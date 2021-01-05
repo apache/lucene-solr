@@ -18,12 +18,10 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.Bits;
 
-/**
- * Filters the incoming reader and makes all documents appear deleted.
- */
+/** Filters the incoming reader and makes all documents appear deleted. */
 public class AllDeletedFilterReader extends FilterLeafReader {
   final Bits liveDocs;
-  
+
   public AllDeletedFilterReader(LeafReader in) {
     super(in);
     liveDocs = new Bits.MatchNoBits(in.maxDoc());

@@ -18,6 +18,8 @@ package org.apache.lucene.misc.store;
 
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.io.IOException;
+import java.util.EnumSet;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -26,19 +28,19 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 
-import java.io.IOException;
-import java.util.EnumSet;
-
 public class NativeUnixDirectoryTest extends LuceneTestCase {
   @Rule
-  public static TestRule requiresNative = new NativeLibEnableRule(
-      EnumSet.of(NativeLibEnableRule.OperatingSystem.MAC,
-          NativeLibEnableRule.OperatingSystem.FREE_BSD,
-          NativeLibEnableRule.OperatingSystem.LINUX));
+  public static TestRule requiresNative =
+      new NativeLibEnableRule(
+          EnumSet.of(
+              NativeLibEnableRule.OperatingSystem.MAC,
+              NativeLibEnableRule.OperatingSystem.FREE_BSD,
+              NativeLibEnableRule.OperatingSystem.LINUX));
 
   public void testLibraryLoaded() throws IOException {
     try (ByteBuffersDirectory ramDir = new ByteBuffersDirectory();
-         Directory dir = new NativeUnixDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST), ramDir)) {
+        Directory dir =
+            new NativeUnixDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST), ramDir)) {
       MergeInfo mergeInfo = new MergeInfo(1000, Integer.MAX_VALUE, true, 1);
       dir.createOutput("test", new IOContext(mergeInfo)).close();
     }

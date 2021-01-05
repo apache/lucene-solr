@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -40,24 +39,25 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
 
 /**
- * A range query that can take advantage of the fact that the index is sorted to speed up
- * execution. If the index is sorted on the same field as the query, it performs binary
- * search on the field's numeric doc values to find the documents at the lower and upper
- * ends of the range.
+ * A range query that can take advantage of the fact that the index is sorted to speed up execution.
+ * If the index is sorted on the same field as the query, it performs binary search on the field's
+ * numeric doc values to find the documents at the lower and upper ends of the range.
  *
- * This optimized execution strategy is only used if the following conditions hold:
+ * <p>This optimized execution strategy is only used if the following conditions hold:
+ *
  * <ul>
- *   <li> The index is sorted, and its primary sort is on the same field as the query.
- *   <li> The query field has either {@link SortedNumericDocValues} or {@link NumericDocValues}.
- *   <li> The segments must have at most one field value per document (otherwise we cannot easily
- * determine the matching document IDs through a binary search).
+ *   <li>The index is sorted, and its primary sort is on the same field as the query.
+ *   <li>The query field has either {@link SortedNumericDocValues} or {@link NumericDocValues}.
+ *   <li>The segments must have at most one field value per document (otherwise we cannot easily
+ *       determine the matching document IDs through a binary search).
  * </ul>
  *
  * If any of these conditions isn't met, the search is delegated to {@code fallbackQuery}.
  *
- * This fallback must be an equivalent range query -- it should produce the same documents and give
- * constant scores. As an example, an {@link IndexSortSortedNumericDocValuesRangeQuery} might be
- * constructed as follows:
+ * <p>This fallback must be an equivalent range query -- it should produce the same documents and
+ * give constant scores. As an example, an {@link IndexSortSortedNumericDocValuesRangeQuery} might
+ * be constructed as follows:
+ *
  * <pre class="prettyprint">
  *   String field = "field";
  *   long lowerValue = 0, long upperValue = 10;
@@ -82,11 +82,9 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
    * @param lowerValue The lower end of the range (inclusive).
    * @param upperValue The upper end of the range (exclusive).
    * @param fallbackQuery A query to fall back to if the optimization cannot be applied.
-      */
-  public IndexSortSortedNumericDocValuesRangeQuery(String field,
-                                                   long lowerValue,
-                                                   long upperValue,
-                                                   Query fallbackQuery) {
+   */
+  public IndexSortSortedNumericDocValuesRangeQuery(
+      String field, long lowerValue, long upperValue, Query fallbackQuery) {
     this.field = Objects.requireNonNull(field);
     this.lowerValue = lowerValue;
     this.upperValue = upperValue;
@@ -102,10 +100,10 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     IndexSortSortedNumericDocValuesRangeQuery that = (IndexSortSortedNumericDocValuesRangeQuery) o;
-    return lowerValue == that.lowerValue &&
-        upperValue == that.upperValue &&
-        Objects.equals(field, that.field) &&
-        Objects.equals(fallbackQuery, that.fallbackQuery);
+    return lowerValue == that.lowerValue
+        && upperValue == that.upperValue
+        && Objects.equals(field, that.field)
+        && Objects.equals(fallbackQuery, that.fallbackQuery);
   }
 
   @Override
@@ -127,8 +125,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     if (this.field.equals(field) == false) {
       b.append(this.field).append(":");
     }
-    return b
-        .append("[")
+    return b.append("[")
         .append(lowerValue)
         .append(" TO ")
         .append(upperValue)
@@ -152,13 +149,15 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     Weight fallbackWeight = fallbackQuery.createWeight(searcher, scoreMode, boost);
 
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        SortedNumericDocValues sortedNumericValues = DocValues.getSortedNumeric(context.reader(), field);
+        SortedNumericDocValues sortedNumericValues =
+            DocValues.getSortedNumeric(context.reader(), field);
         NumericDocValues numericValues = DocValues.unwrapSingleton(sortedNumericValues);
 
         if (numericValues != null) {
@@ -185,20 +184,20 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
   }
 
   /**
-   * Computes the document IDs that lie within the range [lowerValue, upperValue] by
-   * performing binary search on the field's doc values.
+   * Computes the document IDs that lie within the range [lowerValue, upperValue] by performing
+   * binary search on the field's doc values.
    *
-   * Because doc values only allow forward iteration, we need to reload the field comparator
+   * <p>Because doc values only allow forward iteration, we need to reload the field comparator
    * every time the binary search accesses an earlier element.
    *
-   * We must also account for missing values when performing the binary search. For this
-   * reason, we load the {@link FieldComparator} instead of checking the docvalues directly.
-   * The returned {@link DocIdSetIterator} makes sure to wrap the original docvalues to skip
-   * over documents with no value.
+   * <p>We must also account for missing values when performing the binary search. For this reason,
+   * we load the {@link FieldComparator} instead of checking the docvalues directly. The returned
+   * {@link DocIdSetIterator} makes sure to wrap the original docvalues to skip over documents with
+   * no value.
    */
-  private DocIdSetIterator getDocIdSetIterator(SortField sortField,
-                                               LeafReaderContext context,
-                                               DocIdSetIterator delegate) throws IOException {
+  private DocIdSetIterator getDocIdSetIterator(
+      SortField sortField, LeafReaderContext context, DocIdSetIterator delegate)
+      throws IOException {
     long lower = sortField.getReverse() ? upperValue : lowerValue;
     long upper = sortField.getReverse() ? lowerValue : upperValue;
     int maxDoc = context.reader().maxDoc();
@@ -240,16 +239,13 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
     return new BoundedDocSetIdIterator(firstDocIdInclusive, lastDocIdExclusive, delegate);
   }
 
-  /**
-   * Compares the given document's value with a stored reference value.
-   */
+  /** Compares the given document's value with a stored reference value. */
   private interface ValueComparator {
     int compare(int docID) throws IOException;
   }
 
-  private static ValueComparator loadComparator(SortField sortField,
-                                                long topValue,
-                                                LeafReaderContext context) throws IOException {
+  private static ValueComparator loadComparator(
+      SortField sortField, long topValue, LeafReaderContext context) throws IOException {
     @SuppressWarnings("unchecked")
     FieldComparator<Long> fieldComparator = (FieldComparator<Long>) sortField.getComparator(1, 0);
     fieldComparator.setTopValue(topValue);
@@ -264,8 +260,8 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
   }
 
   /**
-   * A doc ID set iterator that wraps a delegate iterator and only returns doc IDs in
-   * the range [firstDocInclusive, lastDoc).
+   * A doc ID set iterator that wraps a delegate iterator and only returns doc IDs in the range
+   * [firstDocInclusive, lastDoc).
    */
   private static class BoundedDocSetIdIterator extends DocIdSetIterator {
     private final int firstDoc;
@@ -274,9 +270,7 @@ public class IndexSortSortedNumericDocValuesRangeQuery extends Query {
 
     private int docID = -1;
 
-    BoundedDocSetIdIterator(int firstDoc,
-                            int lastDoc,
-                            DocIdSetIterator delegate) {
+    BoundedDocSetIdIterator(int firstDoc, int lastDoc, DocIdSetIterator delegate) {
       this.firstDoc = firstDoc;
       this.lastDoc = lastDoc;
       this.delegate = delegate;

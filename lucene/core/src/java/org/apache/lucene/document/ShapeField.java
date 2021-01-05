@@ -144,51 +144,22 @@ public final class ShapeField {
    */
   public static void encodeTriangle(
       byte[] bytes,
-      int aLat,
-      int aLon,
-      boolean abFromShape,
-      int bLat,
-      int bLon,
-      boolean bcFromShape,
-      int cLat,
-      int cLon,
-      boolean caFromShape) {
+      int aY,
+      int aX,
+      boolean ab,
+      int bY,
+      int bX,
+      boolean bc,
+      int cY,
+      int cX,
+      boolean ca) {
     assert bytes.length == 7 * BYTES;
-    int aX;
-    int bX;
-    int cX;
-    int aY;
-    int bY;
-    int cY;
-    boolean ab, bc, ca;
-    // change orientation if CW
-    if (GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat) == -1) {
-      aX = cLon;
-      bX = bLon;
-      cX = aLon;
-      aY = cLat;
-      bY = bLat;
-      cY = aLat;
-      ab = bcFromShape;
-      bc = abFromShape;
-      ca = caFromShape;
-    } else {
-      aX = aLon;
-      bX = bLon;
-      cX = cLon;
-      aY = aLat;
-      bY = bLat;
-      cY = cLat;
-      ab = abFromShape;
-      bc = bcFromShape;
-      ca = caFromShape;
-    }
     // rotate edges and place minX at the beginning
     if (bX < aX || cX < aX) {
+      final int tempX = aX;
+      final int tempY = aY;
+      final boolean tempBool = ab;
       if (bX < cX) {
-        int tempX = aX;
-        int tempY = aY;
-        boolean tempBool = ab;
         aX = bX;
         aY = bY;
         ab = bc;
@@ -198,10 +169,7 @@ public final class ShapeField {
         cX = tempX;
         cY = tempY;
         ca = tempBool;
-      } else if (cX < aX) {
-        int tempX = aX;
-        int tempY = aY;
-        boolean tempBool = ab;
+      } else {
         aX = cX;
         aY = cY;
         ab = ca;
@@ -216,10 +184,10 @@ public final class ShapeField {
       // degenerated case, all points with same longitude
       // we need to prevent that aX is in the middle (not part of the MBS)
       if (bY < aY || cY < aY) {
+        final int tempX = aX;
+        final int tempY = aY;
+        final boolean tempBool = ab;
         if (bY < cY) {
-          int tempX = aX;
-          int tempY = aY;
-          boolean tempBool = ab;
           aX = bX;
           aY = bY;
           ab = bc;
@@ -229,10 +197,7 @@ public final class ShapeField {
           cX = tempX;
           cY = tempY;
           ca = tempBool;
-        } else if (cY < aY) {
-          int tempX = aX;
-          int tempY = aY;
-          boolean tempBool = ab;
+        } else {
           aX = cX;
           aY = cY;
           ab = ca;
@@ -246,10 +211,26 @@ public final class ShapeField {
       }
     }
 
-    int minX = aX;
-    int minY = StrictMath.min(aY, StrictMath.min(bY, cY));
-    int maxX = StrictMath.max(aX, StrictMath.max(bX, cX));
-    int maxY = StrictMath.max(aY, StrictMath.max(bY, cY));
+    // change orientation if CW
+    if (GeoUtils.orient(aX, aY, bX, bY, cX, cY) == -1) {
+      // swap b with c
+      final int tempX = bX;
+      final int tempY = bY;
+      final boolean tempBool = ab;
+      // aX and aY do not change, ab becomes bc
+      ab = bc;
+      bX = cX;
+      bY = cY;
+      // bc does not change, ca becomes ab
+      cX = tempX;
+      cY = tempY;
+      ca = tempBool;
+    }
+
+    final int minX = aX;
+    final int minY = StrictMath.min(aY, StrictMath.min(bY, cY));
+    final int maxX = StrictMath.max(aX, StrictMath.max(bX, cX));
+    final int maxY = StrictMath.max(aY, StrictMath.max(bY, cY));
 
     int bits, x, y;
     if (minY == aY) {

@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanClause;
@@ -33,23 +32,23 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
 /**
- * A TermFilteredPresearcher that indexes queries multiple times, with terms collected
- * from different routes through a querytree.  Each route will produce a set of terms
- * that are *sufficient* to select the query, and are indexed into a separate, suffixed field.
- * <p>
- * Incoming documents are then converted to a set of Disjunction queries over each
- * suffixed field, and these queries are combined into a conjunction query, such that the
- * document's set of terms must match a term from each route.
- * <p>
- * This allows filtering out of documents that contain one half of a two-term phrase query, for
- * example.  The query {@code "hello world"} will be indexed twice, once under 'hello' and once
- * under 'world'.  A document containing the terms "hello there" would match the first field,
- * but not the second, and so would not be selected for matching.
- * <p>
- * The number of passes the presearcher makes is configurable.  More passes will improve the
+ * A TermFilteredPresearcher that indexes queries multiple times, with terms collected from
+ * different routes through a querytree. Each route will produce a set of terms that are
+ * *sufficient* to select the query, and are indexed into a separate, suffixed field.
+ *
+ * <p>Incoming documents are then converted to a set of Disjunction queries over each suffixed
+ * field, and these queries are combined into a conjunction query, such that the document's set of
+ * terms must match a term from each route.
+ *
+ * <p>This allows filtering out of documents that contain one half of a two-term phrase query, for
+ * example. The query {@code "hello world"} will be indexed twice, once under 'hello' and once under
+ * 'world'. A document containing the terms "hello there" would match the first field, but not the
+ * second, and so would not be selected for matching.
+ *
+ * <p>The number of passes the presearcher makes is configurable. More passes will improve the
  * selected/matched ratio, but will take longer to index and will use more RAM.
- * <p>
- * A minimum weight can we set for terms to be chosen for the second and subsequent passes.  This
+ *
+ * <p>A minimum weight can we set for terms to be chosen for the second and subsequent passes. This
  * allows users to avoid indexing stopwords, for example.
  */
 public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
@@ -60,25 +59,30 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
   /**
    * Construct a new MultipassTermFilteredPresearcher
    *
-   * @param passes        the number of times a query should be indexed
-   * @param minWeight     the minimum weight a querytree should be advanced over
-   * @param weightor      the TreeWeightor to use
+   * @param passes the number of times a query should be indexed
+   * @param minWeight the minimum weight a querytree should be advanced over
+   * @param weightor the TreeWeightor to use
    * @param queryHandlers a list of custom query handlers
-   * @param filterFields  a set of fields to use as filters
+   * @param filterFields a set of fields to use as filters
    */
-  public MultipassTermFilteredPresearcher(int passes, float minWeight, TermWeightor weightor,
-                                          List<CustomQueryHandler> queryHandlers, Set<String> filterFields) {
+  public MultipassTermFilteredPresearcher(
+      int passes,
+      float minWeight,
+      TermWeightor weightor,
+      List<CustomQueryHandler> queryHandlers,
+      Set<String> filterFields) {
     super(weightor, queryHandlers, filterFields);
     this.passes = passes;
     this.minWeight = minWeight;
   }
 
   /**
-   * Construct a new MultipassTermFilteredPresearcher using {@link TermFilteredPresearcher#DEFAULT_WEIGHTOR}
-   * <p>
-   * Note that this will be constructed with a minimum advance weight of zero
+   * Construct a new MultipassTermFilteredPresearcher using {@link
+   * TermFilteredPresearcher#DEFAULT_WEIGHTOR}
    *
-   * @param passes     the number of times a query should be indexed
+   * <p>Note that this will be constructed with a minimum advance weight of zero
+   *
+   * @param passes the number of times a query should be indexed
    */
   public MultipassTermFilteredPresearcher(int passes) {
     this(passes, 0, DEFAULT_WEIGHTOR, Collections.emptyList(), Collections.emptySet());
@@ -120,7 +124,9 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
       for (int i = 0; i < passes; i++) {
         BooleanQuery.Builder child = new BooleanQuery.Builder();
         for (String field : terms.keySet()) {
-          child.add(new TermInSetQuery(field(field, i), collectedTerms.get(field)), BooleanClause.Occur.SHOULD);
+          child.add(
+              new TermInSetQuery(field(field, i), collectedTerms.get(field)),
+              BooleanClause.Occur.SHOULD);
         }
         parent.add(child.build(), BooleanClause.Occur.MUST);
       }
@@ -138,10 +144,16 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
       for (Map.Entry<String, BytesRefHash> entry : fieldTerms.entrySet()) {
         // we add the index terms once under a suffixed field for the multipass query, and
         // once under the plan field name for the TermsEnumTokenFilter
-        doc.add(new Field(field(entry.getKey(), i),
-            new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())), QUERYFIELDTYPE));
-        doc.add(new Field(entry.getKey(),
-            new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())), QUERYFIELDTYPE));
+        doc.add(
+            new Field(
+                field(entry.getKey(), i),
+                new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())),
+                QUERYFIELDTYPE));
+        doc.add(
+            new Field(
+                entry.getKey(),
+                new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())),
+                QUERYFIELDTYPE));
       }
       querytree.advancePhase(minWeight);
     }
@@ -157,5 +169,4 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
     }
     return terms;
   }
-
 }

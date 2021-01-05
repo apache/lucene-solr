@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.queryparser.flexible.core.config;
 
-/**
- * This class represents a field configuration.
- */
+/** This class represents a field configuration. */
 public class FieldConfig extends AbstractQueryConfig {
 
   private String fieldName;
-  
+
   /**
    * Constructs a {@link FieldConfig}
-   * 
+   *
    * @param fieldName the field name, it must not be null
    * @throws IllegalArgumentException if the field name is null
    */
@@ -36,12 +34,11 @@ public class FieldConfig extends AbstractQueryConfig {
     }
 
     this.fieldName = fieldName;
-
   }
 
   /**
    * Returns the field name this configuration represents.
-   * 
+   *
    * @return the field name
    */
   public String getField() {
@@ -50,8 +47,10 @@ public class FieldConfig extends AbstractQueryConfig {
 
   @Override
   public String toString() {
-    return "<fieldconfig name=\"" + this.fieldName + "\" configurations=\""
-        + super.toString() + "\"/>";
+    return "<fieldconfig name=\""
+        + this.fieldName
+        + "\" configurations=\""
+        + super.toString()
+        + "\"/>";
   }
-
 }

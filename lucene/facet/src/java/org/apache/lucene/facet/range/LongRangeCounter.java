@@ -22,11 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Counts how many times each range was seen;
- *  per-hit it's just a binary search ({@link #add})
- *  against the elementary intervals, and in the end we
- *  rollup back to the original ranges. */
-
+/**
+ * Counts how many times each range was seen; per-hit it's just a binary search ({@link #add})
+ * against the elementary intervals, and in the end we rollup back to the original ranges.
+ */
 final class LongRangeCounter {
 
   final LongRangeNode root;
@@ -43,12 +42,12 @@ final class LongRangeCounter {
     // track the start vs end case separately because if a
     // given point is both, then it must be its own
     // elementary interval:
-    Map<Long,Integer> endsMap = new HashMap<>();
+    Map<Long, Integer> endsMap = new HashMap<>();
 
     endsMap.put(Long.MIN_VALUE, 1);
     endsMap.put(Long.MAX_VALUE, 2);
 
-    for(LongRange range : ranges) {
+    for (LongRange range : ranges) {
       Integer cur = endsMap.get(range.min);
       if (cur == null) {
         endsMap.put(range.min, 1);
@@ -73,7 +72,7 @@ final class LongRangeCounter {
     long prev;
     if (endsMap.get(v) == 3) {
       elementaryIntervals.add(new InclusiveRange(v, v));
-      prev = v+1;
+      prev = v + 1;
     } else {
       prev = v;
     }
@@ -81,20 +80,20 @@ final class LongRangeCounter {
     while (upto0 < endsList.size()) {
       v = endsList.get(upto0);
       int flags = endsMap.get(v);
-      //System.out.println("  v=" + v + " flags=" + flags);
+      // System.out.println("  v=" + v + " flags=" + flags);
       if (flags == 3) {
         // This point is both an end and a start; we need to
         // separate it:
         if (v > prev) {
-          elementaryIntervals.add(new InclusiveRange(prev, v-1));
+          elementaryIntervals.add(new InclusiveRange(prev, v - 1));
         }
         elementaryIntervals.add(new InclusiveRange(v, v));
-        prev = v+1;
+        prev = v + 1;
       } else if (flags == 1) {
         // This point is only the start of an interval;
         // attach it to next interval:
         if (v > prev) {
-          elementaryIntervals.add(new InclusiveRange(prev, v-1));
+          elementaryIntervals.add(new InclusiveRange(prev, v - 1));
         }
         prev = v;
       } else {
@@ -102,9 +101,9 @@ final class LongRangeCounter {
         // This point is only the end of an interval; attach
         // it to last interval:
         elementaryIntervals.add(new InclusiveRange(prev, v));
-        prev = v+1;
+        prev = v + 1;
       }
-      //System.out.println("    ints=" + elementaryIntervals);
+      // System.out.println("    ints=" + elementaryIntervals);
       upto0++;
     }
 
@@ -113,26 +112,26 @@ final class LongRangeCounter {
 
     // Set outputs, so we know which range to output for
     // each node in the tree:
-    for(int i=0;i<ranges.length;i++) {
+    for (int i = 0; i < ranges.length; i++) {
       root.addOutputs(i, ranges[i]);
     }
 
     // Set boundaries (ends of each elementary interval):
     boundaries = new long[elementaryIntervals.size()];
-    for(int i=0;i<boundaries.length;i++) {
+    for (int i = 0; i < boundaries.length; i++) {
       boundaries[i] = elementaryIntervals.get(i).end;
     }
 
     leafCounts = new int[boundaries.length];
 
-    //System.out.println("ranges: " + Arrays.toString(ranges));
-    //System.out.println("intervals: " + elementaryIntervals);
-    //System.out.println("boundaries: " + Arrays.toString(boundaries));
-    //System.out.println("root:\n" + root);
+    // System.out.println("ranges: " + Arrays.toString(ranges));
+    // System.out.println("intervals: " + elementaryIntervals);
+    // System.out.println("boundaries: " + Arrays.toString(boundaries));
+    // System.out.println("root:\n" + root);
   }
 
   public void add(long v) {
-    //System.out.println("add v=" + v);
+    // System.out.println("add v=" + v);
 
     // NOTE: this works too, but it's ~6% slower on a simple
     // test with a high-freq TermQuery w/ range faceting on
@@ -153,7 +152,8 @@ final class LongRangeCounter {
     int hi = boundaries.length - 1;
     while (true) {
       int mid = (lo + hi) >>> 1;
-      //System.out.println("  cycle lo=" + lo + " hi=" + hi + " mid=" + mid + " boundary=" + boundaries[mid] + " to " + boundaries[mid+1]);
+      // System.out.println("  cycle lo=" + lo + " hi=" + hi + " mid=" + mid + " boundary=" +
+      // boundaries[mid] + " to " + boundaries[mid+1]);
       if (v <= boundaries[mid]) {
         if (mid == 0) {
           leafCounts[0]++;
@@ -161,21 +161,22 @@ final class LongRangeCounter {
         } else {
           hi = mid - 1;
         }
-      } else if (v > boundaries[mid+1]) {
+      } else if (v > boundaries[mid + 1]) {
         lo = mid + 1;
       } else {
-        leafCounts[mid+1]++;
-        //System.out.println("  incr @ " + (mid+1) + "; now " + leafCounts[mid+1]);
+        leafCounts[mid + 1]++;
+        // System.out.println("  incr @ " + (mid+1) + "; now " + leafCounts[mid+1]);
         return;
       }
     }
   }
 
-  /** Fills counts corresponding to the original input
-   *  ranges, returning the missing count (how many hits
-   *  didn't match any ranges). */
+  /**
+   * Fills counts corresponding to the original input ranges, returning the missing count (how many
+   * hits didn't match any ranges).
+   */
   public int fillCounts(int[] counts) {
-    //System.out.println("  rollup");
+    // System.out.println("  rollup");
     missingCount = 0;
     leafUpto = 0;
     rollup(root, counts, false);
@@ -199,16 +200,16 @@ final class LongRangeCounter {
       }
     }
     if (node.outputs != null) {
-      for(int rangeIndex : node.outputs) {
+      for (int rangeIndex : node.outputs) {
         counts[rangeIndex] += count;
       }
     }
-    //System.out.println("  rollup node=" + node.start + " to " + node.end + ": count=" + count);
+    // System.out.println("  rollup node=" + node.start + " to " + node.end + ": count=" + count);
     return count;
   }
 
   private static LongRangeNode split(int start, int end, List<InclusiveRange> elementaryIntervals) {
-    if (start == end-1) {
+    if (start == end - 1) {
       // leaf
       InclusiveRange range = elementaryIntervals.get(start);
       return new LongRangeNode(range.start, range.end, null, null, start);
@@ -253,7 +254,8 @@ final class LongRangeCounter {
     // through this node:
     List<Integer> outputs;
 
-    public LongRangeNode(long start, long end, LongRangeNode left, LongRangeNode right, int leafIndex) {
+    public LongRangeNode(
+        long start, long end, LongRangeNode left, LongRangeNode right, int leafIndex) {
       this.start = start;
       this.end = end;
       this.left = left;
@@ -269,7 +271,7 @@ final class LongRangeCounter {
     }
 
     static void indent(StringBuilder sb, int depth) {
-      for(int i=0;i<depth;i++) {
+      for (int i = 0; i < depth; i++) {
         sb.append("  ");
       }
     }
@@ -307,8 +309,8 @@ final class LongRangeCounter {
 
       if (left != null) {
         assert right != null;
-        left.toString(sb, depth+1);
-        right.toString(sb, depth+1);
+        left.toString(sb, depth + 1);
+        right.toString(sb, depth + 1);
       }
     }
   }

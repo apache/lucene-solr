@@ -17,20 +17,15 @@
 
 /**
  * Expressions.
- * <p>
- * {@link org.apache.lucene.expressions.Expression} - result of compiling an expression, which can
- * evaluate it for a given document.  Each expression can have external variables are resolved by
+ *
+ * <p>{@link org.apache.lucene.expressions.Expression} - result of compiling an expression, which
+ * can evaluate it for a given document. Each expression can have external variables are resolved by
  * {@code Bindings}.
- * </p>
- * 
- * <p>
- * {@link org.apache.lucene.expressions.Bindings} - abstraction for binding external variables
- * to a way to get a value for those variables for a particular document (DoubleValuesSource).
- * </p>
- * 
- * <p>
- * {@link org.apache.lucene.expressions.SimpleBindings} - default implementation of bindings which
- * provide easy ways to bind sort fields and other expressions to external variables
- * </p>
+ *
+ * <p>{@link org.apache.lucene.expressions.Bindings} - abstraction for binding external variables to
+ * a way to get a value for those variables for a particular document (DoubleValuesSource).
+ *
+ * <p>{@link org.apache.lucene.expressions.SimpleBindings} - default implementation of bindings
+ * which provide easy ways to bind sort fields and other expressions to external variables
  */
 package org.apache.lucene.expressions;

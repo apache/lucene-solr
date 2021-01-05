@@ -37,15 +37,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.util.reflection.ClassScanner;
 import org.apache.lucene.util.AttributeImpl;
@@ -66,7 +65,8 @@ public final class AnalysisImpl implements Analysis {
     for (String jarFile : jarFiles) {
       Path path = FileSystems.getDefault().getPath(jarFile);
       if (!Files.exists(path) || !jarFile.endsWith(".jar")) {
-        throw new LukeException(String.format(Locale.ENGLISH, "Invalid jar file path: %s", jarFile));
+        throw new LukeException(
+            String.format(Locale.ENGLISH, "Invalid jar file path: %s", jarFile));
       }
       try {
         URL url = path.toUri().toURL();
@@ -77,8 +77,8 @@ public final class AnalysisImpl implements Analysis {
     }
 
     // reload available tokenizers, charfilters, and tokenfilters
-    URLClassLoader classLoader = new URLClassLoader(
-        urls.toArray(new URL[0]), this.getClass().getClassLoader());
+    URLClassLoader classLoader =
+        new URLClassLoader(urls.toArray(new URL[0]), this.getClass().getClassLoader());
     CharFilterFactory.reloadCharFilters(classLoader);
     TokenizerFactory.reloadTokenizers(classLoader);
     TokenFilterFactory.reloadTokenFilters(classLoader);
@@ -113,11 +113,14 @@ public final class AnalysisImpl implements Analysis {
 
   @Override
   public Collection<String> getAvailableTokenFilters() {
-    return TokenFilterFactory.availableTokenFilters().stream().sorted().collect(Collectors.toList());
+    return TokenFilterFactory.availableTokenFilters().stream()
+        .sorted()
+        .collect(Collectors.toList());
   }
 
   private <T> List<Class<? extends T>> getInstantiableSubTypesBuiltIn(Class<T> superType) {
-    ClassScanner scanner = new ClassScanner("org.apache.lucene.analysis", getClass().getClassLoader());
+    ClassScanner scanner =
+        new ClassScanner("org.apache.lucene.analysis", getClass().getClassLoader());
     Set<Class<? extends T>> types = scanner.scanSubTypes(superType);
     return types.stream()
         .filter(type -> !Modifier.isAbstract(type.getModifiers()))
@@ -157,13 +160,13 @@ public final class AnalysisImpl implements Analysis {
   private List<TokenAttribute> copyAttributes(TokenStream tokenStream, CharTermAttribute charAtt) {
     List<TokenAttribute> attributes = new ArrayList<>();
     Iterator<AttributeImpl> itr = tokenStream.getAttributeImplsIterator();
-    while(itr.hasNext()) {
+    while (itr.hasNext()) {
       AttributeImpl att = itr.next();
       Map<String, String> attValues = new LinkedHashMap<>();
-      att.reflectWith((attClass, key, value) -> {
-        if (value != null)
-          attValues.put(key, value.toString());
-      });
+      att.reflectWith(
+          (attClass, key, value) -> {
+            if (value != null) attValues.put(key, value.toString());
+          });
       attributes.add(new TokenAttribute(att.getClass().getSimpleName(), attValues));
     }
     return attributes;
@@ -178,7 +181,8 @@ public final class AnalysisImpl implements Analysis {
       this.analyzer = clazz.getConstructor().newInstance();
       return analyzer;
     } catch (ReflectiveOperationException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to instantiate class: %s", analyzerType), e);
+      throw new LukeException(
+          String.format(Locale.ENGLISH, "Failed to instantiate class: %s", analyzerType), e);
     }
   }
 
@@ -187,12 +191,15 @@ public final class AnalysisImpl implements Analysis {
     Objects.requireNonNull(config);
     try {
       // create builder
-      CustomAnalyzer.Builder builder = config.getConfigDir()
-          .map(path -> CustomAnalyzer.builder(FileSystems.getDefault().getPath(path)))
-          .orElse(CustomAnalyzer.builder());
+      CustomAnalyzer.Builder builder =
+          config
+              .getConfigDir()
+              .map(path -> CustomAnalyzer.builder(FileSystems.getDefault().getPath(path)))
+              .orElse(CustomAnalyzer.builder());
 
       // set tokenizer
-      builder.withTokenizer(config.getTokenizerConfig().getName(), config.getTokenizerConfig().getParams());
+      builder.withTokenizer(
+          config.getTokenizerConfig().getName(), config.getTokenizerConfig().getParams());
 
       // add char filters
       for (CustomAnalyzerConfig.ComponentConfig cfConf : config.getCharFilterConfigs()) {
@@ -221,7 +228,7 @@ public final class AnalysisImpl implements Analysis {
   }
 
   @Override
-  public StepByStepResult analyzeStepByStep(String text){
+  public StepByStepResult analyzeStepByStep(String text) {
     Objects.requireNonNull(text);
     if (analyzer == null) {
       throw new LukeException("Analyzer is not set.");
@@ -235,7 +242,7 @@ public final class AnalysisImpl implements Analysis {
     List<CharfilteredText> charfilteredTexts = new ArrayList<>();
 
     try {
-      CustomAnalyzer customAnalyzer = (CustomAnalyzer)analyzer;
+      CustomAnalyzer customAnalyzer = (CustomAnalyzer) analyzer;
       final List<CharFilterFactory> charFilterFactories = customAnalyzer.getCharFilterFactories();
       Reader reader = new StringReader(text);
       String charFilteredSource = text;
@@ -246,26 +253,32 @@ public final class AnalysisImpl implements Analysis {
           Reader readerForWriteOut = new StringReader(charFilteredSource);
           readerForWriteOut = charFilterFactory.create(readerForWriteOut);
           charFilteredSource = writeCharStream(readerForWriteOut);
-          charfilteredTexts.add(new CharfilteredText(CharFilterFactory.findSPIName(charFilterFactory.getClass()), charFilteredSource));
+          charfilteredTexts.add(
+              new CharfilteredText(
+                  CharFilterFactory.findSPIName(charFilterFactory.getClass()), charFilteredSource));
         }
         reader = cs;
       }
 
       final TokenizerFactory tokenizerFactory = customAnalyzer.getTokenizerFactory();
-      final List<TokenFilterFactory> tokenFilterFactories = customAnalyzer.getTokenFilterFactories();
+      final List<TokenFilterFactory> tokenFilterFactories =
+          customAnalyzer.getTokenFilterFactories();
 
       TokenStream tokenStream = tokenizerFactory.create();
-      ((Tokenizer)tokenStream).setReader(reader);
+      ((Tokenizer) tokenStream).setReader(reader);
       List<Token> tokens = new ArrayList<>();
       List<AttributeSource> attributeSources = analyzeTokenStream(tokenStream, tokens);
-      namedTokens.add(new NamedTokens(TokenizerFactory.findSPIName(tokenizerFactory.getClass()), tokens));
+      namedTokens.add(
+          new NamedTokens(TokenizerFactory.findSPIName(tokenizerFactory.getClass()), tokens));
 
-      ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokenStream, attributeSources);
+      ListBasedTokenStream listBasedTokenStream =
+          new ListBasedTokenStream(tokenStream, attributeSources);
       for (TokenFilterFactory tokenFilterFactory : tokenFilterFactories) {
         tokenStream = tokenFilterFactory.create(listBasedTokenStream);
         tokens = new ArrayList<>();
         attributeSources = analyzeTokenStream(tokenStream, tokens);
-        namedTokens.add(new NamedTokens(TokenFilterFactory.findSPIName(tokenFilterFactory.getClass()), tokens));
+        namedTokens.add(
+            new NamedTokens(TokenFilterFactory.findSPIName(tokenFilterFactory.getClass()), tokens));
         try {
           listBasedTokenStream.close();
         } catch (IOException e) {
@@ -290,7 +303,6 @@ public final class AnalysisImpl implements Analysis {
    * Analyzes the given TokenStream, collecting the Tokens it produces.
    *
    * @param tokenStream TokenStream to analyze
-   *
    * @return List of tokens produced from the TokenStream
    */
   private List<AttributeSource> analyzeTokenStream(TokenStream tokenStream, List<Token> result) {
@@ -313,10 +325,10 @@ public final class AnalysisImpl implements Analysis {
   }
 
   /**
-   * TokenStream that iterates over a list of pre-existing Tokens
-   * see org.apache.solr.handler.AnalysisRequestHandlerBase#ListBasedTokenStream
+   * TokenStream that iterates over a list of pre-existing Tokens see
+   * org.apache.solr.handler.AnalysisRequestHandlerBase#ListBasedTokenStream
    */
-  protected final static class ListBasedTokenStream extends TokenStream {
+  protected static final class ListBasedTokenStream extends TokenStream {
     private final List<AttributeSource> tokens;
     private Iterator<AttributeSource> tokenIterator;
 
@@ -360,21 +372,21 @@ public final class AnalysisImpl implements Analysis {
     }
   }
 
-  private static String writeCharStream(Reader input ){
+  private static String writeCharStream(Reader input) {
     final int BUFFER_SIZE = 1024;
     char[] buf = new char[BUFFER_SIZE];
     int len = 0;
     StringBuilder sb = new StringBuilder();
     do {
       try {
-        len = input.read( buf, 0, BUFFER_SIZE );
+        len = input.read(buf, 0, BUFFER_SIZE);
       } catch (IOException e) {
         throw new RuntimeException("Error occurred while iterating over charfiltering", e);
       }
-      if( len > 0 )
+      if (len > 0) {
         sb.append(buf, 0, len);
-    } while( len == BUFFER_SIZE );
+      }
+    } while (len == BUFFER_SIZE);
     return sb.toString();
   }
-
 }

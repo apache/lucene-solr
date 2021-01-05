@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -52,21 +51,23 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 // A TermsIncludingScoreQuery variant for point values:
 abstract class PointInSetIncludingScoreQuery extends Query implements Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInSetIncludingScoreQuery.class);
+  protected static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(PointInSetIncludingScoreQuery.class);
 
-  static BiFunction<byte[], Class<? extends Number>, String> toString = (value, numericType) -> {
-    if (Integer.class.equals(numericType)) {
-      return Integer.toString(IntPoint.decodeDimension(value, 0));
-    } else if (Long.class.equals(numericType)) {
-      return Long.toString(LongPoint.decodeDimension(value, 0));
-    } else if (Float.class.equals(numericType)) {
-      return Float.toString(FloatPoint.decodeDimension(value, 0));
-    } else if (Double.class.equals(numericType)) {
-      return Double.toString(DoublePoint.decodeDimension(value, 0));
-    } else {
-      return "unsupported";
-    }
-  };
+  static BiFunction<byte[], Class<? extends Number>, String> toString =
+      (value, numericType) -> {
+        if (Integer.class.equals(numericType)) {
+          return Integer.toString(IntPoint.decodeDimension(value, 0));
+        } else if (Long.class.equals(numericType)) {
+          return Long.toString(LongPoint.decodeDimension(value, 0));
+        } else if (Float.class.equals(numericType)) {
+          return Float.toString(FloatPoint.decodeDimension(value, 0));
+        } else if (Double.class.equals(numericType)) {
+          return Double.toString(DoublePoint.decodeDimension(value, 0));
+        } else {
+          return "unsupported";
+        }
+      };
 
   final ScoreMode scoreMode;
   final Query originalQuery;
@@ -80,20 +81,25 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
 
   private final long ramBytesUsed; // cache
 
-  static abstract class Stream extends PointInSetQuery.Stream {
+  abstract static class Stream extends PointInSetQuery.Stream {
 
     float score;
-
   }
 
-  PointInSetIncludingScoreQuery(ScoreMode scoreMode, Query originalQuery, boolean multipleValuesPerDocument,
-                                String field, int bytesPerDim, Stream packedPoints) {
+  PointInSetIncludingScoreQuery(
+      ScoreMode scoreMode,
+      Query originalQuery,
+      boolean multipleValuesPerDocument,
+      String field,
+      int bytesPerDim,
+      Stream packedPoints) {
     this.scoreMode = scoreMode;
     this.originalQuery = originalQuery;
     this.multipleValuesPerDocument = multipleValuesPerDocument;
     this.field = field;
     if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
-      throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
+      throw new IllegalArgumentException(
+          "bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
     }
     this.bytesPerDim = bytesPerDim;
 
@@ -103,7 +109,15 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
     BytesRef current;
     while ((current = packedPoints.next()) != null) {
       if (current.length != bytesPerDim) {
-        throw new IllegalArgumentException("packed point length should be " + (bytesPerDim) + " but got " + current.length + "; field=\"" + field + "\"bytesPerDim=" + bytesPerDim);
+        throw new IllegalArgumentException(
+            "packed point length should be "
+                + (bytesPerDim)
+                + " but got "
+                + current.length
+                + "; field=\""
+                + field
+                + "\"bytesPerDim="
+                + bytesPerDim);
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
@@ -112,7 +126,8 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
         if (cmp == 0) {
           throw new IllegalArgumentException("unexpected duplicated value: " + current);
         } else if (cmp >= 0) {
-          throw new IllegalArgumentException("values are out of order: saw " + previous + " before " + current);
+          throw new IllegalArgumentException(
+              "values are out of order: saw " + previous + " before " + current);
         }
       }
       builder.add(field, current);
@@ -122,10 +137,12 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
 
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.field) +
-        RamUsageEstimator.sizeOfObject(this.originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(this.sortedPackedPoints);
+    this.ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(this.field)
+            + RamUsageEstimator.sizeOfObject(
+                this.originalQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.sizeOfObject(this.sortedPackedPoints);
   }
 
   @Override
@@ -136,7 +153,9 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(
+      IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
 
       @Override
@@ -159,10 +178,21 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
           return null;
         }
         if (fieldInfo.getPointDimensionCount() != 1) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=1");
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with numDims="
+                  + fieldInfo.getPointDimensionCount()
+                  + " but this query has numDims=1");
         }
         if (fieldInfo.getPointNumBytes() != bytesPerDim) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with bytesPerDim="
+                  + fieldInfo.getPointNumBytes()
+                  + " but this query has bytesPerDim="
+                  + bytesPerDim);
         }
         PointValues values = reader.getPointValues(field);
         if (values == null) {
@@ -195,7 +225,6 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
           public DocIdSetIterator iterator() {
             return disi;
           }
-
         };
       }
 
@@ -203,7 +232,6 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 
@@ -218,7 +246,9 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
     float nextScore;
     private final BytesRef scratch = new BytesRef();
 
-    private MergePointVisitor(PrefixCodedTerms sortedPackedPoints, FixedBitSet result, float[] scores) throws IOException {
+    private MergePointVisitor(
+        PrefixCodedTerms sortedPackedPoints, FixedBitSet result, float[] scores)
+        throws IOException {
       this.result = result;
       this.scores = scores;
       scratch.length = bytesPerDim;
@@ -306,17 +336,16 @@ abstract class PointInSetIncludingScoreQuery extends Query implements Accountabl
 
   @Override
   public final boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(PointInSetIncludingScoreQuery other) {
-    return other.scoreMode.equals(scoreMode) &&
-           other.field.equals(field) &&
-           other.originalQuery.equals(originalQuery) &&
-           other.bytesPerDim == bytesPerDim &&
-           other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-           other.sortedPackedPoints.equals(sortedPackedPoints);
+    return other.scoreMode.equals(scoreMode)
+        && other.field.equals(field)
+        && other.originalQuery.equals(originalQuery)
+        && other.bytesPerDim == bytesPerDim
+        && other.sortedPackedPointsHashCode == sortedPackedPointsHashCode
+        && other.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override

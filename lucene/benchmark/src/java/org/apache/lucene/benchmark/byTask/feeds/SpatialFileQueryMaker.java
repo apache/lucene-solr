@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -32,16 +30,16 @@ import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Reads spatial data from the body field docs from an internally created {@link LineDocSource}.
- * It's parsed by {@link org.locationtech.spatial4j.context.SpatialContext#readShapeFromWkt(String)} (String)} and then
- * further manipulated via a configurable {@link SpatialDocMaker.ShapeConverter}. When using point
- * data, it's likely you'll want to configure the shape converter so that the query shapes actually
- * cover a region. The queries are all created and cached in advance. This query maker works in
- * conjunction with {@link SpatialDocMaker}.  See spatial.alg for a listing of options, in
- * particular the options starting with "query.".
+ * It's parsed by {@link org.locationtech.spatial4j.context.SpatialContext#readShapeFromWkt(String)}
+ * (String)} and then further manipulated via a configurable {@link SpatialDocMaker.ShapeConverter}.
+ * When using point data, it's likely you'll want to configure the shape converter so that the query
+ * shapes actually cover a region. The queries are all created and cached in advance. This query
+ * maker works in conjunction with {@link SpatialDocMaker}. See spatial.alg for a listing of
+ * options, in particular the options starting with "query.".
  */
 public class SpatialFileQueryMaker extends AbstractQueryMaker {
   protected SpatialStrategy strategy;
-  protected double distErrPct;//NaN if not set
+  protected double distErrPct; // NaN if not set
   protected SpatialOperation operation;
   protected boolean score;
 
@@ -56,7 +54,7 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
     operation = SpatialOperation.get(config.get("query.spatial.predicate", "Intersects"));
     score = config.get("query.spatial.score", false);
 
-    super.setConfig(config);//call last, will call prepareQueries()
+    super.setConfig(config); // call last, will call prepareQueries()
   }
 
   @Override
@@ -75,36 +73,34 @@ public class SpatialFileQueryMaker extends AbstractQueryMaker {
       DocData docData = new DocData();
       for (int i = 0; i < maxQueries; i++) {
         docData = src.getNextDocData(docData);
-        Shape shape = SpatialDocMaker.makeShapeFromString(strategy, docData.getName(), docData.getBody());
+        Shape shape =
+            SpatialDocMaker.makeShapeFromString(strategy, docData.getName(), docData.getBody());
         if (shape != null) {
           shape = shapeConverter.convert(shape);
           queries.add(makeQueryFromShape(shape));
         } else {
-          i--;//skip
+          i--; // skip
         }
       }
     } catch (NoMoreDataException e) {
-      //all-done
+      // all-done
     } finally {
       src.close();
     }
     return queries.toArray(new Query[queries.size()]);
   }
 
-
   protected Query makeQueryFromShape(Shape shape) {
     SpatialArgs args = new SpatialArgs(operation, shape);
-    if (!Double.isNaN(distErrPct))
-      args.setDistErrPct(distErrPct);
+    if (!Double.isNaN(distErrPct)) args.setDistErrPct(distErrPct);
 
     Query filterQuery = strategy.makeQuery(args);
     if (score) {
-      //wrap with distance computing query
+      // wrap with distance computing query
       DoubleValuesSource valueSource = strategy.makeDistanceValueSource(shape.getCenter());
       return new FunctionScoreQuery(filterQuery, valueSource);
     } else {
       return filterQuery; // assume constant scoring
     }
   }
-
 }

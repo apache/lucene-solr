@@ -19,5 +19,6 @@ package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
 /** Edit filters mode */
 public enum EditFiltersMode {
-  CHARFILTER, TOKENFILTER;
+  CHARFILTER,
+  TOKENFILTER;
 }

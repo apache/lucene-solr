@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -35,25 +33,25 @@ import org.apache.lucene.document.StringField;
 /** Tests the functionality of {@link WriteEnwikiLineDocTask}. */
 public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
 
-  
   // class has to be public so that Class.forName.newInstance() will work
   /** Interleaves category docs with regular docs */
   public static final class WriteLineCategoryDocMaker extends DocMaker {
-  
+
     AtomicInteger flip = new AtomicInteger(0);
-    
+
     @Override
     public Document makeDocument() throws Exception {
-      boolean isCategory = (flip.incrementAndGet() % 2 == 0); 
+      boolean isCategory = (flip.incrementAndGet() % 2 == 0);
       Document doc = new Document();
       doc.add(new StringField(BODY_FIELD, "body text", Field.Store.NO));
-      doc.add(new StringField(TITLE_FIELD, isCategory ? "Category:title text" : "title text", Field.Store.NO));
+      doc.add(
+          new StringField(
+              TITLE_FIELD, isCategory ? "Category:title text" : "title text", Field.Store.NO));
       doc.add(new StringField(DATE_FIELD, "date text", Field.Store.NO));
       return doc;
     }
-    
   }
-  
+
   private PerfRunData createPerfRunData(Path file, String docMakerName) throws Exception {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
@@ -62,19 +60,20 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     Config config = new Config(props);
     return new PerfRunData(config);
   }
-  
-  private void doReadTest(Path file, String expTitle,
-                          String expDate, String expBody) throws Exception {
+
+  private void doReadTest(Path file, String expTitle, String expDate, String expBody)
+      throws Exception {
     doReadTest(2, file, expTitle, expDate, expBody);
     Path categoriesFile = WriteEnwikiLineDocTask.categoriesLineFile(file);
-    doReadTest(2, categoriesFile, "Category:"+expTitle, expDate, expBody);
+    doReadTest(2, categoriesFile, "Category:" + expTitle, expDate, expBody);
   }
-  
-  private void doReadTest(int n, Path file, String expTitle, String expDate, String expBody) throws Exception {
+
+  private void doReadTest(int n, Path file, String expTitle, String expDate, String expBody)
+      throws Exception {
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       WriteLineDocTaskTest.assertHeaderLine(line);
-      for (int i=0; i<n; i++) {
+      for (int i = 0; i < n; i++) {
         line = br.readLine();
         assertNotNull(line);
         String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
@@ -90,7 +89,6 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     }
   }
 
-
   public void testCategoryLines() throws Exception {
     // WriteLineDocTask replaced only \t characters w/ a space, since that's its
     // separator char. However, it didn't replace newline characters, which
@@ -98,12 +96,11 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     Path file = getWorkDir().resolve("two-lines-each.txt");
     PerfRunData runData = createPerfRunData(file, WriteLineCategoryDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteEnwikiLineDocTask(runData);
-    for (int i=0; i<4; i++) { // four times so that each file should have 2 lines. 
+    for (int i = 0; i < 4; i++) { // four times so that each file should have 2 lines.
       wldt.doLogic();
     }
     wldt.close();
-    
+
     doReadTest(file, "title text", "date text", "body text");
   }
-  
 }

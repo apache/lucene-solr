@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Kuromoji utility classes.
- */
+/** Kuromoji utility classes. */
 package org.apache.lucene.analysis.ja.util;

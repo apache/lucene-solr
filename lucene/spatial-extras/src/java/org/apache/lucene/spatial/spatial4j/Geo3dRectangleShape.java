@@ -41,12 +41,13 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
   private double minY;
   private double maxY;
 
-  public Geo3dRectangleShape(final GeoBBox shape,
-                             final SpatialContext spatialcontext,
-                             double minX,
-                             double maxX,
-                             double minY,
-                             double maxY) {
+  public Geo3dRectangleShape(
+      final GeoBBox shape,
+      final SpatialContext spatialcontext,
+      double minX,
+      double maxX,
+      double minY,
+      double maxY) {
     super(shape, spatialcontext);
     this.minX = minX;
     this.maxX = maxX;
@@ -59,29 +60,38 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
     setBoundsFromshape();
   }
 
-
-  /**
-   * Set the bounds from the wrapped GeoBBox.
-   */
+  /** Set the bounds from the wrapped GeoBBox. */
   private void setBoundsFromshape() {
     LatLonBounds bounds = new LatLonBounds();
     shape.getBounds(bounds);
-    minX = bounds.checkNoLongitudeBound() ? -180.0 : bounds.getLeftLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
-    minY = bounds.checkNoBottomLatitudeBound() ? -90.0 : bounds.getMinLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
-    maxX = bounds.checkNoLongitudeBound() ? 180.0 : bounds.getRightLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
-    maxY = bounds.checkNoTopLatitudeBound() ? 90.0 : bounds.getMaxLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    minX =
+        bounds.checkNoLongitudeBound()
+            ? -180.0
+            : bounds.getLeftLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    minY =
+        bounds.checkNoBottomLatitudeBound()
+            ? -90.0
+            : bounds.getMinLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    maxX =
+        bounds.checkNoLongitudeBound()
+            ? 180.0
+            : bounds.getRightLongitude() * DistanceUtils.RADIANS_TO_DEGREES;
+    maxY =
+        bounds.checkNoTopLatitudeBound()
+            ? 90.0
+            : bounds.getMaxLatitude() * DistanceUtils.RADIANS_TO_DEGREES;
   }
 
   @Override
   public Point getCenter() {
-    Point center = this.center;//volatile read once
+    Point center = this.center; // volatile read once
     if (center == null) {
       GeoPoint point = shape.getCenter();
-      center = new Geo3dPointShape(
-          GeoPointShapeFactory.makeGeoPointShape(shape.getPlanetModel(),
-              point.getLatitude(),
-              point.getLongitude()),
-          spatialcontext);
+      center =
+          new Geo3dPointShape(
+              GeoPointShapeFactory.makeGeoPointShape(
+                  shape.getPlanetModel(), point.getLatitude(), point.getLongitude()),
+              spatialcontext);
       this.center = center;
     }
     return center;
@@ -89,11 +99,13 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
 
   @Override
   public void reset(double minX, double maxX, double minY, double maxY) {
-    shape = GeoBBoxFactory.makeGeoBBox(shape.getPlanetModel(),
-        maxY * DistanceUtils.DEGREES_TO_RADIANS,
-        minY * DistanceUtils.DEGREES_TO_RADIANS,
-        minX * DistanceUtils.DEGREES_TO_RADIANS,
-        maxX * DistanceUtils.DEGREES_TO_RADIANS);
+    shape =
+        GeoBBoxFactory.makeGeoBBox(
+            shape.getPlanetModel(),
+            maxY * DistanceUtils.DEGREES_TO_RADIANS,
+            minY * DistanceUtils.DEGREES_TO_RADIANS,
+            minX * DistanceUtils.DEGREES_TO_RADIANS,
+            maxX * DistanceUtils.DEGREES_TO_RADIANS);
     center = null;
     boundingBox = null;
   }
@@ -140,7 +152,6 @@ public class Geo3dRectangleShape extends Geo3dShape<GeoBBox> implements Rectangl
   @Override
   public boolean getCrossesDateLine() {
     return (getMaxX() > 0 && getMinX() < 0);
-
   }
 
   @Override

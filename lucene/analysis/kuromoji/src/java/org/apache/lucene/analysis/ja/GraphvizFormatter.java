@@ -16,36 +16,31 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Position;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.WrappedPositionArray;
 import org.apache.lucene.analysis.ja.dict.ConnectionCosts;
 import org.apache.lucene.analysis.ja.dict.Dictionary;
 
-
 // TODO: would be nice to show 2nd best path in a diff't
 // color...
 
-/**
- * Outputs the dot (graphviz) string for the viterbi lattice.
- */
+/** Outputs the dot (graphviz) string for the viterbi lattice. */
 public class GraphvizFormatter {
-  
-  private final static String BOS_LABEL = "BOS";
-  
-  private final static String EOS_LABEL = "EOS";
-  
-  private final static String FONT_NAME = "Helvetica";
-  
+
+  private static final String BOS_LABEL = "BOS";
+
+  private static final String EOS_LABEL = "EOS";
+
+  private static final String FONT_NAME = "Helvetica";
+
   private final ConnectionCosts costs;
-  
+
   private final Map<String, String> bestPathMap;
-  
+
   private final StringBuilder sb = new StringBuilder();
-  
+
   public GraphvizFormatter(ConnectionCosts costs) {
     this.costs = costs;
     this.bestPathMap = new HashMap<>();
@@ -60,7 +55,14 @@ public class GraphvizFormatter {
   }
 
   // Backtraces another incremental fragment:
-  void onBacktrace(JapaneseTokenizer tok, WrappedPositionArray positions, int lastBackTracePos, Position endPosData, int fromIDX, char[] fragment, boolean isEnd) {
+  void onBacktrace(
+      JapaneseTokenizer tok,
+      WrappedPositionArray positions,
+      int lastBackTracePos,
+      Position endPosData,
+      int fromIDX,
+      char[] fragment,
+      boolean isEnd) {
     setBestPathMap(positions, lastBackTracePos, endPosData, fromIDX);
     sb.append(formatNodes(tok, positions, lastBackTracePos, endPosData, fragment));
     if (isEnd) {
@@ -72,7 +74,8 @@ public class GraphvizFormatter {
   }
 
   // Records which arcs make up the best bath:
-  private void setBestPathMap(WrappedPositionArray positions, int startPos, Position endPosData, int fromIDX) {
+  private void setBestPathMap(
+      WrappedPositionArray positions, int startPos, Position endPosData, int fromIDX) {
     bestPathMap.clear();
 
     int pos = endPosData.pos;
@@ -85,7 +88,7 @@ public class GraphvizFormatter {
 
       final String toNodeID = getNodeID(pos, bestIDX);
       final String fromNodeID = getNodeID(backPos, backIDX);
-      
+
       assert !bestPathMap.containsKey(fromNodeID);
       assert !bestPathMap.containsValue(toNodeID);
       bestPathMap.put(fromNodeID, toNodeID);
@@ -93,14 +96,19 @@ public class GraphvizFormatter {
       bestIDX = backIDX;
     }
   }
-  
-  private String formatNodes(JapaneseTokenizer tok, WrappedPositionArray positions, int startPos, Position endPosData, char[] fragment) {
+
+  private String formatNodes(
+      JapaneseTokenizer tok,
+      WrappedPositionArray positions,
+      int startPos,
+      Position endPosData,
+      char[] fragment) {
 
     StringBuilder sb = new StringBuilder();
     // Output nodes
-    for (int pos = startPos+1; pos <= endPosData.pos; pos++) {
+    for (int pos = startPos + 1; pos <= endPosData.pos; pos++) {
       final Position posData = positions.get(pos);
-      for(int idx=0;idx<posData.count;idx++) {
+      for (int idx = 0; idx < posData.count; idx++) {
         sb.append("  ");
         sb.append(getNodeID(pos, idx));
         sb.append(" [label=\"");
@@ -114,7 +122,7 @@ public class GraphvizFormatter {
     // Output arcs
     for (int pos = endPosData.pos; pos > startPos; pos--) {
       final Position posData = positions.get(pos);
-      for(int idx=0;idx<posData.count;idx++) {
+      for (int idx = 0; idx < posData.count; idx++) {
         final Position backPosData = positions.get(posData.backPos[idx]);
         final String toNodeID = getNodeID(pos, idx);
         final String fromNodeID = getNodeID(posData.backPos[idx], posData.backIndex[idx]);
@@ -134,13 +142,14 @@ public class GraphvizFormatter {
 
         final Dictionary dict = tok.getDict(posData.backType[idx]);
         final int wordCost = dict.getWordCost(posData.backID[idx]);
-        final int bgCost = costs.get(backPosData.lastRightID[posData.backIndex[idx]],
-                                     dict.getLeftId(posData.backID[idx]));
+        final int bgCost =
+            costs.get(
+                backPosData.lastRightID[posData.backIndex[idx]],
+                dict.getLeftId(posData.backID[idx]));
 
-        final String surfaceForm = new String(fragment,
-                                              posData.backPos[idx] - startPos,
-                                              pos - posData.backPos[idx]);
-        
+        final String surfaceForm =
+            new String(fragment, posData.backPos[idx] - startPos, pos - posData.backPos[idx]);
+
         sb.append(" [label=\"");
         sb.append(surfaceForm);
         sb.append(' ');
@@ -156,25 +165,29 @@ public class GraphvizFormatter {
     }
     return sb.toString();
   }
-  
+
   private String formatHeader() {
     StringBuilder sb = new StringBuilder();
     sb.append("digraph viterbi {\n");
-    sb.append("  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\"];\n");
-    //sb.append("  // A2 paper size\n");
-    //sb.append("  size = \"34.4,16.5\";\n");
-    //sb.append("  // try to fill paper\n");
-    //sb.append("  ratio = fill;\n");
+    sb.append(
+        "  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\"];\n");
+    // sb.append("  // A2 paper size\n");
+    // sb.append("  size = \"34.4,16.5\";\n");
+    // sb.append("  // try to fill paper\n");
+    // sb.append("  ratio = fill;\n");
     sb.append("  edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]\n");
-    sb.append("  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]\n");
-    
+    sb.append(
+        "  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\""
+            + FONT_NAME
+            + "\" ]\n");
+
     return sb.toString();
   }
-  
+
   private String formatTrailer() {
     return "}";
   }
-  
+
   private String getNodeID(int pos, int idx) {
     return pos + "." + idx;
   }

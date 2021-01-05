@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.spans;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
@@ -25,12 +24,11 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 
 /**
- * This processor changes every field name of each {@link FieldableNode} query
- * node contained in the query tree to the field name defined in the
- * {@link UniqueFieldAttribute}. So, the {@link UniqueFieldAttribute} must be
- * defined in the {@link QueryConfigHandler} object set in this processor,
- * otherwise it throws an exception.
- * 
+ * This processor changes every field name of each {@link FieldableNode} query node contained in the
+ * query tree to the field name defined in the {@link UniqueFieldAttribute}. So, the {@link
+ * UniqueFieldAttribute} must be defined in the {@link QueryConfigHandler} object set in this
+ * processor, otherwise it throws an exception.
+ *
  * @see UniqueFieldAttribute
  */
 public class UniqueFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
@@ -39,7 +37,6 @@ public class UniqueFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
-
   }
 
   @Override
@@ -62,19 +59,14 @@ public class UniqueFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
       String uniqueField = queryConfig.get(SpansQueryConfigHandler.UNIQUE_FIELD);
       fieldNode.setField(uniqueField);
-
     }
 
     return node;
-
   }
 
   @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
-      throws QueryNodeException {
+  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
 
     return children;
-
   }
-
 }

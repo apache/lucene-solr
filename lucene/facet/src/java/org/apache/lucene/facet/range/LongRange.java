@@ -18,7 +18,6 @@ package org.apache.lucene.facet.range;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -34,9 +33,11 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
-/** Represents a range over long values.
+/**
+ * Represents a range over long values.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public final class LongRange extends Range {
   /** Minimum (inclusive). */
   public final long min;
@@ -48,7 +49,8 @@ public final class LongRange extends Range {
   // Double/FloatRange too)
 
   /** Create a LongRange. */
-  public LongRange(String label, long minIn, boolean minInclusive, long maxIn, boolean maxInclusive) {
+  public LongRange(
+      String label, long minIn, boolean minInclusive, long maxIn, boolean maxInclusive) {
     super(label);
 
     if (!minInclusive) {
@@ -91,9 +93,7 @@ public final class LongRange extends Range {
       return false;
     }
     LongRange that = (LongRange) _that;
-    return that.label.equals(this.label) &&
-        that.min == this.min &&
-        that.max == this.max;
+    return that.label.equals(this.label) && that.min == this.min && that.max == this.max;
   }
 
   @Override
@@ -114,14 +114,13 @@ public final class LongRange extends Range {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(ValueSourceQuery other) {
-      return range.equals(other.range) && 
-             Objects.equals(fastMatchQuery, other.fastMatchQuery) && 
-             valueSource.equals(other.valueSource);
+      return range.equals(other.range)
+          && Objects.equals(fastMatchQuery, other.fastMatchQuery)
+          && valueSource.equals(other.valueSource);
     }
 
     @Override
@@ -151,10 +150,12 @@ public final class LongRange extends Range {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-      final Weight fastMatchWeight = fastMatchQuery == null
-          ? null
-          : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
+      final Weight fastMatchWeight =
+          fastMatchQuery == null
+              ? null
+              : searcher.createWeight(fastMatchQuery, ScoreMode.COMPLETE_NO_SCORES, 1f);
 
       return new ConstantScoreWeight(this, boost) {
         @Override
@@ -173,17 +174,19 @@ public final class LongRange extends Range {
           }
 
           final LongValues values = valueSource.getValues(context, null);
-          final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
-            @Override
-            public boolean matches() throws IOException {
-              return values.advanceExact(approximation.docID()) && range.accept(values.longValue());
-            }
+          final TwoPhaseIterator twoPhase =
+              new TwoPhaseIterator(approximation) {
+                @Override
+                public boolean matches() throws IOException {
+                  return values.advanceExact(approximation.docID())
+                      && range.accept(values.longValue());
+                }
 
-            @Override
-            public float matchCost() {
-              return 100; // TODO: use cost of range.accept()
-            }
-          };
+                @Override
+                public float matchCost() {
+                  return 100; // TODO: use cost of range.accept()
+                }
+              };
           return new ConstantScoreScorer(this, score(), scoreMode, twoPhase);
         }
 
@@ -191,23 +194,21 @@ public final class LongRange extends Range {
         public boolean isCacheable(LeafReaderContext ctx) {
           return valueSource.isCacheable(ctx);
         }
-
       };
     }
-
   }
 
   /**
    * Create a Query that matches documents in this range
    *
-   * The query will check all documents that match the provided match query,
-   * or every document in the index if the match query is null.
+   * <p>The query will check all documents that match the provided match query, or every document in
+   * the index if the match query is null.
    *
-   * If the value source is static, eg an indexed numeric field, it may be
-   * faster to use {@link org.apache.lucene.search.PointRangeQuery}
+   * <p>If the value source is static, eg an indexed numeric field, it may be faster to use {@link
+   * org.apache.lucene.search.PointRangeQuery}
    *
    * @param fastMatchQuery a query to use as a filter
-   * @param valueSource    the source of values for the range check
+   * @param valueSource the source of values for the range check
    */
   public Query getQuery(Query fastMatchQuery, LongValuesSource valueSource) {
     return new ValueSourceQuery(this, fastMatchQuery, valueSource);

@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 package org.apache.lucene.search.spell;
+
 import java.util.Comparator;
 
-
-/**
- * Score first, then frequency
- *
- **/
+/** Score first, then frequency */
 public class SuggestWordScoreComparator implements Comparator<SuggestWord> {
-  
+
   /**
-   * Creates a new comparator that will compare by {@link SuggestWord#score},
-   * then by {@link SuggestWord#freq}, then by {@link SuggestWord#string}.
+   * Creates a new comparator that will compare by {@link SuggestWord#score}, then by {@link
+   * SuggestWord#freq}, then by {@link SuggestWord#string}.
    */
   public SuggestWordScoreComparator() {}
 

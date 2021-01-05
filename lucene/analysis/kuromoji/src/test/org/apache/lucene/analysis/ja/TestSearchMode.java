@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,35 +24,38 @@ import java.io.LineNumberReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ja.JapaneseTokenizer.Mode;
 
 public class TestSearchMode extends BaseTokenStreamTestCase {
-  private final static String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
+  private static final String SEGMENTATION_FILENAME = "search-segmentation-tests.txt";
   private Analyzer analyzer, analyzerNoOriginal;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, false, Mode.SEARCH);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
-    analyzerNoOriginal = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, true, Mode.SEARCH);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new JapaneseTokenizer(newAttributeFactory(), null, true, false, Mode.SEARCH);
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
+    analyzerNoOriginal =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new JapaneseTokenizer(newAttributeFactory(), null, true, true, Mode.SEARCH);
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
@@ -65,10 +67,12 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   public void testSearchSegmentation() throws IOException {
     InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_FILENAME);
     if (is == null) {
-      throw new FileNotFoundException("Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
+      throw new FileNotFoundException(
+          "Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
     }
     try {
-      LineNumberReader reader = new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      LineNumberReader reader =
+          new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
       String line = null;
       while ((line = reader.readLine()) != null) {
         // Remove comments
@@ -85,10 +89,10 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] expectedTokens = fields[1].split("\\s+");
         int[] expectedPosIncrs = new int[expectedTokens.length];
         int[] expectedPosLengths = new int[expectedTokens.length];
-        for(int tokIDX=0;tokIDX<expectedTokens.length;tokIDX++) {
+        for (int tokIDX = 0; tokIDX < expectedTokens.length; tokIDX++) {
           if (expectedTokens[tokIDX].endsWith("/0")) {
             expectedTokens[tokIDX] = expectedTokens[tokIDX].replace("/0", "");
-            expectedPosLengths[tokIDX] = expectedTokens.length-1;
+            expectedPosLengths[tokIDX] = expectedTokens.length - 1;
           } else {
             expectedPosIncrs[tokIDX] = 1;
             expectedPosLengths[tokIDX] = 1;
@@ -104,10 +108,12 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
   public void testSearchSegmentationNoOriginal() throws IOException {
     InputStream is = TestSearchMode.class.getResourceAsStream(SEGMENTATION_FILENAME);
     if (is == null) {
-      throw new FileNotFoundException("Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
+      throw new FileNotFoundException(
+          "Cannot find " + SEGMENTATION_FILENAME + " in test classpath");
     }
     try {
-      LineNumberReader reader = new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      LineNumberReader reader =
+          new LineNumberReader(new InputStreamReader(is, StandardCharsets.UTF_8));
       String line = null;
       while ((line = reader.readLine()) != null) {
         // Remove comments
@@ -124,7 +130,7 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
         String[] tmpExpectedTokens = fields[1].split("\\s+");
 
         List<String> expectedTokenList = new ArrayList<>();
-        for(int tokIDX=0;tokIDX<tmpExpectedTokens.length;tokIDX++) {
+        for (int tokIDX = 0; tokIDX < tmpExpectedTokens.length; tokIDX++) {
           if (!tmpExpectedTokens[tokIDX].endsWith("/0")) {
             expectedTokenList.add(tmpExpectedTokens[tokIDX]);
           }
@@ -132,11 +138,15 @@ public class TestSearchMode extends BaseTokenStreamTestCase {
 
         int[] expectedPosIncrs = new int[expectedTokenList.size()];
         int[] expectedPosLengths = new int[expectedTokenList.size()];
-        for(int tokIDX=0;tokIDX<expectedTokenList.size();tokIDX++) {
+        for (int tokIDX = 0; tokIDX < expectedTokenList.size(); tokIDX++) {
           expectedPosIncrs[tokIDX] = 1;
           expectedPosLengths[tokIDX] = 1;
         }
-        assertAnalyzesTo(analyzerNoOriginal, sourceText, expectedTokenList.toArray(new String[expectedTokenList.size()]), expectedPosIncrs);
+        assertAnalyzesTo(
+            analyzerNoOriginal,
+            sourceText,
+            expectedTokenList.toArray(new String[expectedTokenList.size()]),
+            expectedPosIncrs);
       }
     } finally {
       is.close();

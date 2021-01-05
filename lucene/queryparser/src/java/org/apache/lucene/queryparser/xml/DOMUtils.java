@@ -16,24 +16,21 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.Reader;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.Reader;
-/**
- * Helper methods for parsing XML
- */
+/** Helper methods for parsing XML */
 public class DOMUtils {
 
   public static Element getChildByTagOrFail(Element e, String name) throws ParserException {
     Element kid = getChildByTagName(e, name);
     if (null == kid) {
-      throw new ParserException(e.getTagName() + " missing \"" + name
-          + "\" child element");
+      throw new ParserException(e.getTagName() + " missing \"" + name + "\" child element");
     }
     return kid;
   }
@@ -41,8 +38,7 @@ public class DOMUtils {
   public static Element getFirstChildOrFail(Element e) throws ParserException {
     Element kid = getFirstChildElement(e);
     if (null == kid) {
-      throw new ParserException(e.getTagName()
-          + " does not contain a child element");
+      throw new ParserException(e.getTagName() + " does not contain a child element");
     }
     return kid;
   }
@@ -50,25 +46,23 @@ public class DOMUtils {
   public static String getAttributeOrFail(Element e, String name) throws ParserException {
     String v = e.getAttribute(name);
     if (null == v) {
-      throw new ParserException(e.getTagName() + " missing \"" + name
-          + "\" attribute");
+      throw new ParserException(e.getTagName() + " missing \"" + name + "\" attribute");
     }
     return v;
   }
 
-  public static String getAttributeWithInheritanceOrFail(Element e, String name) throws ParserException {
+  public static String getAttributeWithInheritanceOrFail(Element e, String name)
+      throws ParserException {
     String v = getAttributeWithInheritance(e, name);
     if (null == v) {
-      throw new ParserException(e.getTagName() + " missing \"" + name
-          + "\" attribute");
+      throw new ParserException(e.getTagName() + " missing \"" + name + "\" attribute");
     }
     return v;
   }
 
   public static String getNonBlankTextOrFail(Element e) throws ParserException {
     String v = getText(e);
-    if (null != v)
-      v = v.trim();
+    if (null != v) v = v.trim();
     if (null == v || 0 == v.length()) {
       throw new ParserException(e.getTagName() + " has no text");
     }
@@ -101,11 +95,10 @@ public class DOMUtils {
         Element parent = (Element) n;
         return getAttributeWithInheritance(parent, attributeName);
       }
-      return null; //we reached the top level of the document without finding attribute
+      return null; // we reached the top level of the document without finding attribute
     }
     return result;
   }
-
 
   /* Convenience method where there is only one child Element of a given name */
   public static String getChildTextByTagName(Element e, String tagName) {
@@ -138,14 +131,13 @@ public class DOMUtils {
     return (result == null) || ("".equals(result)) ? deflt : Integer.parseInt(result);
   }
 
-  public static boolean getAttribute(Element element, String attributeName,
-                                     boolean deflt) {
+  public static boolean getAttribute(Element element, String attributeName, boolean deflt) {
     String result = element.getAttribute(attributeName);
     return (result == null) || ("".equals(result)) ? deflt : Boolean.valueOf(result);
   }
 
   /* Returns text of node and all child nodes - without markup */
-  //MH changed to Node from Element 25/11/2005
+  // MH changed to Node from Element 25/11/2005
 
   public static String getText(Node e) {
     StringBuilder sb = new StringBuilder();
@@ -165,18 +157,21 @@ public class DOMUtils {
   private static void getTextBuffer(Node e, StringBuilder sb) {
     for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {
       switch (kid.getNodeType()) {
-        case Node.TEXT_NODE: {
-          sb.append(kid.getNodeValue());
-          break;
-        }
-        case Node.ELEMENT_NODE: {
-          getTextBuffer(kid, sb);
-          break;
-        }
-        case Node.ENTITY_REFERENCE_NODE: {
-          getTextBuffer(kid, sb);
-          break;
-        }
+        case Node.TEXT_NODE:
+          {
+            sb.append(kid.getNodeValue());
+            break;
+          }
+        case Node.ELEMENT_NODE:
+          {
+            getTextBuffer(kid, sb);
+            break;
+          }
+        case Node.ENTITY_REFERENCE_NODE:
+          {
+            getTextBuffer(kid, sb);
+            break;
+          }
       }
     }
   }
@@ -193,8 +188,7 @@ public class DOMUtils {
 
     try {
       db = dbf.newDocumentBuilder();
-    }
-    catch (Exception se) {
+    } catch (Exception se) {
       throw new RuntimeException("Parser configuration error", se);
     }
 
@@ -202,15 +196,11 @@ public class DOMUtils {
     org.w3c.dom.Document doc = null;
     try {
       doc = db.parse(new InputSource(is));
-      //doc = db.parse(is);
-    }
-    catch (Exception se) {
+      // doc = db.parse(is);
+    } catch (Exception se) {
       throw new RuntimeException("Error parsing file:" + se, se);
     }
 
     return doc;
   }
 }
-
-
-

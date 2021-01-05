@@ -17,7 +17,6 @@
 package org.apache.lucene.expressions;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.DoubleValues;
 
 /** A {@link DoubleValues} which evaluates an expression */
@@ -27,7 +26,7 @@ class ExpressionFunctionValues extends DoubleValues {
   double currentValue;
   int currentDoc = -1;
   boolean computed;
-  
+
   ExpressionFunctionValues(Expression expression, DoubleValues[] functionValues) {
     if (expression == null) {
       throw new NullPointerException();
@@ -51,7 +50,7 @@ class ExpressionFunctionValues extends DoubleValues {
     computed = false;
     return true;
   }
-  
+
   @Override
   public double doubleValue() {
     if (computed == false) {

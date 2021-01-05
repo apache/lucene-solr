@@ -17,17 +17,16 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
@@ -43,30 +42,33 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
     IndexWriter writer = new IndexWriter(indexDir, conf);
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetsConfig config = new FacetsConfig();
-    
+
     Document doc = new Document();
     doc.add(new FacetField("A", "1"));
     writer.addDocument(config.build(taxoWriter, doc));
     doc = new Document();
     doc.add(new FacetField("A", "2"));
     writer.addDocument(config.build(taxoWriter, doc));
-    
+
     final DirectoryReader reader = DirectoryReader.open(writer);
-    final CachedOrdinalsReader ordsReader = new CachedOrdinalsReader(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
+    final CachedOrdinalsReader ordsReader =
+        new CachedOrdinalsReader(
+            new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
     Thread[] threads = new Thread[3];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread("CachedOrdsThread-" + i) {
-        @Override
-        public void run() {
-          for (LeafReaderContext context : reader.leaves()) {
-            try {
-              ordsReader.getReader(context);
-            } catch (IOException e) {
-              throw new RuntimeException(e);
+      threads[i] =
+          new Thread("CachedOrdsThread-" + i) {
+            @Override
+            public void run() {
+              for (LeafReaderContext context : reader.leaves()) {
+                try {
+                  ordsReader.getReader(context);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              }
             }
-          }
-        }
-      };
+          };
     }
 
     long ramBytesUsed = 0;

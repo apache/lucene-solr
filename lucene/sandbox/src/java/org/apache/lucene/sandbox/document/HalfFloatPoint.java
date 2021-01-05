@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.document;
 
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -30,29 +29,29 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * An indexed {@code half-float} field for fast range filters. If you also
- * need to store the value, you should add a separate {@link StoredField} instance.
- * If you need doc values, you can store them in a {@link NumericDocValuesField}
- * and use {@link #halfFloatToSortableShort} and
- * {@link #sortableShortToHalfFloat} for encoding/decoding.
- * <p>
- * The API takes floats, but they will be encoded to half-floats before being
- * indexed. In case the provided floats cannot be represented accurately as a
- * half float, they will be rounded to the closest value that can be
- * represented as a half float. In case of tie, values will be rounded to the
- * value that has a zero as its least significant bit.
- * <p>
- * Finding all documents within an N-dimensional at search time is
- * efficient.  Multiple values for the same field in one document
- * is allowed.
- * <p>
- * This field defines static factory methods for creating common queries:
+ * An indexed {@code half-float} field for fast range filters. If you also need to store the value,
+ * you should add a separate {@link StoredField} instance. If you need doc values, you can store
+ * them in a {@link NumericDocValuesField} and use {@link #halfFloatToSortableShort} and {@link
+ * #sortableShortToHalfFloat} for encoding/decoding.
+ *
+ * <p>The API takes floats, but they will be encoded to half-floats before being indexed. In case
+ * the provided floats cannot be represented accurately as a half float, they will be rounded to the
+ * closest value that can be represented as a half float. In case of tie, values will be rounded to
+ * the value that has a zero as its least significant bit.
+ *
+ * <p>Finding all documents within an N-dimensional at search time is efficient. Multiple values for
+ * the same field in one document is allowed.
+ *
+ * <p>This field defines static factory methods for creating common queries:
+ *
  * <ul>
  *   <li>{@link #newExactQuery(String, float)} for matching an exact 1D point.
  *   <li>{@link #newSetQuery(String, float...)} for matching a set of 1D values.
  *   <li>{@link #newRangeQuery(String, float, float)} for matching a 1D range.
- *   <li>{@link #newRangeQuery(String, float[], float[])} for matching points/ranges in n-dimensional space.
+ *   <li>{@link #newRangeQuery(String, float[], float[])} for matching points/ranges in
+ *       n-dimensional space.
  * </ul>
+ *
  * @see PointValues
  */
 public final class HalfFloatPoint extends Field {
@@ -61,10 +60,9 @@ public final class HalfFloatPoint extends Field {
   public static final int BYTES = 2;
 
   /**
-   * Return the first half float which is immediately greater than {@code v}.
-   * If the argument is {@link Float#NaN} then the return value is
-   * {@link Float#NaN}. If the argument is {@link Float#POSITIVE_INFINITY}
-   * then the return value is {@link Float#POSITIVE_INFINITY}.
+   * Return the first half float which is immediately greater than {@code v}. If the argument is
+   * {@link Float#NaN} then the return value is {@link Float#NaN}. If the argument is {@link
+   * Float#POSITIVE_INFINITY} then the return value is {@link Float#POSITIVE_INFINITY}.
    */
   public static float nextUp(float v) {
     if (Float.isNaN(v) || v == Float.POSITIVE_INFINITY) {
@@ -81,10 +79,9 @@ public final class HalfFloatPoint extends Field {
   }
 
   /**
-   * Return the first half float which is immediately smaller than {@code v}.
-   * If the argument is {@link Float#NaN} then the return value is
-   * {@link Float#NaN}. If the argument is {@link Float#NEGATIVE_INFINITY}
-   * then the return value is {@link Float#NEGATIVE_INFINITY}.
+   * Return the first half float which is immediately smaller than {@code v}. If the argument is
+   * {@link Float#NaN} then the return value is {@link Float#NaN}. If the argument is {@link
+   * Float#NEGATIVE_INFINITY} then the return value is {@link Float#NEGATIVE_INFINITY}.
    */
   public static float nextDown(float v) {
     if (Float.isNaN(v) || v == Float.NEGATIVE_INFINITY) {
@@ -193,12 +190,12 @@ public final class HalfFloatPoint extends Field {
   static void shortToSortableBytes(short value, byte[] result, int offset) {
     // Flip the sign bit, so negative shorts sort before positive shorts correctly:
     value ^= 0x8000;
-    result[offset] = (byte) (value >>  8);
-    result[offset+1] = (byte) value;
+    result[offset] = (byte) (value >> 8);
+    result[offset + 1] = (byte) value;
   }
 
   static short sortableBytesToShort(byte[] encoded, int offset) {
-    short x = (short) (((encoded[offset] & 0xFF) <<  8) |  (encoded[offset+1] & 0xFF));
+    short x = (short) (((encoded[offset] & 0xFF) << 8) | (encoded[offset + 1] & 0xFF));
     // Re-flip the sign bit to restore the original value:
     return (short) (x ^ 0x8000);
   }
@@ -218,7 +215,14 @@ public final class HalfFloatPoint extends Field {
   /** Change the values of this field */
   public void setFloatValues(float... point) {
     if (type.pointDimensionCount() != point.length) {
-      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
+      throw new IllegalArgumentException(
+          "this field (name="
+              + name
+              + ") uses "
+              + type.pointDimensionCount()
+              + " dimensions; cannot change to (incoming) "
+              + point.length
+              + " dimensions");
     }
     fieldsData = pack(point);
   }
@@ -231,7 +235,12 @@ public final class HalfFloatPoint extends Field {
   @Override
   public Number numericValue() {
     if (type.pointDimensionCount() != 1) {
-      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
+      throw new IllegalStateException(
+          "this field (name="
+              + name
+              + ") uses "
+              + type.pointDimensionCount()
+              + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == BYTES;
@@ -254,12 +263,12 @@ public final class HalfFloatPoint extends Field {
     return new BytesRef(packed);
   }
 
-  /** Creates a new FloatPoint, indexing the
-   *  provided N-dimensional float point.
+  /**
+   * Creates a new FloatPoint, indexing the provided N-dimensional float point.
    *
-   *  @param name field name
-   *  @param point float[] value
-   *  @throws IllegalArgumentException if the field name or value is null.
+   * @param name field name
+   * @param point float[] value
+   * @throws IllegalArgumentException if the field name or value is null.
    */
   public HalfFloatPoint(String name, float... point) {
     super(name, pack(point), getType(point.length));
@@ -300,12 +309,11 @@ public final class HalfFloatPoint extends Field {
   // static methods for generating queries
 
   /**
-   * Create a query for matching an exact half-float value. It will be rounded
-   * to the closest half-float if {@code value} cannot be represented accurately
-   * as a half-float.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newRangeQuery(String, float[], float[])} instead.
+   * Create a query for matching an exact half-float value. It will be rounded to the closest
+   * half-float if {@code value} cannot be represented accurately as a half-float.
+   *
+   * <p>This is for simple one-dimension points, for multidimensional points use {@link
+   * #newRangeQuery(String, float[], float[])} instead.
    *
    * @param field field name. must not be {@code null}.
    * @param value half-float value
@@ -317,19 +325,19 @@ public final class HalfFloatPoint extends Field {
   }
 
   /**
-   * Create a range query for half-float values. Bounds will be rounded to the
-   * closest half-float if they cannot be represented accurately as a
-   * half-float.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newRangeQuery(String, float[], float[])} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}.
-   * <p> Ranges are inclusive. For exclusive ranges, pass {@code nextUp(lowerValue)}
-   * or {@code nextDown(upperValue)}.
-   * <p>
-   * Range comparisons are consistent with {@link Float#compareTo(Float)}.
+   * Create a range query for half-float values. Bounds will be rounded to the closest half-float if
+   * they cannot be represented accurately as a half-float.
+   *
+   * <p>This is for simple one-dimension ranges, for multidimensional ranges use {@link
+   * #newRangeQuery(String, float[], float[])} instead.
+   *
+   * <p>You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries) by setting
+   * {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}.
+   *
+   * <p>Ranges are inclusive. For exclusive ranges, pass {@code nextUp(lowerValue)} or {@code
+   * nextDown(upperValue)}.
+   *
+   * <p>Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive).
@@ -338,31 +346,33 @@ public final class HalfFloatPoint extends Field {
    * @return a query matching documents within this range.
    */
   public static Query newRangeQuery(String field, float lowerValue, float upperValue) {
-    return newRangeQuery(field, new float[] { lowerValue }, new float[] { upperValue });
+    return newRangeQuery(field, new float[] {lowerValue}, new float[] {upperValue});
   }
 
   /**
-   * Create a range query for n-dimensional half-float values. Bounds will be
-   * rounded to the closest half-float if they cannot be represented accurately
-   * as a half-float.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] = Float.POSITIVE_INFINITY}.
-   * <p> Ranges are inclusive. For exclusive ranges, pass {@code nextUp(lowerValue[i])}
-   * or {@code nextDown(upperValue[i])}.
-   * <p>
-   * Range comparisons are consistent with {@link Float#compareTo(Float)}.
+   * Create a range query for n-dimensional half-float values. Bounds will be rounded to the closest
+   * half-float if they cannot be represented accurately as a half-float.
+   *
+   * <p>You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries) by setting
+   * {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] =
+   * Float.POSITIVE_INFINITY}.
+   *
+   * <p>Ranges are inclusive. For exclusive ranges, pass {@code nextUp(lowerValue[i])} or {@code
+   * nextDown(upperValue[i])}.
+   *
+   * <p>Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive). must not be {@code null}.
    * @param upperValue upper portion of the range (inclusive). must not be {@code null}.
-   * @throws IllegalArgumentException if {@code field} is null, if {@code lowerValue} is null, if {@code upperValue} is null,
-   *                                  or if {@code lowerValue.length != upperValue.length}
+   * @throws IllegalArgumentException if {@code field} is null, if {@code lowerValue} is null, if
+   *     {@code upperValue} is null, or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
   public static Query newRangeQuery(String field, float[] lowerValue, float[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
+    return new PointRangeQuery(
+        field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Float.toString(decodeDimension(value, 0));
@@ -371,10 +381,9 @@ public final class HalfFloatPoint extends Field {
   }
 
   /**
-   * Create a query matching any of the specified 1D values.
-   * This is the points equivalent of {@code TermsQuery}.
-   * Values will be rounded to the closest half-float if they
-   * cannot be represented accurately as a half-float.
+   * Create a query matching any of the specified 1D values. This is the points equivalent of {@code
+   * TermsQuery}. Values will be rounded to the closest half-float if they cannot be represented
+   * accurately as a half-float.
    *
    * @param field field name. must not be {@code null}.
    * @param values all values to match
@@ -387,22 +396,25 @@ public final class HalfFloatPoint extends Field {
 
     final BytesRef encoded = new BytesRef(new byte[BYTES]);
 
-    return new PointInSetQuery(field, 1, BYTES,
-                               new PointInSetQuery.Stream() {
+    return new PointInSetQuery(
+        field,
+        1,
+        BYTES,
+        new PointInSetQuery.Stream() {
 
-                                 int upto;
+          int upto;
 
-                                 @Override
-                                 public BytesRef next() {
-                                   if (upto == sortedValues.length) {
-                                     return null;
-                                   } else {
-                                     encodeDimension(sortedValues[upto], encoded.bytes, 0);
-                                     upto++;
-                                     return encoded;
-                                   }
-                                 }
-                               }) {
+          @Override
+          public BytesRef next() {
+            if (upto == sortedValues.length) {
+              return null;
+            } else {
+              encodeDimension(sortedValues[upto], encoded.bytes, 0);
+              upto++;
+              return encoded;
+            }
+          }
+        }) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == BYTES;
@@ -412,7 +424,8 @@ public final class HalfFloatPoint extends Field {
   }
 
   /**
-   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * Create a query matching any of the specified 1D values. This is the points equivalent of {@code
+   * TermsQuery}.
    *
    * @param field field name. must not be {@code null}.
    * @param values all values to match
@@ -425,5 +438,4 @@ public final class HalfFloatPoint extends Field {
     }
     return newSetQuery(field, unboxed);
   }
-
 }

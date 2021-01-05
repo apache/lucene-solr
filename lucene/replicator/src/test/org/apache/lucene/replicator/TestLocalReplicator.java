@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
@@ -38,13 +37,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestLocalReplicator extends ReplicatorTestCase {
-  
+
   private static final String VERSION_ID = "version";
-  
+
   private LocalReplicator replicator;
   private Directory sourceDir;
   private IndexWriter sourceWriter;
-  
+
   @Before
   @Override
   public void setUp() throws Exception {
@@ -55,7 +54,7 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     sourceWriter = new IndexWriter(sourceDir, conf);
     replicator = new LocalReplicator();
   }
-  
+
   @After
   @Override
   public void tearDown() throws Exception {
@@ -63,50 +62,59 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     IOUtils.close(replicator, sourceDir);
     super.tearDown();
   }
-  
+
   private Revision createRevision(final int id) throws IOException {
     sourceWriter.addDocument(new Document());
-    sourceWriter.setLiveCommitData(new HashMap<String, String>() {{
-      put(VERSION_ID, Integer.toString(id, 16));
-    }}.entrySet());
+    sourceWriter.setLiveCommitData(
+        new HashMap<String, String>() {
+          {
+            put(VERSION_ID, Integer.toString(id, 16));
+          }
+        }.entrySet());
     sourceWriter.commit();
     return new IndexRevision(sourceWriter);
   }
-  
+
   @Test
   public void testCheckForUpdateNoRevisions() throws Exception {
     assertNull(replicator.checkForUpdate(null));
   }
-  
+
   @Test
   public void testObtainFileAlreadyClosed() throws IOException {
     replicator.publish(createRevision(1));
     SessionToken res = replicator.checkForUpdate(null);
     assertNotNull(res);
     assertEquals(1, res.sourceFiles.size());
-    Entry<String,List<RevisionFile>> entry = res.sourceFiles.entrySet().iterator().next();
+    Entry<String, List<RevisionFile>> entry = res.sourceFiles.entrySet().iterator().next();
     replicator.close();
-    expectThrows(AlreadyClosedException.class, () -> {
-      replicator.obtainFile(res.id, entry.getKey(), entry.getValue().get(0).fileName);
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          replicator.obtainFile(res.id, entry.getKey(), entry.getValue().get(0).fileName);
+        });
   }
-  
+
   @Test
   public void testPublishAlreadyClosed() throws IOException {
     replicator.close();
-    expectThrows(AlreadyClosedException.class, () -> {
-      replicator.publish(createRevision(2));
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          replicator.publish(createRevision(2));
+        });
   }
-  
+
   @Test
   public void testUpdateAlreadyClosed() throws IOException {
     replicator.close();
-    expectThrows(AlreadyClosedException.class, () -> {
-      replicator.checkForUpdate(null);
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          replicator.checkForUpdate(null);
+        });
   }
-  
+
   @Test
   public void testPublishSameRevision() throws IOException {
     Revision rev = createRevision(1);
@@ -118,35 +126,39 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     replicator.publish(new IndexRevision(sourceWriter));
     res = replicator.checkForUpdate(res.version);
     assertNull(res);
-      
+
     // now make sure that publishing same revision doesn't leave revisions
     // "locked", i.e. that replicator releases revisions even when they are not
     // kept
     replicator.publish(createRevision(2));
     assertEquals(1, DirectoryReader.listCommits(sourceDir).size());
   }
-  
+
   @Test
   public void testPublishOlderRev() throws IOException {
     replicator.publish(createRevision(1));
     Revision old = new IndexRevision(sourceWriter);
     replicator.publish(createRevision(2));
     // should fail to publish an older revision
-    expectThrows(IllegalArgumentException.class, () -> {
-      replicator.publish(old);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          replicator.publish(old);
+        });
     assertEquals(1, DirectoryReader.listCommits(sourceDir).size());
   }
-  
+
   @Test
   public void testObtainMissingFile() throws IOException {
     replicator.publish(createRevision(1));
     SessionToken res = replicator.checkForUpdate(null);
-    expectThrowsAnyOf(Arrays.asList(FileNotFoundException.class, NoSuchFileException.class), () -> {
-      replicator.obtainFile(res.id, res.sourceFiles.keySet().iterator().next(), "madeUpFile");
-    });
+    expectThrowsAnyOf(
+        Arrays.asList(FileNotFoundException.class, NoSuchFileException.class),
+        () -> {
+          replicator.obtainFile(res.id, res.sourceFiles.keySet().iterator().next(), "madeUpFile");
+        });
   }
-  
+
   @Test
   public void testSessionExpiration() throws IOException, InterruptedException {
     replicator.publish(createRevision(1));
@@ -154,11 +166,16 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     replicator.setExpirationThreshold(5); // expire quickly
     Thread.sleep(50); // sufficient for expiration
     // should fail to obtain a file for an expired session
-    expectThrows(SessionExpiredException.class, () -> {
-      replicator.obtainFile(session.id, session.sourceFiles.keySet().iterator().next(), session.sourceFiles.values().iterator().next().get(0).fileName);
-    });
+    expectThrows(
+        SessionExpiredException.class,
+        () -> {
+          replicator.obtainFile(
+              session.id,
+              session.sourceFiles.keySet().iterator().next(),
+              session.sourceFiles.values().iterator().next().get(0).fileName);
+        });
   }
-  
+
   @Test
   public void testUpdateToLatest() throws IOException {
     replicator.publish(createRevision(1));
@@ -168,7 +185,7 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     assertNotNull(res);
     assertEquals(0, rev.compareTo(res.version));
   }
-  
+
   @Test
   public void testRevisionRelease() throws Exception {
     replicator.publish(createRevision(1));
@@ -176,7 +193,8 @@ public class TestLocalReplicator extends ReplicatorTestCase {
     replicator.publish(createRevision(2));
     // now the files of revision 1 can be deleted
     assertTrue(slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_2"));
-    assertFalse("segments_1 should not be found in index directory after revision is released", slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_1"));
+    assertFalse(
+        "segments_1 should not be found in index directory after revision is released",
+        slowFileExists(sourceDir, IndexFileNames.SEGMENTS + "_1"));
   }
-  
 }

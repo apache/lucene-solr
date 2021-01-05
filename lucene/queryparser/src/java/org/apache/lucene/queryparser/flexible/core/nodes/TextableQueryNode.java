@@ -16,13 +16,10 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
-/**
- * Interface for a node that has text as a {@link CharSequence}
- */
+/** Interface for a node that has text as a {@link CharSequence} */
 public interface TextableQueryNode {
 
   CharSequence getText();
 
   void setText(CharSequence text);
-
 }

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.search.Explanation;
@@ -29,34 +28,22 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
-/**
- * A dedicated interface for Luke's Search tab.
- */
+/** A dedicated interface for Luke's Search tab. */
 public interface Search {
 
-  /**
-   * Returns all field names in this index.
-   */
+  /** Returns all field names in this index. */
   Collection<String> getFieldNames();
 
-  /**
-   * Returns field names those are sortable.
-   */
+  /** Returns field names those are sortable. */
   Collection<String> getSortableFieldNames();
 
-  /**
-   * Returns field names those are searchable.
-   */
+  /** Returns field names those are searchable. */
   Collection<String> getSearchableFieldNames();
 
-  /**
-   * Returns field names those are searchable by range query.
-   */
+  /** Returns field names those are searchable by range query. */
   Collection<String> getRangeSearchableFieldNames();
 
-  /**
-   * Returns the current query.
-   */
+  /** Returns the current query. */
   Query getCurrentQuery();
 
   /**
@@ -70,7 +57,12 @@ public interface Search {
    * @return parsed query
    * @throws LukeException - if an internal error occurs when accessing index
    */
-  Query parseQuery(String expression, String defField, Analyzer analyzer, QueryParserConfig config, boolean rewrite);
+  Query parseQuery(
+      String expression,
+      String defField,
+      Analyzer analyzer,
+      QueryParserConfig config,
+      boolean rewrite);
 
   /**
    * Creates the MoreLikeThis query for the specified document with given configurations.
@@ -94,7 +86,12 @@ public interface Search {
    * @return search results
    * @throws LukeException - if an internal error occurs when accessing index
    */
-  SearchResults search(Query query, SimilarityConfig simConfig, Set<String> fieldsToLoad, int pageSize, boolean exactHitsCount);
+  SearchResults search(
+      Query query,
+      SimilarityConfig simConfig,
+      Set<String> fieldsToLoad,
+      int pageSize,
+      boolean exactHitsCount);
 
   /**
    * Searches this index by the query with given sort criteria and configurations.
@@ -108,7 +105,13 @@ public interface Search {
    * @return search results
    * @throws LukeException - if an internal error occurs when accessing index
    */
-  SearchResults search(Query query, SimilarityConfig simConfig, Sort sort, Set<String> fieldsToLoad, int pageSize, boolean exactHitsCount);
+  SearchResults search(
+      Query query,
+      SimilarityConfig simConfig,
+      Sort sort,
+      Set<String> fieldsToLoad,
+      int pageSize,
+      boolean exactHitsCount);
 
   /**
    * Returns the next page for the current query.

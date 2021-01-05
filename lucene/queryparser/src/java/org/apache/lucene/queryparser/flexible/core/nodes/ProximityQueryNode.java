@@ -17,43 +17,46 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.List;
-
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 
 /**
- * A {@link ProximityQueryNode} represents a query where the terms should meet
- * specific distance conditions. (a b c) WITHIN [SENTENCE|PARAGRAPH|NUMBER]
- * [INORDER] ("a" "b" "c") WITHIN [SENTENCE|PARAGRAPH|NUMBER] [INORDER]
- * 
- * TODO: Add this to the future standard Lucene parser/processor/builder
+ * A {@link ProximityQueryNode} represents a query where the terms should meet specific distance
+ * conditions. (a b c) WITHIN [SENTENCE|PARAGRAPH|NUMBER] [INORDER] ("a" "b" "c") WITHIN
+ * [SENTENCE|PARAGRAPH|NUMBER] [INORDER]
+ *
+ * <p>TODO: Add this to the future standard Lucene parser/processor/builder
  */
 public class ProximityQueryNode extends BooleanQueryNode {
 
-  /**
-   * Distance condition: PARAGRAPH, SENTENCE, or NUMBER
-   */
+  /** Distance condition: PARAGRAPH, SENTENCE, or NUMBER */
   public enum Type {
     PARAGRAPH {
       @Override
-      CharSequence toQueryString() { return "WITHIN PARAGRAPH"; } 
+      CharSequence toQueryString() {
+        return "WITHIN PARAGRAPH";
+      }
     },
-    SENTENCE  { 
+    SENTENCE {
       @Override
-      CharSequence toQueryString() { return "WITHIN SENTENCE";  }
+      CharSequence toQueryString() {
+        return "WITHIN SENTENCE";
+      }
     },
-    NUMBER    {
+    NUMBER {
       @Override
-      CharSequence toQueryString() { return "WITHIN";           }
+      CharSequence toQueryString() {
+        return "WITHIN";
+      }
     };
 
     abstract CharSequence toQueryString();
   }
 
   /** utility class containing the distance condition and number */
-  static public class ProximityType {
+  public static class ProximityType {
     int pDistance = 0;
 
     Type pType = null;
@@ -74,20 +77,14 @@ public class ProximityQueryNode extends BooleanQueryNode {
   private CharSequence field = null;
 
   /**
-   * @param clauses
-   *          - QueryNode children
-   * @param field
-   *          - field name
-   * @param type
-   *          - type of proximity query
-   * @param distance
-   *          - positive integer that specifies the distance
-   * @param inorder
-   *          - true, if the tokens should be matched in the order of the
-   *          clauses
+   * @param clauses - QueryNode children
+   * @param field - field name
+   * @param type - type of proximity query
+   * @param distance - positive integer that specifies the distance
+   * @param inorder - true, if the tokens should be matched in the order of the clauses
    */
-  public ProximityQueryNode(List<QueryNode> clauses, CharSequence field,
-      Type type, int distance, boolean inorder) {
+  public ProximityQueryNode(
+      List<QueryNode> clauses, CharSequence field, Type type, int distance, boolean inorder) {
     super(clauses);
     setLeaf(false);
     this.proximityType = type;
@@ -95,37 +92,30 @@ public class ProximityQueryNode extends BooleanQueryNode {
     this.field = field;
     if (type == Type.NUMBER) {
       if (distance <= 0) {
-        throw new QueryNodeError(new MessageImpl(
-            QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "distance",
-            distance));
+        throw new QueryNodeError(
+            new MessageImpl(
+                QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "distance", distance));
 
       } else {
         this.distance = distance;
       }
-
     }
     clearFields(clauses, field);
   }
 
   /**
-   * @param clauses
-   *          - QueryNode children
-   * @param field
-   *          - field name
-   * @param type
-   *          - type of proximity query
-   * @param inorder
-   *          - true, if the tokens should be matched in the order of the
-   *          clauses
+   * @param clauses - QueryNode children
+   * @param field - field name
+   * @param type - type of proximity query
+   * @param inorder - true, if the tokens should be matched in the order of the clauses
    */
-  public ProximityQueryNode(List<QueryNode> clauses, CharSequence field,
-      Type type, boolean inorder) {
+  public ProximityQueryNode(
+      List<QueryNode> clauses, CharSequence field, Type type, boolean inorder) {
     this(clauses, field, type, -1, inorder);
   }
 
-  static private void clearFields(List<QueryNode> nodes, CharSequence field) {
-    if (nodes == null || nodes.size() == 0)
-      return;
+  private static void clearFields(List<QueryNode> nodes, CharSequence field) {
+    if (nodes == null || nodes.size() == 0) return;
 
     for (QueryNode clause : nodes) {
 
@@ -142,15 +132,28 @@ public class ProximityQueryNode extends BooleanQueryNode {
 
   @Override
   public String toString() {
-    String distanceSTR = ((this.distance == -1) ? ("")
-        : (" distance='" + this.distance) + "'");
+    String distanceSTR = ((this.distance == -1) ? ("") : (" distance='" + this.distance) + "'");
 
     if (getChildren() == null || getChildren().size() == 0)
-      return "<proximity field='" + this.field + "' inorder='" + this.inorder
-          + "' type='" + this.proximityType.toString() + "'" + distanceSTR
+      return "<proximity field='"
+          + this.field
+          + "' inorder='"
+          + this.inorder
+          + "' type='"
+          + this.proximityType.toString()
+          + "'"
+          + distanceSTR
           + "/>";
     StringBuilder sb = new StringBuilder();
-    sb.append("<proximity field='").append(this.field).append("' inorder='").append(this.inorder).append("' type='").append(this.proximityType.toString()).append("'").append(distanceSTR).append(">");
+    sb.append("<proximity field='")
+        .append(this.field)
+        .append("' inorder='")
+        .append(this.inorder)
+        .append("' type='")
+        .append(this.proximityType.toString())
+        .append("'")
+        .append(distanceSTR)
+        .append(">");
     for (QueryNode child : getChildren()) {
       sb.append("\n");
       sb.append(child.toString());
@@ -161,9 +164,10 @@ public class ProximityQueryNode extends BooleanQueryNode {
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    String withinSTR = this.proximityType.toQueryString()
-        + ((this.distance == -1) ? ("") : (" " + this.distance))
-        + ((this.inorder) ? (" INORDER") : (""));
+    String withinSTR =
+        this.proximityType.toQueryString()
+            + ((this.distance == -1) ? ("") : (" " + this.distance))
+            + ((this.inorder) ? (" INORDER") : (""));
 
     StringBuilder sb = new StringBuilder();
     if (getChildren() == null || getChildren().size() == 0) {
@@ -194,16 +198,14 @@ public class ProximityQueryNode extends BooleanQueryNode {
     return clone;
   }
 
-  /**
-   * @return the distance
-   */
+  /** @return the distance */
   public int getDistance() {
     return this.distance;
   }
 
   /**
    * returns null if the field was not specified in the query string
-   * 
+   *
    * @return the field
    */
   public CharSequence getField() {
@@ -212,29 +214,21 @@ public class ProximityQueryNode extends BooleanQueryNode {
 
   /**
    * returns null if the field was not specified in the query string
-   * 
+   *
    * @return the field
    */
   public String getFieldAsString() {
-    if (this.field == null)
-      return null;
-    else
-      return this.field.toString();
+    if (this.field == null) return null;
+    else return this.field.toString();
   }
 
-  /**
-   * @param field
-   *          the field to set
-   */
+  /** @param field the field to set */
   public void setField(CharSequence field) {
     this.field = field;
   }
 
-  /**
-   * @return terms must be matched in the specified order
-   */
+  /** @return terms must be matched in the specified order */
   public boolean isInOrder() {
     return this.inorder;
   }
-
 }

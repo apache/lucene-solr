@@ -19,31 +19,35 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executor;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
-/**
- * An {@link IndexSearcher} that always uses the {@link Scorer} API, never {@link BulkScorer}.
- */
+/** An {@link IndexSearcher} that always uses the {@link Scorer} API, never {@link BulkScorer}. */
 public class ScorerIndexSearcher extends IndexSearcher {
 
-  /** Creates a searcher searching the provided index. Search on individual
-   *  segments will be run in the provided {@link Executor}.
-   * @see IndexSearcher#IndexSearcher(IndexReader, Executor) */
+  /**
+   * Creates a searcher searching the provided index. Search on individual segments will be run in
+   * the provided {@link Executor}.
+   *
+   * @see IndexSearcher#IndexSearcher(IndexReader, Executor)
+   */
   public ScorerIndexSearcher(IndexReader r, Executor executor) {
     super(r, executor);
   }
 
-  /** Creates a searcher searching the provided index.
-   * @see IndexSearcher#IndexSearcher(IndexReader) */
+  /**
+   * Creates a searcher searching the provided index.
+   *
+   * @see IndexSearcher#IndexSearcher(IndexReader)
+   */
   public ScorerIndexSearcher(IndexReader r) {
     super(r);
   }
 
   @Override
-  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+      throws IOException {
     for (LeafReaderContext ctx : leaves) { // search each subreader
       // we force the use of Scorer (not BulkScorer) to make sure
       // that the scorer passed to LeafCollector.setScorer supports
@@ -54,7 +58,9 @@ public class ScorerIndexSearcher extends IndexSearcher {
         final LeafCollector leafCollector = collector.getLeafCollector(ctx);
         leafCollector.setScorer(scorer);
         final Bits liveDocs = ctx.reader().getLiveDocs();
-        for (int doc = iterator.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iterator.nextDoc()) {
+        for (int doc = iterator.nextDoc();
+            doc != DocIdSetIterator.NO_MORE_DOCS;
+            doc = iterator.nextDoc()) {
           if (liveDocs == null || liveDocs.get(doc)) {
             leafCollector.collect(doc);
           }
@@ -62,5 +68,4 @@ public class ScorerIndexSearcher extends IndexSearcher {
       }
     }
   }
-
 }

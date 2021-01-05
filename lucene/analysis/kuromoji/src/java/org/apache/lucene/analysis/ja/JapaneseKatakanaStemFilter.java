@@ -16,34 +16,28 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
-import java.io.IOException;
-
 /**
- * A {@link TokenFilter} that normalizes common katakana spelling variations
- * ending in a long sound character by removing this character (U+30FC).  Only
- * katakana words longer than a minimum length are stemmed (default is four).
- * <p>
- * Note that only full-width katakana characters are supported.  Please use a
- * {@link org.apache.lucene.analysis.cjk.CJKWidthFilter} to convert half-width
- * katakana to full-width before using this filter.
- * </p>
- * <p>
- * In order to prevent terms from being stemmed, use an instance of
- * {@link org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter}
- * or a custom {@link TokenFilter} that sets the {@link KeywordAttribute}
- * before this {@link TokenStream}.
- * </p>
+ * A {@link TokenFilter} that normalizes common katakana spelling variations ending in a long sound
+ * character by removing this character (U+30FC). Only katakana words longer than a minimum length
+ * are stemmed (default is four).
+ *
+ * <p>Note that only full-width katakana characters are supported. Please use a {@link
+ * org.apache.lucene.analysis.cjk.CJKWidthFilter} to convert half-width katakana to full-width
+ * before using this filter.
+ *
+ * <p>In order to prevent terms from being stemmed, use an instance of {@link
+ * org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter} or a custom {@link TokenFilter}
+ * that sets the {@link KeywordAttribute} before this {@link TokenStream}.
  */
-
 public final class JapaneseKatakanaStemFilter extends TokenFilter {
-  public final static int DEFAULT_MINIMUM_LENGTH = 4;
-  private final static char HIRAGANA_KATAKANA_PROLONGED_SOUND_MARK = '\u30fc';
+  public static final int DEFAULT_MINIMUM_LENGTH = 4;
+  private static final char HIRAGANA_KATAKANA_PROLONGED_SOUND_MARK = '\u30fc';
 
   private final CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
@@ -75,7 +69,7 @@ public final class JapaneseKatakanaStemFilter extends TokenFilter {
       return length;
     }
 
-    if (! isKatakana(term, length)) {
+    if (!isKatakana(term, length)) {
       return length;
     }
 

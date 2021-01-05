@@ -25,7 +25,8 @@ import java.util.concurrent.ExecutorService;
 public class TestPartitionMatcher extends ConcurrentMatcherTestBase {
 
   @Override
-  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(ExecutorService executor, MatcherFactory<T> factory, int threads) {
+  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(
+      ExecutorService executor, MatcherFactory<T> factory, int threads) {
     return PartitionMatcher.factory(executor, factory, threads);
   }
 
@@ -55,6 +56,5 @@ public class TestPartitionMatcher extends ConcurrentMatcherTestBase {
     assertTrue(partitions.contains(Collections.singletonList("6")));
     assertTrue(partitions.contains(Arrays.asList("7", "8")));
     assertTrue(partitions.contains(Arrays.asList("9", "10")));
-
   }
 }

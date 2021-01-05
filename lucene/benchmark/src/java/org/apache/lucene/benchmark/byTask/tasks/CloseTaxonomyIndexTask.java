@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Close taxonomy index.
- * <br>Other side effects: taxonomy writer object in perfRunData is nullified.
+ * Close taxonomy index. <br>
+ * Other side effects: taxonomy writer object in perfRunData is nullified.
  */
 public class CloseTaxonomyIndexTask extends PerfTask {
 
@@ -39,5 +37,4 @@ public class CloseTaxonomyIndexTask extends PerfTask {
 
     return 1;
   }
-
 }

@@ -16,15 +16,16 @@
  */
 
 /**
- * This package is about SpatialPrefixTree and any supporting classes.
- * A SpatialPrefixTree supports spatial indexing by index-time tokens
- * where adding characters to a string gives greater resolution.
- * <p>
- * Potential Implementations include:
+ * This package is about SpatialPrefixTree and any supporting classes. A SpatialPrefixTree supports
+ * spatial indexing by index-time tokens where adding characters to a string gives greater
+ * resolution.
+ *
+ * <p>Potential Implementations include:
+ *
  * <ul>
- * <li>http://en.wikipedia.org/wiki/Quadtree
- * <li>http://en.wikipedia.org/wiki/Geohash
- * <li>http://healpix.jpl.nasa.gov/
+ *   <li>http://en.wikipedia.org/wiki/Quadtree
+ *   <li>http://en.wikipedia.org/wiki/Geohash
+ *   <li>http://healpix.jpl.nasa.gov/
  * </ul>
  */
 package org.apache.lucene.spatial.prefix.tree;

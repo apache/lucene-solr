@@ -22,39 +22,31 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.suggest.Lookup;
 
 /**
- * {@link org.apache.lucene.search.TopDocs} wrapper with
- * an additional CharSequence key per {@link org.apache.lucene.search.ScoreDoc}
+ * {@link org.apache.lucene.search.TopDocs} wrapper with an additional CharSequence key per {@link
+ * org.apache.lucene.search.ScoreDoc}
  *
  * @lucene.experimental
  */
 public class TopSuggestDocs extends TopDocs {
 
-  /**
-   * Singleton for empty {@link TopSuggestDocs}
-   */
-  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new SuggestScoreDoc[0]);
+  /** Singleton for empty {@link TopSuggestDocs} */
+  public static final TopSuggestDocs EMPTY =
+      new TopSuggestDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new SuggestScoreDoc[0]);
 
-  /**
-   * {@link org.apache.lucene.search.ScoreDoc} with an
-   * additional CharSequence key
-   */
+  /** {@link org.apache.lucene.search.ScoreDoc} with an additional CharSequence key */
   public static class SuggestScoreDoc extends ScoreDoc implements Comparable<SuggestScoreDoc> {
 
-    /**
-     * Matched completion key
-     */
+    /** Matched completion key */
     public final CharSequence key;
 
-    /**
-     * Context for the completion
-     */
+    /** Context for the completion */
     public final CharSequence context;
 
     /**
      * Creates a SuggestScoreDoc instance
      *
-     * @param doc   document id (hit)
-     * @param key   matched completion
+     * @param doc document id (hit)
+     * @param key matched completion
      * @param score weight of the matched completion
      */
     public SuggestScoreDoc(int doc, CharSequence key, CharSequence context, float score) {
@@ -84,35 +76,30 @@ public class TopSuggestDocs extends TopDocs {
 
     @Override
     public String toString() {
-      return "key=" + key + " doc=" + doc + " score=" + score + " shardIndex=" + shardIndex;      
+      return "key=" + key + " doc=" + doc + " score=" + score + " shardIndex=" + shardIndex;
     }
   }
 
   /**
-   * {@link org.apache.lucene.search.TopDocs} wrapper with
-   * {@link TopSuggestDocs.SuggestScoreDoc}
+   * {@link org.apache.lucene.search.TopDocs} wrapper with {@link TopSuggestDocs.SuggestScoreDoc}
    * instead of {@link org.apache.lucene.search.ScoreDoc}
    */
   public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs) {
     super(totalHits, scoreDocs);
   }
 
-  /**
-   * Returns {@link TopSuggestDocs.SuggestScoreDoc}s
-   * for this instance
-   */
+  /** Returns {@link TopSuggestDocs.SuggestScoreDoc}s for this instance */
   public SuggestScoreDoc[] scoreLookupDocs() {
     return (SuggestScoreDoc[]) scoreDocs;
   }
 
   /**
-   * Returns a new TopSuggestDocs, containing topN results across
-   * the provided TopSuggestDocs, sorting by score. Each {@link TopSuggestDocs}
-   * instance must be sorted.
-   * Analogous to {@link org.apache.lucene.search.TopDocs#merge(int, org.apache.lucene.search.TopDocs[])}
-   * for {@link TopSuggestDocs}
+   * Returns a new TopSuggestDocs, containing topN results across the provided TopSuggestDocs,
+   * sorting by score. Each {@link TopSuggestDocs} instance must be sorted. Analogous to {@link
+   * org.apache.lucene.search.TopDocs#merge(int, org.apache.lucene.search.TopDocs[])} for {@link
+   * TopSuggestDocs}
    *
-   * NOTE: assumes every <code>shardHit</code> is already sorted by score
+   * <p>NOTE: assumes every <code>shardHit</code> is already sorted by score
    */
   public static TopSuggestDocs merge(int topN, TopSuggestDocs[] shardHits) {
     SuggestScoreDocPriorityQueue priorityQueue = new SuggestScoreDocPriorityQueue(topN);
@@ -125,10 +112,10 @@ public class TopSuggestDocs extends TopDocs {
     }
     SuggestScoreDoc[] topNResults = priorityQueue.getResults();
     if (topNResults.length > 0) {
-      return new TopSuggestDocs(new TotalHits(topNResults.length, TotalHits.Relation.EQUAL_TO), topNResults);
+      return new TopSuggestDocs(
+          new TotalHits(topNResults.length, TotalHits.Relation.EQUAL_TO), topNResults);
     } else {
       return TopSuggestDocs.EMPTY;
     }
   }
-
 }

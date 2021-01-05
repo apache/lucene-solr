@@ -22,27 +22,21 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 import java.util.Objects;
 
-/**  
- * A {@code FilterFileStore} contains another 
- * {@code FileStore}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterFileStore} contains another {@code FileStore}, which it uses as its basic source
+ * of data, possibly transforming the data along the way or providing additional functionality.
  */
 public abstract class FilterFileStore extends FileStore {
-  
-  /** 
-   * The underlying {@code FileStore} instance. 
-   */
+
+  /** The underlying {@code FileStore} instance. */
   protected final FileStore delegate;
-  
-  /**
-   * URI scheme used for this instance.
-   */
+
+  /** URI scheme used for this instance. */
   protected final String scheme;
-  
+
   /**
-   * Construct a {@code FilterFileStore} based on 
-   * the specified base store.
+   * Construct a {@code FilterFileStore} based on the specified base store.
+   *
    * @param delegate specified base store.
    * @param scheme URI scheme identifying this instance.
    */

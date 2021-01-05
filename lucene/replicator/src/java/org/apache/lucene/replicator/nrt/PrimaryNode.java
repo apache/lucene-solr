@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -45,10 +44,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * replicas since step 2) could otherwise be done concurrently with replicas copying files over.
  */
 
-/** 
+/**
  * Node that holds an IndexWriter, indexing documents into its local index.
  *
- * @lucene.experimental 
+ * @lucene.experimental
  */
 public abstract class PrimaryNode extends Node {
 
@@ -57,26 +56,38 @@ public abstract class PrimaryNode extends Node {
 
   protected final IndexWriter writer;
 
-  // IncRef'd state of the last published NRT point; when a replica comes asking, we give it this as the current NRT point:
+  // IncRef'd state of the last published NRT point; when a replica comes asking, we give it this as
+  // the current NRT point:
   private CopyState copyState;
 
   protected final long primaryGen;
 
-  /** Contains merged segments that have been copied to all running replicas (as of when that merge started warming). */
+  /**
+   * Contains merged segments that have been copied to all running replicas (as of when that merge
+   * started warming).
+   */
   final Set<String> finishedMergedFiles = Collections.synchronizedSet(new HashSet<String>());
 
   private final AtomicInteger copyingCount = new AtomicInteger();
 
-  public PrimaryNode(IndexWriter writer, int id, long primaryGen, long forcePrimaryVersion,
-                     SearcherFactory searcherFactory, PrintStream printStream) throws IOException {
+  public PrimaryNode(
+      IndexWriter writer,
+      int id,
+      long primaryGen,
+      long forcePrimaryVersion,
+      SearcherFactory searcherFactory,
+      PrintStream printStream)
+      throws IOException {
     super(id, writer.getDirectory(), searcherFactory, printStream);
     message("top: now init primary");
     this.writer = writer;
     this.primaryGen = primaryGen;
 
     try {
-      // So that when primary node's IndexWriter finishes a merge, but before it cuts over to the merged segment,
-      // it copies it out to the replicas.  This ensures the whole system's NRT latency remains low even when a
+      // So that when primary node's IndexWriter finishes a merge, but before it cuts over to the
+      // merged segment,
+      // it copies it out to the replicas.  This ensures the whole system's NRT latency remains low
+      // even when a
       // large merge completes:
       writer.getConfig().setMergedSegmentWarmer(new PreCopyMergedSegmentWarmer(this));
 
@@ -85,10 +96,10 @@ public abstract class PrimaryNode extends Node {
       message("commitData: " + writer.getLiveCommitData());
 
       // Record our primaryGen in the userData, and set initial version to 0:
-      Map<String,String> commitData = new HashMap<>();
-      Iterable<Map.Entry<String,String>> iter = writer.getLiveCommitData();
+      Map<String, String> commitData = new HashMap<>();
+      Iterable<Map.Entry<String, String>> iter = writer.getLiveCommitData();
       if (iter != null) {
-        for(Map.Entry<String,String> ent : iter) {
+        for (Map.Entry<String, String> ent : iter) {
           commitData.put(ent.getKey(), ent.getValue());
         }
       }
@@ -101,8 +112,10 @@ public abstract class PrimaryNode extends Node {
       }
       writer.setLiveCommitData(commitData.entrySet(), false);
 
-      // We forcefully advance the SIS version to an unused future version.  This is necessary if the previous primary crashed and we are
-      // starting up on an "older" index, else versions can be illegally reused but show different results:
+      // We forcefully advance the SIS version to an unused future version.  This is necessary if
+      // the previous primary crashed and we are
+      // starting up on an "older" index, else versions can be illegally reused but show different
+      // results:
       if (forcePrimaryVersion != -1) {
         message("now forcePrimaryVersion to version=" + forcePrimaryVersion);
         writer.advanceSegmentInfosVersion(forcePrimaryVersion);
@@ -119,23 +132,33 @@ public abstract class PrimaryNode extends Node {
     }
   }
 
-  /** Returns the current primary generation, which is incremented each time a new primary is started for this index */
+  /**
+   * Returns the current primary generation, which is incremented each time a new primary is started
+   * for this index
+   */
   public long getPrimaryGen() {
     return primaryGen;
   }
 
-  // TODO: in the future, we should separate "flush" (returns an incRef'd SegmentInfos) from "refresh" (open new NRT reader from
-  // IndexWriter) so that the latter can be done concurrently while copying files out to replicas, minimizing the refresh time from the
-  // replicas.  But fixing this is tricky because e.g. IndexWriter may complete a big merge just after returning the incRef'd SegmentInfos
-  // and before we can open a new reader causing us to close the just-merged readers only to then open them again from the (now stale)
-  // SegmentInfos.  To fix this "properly" I think IW.inc/decRefDeleter must also incread the ReaderPool entry
+  // TODO: in the future, we should separate "flush" (returns an incRef'd SegmentInfos) from
+  // "refresh" (open new NRT reader from
+  // IndexWriter) so that the latter can be done concurrently while copying files out to replicas,
+  // minimizing the refresh time from the
+  // replicas.  But fixing this is tricky because e.g. IndexWriter may complete a big merge just
+  // after returning the incRef'd SegmentInfos
+  // and before we can open a new reader causing us to close the just-merged readers only to then
+  // open them again from the (now stale)
+  // SegmentInfos.  To fix this "properly" I think IW.inc/decRefDeleter must also incread the
+  // ReaderPool entry
 
-  /** Flush all index operations to disk and opens a new near-real-time reader.
-   *  new NRT point, to make the changes visible to searching.  Returns true if there were changes. */
+  /**
+   * Flush all index operations to disk and opens a new near-real-time reader. new NRT point, to
+   * make the changes visible to searching. Returns true if there were changes.
+   */
   public boolean flushAndRefresh() throws IOException {
     message("top: now flushAndRefresh");
     Set<String> completedMergeFiles;
-    synchronized(finishedMergedFiles) {
+    synchronized (finishedMergedFiles) {
       completedMergeFiles = Set.copyOf(finishedMergedFiles);
     }
     mgr.maybeRefreshBlocking();
@@ -143,7 +166,13 @@ public abstract class PrimaryNode extends Node {
     if (result) {
       message("top: opened NRT reader version=" + curInfos.getVersion());
       finishedMergedFiles.removeAll(completedMergeFiles);
-      message("flushAndRefresh: version=" + curInfos.getVersion() + " completedMergeFiles=" + completedMergeFiles + " finishedMergedFiles=" + finishedMergedFiles);
+      message(
+          "flushAndRefresh: version="
+              + curInfos.getVersion()
+              + " completedMergeFiles="
+              + completedMergeFiles
+              + " finishedMergedFiles="
+              + finishedMergedFiles);
     } else {
       message("top: no changes in flushAndRefresh; still version=" + curInfos.getVersion());
     }
@@ -155,9 +184,9 @@ public abstract class PrimaryNode extends Node {
   }
 
   public synchronized long getLastCommitVersion() {
-    Iterable<Map.Entry<String,String>> iter = writer.getLiveCommitData();
+    Iterable<Map.Entry<String, String>> iter = writer.getLiveCommitData();
     assert iter != null;
-    for(Map.Entry<String,String> ent : iter) {
+    for (Map.Entry<String, String> ent : iter) {
       if (ent.getKey().equals(VERSION_KEY)) {
         return Long.parseLong(ent.getValue());
       }
@@ -169,9 +198,10 @@ public abstract class PrimaryNode extends Node {
 
   @Override
   public void commit() throws IOException {
-    Map<String,String> commitData = new HashMap<>();
+    Map<String, String> commitData = new HashMap<>();
     commitData.put(PRIMARY_GEN_KEY, Long.toString(primaryGen));
-    // TODO (opto): it's a bit wasteful that we put "last refresh" version here, not the actual version we are committing, because it means
+    // TODO (opto): it's a bit wasteful that we put "last refresh" version here, not the actual
+    // version we are committing, because it means
     // on xlog replay we are replaying more ops than necessary.
     commitData.put(VERSION_KEY, Long.toString(copyState.version));
     message("top: commit commitData=" + commitData);
@@ -182,7 +212,8 @@ public abstract class PrimaryNode extends Node {
   /** IncRef the current CopyState and return it */
   public synchronized CopyState getCopyState() throws IOException {
     ensureOpen(false);
-    //message("top: getCopyState replicaID=" + replicaID + " replicaNodeID=" + replicaNodeID + " version=" + curInfos.getVersion() + " infos=" + curInfos.toString());
+    // message("top: getCopyState replicaID=" + replicaID + " replicaNodeID=" + replicaNodeID + "
+    // version=" + curInfos.getVersion() + " infos=" + curInfos.toString());
     assert curInfos == copyState.infos;
     writer.incRefDeleter(copyState.infos);
     int count = copyingCount.incrementAndGet();
@@ -192,7 +223,7 @@ public abstract class PrimaryNode extends Node {
 
   /** Called once replica is done (or failed) copying an NRT point */
   public void releaseCopyState(CopyState copyState) throws IOException {
-    //message("top: releaseCopyState version=" + copyState.version);
+    // message("top: releaseCopyState version=" + copyState.version);
     assert copyState.infos != null;
     writer.decRefDeleter(copyState.infos);
     int count = copyingCount.decrementAndGet();
@@ -229,7 +260,11 @@ public abstract class PrimaryNode extends Node {
     }
     if (curInfos != null && infos.getVersion() == curInfos.getVersion()) {
       // no change
-      message("top: skip switch to infos: version=" + infos.getVersion() + " is unchanged: " + infos.toString());
+      message(
+          "top: skip switch to infos: version="
+              + infos.getVersion()
+              + " is unchanged: "
+              + infos.toString());
       return false;
     }
 
@@ -244,17 +279,18 @@ public abstract class PrimaryNode extends Node {
 
     // Serialize the SegmentInfos.
     ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
-    try (ByteBuffersIndexOutput tmpIndexOutput = new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
+    try (ByteBuffersIndexOutput tmpIndexOutput =
+        new ByteBuffersIndexOutput(buffer, "temporary", "temporary")) {
       infos.write(tmpIndexOutput);
     }
     byte[] infosBytes = buffer.toArrayCopy();
 
-    Map<String,FileMetaData> filesMetaData = new HashMap<String,FileMetaData>();
-    for(SegmentCommitInfo info : infos) {
-      for(String fileName : info.files()) {
+    Map<String, FileMetaData> filesMetaData = new HashMap<String, FileMetaData>();
+    for (SegmentCommitInfo info : infos) {
+      for (String fileName : info.files()) {
         FileMetaData metaData = readLocalFileMetaData(fileName);
         // NOTE: we hold a refCount on this infos, so this file better exist:
-        assert metaData != null: "file \"" + fileName + "\" is missing metadata";
+        assert metaData != null : "file \"" + fileName + "\" is missing metadata";
         assert filesMetaData.containsKey(fileName) == false;
         filesMetaData.put(fileName, metaData);
       }
@@ -262,10 +298,22 @@ public abstract class PrimaryNode extends Node {
 
     lastFileMetaData = Collections.unmodifiableMap(filesMetaData);
 
-    message("top: set copyState primaryGen=" + primaryGen + " version=" + infos.getVersion() + " files=" + filesMetaData.keySet());
-    copyState = new CopyState(lastFileMetaData,
-                              infos.getVersion(), infos.getGeneration(), infosBytes, completedMergeFiles,
-                              primaryGen, curInfos);
+    message(
+        "top: set copyState primaryGen="
+            + primaryGen
+            + " version="
+            + infos.getVersion()
+            + " files="
+            + filesMetaData.keySet());
+    copyState =
+        new CopyState(
+            lastFileMetaData,
+            infos.getVersion(),
+            infos.getGeneration(),
+            infosBytes,
+            completedMergeFiles,
+            primaryGen,
+            curInfos);
     return true;
   }
 
@@ -309,5 +357,6 @@ public abstract class PrimaryNode extends Node {
   }
 
   /** Called when a merge has finished, but before IW switches to the merged segment */
-  protected abstract void preCopyMergedSegmentFiles(SegmentCommitInfo info, Map<String,FileMetaData> files) throws IOException;
+  protected abstract void preCopyMergedSegmentFiles(
+      SegmentCommitInfo info, Map<String, FileMetaData> files) throws IOException;
 }

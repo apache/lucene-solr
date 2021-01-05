@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -31,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.mockfile.DisableFsyncFS;
 import org.apache.lucene.mockfile.ExtrasFS;
 import org.apache.lucene.mockfile.HandleLimitFS;
@@ -43,55 +44,40 @@ import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressFsync;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-
 /**
  * Checks and cleans up temporary files.
- * 
+ *
  * @see LuceneTestCase#createTempDir()
  * @see LuceneTestCase#createTempFile()
  */
 final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
-  /**
-   * Retry to create temporary file name this many times.
-   */
+  /** Retry to create temporary file name this many times. */
   private static final int TEMP_NAME_RETRY_THRESHOLD = 9999;
 
-  /**
-   * Writeable temporary base folder. 
-   */
+  /** Writeable temporary base folder. */
   private Path javaTempDir;
 
-  /**
-   * Per-test class temporary folder.
-   */
+  /** Per-test class temporary folder. */
   private Path tempDirBase;
-  
-  /**
-   * Per-test filesystem
-   */
+
+  /** Per-test filesystem */
   private FileSystem fileSystem;
 
-  /**
-   * Suite failure marker.
-   */
+  /** Suite failure marker. */
   private final TestRuleMarkFailure failureMarker;
 
   /**
-   * A queue of temporary resources to be removed after the
-   * suite completes.
+   * A queue of temporary resources to be removed after the suite completes.
+   *
    * @see #registerToRemoveAfterSuite(Path)
    */
-  private final static List<Path> cleanupQueue = new ArrayList<Path>();
+  private static final List<Path> cleanupQueue = new ArrayList<Path>();
 
   public TestRuleTemporaryFilesCleanup(TestRuleMarkFailure failureMarker) {
     this.failureMarker = failureMarker;
   }
 
-  /**
-   * Register temporary folder for removal after the suite completes.
-   */
+  /** Register temporary folder for removal after the suite completes. */
   void registerToRemoveAfterSuite(Path f) {
     assert f != null;
 
@@ -113,11 +99,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     fileSystem = initializeFileSystem();
     javaTempDir = initializeJavaTempDir();
   }
-  
+
   // os/config-independent limit for too many open files
   // TODO: can we make this lower?
   private static final int MAX_OPEN_FILES = 2048;
-  
+
   private boolean allowed(Set<String> avoid, Class<? extends FileSystemProvider> clazz) {
     if (avoid.contains("*") || avoid.contains(clazz.getSimpleName())) {
       return false;
@@ -125,7 +111,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       return true;
     }
   }
-  
+
   private FileSystem initializeFileSystem() {
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
     Set<String> avoid = new HashSet<>();
@@ -135,26 +121,31 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     }
     FileSystem fs = FileSystems.getDefault();
     if (LuceneTestCase.VERBOSE && allowed(avoid, VerboseFS.class)) {
-      fs = new VerboseFS(fs, new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out)).getFileSystem(null);
+      fs =
+          new VerboseFS(
+                  fs,
+                  new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(
+                      System.out))
+              .getFileSystem(null);
     }
-    
+
     Random random = RandomizedContext.current().getRandom();
-    
+
     // speed up tests by omitting actual fsync calls to the hardware most of the time.
     if (targetClass.isAnnotationPresent(SuppressFsync.class) || random.nextInt(100) > 0) {
       if (allowed(avoid, DisableFsyncFS.class)) {
         fs = new DisableFsyncFS(fs).getFileSystem(null);
       }
     }
-    
+
     // impacts test reproducibility across platforms.
     if (random.nextInt(100) > 0) {
       if (allowed(avoid, ShuffleFS.class)) {
         fs = new ShuffleFS(fs, random.nextLong()).getFileSystem(null);
       }
     }
-    
-    // otherwise, wrap with mockfilesystems for additional checks. some 
+
+    // otherwise, wrap with mockfilesystems for additional checks. some
     // of these have side effects (e.g. concurrency) so it doesn't always happen.
     if (random.nextInt(10) > 0) {
       if (allowed(avoid, LeakFS.class)) {
@@ -182,12 +173,12 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   }
 
   private Path initializeJavaTempDir() throws IOException {
-    Path javaTempDir = fileSystem.getPath(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
-    
+    Path javaTempDir =
+        fileSystem.getPath(System.getProperty("tempDir", System.getProperty("java.io.tmpdir")));
+
     Files.createDirectories(javaTempDir);
 
-    assert Files.isDirectory(javaTempDir) &&
-           Files.isWritable(javaTempDir);
+    assert Files.isDirectory(javaTempDir) && Files.isWritable(javaTempDir);
 
     return javaTempDir.toRealPath();
   }
@@ -195,14 +186,14 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   @Override
   protected void afterAlways(List<Throwable> errors) throws Throwable {
     // Drain cleanup queue and clear it.
-    final Path [] everything;
+    final Path[] everything;
     final String tempDirBasePath;
     synchronized (cleanupQueue) {
       tempDirBasePath = (tempDirBase != null ? tempDirBase.toAbsolutePath().toString() : null);
       tempDirBase = null;
 
       Collections.reverse(cleanupQueue);
-      everything = new Path [cleanupQueue.size()];
+      everything = new Path[cleanupQueue.size()];
       cleanupQueue.toArray(everything);
       cleanupQueue.clear();
     }
@@ -217,9 +208,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       } catch (IOException e) {
         Class<?> suiteClass = RandomizedContext.current().getTargetClass();
         if (suiteClass.isAnnotationPresent(SuppressTempFileChecks.class)) {
-          System.err.println("WARNING: Leftover undeleted temporary files (bugUrl: "
-              + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl() + "): "
-              + e.getMessage());
+          System.err.println(
+              "WARNING: Leftover undeleted temporary files (bugUrl: "
+                  + suiteClass.getAnnotation(SuppressTempFileChecks.class).bugUrl()
+                  + "): "
+                  + e.getMessage());
           return;
         }
         throw e;
@@ -233,7 +226,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       }
     }
   }
-  
+
   Path getPerTestClassTempDir() {
     if (tempDirBase == null) {
       RandomizedContext ctx = RandomizedContext.current();
@@ -249,14 +242,20 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
         if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
           throw new RuntimeException(
               "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-                + javaTempDir.toAbsolutePath());            
+                  + javaTempDir.toAbsolutePath());
         }
-        f = javaTempDir.resolve(prefix + "_" + ctx.getRunnerSeedAsString() 
-              + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
+        f =
+            javaTempDir.resolve(
+                prefix
+                    + "_"
+                    + ctx.getRunnerSeedAsString()
+                    + "-"
+                    + String.format(Locale.ENGLISH, "%03d", attempt));
         try {
           Files.createDirectory(f);
           success = true;
-        } catch (IOException ignore) {}
+        } catch (IOException ignore) {
+        }
       } while (!success);
 
       tempDirBase = f;
@@ -264,10 +263,8 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     }
     return tempDirBase;
   }
-  
-  /**
-   * @see LuceneTestCase#createTempDir()
-   */
+
+  /** @see LuceneTestCase#createTempDir() */
   public Path createTempDir(String prefix) {
     Path base = getPerTestClassTempDir();
 
@@ -278,22 +275,21 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
         throw new RuntimeException(
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-              + base.toAbsolutePath());            
+                + base.toAbsolutePath());
       }
       f = base.resolve(prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt));
       try {
         Files.createDirectory(f);
         success = true;
-      } catch (IOException ignore) {}
+      } catch (IOException ignore) {
+      }
     } while (!success);
 
     registerToRemoveAfterSuite(f);
     return f;
   }
 
-  /**
-   * @see LuceneTestCase#createTempFile()
-   */
+  /** @see LuceneTestCase#createTempFile() */
   public Path createTempFile(String prefix, String suffix) throws IOException {
     Path base = getPerTestClassTempDir();
 
@@ -304,13 +300,14 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       if (attempt++ >= TEMP_NAME_RETRY_THRESHOLD) {
         throw new RuntimeException(
             "Failed to get a temporary name too many times, check your temp directory and consider manually cleaning it: "
-              + base.toAbsolutePath());            
+                + base.toAbsolutePath());
       }
       f = base.resolve(prefix + "-" + String.format(Locale.ENGLISH, "%03d", attempt) + suffix);
       try {
         Files.createFile(f);
         success = true;
-      } catch (IOException ignore) {}
+      } catch (IOException ignore) {
+      }
     } while (!success);
 
     registerToRemoveAfterSuite(f);

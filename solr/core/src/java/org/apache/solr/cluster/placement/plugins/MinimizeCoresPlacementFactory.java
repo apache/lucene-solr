@@ -31,6 +31,7 @@ import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.common.util.SuppressForbidden;
 
 /**
@@ -66,17 +67,17 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
 
       Set<Node> nodes = request.getTargetNodes();
 
-      attributeFetcher.requestNodeCoreCount();
+      attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
 
 
       // Get the number of cores on each node and sort the nodes by increasing number of cores
       for (Node node : nodes) {
-        if (attrValues.getCoresCount(node).isEmpty()) {
+        if (attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).isEmpty()) {
           throw new PlacementException("Can't get number of cores in " + node);
         }
-        nodesByCores.put(attrValues.getCoresCount(node).get(), node);
+        nodesByCores.put(attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get(), node);
       }
 
       Set<ReplicaPlacement> replicaPlacements = new HashSet<>(totalReplicasPerShard * request.getShardNames().size());

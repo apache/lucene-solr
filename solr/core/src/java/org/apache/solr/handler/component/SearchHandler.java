@@ -521,8 +521,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         StringWriter trace = new StringWriter();
         cause.printStackTrace(new PrintWriter(trace));
         nl.add("trace", trace.toString() );
-      }
-      else {
+      } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add("numFoundExact", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());

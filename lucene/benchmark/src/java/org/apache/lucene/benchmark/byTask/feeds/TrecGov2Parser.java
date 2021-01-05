@@ -16,25 +16,27 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Date;
 
-/**
- * Parser for the GOV2 collection format
- */
+/** Parser for the GOV2 collection format */
 public class TrecGov2Parser extends TrecDocParser {
 
   private static final String DATE = "Date: ";
   private static final String DATE_END = TrecContentSource.NEW_LINE;
-  
+
   private static final String DOCHDR = "<DOCHDR>";
   private static final String TERMINATING_DOCHDR = "</DOCHDR>";
 
   @Override
-  public DocData parse(DocData docData, String name, TrecContentSource trecSrc, 
-      StringBuilder docBuf, ParsePathType pathType) throws IOException {
+  public DocData parse(
+      DocData docData,
+      String name,
+      TrecContentSource trecSrc,
+      StringBuilder docBuf,
+      ParsePathType pathType)
+      throws IOException {
     // skip some of the non-html text, optionally set date
     Date date = null;
     int start = 0;
@@ -50,5 +52,4 @@ public class TrecGov2Parser extends TrecDocParser {
     final String html = docBuf.substring(start);
     return trecSrc.getHtmlParser().parse(docData, name, date, new StringReader(html), trecSrc);
   }
-  
 }

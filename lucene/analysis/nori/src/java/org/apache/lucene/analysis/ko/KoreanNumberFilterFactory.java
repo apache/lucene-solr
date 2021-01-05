@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.analysis.ko;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KoreanNumberFilter}.
- * <br>
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -33,9 +31,10 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
- * <p>
- * It is important that punctuation is not discarded by the tokenizer so use
- * {@code discardPunctuation="false"} in your {@link KoreanTokenizerFactory}.
+ *
+ * <p>It is important that punctuation is not discarded by the tokenizer so use {@code
+ * discardPunctuation="false"} in your {@link KoreanTokenizerFactory}.
+ *
  * @since 8.2.0
  * @lucene.spi {@value #NAME}
  */

@@ -19,8 +19,8 @@ package org.apache.lucene.util;
 import org.apache.lucene.search.IndexSearcher;
 
 /**
- * Prepares and restores {@link LuceneTestCase} at instance level 
- * (fine grained junk that doesn't fit anywhere else).
+ * Prepares and restores {@link LuceneTestCase} at instance level (fine grained junk that doesn't
+ * fit anywhere else).
  */
 final class TestRuleSetupAndRestoreInstanceEnv extends AbstractBeforeAfterRule {
   private int savedBoolMaxClauseCount;

@@ -21,21 +21,18 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 
 /**
- * A {@link QueryNodeProcessor} is an interface for classes that process a
- * {@link QueryNode} tree.
- * <p>
- * The implementor of this class should perform some operation on a query node
- * tree and return the same or another query node tree.
- * <p>
- * It also may carry a {@link QueryConfigHandler} object that contains
- * configuration about the query represented by the query tree or the
- * collection/index where it's intended to be executed.
- * <p>
- * In case there is any {@link QueryConfigHandler} associated to the query tree
- * to be processed, it should be set using
- * {@link QueryNodeProcessor#setQueryConfigHandler(QueryConfigHandler)} before
- * {@link QueryNodeProcessor#process(QueryNode)} is invoked.
- * 
+ * A {@link QueryNodeProcessor} is an interface for classes that process a {@link QueryNode} tree.
+ *
+ * <p>The implementor of this class should perform some operation on a query node tree and return
+ * the same or another query node tree.
+ *
+ * <p>It also may carry a {@link QueryConfigHandler} object that contains configuration about the
+ * query represented by the query tree or the collection/index where it's intended to be executed.
+ *
+ * <p>In case there is any {@link QueryConfigHandler} associated to the query tree to be processed,
+ * it should be set using {@link QueryNodeProcessor#setQueryConfigHandler(QueryConfigHandler)}
+ * before {@link QueryNodeProcessor#process(QueryNode)} is invoked.
+ *
  * @see QueryNode
  * @see QueryNodeProcessor
  * @see QueryConfigHandler
@@ -43,28 +40,23 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 public interface QueryNodeProcessor {
 
   /**
-   * Processes a query node tree. It may return the same or another query tree.
-   * I should never return <code>null</code>.
-   * 
-   * @param queryTree
-   *          tree root node
-   * 
+   * Processes a query node tree. It may return the same or another query tree. I should never
+   * return <code>null</code>.
+   *
+   * @param queryTree tree root node
    * @return the processed query tree
    */
   public QueryNode process(QueryNode queryTree) throws QueryNodeException;
 
-  /**
-   * Sets the {@link QueryConfigHandler} associated to the query tree.
-   */
+  /** Sets the {@link QueryConfigHandler} associated to the query tree. */
   public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler);
 
   /**
-   * Returns the {@link QueryConfigHandler} associated to the query tree if any,
-   * otherwise it returns <code>null</code>
-   * 
-   * @return the {@link QueryConfigHandler} associated to the query tree if any,
-   *         otherwise it returns <code>null</code>
+   * Returns the {@link QueryConfigHandler} associated to the query tree if any, otherwise it
+   * returns <code>null</code>
+   *
+   * @return the {@link QueryConfigHandler} associated to the query tree if any, otherwise it
+   *     returns <code>null</code>
    */
   public QueryConfigHandler getQueryConfigHandler();
-
 }

@@ -16,24 +16,24 @@
  */
 package org.apache.lucene.util;
 
-import org.junit.Ignore;
-
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.Timeout;
+import org.junit.Ignore;
 
 public class TestWorstCaseTestBehavior extends LuceneTestCase {
   @Ignore
   public void testThreadLeak() {
-    Thread t = new Thread() {
-      @Override
-      public void run() {
-        try {
-          Thread.sleep(10000);
-        } catch (InterruptedException e) {
-          // Ignore.
-        }
-      }
-    };
+    Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              Thread.sleep(10000);
+            } catch (InterruptedException e) {
+              // Ignore.
+            }
+          }
+        };
     t.start();
 
     while (!t.isAlive()) {
@@ -68,29 +68,31 @@ public class TestWorstCaseTestBehavior extends LuceneTestCase {
 
   @Ignore
   public void testUncaughtException() throws Exception {
-    Thread t = new Thread() {
-      @Override
-      public void run() {
-        throw new RuntimeException("foobar");
-      }
-    };
+    Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            throw new RuntimeException("foobar");
+          }
+        };
     t.start();
     t.join();
   }
-  
+
   @Ignore
   @Timeout(millis = 500)
   public void testTimeout() throws Exception {
     Thread.sleep(5000);
   }
-  
+
   @Ignore
   @Timeout(millis = 1000)
   public void testZombie() throws Exception {
     while (true) {
       try {
         Thread.sleep(1000);
-      } catch (InterruptedException e) {}
+      } catch (InterruptedException e) {
+      }
     }
   }
 }

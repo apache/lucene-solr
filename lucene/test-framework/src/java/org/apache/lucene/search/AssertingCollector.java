@@ -17,12 +17,9 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
-/**
- * A collector that asserts that it is used correctly.
- */
+/** A collector that asserts that it is used correctly. */
 class AssertingCollector extends FilterCollector {
 
   private int maxDoc = -1;
@@ -52,13 +49,16 @@ class AssertingCollector extends FilterCollector {
       public void collect(int doc) throws IOException {
         // check that documents are scored in order globally,
         // not only per segment
-        assert docBase + doc >= maxDoc : "collection is not in order: current doc="
-            + (docBase + doc) + " while " + maxDoc + " has already been collected";
+        assert docBase + doc >= maxDoc
+            : "collection is not in order: current doc="
+                + (docBase + doc)
+                + " while "
+                + maxDoc
+                + " has already been collected";
 
         super.collect(doc);
         maxDoc = docBase + doc;
       }
     };
   }
-
 }

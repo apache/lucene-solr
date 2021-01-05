@@ -17,6 +17,18 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
@@ -32,19 +44,6 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
@@ -100,7 +99,8 @@ public final class CommitsPanelProvider {
     panel.setOpaque(false);
     panel.setBorder(BorderFactory.createLineBorder(Color.gray));
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
     splitPane.setOpaque(false);
     splitPane.setBorder(BorderFactory.createEmptyBorder());
     splitPane.setDividerLocation(120);
@@ -162,7 +162,11 @@ public final class CommitsPanelProvider {
     userDataTA.setLineWrap(true);
     userDataTA.setWrapStyleWord(true);
     userDataTA.setEditable(false);
-    JScrollPane userDataScroll = new JScrollPane(userDataTA, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    JScrollPane userDataScroll =
+        new JScrollPane(
+            userDataTA,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
     c1.gridx = 1;
     c1.gridy = 2;
     c1.weightx = 0.5;
@@ -179,7 +183,8 @@ public final class CommitsPanelProvider {
     panel.setOpaque(false);
     panel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initFilesPanel(), initSegmentsPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initFilesPanel(), initSegmentsPanel());
     splitPane.setOpaque(false);
     splitPane.setBorder(BorderFactory.createEmptyBorder());
     splitPane.setDividerLocation(300);
@@ -197,7 +202,12 @@ public final class CommitsPanelProvider {
     header.add(new JLabel(MessageUtils.getLocalizedMessage("commits.label.files")));
     panel.add(header, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(filesTable, ListSelectionModel.SINGLE_SELECTION, new FilesTableModel(), null, FilesTableModel.Column.FILENAME.getColumnWidth());
+    TableUtils.setupTable(
+        filesTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new FilesTableModel(),
+        null,
+        FilesTableModel.Column.FILENAME.getColumnWidth());
     panel.add(new JScrollPane(filesTable), BorderLayout.CENTER);
 
     return panel;
@@ -213,7 +223,10 @@ public final class CommitsPanelProvider {
     segments.add(new JLabel(MessageUtils.getLocalizedMessage("commits.label.segments")));
     panel.add(segments);
 
-    TableUtils.setupTable(segmentsTable, ListSelectionModel.SINGLE_SELECTION, new SegmentsTableModel(),
+    TableUtils.setupTable(
+        segmentsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new SegmentsTableModel(),
         new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
@@ -241,12 +254,13 @@ public final class CommitsPanelProvider {
     diagRB.setSelected(true);
     diagRB.setEnabled(false);
     diagRB.setOpaque(false);
-    diagRB.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        listeners.showSegmentDetails(e);
-      }
-    });
+    diagRB.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            listeners.showSegmentDetails(e);
+          }
+        });
     buttons.add(diagRB);
 
     attrRB.setText("Attributes");
@@ -254,12 +268,13 @@ public final class CommitsPanelProvider {
     attrRB.setSelected(false);
     attrRB.setEnabled(false);
     attrRB.setOpaque(false);
-    attrRB.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        listeners.showSegmentDetails(e);
-      }
-    });
+    attrRB.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            listeners.showSegmentDetails(e);
+          }
+        });
     buttons.add(attrRB);
 
     codecRB.setText("Codec");
@@ -267,12 +282,13 @@ public final class CommitsPanelProvider {
     codecRB.setSelected(false);
     codecRB.setEnabled(false);
     codecRB.setOpaque(false);
-    codecRB.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        listeners.showSegmentDetails(e);
-      }
-    });
+    codecRB.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            listeners.showSegmentDetails(e);
+          }
+        });
     buttons.add(codecRB);
 
     rbGroup.add(diagRB);
@@ -296,30 +312,55 @@ public final class CommitsPanelProvider {
     segDetailList.setModel(new DefaultListModel<>());
 
     long commitGen = (long) commitGenCombo.getSelectedItem();
-    commitsModel.getCommit(commitGen).ifPresent(commit -> {
-      deletedLbl.setText(String.valueOf(commit.isDeleted()));
-      segCntLbl.setText(String.valueOf(commit.getSegCount()));
-      userDataTA.setText(commit.getUserData());
-    });
+    commitsModel
+        .getCommit(commitGen)
+        .ifPresent(
+            commit -> {
+              deletedLbl.setText(String.valueOf(commit.isDeleted()));
+              segCntLbl.setText(String.valueOf(commit.getSegCount()));
+              userDataTA.setText(commit.getUserData());
+            });
 
     filesTable.setModel(new FilesTableModel(commitsModel.getFiles(commitGen)));
     filesTable.setShowGrid(true);
-    filesTable.getColumnModel().getColumn(FilesTableModel.Column.FILENAME.getIndex()).setPreferredWidth(FilesTableModel.Column.FILENAME.getColumnWidth());
+    filesTable
+        .getColumnModel()
+        .getColumn(FilesTableModel.Column.FILENAME.getIndex())
+        .setPreferredWidth(FilesTableModel.Column.FILENAME.getColumnWidth());
 
     segmentsTable.setModel(new SegmentsTableModel(commitsModel.getSegments(commitGen)));
     segmentsTable.setShowGrid(true);
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.NAME.getIndex()).setPreferredWidth(SegmentsTableModel.Column.NAME.getColumnWidth());
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.MAXDOCS.getIndex()).setPreferredWidth(SegmentsTableModel.Column.MAXDOCS.getColumnWidth());
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.DELS.getIndex()).setPreferredWidth(SegmentsTableModel.Column.DELS.getColumnWidth());
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.DELGEN.getIndex()).setPreferredWidth(SegmentsTableModel.Column.DELGEN.getColumnWidth());
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.VERSION.getIndex()).setPreferredWidth(SegmentsTableModel.Column.VERSION.getColumnWidth());
-    segmentsTable.getColumnModel().getColumn(SegmentsTableModel.Column.CODEC.getIndex()).setPreferredWidth(SegmentsTableModel.Column.CODEC.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.NAME.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.NAME.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.MAXDOCS.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.MAXDOCS.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.DELS.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.DELS.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.DELGEN.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.DELGEN.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.VERSION.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.VERSION.getColumnWidth());
+    segmentsTable
+        .getColumnModel()
+        .getColumn(SegmentsTableModel.Column.CODEC.getIndex())
+        .setPreferredWidth(SegmentsTableModel.Column.CODEC.getColumnWidth());
   }
 
   private void showSegmentDetails() {
     int selectedRow = segmentsTable.getSelectedRow();
-    if (commitGenCombo.getSelectedItem() == null ||
-        selectedRow < 0 || selectedRow >= segmentsTable.getRowCount()) {
+    if (commitGenCombo.getSelectedItem() == null
+        || selectedRow < 0
+        || selectedRow >= segmentsTable.getRowCount()) {
       return;
     }
 
@@ -328,7 +369,8 @@ public final class CommitsPanelProvider {
     codecRB.setEnabled(true);
 
     long commitGen = (long) commitGenCombo.getSelectedItem();
-    String segName = (String) segmentsTable.getValueAt(selectedRow, SegmentsTableModel.Column.NAME.getIndex());
+    String segName =
+        (String) segmentsTable.getValueAt(selectedRow, SegmentsTableModel.Column.NAME.getIndex());
     ActionCommand command = ActionCommand.valueOf(rbGroup.getSelection().getActionCommand());
 
     final DefaultListModel<String> detailsModel = new DefaultListModel<>();
@@ -344,27 +386,30 @@ public final class CommitsPanelProvider {
             .forEach(detailsModel::addElement);
         break;
       case CODEC:
-        commitsModel.getSegmentCodec(commitGen, segName).ifPresent(codec -> {
-          Map<String, String> map = new HashMap<>();
-          map.put("Codec name", codec.getName());
-          map.put("Codec class name", codec.getClass().getName());
-          map.put("Compound format", codec.compoundFormat().getClass().getName());
-          map.put("DocValues format", codec.docValuesFormat().getClass().getName());
-          map.put("FieldInfos format", codec.fieldInfosFormat().getClass().getName());
-          map.put("LiveDocs format", codec.liveDocsFormat().getClass().getName());
-          map.put("Norms format", codec.normsFormat().getClass().getName());
-          map.put("Points format", codec.pointsFormat().getClass().getName());
-          map.put("Postings format", codec.postingsFormat().getClass().getName());
-          map.put("SegmentInfo format", codec.segmentInfoFormat().getClass().getName());
-          map.put("StoredFields format", codec.storedFieldsFormat().getClass().getName());
-          map.put("TermVectors format", codec.termVectorsFormat().getClass().getName());
-          map.entrySet().stream()
-              .map(entry -> entry.getKey() + " = " + entry.getValue()).forEach(detailsModel::addElement);
-        });
+        commitsModel
+            .getSegmentCodec(commitGen, segName)
+            .ifPresent(
+                codec -> {
+                  Map<String, String> map = new HashMap<>();
+                  map.put("Codec name", codec.getName());
+                  map.put("Codec class name", codec.getClass().getName());
+                  map.put("Compound format", codec.compoundFormat().getClass().getName());
+                  map.put("DocValues format", codec.docValuesFormat().getClass().getName());
+                  map.put("FieldInfos format", codec.fieldInfosFormat().getClass().getName());
+                  map.put("LiveDocs format", codec.liveDocsFormat().getClass().getName());
+                  map.put("Norms format", codec.normsFormat().getClass().getName());
+                  map.put("Points format", codec.pointsFormat().getClass().getName());
+                  map.put("Postings format", codec.postingsFormat().getClass().getName());
+                  map.put("SegmentInfo format", codec.segmentInfoFormat().getClass().getName());
+                  map.put("StoredFields format", codec.storedFieldsFormat().getClass().getName());
+                  map.put("TermVectors format", codec.termVectorsFormat().getClass().getName());
+                  map.entrySet().stream()
+                      .map(entry -> entry.getKey() + " = " + entry.getValue())
+                      .forEach(detailsModel::addElement);
+                });
         break;
     }
     segDetailList.setModel(detailsModel);
-
   }
 
   private class ListenerFunctions {
@@ -376,7 +421,6 @@ public final class CommitsPanelProvider {
     void showSegmentDetails(MouseEvent e) {
       CommitsPanelProvider.this.showSegmentDetails();
     }
-
   }
 
   private class Observer implements IndexObserver, DirectoryObserver {
@@ -425,8 +469,17 @@ public final class CommitsPanelProvider {
       deletedLbl.setText("");
       segCntLbl.setText("");
       userDataTA.setText("");
-      TableUtils.setupTable(filesTable, ListSelectionModel.SINGLE_SELECTION, new FilesTableModel(), null, FilesTableModel.Column.FILENAME.getColumnWidth());
-      TableUtils.setupTable(segmentsTable, ListSelectionModel.SINGLE_SELECTION, new SegmentsTableModel(), null,
+      TableUtils.setupTable(
+          filesTable,
+          ListSelectionModel.SINGLE_SELECTION,
+          new FilesTableModel(),
+          null,
+          FilesTableModel.Column.FILENAME.getColumnWidth());
+      TableUtils.setupTable(
+          segmentsTable,
+          ListSelectionModel.SINGLE_SELECTION,
+          new SegmentsTableModel(),
+          null,
           SegmentsTableModel.Column.NAME.getColumnWidth(),
           SegmentsTableModel.Column.MAXDOCS.getColumnWidth(),
           SegmentsTableModel.Column.DELS.getColumnWidth(),
@@ -441,13 +494,14 @@ public final class CommitsPanelProvider {
   }
 
   enum ActionCommand {
-    DIAGNOSTICS, ATTRIBUTES, CODEC;
+    DIAGNOSTICS,
+    ATTRIBUTES,
+    CODEC;
   }
 
   static final class FilesTableModel extends TableModelBase<FilesTableModel.Column> {
 
     enum Column implements TableColumnInfo {
-
       FILENAME("Filename", 0, String.class, 200),
       SIZE("Size", 1, String.class, Integer.MAX_VALUE);
 
@@ -506,7 +560,6 @@ public final class CommitsPanelProvider {
   static final class SegmentsTableModel extends TableModelBase<SegmentsTableModel.Column> {
 
     enum Column implements TableColumnInfo {
-
       NAME("Name", 0, String.class, 60),
       MAXDOCS("Max docs", 1, Integer.class, 60),
       DELS("Dels", 2, Integer.class, 60),
@@ -572,4 +625,3 @@ public final class CommitsPanelProvider {
     }
   }
 }
-

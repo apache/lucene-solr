@@ -17,7 +17,6 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
-
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
@@ -52,11 +51,12 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
     return new OrdinalsSegmentReader() {
 
       private int lastDocID;
-      
+
       @Override
       public void get(int docID, IntsRef ordinals) throws IOException {
         if (docID < lastDocID) {
-          throw new AssertionError("docs out of order: lastDocID=" + lastDocID + " vs docID=" + docID);
+          throw new AssertionError(
+              "docs out of order: lastDocID=" + lastDocID + " vs docID=" + docID);
         }
         lastDocID = docID;
         if (docID > values.docID()) {
@@ -78,14 +78,14 @@ public class DocValuesOrdinalsReader extends OrdinalsReader {
     return field;
   }
 
- /** 
-   * Subclass and override if you change the encoding. 
-   * The method is marked 'public' to allow decoding of binary payload containing ordinals
-   * without instantiating an {@link org.apache.lucene.facet.taxonomy.OrdinalsReader.OrdinalsSegmentReader}.
-   *  
-   * This takes care of use cases where an application instantiates {@link org.apache.lucene.index.BinaryDocValues} 
-   * reader for a facet field outside this class, reads the binary payload for a document and decodes the ordinals
-   * in the payload.
+  /**
+   * Subclass and override if you change the encoding. The method is marked 'public' to allow
+   * decoding of binary payload containing ordinals without instantiating an {@link
+   * org.apache.lucene.facet.taxonomy.OrdinalsReader.OrdinalsSegmentReader}.
+   *
+   * <p>This takes care of use cases where an application instantiates {@link
+   * org.apache.lucene.index.BinaryDocValues} reader for a facet field outside this class, reads the
+   * binary payload for a document and decodes the ordinals in the payload.
    *
    * @param buf binary payload containing encoded ordinals
    * @param ordinals buffer for decoded ordinals

@@ -19,7 +19,6 @@ package org.apache.lucene.monitor;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
@@ -36,7 +35,8 @@ abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<
   }
 
   @Override
-  protected void matchQuery(final String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+  protected void matchQuery(final String queryId, Query matchQuery, Map<String, String> metadata)
+      throws IOException {
     searcher.search(matchQuery, new MatchCollector(queryId, scoreMode));
   }
 
@@ -44,8 +44,8 @@ abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<
    * Called when a query matches a Document
    *
    * @param queryId the query ID
-   * @param doc     the index of the document in the DocumentBatch
-   * @param scorer  the Scorer for this query
+   * @param doc the index of the document in the DocumentBatch
+   * @param scorer the Scorer for this query
    * @return a match object
    * @throws IOException on IO error
    */
@@ -80,5 +80,4 @@ abstract class CollectingMatcher<T extends QueryMatch> extends CandidateMatcher<
       return scoreMode;
     }
   }
-
 }

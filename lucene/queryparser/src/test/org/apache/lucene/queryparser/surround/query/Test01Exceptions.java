@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.surround.query;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class Test01Exceptions extends LuceneTestCase {
@@ -64,6 +63,3 @@ public class Test01Exceptions extends LuceneTestCase {
     }
   }
 }
-
-
-

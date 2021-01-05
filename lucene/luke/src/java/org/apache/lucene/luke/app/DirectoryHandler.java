@@ -19,7 +19,6 @@ package org.apache.lucene.luke.app;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.util.IndexUtils;
@@ -60,7 +59,8 @@ public final class DirectoryHandler extends AbstractHandler<DirectoryObserver> {
     try {
       dir = IndexUtils.openDirectory(indexPath, dirImpl);
     } catch (IOException e) {
-      throw new LukeException(MessageUtils.getLocalizedMessage("openindex.message.index_path_invalid", indexPath), e);
+      throw new LukeException(
+          MessageUtils.getLocalizedMessage("openindex.message.index_path_invalid", indexPath), e);
     }
 
     state = new LukeStateImpl();
@@ -108,5 +108,4 @@ public final class DirectoryHandler extends AbstractHandler<DirectoryObserver> {
       return dir;
     }
   }
-
 }

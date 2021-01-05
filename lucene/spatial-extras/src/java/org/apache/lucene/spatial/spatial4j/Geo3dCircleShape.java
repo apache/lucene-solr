@@ -38,10 +38,12 @@ public class Geo3dCircleShape extends Geo3dShape<GeoCircle> implements Circle {
 
   @Override
   public void reset(double x, double y, double radiusDEG) {
-    shape = GeoCircleFactory.makeGeoCircle(shape.getPlanetModel(),
-        y * DistanceUtils.DEGREES_TO_RADIANS,
-        x * DistanceUtils.DEGREES_TO_RADIANS,
-        radiusDEG * DistanceUtils.DEGREES_TO_RADIANS);
+    shape =
+        GeoCircleFactory.makeGeoCircle(
+            shape.getPlanetModel(),
+            y * DistanceUtils.DEGREES_TO_RADIANS,
+            x * DistanceUtils.DEGREES_TO_RADIANS,
+            radiusDEG * DistanceUtils.DEGREES_TO_RADIANS);
     center = null;
     boundingBox = null;
   }
@@ -53,13 +55,15 @@ public class Geo3dCircleShape extends Geo3dShape<GeoCircle> implements Circle {
 
   @Override
   public Point getCenter() {
-    Point center = this.center;//volatile read once
+    Point center = this.center; // volatile read once
     if (center == null) {
-      center = new Geo3dPointShape(
-          GeoPointShapeFactory.makeGeoPointShape(shape.getPlanetModel(),
-              shape.getCenter().getLatitude(),
-              shape.getCenter().getLongitude()),
-          spatialcontext);
+      center =
+          new Geo3dPointShape(
+              GeoPointShapeFactory.makeGeoPointShape(
+                  shape.getPlanetModel(),
+                  shape.getCenter().getLatitude(),
+                  shape.getCenter().getLongitude()),
+              spatialcontext);
       this.center = center;
     }
     return center;

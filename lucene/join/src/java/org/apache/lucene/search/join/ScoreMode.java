@@ -16,34 +16,21 @@
  */
 package org.apache.lucene.search.join;
 
-/**
- * How to aggregate multiple child hit scores into a single parent score.
- */
+/** How to aggregate multiple child hit scores into a single parent score. */
 public enum ScoreMode {
 
-  /**
-   * Do no scoring.
-   */
+  /** Do no scoring. */
   None,
 
-  /**
-   * Parent hit's score is the average of all child scores.
-   */
+  /** Parent hit's score is the average of all child scores. */
   Avg,
 
-  /**
-   * Parent hit's score is the max of all child scores.
-   */
+  /** Parent hit's score is the max of all child scores. */
   Max,
 
-  /**
-   * Parent hit's score is the sum of all child scores.
-   */
+  /** Parent hit's score is the sum of all child scores. */
   Total,
 
-  /**
-   * Parent hit's score is the min of all child scores.
-   */
+  /** Parent hit's score is the min of all child scores. */
   Min
-
 }

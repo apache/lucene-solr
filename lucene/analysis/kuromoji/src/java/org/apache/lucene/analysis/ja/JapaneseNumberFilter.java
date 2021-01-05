@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.math.BigDecimal;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -29,68 +27,68 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 
 /**
- * A {@link TokenFilter} that normalizes Japanese numbers (kansūji) to regular Arabic
- * decimal numbers in half-width characters.
- * <p>
- * Japanese numbers are often written using a combination of kanji and Arabic numbers with
- * various kinds punctuation. For example, ３．２千 means 3200. This filter does this kind
- * of normalization and allows a search for 3200 to match ３．２千 in text, but can also be
- * used to make range facets based on the normalized numbers and so on.
- * <p>
- * Notice that this analyzer uses a token composition scheme and relies on punctuation
- * tokens being found in the token stream. Please make sure your {@link JapaneseTokenizer}
- * has {@code discardPunctuation} set to false. In case punctuation characters, such as ．
- * (U+FF0E FULLWIDTH FULL STOP), is removed from the token stream, this filter would find
- * input tokens tokens ３ and ２千 and give outputs 3 and 2000 instead of 3200, which is
- * likely not the intended result. If you want to remove punctuation characters from your
- * index that are not part of normalized numbers, add a
- * {@link org.apache.lucene.analysis.StopFilter} with the punctuation you wish to
- * remove after {@link JapaneseNumberFilter} in your analyzer chain.
- * <p>
- * Below are some examples of normalizations this filter supports. The input is untokenized
- * text and the result is the single term attribute emitted for the input.
+ * A {@link TokenFilter} that normalizes Japanese numbers (kansūji) to regular Arabic decimal
+ * numbers in half-width characters.
+ *
+ * <p>Japanese numbers are often written using a combination of kanji and Arabic numbers with
+ * various kinds punctuation. For example, ３．２千 means 3200. This filter does this kind of
+ * normalization and allows a search for 3200 to match ３．２千 in text, but can also be used to make
+ * range facets based on the normalized numbers and so on.
+ *
+ * <p>Notice that this analyzer uses a token composition scheme and relies on punctuation tokens
+ * being found in the token stream. Please make sure your {@link JapaneseTokenizer} has {@code
+ * discardPunctuation} set to false. In case punctuation characters, such as ． (U+FF0E FULLWIDTH
+ * FULL STOP), is removed from the token stream, this filter would find input tokens tokens ３ and ２千
+ * and give outputs 3 and 2000 instead of 3200, which is likely not the intended result. If you want
+ * to remove punctuation characters from your index that are not part of normalized numbers, add a
+ * {@link org.apache.lucene.analysis.StopFilter} with the punctuation you wish to remove after
+ * {@link JapaneseNumberFilter} in your analyzer chain.
+ *
+ * <p>Below are some examples of normalizations this filter supports. The input is untokenized text
+ * and the result is the single term attribute emitted for the input.
+ *
  * <ul>
- * <li>〇〇七 becomes 7</li>
- * <li>一〇〇〇 becomes 1000</li>
- * <li>三千2百２十三 becomes 3223</li>
- * <li>兆六百万五千一 becomes 1000006005001</li>
- * <li>３．２千 becomes 3200</li>
- * <li>１．２万３４５．６７ becomes 12345.67</li>
- * <li>4,647.100 becomes 4647.1</li>
- * <li>15,7 becomes 157 (be aware of this weakness)</li>
+ *   <li>〇〇七 becomes 7
+ *   <li>一〇〇〇 becomes 1000
+ *   <li>三千2百２十三 becomes 3223
+ *   <li>兆六百万五千一 becomes 1000006005001
+ *   <li>３．２千 becomes 3200
+ *   <li>１．２万３４５．６７ becomes 12345.67
+ *   <li>4,647.100 becomes 4647.1
+ *   <li>15,7 becomes 157 (be aware of this weakness)
  * </ul>
- * <p>
- * Tokens preceded by a token with {@link PositionIncrementAttribute} of zero are left
- * left untouched and emitted as-is.
- * <p>
- * This filter does not use any part-of-speech information for its normalization and
- * the motivation for this is to also support n-grammed token streams in the future.
- * <p>
- * This filter may in some cases normalize tokens that are not numbers in their context.
- * For example, is 田中京一 is a name and means Tanaka Kyōichi, but 京一 (Kyōichi) out of
- * context can strictly speaking also represent the number 10000000000000001. This filter
- * respects the {@link KeywordAttribute}, which can be used to prevent specific
- * normalizations from happening.
- * <p>
- * Also notice that token attributes such as
- * {@link org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute},
- * {@link org.apache.lucene.analysis.ja.tokenattributes.ReadingAttribute},
- * {@link org.apache.lucene.analysis.ja.tokenattributes.InflectionAttribute} and
- * {@link org.apache.lucene.analysis.ja.tokenattributes.BaseFormAttribute} are left
- * unchanged and will inherit the values of the last token used to compose the normalized
- * number and can be wrong. Hence, for １０万 (10000), we will have
- * {@link org.apache.lucene.analysis.ja.tokenattributes.ReadingAttribute}
- * set to マン. This is a known issue and is subject to a future improvement.
- * <p>
- * Japanese formal numbers (daiji), accounting numbers and decimal fractions are currently
- * not supported.
+ *
+ * <p>Tokens preceded by a token with {@link PositionIncrementAttribute} of zero are left left
+ * untouched and emitted as-is.
+ *
+ * <p>This filter does not use any part-of-speech information for its normalization and the
+ * motivation for this is to also support n-grammed token streams in the future.
+ *
+ * <p>This filter may in some cases normalize tokens that are not numbers in their context. For
+ * example, is 田中京一 is a name and means Tanaka Kyōichi, but 京一 (Kyōichi) out of context can strictly
+ * speaking also represent the number 10000000000000001. This filter respects the {@link
+ * KeywordAttribute}, which can be used to prevent specific normalizations from happening.
+ *
+ * <p>Also notice that token attributes such as {@link
+ * org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute}, {@link
+ * org.apache.lucene.analysis.ja.tokenattributes.ReadingAttribute}, {@link
+ * org.apache.lucene.analysis.ja.tokenattributes.InflectionAttribute} and {@link
+ * org.apache.lucene.analysis.ja.tokenattributes.BaseFormAttribute} are left unchanged and will
+ * inherit the values of the last token used to compose the normalized number and can be wrong.
+ * Hence, for １０万 (10000), we will have {@link
+ * org.apache.lucene.analysis.ja.tokenattributes.ReadingAttribute} set to マン. This is a known issue
+ * and is subject to a future improvement.
+ *
+ * <p>Japanese formal numbers (daiji), accounting numbers and decimal fractions are currently not
+ * supported.
  */
 public class JapaneseNumberFilter extends TokenFilter {
 
   private final CharTermAttribute termAttr = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttr = addAttribute(OffsetAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-  private final PositionIncrementAttribute posIncrAttr = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAttr =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAttr = addAttribute(PositionLengthAttribute.class);
 
   private static char NO_NUMERAL = Character.MAX_VALUE;
@@ -104,7 +102,7 @@ public class JapaneseNumberFilter extends TokenFilter {
   private StringBuilder numeral;
 
   private int fallThroughTokens;
-  
+
   private boolean exhausted = false;
 
   static {
@@ -127,11 +125,11 @@ public class JapaneseNumberFilter extends TokenFilter {
     for (int i = 0; i < exponents.length; i++) {
       exponents[i] = 0;
     }
-    exponents['十'] = 1;  // 十 U+5341 10
-    exponents['百'] = 2;  // 百 U+767E 100
-    exponents['千'] = 3;  // 千 U+5343 1,000
-    exponents['万'] = 4;  // 万 U+4E07 10,000
-    exponents['億'] = 8;  // 億 U+5104 100,000,000
+    exponents['十'] = 1; // 十 U+5341 10
+    exponents['百'] = 2; // 百 U+767E 100
+    exponents['千'] = 3; // 千 U+5343 1,000
+    exponents['万'] = 4; // 万 U+4E07 10,000
+    exponents['億'] = 8; // 億 U+5104 100,000,000
     exponents['兆'] = 12; // 兆 U+5146 1,000,000,000,000
     exponents['京'] = 16; // 京 U+4EAC 10,000,000,000,000,000
     exponents['垓'] = 20; // 垓 U+5793 100,000,000,000,000,000,000
@@ -154,7 +152,7 @@ public class JapaneseNumberFilter extends TokenFilter {
     if (exhausted) {
       return false;
     }
-    
+
     if (!input.incrementToken()) {
       exhausted = true;
       return false;
@@ -181,7 +179,7 @@ public class JapaneseNumberFilter extends TokenFilter {
     State preCompositionState = captureState();
     String term = termAttr.toString();
     boolean numeralTerm = isNumeral(term);
-    
+
     while (moreTokens && numeralTerm) {
 
       if (!composedNumberToken) {
@@ -311,8 +309,8 @@ public class JapaneseNumberFilter extends TokenFilter {
   }
 
   /**
-   * Parses a "medium sized" number, typically less than 10,000（万）, but might be larger
-   * due to a larger factor from {link parseBasicNumber}.
+   * Parses a "medium sized" number, typically less than 10,000（万）, but might be larger due to a
+   * larger factor from {link parseBasicNumber}.
    *
    * @param buffer buffer to parse
    * @return parsed number, or null on error or end of input
@@ -365,7 +363,8 @@ public class JapaneseNumberFilter extends TokenFilter {
   }
 
   /**
-   * Parse a basic number, which is a sequence of Arabic numbers or a sequence or 0-9 kanji numerals (〇 to 九).
+   * Parse a basic number, which is a sequence of Arabic numbers or a sequence or 0-9 kanji numerals
+   * (〇 to 九).
    *
    * @param buffer buffer to parse
    * @return parsed number, or null on error or end of input
@@ -535,8 +534,8 @@ public class JapaneseNumberFilter extends TokenFilter {
   }
 
   /**
-   * Returns the numeric value for the specified character Arabic numeral.
-   * Behavior is undefined if a non-Arabic numeral is provided
+   * Returns the numeric value for the specified character Arabic numeral. Behavior is undefined if
+   * a non-Arabic numeral is provided
    *
    * @param c arabic numeral character
    * @return numeral value
@@ -552,8 +551,8 @@ public class JapaneseNumberFilter extends TokenFilter {
   }
 
   /**
-   * Kanji numeral predicate that tests if the provided character is one of 〇, 一, 二, 三, 四, 五, 六, 七, 八, or 九.
-   * Larger number kanji gives a false value.
+   * Kanji numeral predicate that tests if the provided character is one of 〇, 一, 二, 三, 四, 五, 六, 七,
+   * 八, or 九. Larger number kanji gives a false value.
    *
    * @param c character to test
    * @return true if and only is character is one of 〇, 一, 二, 三, 四, 五, 六, 七, 八, or 九 (0 to 9)
@@ -581,7 +580,7 @@ public class JapaneseNumberFilter extends TokenFilter {
    * @return true if and only if c is a decimal point
    */
   private boolean isDecimalPoint(char c) {
-    return c == '.'   // U+002E FULL STOP 
+    return c == '.' // U+002E FULL STOP
         || c == '．'; // U+FF0E FULLWIDTH FULL STOP
   }
 
@@ -592,13 +591,11 @@ public class JapaneseNumberFilter extends TokenFilter {
    * @return true if and only if c is a thousand separator predicate
    */
   private boolean isThousandSeparator(char c) {
-    return c == ','   // U+002C COMMA
+    return c == ',' // U+002C COMMA
         || c == '，'; // U+FF0C FULLWIDTH COMMA
   }
 
-  /**
-   * Buffer that holds a Japanese number string and a position index used as a parsed-to marker
-   */
+  /** Buffer that holds a Japanese number string and a position index used as a parsed-to marker */
   public static class NumberBuffer {
 
     private int position;

@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.opennlp;
 import java.io.IOException;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
-
 import org.apache.lucene.analysis.opennlp.tools.NLPSentenceDetectorOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.analysis.util.CharArrayIterator;
@@ -31,24 +30,31 @@ import org.junit.BeforeClass;
 public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
 
   private static final String TEXT
-      //                                                                                                     111
-      //           111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000
+      //
+      //         111
+      //
+      // 111111111122222222223333333333444444444455555555556666666666777777777788888888889999999999000
       // 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
-      = "Sentence number 1 has 6 words. Sentence number 2, 5 words. And finally, sentence number 3 has 8 words.";
-  private static final String[] SENTENCES = new String[] {
-    "Sentence number 1 has 6 words. ", "Sentence number 2, 5 words. ", "And finally, sentence number 3 has 8 words." };
+      =
+      "Sentence number 1 has 6 words. Sentence number 2, 5 words. And finally, sentence number 3 has 8 words.";
+  private static final String[] SENTENCES =
+      new String[] {
+        "Sentence number 1 has 6 words. ",
+        "Sentence number 2, 5 words. ",
+        "And finally, sentence number 3 has 8 words."
+      };
   private static final String PADDING = " Word. Word. ";
   private static final String sentenceModelFile = "en-test-sent.bin";
 
-
   @BeforeClass
   public static void populateCache() throws IOException {
-    OpenNLPOpsFactory.getSentenceModel
-        (sentenceModelFile, new ClasspathResourceLoader(TestOpenNLPSentenceBreakIterator.class));
+    OpenNLPOpsFactory.getSentenceModel(
+        sentenceModelFile, new ClasspathResourceLoader(TestOpenNLPSentenceBreakIterator.class));
   }
 
   public void testThreeSentences() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText(TEXT); // String is converted to StringCharacterIterator
     do3SentenceTest(bi);
@@ -62,14 +68,15 @@ public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
   }
 
   private CharacterIterator getCharArrayIterator(String text, int start, int length) {
-    CharArrayIterator charArrayIterator = new CharArrayIterator() {
-      // Lie about all surrogates to the sentence tokenizer,
-      // instead we treat them all as SContinue so we won't break around them.
-      @Override
-      protected char jreBugWorkaround(char ch) {
-        return ch >= 0xD800 && ch <= 0xDFFF ? 0x002C : ch;
-      }
-    };
+    CharArrayIterator charArrayIterator =
+        new CharArrayIterator() {
+          // Lie about all surrogates to the sentence tokenizer,
+          // instead we treat them all as SContinue so we won't break around them.
+          @Override
+          protected char jreBugWorkaround(char ch) {
+            return ch >= 0xD800 && ch <= 0xDFFF ? 0x002C : ch;
+          }
+        };
     charArrayIterator.setText(text.toCharArray(), start, length);
     return charArrayIterator;
   }
@@ -109,7 +116,8 @@ public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
   }
 
   public void testSingleSentence() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText(getCharArrayIterator(SENTENCES[0]));
     test1Sentence(bi, SENTENCES[0]);
@@ -141,7 +149,8 @@ public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
   }
 
   public void testSliceEnd() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText(getCharArrayIterator(SENTENCES[0] + PADDING, 0, SENTENCES[0].length()));
 
@@ -149,23 +158,29 @@ public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
   }
 
   public void testSliceStart() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
-    bi.setText(getCharArrayIterator(PADDING + SENTENCES[0], PADDING.length(), SENTENCES[0].length()));
+    bi.setText(
+        getCharArrayIterator(PADDING + SENTENCES[0], PADDING.length(), SENTENCES[0].length()));
     test1Sentence(bi, SENTENCES[0]);
   }
 
   public void testSliceMiddle() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
-    bi.setText(getCharArrayIterator(PADDING + SENTENCES[0] + PADDING, PADDING.length(), SENTENCES[0].length()));
+    bi.setText(
+        getCharArrayIterator(
+            PADDING + SENTENCES[0] + PADDING, PADDING.length(), SENTENCES[0].length()));
 
     test1Sentence(bi, SENTENCES[0]);
   }
 
   /** the current position must be ignored, initial position is always first() */
   public void testFirstPosition() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText(getCharArrayIterator(SENTENCES[0]));
     assertEquals(SENTENCES[0].length(), bi.last()); // side-effect: set current position to last()
@@ -173,14 +188,16 @@ public class TestOpenNLPSentenceBreakIterator extends LuceneTestCase {
   }
 
   public void testWhitespaceOnly() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText("   \n \n\n\r\n\t  \n");
     test0Sentences(bi);
   }
 
   public void testEmptyString() throws Exception {
-    NLPSentenceDetectorOp sentenceDetectorOp = OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
+    NLPSentenceDetectorOp sentenceDetectorOp =
+        OpenNLPOpsFactory.getSentenceDetector(sentenceModelFile);
     BreakIterator bi = new OpenNLPSentenceBreakIterator(sentenceDetectorOp);
     bi.setText("");
     test0Sentences(bi);

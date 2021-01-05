@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * Bounding box including the entire world.
@@ -27,21 +27,25 @@ import java.io.IOException;
  */
 class GeoWorld extends GeoBaseBBox {
   /** No points on the edge of the shape */
-  protected final static GeoPoint[] edgePoints = new GeoPoint[0];
+  protected static final GeoPoint[] edgePoints = new GeoPoint[0];
   /** Point in the middle of the world */
   protected final GeoPoint originPoint;
-  
-  /** Constructor.
-   *@param planetModel is the planet model.
+
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model.
    */
   public GeoWorld(final PlanetModel planetModel) {
     super(planetModel);
     originPoint = new GeoPoint(planetModel.xyScaling, 1.0, 0.0, 0.0);
   }
 
-  /** Constructor.
-   *@param planetModel is the planet model.
-   *@param inputStream is the input stream.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model.
+   * @param inputStream is the input stream.
    */
   public GeoWorld(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
     this(planetModel);
@@ -79,7 +83,8 @@ class GeoWorld extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     return false;
   }
 
@@ -92,7 +97,7 @@ class GeoWorld extends GeoBaseBBox {
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     // Unnecessary
-    //bounds.noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
+    // bounds.noLongitudeBound().noTopLatitudeBound().noBottomLatitudeBound();
   }
 
   @Override
@@ -105,14 +110,16 @@ class GeoWorld extends GeoBaseBBox {
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     return 0.0;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoWorld))
+    if (!(o instanceof GeoWorld)) {
       return false;
+    }
     return super.equals(o);
   }
 
@@ -123,6 +130,6 @@ class GeoWorld extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoWorld: {planetmodel="+planetModel+"}";
+    return "GeoWorld: {planetmodel=" + planetModel + "}";
   }
 }

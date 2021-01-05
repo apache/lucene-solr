@@ -31,30 +31,27 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
-/** 
- * FileSystem that records all major destructive filesystem activities.
- */
+/** FileSystem that records all major destructive filesystem activities. */
 public class VerboseFS extends FilterFileSystemProvider {
   final InfoStream infoStream;
   final Path root;
-  
+
   /**
-   * Create a new instance, recording major filesystem write activities
-   * (create, delete, etc) to the specified {@code InfoStream}.
+   * Create a new instance, recording major filesystem write activities (create, delete, etc) to the
+   * specified {@code InfoStream}.
+   *
    * @param delegate delegate filesystem to wrap.
-   * @param infoStream infoStream to send messages to. The component for 
-   * messages is named "FS".
+   * @param infoStream infoStream to send messages to. The component for messages is named "FS".
    */
   public VerboseFS(FileSystem delegate, InfoStream infoStream) {
     super("verbose://", delegate);
     this.infoStream = infoStream;
     this.root = this.getFileSystem(null).getPath(".").toAbsolutePath().normalize();
   }
-  
+
   /** Records message, and rethrows exception if not null */
   private void sop(String text, Throwable exception) throws IOException {
     if (exception == null) {
@@ -68,7 +65,7 @@ public class VerboseFS extends FilterFileSystemProvider {
       throw IOUtils.rethrowAlways(exception);
     }
   }
-  
+
   private String path(Path path) {
     path = root.relativize(path.toAbsolutePath().normalize());
     return path.toString();
@@ -106,7 +103,9 @@ public class VerboseFS extends FilterFileSystemProvider {
     } catch (Throwable t) {
       exception = t;
     } finally {
-      sop("copy" + Arrays.toString(options) + ": " + path(source) + " -> " + path(target), exception);
+      sop(
+          "copy" + Arrays.toString(options) + ": " + path(source) + " -> " + path(target),
+          exception);
     }
   }
 
@@ -118,12 +117,15 @@ public class VerboseFS extends FilterFileSystemProvider {
     } catch (Throwable t) {
       exception = t;
     } finally {
-      sop("move" + Arrays.toString(options) + ": " + path(source) + " -> " + path(target), exception);
+      sop(
+          "move" + Arrays.toString(options) + ": " + path(source) + " -> " + path(target),
+          exception);
     }
   }
 
   @Override
-  public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
+  public void setAttribute(Path path, String attribute, Object value, LinkOption... options)
+      throws IOException {
     Throwable exception = null;
     try {
       super.setAttribute(path, attribute, value, options);
@@ -146,15 +148,16 @@ public class VerboseFS extends FilterFileSystemProvider {
     }
     throw new AssertionError();
   }
-  
+
   private boolean containsDestructive(Set<? extends OpenOption> options) {
-    return (options.contains(StandardOpenOption.APPEND) ||
-            options.contains(StandardOpenOption.WRITE)  || 
-            options.contains(StandardOpenOption.DELETE_ON_CLOSE));
+    return (options.contains(StandardOpenOption.APPEND)
+        || options.contains(StandardOpenOption.WRITE)
+        || options.contains(StandardOpenOption.DELETE_ON_CLOSE));
   }
 
   @Override
-  public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+  public FileChannel newFileChannel(
+      Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     Throwable exception = null;
     try {
       return super.newFileChannel(path, options, attrs);
@@ -173,7 +176,12 @@ public class VerboseFS extends FilterFileSystemProvider {
   }
 
   @Override
-  public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+  public AsynchronousFileChannel newAsynchronousFileChannel(
+      Path path,
+      Set<? extends OpenOption> options,
+      ExecutorService executor,
+      FileAttribute<?>... attrs)
+      throws IOException {
     Throwable exception = null;
     try {
       return super.newAsynchronousFileChannel(path, options, executor, attrs);
@@ -192,7 +200,8 @@ public class VerboseFS extends FilterFileSystemProvider {
   }
 
   @Override
-  public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+  public SeekableByteChannel newByteChannel(
+      Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     Throwable exception = null;
     try {
       return super.newByteChannel(path, options, attrs);
@@ -211,7 +220,8 @@ public class VerboseFS extends FilterFileSystemProvider {
   }
 
   @Override
-  public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
+  public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs)
+      throws IOException {
     Throwable exception = null;
     try {
       super.createSymbolicLink(link, target, attrs);

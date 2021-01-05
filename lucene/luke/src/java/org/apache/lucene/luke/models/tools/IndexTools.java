@@ -18,25 +18,20 @@
 package org.apache.lucene.luke.models.tools;
 
 import java.io.PrintStream;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.search.Query;
 
-/**
- * A dedicated interface for Luke's various index manipulations.
- */
+/** A dedicated interface for Luke's various index manipulations. */
 public interface IndexTools {
 
   /**
    * Execute force merges.
    *
-   * <p>
-   * Merges are executed until there are <i>maxNumSegments</i> segments. <br>
+   * <p>Merges are executed until there are <i>maxNumSegments</i> segments. <br>
    * When <i>expunge</i> is true, <i>maxNumSegments</i> parameter is ignored.
-   * </p>
    *
    * @param expunge - if true, only segments having deleted documents are merged
    * @param maxNumSegments - max number of segments
@@ -57,7 +52,8 @@ public interface IndexTools {
   /**
    * Try to repair the corrupted index using previously returned index status.
    *
-   * <p>This method must be called with the return value from {@link IndexTools#checkIndex(PrintStream)}.</p>
+   * <p>This method must be called with the return value from {@link
+   * IndexTools#checkIndex(PrintStream)}.
    *
    * @param st - index status
    * @param ps - information stream
@@ -91,13 +87,14 @@ public interface IndexTools {
 
   /**
    * Create a new index with sample documents.
+   *
    * @param dataDir - the directory path which contains sample documents (20 Newsgroups).
    */
   void createNewIndex(String dataDir);
 
-
   /**
    * Export terms from given field into a new file on the destination directory
+   *
    * @param destDir - destination directory
    * @param field - field name
    * @param delimiter - delimiter to separate terms and their frequency
