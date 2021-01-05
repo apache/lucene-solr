@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
 import java.text.CharacterIterator;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharArrayIterator extends LuceneTestCase {
@@ -35,24 +33,24 @@ public class TestCharArrayIterator extends LuceneTestCase {
     assertEquals('t', ci.first());
     assertEquals(CharacterIterator.DONE, ci.previous());
   }
-  
+
   public void testFirst() {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText("testing".toCharArray(), 0, "testing".length());
     ci.next();
-    // Sets the position to getBeginIndex() and returns the character at that position. 
+    // Sets the position to getBeginIndex() and returns the character at that position.
     assertEquals('t', ci.first());
     assertEquals(ci.getBeginIndex(), ci.getIndex());
     // or DONE if the text is empty
     ci.setText(new char[] {}, 0, 0);
     assertEquals(CharacterIterator.DONE, ci.first());
   }
-  
+
   public void testLast() {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText("testing".toCharArray(), 0, "testing".length());
-    // Sets the position to getEndIndex()-1 (getEndIndex() if the text is empty) 
-    // and returns the character at that position. 
+    // Sets the position to getEndIndex()-1 (getEndIndex() if the text is empty)
+    // and returns the character at that position.
     assertEquals('g', ci.last());
     assertEquals(ci.getIndex(), ci.getEndIndex() - 1);
     // or DONE if the text is empty
@@ -60,10 +58,10 @@ public class TestCharArrayIterator extends LuceneTestCase {
     assertEquals(CharacterIterator.DONE, ci.last());
     assertEquals(ci.getEndIndex(), ci.getIndex());
   }
-  
+
   public void testCurrent() {
     CharArrayIterator ci = new CharArrayIterator();
-    // Gets the character at the current position (as returned by getIndex()). 
+    // Gets the character at the current position (as returned by getIndex()).
     ci.setText("testing".toCharArray(), 0, "testing".length());
     assertEquals('t', ci.current());
     ci.last();
@@ -71,7 +69,7 @@ public class TestCharArrayIterator extends LuceneTestCase {
     // or DONE if the current position is off the end of the text.
     assertEquals(CharacterIterator.DONE, ci.current());
   }
-  
+
   public void testNext() {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText("te".toCharArray(), 0, 2);
@@ -82,15 +80,17 @@ public class TestCharArrayIterator extends LuceneTestCase {
     assertEquals(CharacterIterator.DONE, ci.next());
     assertEquals(ci.getEndIndex(), ci.getIndex());
   }
-  
+
   public void testSetIndex() {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText("test".toCharArray(), 0, "test".length());
-    expectThrows(IllegalArgumentException.class, () -> {
-      ci.setIndex(5);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          ci.setIndex(5);
+        });
   }
-  
+
   public void testClone() {
     char text[] = "testing".toCharArray();
     CharArrayIterator ci = new CharArrayIterator();
@@ -101,6 +101,4 @@ public class TestCharArrayIterator extends LuceneTestCase {
     assertEquals(ci.next(), ci2.next());
     assertEquals(ci.last(), ci2.last());
   }
-  
-
 }

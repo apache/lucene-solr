@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * MinHash filtering (for LSH).
- */
+/** MinHash filtering (for LSH). */
 package org.apache.lucene.analysis.minhash;

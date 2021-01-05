@@ -21,27 +21,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsConfig.DimConfig; // javadocs
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.FacetsConfig.DimConfig; // javadocs
 
 /** Base class for all taxonomy-based facets impls. */
 public abstract class TaxonomyFacets extends Facets {
 
-  private static final Comparator<FacetResult> BY_VALUE_THEN_DIM = new Comparator<FacetResult>() {
-    @Override
-    public int compare(FacetResult a, FacetResult b) {
-      if (a.value.doubleValue() > b.value.doubleValue()) {
-        return -1;
-      } else if (b.value.doubleValue() > a.value.doubleValue()) {
-        return 1;
-      } else {
-        return a.dim.compareTo(b.dim);
-      }
-    }
-  };
+  private static final Comparator<FacetResult> BY_VALUE_THEN_DIM =
+      new Comparator<FacetResult>() {
+        @Override
+        public int compare(FacetResult a, FacetResult b) {
+          if (a.value.doubleValue() > b.value.doubleValue()) {
+            return -1;
+          } else if (b.value.doubleValue() > a.value.doubleValue()) {
+            return 1;
+          } else {
+            return a.dim.compareTo(b.dim);
+          }
+        }
+      };
 
   /** Index field name provided to the constructor. */
   protected final String indexFieldName;
@@ -52,37 +52,39 @@ public abstract class TaxonomyFacets extends Facets {
   /** {@code FacetsConfig} provided to the constructor. */
   protected final FacetsConfig config;
 
-  /** Maps parent ordinal to its child, or -1 if the parent
-   *  is childless. */
+  /** Maps parent ordinal to its child, or -1 if the parent is childless. */
   private int[] children;
 
-  /** Maps an ordinal to its sibling, or -1 if there is no
-   *  sibling. */
+  /** Maps an ordinal to its sibling, or -1 if there is no sibling. */
   private int[] siblings;
 
-  /** Maps an ordinal to its parent, or -1 if there is no
-   *  parent (root node). */
+  /** Maps an ordinal to its parent, or -1 if there is no parent (root node). */
   protected final int[] parents;
 
   /** Sole constructor. */
-  protected TaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
+  protected TaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config)
+      throws IOException {
     this.indexFieldName = indexFieldName;
     this.taxoReader = taxoReader;
     this.config = config;
     parents = taxoReader.getParallelTaxonomyArrays().parents();
   }
 
-  /** Returns int[] mapping each ordinal to its first child; this is a large array and
-   *  is computed (and then saved) the first time this method is invoked. */
+  /**
+   * Returns int[] mapping each ordinal to its first child; this is a large array and is computed
+   * (and then saved) the first time this method is invoked.
+   */
   protected int[] getChildren() throws IOException {
     if (children == null) {
       children = taxoReader.getParallelTaxonomyArrays().children();
     }
     return children;
-  }       
+  }
 
-  /** Returns int[] mapping each ordinal to its next sibling; this is a large array and
-   *  is computed (and then saved) the first time this method is invoked. */
+  /**
+   * Returns int[] mapping each ordinal to its next sibling; this is a large array and is computed
+   * (and then saved) the first time this method is invoked.
+   */
   protected int[] getSiblings() throws IOException {
     if (siblings == null) {
       siblings = taxoReader.getParallelTaxonomyArrays().siblings();
@@ -90,27 +92,33 @@ public abstract class TaxonomyFacets extends Facets {
     return siblings;
   }
 
-  /** Returns true if the (costly, and lazily initialized) children int[] was initialized.
+  /**
+   * Returns true if the (costly, and lazily initialized) children int[] was initialized.
    *
-   * @lucene.experimental */
+   * @lucene.experimental
+   */
   public boolean childrenLoaded() {
     return children != null;
   }
 
-  /** Returns true if the (costly, and lazily initialized) sibling int[] was initialized.
+  /**
+   * Returns true if the (costly, and lazily initialized) sibling int[] was initialized.
    *
-   * @lucene.experimental */
+   * @lucene.experimental
+   */
   public boolean siblingsLoaded() {
     return children != null;
   }
 
-  /** Throws {@code IllegalArgumentException} if the
-   *  dimension is not recognized.  Otherwise, returns the
-   *  {@link DimConfig} for this dimension. */
+  /**
+   * Throws {@code IllegalArgumentException} if the dimension is not recognized. Otherwise, returns
+   * the {@link DimConfig} for this dimension.
+   */
   protected FacetsConfig.DimConfig verifyDim(String dim) {
     FacetsConfig.DimConfig dimConfig = config.getDimConfig(dim);
     if (!dimConfig.indexFieldName.equals(indexFieldName)) {
-      throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName + "\"");
+      throw new IllegalArgumentException(
+          "dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName + "\"");
     }
     return dimConfig;
   }

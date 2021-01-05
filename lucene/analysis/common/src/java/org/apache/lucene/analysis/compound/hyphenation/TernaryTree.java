@@ -21,92 +21,71 @@ import java.util.Enumeration;
 import java.util.Stack;
 
 /**
+ *
+ *
  * <h2>Ternary Search Tree.</h2>
- * 
- * <p>
- * A ternary search tree is a hybrid between a binary tree and a digital search
- * tree (trie). Keys are limited to strings. A data value of type char is stored
- * in each leaf node. It can be used as an index (or pointer) to the data.
- * Branches that only contain one key are compressed to one node by storing a
- * pointer to the trailer substring of the key. This class is intended to serve
- * as base class or helper class to implement Dictionary collections or the
- * like. Ternary trees have some nice properties as the following: the tree can
- * be traversed in sorted order, partial matches (wildcard) can be implemented,
- * retrieval of all keys within a given distance from the target, etc. The
- * storage requirements are higher than a binary tree but a lot less than a
- * trie. Performance is comparable with a hash table, sometimes it outperforms a
- * hash function (most of the time can determine a miss faster than a hash).
- * </p>
- * 
- * <p>
- * The main purpose of this java port is to serve as a base for implementing
- * TeX's hyphenation algorithm (see The TeXBook, appendix H). Each language
- * requires from 5000 to 15000 hyphenation patterns which will be keys in this
- * tree. The strings patterns are usually small (from 2 to 5 characters), but
- * each char in the tree is stored in a node. Thus memory usage is the main
- * concern. We will sacrifice 'elegance' to keep memory requirements to the
- * minimum. Using java's char type as pointer (yes, I know pointer it is a
- * forbidden word in java) we can keep the size of the node to be just 8 bytes
- * (3 pointers and the data char). This gives room for about 65000 nodes. In my
- * tests the english patterns took 7694 nodes and the german patterns 10055
- * nodes, so I think we are safe.
- * </p>
- * 
- * <p>
- * All said, this is a map with strings as keys and char as value. Pretty
- * limited!. It can be extended to a general map by using the string
- * representation of an object and using the char value as an index to an array
- * that contains the object values.
- * </p>
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ *
+ * <p>A ternary search tree is a hybrid between a binary tree and a digital search tree (trie). Keys
+ * are limited to strings. A data value of type char is stored in each leaf node. It can be used as
+ * an index (or pointer) to the data. Branches that only contain one key are compressed to one node
+ * by storing a pointer to the trailer substring of the key. This class is intended to serve as base
+ * class or helper class to implement Dictionary collections or the like. Ternary trees have some
+ * nice properties as the following: the tree can be traversed in sorted order, partial matches
+ * (wildcard) can be implemented, retrieval of all keys within a given distance from the target,
+ * etc. The storage requirements are higher than a binary tree but a lot less than a trie.
+ * Performance is comparable with a hash table, sometimes it outperforms a hash function (most of
+ * the time can determine a miss faster than a hash).
+ *
+ * <p>The main purpose of this java port is to serve as a base for implementing TeX's hyphenation
+ * algorithm (see The TeXBook, appendix H). Each language requires from 5000 to 15000 hyphenation
+ * patterns which will be keys in this tree. The strings patterns are usually small (from 2 to 5
+ * characters), but each char in the tree is stored in a node. Thus memory usage is the main
+ * concern. We will sacrifice 'elegance' to keep memory requirements to the minimum. Using java's
+ * char type as pointer (yes, I know pointer it is a forbidden word in java) we can keep the size of
+ * the node to be just 8 bytes (3 pointers and the data char). This gives room for about 65000
+ * nodes. In my tests the english patterns took 7694 nodes and the german patterns 10055 nodes, so I
+ * think we are safe.
+ *
+ * <p>All said, this is a map with strings as keys and char as value. Pretty limited!. It can be
+ * extended to a general map by using the string representation of an object and using the char
+ * value as an index to an array that contains the object values. This class has been taken from the
+ * Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified.
  */
-
 public class TernaryTree implements Cloneable {
 
   /**
-   * We use 4 arrays to represent a node. I guess I should have created a proper
-   * node class, but somehow Knuth's pascal code made me forget we now have a
-   * portable language with virtual memory management and automatic garbage
-   * collection! And now is kind of late, furthermore, if it ain't broken, don't
-   * fix it.
+   * We use 4 arrays to represent a node. I guess I should have created a proper node class, but
+   * somehow Knuth's pascal code made me forget we now have a portable language with virtual memory
+   * management and automatic garbage collection! And now is kind of late, furthermore, if it ain't
+   * broken, don't fix it.
    */
 
   /**
-   * Pointer to low branch and to rest of the key when it is stored directly in
-   * this node, we don't have unions in java!
+   * Pointer to low branch and to rest of the key when it is stored directly in this node, we don't
+   * have unions in java!
    */
   protected char[] lo;
 
-  /**
-   * Pointer to high branch.
-   */
+  /** Pointer to high branch. */
   protected char[] hi;
 
-  /**
-   * Pointer to equal branch and to data when this node is a string terminator.
-   */
+  /** Pointer to equal branch and to data when this node is a string terminator. */
   protected char[] eq;
 
   /**
-   * <P>
-   * The character stored in this node: splitchar. Two special values are
-   * reserved:
-   * </P>
+   * The character stored in this node: splitchar. Two special values are reserved:
+   *
    * <ul>
-   * <li>0x0000 as string terminator</li>
-   * <li>0xFFFF to indicate that the branch starting at this node is compressed</li>
+   *   <li>0x0000 as string terminator
+   *   <li>0xFFFF to indicate that the branch starting at this node is compressed
    * </ul>
-   * <p>
-   * This shouldn't be a problem if we give the usual semantics to strings since
-   * 0xFFFF is guaranteed not to be an Unicode character.
-   * </p>
+   *
+   * <p>This shouldn't be a problem if we give the usual semantics to strings since 0xFFFF is
+   * guaranteed not to be an Unicode character.
    */
   protected char[] sc;
 
-  /**
-   * This vector holds the trailing of the keys when the branch is compressed.
-   */
+  /** This vector holds the trailing of the keys when the branch is compressed. */
   protected CharVector kv;
 
   protected char root;
@@ -133,10 +112,9 @@ public class TernaryTree implements Cloneable {
   }
 
   /**
-   * Branches are initially compressed, needing one node per key plus the size
-   * of the string key. They are decompressed as needed when another key with
-   * same prefix is inserted. This saves a lot of space, specially for long
-   * keys.
+   * Branches are initially compressed, needing one node per key plus the size of the string key.
+   * They are decompressed as needed when another key with same prefix is inserted. This saves a lot
+   * of space, specially for long keys.
    */
   public void insert(String key, char val) {
     // make sure we have enough room in the arrays
@@ -158,9 +136,7 @@ public class TernaryTree implements Cloneable {
     root = insert(root, key, start, val);
   }
 
-  /**
-   * The actual insertion function, recursive version.
-   */
+  /** The actual insertion function, recursive version. */
   private char insert(char p, char[] key, int start, char val) {
     int len = strlen(key, start);
     if (p == 0) {
@@ -230,9 +206,7 @@ public class TernaryTree implements Cloneable {
     return p;
   }
 
-  /**
-   * Compares 2 null terminated char arrays
-   */
+  /** Compares 2 null terminated char arrays */
   public static int strcmp(char[] a, int startA, char[] b, int startB) {
     for (; a[startA] == b[startB]; startA++, startB++) {
       if (a[startA] == 0) {
@@ -242,9 +216,7 @@ public class TernaryTree implements Cloneable {
     return a[startA] - b[startB];
   }
 
-  /**
-   * Compares a string with null terminated char array
-   */
+  /** Compares a string with null terminated char array */
   public static int strcmp(String str, char[] a, int start) {
     int i, d, len = str.length();
     for (i = 0; i < len; i++) {
@@ -260,7 +232,6 @@ public class TernaryTree implements Cloneable {
       return -a[start + i];
     }
     return 0;
-
   }
 
   public static void strcpy(char[] dst, int di, char[] src, int si) {
@@ -363,9 +334,9 @@ public class TernaryTree implements Cloneable {
   }
 
   /**
-   * Recursively insert the median first and then the median of the lower and
-   * upper halves, and so on in order to get a balanced tree. The array of keys
-   * is assumed to be sorted in ascending order.
+   * Recursively insert the median first and then the median of the lower and upper halves, and so
+   * on in order to get a balanced tree. The array of keys is assumed to be sorted in ascending
+   * order.
    */
   protected void insertBalanced(String[] k, char[] v, int offset, int n) {
     int m;
@@ -380,9 +351,7 @@ public class TernaryTree implements Cloneable {
     insertBalanced(k, v, offset + m + 1, n - m - 1);
   }
 
-  /**
-   * Balance the tree for best search performance
-   */
+  /** Balance the tree for best search performance */
   public void balance() {
     // System.out.print("Before root splitchar = ");
     // System.out.println(sc[root]);
@@ -404,15 +373,12 @@ public class TernaryTree implements Cloneable {
   }
 
   /**
-   * Each node stores a character (splitchar) which is part of some key(s). In a
-   * compressed branch (one that only contain a single string key) the trailer
-   * of the key which is not already in nodes is stored externally in the kv
-   * array. As items are inserted, key substrings decrease. Some substrings may
-   * completely disappear when the whole branch is totally decompressed. The
-   * tree is traversed to find the key substrings actually used. In addition,
-   * duplicate substrings are removed using a map (implemented with a
-   * TernaryTree!).
-   * 
+   * Each node stores a character (splitchar) which is part of some key(s). In a compressed branch
+   * (one that only contain a single string key) the trailer of the key which is not already in
+   * nodes is stored externally in the kv array. As items are inserted, key substrings decrease.
+   * Some substrings may completely disappear when the whole branch is totally decompressed. The
+   * tree is traversed to find the key substrings actually used. In addition, duplicate substrings
+   * are removed using a map (implemented with a TernaryTree!).
    */
   public void trimToSize() {
     // first balance the tree for best performance
@@ -458,18 +424,15 @@ public class TernaryTree implements Cloneable {
 
   /**
    * Enumeration over TST keys
+   *
    * @lucene.internal
    */
   public class Iterator implements Enumeration<String> {
 
-    /**
-     * current node index
-     */
+    /** current node index */
     int cur;
 
-    /**
-     * current key
-     */
+    /** current key */
     String curkey;
 
     private class Item implements Cloneable {
@@ -491,17 +454,12 @@ public class TernaryTree implements Cloneable {
       public Item clone() {
         return new Item(parent, child);
       }
-
     }
 
-    /**
-     * Node stack
-     */
+    /** Node stack */
     Stack<Item> ns;
 
-    /**
-     * key stack implemented with a StringBuilder
-     */
+    /** key stack implemented with a StringBuilder */
     StringBuilder ks;
 
     public Iterator() {
@@ -538,9 +496,7 @@ public class TernaryTree implements Cloneable {
       return (cur != -1);
     }
 
-    /**
-     * traverse upwards
-     */
+    /** traverse upwards */
     private int up() {
       Item i = new Item();
       int res = 0;
@@ -592,9 +548,7 @@ public class TernaryTree implements Cloneable {
       return res;
     }
 
-    /**
-     * traverse the tree to find next key
-     */
+    /** traverse the tree to find next key */
     private int run() {
       if (cur == -1) {
         return -1;
@@ -636,7 +590,6 @@ public class TernaryTree implements Cloneable {
       curkey = buf.toString();
       return 0;
     }
-
   }
 
   public void printStats(PrintStream out) {
@@ -653,7 +606,7 @@ public class TernaryTree implements Cloneable {
      */
 
   }
-/*
+  /*
   public static void main(String[] args) {
     TernaryTree tt = new TernaryTree();
     tt.insert("Carlos", 'C');

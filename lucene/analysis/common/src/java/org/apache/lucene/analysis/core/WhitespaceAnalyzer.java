@@ -16,33 +16,31 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import org.apache.lucene.analysis.Analyzer;
 
 /**
  * An Analyzer that uses {@link WhitespaceTokenizer}.
  *
  * @since 3.1
- **/
+ */
 public final class WhitespaceAnalyzer extends Analyzer {
 
   private final int maxTokenLength;
-  
-  /**
-   * Creates a new {@link WhitespaceAnalyzer} with a maximum token length of 255 chars
-   */
+
+  /** Creates a new {@link WhitespaceAnalyzer} with a maximum token length of 255 chars */
   public WhitespaceAnalyzer() {
     this(WhitespaceTokenizer.DEFAULT_MAX_WORD_LEN);
   }
 
   /**
    * Creates a new {@link WhitespaceAnalyzer} with a custom maximum token length
+   *
    * @param maxTokenLength the maximum token length the analyzer will emit
    */
   public WhitespaceAnalyzer(int maxTokenLength) {
     this.maxTokenLength = maxTokenLength;
   }
-  
+
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
     return new TokenStreamComponents(new WhitespaceTokenizer(maxTokenLength));

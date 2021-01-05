@@ -18,22 +18,20 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * Shape that implements GeoArea. This type of shapes are able to resolve the
- * spatial relationship of other shapes with itself.
+ * Shape that implements GeoArea. This type of shapes are able to resolve the spatial relationship
+ * of other shapes with itself.
  *
  * @lucene.experimental
  */
-
-public interface GeoAreaShape extends GeoMembershipShape, GeoArea{
+public interface GeoAreaShape extends GeoMembershipShape, GeoArea {
 
   /**
-   * Assess whether a shape intersects with any of the edges of this shape.
-   * Note well that this method must return false if the shape contains or is disjoint
-   * with the given shape.  It is permissible to return true if the shape is within the
-   * specified shape, if it is difficult to compute intersection with edges.
+   * Assess whether a shape intersects with any of the edges of this shape. Note well that this
+   * method must return false if the shape contains or is disjoint with the given shape. It is
+   * permissible to return true if the shape is within the specified shape, if it is difficult to
+   * compute intersection with edges.
    *
    * @param geoShape is the shape to assess for intersection with this shape's edges.
-   *
    * @return true if there's such an intersection, false if not.
    */
   boolean intersects(GeoShape geoShape);

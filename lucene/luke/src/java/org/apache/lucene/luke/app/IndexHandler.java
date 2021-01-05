@@ -19,7 +19,6 @@ package org.apache.lucene.luke.app;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Objects;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
@@ -57,7 +56,12 @@ public final class IndexHandler extends AbstractHandler<IndexObserver> {
     open(indexPath, dirImpl, false, false, false);
   }
 
-  public void open(String indexPath, String dirImpl, boolean readOnly, boolean useCompound, boolean keepAllCommits) {
+  public void open(
+      String indexPath,
+      String dirImpl,
+      boolean readOnly,
+      boolean useCompound,
+      boolean keepAllCommits) {
     Objects.requireNonNull(indexPath);
 
     if (indexOpened()) {
@@ -69,7 +73,8 @@ public final class IndexHandler extends AbstractHandler<IndexObserver> {
       reader = IndexUtils.openIndex(indexPath, dirImpl);
     } catch (Exception e) {
       log.error("Error opening index", e);
-      throw new LukeException(MessageUtils.getLocalizedMessage("openindex.message.index_path_invalid", indexPath), e);
+      throw new LukeException(
+          MessageUtils.getLocalizedMessage("openindex.message.index_path_invalid", indexPath), e);
     }
 
     state = new LukeStateImpl();
@@ -96,7 +101,12 @@ public final class IndexHandler extends AbstractHandler<IndexObserver> {
 
   public void reOpen() {
     close();
-    open(state.getIndexPath(), state.getDirImpl(), state.readOnly(), state.useCompound(), state.keepAllCommits());
+    open(
+        state.getIndexPath(),
+        state.getDirImpl(),
+        state.readOnly(),
+        state.useCompound(),
+        state.keepAllCommits());
   }
 
   public LukeState getState() {

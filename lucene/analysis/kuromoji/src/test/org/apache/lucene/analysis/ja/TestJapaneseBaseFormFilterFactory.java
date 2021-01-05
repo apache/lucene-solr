@@ -16,38 +16,40 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-/**
- * Simple tests for {@link JapaneseBaseFormFilterFactory}
- */
+/** Simple tests for {@link JapaneseBaseFormFilterFactory} */
 public class TestJapaneseBaseFormFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
-    JapaneseTokenizerFactory tokenizerFactory = new JapaneseTokenizerFactory(new HashMap<String,String>());
+    JapaneseTokenizerFactory tokenizerFactory =
+        new JapaneseTokenizerFactory(new HashMap<String, String>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream ts = tokenizerFactory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("それはまだ実験段階にあります"));
-    JapaneseBaseFormFilterFactory factory = new JapaneseBaseFormFilterFactory(new HashMap<String,String>());
+    ((Tokenizer) ts).setReader(new StringReader("それはまだ実験段階にあります"));
+    JapaneseBaseFormFilterFactory factory =
+        new JapaneseBaseFormFilterFactory(new HashMap<String, String>());
     ts = factory.create(ts);
-    assertTokenStreamContents(ts,
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
-    );
+    assertTokenStreamContents(ts, new String[] {"それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new JapaneseBaseFormFilterFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new JapaneseBaseFormFilterFactory(
+                  new HashMap<String, String>() {
+                    {
+                      put("bogusArg", "bogusValue");
+                    }
+                  });
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

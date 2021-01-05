@@ -17,6 +17,7 @@
 
 /**
  * SmartChineseAnalyzer Hidden Markov Model package.
+ *
  * @lucene.experimental
  */
 package org.apache.lucene.analysis.cn.smart.hhmm;

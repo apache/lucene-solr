@@ -18,7 +18,6 @@
 package org.apache.lucene.queries.intervals;
 
 import java.util.Objects;
-
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -78,11 +77,14 @@ abstract class IntervalScoreFunction {
     @Override
     public Explanation explain(String interval, float weight, float sloppyFreq) {
       float score = scorer(weight).score(sloppyFreq, 1L);
-      return Explanation.match(score,
+      return Explanation.match(
+          score,
           "Saturation function on interval frequency, computed as w * S / (S + k) from:",
           Explanation.match(weight, "w, weight of this function"),
-          Explanation.match(pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
-          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
+          Explanation.match(
+              pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
+          Explanation.match(
+              sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
     }
 
     @Override
@@ -131,12 +133,17 @@ abstract class IntervalScoreFunction {
     @Override
     public Explanation explain(String interval, float weight, float sloppyFreq) {
       float score = scorer(weight).score(sloppyFreq, 1L);
-      return Explanation.match(score,
+      return Explanation.match(
+          score,
           "Sigmoid function on interval frequency, computed as w * S^a / (S^a + k^a) from:",
           Explanation.match(weight, "w, weight of this function"),
-          Explanation.match(pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
-          Explanation.match(a, "a, exponent, higher values make the function grow slower before k and faster after k"),
-          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
+          Explanation.match(
+              pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
+          Explanation.match(
+              a,
+              "a, exponent, higher values make the function grow slower before k and faster after k"),
+          Explanation.match(
+              sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
     }
 
     @Override
@@ -144,8 +151,7 @@ abstract class IntervalScoreFunction {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       SigmoidFunction that = (SigmoidFunction) o;
-      return Float.compare(that.pivot, pivot) == 0 &&
-          Float.compare(that.a, a) == 0;
+      return Float.compare(that.pivot, pivot) == 0 && Float.compare(that.a, a) == 0;
     }
 
     @Override
@@ -158,5 +164,4 @@ abstract class IntervalScoreFunction {
       return "SigmoidFunction(pivot=" + pivot + ", a=" + a + ")";
     }
   }
-
 }

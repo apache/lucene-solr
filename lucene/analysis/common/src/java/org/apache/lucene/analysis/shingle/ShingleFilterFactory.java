@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.shingle;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link ShingleFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_shingle" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -53,15 +52,21 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     super(args);
     maxShingleSize = getInt(args, "maxShingleSize", ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE);
     if (maxShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid maxShingleSize (" + maxShingleSize + ") - must be at least 2");
+      throw new IllegalArgumentException(
+          "Invalid maxShingleSize (" + maxShingleSize + ") - must be at least 2");
     }
     minShingleSize = getInt(args, "minShingleSize", ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE);
     if (minShingleSize < 2) {
-      throw new IllegalArgumentException("Invalid minShingleSize (" + minShingleSize + ") - must be at least 2");
+      throw new IllegalArgumentException(
+          "Invalid minShingleSize (" + minShingleSize + ") - must be at least 2");
     }
     if (minShingleSize > maxShingleSize) {
-      throw new IllegalArgumentException
-          ("Invalid minShingleSize (" + minShingleSize + ") - must be no greater than maxShingleSize (" + maxShingleSize + ")");
+      throw new IllegalArgumentException(
+          "Invalid minShingleSize ("
+              + minShingleSize
+              + ") - must be no greater than maxShingleSize ("
+              + maxShingleSize
+              + ")");
     }
     outputUnigrams = getBoolean(args, "outputUnigrams", true);
     outputUnigramsIfNoShingles = getBoolean(args, "outputUnigramsIfNoShingles", false);
@@ -87,4 +92,3 @@ public class ShingleFilterFactory extends TokenFilterFactory {
     return r;
   }
 }
-

@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.facet.DrillDownQuery;
@@ -79,13 +78,18 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IndexSearcher searcher = newSearcher(writer.getReader());
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state =
+        new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     ExecutorService exec = randomExecutorServiceOrNull();
     Facets facets = getAllFacets(searcher, state, exec);
 
-    assertEquals("dim=a path=[] value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n", facets.getTopChildren(10, "a").toString());
-    assertEquals("dim=b path=[] value=1 childCount=1\n  baz (1)\n", facets.getTopChildren(10, "b").toString());
+    assertEquals(
+        "dim=a path=[] value=4 childCount=3\n  foo (2)\n  bar (1)\n  zoo (1)\n",
+        facets.getTopChildren(10, "a").toString());
+    assertEquals(
+        "dim=b path=[] value=1 childCount=1\n  baz (1)\n",
+        facets.getTopChildren(10, "b").toString());
 
     // DrillDown:
     DrillDownQuery q = new DrillDownQuery(config);
@@ -131,9 +135,11 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     searcher.search(new MatchAllDocsQuery(), c);
 
-    expectThrows(IllegalStateException.class, () -> {
-      new SortedSetDocValuesFacetCounts(state, c);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new SortedSetDocValuesFacetCounts(state, c);
+        });
 
     r.close();
     writer.close();
@@ -177,7 +183,8 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.close();
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state =
+        new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     ExecutorService exec = randomExecutorServiceOrNull();
     Facets facets = getAllFacets(searcher, state, exec);
@@ -186,8 +193,11 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     List<FacetResult> results = facets.getAllDims(10);
 
     assertEquals(3, results.size());
-    assertEquals("dim=a path=[] value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n", results.get(0).toString());
-    assertEquals("dim=b path=[] value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
+    assertEquals(
+        "dim=a path=[] value=3 childCount=3\n  foo1 (1)\n  foo2 (1)\n  foo3 (1)\n",
+        results.get(0).toString());
+    assertEquals(
+        "dim=b path=[] value=2 childCount=2\n  bar1 (1)\n  bar2 (1)\n", results.get(1).toString());
     assertEquals("dim=c path=[] value=1 childCount=1\n  baz1 (1)\n", results.get(2).toString());
 
     Collection<Accountable> resources = state.getChildResources();
@@ -234,13 +244,16 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     writer.close();
 
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state =
+        new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
 
     ExecutorService exec = randomExecutorServiceOrNull();
     Facets facets = getAllFacets(searcher, state, exec);
 
     // Ask for top 10 labels for any dims that have counts:
-    assertEquals("dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n", facets.getTopChildren(10, "a").toString());
+    assertEquals(
+        "dim=a path=[] value=2 childCount=2\n  foo1 (1)\n  foo2 (1)\n",
+        facets.getTopChildren(10, "a").toString());
 
     if (exec != null) {
       exec.shutdownNow();
@@ -259,10 +272,10 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     int numDocs = atLeast(1000);
     int numDims = TestUtil.nextInt(random(), 1, 7);
     List<TestDoc> testDocs = getRandomDocs(tokens, numDocs, numDims);
-    for(TestDoc testDoc : testDocs) {
+    for (TestDoc testDoc : testDocs) {
       Document doc = new Document();
       doc.add(newStringField("content", testDoc.content, Field.Store.NO));
-      for(int j=0;j<numDims;j++) {
+      for (int j = 0; j < numDims; j++) {
         if (testDoc.dims[j] != null) {
           doc.add(new SortedSetDocValuesFacetField("dim" + j, testDoc.dims[j]));
         }
@@ -272,13 +285,14 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     // NRT open
     IndexSearcher searcher = newSearcher(w.getReader());
-    
+
     // Per-top-reader state:
-    SortedSetDocValuesReaderState state = new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
+    SortedSetDocValuesReaderState state =
+        new DefaultSortedSetDocValuesReaderState(searcher.getIndexReader());
     ExecutorService exec = randomExecutorServiceOrNull();
 
     int iters = atLeast(100);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       String searchToken = tokens[random().nextInt(tokens.length)];
       if (VERBOSE) {
         System.out.println("\nTEST: iter content=" + searchToken);
@@ -293,14 +307,15 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       }
 
       // Slow, yet hopefully bug-free, faceting:
-      @SuppressWarnings({"rawtypes","unchecked"}) Map<String,Integer>[] expectedCounts = new HashMap[numDims];
-      for(int i=0;i<numDims;i++) {
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      Map<String, Integer>[] expectedCounts = new HashMap[numDims];
+      for (int i = 0; i < numDims; i++) {
         expectedCounts[i] = new HashMap<>();
       }
 
-      for(TestDoc doc : testDocs) {
+      for (TestDoc doc : testDocs) {
         if (doc.content.equals(searchToken)) {
-          for(int j=0;j<numDims;j++) {
+          for (int j = 0; j < numDims; j++) {
             if (doc.dims[j] != null) {
               Integer v = expectedCounts[j].get(doc.dims[j]);
               if (v == null) {
@@ -314,16 +329,22 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       }
 
       List<FacetResult> expected = new ArrayList<>();
-      for(int i=0;i<numDims;i++) {
+      for (int i = 0; i < numDims; i++) {
         List<LabelAndValue> labelValues = new ArrayList<>();
         int totCount = 0;
-        for(Map.Entry<String,Integer> ent : expectedCounts[i].entrySet()) {
+        for (Map.Entry<String, Integer> ent : expectedCounts[i].entrySet()) {
           labelValues.add(new LabelAndValue(ent.getKey(), ent.getValue()));
           totCount += ent.getValue();
         }
         sortLabelValues(labelValues);
         if (totCount > 0) {
-          expected.add(new FacetResult("dim" + i, new String[0], totCount, labelValues.toArray(new LabelAndValue[labelValues.size()]), labelValues.size()));
+          expected.add(
+              new FacetResult(
+                  "dim" + i,
+                  new String[0],
+                  totCount,
+                  labelValues.toArray(new LabelAndValue[labelValues.size()]),
+                  labelValues.size()));
         }
       }
 
@@ -333,7 +354,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
       List<FacetResult> actual = facets.getAllDims(10);
 
       // Messy: fixup ties
-      //sortTies(actual);
+      // sortTies(actual);
 
       assertEquals(expected, actual);
     }
@@ -345,8 +366,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     IOUtils.close(searcher.getIndexReader(), indexDir, taxoDir);
   }
 
-  private static Facets getAllFacets(IndexSearcher searcher, SortedSetDocValuesReaderState state,
-                                     ExecutorService exec) throws IOException, InterruptedException {
+  private static Facets getAllFacets(
+      IndexSearcher searcher, SortedSetDocValuesReaderState state, ExecutorService exec)
+      throws IOException, InterruptedException {
     if (random().nextBoolean()) {
       FacetsCollector c = new FacetsCollector();
       searcher.search(new MatchAllDocsQuery(), c);
@@ -366,9 +388,13 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     if (random().nextBoolean()) {
       return null;
     } else {
-      return new ThreadPoolExecutor(1, TestUtil.nextInt(random(), 2, 6), Long.MAX_VALUE, TimeUnit.MILLISECONDS,
-                                    new LinkedBlockingQueue<Runnable>(),
-                                    new NamedThreadFactory("TestIndexSearcher"));
+      return new ThreadPoolExecutor(
+          1,
+          TestUtil.nextInt(random(), 2, 6),
+          Long.MAX_VALUE,
+          TimeUnit.MILLISECONDS,
+          new LinkedBlockingQueue<Runnable>(),
+          new NamedThreadFactory("TestIndexSearcher"));
     }
   }
 }

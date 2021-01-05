@@ -17,15 +17,12 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
 
-/**
- * Random test for planes.
- */
+/** Random test for planes. */
 public class TestRandomPlane extends RandomGeo3dShapeGenerator {
 
   @Test
@@ -33,10 +30,12 @@ public class TestRandomPlane extends RandomGeo3dShapeGenerator {
   public void testPlaneAccuracy() {
     PlanetModel planetModel = randomPlanetModel();
     GeoPoint point1 = randomGeoPoint(planetModel);
-    for (int i= 0; i < 1000; i++) {
-      double dist = random().nextDouble() * Vector.MINIMUM_ANGULAR_RESOLUTION + Vector.MINIMUM_ANGULAR_RESOLUTION;
+    for (int i = 0; i < 1000; i++) {
+      double dist =
+          random().nextDouble() * Vector.MINIMUM_ANGULAR_RESOLUTION
+              + Vector.MINIMUM_ANGULAR_RESOLUTION;
       double bearing = random().nextDouble() * 2 * Math.PI;
-      GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, bearing );
+      GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, bearing);
       GeoPoint check = randomGeoPoint(planetModel);
       if (!point1.isNumericallyIdentical(point2)) {
         SidedPlane plane = new SidedPlane(check, point1, point2);
@@ -44,47 +43,56 @@ public class TestRandomPlane extends RandomGeo3dShapeGenerator {
         assertTrue(msg, plane.isWithin(check));
         assertTrue(msg, plane.isWithin(point2));
         assertTrue(msg, plane.isWithin(point1));
-      }
-      else {
+      } else {
         assertFalse("numerically identical", true);
       }
     }
   }
-  
+
   @Test
   @Repeat(iterations = 10)
   public void testPlaneThreePointsAccuracy() {
     PlanetModel planetModel = randomPlanetModel();
-    for (int i= 0; i < 1000; i++) {
+    for (int i = 0; i < 1000; i++) {
       GeoPoint point1 = randomGeoPoint(planetModel);
       double dist = random().nextDouble() * Math.PI - Vector.MINIMUM_ANGULAR_RESOLUTION;
       double bearing = random().nextDouble() * 2 * Math.PI;
-      GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, bearing );
-      dist = random().nextDouble() * Vector.MINIMUM_ANGULAR_RESOLUTION + Vector.MINIMUM_ANGULAR_RESOLUTION;
+      GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, bearing);
+      dist =
+          random().nextDouble() * Vector.MINIMUM_ANGULAR_RESOLUTION
+              + Vector.MINIMUM_ANGULAR_RESOLUTION;
       bearing = random().nextDouble() * 2 * Math.PI;
-      GeoPoint point3 = planetModel.surfacePointOnBearing(point1, dist, bearing );
+      GeoPoint point3 = planetModel.surfacePointOnBearing(point1, dist, bearing);
       GeoPoint check = randomGeoPoint(planetModel);
-      SidedPlane plane  = SidedPlane.constructNormalizedThreePointSidedPlane(check, point1, point2, point3);
-      String msg = planetModel + " point 1: " + point1 + ", point 2: " + point2 + ", point 3: " + point3 + " , check: " + check;
+      SidedPlane plane =
+          SidedPlane.constructNormalizedThreePointSidedPlane(check, point1, point2, point3);
+      String msg =
+          planetModel
+              + " point 1: "
+              + point1
+              + ", point 2: "
+              + point2
+              + ", point 3: "
+              + point3
+              + " , check: "
+              + check;
       if (plane == null) {
         fail(msg);
       }
       // This is not expected
-      //assertTrue(plane.evaluate(check) + " " + msg, plane.isWithin(check));
-      assertTrue(plane.evaluate(point1) + " " +msg, plane.isWithin(point1));
-      assertTrue(plane.evaluate(point2) + " " +msg, plane.isWithin(point2));
-      assertTrue(plane.evaluate(point3) + " " +msg, plane.isWithin(point3));
+      // assertTrue(plane.evaluate(check) + " " + msg, plane.isWithin(check));
+      assertTrue(plane.evaluate(point1) + " " + msg, plane.isWithin(point1));
+      assertTrue(plane.evaluate(point2) + " " + msg, plane.isWithin(point2));
+      assertTrue(plane.evaluate(point3) + " " + msg, plane.isWithin(point3));
     }
   }
-
-
 
   @Test
   @Repeat(iterations = 10)
   public void testPolygonAccuracy() {
     PlanetModel planetModel = randomPlanetModel();
     GeoPoint point1 = randomGeoPoint(planetModel);
-    for (int i= 0; i < 1000; i++) {
+    for (int i = 0; i < 1000; i++) {
       double dist = random().nextDouble() * 1e-6 + Vector.MINIMUM_ANGULAR_RESOLUTION;
       GeoPoint point2 = planetModel.surfacePointOnBearing(point1, dist, 0);
       GeoPoint point3 = planetModel.surfacePointOnBearing(point1, dist, 0.5 * Math.PI);
@@ -94,8 +102,6 @@ public class TestRandomPlane extends RandomGeo3dShapeGenerator {
       points.add(point2);
       points.add(point3);
       GeoPolygonFactory.makeGeoPolygon(planetModel, points);
-
     }
   }
-
 }

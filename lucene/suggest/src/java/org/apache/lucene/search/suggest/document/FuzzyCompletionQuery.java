@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,14 +37,14 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.UTF32ToUTF8;
 
 /**
- * A {@link CompletionQuery} that match documents containing terms
- * within an edit distance of the specified prefix.
- * <p>
- * This query boost documents relative to how similar the indexed terms are to the
- * provided prefix.
- * <p>
- * Example usage of querying an analyzed prefix within an edit distance of 1 of 'subg'
- * against a field 'suggest_field' is as follows:
+ * A {@link CompletionQuery} that match documents containing terms within an edit distance of the
+ * specified prefix.
+ *
+ * <p>This query boost documents relative to how similar the indexed terms are to the provided
+ * prefix.
+ *
+ * <p>Example usage of querying an analyzed prefix within an edit distance of 1 of 'subg' against a
+ * field 'suggest_field' is as follows:
  *
  * <pre class="prettyprint">
  *  CompletionQuery query = new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "subg"));
@@ -56,31 +55,21 @@ import org.apache.lucene.util.automaton.UTF32ToUTF8;
 public class FuzzyCompletionQuery extends PrefixCompletionQuery {
 
   /**
-   * Measure maxEdits, minFuzzyLength, transpositions and nonFuzzyPrefix
-   * parameters in Unicode code points (actual letters)
-   * instead of bytes.
-   * */
+   * Measure maxEdits, minFuzzyLength, transpositions and nonFuzzyPrefix parameters in Unicode code
+   * points (actual letters) instead of bytes.
+   */
   public static final boolean DEFAULT_UNICODE_AWARE = false;
 
-  /**
-   * The default minimum length of the key before any edits are allowed.
-   */
+  /** The default minimum length of the key before any edits are allowed. */
   public static final int DEFAULT_MIN_FUZZY_LENGTH = 3;
 
-  /**
-   * The default prefix length where edits are not allowed.
-   */
+  /** The default prefix length where edits are not allowed. */
   public static final int DEFAULT_NON_FUZZY_PREFIX = 1;
 
-  /**
-   * The default maximum number of edits for fuzzy
-   * suggestions.
-   */
+  /** The default maximum number of edits for fuzzy suggestions. */
   public static final int DEFAULT_MAX_EDITS = 1;
 
-  /**
-   * The default transposition value passed to {@link LevenshteinAutomata}
-   */
+  /** The default transposition value passed to {@link LevenshteinAutomata} */
   public static final boolean DEFAULT_TRANSPOSITIONS = true;
 
   private final int maxEdits;
@@ -91,37 +80,41 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   private final int maxDeterminizedStates;
 
   /**
-   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer)}
-   * with no filter
+   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer)} with no
+   * filter
    */
   public FuzzyCompletionQuery(Analyzer analyzer, Term term) {
     this(analyzer, term, null);
   }
 
   /**
-   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer,
-   * int, boolean, int, int, boolean, int)}
-   * with defaults for <code>maxEdits</code>, <code>transpositions</code>,
-   * <code>nonFuzzyPrefix</code>, <code>minFuzzyLength</code>,
-   * <code>unicodeAware</code> and <code>maxDeterminizedStates</code>
-   *
-   * See {@link #DEFAULT_MAX_EDITS}, {@link #DEFAULT_TRANSPOSITIONS},
-   * {@link #DEFAULT_NON_FUZZY_PREFIX}, {@link #DEFAULT_MIN_FUZZY_LENGTH},
-   * {@link #DEFAULT_UNICODE_AWARE} and {@link Operations#DEFAULT_MAX_DETERMINIZED_STATES}
-   * for defaults
+   * Calls {@link FuzzyCompletionQuery#FuzzyCompletionQuery(Analyzer, Term, BitsProducer, int,
+   * boolean, int, int, boolean, int)} with defaults for <code>maxEdits</code>, <code>transpositions
+   * </code>, <code>nonFuzzyPrefix</code>, <code>minFuzzyLength</code>, <code>unicodeAware</code>
+   * and <code>maxDeterminizedStates</code> See {@link #DEFAULT_MAX_EDITS}, {@link
+   * #DEFAULT_TRANSPOSITIONS}, {@link #DEFAULT_NON_FUZZY_PREFIX}, {@link #DEFAULT_MIN_FUZZY_LENGTH},
+   * {@link #DEFAULT_UNICODE_AWARE} and {@link Operations#DEFAULT_MAX_DETERMINIZED_STATES} for
+   * defaults
    */
   public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter) {
-    this(analyzer, term, filter, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS, DEFAULT_NON_FUZZY_PREFIX,
-        DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_UNICODE_AWARE, Operations.DEFAULT_MAX_DETERMINIZED_STATES
-    );
+    this(
+        analyzer,
+        term,
+        filter,
+        DEFAULT_MAX_EDITS,
+        DEFAULT_TRANSPOSITIONS,
+        DEFAULT_NON_FUZZY_PREFIX,
+        DEFAULT_MIN_FUZZY_LENGTH,
+        DEFAULT_UNICODE_AWARE,
+        Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
 
   /**
    * Constructs an analyzed fuzzy prefix completion query
    *
    * @param analyzer used to analyze the provided {@link Term#text()}
-   * @param term query is run against {@link Term#field()} and {@link Term#text()}
-   *             is analyzed with <code>analyzer</code>
+   * @param term query is run against {@link Term#field()} and {@link Term#text()} is analyzed with
+   *     <code>analyzer</code>
    * @param filter used to query on a sub set of documents
    * @param maxEdits maximum number of acceptable edits
    * @param transpositions value passed to {@link LevenshteinAutomata}
@@ -130,9 +123,16 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
    * @param unicodeAware treat prefix as unicode rather than bytes
    * @param maxDeterminizedStates maximum automaton states allowed for {@link LevenshteinAutomata}
    */
-  public FuzzyCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter, int maxEdits,
-                              boolean transpositions, int nonFuzzyPrefix, int minFuzzyLength,
-                              boolean unicodeAware, int maxDeterminizedStates) {
+  public FuzzyCompletionQuery(
+      Analyzer analyzer,
+      Term term,
+      BitsProducer filter,
+      int maxEdits,
+      boolean transpositions,
+      int nonFuzzyPrefix,
+      int minFuzzyLength,
+      boolean unicodeAware,
+      int maxDeterminizedStates) {
     super(analyzer, term, filter);
     this.maxEdits = maxEdits;
     this.transpositions = transpositions;
@@ -143,9 +143,11 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Automaton originalAutomata;
-    try (CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text()) ) {
+    try (CompletionTokenStream stream =
+        (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text())) {
       originalAutomata = stream.toAutomaton(unicodeAware);
     }
     Set<IntsRef> refs = new HashSet<>();
@@ -163,7 +165,7 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
   private Automaton toLevenshteinAutomata(Automaton automaton, Set<IntsRef> refs) {
     List<Automaton> subs = new ArrayList<>();
     FiniteStringsIterator finiteStrings = new FiniteStringsIterator(automaton);
-    for (IntsRef string; (string = finiteStrings.next()) != null;) {
+    for (IntsRef string; (string = finiteStrings.next()) != null; ) {
       refs.add(IntsRef.deepCopyOf(string));
 
       if (string.length <= nonFuzzyPrefix || string.length < minFuzzyLength) {
@@ -176,11 +178,12 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
         // to allow the trailing dedup bytes to be
         // edited... but then 0 byte is "in general" allowed
         // on input (but not in UTF8).
-        LevenshteinAutomata lev = new LevenshteinAutomata(ints,
-            unicodeAware ? Character.MAX_CODE_POINT : 255,
-            transpositions);
-        subs.add(lev.toAutomaton(maxEdits,
-            UnicodeUtil.newString(string.ints, string.offset, nonFuzzyPrefix)));
+        LevenshteinAutomata lev =
+            new LevenshteinAutomata(
+                ints, unicodeAware ? Character.MAX_CODE_POINT : 255, transpositions);
+        subs.add(
+            lev.toAutomaton(
+                maxEdits, UnicodeUtil.newString(string.ints, string.offset, nonFuzzyPrefix)));
       }
     }
 
@@ -200,44 +203,32 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     }
   }
 
-  /**
-   * Get the maximum edit distance for fuzzy matches
-   */
+  /** Get the maximum edit distance for fuzzy matches */
   public int getMaxEdits() {
     return maxEdits;
   }
 
-  /**
-   * Return whether transpositions count as a single edit
-   */
+  /** Return whether transpositions count as a single edit */
   public boolean isTranspositions() {
     return transpositions;
   }
 
-  /**
-   * Get the length of a prefix where no edits are permitted
-   */
+  /** Get the length of a prefix where no edits are permitted */
   public int getNonFuzzyPrefix() {
     return nonFuzzyPrefix;
   }
 
-  /**
-   * Get the minimum length of a term considered for matching
-   */
+  /** Get the minimum length of a term considered for matching */
   public int getMinFuzzyLength() {
     return minFuzzyLength;
   }
 
-  /**
-   * Return true if lengths are measured in unicode code-points rather than bytes
-   */
+  /** Return true if lengths are measured in unicode code-points rather than bytes */
   public boolean isUnicodeAware() {
     return unicodeAware;
   }
 
-  /**
-   * Get the maximum number of determinized states permitted
-   */
+  /** Get the maximum number of determinized states permitted */
   public int getMaxDeterminizedStates() {
     return maxDeterminizedStates;
   }
@@ -265,7 +256,8 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     private final Set<IntsRef> refs;
     int currentBoost = 0;
 
-    public FuzzyCompletionWeight(CompletionQuery query, Automaton automaton, Set<IntsRef> refs) throws IOException {
+    public FuzzyCompletionWeight(CompletionQuery query, Automaton automaton, Set<IntsRef> refs)
+        throws IOException {
       super(query, automaton);
       this.refs = refs;
     }

@@ -16,8 +16,9 @@
  */
 package org.apache.lucene.analysis.ko;
 
-import java.util.Set;
+import static org.apache.lucene.analysis.TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
 
+import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,13 +26,11 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 import org.apache.lucene.analysis.ko.dict.UserDictionary;
 
-import static org.apache.lucene.analysis.TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY;
-
 /**
  * Analyzer for Korean that uses morphological analysis.
+ *
  * @see KoreanTokenizer
  * @lucene.experimental
- *
  * @since 7.4.0
  */
 public class KoreanAnalyzer extends Analyzer {
@@ -40,11 +39,13 @@ public class KoreanAnalyzer extends Analyzer {
   private final Set<POS.Tag> stopTags;
   private final boolean outputUnknownUnigrams;
 
-  /**
-   * Creates a new KoreanAnalyzer.
-   */
+  /** Creates a new KoreanAnalyzer. */
   public KoreanAnalyzer() {
-    this(null, KoreanTokenizer.DEFAULT_DECOMPOUND, KoreanPartOfSpeechStopFilter.DEFAULT_STOP_TAGS, false);
+    this(
+        null,
+        KoreanTokenizer.DEFAULT_DECOMPOUND,
+        KoreanPartOfSpeechStopFilter.DEFAULT_STOP_TAGS,
+        false);
   }
 
   /**
@@ -55,7 +56,11 @@ public class KoreanAnalyzer extends Analyzer {
    * @param stopTags The set of part of speech that should be filtered.
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
-  public KoreanAnalyzer(UserDictionary userDict, DecompoundMode mode, Set<POS.Tag> stopTags, boolean outputUnknownUnigrams) {
+  public KoreanAnalyzer(
+      UserDictionary userDict,
+      DecompoundMode mode,
+      Set<POS.Tag> stopTags,
+      boolean outputUnknownUnigrams) {
     super();
     this.userDict = userDict;
     this.mode = mode;
@@ -65,7 +70,8 @@ public class KoreanAnalyzer extends Analyzer {
 
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
-    Tokenizer tokenizer = new KoreanTokenizer(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDict, mode, outputUnknownUnigrams);
+    Tokenizer tokenizer =
+        new KoreanTokenizer(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, userDict, mode, outputUnknownUnigrams);
     TokenStream stream = new KoreanPartOfSpeechStopFilter(tokenizer, stopTags);
     stream = new KoreanReadingFormFilter(stream);
     stream = new LowerCaseFilter(stream);

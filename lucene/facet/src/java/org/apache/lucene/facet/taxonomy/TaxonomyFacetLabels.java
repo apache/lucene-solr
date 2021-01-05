@@ -16,40 +16,36 @@
  */
 package org.apache.lucene.facet.taxonomy;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.IntsRef;
-
-import java.io.IOException;
-
 import static org.apache.lucene.facet.taxonomy.TaxonomyReader.INVALID_ORDINAL;
 import static org.apache.lucene.facet.taxonomy.TaxonomyReader.ROOT_ORDINAL;
 
+import java.io.IOException;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.IntsRef;
+
 /**
- * Utility class to easily retrieve previously indexed facet labels, allowing you to skip also adding stored fields for these values,
- * reducing your index size.
+ * Utility class to easily retrieve previously indexed facet labels, allowing you to skip also
+ * adding stored fields for these values, reducing your index size.
  *
  * @lucene.experimental
- **/
+ */
 public class TaxonomyFacetLabels {
 
-  /**
-   * Index field name provided to the constructor
-   */
+  /** Index field name provided to the constructor */
   private final String indexFieldName;
 
-  /**
-   * {@code TaxonomyReader} provided to the constructor
-   */
+  /** {@code TaxonomyReader} provided to the constructor */
   private final TaxonomyReader taxoReader;
 
-
   /**
-   * {@code OrdinalsReader} to decode ordinals previously indexed into the {@code BinaryDocValues} facet field
+   * {@code OrdinalsReader} to decode ordinals previously indexed into the {@code BinaryDocValues}
+   * facet field
    */
   private final OrdinalsReader ordsReader;
 
   /**
-   * Sole constructor.  Do not close the provided {@link TaxonomyReader} while still using this instance!
+   * Sole constructor. Do not close the provided {@link TaxonomyReader} while still using this
+   * instance!
    */
   public TaxonomyFacetLabels(TaxonomyReader taxoReader, String indexFieldName) throws IOException {
     this.taxoReader = taxoReader;
@@ -58,12 +54,12 @@ public class TaxonomyFacetLabels {
   }
 
   /**
-   * Create and return an instance of {@link FacetLabelReader} to retrieve facet labels for
-   * multiple documents and (optionally) for a specific dimension.  You must create this per-segment,
-   * and then step through all hits, in order, for that segment.
+   * Create and return an instance of {@link FacetLabelReader} to retrieve facet labels for multiple
+   * documents and (optionally) for a specific dimension. You must create this per-segment, and then
+   * step through all hits, in order, for that segment.
    *
-   * <p><b>NOTE</b>: This class is not thread-safe, so you must use a new instance of this
-   * class for each thread.</p>
+   * <p><b>NOTE</b>: This class is not thread-safe, so you must use a new instance of this class for
+   * each thread.
    *
    * @param readerContext LeafReaderContext used to access the {@code BinaryDocValues} facet field
    * @return an instance of {@link FacetLabelReader}
@@ -87,32 +83,34 @@ public class TaxonomyFacetLabels {
     // Lazily set when nextFacetLabel(int docId, String facetDimension) is first called
     private int[] parents;
 
-    /**
-     * Sole constructor.
-     */
-    public FacetLabelReader(OrdinalsReader ordsReader, LeafReaderContext readerContext) throws IOException {
+    /** Sole constructor. */
+    public FacetLabelReader(OrdinalsReader ordsReader, LeafReaderContext readerContext)
+        throws IOException {
       ordinalsSegmentReader = ordsReader.getReader(readerContext);
     }
 
     /**
-     * Retrieves the next {@link FacetLabel} for the specified {@code docId}, or {@code null} if there are no more.
-     * This method has state: if the provided {@code docId} is the same as the previous invocation, it returns the
-     * next {@link FacetLabel} for that document.  Otherwise, it advances to the new {@code docId} and provides the
-     * first {@link FacetLabel} for that document, or {@code null} if that document has no indexed facets.  Each
-     * new {@code docId} must be in strictly monotonic (increasing) order.
+     * Retrieves the next {@link FacetLabel} for the specified {@code docId}, or {@code null} if
+     * there are no more. This method has state: if the provided {@code docId} is the same as the
+     * previous invocation, it returns the next {@link FacetLabel} for that document. Otherwise, it
+     * advances to the new {@code docId} and provides the first {@link FacetLabel} for that
+     * document, or {@code null} if that document has no indexed facets. Each new {@code docId} must
+     * be in strictly monotonic (increasing) order.
      *
-     * <p><b>NOTE</b>: The returned FacetLabels may not be in the same order in which they were indexed</p>
+     * <p><b>NOTE</b>: The returned FacetLabels may not be in the same order in which they were
+     * indexed
      *
      * @param docId input docId provided in monotonic (non-decreasing) order
      * @return the first or next {@link FacetLabel}, or {@code null} if there are no more
      * @throws IOException when a low-level IO issue occurs
-     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier invocation
+     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier
+     *     invocation
      */
     public FacetLabel nextFacetLabel(int docId) throws IOException {
       if (currentDocId != docId) {
         if (docId < currentDocId) {
-          throw new IllegalArgumentException("docs out of order: previous docId=" + currentDocId
-              + " current docId=" + docId);
+          throw new IllegalArgumentException(
+              "docs out of order: previous docId=" + currentDocId + " current docId=" + docId);
         }
         ordinalsSegmentReader.get(docId, decodedOrds);
         currentDocId = docId;
@@ -142,19 +140,21 @@ public class TaxonomyFacetLabels {
     }
 
     /**
-     * Retrieves the next {@link FacetLabel} for the specified {@code docId} under the requested {@code facetDimension},
-     * or {@code null} if there are no more. This method has state: if the provided {@code docId} is the same as the
-     * previous invocation, it returns the next {@link FacetLabel} for that document.  Otherwise, it advances to
-     * the new {@code docId} and provides the first {@link FacetLabel} for that document, or {@code null} if that document
-     * has no indexed facets.  Each new {@code docId} must be in strictly monotonic (increasing) order.
+     * Retrieves the next {@link FacetLabel} for the specified {@code docId} under the requested
+     * {@code facetDimension}, or {@code null} if there are no more. This method has state: if the
+     * provided {@code docId} is the same as the previous invocation, it returns the next {@link
+     * FacetLabel} for that document. Otherwise, it advances to the new {@code docId} and provides
+     * the first {@link FacetLabel} for that document, or {@code null} if that document has no
+     * indexed facets. Each new {@code docId} must be in strictly monotonic (increasing) order.
      *
      * <p><b>NOTE</b>: This method loads the {@code int[] parents} array from the taxonomy index.
-     * The returned FacetLabels may not be in the same order in which they were indexed.</p>
+     * The returned FacetLabels may not be in the same order in which they were indexed.
      *
      * @param docId input docId provided in non-decreasing order
      * @return the first or next {@link FacetLabel}, or {@code null} if there are no more
      * @throws IOException if {@link TaxonomyReader} has problems getting path for an ordinal
-     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier invocation
+     * @throws IllegalArgumentException if docId provided is less than docId supplied in an earlier
+     *     invocation
      * @throws IllegalArgumentException if facetDimension is null
      */
     public FacetLabel nextFacetLabel(int docId, String facetDimension) throws IOException {
@@ -163,13 +163,14 @@ public class TaxonomyFacetLabels {
       }
       final int parentOrd = taxoReader.getOrdinal(new FacetLabel(facetDimension));
       if (parentOrd == INVALID_ORDINAL) {
-        throw new IllegalArgumentException("Category ordinal not found for facet dimension: " + facetDimension);
+        throw new IllegalArgumentException(
+            "Category ordinal not found for facet dimension: " + facetDimension);
       }
 
       if (currentDocId != docId) {
         if (docId < currentDocId) {
-          throw new IllegalArgumentException("docs out of order: previous docId=" + currentDocId
-              + " current docId=" + docId);
+          throw new IllegalArgumentException(
+              "docs out of order: previous docId=" + currentDocId + " current docId=" + docId);
         }
         ordinalsSegmentReader.get(docId, decodedOrds);
         currentPos = decodedOrds.offset;

@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.text.BreakIterator; // javadoc
 import java.text.CharacterIterator;
 import java.util.Locale;
 
-/** 
+/**
  * A CharacterIterator used internally for use with {@link BreakIterator}
+ *
  * @lucene.internal
  */
 public abstract class CharArrayIterator implements CharacterIterator {
@@ -32,21 +32,21 @@ public abstract class CharArrayIterator implements CharacterIterator {
   private int length;
   private int limit;
 
-  public char [] getText() {
+  public char[] getText() {
     return array;
   }
-  
+
   public int getStart() {
     return start;
   }
-  
+
   public int getLength() {
     return length;
   }
-  
+
   /**
    * Set a new region of text to be examined by this iterator
-   * 
+   *
    * @param array text buffer to examine
    * @param start offset into buffer
    * @param length maximum length to examine
@@ -63,7 +63,7 @@ public abstract class CharArrayIterator implements CharacterIterator {
   public char current() {
     return (index == limit) ? DONE : jreBugWorkaround(array[index]);
   }
-  
+
   protected abstract char jreBugWorkaround(char ch);
 
   @Override
@@ -120,26 +120,26 @@ public abstract class CharArrayIterator implements CharacterIterator {
     index = start + position;
     return current();
   }
-  
+
   @Override
   public CharArrayIterator clone() {
     try {
-      return (CharArrayIterator)super.clone();
+      return (CharArrayIterator) super.clone();
     } catch (CloneNotSupportedException e) {
       // CharacterIterator does not allow you to throw CloneNotSupported
       throw new RuntimeException(e);
     }
   }
-  
+
   /**
-   * Create a new CharArrayIterator that works around JRE bugs
-   * in a manner suitable for {@link BreakIterator#getSentenceInstance()}
+   * Create a new CharArrayIterator that works around JRE bugs in a manner suitable for {@link
+   * BreakIterator#getSentenceInstance()}
    */
   public static CharArrayIterator newSentenceInstance() {
     if (HAS_BUGGY_BREAKITERATORS) {
       return new CharArrayIterator() {
-        // work around this for now by lying about all surrogates to 
-        // the sentence tokenizer, instead we treat them all as 
+        // work around this for now by lying about all surrogates to
+        // the sentence tokenizer, instead we treat them all as
         // SContinue so we won't break around them.
         @Override
         protected char jreBugWorkaround(char ch) {
@@ -156,15 +156,15 @@ public abstract class CharArrayIterator implements CharacterIterator {
       };
     }
   }
-  
+
   /**
-   * Create a new CharArrayIterator that works around JRE bugs
-   * in a manner suitable for {@link BreakIterator#getWordInstance()}
+   * Create a new CharArrayIterator that works around JRE bugs in a manner suitable for {@link
+   * BreakIterator#getWordInstance()}
    */
   public static CharArrayIterator newWordInstance() {
     if (HAS_BUGGY_BREAKITERATORS) {
       return new CharArrayIterator() {
-        // work around this for now by lying about all surrogates to the word, 
+        // work around this for now by lying about all surrogates to the word,
         // instead we treat them all as ALetter so we won't break around them.
         @Override
         protected char jreBugWorkaround(char ch) {
@@ -181,11 +181,10 @@ public abstract class CharArrayIterator implements CharacterIterator {
       };
     }
   }
-  
-  /**
-   * True if this JRE has a buggy BreakIterator implementation
-   */
+
+  /** True if this JRE has a buggy BreakIterator implementation */
   public static final boolean HAS_BUGGY_BREAKITERATORS;
+
   static {
     boolean v;
     try {

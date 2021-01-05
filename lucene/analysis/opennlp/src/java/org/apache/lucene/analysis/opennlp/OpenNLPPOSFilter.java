@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.opennlp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.NLPPOSTaggerOp;
@@ -29,9 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
-/**
- * Run OpenNLP POS tagger.  Tags all terms in the TypeAttribute.
- */
+/** Run OpenNLP POS tagger. Tags all terms in the TypeAttribute. */
 public final class OpenNLPPOSFilter extends TokenFilter {
 
   private List<AttributeSource> sentenceTokenAttrs = new ArrayList<>();
@@ -51,11 +48,12 @@ public final class OpenNLPPOSFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if ( ! moreTokensAvailable) {
+    if (!moreTokensAvailable) {
       clear();
       return false;
     }
-    if (tokenNum == sentenceTokenAttrs.size()) { // beginning of stream, or previous sentence exhausted
+    if (tokenNum
+        == sentenceTokenAttrs.size()) { // beginning of stream, or previous sentence exhausted
       String[] sentenceTokens = nextSentence();
       if (sentenceTokens == null) {
         clear();
@@ -74,7 +72,7 @@ public final class OpenNLPPOSFilter extends TokenFilter {
     List<String> termList = new ArrayList<>();
     sentenceTokenAttrs.clear();
     boolean endOfSentence = false;
-    while ( ! endOfSentence && (moreTokensAvailable = input.incrementToken())) {
+    while (!endOfSentence && (moreTokensAvailable = input.incrementToken())) {
       termList.add(termAtt.toString());
       endOfSentence = 0 != (flagsAtt.getFlags() & OpenNLPTokenizer.EOS_FLAG_BIT);
       sentenceTokenAttrs.add(input.cloneAttributes());

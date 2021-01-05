@@ -22,19 +22,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** 
+/**
  * FileSystem that tracks open handles.
- * <p>
- * When {@link FileSystem#close()} is called, this class will throw
- * an exception if any file handles are still open.
+ *
+ * <p>When {@link FileSystem#close()} is called, this class will throw an exception if any file
+ * handles are still open.
  */
 public class LeakFS extends HandleTrackingFS {
   // we explicitly use reference hashcode/equality in our keys
-  private final Map<Object,Exception> openHandles = new ConcurrentHashMap<>();
-  
+  private final Map<Object, Exception> openHandles = new ConcurrentHashMap<>();
+
   /**
-   * Create a new instance, tracking file handle leaks for the 
-   * specified delegate filesystem.
+   * Create a new instance, tracking file handle leaks for the specified delegate filesystem.
+   *
    * @param delegate delegate filesystem to wrap.
    */
   public LeakFS(FileSystem delegate) {

@@ -22,9 +22,9 @@ import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 /** Test AssertingStoredFieldsFormat directly */
 public class TestAssertingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   private final Codec codec = new AssertingCodec();
-  
+
   @Override
   protected Codec getCodec() {
     return codec;
-  } 
+  }
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Hungarian.
- */
+/** Analyzer for Hungarian. */
 package org.apache.lucene.analysis.hu;

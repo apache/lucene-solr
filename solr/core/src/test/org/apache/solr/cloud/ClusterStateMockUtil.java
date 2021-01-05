@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -224,8 +225,9 @@ public class ClusterStateMockUtil {
     }
 
     Map<String,Object> replicaPropMap = new HashMap<>();
-    replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, "baseUrl" + node + "_");
-    replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
+    int port = 8982 + Integer.parseInt(node);
+    String nodeName = String.format(Locale.ROOT, "baseUrl%s:%d_", node, port);
+    replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
     replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
     replicaPropMap.put(ZkStateReader.CORE_NAME_PROP, sliceName + "_" + replicaName);
     replicaPropMap.put(ZkStateReader.REPLICA_TYPE, replicaType.name());

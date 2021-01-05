@@ -16,29 +16,26 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FST.Arc;
 
 /**
  * Thin wrapper around an FST with root-arc caching for Japanese.
- * <p>
- * Depending upon fasterButMoreRam, either just kana (191 arcs),
- * or kana and han (28,607 arcs) are cached. The latter offers
- * additional performance at the cost of more RAM.
+ *
+ * <p>Depending upon fasterButMoreRam, either just kana (191 arcs), or kana and han (28,607 arcs)
+ * are cached. The latter offers additional performance at the cost of more RAM.
  */
 public final class TokenInfoFST {
   private final FST<Long> fst;
 
-  // depending upon fasterButMoreRam, we cache root arcs for either 
+  // depending upon fasterButMoreRam, we cache root arcs for either
   // kana (0x3040-0x30FF) or kana + han (0x3040-0x9FFF)
   // false: 191 arcs
   // true:  28,607 arcs (costs ~1.5MB)
   private final int cacheCeiling;
   private final FST.Arc<Long> rootCache[];
-  
+
   public final Long NO_OUTPUT;
 
   public TokenInfoFST(FST<Long> fst, boolean fasterButMoreRam) throws IOException {
@@ -47,10 +44,10 @@ public final class TokenInfoFST {
     NO_OUTPUT = fst.outputs.getNoOutput();
     rootCache = cacheRootArcs();
   }
-  
-  @SuppressWarnings({"rawtypes","unchecked"})
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private FST.Arc<Long>[] cacheRootArcs() throws IOException {
-    FST.Arc<Long> rootCache[] = new FST.Arc[1+(cacheCeiling-0x3040)];
+    FST.Arc<Long> rootCache[] = new FST.Arc[1 + (cacheCeiling - 0x3040)];
     FST.Arc<Long> firstArc = new FST.Arc<>();
     fst.getFirstArc(firstArc);
     FST.Arc<Long> arc = new FST.Arc<>();
@@ -63,8 +60,10 @@ public final class TokenInfoFST {
     }
     return rootCache;
   }
-  
-  public FST.Arc<Long> findTargetArc(int ch, FST.Arc<Long> follow, FST.Arc<Long> arc, boolean useCache, FST.BytesReader fstReader) throws IOException {
+
+  public FST.Arc<Long> findTargetArc(
+      int ch, FST.Arc<Long> follow, FST.Arc<Long> arc, boolean useCache, FST.BytesReader fstReader)
+      throws IOException {
     if (useCache && ch >= 0x3040 && ch <= cacheCeiling) {
       assert ch != FST.END_LABEL;
       final Arc<Long> result = rootCache[ch - 0x3040];
@@ -78,7 +77,7 @@ public final class TokenInfoFST {
       return fst.findTargetArc(ch, follow, arc, fstReader);
     }
   }
-  
+
   public Arc<Long> getFirstArc(FST.Arc<Long> arc) {
     return fst.getFirstArc(arc);
   }
@@ -86,7 +85,7 @@ public final class TokenInfoFST {
   public FST.BytesReader getBytesReader() {
     return fst.getBytesReader();
   }
-  
+
   /** @lucene.internal for testing only */
   FST<Long> getInternalFST() {
     return fst;

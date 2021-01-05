@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -43,9 +42,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
-/**
- * Simplification of FuzzyLikeThisQuery, to be used in the context of KNN classification.
- */
+/** Simplification of FuzzyLikeThisQuery, to be used in the context of KNN classification. */
 public class NearestFuzzyQuery extends Query {
 
   private final ArrayList<FieldVals> fieldVals = new ArrayList<>();
@@ -83,55 +80,49 @@ public class NearestFuzzyQuery extends Query {
     public int hashCode() {
       final int prime = 31;
       int result = 1;
-      result = prime * result
-          + ((fieldName == null) ? 0 : fieldName.hashCode());
+      result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
       result = prime * result + maxEdits;
       result = prime * result + prefixLength;
-      result = prime * result
-          + ((queryString == null) ? 0 : queryString.hashCode());
+      result = prime * result + ((queryString == null) ? 0 : queryString.hashCode());
       return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       FieldVals other = (FieldVals) obj;
       if (fieldName == null) {
-        if (other.fieldName != null)
-          return false;
-      } else if (!fieldName.equals(other.fieldName))
-        return false;
+        if (other.fieldName != null) return false;
+      } else if (!fieldName.equals(other.fieldName)) return false;
       if (maxEdits != other.maxEdits) {
         return false;
       }
-      if (prefixLength != other.prefixLength)
-        return false;
+      if (prefixLength != other.prefixLength) return false;
       if (queryString == null) {
         return other.queryString == null;
       } else return queryString.equals(other.queryString);
     }
-
-
   }
 
   /**
    * Adds user input for "fuzzification"
    *
-   * @param queryString The string which will be parsed by the analyzer and for which fuzzy variants will be parsed
+   * @param queryString The string which will be parsed by the analyzer and for which fuzzy variants
+   *     will be parsed
    */
   public void addTerms(String queryString, String fieldName) {
     int maxEdits = (int) MIN_SIMILARITY;
     if (maxEdits != MIN_SIMILARITY) {
-      throw new IllegalArgumentException("MIN_SIMILARITY must integer value between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got " + MIN_SIMILARITY);
+      throw new IllegalArgumentException(
+          "MIN_SIMILARITY must integer value between 0 and "
+              + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE
+              + ", inclusive; got "
+              + MIN_SIMILARITY);
     }
     fieldVals.add(new FieldVals(fieldName, maxEdits, queryString));
   }
-
 
   private void addTerms(IndexReader reader, FieldVals f, ScoreTermQueue q) throws IOException {
     if (f.queryString == null) return;
@@ -149,11 +140,14 @@ public class NearestFuzzyQuery extends Query {
         String term = termAtt.toString();
         if (!processedTerms.contains(term)) {
           processedTerms.add(term);
-          ScoreTermQueue variantsQ = new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
+          ScoreTermQueue variantsQ =
+              new ScoreTermQueue(
+                  MAX_VARIANTS_PER_TERM); // maxNum variants considered for any one term
           float minScore = 0;
           Term startTerm = new Term(f.fieldName, term);
-          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, startTerm, f.maxEdits, f.prefixLength, true);
-          //store the df so all variants use same idf
+          FuzzyTermsEnum fe =
+              new FuzzyTermsEnum(terms, startTerm, f.maxEdits, f.prefixLength, true);
+          // store the df so all variants use same idf
           int df = reader.docFreq(startTerm);
           int numVariants = 0;
           int totalVariantDocFreqs = 0;
@@ -163,18 +157,23 @@ public class NearestFuzzyQuery extends Query {
             totalVariantDocFreqs += fe.docFreq();
             float score = fe.getBoost();
             if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore) {
-              ScoreTerm st = new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)), score, startTerm);
+              ScoreTerm st =
+                  new ScoreTerm(
+                      new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)),
+                      score,
+                      startTerm);
               variantsQ.insertWithOverflow(st);
               minScore = variantsQ.top().score; // maintain minScore
             }
-            fe.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+            fe.setMaxNonCompetitiveBoost(
+                variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
           }
 
           if (numVariants > 0) {
             int avgDf = totalVariantDocFreqs / numVariants;
-            if (df == 0)//no direct match we can use as df for all variants
+            if (df == 0) // no direct match we can use as df for all variants
             {
-              df = avgDf; //use avg df of all variants
+              df = avgDf; // use avg df of all variants
             }
 
             // take the top variants (scored by edit distance) and reset the score
@@ -196,7 +195,7 @@ public class NearestFuzzyQuery extends Query {
   }
 
   private float idf(int docFreq, int docCount) {
-    return (float)(Math.log((docCount+1)/(double)(docFreq+1)) + 1.0);
+    return (float) (Math.log((docCount + 1) / (double) (docFreq + 1)) + 1.0);
   }
 
   private Query newTermQuery(IndexReader reader, Term term) throws IOException {
@@ -219,29 +218,30 @@ public class NearestFuzzyQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     ScoreTermQueue q = new ScoreTermQueue(MAX_NUM_TERMS);
-    //load up the list of possible terms
+    // load up the list of possible terms
     for (FieldVals f : fieldVals) {
       addTerms(reader, f, q);
     }
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
-    //create BooleanQueries to hold the variants for each token/field pair and ensure it
+    // create BooleanQueries to hold the variants for each token/field pair and ensure it
     // has no coord factor
-    //Step 1: sort the termqueries by term/field
+    // Step 1: sort the termqueries by term/field
     HashMap<Term, ArrayList<ScoreTerm>> variantQueries = new HashMap<>();
     int size = q.size();
     for (int i = 0; i < size; i++) {
       ScoreTerm st = q.pop();
       if (st != null) {
-        ArrayList<ScoreTerm> l = variantQueries.computeIfAbsent(st.fuzziedSourceTerm, k -> new ArrayList<>());
+        ArrayList<ScoreTerm> l =
+            variantQueries.computeIfAbsent(st.fuzziedSourceTerm, k -> new ArrayList<>());
         l.add(st);
       }
     }
-    //Step 2: Organize the sorted termqueries into zero-coord scoring boolean queries
+    // Step 2: Organize the sorted termqueries into zero-coord scoring boolean queries
     for (ArrayList<ScoreTerm> variants : variantQueries.values()) {
       if (variants.size() == 1) {
-        //optimize where only one selected variant
+        // optimize where only one selected variant
         ScoreTerm st = variants.get(0);
         Query tq = newTermQuery(reader, st.term);
         // set the boost to a mix of IDF and score
@@ -252,17 +252,18 @@ public class NearestFuzzyQuery extends Query {
           // found a match
           Query tq = newTermQuery(reader, st.term);
           // set the boost using the ScoreTerm's score
-          termVariants.add(new BoostQuery(tq, st.score), BooleanClause.Occur.SHOULD);          // add to query
+          termVariants.add(
+              new BoostQuery(tq, st.score), BooleanClause.Occur.SHOULD); // add to query
         }
-        bq.add(termVariants.build(), BooleanClause.Occur.SHOULD);          // add to query
+        bq.add(termVariants.build(), BooleanClause.Occur.SHOULD); // add to query
       }
     }
-    //TODO possible alternative step 3 - organize above booleans into a new layer of field-based
+    // TODO possible alternative step 3 - organize above booleans into a new layer of field-based
     // booleans with a minimum-should-match of NumFields-1?
     return bq.build();
   }
 
-  //Holds info for a fuzzy term variant - initially score is set to edit distance (for ranking best
+  // Holds info for a fuzzy term variant - initially score is set to edit distance (for ranking best
   // term variants) then is reset with IDF for use in ranking against all other
   // terms/fields
   private static class ScoreTerm {
@@ -287,12 +288,9 @@ public class NearestFuzzyQuery extends Query {
      */
     @Override
     protected boolean lessThan(ScoreTerm termA, ScoreTerm termB) {
-      if (termA.score == termB.score)
-        return termA.term.compareTo(termB.term) > 0;
-      else
-        return termA.score < termB.score;
+      if (termA.score == termB.score) return termA.term.compareTo(termB.term) > 0;
+      else return termA.score < termB.score;
     }
-
   }
 
   @Override
@@ -311,18 +309,15 @@ public class NearestFuzzyQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-        equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(NearestFuzzyQuery other) {
-    return Objects.equals(analyzer, other.analyzer) &&
-        Objects.equals(fieldVals, other.fieldVals);
+    return Objects.equals(analyzer, other.analyzer) && Objects.equals(fieldVals, other.fieldVals);
   }
 
   @Override
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
-
 }

@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.gl;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new GalicianAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new GalicianAnalyzer();
@@ -40,17 +37,16 @@ public class TestGalicianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "e", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("correspondente"), false);
-    Analyzer a = new GalicianAnalyzer( 
-        GalicianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("correspondente"), false);
+    Analyzer a = new GalicianAnalyzer(GalicianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "correspondente", "correspondente");
     checkOneTerm(a, "corresponderá", "correspond");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new GalicianAnalyzer();

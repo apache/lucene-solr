@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks.alt;
 
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 
-/**
- * {@link PerfTask} which does nothing, but is in a different package 
- */
+/** {@link PerfTask} which does nothing, but is in a different package */
 public class AltTestTask extends PerfTask {
-  
+
   public AltTestTask(PerfRunData runData) {
     super(runData);
   }
@@ -33,5 +30,4 @@ public class AltTestTask extends PerfTask {
   public int doLogic() throws Exception {
     return 0;
   }
-  
 }

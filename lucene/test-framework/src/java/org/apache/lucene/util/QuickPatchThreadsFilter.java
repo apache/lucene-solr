@@ -18,12 +18,10 @@ package org.apache.lucene.util;
 
 import com.carrotsearch.randomizedtesting.ThreadFilter;
 
-/**
- * Last minute patches.
- */
+/** Last minute patches. */
 public class QuickPatchThreadsFilter implements ThreadFilter {
   static final boolean isJ9;
-  
+
   static {
     isJ9 = Constants.JAVA_VENDOR.startsWith("IBM");
   }
@@ -37,8 +35,9 @@ public class QuickPatchThreadsFilter implements ThreadFilter {
       }
 
       // LUCENE-4736
-      StackTraceElement [] stack = t.getStackTrace();
-      if (stack.length > 0 && stack[stack.length - 1].getClassName().equals("java.util.Timer$TimerImpl")) {
+      StackTraceElement[] stack = t.getStackTrace();
+      if (stack.length > 0
+          && stack[stack.length - 1].getClassName().equals("java.util.Timer$TimerImpl")) {
         return true;
       }
     }

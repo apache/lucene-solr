@@ -17,20 +17,19 @@
 package org.apache.lucene.analysis.cn.smart;
 
 import java.util.Map;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Factory for {@link HMMChineseTokenizer}
- * <p>
- * Note: this class will currently emit tokens for punctuation. So you should either add
- * a WordDelimiterFilter after to remove these (with concatenate off), or use the 
- * SmartChinese stoplist with a StopFilterFactory via:
- * <code>words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
- * @lucene.experimental
  *
+ * <p>Note: this class will currently emit tokens for punctuation. So you should either add a
+ * WordDelimiterFilter after to remove these (with concatenate off), or use the SmartChinese
+ * stoplist with a StopFilterFactory via: <code>
+ * words="org/apache/lucene/analysis/cn/smart/stopwords.txt"</code>
+ *
+ * @lucene.experimental
  * @since 4.10.0
  * @lucene.spi {@value #NAME}
  */
@@ -40,7 +39,7 @@ public final class HMMChineseTokenizerFactory extends TokenizerFactory {
   public static final String NAME = "hmmChinese";
 
   /** Creates a new HMMChineseTokenizerFactory */
-  public HMMChineseTokenizerFactory(Map<String,String> args) {
+  public HMMChineseTokenizerFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

@@ -16,25 +16,22 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import java.io.IOException;
-import java.util.Map;
-
-
 /**
- * Depending on the boolean value of the <code>ifSource</code> function,
- * returns the value of the <code>trueSource</code> or <code>falseSource</code> function.
+ * Depending on the boolean value of the <code>ifSource</code> function, returns the value of the
+ * <code>trueSource</code> or <code>falseSource</code> function.
  */
 public class IfFunction extends BoolFunction {
   private final ValueSource ifSource;
   private final ValueSource trueSource;
   private final ValueSource falseSource;
-
 
   public IfFunction(ValueSource ifSource, ValueSource trueSource, ValueSource falseSource) {
     this.ifSource = ifSource;
@@ -43,7 +40,8 @@ public class IfFunction extends BoolFunction {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues ifVals = ifSource.getValues(context, readerContext);
     final FunctionValues trueVals = trueSource.getValues(context, readerContext);
     final FunctionValues falseVals = falseSource.getValues(context, readerContext);
@@ -91,7 +89,9 @@ public class IfFunction extends BoolFunction {
 
       @Override
       public boolean bytesVal(int doc, BytesRefBuilder target) throws IOException {
-        return ifVals.boolVal(doc) ? trueVals.bytesVal(doc, target) : falseVals.bytesVal(doc, target);
+        return ifVals.boolVal(doc)
+            ? trueVals.bytesVal(doc, target)
+            : falseVals.bytesVal(doc, target);
       }
 
       @Override
@@ -113,15 +113,26 @@ public class IfFunction extends BoolFunction {
 
       @Override
       public String toString(int doc) throws IOException {
-        return "if(" + ifVals.toString(doc) + ',' + trueVals.toString(doc) + ',' + falseVals.toString(doc) + ')';
+        return "if("
+            + ifVals.toString(doc)
+            + ','
+            + trueVals.toString(doc)
+            + ','
+            + falseVals.toString(doc)
+            + ')';
       }
     };
-
   }
 
   @Override
   public String description() {
-    return "if(" + ifSource.description() + ',' + trueSource.description() + ',' + falseSource + ')';
+    return "if("
+        + ifSource.description()
+        + ','
+        + trueSource.description()
+        + ','
+        + falseSource
+        + ')';
   }
 
   @Override
@@ -135,7 +146,7 @@ public class IfFunction extends BoolFunction {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof IfFunction)) return false;
-    IfFunction other = (IfFunction)o;
+    IfFunction other = (IfFunction) o;
     return ifSource.equals(other.ifSource)
         && trueSource.equals(other.trueSource)
         && falseSource.equals(other.falseSource);

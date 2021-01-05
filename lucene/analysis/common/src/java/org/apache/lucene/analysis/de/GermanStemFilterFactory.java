@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.de;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
- * Factory for {@link GermanStemFilter}. 
+/**
+ * Factory for {@link GermanStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_destem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -40,15 +39,15 @@ public class GermanStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "germanStem";
-  
+
   /** Creates a new GermanStemFilterFactory */
-  public GermanStemFilterFactory(Map<String,String> args) {
+  public GermanStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public GermanStemFilterFactory() {
     throw defaultCtorException();
@@ -59,4 +58,3 @@ public class GermanStemFilterFactory extends TokenFilterFactory {
     return new GermanStemFilter(in);
   }
 }
-

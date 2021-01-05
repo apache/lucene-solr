@@ -16,30 +16,28 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-
 /**
- * Restore a given set of system properties to a snapshot taken at the beginning
- * of the rule.
- * 
- * This is semantically similar to {@link SystemPropertiesRestoreRule} but
- * the list of properties to restore must be provided explicitly (because the security
- * manager prevents us from accessing the whole set of properties).
- * 
- * All properties to be restored must have r/w property permission.
+ * Restore a given set of system properties to a snapshot taken at the beginning of the rule.
+ *
+ * <p>This is semantically similar to {@link SystemPropertiesRestoreRule} but the list of properties
+ * to restore must be provided explicitly (because the security manager prevents us from accessing
+ * the whole set of properties).
+ *
+ * <p>All properties to be restored must have r/w property permission.
  */
-public class TestRuleRestoreSystemProperties extends TestRuleAdapter {  
+public class TestRuleRestoreSystemProperties extends TestRuleAdapter {
   private final String[] propertyNames;
   private final Map<String, String> restore = new HashMap<String, String>();
 
   public TestRuleRestoreSystemProperties(String... propertyNames) {
     this.propertyNames = propertyNames;
-    
+
     if (propertyNames.length == 0) {
       throw new IllegalArgumentException("No properties to restore? Odd.");
     }
@@ -54,7 +52,7 @@ public class TestRuleRestoreSystemProperties extends TestRuleAdapter {
       restore.put(key, System.getProperty(key));
     }
   }
-  
+
   @Override
   protected void afterAlways(List<Throwable> errors) throws Throwable {
     for (String key : propertyNames) {

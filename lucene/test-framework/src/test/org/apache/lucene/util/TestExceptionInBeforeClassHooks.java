@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,12 +35,13 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar");
+            }
+          };
       t.start();
       t.join();
     }
@@ -51,54 +51,57 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
 
   public static class Nested2 extends WithNestedTests.AbstractNestedTest {
     public void test1() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar1");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar1");
+            }
+          };
       t.start();
       t.join();
     }
 
     public void test2() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar2");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar2");
+            }
+          };
       t.start();
       t.join();
     }
-    
+
     public void test3() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar3");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar3");
+            }
+          };
       t.start();
       t.join();
-    }    
+    }
   }
 
   public static class Nested3 extends WithNestedTests.AbstractNestedTest {
     @Before
     public void runBeforeTest() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar");
+            }
+          };
       t.start();
       t.join();
     }
 
-    public void test1() throws Exception {
-    }
+    public void test1() throws Exception {}
   }
 
   @Test
@@ -114,7 +117,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     Result runClasses = JUnitCore.runClasses(Nested2.class);
     assertFailureCount(3, runClasses);
     Assert.assertEquals(3, runClasses.getRunCount());
-    
+
     ArrayList<String> foobars = new ArrayList<>();
     for (Failure f : runClasses.getFailures()) {
       Matcher m = Pattern.compile("foobar[0-9]+").matcher(f.getTrace());
@@ -124,16 +127,14 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     }
 
     Collections.sort(foobars);
-    Assert.assertEquals("[foobar1, foobar2, foobar3]", 
-        Arrays.toString(foobars.toArray()));
+    Assert.assertEquals("[foobar1, foobar2, foobar3]", Arrays.toString(foobars.toArray()));
   }
-  
+
   @Test
   public void testExceptionWithinBefore() {
     Result runClasses = JUnitCore.runClasses(Nested3.class);
     assertFailureCount(1, runClasses);
     Assert.assertEquals(1, runClasses.getRunCount());
     Assert.assertTrue(runClasses.getFailures().get(0).getTrace().contains("foobar"));
-  }  
-  
+  }
 }

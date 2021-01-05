@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
@@ -38,24 +37,20 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
   public void testGreedy() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("(foo)+");
     t.setReader(new StringReader("bar foofoo baz"));
-    assertTokenStreamContents(t,
-                              new String[] {"bar ", " baz"},
-                              new int[] {0, 10},
-                              new int[] {4, 14});
+    assertTokenStreamContents(
+        t, new String[] {"bar ", " baz"}, new int[] {0, 10}, new int[] {4, 14});
   }
 
   public void testBackToBack() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("foo");
     t.setReader(new StringReader("bar foofoo baz"));
-    assertTokenStreamContents(t,
-                              new String[] {"bar ", " baz"},
-                              new int[] {0, 10},
-                              new int[] {4, 14});
+    assertTokenStreamContents(
+        t, new String[] {"bar ", " baz"}, new int[] {0, 10}, new int[] {4, 14});
   }
 
   public void testBigLookahead() throws Exception {
     StringBuilder b = new StringBuilder();
-    for(int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       b.append('a');
     }
     b.append('b');
@@ -63,7 +58,7 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
 
     b = new StringBuilder();
-    for(int i=0;i<200;i++) {
+    for (int i = 0; i < 200; i++) {
       b.append('a');
     }
     t.setReader(new StringReader(b.toString()));
@@ -102,50 +97,37 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     Tokenizer t = new SimplePatternSplitTokenizer("[ \t\r\n]");
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
     t.setReader(new StringReader("a \tb   c"));
-    assertTokenStreamContents(t,
-                              new String[] {"a", "b", "c"},
-                              new int[] {0, 3, 7},
-                              new int[] {1, 4, 8});
+    assertTokenStreamContents(
+        t, new String[] {"a", "b", "c"}, new int[] {0, 3, 7}, new int[] {1, 4, 8});
   }
 
   public void testSplitMultiCharWhitespace() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("[ \t\r\n]*");
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
     t.setReader(new StringReader("a \tb   c"));
-    assertTokenStreamContents(t,
-                              new String[] {"a", "b", "c"},
-                              new int[] {0, 3, 7},
-                              new int[] {1, 4, 8});
+    assertTokenStreamContents(
+        t, new String[] {"a", "b", "c"}, new int[] {0, 3, 7}, new int[] {1, 4, 8});
   }
 
   public void testLeadingNonToken() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("[ \t\r\n]*");
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
     t.setReader(new StringReader("    a c"));
-    assertTokenStreamContents(t,
-                              new String[] {"a", "c"},
-                              new int[] {4, 6},
-                              new int[] {5, 7});
+    assertTokenStreamContents(t, new String[] {"a", "c"}, new int[] {4, 6}, new int[] {5, 7});
   }
 
   public void testTrailingNonToken() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("[ \t\r\n]*");
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
     t.setReader(new StringReader("a c   "));
-    assertTokenStreamContents(t,
-                              new String[] {"a", "c"},
-                              new int[] {0, 2},
-                              new int[] {1, 3});
+    assertTokenStreamContents(t, new String[] {"a", "c"}, new int[] {0, 2}, new int[] {1, 3});
   }
 
   public void testEmptyStringPatternOneMatch() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("a*");
     CharTermAttribute termAtt = t.getAttribute(CharTermAttribute.class);
     t.setReader(new StringReader("bbab"));
-    assertTokenStreamContents(t,
-                              new String[] {"bb", "b"},
-                              new int[] {0, 3},
-                              new int[] {2, 4});
+    assertTokenStreamContents(t, new String[] {"bb", "b"}, new int[] {0, 3}, new int[] {2, 4});
   }
 
   public void testEndOffset() throws Exception {
@@ -165,28 +147,24 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     Tokenizer t = new SimplePatternSplitTokenizer("aaaa");
 
     t.setReader(new StringReader("aaaaaaaaaaaaaaa"));
-    assertTokenStreamContents(t,
-                              new String[] {"aaa"},
-                              new int[] {12},
-                              new int[] {15});
+    assertTokenStreamContents(t, new String[] {"aaa"}, new int[] {12}, new int[] {15});
   }
 
-  public void testBasic() throws Exception 
-  {
+  public void testBasic() throws Exception {
     String[][] tests = {
       // pattern        input                    output
-      { "--",          "aaa--bbb--ccc",         "aaa bbb ccc" },
-      { ":",           "aaa:bbb:ccc",           "aaa bbb ccc" },
-      { ":",           "boo:and:foo",           "boo and foo" },
-      { "o",           "boo:and:foo",           "b :and:f" },
+      {"--", "aaa--bbb--ccc", "aaa bbb ccc"},
+      {":", "aaa:bbb:ccc", "aaa bbb ccc"},
+      {":", "boo:and:foo", "boo and foo"},
+      {"o", "boo:and:foo", "b :and:f"},
     };
-    
-    for(String[] test : tests) {     
+
+    for (String[] test : tests) {
       TokenStream stream = new SimplePatternSplitTokenizer(test[0]);
-      ((Tokenizer)stream).setReader(new StringReader(test[1]));
+      ((Tokenizer) stream).setReader(new StringReader(test[1]));
       String out = tsToString(stream);
-      assertEquals("pattern: "+test[0]+" with input: "+test[1], test[2], out);
-    } 
+      assertEquals("pattern: " + test[0] + " with input: " + test[1], test[2], out);
+    }
   }
 
   public void testNotDeterminized() throws Exception {
@@ -200,7 +178,11 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     a.addTransition(start, mid2, 'a', 'z');
     a.addTransition(mid1, end, 'b');
     a.addTransition(mid2, end, 'b');
-    expectThrows(IllegalArgumentException.class, () -> {new SimplePatternSplitTokenizer(a);});
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SimplePatternSplitTokenizer(a);
+        });
   }
 
   public void testOffsetCorrection() throws Exception {
@@ -208,25 +190,24 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
 
     // create MappingCharFilter
     List<String> mappingRules = new ArrayList<>();
-    mappingRules.add( "\"&uuml;\" => \"ü\"" );
+    mappingRules.add("\"&uuml;\" => \"ü\"");
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");
     NormalizeCharMap normMap = builder.build();
-    CharFilter charStream = new MappingCharFilter( normMap, new StringReader(INPUT));
+    CharFilter charStream = new MappingCharFilter(normMap, new StringReader(INPUT));
 
     // create SimplePatternSplitTokenizer
     Tokenizer stream = new SimplePatternSplitTokenizer("Günther");
     stream.setReader(charStream);
-    assertTokenStreamContents(stream,
-        new String[] { " ", " is here" },
-        new int[] { 12, 25 },
-        new int[] { 13, 33 },
+    assertTokenStreamContents(
+        stream,
+        new String[] {" ", " is here"},
+        new int[] {12, 25},
+        new int[] {13, 33},
         INPUT.length());
   }
-  
-  /** 
-   * TODO: rewrite tests not to use string comparison.
-   */
+
+  /** TODO: rewrite tests not to use string comparison. */
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
     CharTermAttribute termAtt = in.addAttribute(CharTermAttribute.class);
@@ -247,26 +228,28 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
     in.close();
     return out.toString();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new SimplePatternSplitTokenizer("a");
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new SimplePatternSplitTokenizer("a");
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
-    
-    Analyzer b = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new SimplePatternSplitTokenizer("a");
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+
+    Analyzer b =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new SimplePatternSplitTokenizer("a");
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
@@ -274,10 +257,6 @@ public class TestSimplePatternSplitTokenizer extends BaseTokenStreamTestCase {
   public void testEndLookahead() throws Exception {
     Tokenizer t = new SimplePatternSplitTokenizer("(ab)+");
     t.setReader(new StringReader("aba"));
-    assertTokenStreamContents(t,
-        new String[] { "a" },
-        new int[] { 2 },
-        new int[] { 3 },
-        3);
+    assertTokenStreamContents(t, new String[] {"a"}, new int[] {2}, new int[] {3}, 3);
   }
 }

@@ -16,8 +16,11 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
@@ -26,94 +29,102 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 
 /**
- * A QueryMaker that makes queries devised manually (by Grant Ingersoll) for
- * searching in the Reuters collection.
+ * A QueryMaker that makes queries devised manually (by Grant Ingersoll) for searching in the
+ * Reuters collection.
  */
 public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker {
 
-  private static String [] STANDARD_QUERIES = {
-    //Start with some short queries
-    "Salomon", "Comex", "night trading", "Japan Sony",
-    //Try some Phrase Queries
-    "\"Sony Japan\"", "\"food needs\"~3",
-    "\"World Bank\"^2 AND Nigeria", "\"World Bank\" -Nigeria",
+  private static String[] STANDARD_QUERIES = {
+    // Start with some short queries
+    "Salomon",
+    "Comex",
+    "night trading",
+    "Japan Sony",
+    // Try some Phrase Queries
+    "\"Sony Japan\"",
+    "\"food needs\"~3",
+    "\"World Bank\"^2 AND Nigeria",
+    "\"World Bank\" -Nigeria",
     "\"Ford Credit\"~5",
-    //Try some longer queries
+    // Try some longer queries
     "airline Europe Canada destination",
-    "Long term pressure by trade " +
-    "ministers is necessary if the current Uruguay round of talks on " +
-    "the General Agreement on Trade and Tariffs (GATT) is to " +
-    "succeed"
+    "Long term pressure by trade "
+        + "ministers is necessary if the current Uruguay round of talks on "
+        + "the General Agreement on Trade and Tariffs (GATT) is to "
+        + "succeed"
   };
-  
+
   private static Query[] getPrebuiltQueries(String field) {
     //  be wary of unanalyzed text
     return new Query[] {
-        new SpanFirstQuery(new SpanTermQuery(new Term(field, "ford")), 5),
-        new SpanNearQuery(new SpanQuery[]{new SpanTermQuery(new Term(field, "night")), new SpanTermQuery(new Term(field, "trading"))}, 4, false),
-        new SpanNearQuery(new SpanQuery[]{new SpanFirstQuery(new SpanTermQuery(new Term(field, "ford")), 10), new SpanTermQuery(new Term(field, "credit"))}, 10, false),
-        new WildcardQuery(new Term(field, "fo*")),
+      new SpanFirstQuery(new SpanTermQuery(new Term(field, "ford")), 5),
+      new SpanNearQuery(
+          new SpanQuery[] {
+            new SpanTermQuery(new Term(field, "night")),
+            new SpanTermQuery(new Term(field, "trading"))
+          },
+          4,
+          false),
+      new SpanNearQuery(
+          new SpanQuery[] {
+            new SpanFirstQuery(new SpanTermQuery(new Term(field, "ford")), 10),
+            new SpanTermQuery(new Term(field, "credit"))
+          },
+          10,
+          false),
+      new WildcardQuery(new Term(field, "fo*")),
     };
   }
-  
+
   /**
    * Parse the strings containing Lucene queries.
    *
    * @param qs array of strings containing query expressions
-   * @param a  analyzer to use when parsing queries
+   * @param a analyzer to use when parsing queries
    * @return array of Lucene queries
    */
   private static Query[] createQueries(List<Object> qs, Analyzer a) {
     QueryParser qp = new QueryParser(DocMaker.BODY_FIELD, a);
     List<Object> queries = new ArrayList<>();
-    for (int i = 0; i < qs.size(); i++)  {
+    for (int i = 0; i < qs.size(); i++) {
       try {
-        
+
         Object query = qs.get(i);
         Query q = null;
         if (query instanceof String) {
           q = qp.parse((String) query);
-          
+
         } else if (query instanceof Query) {
           q = (Query) query;
-          
+
         } else {
           System.err.println("Unsupported Query Type: " + query);
         }
-        
+
         if (q != null) {
           queries.add(q);
         }
-        
-      } catch (Exception e)  {
+
+      } catch (Exception e) {
         e.printStackTrace();
       }
     }
-    
+
     return queries.toArray(new Query[0]);
   }
-  
+
   @Override
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
-    Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
-    "org.apache.lucene.analysis.standard.StandardAnalyzer")); 
-    
+    Analyzer anlzr =
+        NewAnalyzerTask.createAnalyzer(
+            config.get("analyzer", "org.apache.lucene.analysis.standard.StandardAnalyzer"));
+
     List<Object> queryList = new ArrayList<>(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));
     queryList.addAll(Arrays.asList(getPrebuiltQueries(DocMaker.BODY_FIELD)));
     return createQueries(queryList, anlzr);
   }
-
-
-  
-
 }

@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * This class represents a degenerate point bounding box.
- * It is not a simple GeoPoint because we must have the latitude and longitude.
+ * This class represents a degenerate point bounding box. It is not a simple GeoPoint because we
+ * must have the latitude and longitude.
  *
  * @lucene.internal
  */
@@ -31,27 +31,32 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
   /** Edge point is an area containing just this */
   protected final GeoPoint[] edgePoints;
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
-   *@param lat is the latitude.
-   *@param lon is the longitude.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model to use.
+   * @param lat is the latitude.
+   * @param lon is the longitude.
    */
   public GeoDegeneratePoint(final PlanetModel planetModel, final double lat, final double lon) {
     super(planetModel, lat, lon);
     this.planetModel = planetModel;
-    this.edgePoints = new GeoPoint[]{this};
+    this.edgePoints = new GeoPoint[] {this};
   }
 
-  /** Constructor for deserialization.
-   *@param planetModel is the planet model to use.
-   *@param inputStream is the input stream.
+  /**
+   * Constructor for deserialization.
+   *
+   * @param planetModel is the planet model to use.
+   * @param inputStream is the input stream.
    */
-  public GeoDegeneratePoint(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  public GeoDegeneratePoint(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
     super(planetModel, inputStream);
     this.planetModel = planetModel;
-    this.edgePoints = new GeoPoint[]{this};
+    this.edgePoints = new GeoPoint[] {this};
   }
-  
+
   @Override
   public PlanetModel getPlanetModel() {
     return planetModel;
@@ -63,7 +68,8 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
     final double newBottomLat = latitude - angle;
     final double newLeftLon = longitude - angle;
     final double newRightLon = longitude + angle;
-    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(
+        planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
@@ -72,24 +78,28 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
   }
 
   @Override
-  public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
     // If not on the plane, no intersection
-    if (!plane.evaluateIsZero(this))
+    if (!plane.evaluateIsZero(this)) {
       return false;
+    }
 
     for (Membership m : bounds) {
-      if (!m.isWithin(this))
+      if (!m.isWithin(this)) {
         return false;
+      }
     }
     return true;
   }
 
   @Override
   public boolean intersects(GeoShape geoShape) {
-    // We have no way of computing this properly, so return isWithin(), as we are allowed by contract.
+    // We have no way of computing this properly, so return isWithin(), as we are allowed by
+    // contract.
     return geoShape.isWithin(this);
   }
-  
+
   @Override
   public void getBounds(Bounds bounds) {
     bounds.addPoint(this);
@@ -101,21 +111,33 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
   }
 
   @Override
-  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    return distanceStyle.computeDistance(this, x,y,z);
+  public double computeOutsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(this, x, y, z);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoDegeneratePoint))
+    if (!(o instanceof GeoDegeneratePoint)) {
       return false;
+    }
     GeoDegeneratePoint other = (GeoDegeneratePoint) o;
     return super.equals(other) && other.latitude == latitude && other.longitude == longitude;
   }
 
   @Override
   public String toString() {
-    return "GeoDegeneratePoint: {planetmodel="+planetModel+", lat=" + latitude + "(" + latitude * 180.0 / Math.PI + "), lon=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
+    return "GeoDegeneratePoint: {planetmodel="
+        + planetModel
+        + ", lat="
+        + latitude
+        + "("
+        + latitude * 180.0 / Math.PI
+        + "), lon="
+        + longitude
+        + "("
+        + longitude * 180.0 / Math.PI
+        + ")}";
   }
 
   @Override
@@ -141,25 +163,26 @@ class GeoDegeneratePoint extends GeoPoint implements GeoPointShape {
   @Override
   public int getRelationship(final GeoShape shape) {
     if (shape.isWithin(this)) {
-      //System.err.println("Degenerate point "+this+" is WITHIN shape "+shape);
+      // System.err.println("Degenerate point " + this + " is WITHIN shape " + shape);
       return CONTAINS;
     }
 
-    //System.err.println("Degenerate point "+this+" is NOT within shape "+shape);
+    // System.err.println("Degenerate point " + this + " is NOT within shape " + shape);
     return DISJOINT;
   }
 
   @Override
-  public double computeDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    if (isWithin(x,y,z))
+  public double computeDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    if (isWithin(x, y, z)) {
       return 0.0;
+    }
     return Double.POSITIVE_INFINITY;
   }
-  
+
   @Override
-  public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+  public void getDistanceBounds(
+      final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
     getBounds(bounds);
   }
-
 }
-

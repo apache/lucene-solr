@@ -16,9 +16,10 @@
  */
 
 /**
- * Uses already seen data (the indexed documents) to classify an input ( can be simple text or a structured document).
+ * Uses already seen data (the indexed documents) to classify an input ( can be simple text or a
+ * structured document).
  *
- * Currently contains a (simplistic) Naive Bayes classifier, a k-Nearest
- * Neighbor classifier and a Perceptron based classifier.
+ * <p>Currently contains a (simplistic) Naive Bayes classifier, a k-Nearest Neighbor classifier and
+ * a Perceptron based classifier.
  */
 package org.apache.lucene.classification;

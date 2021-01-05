@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
@@ -31,9 +30,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-/**
- * An implementation for retrieving {@link FunctionValues} instances for string based fields.
- */
+/** An implementation for retrieving {@link FunctionValues} instances for string based fields. */
 public class BytesRefFieldSource extends FieldCacheSource {
 
   public BytesRefFieldSource(String field) {
@@ -41,7 +38,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FieldInfo fieldInfo = readerContext.reader().getFieldInfos().fieldInfo(field);
 
     // To be sorted or not to be sorted, that is the question
@@ -53,7 +51,8 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
         private BytesRef getValueForDoc(int doc) throws IOException {
           if (doc < lastDocID) {
-            throw new IllegalArgumentException("docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+            throw new IllegalArgumentException(
+                "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
           }
           lastDocID = doc;
           int curDocID = binaryValues.docID();
@@ -85,9 +84,7 @@ public class BytesRefFieldSource extends FieldCacheSource {
 
         public String strVal(int doc) throws IOException {
           final BytesRefBuilder bytes = new BytesRefBuilder();
-          return bytesVal(doc, bytes)
-              ? bytes.get().utf8ToString()
-              : null;
+          return bytesVal(doc, bytes) ? bytes.get().utf8ToString() : null;
         }
 
         @Override
@@ -121,7 +118,6 @@ public class BytesRefFieldSource extends FieldCacheSource {
             }
           };
         }
-
       };
     } else {
       return new DocTermsIndexDocValues(this, readerContext, field) {

@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.commongrams;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,20 +27,20 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /*
- * TODO: Consider implementing https://issues.apache.org/jira/browse/LUCENE-1688 changes to stop list and associated constructors 
+ * TODO: Consider implementing https://issues.apache.org/jira/browse/LUCENE-1688 changes to stop list and associated constructors
  */
 
 /**
- * Construct bigrams for frequently occurring terms while indexing. Single terms
- * are still indexed too, with bigrams overlaid. This is achieved through the
- * use of {@link PositionIncrementAttribute#setPositionIncrement(int)}. Bigrams have a type
- * of {@link #GRAM_TYPE} Example:
+ * Construct bigrams for frequently occurring terms while indexing. Single terms are still indexed
+ * too, with bigrams overlaid. This is achieved through the use of {@link
+ * PositionIncrementAttribute#setPositionIncrement(int)}. Bigrams have a type of {@link #GRAM_TYPE}
+ * Example:
+ *
  * <ul>
- * <li>input:"the quick brown fox"</li>
- * <li>output:|"the","the-quick"|"brown"|"fox"|</li>
- * <li>"the-quick" has a position increment of 0 so it is in the same position
- * as "the" "the-quick" has a term.type() of "gram"</li>
- * 
+ *   <li>input:"the quick brown fox"
+ *   <li>output:|"the","the-quick"|"brown"|"fox"|
+ *   <li>"the-quick" has a position increment of 0 so it is in the same position as "the"
+ *       "the-quick" has a term.type() of "gram"
  * </ul>
  */
 
@@ -56,23 +55,24 @@ public final class CommonGramsFilter extends TokenFilter {
   private final CharArraySet commonWords;
 
   private final StringBuilder buffer = new StringBuilder();
-  
+
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute =
+      addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAttribute =
+      addAttribute(PositionLengthAttribute.class);
 
   private int lastStartOffset;
   private boolean lastWasCommon;
   private State savedState;
 
   /**
-   * Construct a token stream filtering the given input using a Set of common
-   * words to create bigrams. Outputs both unigrams with position increment and
-   * bigrams with position increment 0 type=gram where one or both of the words
-   * in a potential bigram are in the set of common words .
-   * 
+   * Construct a token stream filtering the given input using a Set of common words to create
+   * bigrams. Outputs both unigrams with position increment and bigrams with position increment 0
+   * type=gram where one or both of the words in a potential bigram are in the set of common words .
+   *
    * @param input TokenStream input in filter chain
    * @param commonWords The set of common words.
    */
@@ -82,20 +82,17 @@ public final class CommonGramsFilter extends TokenFilter {
   }
 
   /**
-   * Inserts bigrams for common words into a token stream. For each input token,
-   * output the token. If the token and/or the following token are in the list
-   * of common words also output a bigram with position increment 0 and
-   * type="gram"
+   * Inserts bigrams for common words into a token stream. For each input token, output the token.
+   * If the token and/or the following token are in the list of common words also output a bigram
+   * with position increment 0 and type="gram"
    *
-   * TODO:Consider adding an option to not emit unigram stopwords
-   * as in CDL XTF BigramStopFilter, CommonGramsQueryFilter would need to be
-   * changed to work with this.
+   * <p>TODO:Consider adding an option to not emit unigram stopwords as in CDL XTF BigramStopFilter,
+   * CommonGramsQueryFilter would need to be changed to work with this.
    *
-   * TODO: Consider optimizing for the case of three
-   * commongrams i.e "man of the year" normally produces 3 bigrams: "man-of",
-   * "of-the", "the-year" but with proper management of positions we could
-   * eliminate the middle bigram "of-the"and save a disk seek and a whole set of
-   * position lookups.
+   * <p>TODO: Consider optimizing for the case of three commongrams i.e "man of the year" normally
+   * produces 3 bigrams: "man-of", "of-the", "the-year" but with proper management of positions we
+   * could eliminate the middle bigram "of-the"and save a disk seek and a whole set of position
+   * lookups.
    */
   @Override
   public boolean incrementToken() throws IOException {
@@ -108,15 +105,15 @@ public final class CommonGramsFilter extends TokenFilter {
     } else if (!input.incrementToken()) {
       return false;
     }
-    
-    /* We build n-grams before and after stopwords. 
+
+    /* We build n-grams before and after stopwords.
      * When valid, the buffer always contains at least the separator.
      * If it's empty, there is nothing before this stopword.
      */
     if (lastWasCommon || (isCommon() && buffer.length() > 0)) {
       savedState = captureState();
       gramToken();
-      return true;      
+      return true;
     }
 
     saveTermBuffer();
@@ -131,20 +128,17 @@ public final class CommonGramsFilter extends TokenFilter {
     buffer.setLength(0);
   }
 
-  // ================================================= Helper Methods ================================================
-
   /**
    * Determines if the current token is a common term
    *
    * @return {@code true} if the current token is a common term, {@code false} otherwise
    */
   private boolean isCommon() {
-    return commonWords != null && commonWords.contains(termAttribute.buffer(), 0, termAttribute.length());
+    return commonWords != null
+        && commonWords.contains(termAttribute.buffer(), 0, termAttribute.length());
   }
 
-  /**
-   * Saves this information to form the left part of a gram
-   */
+  /** Saves this information to form the left part of a gram */
   private void saveTermBuffer() {
     buffer.setLength(0);
     buffer.append(termAttribute.buffer(), 0, termAttribute.length());
@@ -153,9 +147,7 @@ public final class CommonGramsFilter extends TokenFilter {
     lastWasCommon = isCommon();
   }
 
-  /**
-   * Constructs a compound token.
-   */
+  /** Constructs a compound token. */
   private void gramToken() {
     buffer.append(termAttribute.buffer(), 0, termAttribute.length());
     int endOffset = offsetAttribute.endOffset();
@@ -167,7 +159,7 @@ public final class CommonGramsFilter extends TokenFilter {
     if (length > termText.length) {
       termText = termAttribute.resizeBuffer(length);
     }
-    
+
     buffer.getChars(0, length, termText, 0);
     termAttribute.setLength(length);
     posIncAttribute.setPositionIncrement(0);

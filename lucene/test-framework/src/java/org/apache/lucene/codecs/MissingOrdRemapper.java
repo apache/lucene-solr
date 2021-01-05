@@ -17,15 +17,14 @@
 package org.apache.lucene.codecs;
 
 import java.util.Iterator;
-
 import org.apache.lucene.util.BytesRef;
 
-/** 
- * a utility class to write missing values for SORTED as if they were the empty string
- * (to simulate pre-Lucene4.5 dv behavior for testing old codecs)
+/**
+ * a utility class to write missing values for SORTED as if they were the empty string (to simulate
+ * pre-Lucene4.5 dv behavior for testing old codecs)
  */
 public class MissingOrdRemapper {
-  
+
   /** insert an empty byte[] to the front of this iterable */
   public static Iterable<BytesRef> insertEmptyValue(final Iterable<BytesRef> iterable) {
     return new Iterable<BytesRef>() {
@@ -34,7 +33,7 @@ public class MissingOrdRemapper {
         return new Iterator<BytesRef>() {
           boolean seenEmpty = false;
           Iterator<BytesRef> in = iterable.iterator();
-          
+
           @Override
           public boolean hasNext() {
             return !seenEmpty || in.hasNext();
@@ -58,7 +57,7 @@ public class MissingOrdRemapper {
       }
     };
   }
-  
+
   /** remaps ord -1 to ord 0 on this iterable. */
   public static Iterable<Number> mapMissingToOrd0(final Iterable<Number> iterable) {
     return new Iterable<Number>() {
@@ -66,7 +65,7 @@ public class MissingOrdRemapper {
       public Iterator<Number> iterator() {
         return new Iterator<Number>() {
           Iterator<Number> in = iterable.iterator();
-          
+
           @Override
           public boolean hasNext() {
             return in.hasNext();
@@ -90,7 +89,7 @@ public class MissingOrdRemapper {
       }
     };
   }
-  
+
   /** remaps every ord+1 on this iterable */
   public static Iterable<Number> mapAllOrds(final Iterable<Number> iterable) {
     return new Iterable<Number>() {
@@ -98,7 +97,7 @@ public class MissingOrdRemapper {
       public Iterator<Number> iterator() {
         return new Iterator<Number>() {
           Iterator<Number> in = iterable.iterator();
-          
+
           @Override
           public boolean hasNext() {
             return in.hasNext();
@@ -107,7 +106,7 @@ public class MissingOrdRemapper {
           @Override
           public Number next() {
             Number n = in.next();
-            return n.longValue()+1;
+            return n.longValue() + 1;
           }
 
           @Override

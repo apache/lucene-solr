@@ -22,16 +22,15 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 /**
- * Class for building a User Dictionary.
- * This class allows for adding custom nouns (세종) or compounds (세종시 세종 시).
+ * Class for building a User Dictionary. This class allows for adding custom nouns (세종) or compounds
+ * (세종시 세종 시).
  */
 public final class UserDictionary implements Dictionary {
   // text -> wordID
@@ -96,7 +95,7 @@ public final class UserDictionary implements Dictionary {
       if (token.equals(lastToken)) {
         continue;
       }
-      char lastChar = entry.charAt(entry.length()-1);
+      char lastChar = entry.charAt(entry.length() - 1);
       if (charDef.isHangul(lastChar)) {
         if (charDef.hasCoda(lastChar)) {
           rightIds.add(RIGHT_ID_T);
@@ -110,15 +109,19 @@ public final class UserDictionary implements Dictionary {
       if (splits.length == 1) {
         segmentations.add(null);
       } else {
-        int[] length = new int[splits.length-1];
+        int[] length = new int[splits.length - 1];
         int offset = 0;
         for (int i = 1; i < splits.length; i++) {
-          length[i-1] = splits[i].length();
+          length[i - 1] = splits[i].length();
           offset += splits[i].length();
         }
         if (offset > token.length()) {
-          throw new IllegalArgumentException("Illegal user dictionary entry " + entry +
-              " - the segmentation is bigger than the surface form (" + token + ")");
+          throw new IllegalArgumentException(
+              "Illegal user dictionary entry "
+                  + entry
+                  + " - the segmentation is bigger than the surface form ("
+                  + token
+                  + ")");
         }
         segmentations.add(length);
       }
@@ -131,7 +134,7 @@ public final class UserDictionary implements Dictionary {
       }
       fstCompiler.add(scratch.get(), ord);
       lastToken = token;
-      ord ++;
+      ord++;
     }
     this.fst = new TokenInfoFST(fstCompiler.compile());
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
@@ -149,12 +152,12 @@ public final class UserDictionary implements Dictionary {
   public int getLeftId(int wordId) {
     return LEFT_ID;
   }
-  
+
   @Override
   public int getRightId(int wordId) {
     return rightIds[wordId];
   }
-  
+
   @Override
   public int getWordCost(int wordId) {
     return WORD_COST;
@@ -193,7 +196,7 @@ public final class UserDictionary implements Dictionary {
     int offset = 0;
     Morpheme[] morphemes = new Morpheme[segs.length];
     for (int i = 0; i < segs.length; i++) {
-      morphemes[i] = new Morpheme(POS.Tag.NNG, new String(surfaceForm, off+offset, segs[i]));
+      morphemes[i] = new Morpheme(POS.Tag.NNG, new String(surfaceForm, off + offset, segs[i]));
       offset += segs[i];
     }
     return morphemes;
@@ -201,6 +204,7 @@ public final class UserDictionary implements Dictionary {
 
   /**
    * Lookup words in text
+   *
    * @param chars text
    * @param off offset into text
    * @param len length of text
@@ -217,7 +221,7 @@ public final class UserDictionary implements Dictionary {
       int output = 0;
       int remaining = end - startOffset;
       for (int i = 0; i < remaining; i++) {
-        int ch = chars[startOffset+i];
+        int ch = chars[startOffset + i];
         if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }

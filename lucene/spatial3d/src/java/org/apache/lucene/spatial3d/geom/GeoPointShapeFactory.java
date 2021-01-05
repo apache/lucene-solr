@@ -17,22 +17,21 @@
 
 package org.apache.lucene.spatial3d.geom;
 
-/**
- *  Class which constructs a GeoPointShape.
- */
+/** Class which constructs a GeoPointShape. */
 public class GeoPointShapeFactory {
 
-  private GeoPointShapeFactory() {
-  }
+  private GeoPointShapeFactory() {}
 
   /**
    * Create a GeoPointShape with the provided information.
+   *
    * @param planetModel the planet model
    * @param lat the latitude
    * @param lon the longitude
    * @return a GeoPointShape corresponding to what was specified.
    */
-  public static GeoPointShape makeGeoPointShape(final PlanetModel planetModel, final double lat, final double lon) {
+  public static GeoPointShape makeGeoPointShape(
+      final PlanetModel planetModel, final double lat, final double lon) {
     return new GeoDegeneratePoint(planetModel, lat, lon);
   }
 }

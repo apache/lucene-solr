@@ -20,13 +20,11 @@ package org.apache.lucene.replicator.nrt;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Locale;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 
 /** Copies one file from an incoming DataInput to a dest filename in a local Directory */
-
 public class CopyOneFile implements Closeable {
   private final DataInput in;
   private final IndexOutput out;
@@ -40,7 +38,9 @@ public class CopyOneFile implements Closeable {
 
   private long bytesCopied;
 
-  public CopyOneFile(DataInput in, ReplicaNode dest, String name, FileMetaData metaData, byte[] buffer) throws IOException {
+  public CopyOneFile(
+      DataInput in, ReplicaNode dest, String name, FileMetaData metaData, byte[] buffer)
+      throws IOException {
     this.in = in;
     this.name = name;
     this.dest = dest;
@@ -49,11 +49,18 @@ public class CopyOneFile implements Closeable {
     out = dest.createTempOutput(name, "copy", IOContext.DEFAULT);
     tmpName = out.getName();
 
-    // last 8 bytes are checksum, which we write ourselves after copying all bytes and confirming checksum:
+    // last 8 bytes are checksum, which we write ourselves after copying all bytes and confirming
+    // checksum:
     bytesToCopy = metaData.length - Long.BYTES;
 
     if (Node.VERBOSE_FILES) {
-      dest.message("file " + name + ": start copying to tmp file " + tmpName + " length=" + (8+bytesToCopy));
+      dest.message(
+          "file "
+              + name
+              + ": start copying to tmp file "
+              + tmpName
+              + " length="
+              + (8 + bytesToCopy));
     }
 
     copyStartNS = System.nanoTime();
@@ -83,21 +90,35 @@ public class CopyOneFile implements Closeable {
   /** Copy another chunk of bytes, returning true once the copy is done */
   public boolean visit() throws IOException {
     // Copy up to 640 KB per visit:
-    for(int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++) {
       long bytesLeft = bytesToCopy - bytesCopied;
       if (bytesLeft == 0) {
         long checksum = out.getChecksum();
         if (checksum != metaData.checksum) {
           // Bits flipped during copy!
-          dest.message("file " + tmpName + ": checksum mismatch after copy (bits flipped during network copy?) after-copy checksum=" + checksum + " vs expected=" + metaData.checksum + "; cancel job");
+          dest.message(
+              "file "
+                  + tmpName
+                  + ": checksum mismatch after copy (bits flipped during network copy?) after-copy checksum="
+                  + checksum
+                  + " vs expected="
+                  + metaData.checksum
+                  + "; cancel job");
           throw new IOException("file " + name + ": checksum mismatch after file copy");
         }
 
-        // Paranoia: make sure the primary node is not smoking crack, by somehow sending us an already corrupted file whose checksum (in its
+        // Paranoia: make sure the primary node is not smoking crack, by somehow sending us an
+        // already corrupted file whose checksum (in its
         // footer) disagrees with reality:
         long actualChecksumIn = in.readLong();
         if (actualChecksumIn != checksum) {
-          dest.message("file " + tmpName + ": checksum claimed by primary disagrees with the file's footer: claimed checksum=" + checksum + " vs actual=" + actualChecksumIn);
+          dest.message(
+              "file "
+                  + tmpName
+                  + ": checksum claimed by primary disagrees with the file's footer: claimed checksum="
+                  + checksum
+                  + " vs actual="
+                  + actualChecksumIn);
           throw new IOException("file " + name + ": checksum mismatch after file copy");
         }
         out.writeLong(checksum);
@@ -105,10 +126,13 @@ public class CopyOneFile implements Closeable {
         close();
 
         if (Node.VERBOSE_FILES) {
-          dest.message(String.format(Locale.ROOT, "file %s: done copying [%s, %.3fms]",
-                                     name,
-                                     Node.bytesToString(metaData.length),
-                                     (System.nanoTime() - copyStartNS)/1000000.0));
+          dest.message(
+              String.format(
+                  Locale.ROOT,
+                  "file %s: done copying [%s, %.3fms]",
+                  name,
+                  Node.bytesToString(metaData.length),
+                  (System.nanoTime() - copyStartNS) / 1000000.0));
         }
 
         return true;
@@ -118,7 +142,8 @@ public class CopyOneFile implements Closeable {
       in.readBytes(buffer, 0, toCopy);
       out.writeBytes(buffer, 0, toCopy);
 
-      // TODO: rsync will fsync a range of the file; maybe we should do that here for large files in case we crash/killed
+      // TODO: rsync will fsync a range of the file; maybe we should do that here for large files in
+      // case we crash/killed
       bytesCopied += toCopy;
     }
 

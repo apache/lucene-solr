@@ -17,15 +17,13 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
 /**
  * A {@link TokenizedPhraseQueryNode} represents a node created by a code that
  * tokenizes/lemmatizes/analyzes.
  */
-public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
-    FieldableNode {
+public class TokenizedPhraseQueryNode extends QueryNodeImpl implements FieldableNode {
 
   public TokenizedPhraseQueryNode() {
     setLeaf(false);
@@ -34,8 +32,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
 
   @Override
   public String toString() {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "<tokenizedphrase/>";
+    if (getChildren() == null || getChildren().size() == 0) return "<tokenizedphrase/>";
     StringBuilder sb = new StringBuilder();
     sb.append("<tokenizedtphrase>");
     for (QueryNode child : getChildren()) {
@@ -49,8 +46,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
   // This text representation is not re-parseable
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "";
+    if (getChildren() == null || getChildren().size() == 0) return "";
 
     StringBuilder sb = new StringBuilder();
     String filler = "";
@@ -64,8 +60,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
 
   @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
-    TokenizedPhraseQueryNode clone = (TokenizedPhraseQueryNode) super
-        .cloneTree();
+    TokenizedPhraseQueryNode clone = (TokenizedPhraseQueryNode) super.cloneTree();
 
     // nothing to do
 
@@ -82,7 +77,6 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     } else {
       return ((FieldableNode) children.get(0)).getField();
     }
-
   }
 
   @Override
@@ -96,11 +90,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
         if (child instanceof FieldableNode) {
           ((FieldableNode) child).setField(fieldName);
         }
-
       }
-
     }
-
   }
-
 } // end class MultitermQueryNode

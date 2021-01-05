@@ -34,6 +34,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
@@ -379,6 +380,13 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         log.warn("Query: {}; ", req.getParamString(), ex);
         if( rb.rsp.getResponse() == null) {
           rb.rsp.addResponse(new SolrDocumentList());
+
+          // If a cursorMark was passed, and we didn't progress, set
+          // the nextCursorMark to the same position
+          String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+          if (null != cursorStr) {
+            rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, cursorStr);
+          }
         }
         if(rb.isDebug()) {
           NamedList debug = new NamedList();
@@ -513,8 +521,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         StringWriter trace = new StringWriter();
         cause.printStackTrace(new PrintWriter(trace));
         nl.add("trace", trace.toString() );
-      }
-      else {
+      } else if (rb.getResults() != null) {
         nl.add("numFound", rb.getResults().docList.matches());
         nl.add("numFoundExact", rb.getResults().docList.hitCountRelation() == TotalHits.Relation.EQUAL_TO);
         nl.add("maxScore", rb.getResults().docList.maxScore());

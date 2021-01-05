@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.Reader;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -30,9 +28,8 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 
 /**
- * Simple task to test performance of tokenizers.  It just
- * creates a token stream for each field of the document and
- * read all tokens out of that stream.
+ * Simple task to test performance of tokenizers. It just creates a token stream for each field of
+ * the document and read all tokens out of that stream.
  */
 public class ReadTokensTask extends PerfTask {
 
@@ -41,10 +38,10 @@ public class ReadTokensTask extends PerfTask {
   }
 
   private int totalTokenCount = 0;
-  
+
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
-  
+
   @Override
   public void setup() throws Exception {
     super.setup();
@@ -56,7 +53,7 @@ public class ReadTokensTask extends PerfTask {
   protected String getLogMessage(int recsCount) {
     return "read " + recsCount + " docs; " + totalTokenCount + " tokens";
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     doc = null;
@@ -68,18 +65,18 @@ public class ReadTokensTask extends PerfTask {
     List<IndexableField> fields = doc.getFields();
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
-    for(final IndexableField field : fields) {
-      if (field.fieldType().indexOptions() == IndexOptions.NONE ||
-          field.fieldType().tokenized() == false) {
+    for (final IndexableField field : fields) {
+      if (field.fieldType().indexOptions() == IndexOptions.NONE
+          || field.fieldType().tokenized() == false) {
         continue;
       }
-      
+
       final TokenStream stream = field.tokenStream(analyzer, null);
       // reset the TokenStream to the first token
       stream.reset();
 
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-      while(stream.incrementToken()) {
+      while (stream.incrementToken()) {
         termAtt.getBytesRef();
         tokenCount++;
       }
@@ -95,36 +92,40 @@ public class ReadTokensTask extends PerfTask {
    * Field. */
   ReusableStringReader stringReader = new ReusableStringReader();
 
-  private final static class ReusableStringReader extends Reader {
+  private static final class ReusableStringReader extends Reader {
     int upto;
     int left;
     String s;
+
     void init(String s) {
       this.s = s;
       left = s.length();
       this.upto = 0;
     }
+
     @Override
     public int read(char[] c) {
       return read(c, 0, c.length);
     }
+
     @Override
     public int read(char[] c, int off, int len) {
       if (left > len) {
-        s.getChars(upto, upto+len, c, off);
+        s.getChars(upto, upto + len, c, off);
         upto += len;
         left -= len;
         return len;
       } else if (0 == left) {
         return -1;
       } else {
-        s.getChars(upto, upto+left, c, off);
+        s.getChars(upto, upto + left, c, off);
         int r = left;
         left = 0;
         upto = s.length();
         return r;
       }
     }
+
     @Override
     public void close() {}
   }

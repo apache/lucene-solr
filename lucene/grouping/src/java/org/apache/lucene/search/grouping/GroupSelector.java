@@ -19,61 +19,52 @@ package org.apache.lucene.search.grouping;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
 
 /**
  * Defines a group, for use by grouping collectors
  *
- * A GroupSelector acts as an iterator over documents.  For each segment, clients
- * should call {@link #setNextReader(LeafReaderContext)}, and then {@link #advanceTo(int)}
- * for each matching document.
+ * <p>A GroupSelector acts as an iterator over documents. For each segment, clients should call
+ * {@link #setNextReader(LeafReaderContext)}, and then {@link #advanceTo(int)} for each matching
+ * document.
  *
  * @param <T> the type of the group value
  */
 public abstract class GroupSelector<T> {
 
-  /**
-   * What to do with the current value
-   */
-  public enum State { SKIP, ACCEPT }
+  /** What to do with the current value */
+  public enum State {
+    SKIP,
+    ACCEPT
+  }
 
-  /**
-   * Set the LeafReaderContext
-   */
+  /** Set the LeafReaderContext */
   public abstract void setNextReader(LeafReaderContext readerContext) throws IOException;
 
-  /**
-   * Set the current Scorer
-   */
+  /** Set the current Scorer */
   public abstract void setScorer(Scorable scorer) throws IOException;
 
-  /**
-   * Advance the GroupSelector's iterator to the given document
-   */
+  /** Advance the GroupSelector's iterator to the given document */
   public abstract State advanceTo(int doc) throws IOException;
 
   /**
    * Get the group value of the current document
    *
-   * N.B. this object may be reused, for a persistent version use {@link #copyValue()}
+   * <p>N.B. this object may be reused, for a persistent version use {@link #copyValue()}
    */
   public abstract T currentValue() throws IOException;
 
-  /**
-   * @return a copy of the group value of the current document
-   */
+  /** @return a copy of the group value of the current document */
   public abstract T copyValue() throws IOException;
 
   /**
    * Set a restriction on the group values returned by this selector
    *
-   * If the selector is positioned on a document whose group value is not contained
-   * within this set, then {@link #advanceTo(int)} will return {@link State#SKIP}
+   * <p>If the selector is positioned on a document whose group value is not contained within this
+   * set, then {@link #advanceTo(int)} will return {@link State#SKIP}
    *
    * @param groups a set of {@link SearchGroup} objects to limit selections to
    */
   public abstract void setGroups(Collection<SearchGroup<T>> groups);
-
 }

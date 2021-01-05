@@ -16,11 +16,12 @@
  */
 package org.apache.lucene.search.join;
 
+import static org.apache.lucene.search.ScoreMode.COMPLETE;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,33 +40,23 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
 
-import static org.apache.lucene.search.ScoreMode.COMPLETE;
-
 /**
- * This query requires that you index
- * children and parent docs as a single block, using the
- * {@link IndexWriter#addDocuments IndexWriter.addDocuments()} or {@link
- * IndexWriter#updateDocuments IndexWriter.updateDocuments()} API.  In each block, the
- * child documents must appear first, ending with the parent
- * document.  At search time you provide a Filter
- * identifying the parents, however this Filter must provide
- * an {@link BitSet} per sub-reader.
+ * This query requires that you index children and parent docs as a single block, using the {@link
+ * IndexWriter#addDocuments IndexWriter.addDocuments()} or {@link IndexWriter#updateDocuments
+ * IndexWriter.updateDocuments()} API. In each block, the child documents must appear first, ending
+ * with the parent document. At search time you provide a Filter identifying the parents, however
+ * this Filter must provide an {@link BitSet} per sub-reader.
  *
- * <p>Once the block index is built, use this query to wrap
- * any sub-query matching only child docs and join matches in that
- * child document space up to the parent document space.
- * You can then use this Query as a clause with
- * other queries in the parent document space.</p>
+ * <p>Once the block index is built, use this query to wrap any sub-query matching only child docs
+ * and join matches in that child document space up to the parent document space. You can then use
+ * this Query as a clause with other queries in the parent document space.
  *
- * <p>See {@link ToChildBlockJoinQuery} if you need to join
- * in the reverse order.
+ * <p>See {@link ToChildBlockJoinQuery} if you need to join in the reverse order.
  *
- * <p>The child documents must be orthogonal to the parent
- * documents: the wrapped child query must never
- * return a parent document.</p>
+ * <p>The child documents must be orthogonal to the parent documents: the wrapped child query must
+ * never return a parent document.
  *
- * <p>See {@link org.apache.lucene.search.join} for an
- * overview. </p>
+ * <p>See {@link org.apache.lucene.search.join} for an overview.
  *
  * @lucene.experimental
  */
@@ -75,14 +66,15 @@ public class ToParentBlockJoinQuery extends Query {
   private final Query childQuery;
   private final ScoreMode scoreMode;
 
-  /** Create a ToParentBlockJoinQuery.
+  /**
+   * Create a ToParentBlockJoinQuery.
    *
    * @param childQuery Query matching child documents.
    * @param parentsFilter Filter identifying the parent documents.
-   * @param scoreMode How to aggregate multiple child scores
-   * into a single parent score.
-   **/
-  public ToParentBlockJoinQuery(Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
+   * @param scoreMode How to aggregate multiple child scores into a single parent score.
+   */
+  public ToParentBlockJoinQuery(
+      Query childQuery, BitSetProducer parentsFilter, ScoreMode scoreMode) {
     super();
     this.childQuery = childQuery;
     this.parentsFilter = parentsFilter;
@@ -95,7 +87,9 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode weightScoreMode, float boost) throws IOException {
+  public Weight createWeight(
+      IndexSearcher searcher, org.apache.lucene.search.ScoreMode weightScoreMode, float boost)
+      throws IOException {
     ScoreMode childScoreMode = weightScoreMode.needsScores() ? scoreMode : ScoreMode.None;
     final Weight childWeight;
     if (childScoreMode == ScoreMode.None) {
@@ -103,11 +97,17 @@ public class ToParentBlockJoinQuery extends Query {
       // it under a constant score query that can early terminate if the
       // minimum score is greater than 0 and the total hits that match the
       // query is not requested.
-      childWeight = searcher.rewrite(new ConstantScoreQuery(childQuery)).createWeight(searcher, weightScoreMode, 0f);
+      childWeight =
+          searcher
+              .rewrite(new ConstantScoreQuery(childQuery))
+              .createWeight(searcher, weightScoreMode, 0f);
     } else {
-      // if the score is needed we force the collection mode to COMPLETE because the child query cannot skip
+      // if the score is needed we force the collection mode to COMPLETE because the child query
+      // cannot skip
       // non-competitive documents.
-      childWeight = childQuery.createWeight(searcher, weightScoreMode.needsScores() ? COMPLETE : weightScoreMode, boost);
+      childWeight =
+          childQuery.createWeight(
+              searcher, weightScoreMode.needsScores() ? COMPLETE : weightScoreMode, boost);
     }
     return new BlockJoinWeight(this, childWeight, parentsFilter, childScoreMode);
   }
@@ -121,7 +121,8 @@ public class ToParentBlockJoinQuery extends Query {
     private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
-    public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
+    public BlockJoinWeight(
+        Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
       super(joinQuery, childWeight);
       this.parentsFilter = parentsFilter;
       this.scoreMode = scoreMode;
@@ -157,7 +158,8 @@ public class ToParentBlockJoinQuery extends Query {
 
         @Override
         public Scorer get(long leadCost) throws IOException {
-          return new BlockJoinScorer(BlockJoinWeight.this, childScorerSupplier.get(leadCost), parents, scoreMode);
+          return new BlockJoinScorer(
+              BlockJoinWeight.this, childScorerSupplier.get(leadCost), parents, scoreMode);
         }
 
         @Override
@@ -189,8 +191,7 @@ public class ToParentBlockJoinQuery extends Query {
         if (scorer.iterator().advance(doc) != doc) {
           return null;
         }
-      }
-      else {
+      } else {
         if (twoPhase.approximation().advance(doc) != doc || twoPhase.matches() == false) {
           return null;
         }
@@ -283,9 +284,10 @@ public class ToParentBlockJoinQuery extends Query {
     private final ParentTwoPhase parentTwoPhase;
     private float score;
 
-    public BlockJoinScorer(Weight weight, Scorer childScorer, BitSet parentBits, ScoreMode scoreMode) {
+    public BlockJoinScorer(
+        Weight weight, Scorer childScorer, BitSet parentBits, ScoreMode scoreMode) {
       super(weight);
-      //System.out.println("Q.init firstChildDoc=" + firstChildDoc);
+      // System.out.println("Q.init firstChildDoc=" + firstChildDoc);
       this.parentBits = parentBits;
       this.childScorer = childScorer;
       this.scoreMode = scoreMode;
@@ -375,10 +377,15 @@ public class ToParentBlockJoinQuery extends Query {
           }
         }
       }
-      if (childApproximation.docID() == parentApproximation.docID() && (childTwoPhase == null || childTwoPhase.matches())) {
-        throw new IllegalStateException("Child query must not match same docs with parent filter. "
-            + "Combine them as must clauses (+) to find a problem doc. "
-            + "docId=" + parentApproximation.docID() + ", " + childScorer.getClass());
+      if (childApproximation.docID() == parentApproximation.docID()
+          && (childTwoPhase == null || childTwoPhase.matches())) {
+        throw new IllegalStateException(
+            "Child query must not match same docs with parent filter. "
+                + "Combine them as must clauses (+) to find a problem doc. "
+                + "docId="
+                + parentApproximation.docID()
+                + ", "
+                + childScorer.getClass());
       }
       if (scoreMode == ScoreMode.Avg) {
         score /= freq;
@@ -388,7 +395,8 @@ public class ToParentBlockJoinQuery extends Query {
 
     public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
       int prevParentDoc = parentBits.prevSetBit(parentApproximation.docID() - 1);
-      int start = context.docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int start =
+          context.docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
       int end = context.docBase + parentApproximation.docID() - 1; // -1 b/c parentDoc is parent doc
 
       Explanation bestChild = null;
@@ -397,15 +405,22 @@ public class ToParentBlockJoinQuery extends Query {
         Explanation child = childWeight.explain(context, childDoc - context.docBase);
         if (child.isMatch()) {
           matches++;
-          if (bestChild == null || child.getValue().floatValue() > bestChild.getValue().floatValue()) {
+          if (bestChild == null
+              || child.getValue().floatValue() > bestChild.getValue().floatValue()) {
             bestChild = child;
           }
         }
       }
 
-      return Explanation.match(score(), String.format(Locale.ROOT,
-          "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
-      );
+      return Explanation.match(
+          score(),
+          String.format(
+              Locale.ROOT,
+              "Score based on %d child docs in range from %d to %d, best match:",
+              matches,
+              start,
+              end),
+          bestChild);
     }
   }
 
@@ -413,9 +428,7 @@ public class ToParentBlockJoinQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     final Query childRewrite = childQuery.rewrite(reader);
     if (childRewrite != childQuery) {
-      return new ToParentBlockJoinQuery(childRewrite,
-                                parentsFilter,
-                                scoreMode);
+      return new ToParentBlockJoinQuery(childRewrite, parentsFilter, scoreMode);
     } else {
       return super.rewrite(reader);
     }
@@ -423,19 +436,18 @@ public class ToParentBlockJoinQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "ToParentBlockJoinQuery ("+childQuery.toString()+")";
+    return "ToParentBlockJoinQuery (" + childQuery.toString() + ")";
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(ToParentBlockJoinQuery other) {
-    return childQuery.equals(other.childQuery) &&
-           parentsFilter.equals(other.parentsFilter) &&
-           scoreMode == other.scoreMode;
+    return childQuery.equals(other.childQuery)
+        && parentsFilter.equals(other.parentsFilter)
+        && scoreMode == other.scoreMode;
   }
 
   @Override

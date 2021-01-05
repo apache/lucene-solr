@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.ga;
 
-
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -24,29 +23,29 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test the Irish lowercase filter.
- */
+/** Test the Irish lowercase filter. */
 public class TestIrishLowerCaseFilter extends BaseTokenStreamTestCase {
-  
-  /**
-   * Test lowercase
-   */
+
+  /** Test lowercase */
   public void testIrishLowerCaseFilter() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("nAthair tUISCE hARD");
     IrishLowerCaseFilter filter = new IrishLowerCaseFilter(stream);
-    assertTokenStreamContents(filter, new String[] {"n-athair", "t-uisce",
-        "hard",});
+    assertTokenStreamContents(
+        filter,
+        new String[] {
+          "n-athair", "t-uisce", "hard",
+        });
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new IrishLowerCaseFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new IrishLowerCaseFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

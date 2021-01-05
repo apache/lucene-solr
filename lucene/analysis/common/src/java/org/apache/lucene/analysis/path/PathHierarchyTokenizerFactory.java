@@ -16,27 +16,21 @@
  */
 package org.apache.lucene.analysis.path;
 
-
 import java.util.Map;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * Factory for {@link PathHierarchyTokenizer}. 
- * <p>
- * This factory is typically configured for use only in the <code>index</code> 
- * Analyzer (or only in the <code>query</code> Analyzer, but never both).
- * </p>
- * <p>
- * For example, in the configuration below a query for 
- * <code>Books/NonFic</code> will match documents indexed with values like 
- * <code>Books/NonFic</code>, <code>Books/NonFic/Law</code>, 
- * <code>Books/NonFic/Science/Physics</code>, etc. But it will not match 
- * documents indexed with values like <code>Books</code>, or 
- * <code>Books/Fic</code>...
- * </p>
+ * Factory for {@link PathHierarchyTokenizer}.
+ *
+ * <p>This factory is typically configured for use only in the <code>index</code> Analyzer (or only
+ * in the <code>query</code> Analyzer, but never both).
+ *
+ * <p>For example, in the configuration below a query for <code>Books/NonFic</code> will match
+ * documents indexed with values like <code>Books/NonFic</code>, <code>Books/NonFic/Law</code>,
+ * <code>Books/NonFic/Science/Physics</code>, etc. But it will not match documents indexed with
+ * values like <code>Books</code>, or <code>Books/Fic</code>...
  *
  * <pre class="prettyprint">
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
@@ -48,14 +42,12 @@ import org.apache.lucene.util.AttributeFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
- * <p>
- * In this example however we see the oposite configuration, so that a query 
- * for <code>Books/NonFic/Science/Physics</code> would match documents 
- * containing <code>Books/NonFic</code>, <code>Books/NonFic/Science</code>, 
- * or <code>Books/NonFic/Science/Physics</code>, but not 
- * <code>Books/NonFic/Science/Physics/Theory</code> or 
- * <code>Books/NonFic/Law</code>.
- * </p>
+ *
+ * <p>In this example however we see the oposite configuration, so that a query for <code>
+ * Books/NonFic/Science/Physics</code> would match documents containing <code>Books/NonFic</code>,
+ * <code>Books/NonFic/Science</code>, or <code>Books/NonFic/Science/Physics</code>, but not <code>
+ * Books/NonFic/Science/Physics/Theory</code> or <code>Books/NonFic/Law</code>.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
  *   &lt;analyzer type="index"&gt;
@@ -79,9 +71,9 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
   private final char replacement;
   private final boolean reverse;
   private final int skip;
-  
+
   /** Creates a new PathHierarchyTokenizerFactory */
-  public PathHierarchyTokenizerFactory(Map<String,String> args) {
+  public PathHierarchyTokenizerFactory(Map<String, String> args) {
     super(args);
     delimiter = getChar(args, "delimiter", PathHierarchyTokenizer.DEFAULT_DELIMITER);
     replacement = getChar(args, "replace", delimiter);
@@ -91,13 +83,13 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public PathHierarchyTokenizerFactory() {
     throw defaultCtorException();
   }
 
-@Override
+  @Override
   public Tokenizer create(AttributeFactory factory) {
     if (reverse) {
       return new ReversePathHierarchyTokenizer(factory, delimiter, replacement, skip);
@@ -105,5 +97,3 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     return new PathHierarchyTokenizer(factory, delimiter, replacement, skip);
   }
 }
-
-

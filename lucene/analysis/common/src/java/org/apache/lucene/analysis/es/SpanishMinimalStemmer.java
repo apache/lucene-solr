@@ -19,59 +19,68 @@ package org.apache.lucene.analysis.es;
 
 /**
  * Minimal plural stemmer for Spanish.
- * <p>
- * This stemmer implements the "plurals" stemmer for
- * spanish lanugage.
  *
+ * <p>This stemmer implements the "plurals" stemmer for spanish lanugage.
  */
 public class SpanishMinimalStemmer {
 
   public int stem(char s[], int len) {
-    if (len < 4 || s[len-1] != 's')
-      return len;
+    if (len < 4 || s[len - 1] != 's') return len;
 
     for (int i = 0; i < len; i++)
-      switch(s[i]) {
+      switch (s[i]) {
         case 'à':
         case 'á':
         case 'â':
-        case 'ä': s[i] = 'a'; break;
+        case 'ä':
+          s[i] = 'a';
+          break;
         case 'ò':
         case 'ó':
         case 'ô':
-        case 'ö': s[i] = 'o'; break;
+        case 'ö':
+          s[i] = 'o';
+          break;
         case 'è':
         case 'é':
         case 'ê':
-        case 'ë': s[i] = 'e'; break;
+        case 'ë':
+          s[i] = 'e';
+          break;
         case 'ù':
         case 'ú':
         case 'û':
-        case 'ü': s[i] = 'u'; break;
+        case 'ü':
+          s[i] = 'u';
+          break;
         case 'ì':
         case 'í':
         case 'î':
-        case 'ï': s[i] = 'i'; break;
-        case 'ñ': s[i] = 'n'; break;
+        case 'ï':
+          s[i] = 'i';
+          break;
+        case 'ñ':
+          s[i] = 'n';
+          break;
       }
 
-    switch(s[len-1]) {
+    switch (s[len - 1]) {
       case 's':
-        if (s[len-2] == 'a' || s[len-2] == 'o') {
-          return len-1;
+        if (s[len - 2] == 'a' || s[len - 2] == 'o') {
+          return len - 1;
         }
-        if (s[len-2] == 'e') {
-          if (s[len-3] == 's' && s[len-4] == 'e') {
-            return len-2;
+        if (s[len - 2] == 'e') {
+          if (s[len - 3] == 's' && s[len - 4] == 'e') {
+            return len - 2;
           }
-          if (s[len-3] == 'c') {
-            s[len-3] = 'z';
-            return len-2;
+          if (s[len - 3] == 'c') {
+            s[len - 3] = 'z';
+            return len - 2;
           } else {
-            return len-2;
+            return len - 2;
           }
         } else {
-          return len-1;
+          return len - 1;
         }
     }
 

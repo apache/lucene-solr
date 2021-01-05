@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.tokenattributes.BaseFormAttribute;
@@ -28,13 +26,12 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
  * Replaces term text with the {@link BaseFormAttribute}.
- * <p>
- * This acts as a lemmatizer for verbs and adjectives.
- * <p>
- * To prevent terms from being stemmed use an instance of
- * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
- * the {@link KeywordAttribute} before this {@link TokenStream}.
- * </p>
+ *
+ * <p>This acts as a lemmatizer for verbs and adjectives.
+ *
+ * <p>To prevent terms from being stemmed use an instance of {@link SetKeywordMarkerFilter} or a
+ * custom {@link TokenFilter} that sets the {@link KeywordAttribute} before this {@link
+ * TokenStream}.
  */
 public final class JapaneseBaseFormFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);

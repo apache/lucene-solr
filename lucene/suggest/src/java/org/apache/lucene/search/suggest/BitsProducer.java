@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
@@ -28,9 +27,9 @@ public abstract class BitsProducer {
   /** Sole constructor, typically invoked by sub-classes. */
   protected BitsProducer() {}
 
-  /** Return {@link Bits} for the given leaf. The returned instance must
-   *  be non-null and have a {@link Bits#length() length} equal to
-   *  {@link LeafReader#maxDoc() maxDoc}. */
+  /**
+   * Return {@link Bits} for the given leaf. The returned instance must be non-null and have a
+   * {@link Bits#length() length} equal to {@link LeafReader#maxDoc() maxDoc}.
+   */
   public abstract Bits getBits(LeafReaderContext context) throws IOException;
-
 }

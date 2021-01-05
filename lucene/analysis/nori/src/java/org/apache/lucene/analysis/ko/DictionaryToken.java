@@ -18,16 +18,21 @@ package org.apache.lucene.analysis.ko;
 
 import org.apache.lucene.analysis.ko.dict.Dictionary;
 
-/**
- * A token stored in a {@link Dictionary}.
- */
+/** A token stored in a {@link Dictionary}. */
 public class DictionaryToken extends Token {
   private final int wordId;
   private final KoreanTokenizer.Type type;
   private final Dictionary dictionary;
 
-  public DictionaryToken(KoreanTokenizer.Type type, Dictionary dictionary, int wordId, char[] surfaceForm,
-                         int offset, int length, int startOffset, int endOffset) {
+  public DictionaryToken(
+      KoreanTokenizer.Type type,
+      Dictionary dictionary,
+      int wordId,
+      char[] surfaceForm,
+      int offset,
+      int length,
+      int startOffset,
+      int endOffset) {
     super(surfaceForm, offset, length, startOffset, endOffset);
     this.type = type;
     this.dictionary = dictionary;
@@ -36,13 +41,26 @@ public class DictionaryToken extends Token {
 
   @Override
   public String toString() {
-    return "DictionaryToken(\"" + getSurfaceFormString() + "\" pos=" + getStartOffset() + " length=" + getLength() +
-        " posLen=" + getPositionLength() + " type=" + type + " wordId=" + wordId +
-        " leftID=" + dictionary.getLeftId(wordId) + ")";
+    return "DictionaryToken(\""
+        + getSurfaceFormString()
+        + "\" pos="
+        + getStartOffset()
+        + " length="
+        + getLength()
+        + " posLen="
+        + getPositionLength()
+        + " type="
+        + type
+        + " wordId="
+        + wordId
+        + " leftID="
+        + dictionary.getLeftId(wordId)
+        + ")";
   }
 
   /**
    * Returns the type of this token
+   *
    * @return token type, not null
    */
   public KoreanTokenizer.Type getType() {
@@ -51,6 +69,7 @@ public class DictionaryToken extends Token {
 
   /**
    * Returns true if this token is known word
+   *
    * @return true if this token is in standard dictionary. false if not.
    */
   public boolean isKnown() {
@@ -59,6 +78,7 @@ public class DictionaryToken extends Token {
 
   /**
    * Returns true if this token is unknown word
+   *
    * @return true if this token is unknown word. false if not.
    */
   public boolean isUnknown() {
@@ -67,6 +87,7 @@ public class DictionaryToken extends Token {
 
   /**
    * Returns true if this token is defined in user dictionary
+   *
    * @return true if this token is in user dictionary. false if not.
    */
   public boolean isUser() {

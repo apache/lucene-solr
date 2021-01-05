@@ -17,12 +17,12 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link LimitTokenPositionFilter}. 
+ * Factory for {@link LimitTokenPositionFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_limit_pos" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -30,9 +30,10 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.LimitTokenPositionFilterFactory" maxTokenPosition="3" consumeAllTokens="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * <p>
- * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  
- * See {@link LimitTokenPositionFilter} for an explanation of its use.
+ *
+ * <p>The {@code consumeAllTokens} property is optional and defaults to {@code false}. See {@link
+ * LimitTokenPositionFilter} for an explanation of its use.
+ *
  * @since 4.3.0
  * @lucene.spi {@value #NAME}
  */
@@ -47,7 +48,7 @@ public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
   final boolean consumeAllTokens;
 
   /** Creates a new LimitTokenPositionFilterFactory */
-  public LimitTokenPositionFilterFactory(Map<String,String> args) {
+  public LimitTokenPositionFilterFactory(Map<String, String> args) {
     super(args);
     maxTokenPosition = requireInt(args, MAX_TOKEN_POSITION_KEY);
     consumeAllTokens = getBoolean(args, CONSUME_ALL_TOKENS_KEY, false);
@@ -65,5 +66,4 @@ public class LimitTokenPositionFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new LimitTokenPositionFilter(input, maxTokenPosition, consumeAllTokens);
   }
-
 }

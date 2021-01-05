@@ -244,6 +244,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         });
       });
       metricManager.registerGauge(null, registryName, sysprops, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "properties", "system");
+      MetricsMap sysenv = new MetricsMap(map -> {
+        System.getenv().forEach((k, v) -> {
+          if (!hiddenSysProps.contains(k)) {
+            map.putNoEx(String.valueOf(k), v);
+          }
+        });
+      });
+      metricManager.registerGauge(null, registryName, sysenv, metricTag, SolrMetricManager.ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }

@@ -30,14 +30,14 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDirectSpellChecker extends LuceneTestCase {
-  
+
   public void testInternalLevenshteinDistance() throws Exception {
     DirectSpellChecker spellchecker = new DirectSpellChecker();
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, true);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, analyzer);
 
-    String[] termsToAdd = { "metanoia", "metanoian", "metanoiai", "metanoias", "metanoi𐑍" };
+    String[] termsToAdd = {"metanoia", "metanoian", "metanoiai", "metanoias", "metanoi𐑍"};
     for (int i = 0; i < termsToAdd.length; i++) {
       Document doc = new Document();
       doc.add(newTextField("repentance", termsToAdd[i], Field.Store.NO));
@@ -46,19 +46,21 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
     String misspelled = "metanoix";
-    SuggestWord[] similar = spellchecker.suggestSimilar(new Term("repentance", misspelled), 4, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    SuggestWord[] similar =
+        spellchecker.suggestSimilar(
+            new Term("repentance", misspelled), 4, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertTrue(similar.length == 4);
-    
+
     StringDistance sd = spellchecker.getDistance();
     assertTrue(sd instanceof LuceneLevenshteinDistance);
-    for(SuggestWord word : similar) {
-      assertTrue(word.score==sd.getDistance(word.string, misspelled));
-      assertTrue(word.score==sd.getDistance(misspelled, word.string));
+    for (SuggestWord word : similar) {
+      assertTrue(word.score == sd.getDistance(word.string, misspelled));
+      assertTrue(word.score == sd.getDistance(misspelled, word.string));
     }
-    
+
     IOUtils.close(ir, writer, dir, analyzer);
   }
-  
+
   public void testSimpleExamples() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     spellChecker.setMinQueryLength(0);
@@ -74,35 +76,41 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
 
-    SuggestWord[] similar = spellChecker.suggestSimilar(new Term("numbers",
-        "fvie"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    SuggestWord[] similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fvie"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertTrue(similar.length > 0);
     assertEquals("five", similar[0].string);
 
-    similar = spellChecker.suggestSimilar(new Term("numbers", "five"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "five"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     if (similar.length > 0) {
       assertFalse(similar[0].string.equals("five")); // don't suggest a word for itself
     }
 
-    similar = spellChecker.suggestSimilar(new Term("numbers", "fvie"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fvie"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertTrue(similar.length > 0);
     assertEquals("five", similar[0].string);
 
-    similar = spellChecker.suggestSimilar(new Term("numbers", "fiv"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fiv"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertTrue(similar.length > 0);
     assertEquals("five", similar[0].string);
 
-    similar = spellChecker.suggestSimilar(new Term("numbers", "fives"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fives"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertTrue(similar.length > 0);
     assertEquals("five", similar[0].string);
 
     assertTrue(similar.length > 0);
-    similar = spellChecker.suggestSimilar(new Term("numbers", "fie"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fie"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals("five", similar[0].string);
 
     // add some more documents
@@ -116,14 +124,15 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     ir = writer.getReader();
 
     // look ma, no spellcheck index rebuild
-    similar = spellChecker.suggestSimilar(new Term("numbers", "tousand"), 10,
-        ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
-    assertTrue(similar.length > 0); 
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "tousand"), 10, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    assertTrue(similar.length > 0);
     assertEquals("thousand", similar[0].string);
 
     IOUtils.close(ir, writer, dir, analyzer);
   }
-  
+
   public void testOptions() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
@@ -138,64 +147,72 @@ public class TestDirectSpellChecker extends LuceneTestCase {
     writer.addDocument(doc);
     doc.add(newTextField("text", "fobar", Field.Store.NO));
     writer.addDocument(doc);
-   
+
     IndexReader ir = writer.getReader();
-    
+
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     spellChecker.setMaxQueryFrequency(0F);
-    SuggestWord[] similar = spellChecker.suggestSimilar(new Term("text",
-        "fobar"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
+    SuggestWord[] similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "fobar"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
-    
+
     // confirm that a term shorter than minQueryLength is not spellchecked
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMinQueryLength(5);
-    similar = spellChecker.suggestSimilar(new Term("text", "foba"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "foba"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
 
     // confirm that a term longer than maxQueryLength is not spellchecked
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMaxQueryLength(5);
-    similar = spellChecker.suggestSimilar(new Term("text", "foobrr"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "foobrr"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
-    
+
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMaxEdits(1);
-    similar = spellChecker.suggestSimilar(new Term("text", "foobazzz"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "foobazzz"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
-    
+
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setAccuracy(0.9F);
-    similar = spellChecker.suggestSimilar(new Term("text", "foobazzz"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "foobazzz"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
-    
+
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMinPrefix(0);
-    similar = spellChecker.suggestSimilar(new Term("text", "roobaz"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "roobaz"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(1, similar.length);
-    similar = spellChecker.suggestSimilar(new Term("text", "roobaz"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "roobaz"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
 
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMinPrefix(1);
-    similar = spellChecker.suggestSimilar(new Term("text", "roobaz"), 1, ir,
-        SuggestMode.SUGGEST_MORE_POPULAR);
+    similar =
+        spellChecker.suggestSimilar(
+            new Term("text", "roobaz"), 1, ir, SuggestMode.SUGGEST_MORE_POPULAR);
     assertEquals(0, similar.length);
-    
+
     spellChecker = new DirectSpellChecker(); // reset defaults
     spellChecker.setMaxEdits(2);
-    similar = spellChecker.suggestSimilar(new Term("text", "fobar"), 2, ir,
-        SuggestMode.SUGGEST_ALWAYS);
+    similar =
+        spellChecker.suggestSimilar(new Term("text", "fobar"), 2, ir, SuggestMode.SUGGEST_ALWAYS);
     assertEquals(2, similar.length);
 
-    IOUtils.close(ir, writer, dir, analyzer);;
+    IOUtils.close(ir, writer, dir, analyzer);
   }
-  
+
   public void testBogusField() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
     Directory dir = newDirectory();
@@ -210,14 +227,14 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
 
-    SuggestWord[] similar = spellChecker.suggestSimilar(new Term(
-        "bogusFieldBogusField", "fvie"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    SuggestWord[] similar =
+        spellChecker.suggestSimilar(
+            new Term("bogusFieldBogusField", "fvie"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(0, similar.length);
-    
+
     IOUtils.close(ir, writer, dir, analyzer);
   }
-  
+
   // simple test that transpositions work, we suggest five for fvie with ed=1
   public void testTransposition() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
@@ -233,15 +250,15 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
 
-    SuggestWord[] similar = spellChecker.suggestSimilar(new Term(
-        "numbers", "fvie"), 1, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    SuggestWord[] similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "fvie"), 1, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(1, similar.length);
     assertEquals("five", similar[0].string);
-    
+
     IOUtils.close(ir, writer, dir, analyzer);
   }
-  
+
   // simple test that transpositions work, we suggest seventeen for seevntene with ed=2
   public void testTransposition2() throws Exception {
     DirectSpellChecker spellChecker = new DirectSpellChecker();
@@ -257,12 +274,12 @@ public class TestDirectSpellChecker extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
 
-    SuggestWord[] similar = spellChecker.suggestSimilar(new Term(
-        "numbers", "seevntene"), 2, ir,
-        SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    SuggestWord[] similar =
+        spellChecker.suggestSimilar(
+            new Term("numbers", "seevntene"), 2, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
     assertEquals(1, similar.length);
     assertEquals("seventeen", similar[0].string);
-    
+
     IOUtils.close(ir, writer, dir, analyzer);
   }
 }

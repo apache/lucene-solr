@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -29,15 +28,15 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
- * Adds the {@link TypeAttribute#type()} as a synonym,
- * i.e. another token at the same position, optionally with a specified prefix prepended, optionally
- * transfering flags, and optionally ignoring some types. See {@link TypeAsSynonymFilterFactory} for
- * full details.
+ * Adds the {@link TypeAttribute#type()} as a synonym, i.e. another token at the same position,
+ * optionally with a specified prefix prepended, optionally transfering flags, and optionally
+ * ignoring some types. See {@link TypeAsSynonymFilterFactory} for full details.
  */
 public final class TypeAsSynonymFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
   private final String prefix;
   private final Set<String> ignore;
@@ -45,28 +44,27 @@ public final class TypeAsSynonymFilter extends TokenFilter {
 
   private AttributeSource.State savedToken = null;
 
-
   public TypeAsSynonymFilter(TokenStream input) {
     this(input, null, null, ~0);
   }
   /**
    * @param input input tokenstream
-   * @param prefix Prepend this string to every token type emitted as token text.
-   *               If null, nothing will be prepended.
+   * @param prefix Prepend this string to every token type emitted as token text. If null, nothing
+   *     will be prepended.
    */
-
   public TypeAsSynonymFilter(TokenStream input, String prefix) {
     this(input, prefix, null, ~0);
   }
 
   /**
-   * @param input  input tokenstream
-   * @param prefix Prepend this string to every token type emitted as token text.
-   *               If null, nothing will be prepended.
+   * @param input input tokenstream
+   * @param prefix Prepend this string to every token type emitted as token text. If null, nothing
+   *     will be prepended.
    * @param ignore types to ignore (and not convert to a synonym)
    * @param synFlagsMask a mask to control what flags are propagated to the synonym.
    */
-  public TypeAsSynonymFilter(TokenStream input, String prefix, Set<String> ignore, int synFlagsMask) {
+  public TypeAsSynonymFilter(
+      TokenStream input, String prefix, Set<String> ignore, int synFlagsMask) {
     super(input);
     this.prefix = prefix;
     this.ignore = ignore;
@@ -75,7 +73,7 @@ public final class TypeAsSynonymFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-    if (savedToken != null) {         // Emit last token's type at the same position
+    if (savedToken != null) { // Emit last token's type at the same position
       restoreState(savedToken);
       savedToken = null;
       termAtt.setEmpty();

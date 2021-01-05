@@ -20,8 +20,7 @@ package org.apache.lucene.search.grouping;
 import java.util.Objects;
 
 /**
- * Represents a contiguous range of double values, with an inclusive minimum and
- * exclusive maximum
+ * Represents a contiguous range of double values, with an inclusive minimum and exclusive maximum
  */
 public class DoubleRange {
 
@@ -30,9 +29,7 @@ public class DoubleRange {
   /** The exclusive maximum value of this range */
   public double max;
 
-  /**
-   * Creates a new double range, running from {@code min} inclusive to {@code max} exclusive
-   */
+  /** Creates a new double range, running from {@code min} inclusive to {@code max} exclusive */
   public DoubleRange(double min, double max) {
     this.min = min;
     this.max = max;
@@ -48,8 +45,7 @@ public class DoubleRange {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DoubleRange that = (DoubleRange) o;
-    return Double.compare(that.min, min) == 0 &&
-        Double.compare(that.max, max) == 0;
+    return Double.compare(that.min, min) == 0 && Double.compare(that.max, max) == 0;
   }
 
   @Override

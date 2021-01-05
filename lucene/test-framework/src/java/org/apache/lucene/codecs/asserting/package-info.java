@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Codec for testing that asserts various contracts of the codec apis.
- */
+/** Codec for testing that asserts various contracts of the codec apis. */
 package org.apache.lucene.codecs.asserting;

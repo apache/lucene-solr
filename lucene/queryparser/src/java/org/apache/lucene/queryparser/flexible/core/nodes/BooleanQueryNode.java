@@ -16,22 +16,17 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
+import java.util.List;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-import java.util.List;
-
-
 /**
- * A {@link BooleanQueryNode} represents a list of elements which do not have an
- * explicit boolean operator defined between them. It can be used to express a
- * boolean query that intends to use the default boolean operator.
+ * A {@link BooleanQueryNode} represents a list of elements which do not have an explicit boolean
+ * operator defined between them. It can be used to express a boolean query that intends to use the
+ * default boolean operator.
  */
 public class BooleanQueryNode extends QueryNodeImpl {
 
-  /**
-   * @param clauses
-   *          - the query nodes to be and'ed
-   */
+  /** @param clauses - the query nodes to be and'ed */
   public BooleanQueryNode(List<QueryNode> clauses) {
     setLeaf(false);
     allocate();
@@ -40,8 +35,7 @@ public class BooleanQueryNode extends QueryNodeImpl {
 
   @Override
   public String toString() {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "<boolean operation='default'/>";
+    if (getChildren() == null || getChildren().size() == 0) return "<boolean operation='default'/>";
     StringBuilder sb = new StringBuilder();
     sb.append("<boolean operation='default'>");
     for (QueryNode child : getChildren()) {
@@ -54,8 +48,7 @@ public class BooleanQueryNode extends QueryNodeImpl {
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "";
+    if (getChildren() == null || getChildren().size() == 0) return "";
 
     StringBuilder sb = new StringBuilder();
     String filler = "";
@@ -65,11 +58,9 @@ public class BooleanQueryNode extends QueryNodeImpl {
     }
 
     // in case is root or the parent is a group node avoid parenthesis
-    if ((getParent() != null && getParent() instanceof GroupQueryNode)
-        || isRoot())
+    if ((getParent() != null && getParent() instanceof GroupQueryNode) || isRoot())
       return sb.toString();
-    else
-      return "( " + sb.toString() + " )";
+    else return "( " + sb.toString() + " )";
   }
 
   @Override
@@ -80,5 +71,4 @@ public class BooleanQueryNode extends QueryNodeImpl {
 
     return clone;
   }
-
 }

@@ -23,17 +23,15 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 
-
 /**
  * Dictionary represented by a text file.
- * 
+ *
  * <p>Format allowed: 1 word per line:<br>
  * word1<br>
  * word2<br>
@@ -45,8 +43,8 @@ public class PlainTextDictionary implements Dictionary {
 
   /**
    * Creates a dictionary based on a Path.
-   * <p>
-   * NOTE: content is treated as UTF-8
+   *
+   * <p>NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(Path path) throws IOException {
     in = Files.newBufferedReader(path, StandardCharsets.UTF_8);
@@ -54,16 +52,14 @@ public class PlainTextDictionary implements Dictionary {
 
   /**
    * Creates a dictionary based on an inputstream.
-   * <p>
-   * NOTE: content is treated as UTF-8
+   *
+   * <p>NOTE: content is treated as UTF-8
    */
   public PlainTextDictionary(InputStream dictFile) {
     in = new BufferedReader(IOUtils.getDecodingReader(dictFile, StandardCharsets.UTF_8));
   }
 
-  /**
-   * Creates a dictionary based on a reader.
-   */
+  /** Creates a dictionary based on a reader. */
   public PlainTextDictionary(Reader reader) {
     in = new BufferedReader(reader);
   }
@@ -76,6 +72,7 @@ public class PlainTextDictionary implements Dictionary {
   final class FileIterator implements BytesRefIterator {
     private boolean done = false;
     private final BytesRefBuilder spare = new BytesRefBuilder();
+
     @Override
     public BytesRef next() throws IOException {
       if (done) {

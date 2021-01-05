@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.function.valuesource;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 /**
- * {@link ValueSource} implementation which only returns the values from the provided
- * ValueSources which are available for a particular docId.  Consequently, when combined
- * with a {@link ConstValueSource}, this function serves as a way to return a default
- * value when the values for a field are unavailable.
+ * {@link ValueSource} implementation which only returns the values from the provided ValueSources
+ * which are available for a particular docId. Consequently, when combined with a {@link
+ * ConstValueSource}, this function serves as a way to return a default value when the values for a
+ * field are unavailable.
  */
 public class DefFunction extends MultiFunction {
   public DefFunction(List<ValueSource> sources) {
@@ -40,16 +40,15 @@ public class DefFunction extends MultiFunction {
     return "def";
   }
 
-
   @Override
-  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
-
+  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext)
+      throws IOException {
 
     return new Values(valsArr(sources, fcontext, readerContext)) {
       final int upto = valsArr.length - 1;
 
       private FunctionValues get(int doc) throws IOException {
-        for (int i=0; i<upto; i++) {
+        for (int i = 0; i < upto; i++) {
           FunctionValues vals = valsArr[i];
           if (vals.exists(doc)) {
             return vals;

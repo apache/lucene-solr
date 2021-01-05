@@ -20,24 +20,24 @@ package org.apache.lucene.queries.intervals;
 import org.apache.lucene.search.MatchesIterator;
 
 /**
- * An extension of MatchesIterator that allows it to be treated as
- * an IntervalIterator
+ * An extension of MatchesIterator that allows it to be treated as an IntervalIterator
  *
- * This is necessary to get access to {@link IntervalIterator#gaps()}
- * and {@link IntervalIterator#width()} when constructing matches
+ * <p>This is necessary to get access to {@link IntervalIterator#gaps()} and {@link
+ * IntervalIterator#width()} when constructing matches
  */
 public interface IntervalMatchesIterator extends MatchesIterator {
 
   /**
    * The number of top-level gaps inside the current match
+   *
    * @see IntervalIterator#gaps()
    */
   int gaps();
 
   /**
    * The width of the current match
+   *
    * @see IntervalIterator#width()
    */
   int width();
-
 }

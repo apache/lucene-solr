@@ -52,7 +52,9 @@ final class PhrasePositions {
     if (count-- > 0) { // read subsequent pos's
       position = postings.nextPosition() - offset;
       return true;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 
   /** for debug purposes */

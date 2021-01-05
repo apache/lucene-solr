@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.demo;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDemo extends LuceneTestCase {
@@ -34,8 +32,10 @@ public class TestDemo extends LuceneTestCase {
       System.setOut(fakeSystemOut);
       SearchFiles.main(new String[] {"-query", query, "-index", indexPath.toString()});
       fakeSystemOut.flush();
-      String output = bytes.toString(Charset.defaultCharset().name()); // intentionally use default encoding
-      assertTrue("output=" + output, output.contains(expectedHitCount + " total matching documents"));
+      String output =
+          bytes.toString(Charset.defaultCharset().name()); // intentionally use default encoding
+      assertTrue(
+          "output=" + output, output.contains(expectedHitCount + " total matching documents"));
     } finally {
       System.setOut(outSave);
     }
@@ -44,7 +44,8 @@ public class TestDemo extends LuceneTestCase {
   public void testIndexSearch() throws Exception {
     Path dir = getDataPath("test-files/docs");
     Path indexDir = createTempDir("ContribDemoTest");
-    IndexFiles.main(new String[] { "-create", "-docs", dir.toString(), "-index", indexDir.toString()});
+    IndexFiles.main(
+        new String[] {"-create", "-docs", dir.toString(), "-index", indexDir.toString()});
     testOneSearch(indexDir, "apache", 3);
     testOneSearch(indexDir, "patent", 8);
     testOneSearch(indexDir, "lucene", 0);

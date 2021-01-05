@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,42 +27,42 @@ import org.apache.lucene.analysis.Tokenizer;
 
 /** Test {@link KeepWordFilter} */
 public class TestKeepWordFilter extends BaseTokenStreamTestCase {
-  
-  public void testStopAndGo() throws Exception 
-  {  
+
+  public void testStopAndGo() throws Exception {
     Set<String> words = new HashSet<>();
-    words.add( "aaa" );
-    words.add( "bbb" );
-    
+    words.add("aaa");
+    words.add("bbb");
+
     String input = "xxx yyy aaa zzz BBB ccc ddd EEE";
-    
+
     // Test Stopwords
     TokenStream stream = whitespaceMockTokenizer(input);
-    stream = new KeepWordFilter(stream, new CharArraySet( words, true));
-    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" }, new int[] { 3, 2 });
-       
+    stream = new KeepWordFilter(stream, new CharArraySet(words, true));
+    assertTokenStreamContents(stream, new String[] {"aaa", "BBB"}, new int[] {3, 2});
+
     // Now force case
     stream = whitespaceMockTokenizer(input);
     stream = new KeepWordFilter(stream, new CharArraySet(words, false));
-    assertTokenStreamContents(stream, new String[] { "aaa" }, new int[] { 3 });
+    assertTokenStreamContents(stream, new String[] {"aaa"}, new int[] {3});
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     final Set<String> words = new HashSet<>();
-    words.add( "a" );
-    words.add( "b" );
-    
-    Analyzer a = new Analyzer() {
+    words.add("a");
+    words.add("b");
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenStream stream = new KeepWordFilter(tokenizer, new CharArraySet( words, true));
-        return new TokenStreamComponents(tokenizer, stream);
-      }
-    };
-    
+    Analyzer a =
+        new Analyzer() {
+
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream stream = new KeepWordFilter(tokenizer, new CharArraySet(words, true));
+            return new TokenStreamComponents(tokenizer, stream);
+          }
+        };
+
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }

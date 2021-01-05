@@ -16,63 +16,55 @@
  */
 package org.apache.lucene.analysis.ckb;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
-/**
- * Test the Sorani analyzer
- */
+/** Test the Sorani analyzer */
 public class TestSoraniAnalyzer extends BaseTokenStreamTestCase {
-  
-  /**
-   * This test fails with NPE when the stopwords file is missing in classpath
-   */
+
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new SoraniAnalyzer().close();
   }
-  
+
   public void testStopwords() throws IOException {
     Analyzer a = new SoraniAnalyzer();
     assertAnalyzesTo(a, "ئەم پیاوە", new String[] {"پیاو"});
     a.close();
   }
-  
+
   public void testCustomStopwords() throws IOException {
     Analyzer a = new SoraniAnalyzer(CharArraySet.EMPTY_SET);
-    assertAnalyzesTo(a, "ئەم پیاوە", 
-        new String[] {"ئەم", "پیاو"});
+    assertAnalyzesTo(a, "ئەم پیاوە", new String[] {"ئەم", "پیاو"});
     a.close();
   }
-  
+
   public void testReusableTokenStream() throws IOException {
     Analyzer a = new SoraniAnalyzer();
     assertAnalyzesTo(a, "پیاوە", new String[] {"پیاو"});
     assertAnalyzesTo(a, "پیاو", new String[] {"پیاو"});
     a.close();
   }
-  
+
   public void testWithStemExclusionSet() throws IOException {
     CharArraySet set = new CharArraySet(1, true);
     set.add("پیاوە");
     Analyzer a = new SoraniAnalyzer(CharArraySet.EMPTY_SET, set);
-    assertAnalyzesTo(a, "پیاوە", new String[] { "پیاوە" });
+    assertAnalyzesTo(a, "پیاوە", new String[] {"پیاوە"});
     a.close();
   }
-  
+
   /**
-   * test we fold digits to latin-1
-   * (these are somewhat rare, but generally a few % of digits still)
+   * test we fold digits to latin-1 (these are somewhat rare, but generally a few % of digits still)
    */
   public void testDigits() throws Exception {
     SoraniAnalyzer a = new SoraniAnalyzer();
     checkOneTerm(a, "١٢٣٤", "1234");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new SoraniAnalyzer();

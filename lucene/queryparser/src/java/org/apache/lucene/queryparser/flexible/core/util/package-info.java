@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Utility classes to used with the Query Parser.
+ *
  * <h2>Utility classes to used with the Query Parser</h2>
- * <p>
- * This package contains utility classes used with the query parsers.
+ *
+ * <p>This package contains utility classes used with the query parsers.
  */
 package org.apache.lucene.queryparser.flexible.core.util;
-

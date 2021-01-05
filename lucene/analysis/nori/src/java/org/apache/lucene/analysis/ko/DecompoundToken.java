@@ -18,14 +18,13 @@ package org.apache.lucene.analysis.ko;
 
 import org.apache.lucene.analysis.ko.dict.Dictionary;
 
-/**
- * A token that was generated from a compound.
- */
+/** A token that was generated from a compound. */
 public class DecompoundToken extends Token {
   private final POS.Tag posTag;
 
   /**
-   *  Creates a new DecompoundToken
+   * Creates a new DecompoundToken
+   *
    * @param posTag The part of speech of the token.
    * @param surfaceForm The surface form of the token.
    * @param startOffset The start offset of the token in the analyzed text.
@@ -38,8 +37,17 @@ public class DecompoundToken extends Token {
 
   @Override
   public String toString() {
-    return "DecompoundToken(\"" + getSurfaceFormString() + "\" pos=" + getStartOffset() + " length=" + getLength() +
-        " startOffset=" + getStartOffset() + " endOffset=" + getEndOffset() + ")";
+    return "DecompoundToken(\""
+        + getSurfaceFormString()
+        + "\" pos="
+        + getStartOffset()
+        + " length="
+        + getLength()
+        + " startOffset="
+        + getStartOffset()
+        + " endOffset="
+        + getEndOffset()
+        + ")";
   }
 
   @Override

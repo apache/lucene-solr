@@ -17,13 +17,10 @@
 package org.apache.lucene.util;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexOutput;
 
-/**
- * Intentionally slow IndexOutput for testing.
- */
+/** Intentionally slow IndexOutput for testing. */
 public class ThrottledIndexOutput extends IndexOutput {
   public static final int DEFAULT_MIN_WRITTEN_BYTES = 1024;
   private final int bytesPerSecond;
@@ -37,18 +34,27 @@ public class ThrottledIndexOutput extends IndexOutput {
   private final byte[] bytes = new byte[1];
 
   public ThrottledIndexOutput newFromDelegate(IndexOutput output) {
-    return new ThrottledIndexOutput(bytesPerSecond, flushDelayMillis,
-        closeDelayMillis, seekDelayMillis, minBytesWritten, output);
+    return new ThrottledIndexOutput(
+        bytesPerSecond,
+        flushDelayMillis,
+        closeDelayMillis,
+        seekDelayMillis,
+        minBytesWritten,
+        output);
   }
 
-  public ThrottledIndexOutput(int bytesPerSecond, long delayInMillis,
-      IndexOutput delegate) {
-    this(bytesPerSecond, delayInMillis, delayInMillis, delayInMillis,
-        DEFAULT_MIN_WRITTEN_BYTES, delegate);
+  public ThrottledIndexOutput(int bytesPerSecond, long delayInMillis, IndexOutput delegate) {
+    this(
+        bytesPerSecond,
+        delayInMillis,
+        delayInMillis,
+        delayInMillis,
+        DEFAULT_MIN_WRITTEN_BYTES,
+        delegate);
   }
 
-  public ThrottledIndexOutput(int bytesPerSecond, long delays,
-      int minBytesWritten, IndexOutput delegate) {
+  public ThrottledIndexOutput(
+      int bytesPerSecond, long delays, int minBytesWritten, IndexOutput delegate) {
     this(bytesPerSecond, delays, delays, delays, minBytesWritten, delegate);
   }
 
@@ -56,8 +62,12 @@ public class ThrottledIndexOutput extends IndexOutput {
     return mbits * 125000000;
   }
 
-  public ThrottledIndexOutput(int bytesPerSecond, long flushDelayMillis,
-      long closeDelayMillis, long seekDelayMillis, long minBytesWritten,
+  public ThrottledIndexOutput(
+      int bytesPerSecond,
+      long flushDelayMillis,
+      long closeDelayMillis,
+      long seekDelayMillis,
+      long minBytesWritten,
       IndexOutput delegate) {
     super("ThrottledIndexOutput(" + delegate + ")", delegate == null ? "n/a" : delegate.getName());
     assert bytesPerSecond > 0;
@@ -105,15 +115,14 @@ public class ThrottledIndexOutput extends IndexOutput {
     if (pendingBytes > 0 && (closing || pendingBytes > minBytesWritten)) {
       long actualBps = (timeElapsed / pendingBytes) * 1000000000l; // nano to sec
       if (actualBps > bytesPerSecond) {
-        long expected = (pendingBytes * 1000l / bytesPerSecond) ;
-        final long delay = expected - (timeElapsed / 1000000l) ;
+        long expected = (pendingBytes * 1000l / bytesPerSecond);
+        final long delay = expected - (timeElapsed / 1000000l);
         pendingBytes = 0;
         timeElapsed = 0;
         return delay;
       }
     }
     return 0;
-
   }
 
   private static final void sleep(long ms) {
@@ -126,7 +135,7 @@ public class ThrottledIndexOutput extends IndexOutput {
       throw new ThreadInterruptedException(e);
     }
   }
-  
+
   @Override
   public void copyBytes(DataInput input, long numBytes) throws IOException {
     delegate.copyBytes(input, numBytes);

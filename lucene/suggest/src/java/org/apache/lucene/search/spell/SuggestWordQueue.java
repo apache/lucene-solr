@@ -16,50 +16,48 @@
  */
 package org.apache.lucene.search.spell;
 
-
-import org.apache.lucene.util.PriorityQueue;
-
 import java.util.Comparator;
-
+import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Sorts SuggestWord instances
  *
  * @see org.apache.lucene.search.spell.SuggestWordScoreComparator
  * @see org.apache.lucene.search.spell.SuggestWordFrequencyComparator
- *
  */
 public final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
   /**
    * Default comparator: score then frequency.
+   *
    * @see SuggestWordScoreComparator
    */
   public static final Comparator<SuggestWord> DEFAULT_COMPARATOR = new SuggestWordScoreComparator();
-
 
   private Comparator<SuggestWord> comparator;
 
   /**
    * Use the {@link #DEFAULT_COMPARATOR}
+   *
    * @param size The size of the queue
    */
-  public SuggestWordQueue (int size) {
+  public SuggestWordQueue(int size) {
     super(size);
     comparator = DEFAULT_COMPARATOR;
   }
 
   /**
    * Specify the size of the queue and the comparator to use for sorting.
+   *
    * @param size The size
    * @param comparator The comparator.
    */
-  public SuggestWordQueue(int size, Comparator<SuggestWord> comparator){
+  public SuggestWordQueue(int size, Comparator<SuggestWord> comparator) {
     super(size);
     this.comparator = comparator;
   }
 
   @Override
-  protected final boolean lessThan (SuggestWord wa, SuggestWord wb) {
+  protected final boolean lessThan(SuggestWord wa, SuggestWord wb) {
     int val = comparator.compare(wa, wb);
     return val < 0;
   }

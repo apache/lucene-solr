@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.spatial.prefix;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -42,8 +43,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.shape.Shape;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-
 public class TestNumberRangeFacets extends StrategyTestCase {
 
   DateRangePrefixTree tree;
@@ -57,7 +56,8 @@ public class TestNumberRangeFacets extends StrategyTestCase {
     tree = new DateRangePrefixTree(DateRangePrefixTree.DEFAULT_CAL);
     strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
     Calendar tmpCal = tree.newCal();
-    randomCalWindowField = randomIntBetween(1, Calendar.ZONE_OFFSET - 1);//we're not allowed to add zone offset
+    randomCalWindowField =
+        randomIntBetween(1, Calendar.ZONE_OFFSET - 1); // we're not allowed to add zone offset
     tmpCal.add(randomCalWindowField, 2_000);
     randomCalWindowMs = Math.max(2000L, tmpCal.getTimeInMillis());
   }
@@ -65,38 +65,41 @@ public class TestNumberRangeFacets extends StrategyTestCase {
   @Repeat(iterations = 20)
   @Test
   public void test() throws IOException {
-    //generate test data
+    // generate test data
     List<Shape> indexedShapes = new ArrayList<>();
     final int numIndexedShapes = random().nextInt(15);
     for (int i = 0; i < numIndexedShapes; i++) {
       indexedShapes.add(randomShape());
     }
 
-    //Main index loop:
+    // Main index loop:
     for (int i = 0; i < indexedShapes.size(); i++) {
       Shape shape = indexedShapes.get(i);
-      adoc(""+i, shape);
+      adoc("" + i, shape);
 
-      if (random().nextInt(10) == 0)
-        commit();//intermediate commit, produces extra segments
+      if (random().nextInt(10) == 0) {
+        commit(); // intermediate commit, produces extra segments
+      }
     }
 
-    //delete some documents randomly
+    // delete some documents randomly
     for (int id = 0; id < indexedShapes.size(); id++) {
       if (random().nextInt(10) == 0) {
-        deleteDoc(""+id);
+        deleteDoc("" + id);
         indexedShapes.set(id, null);
       }
     }
 
     commit();
 
-    //Main query loop:
+    // Main query loop:
     for (int queryIdx = 0; queryIdx < 10; queryIdx++) {
       preQueryHavoc();
 
-      // We need to have a facet range window to do the facets between (a start time & end time). We randomly
-      // pick a date, decide the level we want to facet on, and then pick a right end time that is up to 2 thousand
+      // We need to have a facet range window to do the facets between (a start time & end time). We
+      // randomly
+      // pick a date, decide the level we want to facet on, and then pick a right end time that is
+      // up to 2 thousand
       // values later.
       int calFieldFacet = randomCalWindowField - 1;
       if (calFieldFacet > 1 && rarely()) {
@@ -108,15 +111,16 @@ public class TestNumberRangeFacets extends StrategyTestCase {
       rightCal.add(calFieldFacet, randomIntBetween(0, 2000));
       // Pick facet detail level based on cal field.
       int detailLevel = tree.getTreeLevelForCalendarField(calFieldFacet);
-      if (detailLevel < 0) {//no exact match
+      if (detailLevel < 0) { // no exact match
         detailLevel = -1 * detailLevel;
       }
 
-      //Randomly pick a filter/acceptDocs
+      // Randomly pick a filter/acceptDocs
       Bits topAcceptDocs = null;
       List<Integer> acceptFieldIds = new ArrayList<>();
       if (usually()) {
-        //get all possible IDs into a list, random shuffle it, then randomly choose how many of the first we use to
+        // get all possible IDs into a list, random shuffle it, then randomly choose how many of the
+        // first we use to
         // replace the list.
         for (int i = 0; i < indexedShapes.size(); i++) {
           if (indexedShapes.get(i) == null) { // we deleted this one
@@ -136,24 +140,28 @@ public class TestNumberRangeFacets extends StrategyTestCase {
         }
       }
 
-      //Lets do it!
-      NumberRangePrefixTree.NRShape facetRange = tree.toRangeShape(tree.toShape(leftCal), tree.toShape(rightCal));
-      Facets facets = ((NumberRangePrefixTreeStrategy) strategy)
-          .calcFacets(indexSearcher.getTopReaderContext(), topAcceptDocs, facetRange, detailLevel);
+      // Lets do it!
+      NumberRangePrefixTree.NRShape facetRange =
+          tree.toRangeShape(tree.toShape(leftCal), tree.toShape(rightCal));
+      Facets facets =
+          ((NumberRangePrefixTreeStrategy) strategy)
+              .calcFacets(
+                  indexSearcher.getTopReaderContext(), topAcceptDocs, facetRange, detailLevel);
 
-      //System.out.println("Q: " + queryIdx + " " + facets);
+      // System.out.println("Q: " + queryIdx + " " + facets);
 
-      //Verify results. We do it by looping over indexed shapes and reducing the facet counts.
+      // Verify results. We do it by looping over indexed shapes and reducing the facet counts.
       Shape facetShapeRounded = facetRange.roundToLevel(detailLevel);
       for (int indexedShapeId = 0; indexedShapeId < indexedShapes.size(); indexedShapeId++) {
         if (topAcceptDocs != null && !acceptFieldIds.contains(indexedShapeId)) {
-          continue;// this doc was filtered out via acceptDocs
+          continue; // this doc was filtered out via acceptDocs
         }
         Shape indexedShape = indexedShapes.get(indexedShapeId);
-        if (indexedShape == null) {//was deleted
+        if (indexedShape == null) { // was deleted
           continue;
         }
-        Shape indexedShapeRounded = ((NumberRangePrefixTree.NRShape) indexedShape).roundToLevel(detailLevel);
+        Shape indexedShapeRounded =
+            ((NumberRangePrefixTree.NRShape) indexedShape).roundToLevel(detailLevel);
         if (!indexedShapeRounded.relate(facetShapeRounded).intersects()) { // no intersection at all
           continue;
         }
@@ -162,15 +170,15 @@ public class TestNumberRangeFacets extends StrategyTestCase {
         while (cellIterator.hasNext()) {
           Cell cell = cellIterator.next();
           if (!cell.getShape().relate(facetShapeRounded).intersects()) {
-            cellIterator.remove();//no intersection; prune
+            cellIterator.remove(); // no intersection; prune
             continue;
           }
           assert cell.getLevel() <= detailLevel;
 
           if (cell.getLevel() == detailLevel) {
-            //count it
+            // count it
             UnitNRShape shape = (UnitNRShape) cell.getShape();
-            final UnitNRShape parentShape = shape.getShapeAtLevel(detailLevel - 1);//get parent
+            final UnitNRShape parentShape = shape.getShapeAtLevel(detailLevel - 1); // get parent
             final Facets.FacetParentVal facetParentVal = facets.parents.get(parentShape);
             assertNotNull(facetParentVal);
             int index = shape.getValAtLevel(shape.getLevel());
@@ -179,13 +187,13 @@ public class TestNumberRangeFacets extends StrategyTestCase {
             facetParentVal.childCounts[index]--;
 
           } else if (cell.isLeaf()) {
-            //count it, and remove/prune.
+            // count it, and remove/prune.
             if (cell.getLevel() < detailLevel - 1) {
               assert facets.topLeaves > 0;
               facets.topLeaves--;
             } else {
               UnitNRShape shape = (UnitNRShape) cell.getShape();
-              final UnitNRShape parentShape = shape.getShapeAtLevel(detailLevel - 1);//get parent
+              final UnitNRShape parentShape = shape.getShapeAtLevel(detailLevel - 1); // get parent
               final Facets.FacetParentVal facetParentVal = facets.parents.get(parentShape);
               assertNotNull(facetParentVal);
               assert facetParentVal.parentLeaves > 0;
@@ -206,15 +214,16 @@ public class TestNumberRangeFacets extends StrategyTestCase {
           }
         }
       }
-
     }
   }
 
   private Bits searchForDocBits(Query query) throws IOException {
     FixedBitSet bitSet = new FixedBitSet(indexSearcher.getIndexReader().maxDoc());
-    indexSearcher.search(query,
+    indexSearcher.search(
+        query,
         new SimpleCollector() {
           int leafDocBase;
+
           @Override
           public void collect(int doc) throws IOException {
             bitSet.set(leafDocBase + doc);
@@ -265,10 +274,9 @@ public class TestNumberRangeFacets extends StrategyTestCase {
     Calendar cal = tree.newCal();
     cal.setTimeInMillis(random().nextLong() % randomCalWindowMs);
     try {
-      tree.clearFieldsAfter(cal, random().nextInt(Calendar.FIELD_COUNT+1)-1);
+      tree.clearFieldsAfter(cal, random().nextInt(Calendar.FIELD_COUNT + 1) - 1);
     } catch (AssertionError e) {
-      if (!e.getMessage().equals("Calendar underflow"))
-        throw e;
+      if (!e.getMessage().equals("Calendar underflow")) throw e;
     }
     return cal;
   }

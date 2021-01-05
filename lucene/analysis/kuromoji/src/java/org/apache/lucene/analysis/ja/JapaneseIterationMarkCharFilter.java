@@ -16,52 +16,45 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
+import java.io.IOException;
+import java.io.Reader;
 import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.util.RollingCharBuffer;
 
-import java.io.IOException;
-import java.io.Reader;
-
 /**
  * Normalizes Japanese horizontal iteration marks (odoriji) to their expanded form.
- * <p>
- * Sequences of iteration marks are supported.  In case an illegal sequence of iteration
- * marks is encountered, the implementation emits the illegal source character as-is
- * without considering its script.  For example, with input "?ゝ", we get
- * "??" even though the question mark isn't hiragana.
- * </p>
- * <p>
- * Note that a full stop punctuation character "。" (U+3002) can not be iterated
- * (see below). Iteration marks themselves can be emitted in case they are illegal,
- * i.e. if they go back past the beginning of the character stream.
- * </p>
- * <p>
- * The implementation buffers input until a full stop punctuation character (U+3002)
- * or EOF is reached in order to not keep a copy of the character stream in memory.
- * Vertical iteration marks, which are even rarer than horizontal iteration marks in
- * contemporary Japanese, are unsupported.
- * </p>
+ *
+ * <p>Sequences of iteration marks are supported. In case an illegal sequence of iteration marks is
+ * encountered, the implementation emits the illegal source character as-is without considering its
+ * script. For example, with input "?ゝ", we get "??" even though the question mark isn't hiragana.
+ *
+ * <p>Note that a full stop punctuation character "。" (U+3002) can not be iterated (see below).
+ * Iteration marks themselves can be emitted in case they are illegal, i.e. if they go back past the
+ * beginning of the character stream.
+ *
+ * <p>The implementation buffers input until a full stop punctuation character (U+3002) or EOF is
+ * reached in order to not keep a copy of the character stream in memory. Vertical iteration marks,
+ * which are even rarer than horizontal iteration marks in contemporary Japanese, are unsupported.
  */
 public class JapaneseIterationMarkCharFilter extends CharFilter {
 
   /** Normalize kanji iteration marks by default */
-  public static final boolean NORMALIZE_KANJI_DEFAULT = true; 
+  public static final boolean NORMALIZE_KANJI_DEFAULT = true;
 
   /** Normalize kana iteration marks by default */
   public static final boolean NORMALIZE_KANA_DEFAULT = true;
 
-  private static final char KANJI_ITERATION_MARK = '\u3005';           // 々
+  private static final char KANJI_ITERATION_MARK = '\u3005'; // 々
 
-  private static final char HIRAGANA_ITERATION_MARK = '\u309d';        // ゝ
+  private static final char HIRAGANA_ITERATION_MARK = '\u309d'; // ゝ
 
   private static final char HIRAGANA_VOICED_ITERATION_MARK = '\u309e'; // ゞ
 
-  private static final char KATAKANA_ITERATION_MARK = '\u30fd';        // ヽ
+  private static final char KATAKANA_ITERATION_MARK = '\u30fd'; // ヽ
 
   private static final char KATAKANA_VOICED_ITERATION_MARK = '\u30fe'; // ヾ
 
-  private static final char FULL_STOP_PUNCTUATION = '\u3002';           // 。
+  private static final char FULL_STOP_PUNCTUATION = '\u3002'; // 。
 
   // Hiragana to dakuten map (lookup using code point - 0x30ab（か）*/
   private static char[] h2d = new char[50];
@@ -83,16 +76,16 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
 
   static {
     // Hiragana dakuten map
-    h2d[0] = '\u304c';  // か => が
-    h2d[1] = '\u304c';  // が => が
-    h2d[2] = '\u304e';  // き => ぎ
-    h2d[3] = '\u304e';  // ぎ => ぎ
-    h2d[4] = '\u3050';  // く => ぐ
-    h2d[5] = '\u3050';  // ぐ => ぐ
-    h2d[6] = '\u3052';  // け => げ
-    h2d[7] = '\u3052';  // げ => げ
-    h2d[8] = '\u3054';  // こ => ご
-    h2d[9] = '\u3054';  // ご => ご
+    h2d[0] = '\u304c'; // か => が
+    h2d[1] = '\u304c'; // が => が
+    h2d[2] = '\u304e'; // き => ぎ
+    h2d[3] = '\u304e'; // ぎ => ぎ
+    h2d[4] = '\u3050'; // く => ぐ
+    h2d[5] = '\u3050'; // ぐ => ぐ
+    h2d[6] = '\u3052'; // け => げ
+    h2d[7] = '\u3052'; // げ => げ
+    h2d[8] = '\u3054'; // こ => ご
+    h2d[9] = '\u3054'; // ご => ご
     h2d[10] = '\u3056'; // さ => ざ
     h2d[11] = '\u3056'; // ざ => ざ
     h2d[12] = '\u3058'; // し => じ
@@ -151,15 +144,15 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
     this(input, NORMALIZE_KANJI_DEFAULT, NORMALIZE_KANA_DEFAULT);
   }
 
-
   /**
    * Constructor
    *
-   * @param input          char stream
+   * @param input char stream
    * @param normalizeKanji indicates whether kanji iteration marks should be normalized
    * @param normalizeKana indicates whether kana iteration marks should be normalized
    */
-  public JapaneseIterationMarkCharFilter(Reader input, boolean normalizeKanji, boolean normalizeKana) {
+  public JapaneseIterationMarkCharFilter(
+      Reader input, boolean normalizeKanji, boolean normalizeKana) {
     super(input);
     this.normalizeKanji = normalizeKanji;
     this.normalizeKana = normalizeKana;
@@ -191,7 +184,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
       buffer.freeBefore(bufferPosition);
       return ic;
     }
-    
+
     char c = (char) ic;
 
     // Skip surrogate pair characters
@@ -204,12 +197,12 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
       buffer.freeBefore(bufferPosition);
       iterationMarkSpanEndPosition = bufferPosition + 1;
     }
-    
+
     // Normalize iteration mark
     if (isIterationMark(c)) {
       c = normalizeIterationMark(c);
     }
-    
+
     bufferPosition++;
     return c;
   }
@@ -250,7 +243,9 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    */
   private int nextIterationMarkSpanSize() throws IOException {
     int spanSize = 0;
-    for (int i = bufferPosition; buffer.get(i) != -1 && isIterationMark((char) (buffer.get(i))); i++) {
+    for (int i = bufferPosition;
+        buffer.get(i) != -1 && isIterationMark((char) (buffer.get(i)));
+        i++) {
       spanSize++;
     }
     // Restrict span size so that we don't go past the previous end position
@@ -288,7 +283,8 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
       return normalizedKatakana(c, m);
     }
 
-    return c; // If m is not kana and we are to normalize it, we assume it is kanji and simply return it
+    return c; // If m is not kana and we are to normalize it, we assume it is kanji and simply
+    // return it
   }
 
   /**
@@ -331,7 +327,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * Iteration mark character predicate
    *
    * @param c character to test
-   * @return true if c is an iteration mark character.  Otherwise false.
+   * @return true if c is an iteration mark character. Otherwise false.
    */
   private boolean isIterationMark(char c) {
     return isKanjiIterationMark(c) || isHiraganaIterationMark(c) || isKatakanaIterationMark(c);
@@ -341,7 +337,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * Hiragana iteration mark character predicate
    *
    * @param c character to test
-   * @return true if c is a hiragana iteration mark character.  Otherwise false.
+   * @return true if c is a hiragana iteration mark character. Otherwise false.
    */
   private boolean isHiraganaIterationMark(char c) {
     if (normalizeKana) {
@@ -355,7 +351,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * Katakana iteration mark character predicate
    *
    * @param c character to test
-   * @return true if c is a katakana iteration mark character.  Otherwise false.
+   * @return true if c is a katakana iteration mark character. Otherwise false.
    */
   private boolean isKatakanaIterationMark(char c) {
     if (normalizeKana) {
@@ -369,7 +365,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * Kanji iteration mark character predicate
    *
    * @param c character to test
-   * @return true if c is a kanji iteration mark character.  Otherwise false.
+   * @return true if c is a kanji iteration mark character. Otherwise false.
    */
   private boolean isKanjiIterationMark(char c) {
     if (normalizeKanji) {
@@ -420,11 +416,11 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
   }
 
   /**
-   * Looks up a character in dakuten map and returns the dakuten variant if it exists.
-   * Otherwise return the character being looked up itself
+   * Looks up a character in dakuten map and returns the dakuten variant if it exists. Otherwise
+   * return the character being looked up itself
    *
-   * @param c      character to look up
-   * @param map    dakuten map
+   * @param c character to look up
+   * @param map dakuten map
    * @param offset code point offset from c
    * @return mapped character or c if no mapping exists
    */
@@ -439,15 +435,14 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
   /**
    * Predicate indicating if the lookup character is within dakuten map range
    *
-   * @param c      character to look up
-   * @param map    dakuten map
+   * @param c character to look up
+   * @param map dakuten map
    * @param offset code point offset from c
    * @return true if c is mapped by map and otherwise false
    */
   private boolean inside(char c, char[] map, char offset) {
     return c >= offset && c < offset + map.length;
   }
-
 
   @Override
   protected int correct(int currentOff) {

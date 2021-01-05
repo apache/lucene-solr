@@ -23,11 +23,10 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**
- * Similarity that behaves like {@link BM25Similarity} while also applying
- * the k1+1 factor to the numerator of the scoring formula
+ * Similarity that behaves like {@link BM25Similarity} while also applying the k1+1 factor to the
+ * numerator of the scoring formula
  *
  * @see BM25Similarity
- *
  * @deprecated {@link BM25Similarity} should be used instead
  */
 @Deprecated
@@ -35,10 +34,12 @@ public final class LegacyBM25Similarity extends Similarity {
 
   private final BM25Similarity bm25Similarity;
 
-  /** BM25 with these default values:
+  /**
+   * BM25 with these default values:
+   *
    * <ul>
-   *   <li>{@code k1 = 1.2}</li>
-   *   <li>{@code b = 0.75}</li>
+   *   <li>{@code k1 = 1.2}
+   *   <li>{@code b = 0.75}
    * </ul>
    */
   public LegacyBM25Similarity() {
@@ -47,10 +48,11 @@ public final class LegacyBM25Similarity extends Similarity {
 
   /**
    * BM25 with the supplied parameter values.
+   *
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
-   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
-   *         not within the range {@code [0..1]}
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is not
+   *     within the range {@code [0..1]}
    */
   public LegacyBM25Similarity(float k1, float b) {
     this.bm25Similarity = new BM25Similarity(k1, b);
@@ -62,12 +64,14 @@ public final class LegacyBM25Similarity extends Similarity {
   }
 
   @Override
-  public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public SimScorer scorer(
+      float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     return bm25Similarity.scorer(boost * (1 + bm25Similarity.getK1()), collectionStats, termStats);
   }
 
   /**
    * Returns the <code>k1</code> parameter
+   *
    * @see #LegacyBM25Similarity(float, float)
    */
   public final float getK1() {
@@ -76,21 +80,24 @@ public final class LegacyBM25Similarity extends Similarity {
 
   /**
    * Returns the <code>b</code> parameter
+   *
    * @see #LegacyBM25Similarity(float, float)
    */
   public final float getB() {
     return bm25Similarity.getB();
   }
 
-  /** Sets whether overlap tokens (Tokens with 0 position increment) are
-   *  ignored when computing norm.  By default this is true, meaning overlap
-   *  tokens do not count when computing norms. */
+  /**
+   * Sets whether overlap tokens (Tokens with 0 position increment) are ignored when computing norm.
+   * By default this is true, meaning overlap tokens do not count when computing norms.
+   */
   public void setDiscountOverlaps(boolean v) {
     bm25Similarity.setDiscountOverlaps(v);
   }
 
   /**
    * Returns true if overlap tokens are discounted from the document's length.
+   *
    * @see #setDiscountOverlaps
    */
   public boolean getDiscountOverlaps() {

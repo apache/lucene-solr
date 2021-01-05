@@ -16,38 +16,32 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
-
+import java.io.Reader;
+import java.io.StringReader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * Simple tests to ensure the apostrophe filter factory is working.
- */
+/** Simple tests to ensure the apostrophe filter factory is working. */
 public class TestApostropheFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually removes characters after an apostrophe.
-   */
+  /** Ensure the filter actually removes characters after an apostrophe. */
   public void testApostrophes() throws Exception {
     Reader reader = new StringReader("Türkiye'de 2003'te Van Gölü'nü gördüm");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("Apostrophe").create(stream);
-    assertTokenStreamContents(stream, new String[]{"Türkiye", "2003", "Van", "Gölü", "gördüm"});
+    assertTokenStreamContents(stream, new String[] {"Türkiye", "2003", "Van", "Gölü", "gördüm"});
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Apostrophe", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Apostrophe", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameter(s):"));
   }
 }

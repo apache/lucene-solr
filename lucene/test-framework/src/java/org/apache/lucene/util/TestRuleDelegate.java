@@ -17,14 +17,13 @@
 package org.apache.lucene.util;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * A {@link TestRule} that delegates to another {@link TestRule} via a delegate
- * contained in a an {@link AtomicReference}.
+ * A {@link TestRule} that delegates to another {@link TestRule} via a delegate contained in a an
+ * {@link AtomicReference}.
  */
 final class TestRuleDelegate<T extends TestRule> implements TestRule {
   private AtomicReference<T> delegate;

@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.serialized;
 
 import java.io.IOException;
-
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
@@ -56,6 +55,6 @@ public class TestSerializedStrategy extends StrategyTestCase {
     executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_Intersects_BBox);
   }
 
-  //sorting is tested in DistanceStrategyTest
+  // sorting is tested in DistanceStrategyTest
 
 }

@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.sandbox.search;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.lucene.search.DisiPriorityQueue;
 import org.apache.lucene.search.DisiWrapper;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -23,11 +27,6 @@ import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /** A {@link Scorer} whose number of matches is per-document. */
 final class CoveringScorer extends Scorer {
@@ -37,7 +36,7 @@ final class CoveringScorer extends Scorer {
   final LongValues minMatchValues;
 
   boolean matches; // if true then the doc matches, otherwise we don't know and need to check
-  int doc;  // current doc ID
+  int doc; // current doc ID
   DisiWrapper topList; // list of matches
   int freq; // number of scorers on the desired doc ID
   long minMatch; // current required number of matches
@@ -74,106 +73,106 @@ final class CoveringScorer extends Scorer {
     return matchingChildren;
   }
 
-  private final DocIdSetIterator approximation = new DocIdSetIterator() {
+  private final DocIdSetIterator approximation =
+      new DocIdSetIterator() {
 
-    @Override
-    public int docID() {
-      return doc;
-    }
+        @Override
+        public int docID() {
+          return doc;
+        }
 
-    @Override
-    public int nextDoc() throws IOException {
-      return advance(docID() + 1);
-    }
+        @Override
+        public int nextDoc() throws IOException {
+          return advance(docID() + 1);
+        }
 
-    @Override
-    public int advance(int target) throws IOException {
-      // reset state
-      matches = false;
-      topList = null;
+        @Override
+        public int advance(int target) throws IOException {
+          // reset state
+          matches = false;
+          topList = null;
 
-      doc = target;
-      setMinMatch();
+          doc = target;
+          setMinMatch();
 
-      DisiWrapper top = subScorers.top();
-      int numMatches = 0;
-      int maxPotentialMatches = numScorers;
-      while (top.doc < target) {
-        if (maxPotentialMatches < minMatch) {
-          // No need to keep trying to advance to `target` since no match is possible.
-          if (target >= maxDoc - 1) {
-            doc = NO_MORE_DOCS;
-          } else {
-            doc = target + 1;
+          DisiWrapper top = subScorers.top();
+          int numMatches = 0;
+          int maxPotentialMatches = numScorers;
+          while (top.doc < target) {
+            if (maxPotentialMatches < minMatch) {
+              // No need to keep trying to advance to `target` since no match is possible.
+              if (target >= maxDoc - 1) {
+                doc = NO_MORE_DOCS;
+              } else {
+                doc = target + 1;
+              }
+              setMinMatch();
+              return doc;
+            }
+            top.doc = top.iterator.advance(target);
+            boolean match = top.doc == target;
+            top = subScorers.updateTop();
+            if (match) {
+              numMatches++;
+              if (numMatches >= minMatch) {
+                // success, no need to check other iterators
+                matches = true;
+                return doc;
+              }
+            } else {
+              maxPotentialMatches--;
+            }
           }
+
+          doc = top.doc;
           setMinMatch();
           return doc;
         }
-        top.doc = top.iterator.advance(target);
-        boolean match = top.doc == target;
-        top = subScorers.updateTop();
-        if (match) {
-          numMatches++;
-          if (numMatches >= minMatch) {
-            // success, no need to check other iterators
-            matches = true;
-            return doc;
+
+        private void setMinMatch() throws IOException {
+          if (doc >= maxDoc) {
+            // advanceExact may not be called on out-of-range doc ids
+            minMatch = 1;
+          } else if (minMatchValues.advanceExact(doc)) {
+            // values < 1 are treated as 1: we require at least one match
+            minMatch = Math.max(1, minMatchValues.longValue());
+          } else {
+            // this will make sure the document does not match
+            minMatch = Long.MAX_VALUE;
           }
-        } else {
-          maxPotentialMatches--;
         }
-      }
 
-      doc = top.doc;
-      setMinMatch();
-      return doc;
-    }
+        @Override
+        public long cost() {
+          return maxDoc;
+        }
+      };
 
-    private void setMinMatch() throws IOException {
-      if (doc >= maxDoc) {
-        // advanceExact may not be called on out-of-range doc ids
-        minMatch = 1;
-      } else if (minMatchValues.advanceExact(doc)) {
-        // values < 1 are treated as 1: we require at least one match
-        minMatch = Math.max(1, minMatchValues.longValue());
-      } else {
-        // this will make sure the document does not match
-        minMatch = Long.MAX_VALUE;
-      }
-    }
+  private final TwoPhaseIterator twoPhase =
+      new TwoPhaseIterator(approximation) {
 
-    @Override
-    public long cost() {
-      return maxDoc;
-    }
+        @Override
+        public boolean matches() throws IOException {
+          if (matches) {
+            return true;
+          }
+          if (topList == null) {
+            advanceAll(doc);
+          }
+          if (subScorers.top().doc != doc) {
+            assert subScorers.top().doc > doc;
+            return false;
+          }
+          setTopListAndFreq();
+          assert topList.doc == doc;
+          return matches = freq >= minMatch;
+        }
 
-  };
-
-  private final TwoPhaseIterator twoPhase = new TwoPhaseIterator(approximation) {
-
-    @Override
-    public boolean matches() throws IOException {
-      if (matches) {
-        return true;
-      }
-      if (topList == null) {
-        advanceAll(doc);
-      }
-      if (subScorers.top().doc != doc) {
-        assert subScorers.top().doc > doc;
-        return false;
-      }
-      setTopListAndFreq();
-      assert topList.doc == doc;
-      return matches = freq >= minMatch;
-    }
-
-    @Override
-    public float matchCost() {
-      return numScorers;
-    }
-
-  };
+        @Override
+        public float matchCost() {
+          return numScorers;
+        }
+      };
 
   @Override
   public DocIdSetIterator iterator() {
@@ -229,5 +228,4 @@ final class CoveringScorer extends Scorer {
   public int docID() {
     return doc;
   }
-
 }

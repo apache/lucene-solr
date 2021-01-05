@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.NLPLemmatizerOp;
@@ -32,17 +31,15 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
- * <p>Runs OpenNLP dictionary-based and/or MaxEnt lemmatizers.</p>
- * <p>
- *   Both a dictionary-based lemmatizer and a MaxEnt lemmatizer are supported,
- *   via the "dictionary" and "lemmatizerModel" params, respectively.
- *   If both are configured, the dictionary-based lemmatizer is tried first,
- *   and then the MaxEnt lemmatizer is consulted for out-of-vocabulary tokens.
- * </p>
- * <p>
- *   The dictionary file must be encoded as UTF-8, with one entry per line,
- *   in the form <code>word[tab]lemma[tab]part-of-speech</code>
- * </p>
+ * Runs OpenNLP dictionary-based and/or MaxEnt lemmatizers.
+ *
+ * <p>Both a dictionary-based lemmatizer and a MaxEnt lemmatizer are supported, via the "dictionary"
+ * and "lemmatizerModel" params, respectively. If both are configured, the dictionary-based
+ * lemmatizer is tried first, and then the MaxEnt lemmatizer is consulted for out-of-vocabulary
+ * tokens.
+ *
+ * <p>The dictionary file must be encoded as UTF-8, with one entry per line, in the form <code>
+ * word[tab]lemma[tab]part-of-speech</code>
  */
 public class OpenNLPLemmatizerFilter extends TokenFilter {
   private final NLPLemmatizerOp lemmatizerOp;
@@ -53,10 +50,10 @@ public class OpenNLPLemmatizerFilter extends TokenFilter {
   private List<AttributeSource> sentenceTokenAttrs = new ArrayList<>();
   private Iterator<AttributeSource> sentenceTokenAttrsIter = null;
   private boolean moreTokensAvailable = true;
-  private String[] sentenceTokens = null;     // non-keyword tokens
+  private String[] sentenceTokens = null; // non-keyword tokens
   private String[] sentenceTokenTypes = null; // types for non-keyword tokens
-  private String[] lemmas = null;             // lemmas for non-keyword tokens
-  private int lemmaNum = 0;                   // lemma counter
+  private String[] lemmas = null; // lemmas for non-keyword tokens
+  private int lemmaNum = 0; // lemma counter
 
   public OpenNLPLemmatizerFilter(TokenStream input, NLPLemmatizerOp lemmatizerOp) {
     super(input);
@@ -65,11 +62,11 @@ public class OpenNLPLemmatizerFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if ( ! moreTokensAvailable) {
+    if (!moreTokensAvailable) {
       clear();
       return false;
     }
-    if (sentenceTokenAttrsIter == null || ! sentenceTokenAttrsIter.hasNext()) {
+    if (sentenceTokenAttrsIter == null || !sentenceTokenAttrsIter.hasNext()) {
       nextSentence();
       if (sentenceTokens == null) { // zero non-keyword tokens
         clear();
@@ -81,11 +78,10 @@ public class OpenNLPLemmatizerFilter extends TokenFilter {
     }
     clearAttributes();
     sentenceTokenAttrsIter.next().copyTo(this);
-    if ( ! keywordAtt.isKeyword()) {
+    if (!keywordAtt.isKeyword()) {
       termAtt.setEmpty().append(lemmas[lemmaNum++]);
     }
     return true;
-
   }
 
   private void nextSentence() throws IOException {
@@ -93,8 +89,8 @@ public class OpenNLPLemmatizerFilter extends TokenFilter {
     List<String> typeList = new ArrayList<>();
     sentenceTokenAttrs.clear();
     boolean endOfSentence = false;
-    while ( ! endOfSentence && (moreTokensAvailable = input.incrementToken())) {
-      if ( ! keywordAtt.isKeyword()) {
+    while (!endOfSentence && (moreTokensAvailable = input.incrementToken())) {
+      if (!keywordAtt.isKeyword()) {
         tokenList.add(termAtt.toString());
         typeList.add(typeAtt.type());
       }

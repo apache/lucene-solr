@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SegmentCacheable;
@@ -28,29 +27,29 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Compares a shape from a provided {@link ShapeValuesSource} with a given Shape and sees
- * if it matches a given {@link SpatialOperation} (the predicate).
+ * Compares a shape from a provided {@link ShapeValuesSource} with a given Shape and sees if it
+ * matches a given {@link SpatialOperation} (the predicate).
  *
- * Consumers should call {@link #iterator(LeafReaderContext, DocIdSetIterator)} to obtain a
- * {@link TwoPhaseIterator} over a particular {@link DocIdSetIterator}.  The initial DocIdSetIterator
+ * <p>Consumers should call {@link #iterator(LeafReaderContext, DocIdSetIterator)} to obtain a
+ * {@link TwoPhaseIterator} over a particular {@link DocIdSetIterator}. The initial DocIdSetIterator
  * will be used as the approximation, and the {@link SpatialOperation} comparison will only be
  * performed in {@link TwoPhaseIterator#matches()}
  *
  * @lucene.experimental
  */
 public class ShapeValuesPredicate implements SegmentCacheable {
-  private final ShapeValuesSource shapeValuesource;//the left hand side
+  private final ShapeValuesSource shapeValuesource; // the left hand side
   private final SpatialOperation op;
-  private final Shape queryShape;//the right hand side (constant)
+  private final Shape queryShape; // the right hand side (constant)
 
   /**
-   *
    * @param shapeValuesource Must yield {@link Shape} instances from its objectVal(doc). If null
-   *                         then the result is false. This is the left-hand (indexed) side.
+   *     then the result is false. This is the left-hand (indexed) side.
    * @param op the predicate
    * @param queryShape The shape on the right-hand (query) side.
    */
-  public ShapeValuesPredicate(ShapeValuesSource shapeValuesource, SpatialOperation op, Shape queryShape) {
+  public ShapeValuesPredicate(
+      ShapeValuesSource shapeValuesource, SpatialOperation op, Shape queryShape) {
     this.shapeValuesource = shapeValuesource;
     this.op = op;
     this.queryShape = queryShape;
@@ -61,12 +60,14 @@ public class ShapeValuesPredicate implements SegmentCacheable {
     return shapeValuesource + " " + op + " " + queryShape;
   }
 
-  public TwoPhaseIterator iterator(LeafReaderContext ctx, DocIdSetIterator approximation) throws IOException {
+  public TwoPhaseIterator iterator(LeafReaderContext ctx, DocIdSetIterator approximation)
+      throws IOException {
     final ShapeValues shapeValues = shapeValuesource.getValues(ctx);
     return new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
-        return shapeValues.advanceExact(approximation.docID()) && op.evaluate(shapeValues.value(), queryShape);
+        return shapeValues.advanceExact(approximation.docID())
+            && op.evaluate(shapeValues.value(), queryShape);
       }
 
       @Override
