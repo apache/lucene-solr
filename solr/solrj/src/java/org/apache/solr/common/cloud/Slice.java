@@ -121,7 +121,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
     /** Converts the state string to a State instance. */
     public static State getState(String stateStr) {
-      return Slice.State.valueOf(stateStr.toUpperCase(Locale.ROOT));
+      return State.valueOf(stateStr.toUpperCase(Locale.ROOT));
     }
   }
 
@@ -152,9 +152,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
     Object rangeObj = propMap.get(RANGE);
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = Slice.State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
     } else {
-      this.state = Slice.State.ACTIVE;                         //Default to ACTIVE
+      this.state = State.ACTIVE;                         //Default to ACTIVE
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
