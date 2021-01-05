@@ -16,90 +16,56 @@
  */
 
 /*
- * LUCENE-9564: This adds automatic (and enforced) code formatting.
+ * LUCENE-9564: This adds automatic (and enforced) code formatting using
+ * spotless and Google Java Format.
  */
 
 def resources = scriptResources(buildscript)
 
-allprojects { prj ->
+configure(project(":lucene").subprojects) { prj ->
   plugins.withType(JavaPlugin) {
     prj.apply plugin: 'com.diffplug.spotless'
 
     spotless {
       java {
-        // TODO: work out how to have multiple different header files (we have
-        // classes in the codebase that have original headers).
+        // TODO: Work out how to support multiple different header files (we have
+        // classes in the codebase that have original headers). We currently use
+        // Apache RAT to enforce headers so this is of lesser priority.
+        //
         // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
 
         lineEndings 'UNIX'
         endWithNewline()
         googleJavaFormat('1.9')
 
+        // Apply to all Java sources
+        target "src/**/*.java"
+
+        // Exclude certain files (generated ones, mostly).
         switch (project.path) {
-          // These modules are complete - all sources scanned.
           case ":lucene:core":
-            target "src/java/**/*.java",
-                   "src/test/**/*.java"
-            targetExclude "**/resources/**", "**/StandardTokenizerImpl.java"
+            targetExclude "**/StandardTokenizerImpl.java"
             break
 
           case ":lucene:analysis:common":
-            target "src/**/*.java"
-            targetExclude "**/resources/**",
-                "**/HTMLStripCharFilter.java",
+            targetExclude "**/HTMLStripCharFilter.java",
                 "**/UAX29URLEmailTokenizerImpl.java",
                 "**/tartarus/**"
             break
 
-          case ":lucene:queries":
-          case ":lucene:highlighter":
-          case ":lucene:demo":
-          case ":lucene:analysis:morfologik":
-          case ":lucene:analysis:icu":
-          case ":lucene:analysis:kuromoji":
-          case ":lucene:memory":
-          case ":lucene:benchmark":
-          case ":lucene:analysis:nori":
-          case ":lucene:analysis:opennlp":
-          case ":lucene:analysis:phonetic":
-          case ":lucene:analysis:smartcn":
-          case ":lucene:analysis:stempel":
-          case ":lucene:classification":
-          case ":lucene:backward-codecs":
-          case ":lucene:codecs":
-          case ":lucene:grouping":
-          case ":lucene:join":
-          case ":lucene:facet":
-          case ":lucene:luke":
-          case ":lucene:misc":
-          case ":lucene:monitor":
-          case ":lucene:replicator":
-          case ":lucene:sandbox":
-          case ":lucene:suggest":
-          case ":lucene:spatial3d":
-          case ":lucene:spatial-extras":
-            target "src/**/*.java"
-            targetExclude "**/resources/**"
-            break
-
           case ":lucene:test-framework":
-            target "src/**/*.java"
-            targetExclude "**/resources/**",
-                "**/EmojiTokenizationTestUnicode_11_0.java",
+            targetExclude "**/EmojiTokenizationTestUnicode_11_0.java",
                 "**/WordBreakTestUnicode_9_0_0.java"
             break
-          //
 
           case ":lucene:expressions":
-            target "src/**/*.java"
-            targetExclude "**/resources/**", "**/JavascriptLexer.java", "**/JavascriptParser.java",
+            targetExclude "**/JavascriptLexer.java",
+                "**/JavascriptParser.java",
                 "**/JavascriptVisitor.java"
             break
 
           case ":lucene:queryparser":
-            target "src/**/*.java"
-            targetExclude "**/resources/**",
-              "**/classic/ParseException.java",
+            targetExclude "**/classic/ParseException.java",
               "**/classic/QueryParser.java",
               "**/classic/QueryParserConstants.java",
               "**/classic/QueryParserTokenManager.java",
@@ -118,26 +84,21 @@ allprojects { prj ->
               "**/surround/parser/Token.java",
               "**/surround/parser/TokenMgrError.java"
             break
-            // Partially complete.
-
-          default:
-            target 'non-existing/**'
-            break
         }
       }
     }
 
+    // Workaround for an odd problem in spotless where it fails because
+    // of a missing folder.
     spotlessJava {
       doFirst {
         project.mkdir("${buildDir}/spotless/spotlessJava")
       }
     }
   }
-}
 
-// Add an alias to 'spotlessApply' simply called 'tidy' and add
-// spotlessCheck to check.
-allprojects { prj ->
+  // Add an alias to 'spotlessApply' simply called 'tidy' and wire up
+  // spotlessCheck to convention's check.
   task tidy() {
     description "Applies formatters and cleanups to sources."
     group "verification"
