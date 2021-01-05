@@ -142,7 +142,7 @@ final class WANDScorer extends Scorer {
 
     this.minCompetitiveScore = 0;
 
-    assert minShouldMatch >=0 : "minShouldMatch should not be negative, but got " + minShouldMatch;
+    assert minShouldMatch >= 0 : "minShouldMatch should not be negative, but got " + minShouldMatch;
     this.minShouldMatch = minShouldMatch;
 
     this.doc = -1;
