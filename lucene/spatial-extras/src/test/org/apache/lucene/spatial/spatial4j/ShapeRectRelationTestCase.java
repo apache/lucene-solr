@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.spatial.spatial4j;
 
+import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.locationtech.spatial4j.TestLog;
@@ -26,13 +28,10 @@ import org.locationtech.spatial4j.shape.RectIntersectionTestHelper;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 
-import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
-
 public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase {
-  protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
+  protected static final double RADIANS_PER_DEGREE = Math.PI / 180.0;
 
-  @Rule
-  public final TestLog testLog = TestLog.instance;
+  @Rule public final TestLog testLog = TestLog.instance;
 
   protected int maxRadius = 180;
 
@@ -40,13 +39,14 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
     super(SpatialContext.GEO);
   }
 
-  public abstract class AbstractRectIntersectionTestHelper extends RectIntersectionTestHelper<Shape> {
+  public abstract class AbstractRectIntersectionTestHelper
+      extends RectIntersectionTestHelper<Shape> {
 
     public AbstractRectIntersectionTestHelper(SpatialContext ctx) {
       super(ctx);
     }
 
-    //2 times each -- should be plenty
+    // 2 times each -- should be plenty
 
     protected int getContainsMinimum(int laps) {
       return 2;
@@ -56,7 +56,8 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
       return 2;
     }
 
-    // producing "within" cases in Geo3D based on our random shapes doesn't happen often. It'd be nice to increase this.
+    // producing "within" cases in Geo3D based on our random shapes doesn't happen often. It'd be
+    // nice to increase this.
     protected int getWithinMinimum(int laps) {
       return 2;
     }
@@ -76,7 +77,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
 
       @Override
       protected Shape generateRandomShape(Point nearP) {
-        final int circleRadius = maxRadius - random().nextInt(maxRadius);//no 0-radius
+        final int circleRadius = maxRadius - random().nextInt(maxRadius); // no 0-radius
         return ctx.getShapeFactory().circle(nearP, circleRadius);
       }
 
@@ -84,7 +85,6 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
       protected Point randomPointInEmptyShape(Shape shape) {
         return shape.getCenter();
       }
-
     }.testRelateWithRectangle();
   }
 
@@ -102,7 +102,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
         Point upperRight = randomPoint();
         Point lowerLeft = randomPoint();
         if (upperRight.getY() < lowerLeft.getY()) {
-          //swap
+          // swap
           Point temp = upperRight;
           upperRight = lowerLeft;
           lowerLeft = temp;
@@ -125,7 +125,7 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
       @Override
       protected Shape generateRandomShape(Point nearP) {
         final Point centerPoint = randomPoint();
-        final int maxDistance = random().nextInt(maxRadius -20) + 20;
+        final int maxDistance = random().nextInt(maxRadius - 20) + 20;
         final Circle pointZone = ctx.getShapeFactory().circle(centerPoint, maxDistance);
         final int vertexCount = random().nextInt(3) + 3;
         while (true) {
@@ -137,8 +137,10 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
           try {
             return builder.build();
           } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            // This is what happens when we create a shape that is invalid.  Although it is
+            // conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this
+            // random test.
             continue;
           }
         }
@@ -154,7 +156,6 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
         // Long/thin so lets just find 1.
         return 1;
       }
-
     }.testRelateWithRectangle();
   }
 
@@ -165,10 +166,10 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
       @Override
       protected Shape generateRandomShape(Point nearP) {
         final Point centerPoint = randomPoint();
-        final int maxDistance = random().nextInt(maxRadius -20) + 20;
+        final int maxDistance = random().nextInt(maxRadius - 20) + 20;
         final Circle pointZone = ctx.getShapeFactory().circle(centerPoint, maxDistance);
         final int pointCount = random().nextInt(5) + 1;
-        final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
+        final double width = (random().nextInt(89) + 1) * DEGREES_TO_RADIANS;
         final ShapeFactory.LineStringBuilder builder = ctx.getShapeFactory().lineString();
         while (true) {
           for (int i = 0; i < pointCount; i++) {
@@ -179,8 +180,10 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
           try {
             return builder.build();
           } catch (IllegalArgumentException e) {
-            // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
-            // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+            // This is what happens when we create a shape that is invalid.  Although it is
+            // conceivable that there are cases where
+            // the exception is thrown incorrectly, we aren't going to be able to do that in this
+            // random test.
             continue;
           }
         }
@@ -196,7 +199,6 @@ public abstract class ShapeRectRelationTestCase extends RandomizedShapeTestCase 
         // Long/thin so lets just find 1.
         return 1;
       }
-
     }.testRelateWithRectangle();
   }
 }

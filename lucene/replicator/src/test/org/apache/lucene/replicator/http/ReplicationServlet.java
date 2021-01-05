@@ -17,23 +17,23 @@
 package org.apache.lucene.replicator.http;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class ReplicationServlet extends HttpServlet {
-  
+
   private final ReplicationService service;
   private boolean respondWithError = false;
-  
+
   public ReplicationServlet(ReplicationService service) {
     this.service = service;
   }
-  
+
   @Override
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+      throws ServletException, IOException {
     if (respondWithError) {
       resp.sendError(500, "Fake error");
     } else {
@@ -44,5 +44,4 @@ public class ReplicationServlet extends HttpServlet {
   public void setRespondWithError(boolean respondWithError) {
     this.respondWithError = respondWithError;
   }
-  
 }

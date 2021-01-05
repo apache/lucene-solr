@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.sandbox.search;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -24,7 +29,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesNumbersQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -39,19 +43,19 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 public class TestDocValuesNumbersQuery extends LuceneTestCase {
 
   public void testEquals() {
-    assertEquals(new DocValuesNumbersQuery("field", 17L, 42L), new DocValuesNumbersQuery("field", 17L, 42L));
-    assertEquals(new DocValuesNumbersQuery("field", 17L, 42L, 32416190071L), new DocValuesNumbersQuery("field", 17L, 32416190071L, 42L));
-    assertFalse(new DocValuesNumbersQuery("field", 42L).equals(new DocValuesNumbersQuery("field2", 42L)));
-    assertFalse(new DocValuesNumbersQuery("field", 17L, 42L).equals(new DocValuesNumbersQuery("field", 17L, 32416190071L)));
+    assertEquals(
+        new DocValuesNumbersQuery("field", 17L, 42L), new DocValuesNumbersQuery("field", 17L, 42L));
+    assertEquals(
+        new DocValuesNumbersQuery("field", 17L, 42L, 32416190071L),
+        new DocValuesNumbersQuery("field", 17L, 32416190071L, 42L));
+    assertFalse(
+        new DocValuesNumbersQuery("field", 42L).equals(new DocValuesNumbersQuery("field2", 42L)));
+    assertFalse(
+        new DocValuesNumbersQuery("field", 17L, 42L)
+            .equals(new DocValuesNumbersQuery("field", 17L, 32416190071L)));
   }
 
   public void testDuelTermsQuery() throws IOException {
@@ -71,7 +75,7 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
         doc.add(new StringField("text", number.toString(), Store.NO));
         doc.add(new NumericDocValuesField("long", number));
         doc.add(new SortedNumericDocValuesField("twolongs", number));
-        doc.add(new SortedNumericDocValuesField("twolongs", number*2));
+        doc.add(new SortedNumericDocValuesField("twolongs", number * 2));
         iw.addDocument(doc);
       }
       if (numNumbers > 1 && random().nextBoolean()) {
@@ -90,13 +94,14 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
-        final int numQueryNumbers = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
+        final int numQueryNumbers =
+            TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
         Set<Long> queryNumbers = new HashSet<>();
         Set<Long> queryNumbersX2 = new HashSet<>();
         for (int j = 0; j < numQueryNumbers; ++j) {
           Long number = allNumbers.get(random().nextInt(allNumbers.size()));
           queryNumbers.add(number);
-          queryNumbersX2.add(2*number);
+          queryNumbersX2.add(2 * number);
         }
         final BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (Long number : queryNumbers) {
@@ -153,7 +158,8 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
-        final int numQueryNumbers = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
+        final int numQueryNumbers =
+            TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
         Set<Long> queryNumbers = new HashSet<>();
         for (int j = 0; j < numQueryNumbers; ++j) {
           queryNumbers.add(allNumbers.get(random().nextInt(allNumbers.size())));
@@ -181,7 +187,8 @@ public class TestDocValuesNumbersQuery extends LuceneTestCase {
     }
   }
 
-  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores)
+      throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);

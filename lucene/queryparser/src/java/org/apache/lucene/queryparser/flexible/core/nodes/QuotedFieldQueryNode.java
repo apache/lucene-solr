@@ -18,24 +18,16 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-/**
- * A {@link QuotedFieldQueryNode} represents phrase query. Example:
- * "life is great"
- */
+/** A {@link QuotedFieldQueryNode} represents phrase query. Example: "life is great" */
 public class QuotedFieldQueryNode extends FieldQueryNode {
 
   /**
-   * @param field
-   *          - field name
-   * @param text
-   *          - value
-   * @param begin
-   *          - position in the query string
-   * @param end
-   *          - position in the query string
+   * @param field - field name
+   * @param text - value
+   * @param begin - position in the query string
+   * @param end - position in the query string
    */
-  public QuotedFieldQueryNode(CharSequence field, CharSequence text, int begin,
-      int end) {
+  public QuotedFieldQueryNode(CharSequence field, CharSequence text, int begin, int end) {
     super(field, text, begin, end);
   }
 
@@ -50,8 +42,15 @@ public class QuotedFieldQueryNode extends FieldQueryNode {
 
   @Override
   public String toString() {
-    return "<quotedfield start='" + this.begin + "' end='" + this.end
-        + "' field='" + this.field + "' term='" + this.text + "'/>";
+    return "<quotedfield start='"
+        + this.begin
+        + "' end='"
+        + this.end
+        + "' field='"
+        + this.field
+        + "' term='"
+        + this.text
+        + "'/>";
   }
 
   @Override
@@ -60,5 +59,4 @@ public class QuotedFieldQueryNode extends FieldQueryNode {
     // nothing to do here
     return clone;
   }
-
 }

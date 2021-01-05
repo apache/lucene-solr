@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.Bits;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 /** Wraps a Scorer with additional checks */
 final class AssertingBulkScorer extends BulkScorer {
@@ -73,8 +71,10 @@ final class AssertingBulkScorer extends BulkScorer {
   }
 
   @Override
-  public int score(LeafCollector collector, Bits acceptDocs, int min, final int max) throws IOException {
-    assert min >= this.max: "Scoring backward: min=" + min + " while previous max was max=" + this.max;
+  public int score(LeafCollector collector, Bits acceptDocs, int min, final int max)
+      throws IOException {
+    assert min >= this.max
+        : "Scoring backward: min=" + min + " while previous max was max=" + this.max;
     assert min <= max : "max must be greater than min, got min=" + min + ", and max=" + max;
     this.max = max;
     collector = new AssertingLeafCollector(collector, min, max);
@@ -92,5 +92,4 @@ final class AssertingBulkScorer extends BulkScorer {
   public String toString() {
     return "AssertingBulkScorer(" + in + ")";
   }
-
 }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -54,7 +53,7 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     Shard shard = new Shard();
     indexRandomDocs(shard.writer);
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
     IndexSearcher searcher = shard.getIndexSearcher();
@@ -65,10 +64,11 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     for (int i = 0; i < topGroups.groups.length; i++) {
       // Each group should have a result set equal to that returned by the top-level query,
       // filtered by the group value.
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10);
       assertScoreDocsEquals(topGroups.groups[i].scoreDocs, td.scoreDocs);
       if (i == 0) {
@@ -86,12 +86,15 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     indexRandomDocs(shard.writer);
     IndexSearcher searcher = shard.getIndexSearcher();
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
     GroupingSearch grouper = new GroupingSearch(getGroupSelector());
     grouper.setGroupDocsLimit(10);
-    Sort sort = new Sort(new SortField("sort1", SortField.Type.STRING), new SortField("sort2", SortField.Type.LONG));
+    Sort sort =
+        new Sort(
+            new SortField("sort1", SortField.Type.STRING),
+            new SortField("sort2", SortField.Type.LONG));
     grouper.setGroupSort(sort);
     TopGroups<T> topGroups = grouper.search(searcher, topLevel, 0, 5);
     TopDocs topDoc = searcher.search(topLevel, 1, sort);
@@ -99,10 +102,11 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       // We're sorting the groups by a defined Sort, but each group itself should be ordered
       // by doc relevance, and should be equal to the results of a top-level query filtered
       // by the group value
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10);
       assertScoreDocsEquals(topGroups.groups[i].scoreDocs, td.scoreDocs);
       // The top group should have sort values equal to the sort values of the top doc of
@@ -111,7 +115,8 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       if (i > 0) {
         assertSortsBefore(topGroups.groups[i - 1], topGroups.groups[i]);
       } else {
-        assertArrayEquals(((FieldDoc)topDoc.scoreDocs[0]).fields, topGroups.groups[0].groupSortValues);
+        assertArrayEquals(
+            ((FieldDoc) topDoc.scoreDocs[0]).fields, topGroups.groups[0].groupSortValues);
       }
     }
 
@@ -124,12 +129,15 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     indexRandomDocs(shard.writer);
     IndexSearcher searcher = shard.getIndexSearcher();
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
     GroupingSearch grouper = new GroupingSearch(getGroupSelector());
     grouper.setGroupDocsLimit(10);
-    Sort sort = new Sort(new SortField("sort1", SortField.Type.STRING), new SortField("sort2", SortField.Type.LONG));
+    Sort sort =
+        new Sort(
+            new SortField("sort1", SortField.Type.STRING),
+            new SortField("sort2", SortField.Type.LONG));
     grouper.setSortWithinGroup(sort);
 
     TopGroups<T> topGroups = grouper.search(searcher, topLevel, 0, 5);
@@ -146,16 +154,16 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       }
       // Groups themselves are ordered by a defined Sort, and each should give the same result as
       // the top-level query, filtered by the group value, with the same Sort
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(topGroups.groups[i].groupValue), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10, sort);
       assertScoreDocsEquals(td.scoreDocs, topGroups.groups[i].scoreDocs);
     }
 
     shard.close();
-
   }
 
   public void testGroupHeads() throws IOException {
@@ -164,7 +172,7 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     indexRandomDocs(shard.writer);
     IndexSearcher searcher = shard.getIndexSearcher();
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
     GroupSelector<T> groupSelector = getGroupSelector();
@@ -180,10 +188,11 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     int totalHits = searcher.count(topLevel);
     int groupHits = 0;
     for (T groupValue : matchingGroups) {
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
+              .build();
       groupHits += searcher.count(filtered);
     }
     assertEquals(totalHits, groupHits);
@@ -195,15 +204,17 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
         cardinality++;
       }
     }
-    assertEquals(matchingGroups.size(), cardinality);   // We should have one set bit per matching group
+    assertEquals(
+        matchingGroups.size(), cardinality); // We should have one set bit per matching group
 
     // Each group head should correspond to the topdoc of a search filtered by
     // that group
     for (T groupValue : matchingGroups) {
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 1);
       assertTrue(groupHeads.get(td.scoreDocs[0].doc));
     }
@@ -217,10 +228,13 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     indexRandomDocs(shard.writer);
     IndexSearcher searcher = shard.getIndexSearcher();
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
-    Sort sort = new Sort(new SortField("sort1", SortField.Type.STRING), new SortField("sort2", SortField.Type.LONG));
+    Sort sort =
+        new Sort(
+            new SortField("sort1", SortField.Type.STRING),
+            new SortField("sort2", SortField.Type.LONG));
     GroupSelector<T> groupSelector = getGroupSelector();
     GroupingSearch grouping = new GroupingSearch(groupSelector);
     grouping.setAllGroups(true);
@@ -237,15 +251,17 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
         cardinality++;
       }
     }
-    assertEquals(matchingGroups.size(), cardinality);   // We should have one set bit per matching group
+    assertEquals(
+        matchingGroups.size(), cardinality); // We should have one set bit per matching group
 
     // Each group head should correspond to the topdoc of a search filtered by
     // that group using the same within-group sort
     for (T groupValue : matchingGroups) {
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(filterQuery(groupValue), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 1, sort);
       assertTrue(groupHeads.get(td.scoreDocs[0].doc));
     }
@@ -263,7 +279,7 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       shards[i] = new Shard();
     }
 
-    String[] texts = new String[]{ "foo", "bar", "bar baz", "foo foo bar" };
+    String[] texts = new String[] {"foo", "bar", "bar baz", "foo foo bar"};
 
     // Create a bunch of random documents, and index them - once into the control index,
     // and once into a randomly picked shard.
@@ -282,29 +298,35 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
       shards[shard].writer.addDocument(doc);
     }
 
-    String[] query = new String[]{ "foo", "bar", "baz" };
+    String[] query = new String[] {"foo", "bar", "baz"};
     Query topLevel = new TermQuery(new Term("text", query[random().nextInt(query.length)]));
 
-    Sort sort = new Sort(new SortField("sort1", SortField.Type.STRING), new SortField("sort2", SortField.Type.LONG));
+    Sort sort =
+        new Sort(
+            new SortField("sort1", SortField.Type.STRING),
+            new SortField("sort2", SortField.Type.LONG));
 
     // A grouped query run in two phases against the control should give us the same
     // result as the query run against shards and merged back together after each phase.
 
-    FirstPassGroupingCollector<T> singletonFirstPass = new FirstPassGroupingCollector<>(getGroupSelector(), sort, 5);
+    FirstPassGroupingCollector<T> singletonFirstPass =
+        new FirstPassGroupingCollector<>(getGroupSelector(), sort, 5);
     control.getIndexSearcher().search(topLevel, singletonFirstPass);
     Collection<SearchGroup<T>> singletonGroups = singletonFirstPass.getTopGroups(0);
 
     List<Collection<SearchGroup<T>>> shardGroups = new ArrayList<>();
     for (Shard shard : shards) {
-      FirstPassGroupingCollector<T> fc = new FirstPassGroupingCollector<>(getGroupSelector(), sort, 5);
+      FirstPassGroupingCollector<T> fc =
+          new FirstPassGroupingCollector<>(getGroupSelector(), sort, 5);
       shard.getIndexSearcher().search(topLevel, fc);
       shardGroups.add(fc.getTopGroups(0));
     }
     Collection<SearchGroup<T>> mergedGroups = SearchGroup.merge(shardGroups, 0, 5, sort);
     assertEquals(singletonGroups, mergedGroups);
 
-    TopGroupsCollector<T> singletonSecondPass = new TopGroupsCollector<>(getGroupSelector(), singletonGroups, sort,
-        Sort.RELEVANCE, 5, true);
+    TopGroupsCollector<T> singletonSecondPass =
+        new TopGroupsCollector<>(
+            getGroupSelector(), singletonGroups, sort, Sort.RELEVANCE, 5, true);
     control.getIndexSearcher().search(topLevel, singletonSecondPass);
     TopGroups<T> singletonTopGroups = singletonSecondPass.getTopGroups(0);
 
@@ -313,12 +335,14 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     TopGroups<T>[] shardTopGroups = (TopGroups<T>[]) new TopGroups<?>[shards.length];
     int j = 0;
     for (Shard shard : shards) {
-      TopGroupsCollector<T> sc = new TopGroupsCollector<>(getGroupSelector(), mergedGroups, sort, Sort.RELEVANCE, 5, true);
+      TopGroupsCollector<T> sc =
+          new TopGroupsCollector<>(getGroupSelector(), mergedGroups, sort, Sort.RELEVANCE, 5, true);
       shard.getIndexSearcher().search(topLevel, sc);
       shardTopGroups[j] = sc.getTopGroups(0);
       j++;
     }
-    TopGroups<T> mergedTopGroups = TopGroups.merge(shardTopGroups, sort, Sort.RELEVANCE, 0, 5, TopGroups.ScoreMergeMode.None);
+    TopGroups<T> mergedTopGroups =
+        TopGroups.merge(shardTopGroups, sort, Sort.RELEVANCE, 0, 5, TopGroups.ScoreMergeMode.None);
     assertNotNull(mergedTopGroups);
 
     assertEquals(singletonTopGroups.totalGroupedHitCount, mergedTopGroups.totalGroupedHitCount);
@@ -327,18 +351,19 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
     assertEquals(singletonTopGroups.groups.length, mergedTopGroups.groups.length);
     for (int i = 0; i < singletonTopGroups.groups.length; i++) {
       assertEquals(singletonTopGroups.groups[i].groupValue, mergedTopGroups.groups[i].groupValue);
-      assertEquals(singletonTopGroups.groups[i].scoreDocs.length, mergedTopGroups.groups[i].scoreDocs.length);
+      assertEquals(
+          singletonTopGroups.groups[i].scoreDocs.length,
+          mergedTopGroups.groups[i].scoreDocs.length);
     }
 
     control.close();
     for (Shard shard : shards) {
       shard.close();
     }
-
   }
 
   private void indexRandomDocs(RandomIndexWriter w) throws IOException {
-    String[] texts = new String[]{ "foo", "bar", "bar baz", "foo foo bar" };
+    String[] texts = new String[] {"foo", "bar", "bar baz", "foo foo bar"};
 
     int numDocs = atLeast(200);
     for (int i = 0; i < numDocs; i++) {
@@ -356,10 +381,9 @@ public abstract class BaseGroupSelectorTestCase<T> extends AbstractGroupingTestC
   private void assertSortsBefore(GroupDocs<T> first, GroupDocs<T> second) {
     Object[] groupSortValues = second.groupSortValues;
     Object[] prevSortValues = first.groupSortValues;
-    assertTrue(((BytesRef)prevSortValues[0]).compareTo((BytesRef)groupSortValues[0]) <= 0);
+    assertTrue(((BytesRef) prevSortValues[0]).compareTo((BytesRef) groupSortValues[0]) <= 0);
     if (prevSortValues[0].equals(groupSortValues[0])) {
-      assertTrue((long)prevSortValues[1] <= (long)groupSortValues[1]);
+      assertTrue((long) prevSortValues[1] <= (long) groupSortValues[1]);
     }
   }
-
 }

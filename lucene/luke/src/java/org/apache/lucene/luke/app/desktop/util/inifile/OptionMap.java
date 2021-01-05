@@ -29,5 +29,4 @@ public class OptionMap extends LinkedHashMap<String, String> {
   Boolean getAsBoolean(String key) {
     return Boolean.parseBoolean(get(key));
   }
-
 }

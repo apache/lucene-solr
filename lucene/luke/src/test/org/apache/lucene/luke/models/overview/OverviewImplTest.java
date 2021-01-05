@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.store.AlreadyClosedException;
 import org.junit.Test;
 
@@ -43,9 +42,7 @@ public class OverviewImplTest extends OverviewTestBase {
   @Test
   public void testGetFieldNames() {
     OverviewImpl overview = new OverviewImpl(reader, indexDir.toString());
-    assertEquals(
-        new HashSet<>(Arrays.asList("f1", "f2")),
-        new HashSet<>(overview.getFieldNames()));
+    assertEquals(new HashSet<>(Arrays.asList("f1", "f2")), new HashSet<>(overview.getFieldNames()));
   }
 
   @Test
@@ -111,7 +108,7 @@ public class OverviewImplTest extends OverviewTestBase {
   @Test
   public void testGetSortedTermCounts() {
     OverviewImpl overview = new OverviewImpl(reader, indexDir.toString());
-    Map<String, Long>  countsMap = overview.getSortedTermCounts(TermCountsOrder.COUNT_DESC);
+    Map<String, Long> countsMap = overview.getSortedTermCounts(TermCountsOrder.COUNT_DESC);
     assertEquals(Arrays.asList("f2", "f1"), new ArrayList<>(countsMap.keySet()));
   }
 
@@ -136,5 +133,4 @@ public class OverviewImplTest extends OverviewTestBase {
     reader.close();
     overview.getNumFields();
   }
-
 }

@@ -18,11 +18,10 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.analysis.CharArraySet;
 
 final class SuffixingNGramTokenFilter extends TokenFilter {
 
@@ -51,12 +50,13 @@ final class SuffixingNGramTokenFilter extends TokenFilter {
   /**
    * Creates SuffixingNGramTokenFilter.
    *
-   * @param input          {@link org.apache.lucene.analysis.TokenStream} holding the input to be tokenized
-   * @param suffix         a string to suffix to all ngrams
-   * @param wildcardToken  a token to emit if the input token is longer than maxTokenLength
+   * @param input {@link org.apache.lucene.analysis.TokenStream} holding the input to be tokenized
+   * @param suffix a string to suffix to all ngrams
+   * @param wildcardToken a token to emit if the input token is longer than maxTokenLength
    * @param maxTokenLength tokens longer than this will not be ngrammed
    */
-  public SuffixingNGramTokenFilter(TokenStream input, String suffix, String wildcardToken, int maxTokenLength) {
+  public SuffixingNGramTokenFilter(
+      TokenStream input, String suffix, String wildcardToken, int maxTokenLength) {
     super(input);
 
     this.suffix = suffix;
@@ -65,12 +65,9 @@ final class SuffixingNGramTokenFilter extends TokenFilter {
 
     posIncAtt = addAttribute(PositionIncrementAttribute.class);
     posLenAtt = addAttribute(PositionLengthAttribute.class);
-
   }
 
-  /**
-   * Returns the next token in the stream, or null at EOS.
-   */
+  /** Returns the next token in the stream, or null at EOS. */
   @Override
   public final boolean incrementToken() throws IOException {
     while (true) {
@@ -80,8 +77,7 @@ final class SuffixingNGramTokenFilter extends TokenFilter {
           return false;
         }
 
-        if (keywordAtt.isKeyword())
-          return true;
+        if (keywordAtt.isKeyword()) return true;
 
         curTermBuffer = termAtt.buffer().clone();
         curTermLength = termAtt.length();
@@ -92,9 +88,8 @@ final class SuffixingNGramTokenFilter extends TokenFilter {
         curPosLen = posLenAtt.getPositionLength();
         tokStart = offsetAtt.startOffset();
         tokEnd = offsetAtt.endOffset();
-        //termAtt.setEmpty().append(suffix);
+        // termAtt.setEmpty().append(suffix);
         return true;
-
       }
 
       if (curTermLength > maxTokenLength) {
@@ -111,10 +106,12 @@ final class SuffixingNGramTokenFilter extends TokenFilter {
       if (curGramSize >= 0 && (curPos + curGramSize) <= curCodePointCount) {
         clearAttributes();
         final int start = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
-        final int end = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
+        final int end =
+            Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
         termAtt.copyBuffer(curTermBuffer, start, end - start);
         termAtt.append(suffix);
-        if ((curGramSize == curTermLength - curPos) && !seenSuffixes.add(termAtt.subSequence(0, termAtt.length()))) {
+        if ((curGramSize == curTermLength - curPos)
+            && !seenSuffixes.add(termAtt.subSequence(0, termAtt.length()))) {
           curTermBuffer = null;
           continue;
         }

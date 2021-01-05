@@ -28,6 +28,4 @@ public interface AnalysisTabOperator extends ComponentOperatorRegistry.Component
   void setAnalyzerByCustomConfiguration(CustomAnalyzerConfig config);
 
   Analyzer getCurrentAnalyzer();
-
 }
-

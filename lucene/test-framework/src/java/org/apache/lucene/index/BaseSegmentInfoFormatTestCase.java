@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
@@ -40,13 +39,11 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /**
- * Abstract class to do basic tests for si format.
- * NOTE: This test focuses on the si impl, nothing else.
- * The [stretch] goal is for this test to be
- * so thorough in testing a new si format that if this
- * test passes, then all Lucene/Solr tests should also pass.  Ie,
- * if there is some bug in a given si Format that this
- * test fails to catch then this test needs to be improved! */
+ * Abstract class to do basic tests for si format. NOTE: This test focuses on the si impl, nothing
+ * else. The [stretch] goal is for this test to be so thorough in testing a new si format that if
+ * this test passes, then all Lucene/Solr tests should also pass. Ie, if there is some bug in a
+ * given si Format that this test fails to catch then this test needs to be improved!
+ */
 public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatTestCase {
 
   /** Whether this format records min versions. */
@@ -59,110 +56,183 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.emptyMap(), id, Collections.emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(info.files(), info2.files());
     dir.close();
   }
-  
+
   /** Tests SI writer adds itself to files... */
   public void testAddsSelfToFiles() throws Exception {
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.emptyMap(), id, Collections.emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
     Set<String> originalFiles = Collections.singleton("_123.a");
     info.setFiles(originalFiles);
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    
+
     Set<String> modifiedFiles = info.files();
     assertTrue(modifiedFiles.containsAll(originalFiles));
-    assertTrue("did you forget to add yourself to files()", modifiedFiles.size() > originalFiles.size());
-    
+    assertTrue(
+        "did you forget to add yourself to files()", modifiedFiles.size() > originalFiles.size());
+
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(info.files(), info2.files());
 
     // files set should be immutable
-    expectThrows(UnsupportedOperationException.class, () -> {
-      info2.files().add("bogus");
-    });
+    expectThrows(
+        UnsupportedOperationException.class,
+        () -> {
+          info2.files().add("bogus");
+        });
 
     dir.close();
   }
-  
+
   /** Test diagnostics map */
   public void testDiagnostics() throws Exception {
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    Map<String,String> diagnostics = new HashMap<>();
+    Map<String, String> diagnostics = new HashMap<>();
     diagnostics.put("key1", "value1");
     diagnostics.put("key2", "value2");
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       diagnostics, id, Collections.emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            diagnostics,
+            id,
+            Collections.emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(diagnostics, info2.getDiagnostics());
 
     // diagnostics map should be immutable
-    expectThrows(UnsupportedOperationException.class, () -> {
-      info2.getDiagnostics().put("bogus", "bogus");
-    });
+    expectThrows(
+        UnsupportedOperationException.class,
+        () -> {
+          info2.getDiagnostics().put("bogus", "bogus");
+        });
 
     dir.close();
   }
-  
+
   /** Test attributes map */
   public void testAttributes() throws Exception {
     Directory dir = newDirectory();
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    Map<String,String> attributes = new HashMap<>();
+    Map<String, String> attributes = new HashMap<>();
     attributes.put("key1", "value1");
     attributes.put("key2", "value2");
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.emptyMap(), id, attributes, null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.emptyMap(),
+            id,
+            attributes,
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertEquals(attributes, info2.getAttributes());
-    
+
     // attributes map should be immutable
-    expectThrows(UnsupportedOperationException.class, () -> {
-      info2.getAttributes().put("bogus", "bogus");
-    });
+    expectThrows(
+        UnsupportedOperationException.class,
+        () -> {
+          info2.getAttributes().put("bogus", "bogus");
+        });
 
     dir.close();
   }
-  
+
   /** Test unique ID */
   public void testUniqueID() throws Exception {
     Codec codec = getCodec();
     Directory dir = newDirectory();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
     assertIDEquals(id, info2.getId());
     dir.close();
   }
-  
+
   /** Test versions */
   public void testVersions() throws Exception {
     Codec codec = getCodec();
     for (Version v : getVersions()) {
-      for (Version minV : new Version[] { v, null}) {
+      for (Version minV : new Version[] {v, null}) {
         Directory dir = newDirectory();
         byte id[] = StringHelper.randomId();
-        SegmentInfo info = new SegmentInfo(dir, v, minV, "_123", 1, false, codec, 
-                                           Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
+        SegmentInfo info =
+            new SegmentInfo(
+                dir,
+                v,
+                minV,
+                "_123",
+                1,
+                false,
+                codec,
+                Collections.<String, String>emptyMap(),
+                id,
+                Collections.emptyMap(),
+                null);
         info.setFiles(Collections.<String>emptySet());
         codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
         SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
@@ -184,58 +254,71 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
   private SortField randomIndexSortField() {
     boolean reversed = random().nextBoolean();
     SortField sortField;
-    switch(random().nextInt(10)) {
+    switch (random().nextInt(10)) {
       case 0:
-        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
+        sortField =
+            new SortField(TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextInt());
         }
         break;
       case 1:
-        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
+        sortField =
+            new SortedNumericSortField(
+                TestUtil.randomSimpleString(random()), SortField.Type.INT, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextInt());
         }
         break;
 
       case 2:
-        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
+        sortField =
+            new SortField(TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextLong());
         }
         break;
       case 3:
-        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
+        sortField =
+            new SortedNumericSortField(
+                TestUtil.randomSimpleString(random()), SortField.Type.LONG, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextLong());
         }
         break;
       case 4:
-        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
+        sortField =
+            new SortField(TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextFloat());
         }
         break;
       case 5:
-        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
+        sortField =
+            new SortedNumericSortField(
+                TestUtil.randomSimpleString(random()), SortField.Type.FLOAT, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextFloat());
         }
         break;
       case 6:
-        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
+        sortField =
+            new SortField(TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextDouble());
         }
         break;
       case 7:
-        sortField = new SortedNumericSortField(TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
+        sortField =
+            new SortedNumericSortField(
+                TestUtil.randomSimpleString(random()), SortField.Type.DOUBLE, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(random().nextDouble());
         }
         break;
       case 8:
-        sortField = new SortField(TestUtil.randomSimpleString(random()), SortField.Type.STRING, reversed);
+        sortField =
+            new SortField(TestUtil.randomSimpleString(random()), SortField.Type.STRING, reversed);
         if (random().nextBoolean()) {
           sortField.setMissingValue(SortField.STRING_LAST);
         }
@@ -274,8 +357,19 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
       Directory dir = newDirectory();
       Codec codec = getCodec();
       byte id[] = StringHelper.randomId();
-      SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-          Collections.<String,String>emptyMap(), id, Collections.emptyMap(), sort);
+      SegmentInfo info =
+          new SegmentInfo(
+              dir,
+              getVersions()[0],
+              getVersions()[0],
+              "_123",
+              1,
+              false,
+              codec,
+              Collections.<String, String>emptyMap(),
+              id,
+              Collections.emptyMap(),
+              sort);
       info.setFiles(Collections.<String>emptySet());
       codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
       SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
@@ -284,135 +378,191 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
-  /** 
-   * Test segment infos write that hits exception immediately on open.
-   * make sure we get our exception back, no file handle leaks, etc. 
+  /**
+   * Test segment infos write that hits exception immediately on open. make sure we get our
+   * exception back, no file handle leaks, etc.
    */
   public void testExceptionOnCreateOutput() throws Exception {
-    Failure fail = new Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (doFail && callStackContainsAnyOf("createOutput")) {
-          throw new FakeIOException();
-        }
-      }
-    };
-    
+    Failure fail =
+        new Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            if (doFail && callStackContainsAnyOf("createOutput")) {
+              throw new FakeIOException();
+            }
+          }
+        };
+
     MockDirectoryWrapper dir = newMockDirectory();
     dir.failOn(fail);
     Codec codec = getCodec();
     byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
     info.setFiles(Collections.<String>emptySet());
-    
+
     fail.setDoFail();
-    expectThrows(FakeIOException.class, () -> {
-      codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    });
-    fail.clearDoFail();
-    
-    dir.close();
-  }
-  
-  /** 
-   * Test segment infos write that hits exception on close.
-   * make sure we get our exception back, no file handle leaks, etc. 
-   */
-  public void testExceptionOnCloseOutput() throws Exception {
-    Failure fail = new Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (doFail && callStackContainsAnyOf("close")) {
-          throw new FakeIOException();
-        }
-      }
-    };
-    
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.failOn(fail);
-    Codec codec = getCodec();
-    byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
-    info.setFiles(Collections.<String>emptySet());
-    
-    fail.setDoFail();
-    expectThrows(FakeIOException.class, () -> {
-      codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    });
-    fail.clearDoFail();
-    
-    dir.close();
-  }
-  
-  /** 
-   * Test segment infos read that hits exception immediately on open.
-   * make sure we get our exception back, no file handle leaks, etc. 
-   */
-  public void testExceptionOnOpenInput() throws Exception {
-    Failure fail = new Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (doFail && callStackContainsAnyOf("openInput")) {
-          throw new FakeIOException();
-        }
-      }
-    };
-    
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.failOn(fail);
-    Codec codec = getCodec();
-    byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
-    info.setFiles(Collections.<String>emptySet());
-    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    
-    fail.setDoFail();
-    expectThrows(FakeIOException.class, () -> {
-      codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
-    });
-    fail.clearDoFail();
-    
-    dir.close();
-  }
-  
-  /** 
-   * Test segment infos read that hits exception on close
-   * make sure we get our exception back, no file handle leaks, etc. 
-   */
-  public void testExceptionOnCloseInput() throws Exception {
-    Failure fail = new Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (doFail && callStackContainsAnyOf("close")) {
-          throw new FakeIOException();
-        }
-      }
-    };
-    
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.failOn(fail);
-    Codec codec = getCodec();
-    byte id[] = StringHelper.randomId();
-    SegmentInfo info = new SegmentInfo(dir, getVersions()[0], getVersions()[0], "_123", 1, false, codec, 
-                                       Collections.<String,String>emptyMap(), id, Collections.emptyMap(), null);
-    info.setFiles(Collections.<String>emptySet());
-    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
-    
-    fail.setDoFail();
-    expectThrows(FakeIOException.class, () -> {
-      codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
-    });
+    expectThrows(
+        FakeIOException.class,
+        () -> {
+          codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+        });
     fail.clearDoFail();
 
     dir.close();
   }
-  
-  /** 
-   * Sets some otherwise hard-to-test properties: 
-   * random segment names, ID values, document count, etc and round-trips
+
+  /**
+   * Test segment infos write that hits exception on close. make sure we get our exception back, no
+   * file handle leaks, etc.
+   */
+  public void testExceptionOnCloseOutput() throws Exception {
+    Failure fail =
+        new Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            if (doFail && callStackContainsAnyOf("close")) {
+              throw new FakeIOException();
+            }
+          }
+        };
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
+    info.setFiles(Collections.<String>emptySet());
+
+    fail.setDoFail();
+    expectThrows(
+        FakeIOException.class,
+        () -> {
+          codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+        });
+    fail.clearDoFail();
+
+    dir.close();
+  }
+
+  /**
+   * Test segment infos read that hits exception immediately on open. make sure we get our exception
+   * back, no file handle leaks, etc.
+   */
+  public void testExceptionOnOpenInput() throws Exception {
+    Failure fail =
+        new Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            if (doFail && callStackContainsAnyOf("openInput")) {
+              throw new FakeIOException();
+            }
+          }
+        };
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+
+    fail.setDoFail();
+    expectThrows(
+        FakeIOException.class,
+        () -> {
+          codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
+        });
+    fail.clearDoFail();
+
+    dir.close();
+  }
+
+  /**
+   * Test segment infos read that hits exception on close make sure we get our exception back, no
+   * file handle leaks, etc.
+   */
+  public void testExceptionOnCloseInput() throws Exception {
+    Failure fail =
+        new Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            if (doFail && callStackContainsAnyOf("close")) {
+              throw new FakeIOException();
+            }
+          }
+        };
+
+    MockDirectoryWrapper dir = newMockDirectory();
+    dir.failOn(fail);
+    Codec codec = getCodec();
+    byte id[] = StringHelper.randomId();
+    SegmentInfo info =
+        new SegmentInfo(
+            dir,
+            getVersions()[0],
+            getVersions()[0],
+            "_123",
+            1,
+            false,
+            codec,
+            Collections.<String, String>emptyMap(),
+            id,
+            Collections.emptyMap(),
+            null);
+    info.setFiles(Collections.<String>emptySet());
+    codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
+
+    fail.setDoFail();
+    expectThrows(
+        FakeIOException.class,
+        () -> {
+          codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
+        });
+    fail.clearDoFail();
+
+    dir.close();
+  }
+
+  /**
+   * Sets some otherwise hard-to-test properties: random segment names, ID values, document count,
+   * etc and round-trips
    */
   public void testRandom() throws Exception {
     Codec codec = getCodec();
@@ -421,7 +571,13 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
       Directory dir = newDirectory();
       Version version = versions[random().nextInt(versions.length)];
       long randomSegmentIndex = Math.abs(random().nextLong());
-      String name = "_" + Long.toString(randomSegmentIndex != Long.MIN_VALUE ? randomSegmentIndex : random().nextInt(Integer.MAX_VALUE), Character.MAX_RADIX);
+      String name =
+          "_"
+              + Long.toString(
+                  randomSegmentIndex != Long.MIN_VALUE
+                      ? randomSegmentIndex
+                      : random().nextInt(Integer.MAX_VALUE),
+                  Character.MAX_RADIX);
       int docCount = TestUtil.nextInt(random(), 1, IndexWriter.MAX_DOCS);
       boolean isCompoundFile = random().nextBoolean();
       Set<String> files = new HashSet<>();
@@ -431,32 +587,44 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
         files.add(file);
         dir.createOutput(file, IOContext.DEFAULT).close();
       }
-      Map<String,String> diagnostics = new HashMap<>();
+      Map<String, String> diagnostics = new HashMap<>();
       int numDiags = random().nextInt(10);
       for (int j = 0; j < numDiags; j++) {
-        diagnostics.put(TestUtil.randomUnicodeString(random()), 
-                        TestUtil.randomUnicodeString(random()));
+        diagnostics.put(
+            TestUtil.randomUnicodeString(random()), TestUtil.randomUnicodeString(random()));
       }
       byte id[] = new byte[StringHelper.ID_LENGTH];
       random().nextBytes(id);
-      
-      Map<String,String> attributes = new HashMap<>();
+
+      Map<String, String> attributes = new HashMap<>();
       int numAttributes = random().nextInt(10);
       for (int j = 0; j < numAttributes; j++) {
-        attributes.put(TestUtil.randomUnicodeString(random()), 
-                       TestUtil.randomUnicodeString(random()));
+        attributes.put(
+            TestUtil.randomUnicodeString(random()), TestUtil.randomUnicodeString(random()));
       }
-      
-      SegmentInfo info = new SegmentInfo(dir, version, null, name, docCount, isCompoundFile, codec, diagnostics, id, attributes, null);
+
+      SegmentInfo info =
+          new SegmentInfo(
+              dir,
+              version,
+              null,
+              name,
+              docCount,
+              isCompoundFile,
+              codec,
+              diagnostics,
+              id,
+              attributes,
+              null);
       info.setFiles(files);
       codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
       SegmentInfo info2 = codec.segmentInfoFormat().read(dir, name, id, IOContext.DEFAULT);
       assertEquals(info, info2);
- 
+
       dir.close();
     }
   }
-  
+
   protected final void assertEquals(SegmentInfo expected, SegmentInfo actual) {
     assertSame(expected.dir, actual.dir);
     assertEquals(expected.name, actual.name);
@@ -470,19 +638,20 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     assertEquals(expected.getVersion(), actual.getVersion());
     assertEquals(expected.getAttributes(), actual.getAttributes());
   }
-  
+
   /** Returns the versions this SI should test */
   protected abstract Version[] getVersions();
-  
-  /** 
-   * assert that unique id is equal. 
+
+  /**
+   * assert that unique id is equal.
+   *
    * @deprecated only exists to be overridden by old codecs that didnt support this
    */
   @Deprecated
   protected void assertIDEquals(byte expected[], byte actual[]) {
     assertArrayEquals(expected, actual);
   }
-  
+
   @Override
   protected void addRandomFields(Document doc) {
     doc.add(new StoredField("foobar", TestUtil.randomSimpleString(random())));

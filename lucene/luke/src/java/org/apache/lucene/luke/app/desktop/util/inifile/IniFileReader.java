@@ -25,5 +25,4 @@ import java.util.Map;
 public interface IniFileReader {
 
   Map<String, OptionMap> readSections(Path path) throws IOException;
-
 }

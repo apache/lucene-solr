@@ -27,13 +27,15 @@ import java.nio.file.Path;
 
 /** Basic tests for VirusCheckingFS */
 public class TestVirusCheckingFS extends MockFileSystemTestCase {
-  
+
   @Override
   protected Path wrap(Path path) {
-    FileSystem fs = new VirusCheckingFS(path.getFileSystem(), random().nextLong()).getFileSystem(URI.create("file:///"));
+    FileSystem fs =
+        new VirusCheckingFS(path.getFileSystem(), random().nextLong())
+            .getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** Test Files.delete fails if a file has an open inputstream against it */
   public void testDeleteSometimesFails() throws IOException {
     Path dir = wrap(createTempDir());
@@ -52,7 +54,8 @@ public class TestVirusCheckingFS extends MockFileSystemTestCase {
         Files.delete(path);
       } catch (AccessDeniedException ade) {
         // expected (sometimes)
-        assertTrue(ade.getMessage().contains("VirusCheckingFS is randomly refusing to delete file "));
+        assertTrue(
+            ade.getMessage().contains("VirusCheckingFS is randomly refusing to delete file "));
         break;
       }
 

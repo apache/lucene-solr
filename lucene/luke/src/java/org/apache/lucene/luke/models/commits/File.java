@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-/**
- * Holder for a index file.
- */
+/** Holder for a index file. */
 public final class File {
   private String fileName;
   private String displaySize;
@@ -47,6 +45,5 @@ public final class File {
     return displaySize;
   }
 
-  private File() {
-  }
+  private File() {}
 }

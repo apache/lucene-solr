@@ -16,6 +16,7 @@
  */
 
 /**
- * Lucene field &amp; query support for the spatial geometry implemented in {@link org.apache.lucene.spatial3d.geom}.
+ * Lucene field &amp; query support for the spatial geometry implemented in {@link
+ * org.apache.lucene.spatial3d.geom}.
  */
 package org.apache.lucene.spatial3d;

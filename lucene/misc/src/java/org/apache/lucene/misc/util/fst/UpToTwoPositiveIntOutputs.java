@@ -17,7 +17,6 @@
 package org.apache.lucene.misc.util.fst;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -26,34 +25,26 @@ import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Outputs;
 
 /**
- * An FST {@link Outputs} implementation where each output
- * is one or two non-negative long values.  If it's a
- * single output, Long is returned; else, TwoLongs.  Order
- * is preserved in the TwoLongs case, ie .first is the first
- * input/output added to Builder, and .second is the
- * second.  You cannot store 0 output with this (that's
- * reserved to mean "no output")!
+ * An FST {@link Outputs} implementation where each output is one or two non-negative long values.
+ * If it's a single output, Long is returned; else, TwoLongs. Order is preserved in the TwoLongs
+ * case, ie .first is the first input/output added to Builder, and .second is the second. You cannot
+ * store 0 output with this (that's reserved to mean "no output")!
  *
- * <p>NOTE: the only way to create a TwoLongs output is to
- * add the same input to the FST twice in a row.  This is
- * how the FST maps a single input to two outputs (e.g. you
- * cannot pass a TwoLongs to {@link FSTCompiler#add}.  If you
- * need more than two then use {@link ListOfOutputs}, but if
- * you only have at most 2 then this implementation will
- * require fewer bytes as it steals one bit from each long
- * value.
+ * <p>NOTE: the only way to create a TwoLongs output is to add the same input to the FST twice in a
+ * row. This is how the FST maps a single input to two outputs (e.g. you cannot pass a TwoLongs to
+ * {@link FSTCompiler#add}. If you need more than two then use {@link ListOfOutputs}, but if you
+ * only have at most 2 then this implementation will require fewer bytes as it steals one bit from
+ * each long value.
  *
- * <p>NOTE: the resulting FST is not guaranteed to be minimal!
- * See {@link FSTCompiler}.
+ * <p>NOTE: the resulting FST is not guaranteed to be minimal! See {@link FSTCompiler}.
  *
  * @lucene.experimental
  */
-
 @SuppressForbidden(reason = "Uses a Long instance as a marker")
 public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
   /** Holds two long outputs. */
-  public final static class TwoLongs {
+  public static final class TwoLongs {
     public final long first;
     public final long second;
 
@@ -81,17 +72,19 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
     @Override
     public int hashCode() {
-      return (int) ((first^(first>>>32)) ^ (second^(second>>32)));
+      return (int) ((first ^ (first >>> 32)) ^ (second ^ (second >> 32)));
     }
   }
 
   @SuppressWarnings("deprecation")
-  private final static Long NO_OUTPUT = new Long(0);
+  private static final Long NO_OUTPUT = new Long(0);
 
   private final boolean doShare;
 
-  private final static UpToTwoPositiveIntOutputs singletonShare = new UpToTwoPositiveIntOutputs(true);
-  private final static UpToTwoPositiveIntOutputs singletonNoShare = new UpToTwoPositiveIntOutputs(false);
+  private static final UpToTwoPositiveIntOutputs singletonShare =
+      new UpToTwoPositiveIntOutputs(true);
+  private static final UpToTwoPositiveIntOutputs singletonNoShare =
+      new UpToTwoPositiveIntOutputs(false);
 
   private UpToTwoPositiveIntOutputs(boolean doShare) {
     this.doShare = doShare;
@@ -175,10 +168,10 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
     assert valid(_output, true);
     if (_output instanceof Long) {
       final Long output = (Long) _output;
-      out.writeVLong(output<<1);
+      out.writeVLong(output << 1);
     } else {
       final TwoLongs output = (TwoLongs) _output;
-      out.writeVLong((output.first<<1) | 1);
+      out.writeVLong((output.first << 1) | 1);
       out.writeVLong(output.second);
     }
   }
@@ -238,7 +231,8 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
     return new TwoLongs((Long) first, (Long) second);
   }
 
-  private static final long TWO_LONGS_NUM_BYTES = RamUsageEstimator.shallowSizeOf(new TwoLongs(0, 0));
+  private static final long TWO_LONGS_NUM_BYTES =
+      RamUsageEstimator.shallowSizeOf(new TwoLongs(0, 0));
 
   @Override
   public long ramBytesUsed(Object o) {

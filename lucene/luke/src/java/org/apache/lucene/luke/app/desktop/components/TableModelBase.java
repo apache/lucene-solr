@@ -17,12 +17,14 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import javax.swing.table.AbstractTableModel;
 import java.util.Map;
-
+import javax.swing.table.AbstractTableModel;
 import org.apache.lucene.luke.app.desktop.util.TableUtils;
 
-/** Base table model that stores table's meta data and content. This also provides some default implementation of the {@link javax.swing.table.TableModel} interface. */
+/**
+ * Base table model that stores table's meta data and content. This also provides some default
+ * implementation of the {@link javax.swing.table.TableModel} interface.
+ */
 public abstract class TableModelBase<T extends TableColumnInfo> extends AbstractTableModel {
 
   private final Map<Integer, T> columnMap = TableUtils.columnMap(columnInfos());
@@ -66,7 +68,6 @@ public abstract class TableModelBase<T extends TableColumnInfo> extends Abstract
     }
     return Object.class;
   }
-
 
   @Override
   public Object getValueAt(int rowIndex, int columnIndex) {

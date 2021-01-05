@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -27,15 +26,16 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.suggest.BitsProducer;
 
 /**
- * A {@link CompletionQuery} which takes an {@link Analyzer}
- * to analyze the prefix of the query term.
- * <p>
- * Example usage of querying an analyzed prefix 'sugg'
- * against a field 'suggest_field' is as follows:
+ * A {@link CompletionQuery} which takes an {@link Analyzer} to analyze the prefix of the query
+ * term.
+ *
+ * <p>Example usage of querying an analyzed prefix 'sugg' against a field 'suggest_field' is as
+ * follows:
  *
  * <pre class="prettyprint">
  *  CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
  * </pre>
+ *
  * @lucene.experimental
  */
 public class PrefixCompletionQuery extends CompletionQuery {
@@ -43,8 +43,8 @@ public class PrefixCompletionQuery extends CompletionQuery {
   protected final CompletionAnalyzer analyzer;
 
   /**
-   * Calls {@link PrefixCompletionQuery#PrefixCompletionQuery(Analyzer, Term, BitsProducer)}
-   * with no filter
+   * Calls {@link PrefixCompletionQuery#PrefixCompletionQuery(Analyzer, Term, BitsProducer)} with no
+   * filter
    */
   public PrefixCompletionQuery(Analyzer analyzer, Term term) {
     this(analyzer, term, null);
@@ -54,8 +54,8 @@ public class PrefixCompletionQuery extends CompletionQuery {
    * Constructs an analyzed prefix completion query
    *
    * @param analyzer used to analyze the provided {@link Term#text()}
-   * @param term query is run against {@link Term#field()} and {@link Term#text()}
-   *             is analyzed with <code>analyzer</code>
+   * @param term query is run against {@link Term#field()} and {@link Term#text()} is analyzed with
+   *     <code>analyzer</code>
    * @param filter used to query on a sub set of documents
    */
   public PrefixCompletionQuery(Analyzer analyzer, Term term, BitsProducer filter) {
@@ -68,8 +68,10 @@ public class PrefixCompletionQuery extends CompletionQuery {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    try (CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text())) {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    try (CompletionTokenStream stream =
+        (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text())) {
       return new CompletionWeight(this, stream.toAutomaton());
     }
   }
@@ -78,9 +80,7 @@ public class PrefixCompletionQuery extends CompletionQuery {
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
-  /**
-   * Gets the analyzer used to analyze the prefix.
-   */
+  /** Gets the analyzer used to analyze the prefix. */
   public Analyzer getAnalyzer() {
     return analyzer;
   }

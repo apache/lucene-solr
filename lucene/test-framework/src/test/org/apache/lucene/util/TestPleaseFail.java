@@ -19,9 +19,8 @@ package org.apache.lucene.util;
 import org.junit.Assert;
 
 /**
- * This test is for manually causing assertion failures or errors (to
- * trigger the event for occasional needs of testing the test framework
- * itself from command line).
+ * This test is for manually causing assertion failures or errors (to trigger the event for
+ * occasional needs of testing the test framework itself from command line).
  */
 public class TestPleaseFail extends LuceneTestCase {
   public void testFail() {

@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
- * This GeoBBox represents an area rectangle of one specific latitude with
- * no longitude bounds.
+ * This GeoBBox represents an area rectangle of one specific latitude with no longitude bounds.
  *
  * @lucene.internal
  */
@@ -38,11 +37,13 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   /** An array consisting of the interiorPoint */
   protected final GeoPoint[] edgePoints;
   /** No notable points */
-  protected final static GeoPoint[] planePoints = new GeoPoint[0];
+  protected static final GeoPoint[] planePoints = new GeoPoint[0];
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
-   *@param latitude is the latitude of the latitude zone.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model to use.
+   * @param latitude is the latitude of the latitude zone.
    */
   public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final double latitude) {
     super(planetModel);
@@ -53,15 +54,17 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
     this.plane = new Plane(planetModel, sinLatitude);
     // Compute an interior point.
     interiorPoint = new GeoPoint(planetModel, sinLatitude, 0.0, cosLatitude, 1.0);
-    edgePoints = new GeoPoint[]{interiorPoint};
+    edgePoints = new GeoPoint[] {interiorPoint};
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  public GeoDegenerateLatitudeZone(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
     this(planetModel, SerializableObject.readDouble(inputStream));
   }
 
@@ -99,7 +102,8 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds);
   }
 
@@ -111,15 +115,14 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    bounds.noLongitudeBound()
-      .addHorizontalPlane(planetModel, latitude, plane);
+    bounds.noLongitudeBound().addHorizontalPlane(planetModel, latitude, plane);
   }
 
   @Override
   public int getRelationship(final GeoShape path) {
     // Second, the shortcut of seeing whether endpoints are in/out is not going to
     // work with no area endpoints.  So we rely entirely on intersections.
-    //System.out.println("Got here! latitude="+latitude+" path="+path);
+    // System.out.println("Got here! latitude=" + latitude + " path=" + path);
 
     if (intersects(path)) {
       return OVERLAPS;
@@ -133,14 +136,16 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    return distanceStyle.computeDistance(planetModel, plane, x,y,z);
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    return distanceStyle.computeDistance(planetModel, plane, x, y, z);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoDegenerateLatitudeZone))
+    if (!(o instanceof GeoDegenerateLatitudeZone)) {
       return false;
+    }
     GeoDegenerateLatitudeZone other = (GeoDegenerateLatitudeZone) o;
     return super.equals(other) && other.latitude == latitude;
   }
@@ -155,7 +160,12 @@ class GeoDegenerateLatitudeZone extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoDegenerateLatitudeZone: {planetmodel="+planetModel+", lat=" + latitude + "(" + latitude * 180.0 / Math.PI + ")}";
+    return "GeoDegenerateLatitudeZone: {planetmodel="
+        + planetModel
+        + ", lat="
+        + latitude
+        + "("
+        + latitude * 180.0 / Math.PI
+        + ")}";
   }
 }
-

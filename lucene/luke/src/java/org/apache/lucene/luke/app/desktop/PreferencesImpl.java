@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.luke.app.desktop.util.inifile.IniFile;
 import org.apache.lucene.luke.app.desktop.util.inifile.SimpleIniFile;
 import org.apache.lucene.store.FSDirectory;
@@ -31,13 +30,13 @@ import org.apache.lucene.store.FSDirectory;
 /** Default implementation of {@link Preferences} */
 public final class PreferencesImpl implements Preferences {
 
-  private static final String CONFIG_DIR = System.getProperty("user.home") + FileSystems.getDefault().getSeparator() + ".luke.d";
+  private static final String CONFIG_DIR =
+      System.getProperty("user.home") + FileSystems.getDefault().getSeparator() + ".luke.d";
   private static final String INIT_FILE = "luke.ini";
   private static final String HISTORY_FILE = "history";
   private static final int MAX_HISTORY = 10;
 
   private final IniFile ini = new SimpleIniFile();
-
 
   private final List<String> history = new ArrayList<>();
 
@@ -61,7 +60,6 @@ public final class PreferencesImpl implements Preferences {
       List<String> allHistory = Files.readAllLines(histFile);
       history.addAll(allHistory.subList(0, Math.min(MAX_HISTORY, allHistory.size())));
     }
-
   }
 
   public List<String> getHistory() {
@@ -128,7 +126,13 @@ public final class PreferencesImpl implements Preferences {
   }
 
   @Override
-  public void setIndexOpenerPrefs(boolean readOnly, String dirImpl, boolean noReader, boolean useCompound, boolean keepAllCommits) throws IOException {
+  public void setIndexOpenerPrefs(
+      boolean readOnly,
+      String dirImpl,
+      boolean noReader,
+      boolean useCompound,
+      boolean keepAllCommits)
+      throws IOException {
     ini.put("opener", "readOnly", readOnly);
     ini.put("opener", "dirImpl", dirImpl);
     ini.put("opener", "noReader", noReader);

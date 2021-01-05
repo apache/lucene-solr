@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -41,15 +40,11 @@ import org.apache.lucene.util.TestUtil;
 //   - doc blocks?  so we can test joins/grouping...
 //   - controlled consistency (NRTMgr)
 
-/**
- * Base test class for simulating distributed search across multiple shards.
- */
+/** Base test class for simulating distributed search across multiple shards. */
 public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
   // TODO: maybe SLM should throw this instead of returning null...
-  /**
-   * Thrown when the lease for a searcher has expired.
-   */
+  /** Thrown when the lease for a searcher has expired. */
   public static class SearcherExpiredException extends RuntimeException {
     public SearcherExpiredException(String message) {
       super(message);
@@ -85,7 +80,13 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "FieldAndShardVersion(field=" + field + " nodeID=" + nodeID + " version=" + version+ ")";
+      return "FieldAndShardVersion(field="
+          + field
+          + " nodeID="
+          + nodeID
+          + " version="
+          + version
+          + ")";
     }
   }
 
@@ -129,12 +130,18 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   void broadcastNodeReopen(int nodeID, long version, IndexSearcher newSearcher) throws IOException {
 
     if (VERBOSE) {
-      System.out.println("REOPEN: nodeID=" + nodeID + " version=" + version + " maxDoc=" + newSearcher.getIndexReader().maxDoc());
+      System.out.println(
+          "REOPEN: nodeID="
+              + nodeID
+              + " version="
+              + version
+              + " maxDoc="
+              + newSearcher.getIndexReader().maxDoc());
     }
 
     // Broadcast new collection stats for this node to all
     // other nodes:
-    for(String field : fieldsToShare) {
+    for (String field : fieldsToShare) {
       final CollectionStatistics stats = newSearcher.collectionStatistics(field);
       if (stats != null) {
         for (NodeState node : nodes) {
@@ -157,7 +164,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   // MOCK: in a real env you have to hit the wire
   // (send this query to all remote nodes
   // concurrently):
-  TopDocs searchNode(int nodeID, long[] nodeVersions, Query q, Sort sort, int numHits, ScoreDoc searchAfter) throws IOException {
+  TopDocs searchNode(
+      int nodeID, long[] nodeVersions, Query q, Sort sort, int numHits, ScoreDoc searchAfter)
+      throws IOException {
     final NodeState.ShardIndexSearcher s = nodes[nodeID].acquire(nodeVersions);
     try {
       if (sort == null) {
@@ -167,7 +176,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           return s.localSearch(q, numHits);
         }
       } else {
-        assert searchAfter == null;  // not supported yet
+        assert searchAfter == null; // not supported yet
         return s.localSearch(q, numHits, sort);
       }
     } finally {
@@ -177,15 +186,16 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
   // Mock: in a real env, this would hit the wire and get
   // term stats from remote node
-  Map<Term,TermStatistics> getNodeTermStats(Set<Term> terms, int nodeID, long version) throws IOException {
+  Map<Term, TermStatistics> getNodeTermStats(Set<Term> terms, int nodeID, long version)
+      throws IOException {
     final NodeState node = nodes[nodeID];
-    final Map<Term,TermStatistics> stats = new HashMap<>();
+    final Map<Term, TermStatistics> stats = new HashMap<>();
     final IndexSearcher s = node.searchers.acquire(version);
     if (s == null) {
       throw new SearcherExpiredException("node=" + nodeID + " version=" + version);
     }
     try {
-      for(Term term : terms) {
+      for (Term term : terms) {
         final TermStates ts = TermStates.build(s.getIndexReader().getContext(), term, true);
         if (ts.docFreq() > 0) {
           stats.put(term, s.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
@@ -211,13 +221,15 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     // local cache...?  And still LRU otherwise (for the
     // still-live searchers).
 
-    private final Map<FieldAndShardVersion,CollectionStatistics> collectionStatsCache = new ConcurrentHashMap<>();
-    private final Map<TermAndShardVersion,TermStatistics> termStatsCache = new ConcurrentHashMap<>();
+    private final Map<FieldAndShardVersion, CollectionStatistics> collectionStatsCache =
+        new ConcurrentHashMap<>();
+    private final Map<TermAndShardVersion, TermStatistics> termStatsCache =
+        new ConcurrentHashMap<>();
 
-    /** Matches docs in the local shard but scores based on
-     *  aggregated stats ("mock distributed scoring") from all
-     *  nodes. */ 
-
+    /**
+     * Matches docs in the local shard but scores based on aggregated stats ("mock distributed
+     * scoring") from all nodes.
+     */
     public class ShardIndexSearcher extends IndexSearcher {
       // Version for the node searchers we search:
       public final long[] nodeVersions;
@@ -227,7 +239,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         super(localReader);
         this.nodeVersions = nodeVersions;
         myNodeID = nodeID;
-        assert myNodeID == NodeState.this.myNodeID: "myNodeID=" + nodeID + " NodeState.this.myNodeID=" + NodeState.this.myNodeID;
+        assert myNodeID == NodeState.this.myNodeID
+            : "myNodeID=" + nodeID + " NodeState.this.myNodeID=" + NodeState.this.myNodeID;
       }
 
       @Override
@@ -239,22 +252,25 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
         // Make a single request to remote nodes for term
         // stats:
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
           if (nodeID == myNodeID) {
             continue;
           }
 
           final Set<Term> missing = new HashSet<>();
-          for(Term term : terms) {
-            final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
+          for (Term term : terms) {
+            final TermAndShardVersion key =
+                new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             if (!termStatsCache.containsKey(key)) {
               missing.add(term);
             }
           }
           if (missing.size() != 0) {
-            for(Map.Entry<Term,TermStatistics> ent : getNodeTermStats(missing, nodeID, nodeVersions[nodeID]).entrySet()) {
+            for (Map.Entry<Term, TermStatistics> ent :
+                getNodeTermStats(missing, nodeID, nodeVersions[nodeID]).entrySet()) {
               if (ent.getValue() != null) {
-                final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], ent.getKey());
+                final TermAndShardVersion key =
+                    new TermAndShardVersion(nodeID, nodeVersions[nodeID], ent.getKey());
                 termStatsCache.put(key, ent.getValue());
               }
             }
@@ -265,17 +281,19 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
 
       @Override
-      public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+      public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq)
+          throws IOException {
         assert term != null;
         long distributedDocFreq = 0;
         long distributedTotalTermFreq = 0;
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
 
           final TermStatistics subStats;
           if (nodeID == myNodeID) {
             subStats = super.termStatistics(term, docFreq, totalTermFreq);
           } else {
-            final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
+            final TermAndShardVersion key =
+                new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             subStats = termStatsCache.get(key);
             if (subStats == null) {
               continue; // term not found
@@ -284,7 +302,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
           long nodeDocFreq = subStats.docFreq();
           distributedDocFreq += nodeDocFreq;
-          
+
           long nodeTotalTermFreq = subStats.totalTermFreq();
           distributedTotalTermFreq += nodeTotalTermFreq;
         }
@@ -302,8 +320,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         long sumDocFreq = 0;
         long maxDoc = 0;
 
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
-          final FieldAndShardVersion key = new FieldAndShardVersion(nodeID, nodeVersions[nodeID], field);
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
+          final FieldAndShardVersion key =
+              new FieldAndShardVersion(nodeID, nodeVersions[nodeID], field);
           final CollectionStatistics nodeStats;
           if (nodeID == myNodeID) {
             nodeStats = super.collectionStatistics(field);
@@ -313,16 +332,16 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           if (nodeStats == null) {
             continue; // field not in sub at all
           }
-          
+
           long nodeDocCount = nodeStats.docCount();
           docCount += nodeDocCount;
-          
+
           long nodeSumTotalTermFreq = nodeStats.sumTotalTermFreq();
           sumTotalTermFreq += nodeSumTotalTermFreq;
-          
+
           long nodeSumDocFreq = nodeStats.sumDocFreq();
           sumDocFreq += nodeSumDocFreq;
-          
+
           assert nodeStats.maxDoc() >= 0;
           maxDoc += nodeStats.maxDoc();
         }
@@ -337,7 +356,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       @Override
       public TopDocs search(Query query, int numHits) throws IOException {
         final TopDocs[] shardHits = new TopDocs[nodeVersions.length];
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
           if (nodeID == myNodeID) {
             // My node; run using local shard searcher we
             // already aquired:
@@ -368,7 +387,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         // results are merged in that order: score, shardIndex, doc. therefore we set
         // after to after.score and depending on the nodeID we set doc to either:
         // - not collect any more documents with that score (only with worse score)
-        // - collect more documents with that score (and worse) following the last collected document
+        // - collect more documents with that score (and worse) following the last collected
+        // document
         // - collect all documents with that score (and worse)
         ScoreDoc shardAfter = new ScoreDoc(after.doc, after.score);
         for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
@@ -389,7 +409,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             }
           } else if (nodeID == after.shardIndex) {
             // collect all documents following the last collected doc with
-            // after.score + documents with worse scores.  
+            // after.score + documents with worse scores.
             shardAfter.doc = after.doc;
           } else {
             // all documents with after.score (and worse) should be collected
@@ -407,7 +427,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
             shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
           }
-          //System.out.println("  node=" + nodeID + " totHits=" + shardHits[nodeID].totalHits);
+          // System.out.println("  node=" + nodeID + " totHits=" + shardHits[nodeID].totalHits);
         }
 
         // Merge:
@@ -422,13 +442,14 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       public TopFieldDocs search(Query query, int numHits, Sort sort) throws IOException {
         assert sort != null;
         final TopFieldDocs[] shardHits = new TopFieldDocs[nodeVersions.length];
-        for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
+        for (int nodeID = 0; nodeID < nodeVersions.length; nodeID++) {
           if (nodeID == myNodeID) {
             // My node; run using local shard searcher we
             // already aquired:
             shardHits[nodeID] = localSearch(query, numHits, sort);
           } else {
-            shardHits[nodeID] = (TopFieldDocs) searchNode(nodeID, nodeVersions, query, sort, numHits, null);
+            shardHits[nodeID] =
+                (TopFieldDocs) searchNode(nodeID, nodeVersions, query, sort, numHits, null);
           }
 
           for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
@@ -443,7 +464,6 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       public TopFieldDocs localSearch(Query query, int numHits, Sort sort) throws IOException {
         return super.search(query, numHits, sort);
       }
-
     }
 
     private volatile ShardIndexSearcher currentShardSearcher;
@@ -471,9 +491,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     public void initSearcher(long[] nodeVersions) throws IOException {
       assert currentShardSearcher == null;
       System.arraycopy(nodeVersions, 0, currentNodeVersions, 0, currentNodeVersions.length);
-      currentShardSearcher = new ShardIndexSearcher(currentNodeVersions.clone(),
-                                                    mgr.acquire().getIndexReader(),
-                                                    myNodeID);
+      currentShardSearcher =
+          new ShardIndexSearcher(
+              currentNodeVersions.clone(), mgr.acquire().getIndexReader(), myNodeID);
     }
 
     public void updateNodeVersion(int nodeID, long version) throws IOException {
@@ -481,14 +501,14 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       if (currentShardSearcher != null) {
         currentShardSearcher.getIndexReader().decRef();
       }
-      currentShardSearcher = new ShardIndexSearcher(currentNodeVersions.clone(), 
-                                                    mgr.acquire().getIndexReader(),
-                                                    myNodeID);
+      currentShardSearcher =
+          new ShardIndexSearcher(
+              currentNodeVersions.clone(), mgr.acquire().getIndexReader(), myNodeID);
     }
 
     // Get the current (fresh) searcher for this node
     public ShardIndexSearcher acquire() {
-      while(true) {
+      while (true) {
         final ShardIndexSearcher s = currentShardSearcher;
         // In theory the reader could get decRef'd to 0
         // before we have a chance to incRef, ie if a reopen
@@ -509,7 +529,8 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     public ShardIndexSearcher acquire(long[] nodeVersions) {
       final IndexSearcher s = searchers.acquire(nodeVersions[myNodeID]);
       if (s == null) {
-        throw new SearcherExpiredException("nodeID=" + myNodeID + " version=" + nodeVersions[myNodeID]);
+        throw new SearcherExpiredException(
+            "nodeID=" + myNodeID + " version=" + nodeVersions[myNodeID]);
       }
       return new ShardIndexSearcher(nodeVersions, s.getIndexReader(), myNodeID);
     }
@@ -560,11 +581,11 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             node.writer.addDocument(docs.nextDoc());
             numDocs++;
           } else if (what == 1) {
-            node.writer.updateDocument(new Term("docid", ""+random().nextInt(numDocs)),
-                                        docs.nextDoc());
+            node.writer.updateDocument(
+                new Term("docid", "" + random().nextInt(numDocs)), docs.nextDoc());
             numDocs++;
           } else {
-            node.writer.deleteDocuments(new Term("docid", ""+random().nextInt(numDocs)));
+            node.writer.deleteDocuments(new Term("docid", "" + random().nextInt(numDocs)));
           }
           // TODO: doc blocks too
 
@@ -589,18 +610,19 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
   long endTimeNanos;
   private Thread changeIndicesThread;
 
-  protected void start(int numNodes, double runTimeSec, int maxSearcherAgeSeconds) throws IOException {
+  protected void start(int numNodes, double runTimeSec, int maxSearcherAgeSeconds)
+      throws IOException {
 
-    endTimeNanos = System.nanoTime() + (long) (runTimeSec*1000000000);
+    endTimeNanos = System.nanoTime() + (long) (runTimeSec * 1000000000);
     this.maxSearcherAgeSeconds = maxSearcherAgeSeconds;
 
     nodes = new NodeState[numNodes];
-    for(int nodeID=0;nodeID<numNodes;nodeID++) {
+    for (int nodeID = 0; nodeID < numNodes; nodeID++) {
       nodes[nodeID] = new NodeState(random(), nodeID, numNodes);
     }
 
     long[] nodeVersions = new long[nodes.length];
-    for(int nodeID=0;nodeID<numNodes;nodeID++) {
+    for (int nodeID = 0; nodeID < numNodes; nodeID++) {
       final IndexSearcher s = nodes[nodeID].mgr.acquire();
       try {
         nodeVersions[nodeID] = nodes[nodeID].searchers.record(s);
@@ -609,7 +631,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
     }
 
-    for(int nodeID=0;nodeID<numNodes;nodeID++) {
+    for (int nodeID = 0; nodeID < numNodes; nodeID++) {
       final IndexSearcher s = nodes[nodeID].mgr.acquire();
       assert nodeVersions[nodeID] == nodes[nodeID].searchers.record(s);
       assert s != null;
@@ -626,14 +648,12 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
   protected void finish() throws InterruptedException, IOException {
     changeIndicesThread.join();
-    for(NodeState node : nodes) {
+    for (NodeState node : nodes) {
       node.close();
     }
   }
 
-  /**
-   * An IndexSearcher and associated version (lease)
-   */
+  /** An IndexSearcher and associated version (lease) */
   protected static class SearcherAndVersion {
     public final IndexSearcher searcher;
     public final long version;

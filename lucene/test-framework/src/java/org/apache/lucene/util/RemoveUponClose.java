@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * A {@link Closeable} that attempts to remove a given file/folder.
- */
+/** A {@link Closeable} that attempts to remove a given file/folder. */
 final class RemoveUponClose implements Closeable {
   private final Path path;
   private final TestRuleMarkFailure failureMarker;
@@ -49,8 +47,11 @@ final class RemoveUponClose implements Closeable {
           IOUtils.rm(path);
         } catch (IOException e) {
           throw new IOException(
-              "Could not remove temporary location '" 
-                  + path.toAbsolutePath() + "', created at stack trace:\n" + creationStack, e);
+              "Could not remove temporary location '"
+                  + path.toAbsolutePath()
+                  + "', created at stack trace:\n"
+                  + creationStack,
+              e);
         }
       }
     }

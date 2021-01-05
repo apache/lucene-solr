@@ -17,15 +17,17 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.util.Arrays;
-
+import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
-import org.apache.lucene.util.BytesRef;
 
-/** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
- * @lucene.internal */
+/**
+ * The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
+ *
+ * @lucene.internal
+ */
 abstract class LegacyPrefixTree extends SpatialPrefixTree {
   public LegacyPrefixTree(SpatialContext ctx, int maxLevels) {
     super(ctx, maxLevels);
@@ -34,51 +36,48 @@ abstract class LegacyPrefixTree extends SpatialPrefixTree {
   public double getDistanceForLevel(int level) {
     if (level < 1 || level > getMaxLevels())
       throw new IllegalArgumentException("Level must be in 1 to maxLevels range");
-    //TODO cache for each level
+    // TODO cache for each level
     Cell cell = getCell(ctx.getWorldBounds().getCenter(), level);
     Rectangle bbox = cell.getShape().getBoundingBox();
     double width = bbox.getWidth();
     double height = bbox.getHeight();
-    //Use standard cartesian hypotenuse. For geospatial, this answer is larger
+    // Use standard cartesian hypotenuse. For geospatial, this answer is larger
     // than the correct one but it's okay to over-estimate.
     return Math.sqrt(width * width + height * height);
   }
 
-  /**
-   * Returns the cell containing point {@code p} at the specified {@code level}.
-   */
+  /** Returns the cell containing point {@code p} at the specified {@code level}. */
   protected abstract Cell getCell(Point p, int level);
 
   @Override
   public Cell readCell(BytesRef term, Cell scratch) {
     LegacyCell cell = (LegacyCell) scratch;
-    if (cell == null)
-      cell = (LegacyCell) getWorldCell();
+    if (cell == null) cell = (LegacyCell) getWorldCell();
     cell.readCell(term);
     return cell;
   }
 
   @Override
   public CellIterator getTreeCellIterator(Shape shape, int detailLevel) {
-    if (!(shape instanceof Point))
-      return super.getTreeCellIterator(shape, detailLevel);
+    if (!(shape instanceof Point)) return super.getTreeCellIterator(shape, detailLevel);
 
-    //This specialization is here because the legacy implementations don't have a fast implementation of
-    // cell.getSubCells(point). It's fastest here to encode the full bytes for detailLevel, and create
+    // This specialization is here because the legacy implementations don't have a fast
+    // implementation of
+    // cell.getSubCells(point). It's fastest here to encode the full bytes for detailLevel, and
+    // create
     // subcells from the bytesRef in a loop. This avoids an O(N^2) encode, and we have O(N) instead.
 
     Cell cell = getCell((Point) shape, detailLevel);
     assert cell instanceof LegacyCell;
     BytesRef fullBytes = cell.getTokenBytesNoLeaf(null);
-    //fill in reverse order to be sorted
+    // fill in reverse order to be sorted
     Cell[] cells = new Cell[detailLevel];
     for (int i = 1; i < detailLevel; i++) {
       fullBytes.length = i;
       Cell parentCell = readCell(fullBytes, null);
-      cells[i-1] = parentCell;
+      cells[i - 1] = parentCell;
     }
-    cells[detailLevel-1] = cell;
-    return new FilterCellIterator(Arrays.asList(cells).iterator(), null);//null filter
+    cells[detailLevel - 1] = cell;
+    return new FilterCellIterator(Arrays.asList(cells).iterator(), null); // null filter
   }
-
 }

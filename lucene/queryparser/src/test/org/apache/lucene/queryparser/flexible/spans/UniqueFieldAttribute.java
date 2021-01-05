@@ -20,10 +20,9 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.util.Attribute;
 
 /**
- * This attribute is used by the {@link UniqueFieldQueryNodeProcessor}
- * processor. It holds a value that defines which is the unique field name that
- * should be set in every {@link FieldableNode}.
- * 
+ * This attribute is used by the {@link UniqueFieldQueryNodeProcessor} processor. It holds a value
+ * that defines which is the unique field name that should be set in every {@link FieldableNode}.
+ *
  * @see UniqueFieldQueryNodeProcessor
  */
 public interface UniqueFieldAttribute extends Attribute {

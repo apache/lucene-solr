@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.nodes;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 

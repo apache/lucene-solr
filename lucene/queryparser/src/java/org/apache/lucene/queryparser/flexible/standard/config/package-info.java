@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Standard Lucene Query Configuration.
- * 
+ *
  * <h2>Standard Lucene Query Configuration</h2>
- * <p>
- * The package org.apache.lucene.queryparser.flexible.standard.config contains the Lucene
- * query configuration handler (StandardQueryConfigHandler). This configuration
- * handler reproduces almost everything that could be set on the old query parser.
- * <p>
- * StandardQueryConfigHandler is the class that should be used to configure the StandardQueryNodeProcessorPipeline.
+ *
+ * <p>The package org.apache.lucene.queryparser.flexible.standard.config contains the Lucene query
+ * configuration handler (StandardQueryConfigHandler). This configuration handler reproduces almost
+ * everything that could be set on the old query parser.
+ *
+ * <p>StandardQueryConfigHandler is the class that should be used to configure the
+ * StandardQueryNodeProcessorPipeline.
  */
 package org.apache.lucene.queryparser.flexible.standard.config;
-

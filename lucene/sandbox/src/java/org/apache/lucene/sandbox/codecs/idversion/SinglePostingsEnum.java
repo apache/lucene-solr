@@ -46,7 +46,7 @@ class SinglePostingsEnum extends PostingsEnum {
       doc = NO_MORE_DOCS;
     }
     pos = -1;
-    
+
     return doc;
   }
 

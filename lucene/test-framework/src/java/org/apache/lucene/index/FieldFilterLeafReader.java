@@ -21,15 +21,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.util.FilterIterator;
 
 /**
- * A {@link FilterLeafReader} that exposes only a subset
- * of fields from the underlying wrapped reader.
+ * A {@link FilterLeafReader} that exposes only a subset of fields from the underlying wrapped
+ * reader.
  */
 public final class FieldFilterLeafReader extends FilterLeafReader {
-  
+
   private final Set<String> fields;
   private final boolean negate;
   private final FieldInfos fieldInfos;
@@ -46,7 +45,7 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     }
     fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
   }
-  
+
   boolean hasField(String field) {
     return negate ^ fields.contains(field);
   }
@@ -70,42 +69,45 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
 
   @Override
   public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
-    super.document(docID, new StoredFieldVisitor() {
-      @Override
-      public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-        visitor.binaryField(fieldInfo, value);
-      }
+    super.document(
+        docID,
+        new StoredFieldVisitor() {
+          @Override
+          public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+            visitor.binaryField(fieldInfo, value);
+          }
 
-      @Override
-      public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-        visitor.stringField(fieldInfo, Objects.requireNonNull(value, "String value should not be null"));
-      }
+          @Override
+          public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+            visitor.stringField(
+                fieldInfo, Objects.requireNonNull(value, "String value should not be null"));
+          }
 
-      @Override
-      public void intField(FieldInfo fieldInfo, int value) throws IOException {
-        visitor.intField(fieldInfo, value);
-      }
+          @Override
+          public void intField(FieldInfo fieldInfo, int value) throws IOException {
+            visitor.intField(fieldInfo, value);
+          }
 
-      @Override
-      public void longField(FieldInfo fieldInfo, long value) throws IOException {
-        visitor.longField(fieldInfo, value);
-      }
+          @Override
+          public void longField(FieldInfo fieldInfo, long value) throws IOException {
+            visitor.longField(fieldInfo, value);
+          }
 
-      @Override
-      public void floatField(FieldInfo fieldInfo, float value) throws IOException {
-        visitor.floatField(fieldInfo, value);
-      }
+          @Override
+          public void floatField(FieldInfo fieldInfo, float value) throws IOException {
+            visitor.floatField(fieldInfo, value);
+          }
 
-      @Override
-      public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
-        visitor.doubleField(fieldInfo, value);
-      }
+          @Override
+          public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
+            visitor.doubleField(fieldInfo, value);
+          }
 
-      @Override
-      public Status needsField(FieldInfo fieldInfo) throws IOException {
-        return hasField(fieldInfo.name) ? visitor.needsField(fieldInfo) : Status.NO;
-      }
-    });
+          @Override
+          public Status needsField(FieldInfo fieldInfo) throws IOException {
+            return hasField(fieldInfo.name) ? visitor.needsField(fieldInfo) : Status.NO;
+          }
+        });
   }
 
   @Override
@@ -122,12 +124,12 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     return hasField(field) ? super.getSortedDocValues(field) : null;
   }
-  
+
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     return hasField(field) ? super.getSortedNumericDocValues(field) : null;
   }
-  
+
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     return hasField(field) ? super.getSortedSetDocValues(field) : null;
@@ -172,7 +174,6 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
     public Terms terms(String field) throws IOException {
       return hasField(field) ? super.terms(field) : null;
     }
-    
   }
 
   @Override
@@ -184,5 +185,4 @@ public final class FieldFilterLeafReader extends FilterLeafReader {
   public CacheHelper getReaderCacheHelper() {
     return null;
   }
-
 }

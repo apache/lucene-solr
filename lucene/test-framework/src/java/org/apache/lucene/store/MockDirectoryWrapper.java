@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -54,19 +53,18 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThrottledIndexOutput;
 
 /**
- * This is a Directory Wrapper that adds methods
- * intended to be used only by unit tests.
- * It also adds a number of features useful for testing:
+ * This is a Directory Wrapper that adds methods intended to be used only by unit tests. It also
+ * adds a number of features useful for testing:
+ *
  * <ul>
- *   <li> Instances created by {@link LuceneTestCase#newDirectory()} are tracked 
- *        to ensure they are closed by the test.
- *   <li> When a MockDirectoryWrapper is closed, it will throw an exception if 
- *        it has any open files against it (with a stacktrace indicating where 
- *        they were opened from).
- *   <li> When a MockDirectoryWrapper is closed, it runs CheckIndex to test if
- *        the index was corrupted.
- *   <li> MockDirectoryWrapper simulates some "features" of Windows, such as
- *        refusing to write/delete to open files.
+ *   <li>Instances created by {@link LuceneTestCase#newDirectory()} are tracked to ensure they are
+ *       closed by the test.
+ *   <li>When a MockDirectoryWrapper is closed, it will throw an exception if it has any open files
+ *       against it (with a stacktrace indicating where they were opened from).
+ *   <li>When a MockDirectoryWrapper is closed, it runs CheckIndex to test if the index was
+ *       corrupted.
+ *   <li>MockDirectoryWrapper simulates some "features" of Windows, such as refusing to write/delete
+ *       to open files.
  * </ul>
  */
 public class MockDirectoryWrapper extends BaseDirectoryWrapper {
@@ -85,10 +83,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   private Set<String> openFilesForWrite = new HashSet<>();
-  ConcurrentMap<String,RuntimeException> openLocks = new ConcurrentHashMap<>();
+  ConcurrentMap<String, RuntimeException> openLocks = new ConcurrentHashMap<>();
   volatile boolean crashed;
   private ThrottledIndexOutput throttledOutput;
-  private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
+  private Throttling throttling =
+      LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
   // for testing
   boolean alwaysCorrupt;
@@ -97,28 +96,27 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
-  private Map<Closeable,Exception> openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
+  private Map<Closeable, Exception> openFileHandles =
+      Collections.synchronizedMap(new IdentityHashMap<Closeable, Exception>());
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
   // member initialization vs when it calls super.  It seems
   // like super is called, then our members are initialized:
-  private Map<String,Integer> openFiles;
+  private Map<String, Integer> openFiles;
 
   // Only tracked if noDeleteOpenFile is true: if an attempt
   // is made to delete an open file, we enroll it here.
   private Set<String> openFilesDeleted;
-  
+
   private synchronized void init() {
     if (openFiles == null) {
       openFiles = new HashMap<>();
       openFilesDeleted = new HashSet<>();
     }
 
-    if (createdFiles == null)
-      createdFiles = new HashSet<>();
-    if (unSyncedFiles == null)
-      unSyncedFiles = new HashSet<>();
+    if (createdFiles == null) createdFiles = new HashSet<>();
+    if (unSyncedFiles == null) unSyncedFiles = new HashSet<>();
   }
 
   public MockDirectoryWrapper(Random random, Directory delegate) {
@@ -127,20 +125,23 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // called from different threads; else test failures may
     // not be reproducible from the original seed
     this.randomState = new Random(random.nextInt());
-    this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
-        .mBitsToBytes(40 + randomState.nextInt(10)), 1 + randomState.nextInt(5), null);
+    this.throttledOutput =
+        new ThrottledIndexOutput(
+            ThrottledIndexOutput.mBitsToBytes(40 + randomState.nextInt(10)),
+            1 + randomState.nextInt(5),
+            null);
     init();
   }
 
   public int getInputCloneCount() {
     return inputCloneCount.get();
   }
-  
+
   boolean verboseClone;
-  
-  /** 
-   * If set to true, we print a fake exception
-   * with filename and stacktrace on every indexinput clone()
+
+  /**
+   * If set to true, we print a fake exception with filename and stacktrace on every indexinput
+   * clone()
    */
   public void setVerboseClone(boolean v) {
     verboseClone = v;
@@ -150,25 +151,24 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     trackDiskUsage = v;
   }
 
-  /** If set to true (the default), when we throw random
-   *  IOException on openInput or createOutput, we may
-   *  sometimes throw FileNotFoundException or
-   *  NoSuchFileException. */
+  /**
+   * If set to true (the default), when we throw random IOException on openInput or createOutput, we
+   * may sometimes throw FileNotFoundException or NoSuchFileException.
+   */
   public void setAllowRandomFileNotFoundException(boolean value) {
     allowRandomFileNotFoundException = value;
   }
-  
-  /** If set to true, you can open an inputstream on a file
-   *  that is still open for writes. */
+
+  /** If set to true, you can open an inputstream on a file that is still open for writes. */
   public void setAllowReadingFilesStillOpenForWrite(boolean value) {
     allowReadingFilesStillOpenForWrite = value;
   }
-  
+
   /**
-   * Enum for controlling hard disk throttling.
-   * Set via {@link MockDirectoryWrapper #setThrottling(Throttling)}
-   * <p>
-   * WARNING: can make tests very slow.
+   * Enum for controlling hard disk throttling. Set via {@link MockDirectoryWrapper
+   * #setThrottling(Throttling)}
+   *
+   * <p>WARNING: can make tests very slow.
    */
   public static enum Throttling {
     /** always emulate a slow hard disk. could be very slow! */
@@ -178,15 +178,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     /** never throttle output */
     NEVER
   }
-  
+
   public void setThrottling(Throttling throttling) {
     this.throttling = throttling;
   }
-  
-  /** 
+
+  /**
    * Add a rare small sleep to catch race conditions in open/close
-   * <p>
-   * You can enable this if you need it.
+   *
+   * <p>You can enable this if you need it.
    */
   public void setUseSlowOpenClosers(boolean v) {
     useSlowOpenClosers = v;
@@ -217,13 +217,21 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (crashed) {
       throw new IOException("cannot rename after crash");
     }
-    
+
     if (openFiles.containsKey(source) && assertNoDeleteOpenFile) {
-      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
+      throw fillOpenTrace(
+          new AssertionError(
+              "MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"),
+          source,
+          true);
     }
 
     if (openFiles.containsKey(dest) && assertNoDeleteOpenFile) {
-      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
+      throw fillOpenTrace(
+          new AssertionError(
+              "MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"),
+          dest,
+          true);
     }
 
     boolean success = false;
@@ -254,7 +262,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     in.syncMetaData();
   }
 
-  public synchronized final long sizeInBytes() throws IOException {
+  public final synchronized long sizeInBytes() throws IOException {
     long size = 0;
     for (String file : in.listAll()) {
       // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
@@ -271,7 +279,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       System.out.println("MDW: corrupt unknown files");
     }
     Set<String> knownFiles = new HashSet<>();
-    for(String fileName : listAll()) {
+    for (String fileName : listAll()) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         if (LuceneTestCase.VERBOSE) {
           System.out.println("MDW: read " + fileName + " to gather files it references");
@@ -281,7 +289,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           infos = SegmentInfos.readCommit(this, fileName);
         } catch (IOException ioe) {
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MDW: exception reading segment infos " + fileName + "; files: " + Arrays.toString(listAll()));
+            System.out.println(
+                "MDW: exception reading segment infos "
+                    + fileName
+                    + "; files: "
+                    + Arrays.toString(listAll()));
           }
           throw ioe;
         }
@@ -291,11 +303,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     Set<String> toCorrupt = new HashSet<>();
     Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
-    for(String fileName : listAll()) {
+    for (String fileName : listAll()) {
       m.reset(fileName);
-      if (knownFiles.contains(fileName) == false &&
-          fileName.endsWith("write.lock") == false &&
-          (m.matches() || fileName.startsWith(IndexFileNames.PENDING_SEGMENTS))) {
+      if (knownFiles.contains(fileName) == false
+          && fileName.endsWith("write.lock") == false
+          && (m.matches() || fileName.startsWith(IndexFileNames.PENDING_SEGMENTS))) {
         toCorrupt.add(fileName);
       }
     }
@@ -313,156 +325,174 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
   }
-    
+
   private synchronized void _corruptFiles(Collection<String> files) throws IOException {
 
     // TODO: we should also mess with any recent file renames, file deletions, if
     // syncMetaData was not called!!
-    
+
     // Must make a copy because we change the incoming unsyncedFiles
     // when we create temp files, delete, etc., below:
     final List<String> filesToCorrupt = new ArrayList<>(files);
     // sort the files otherwise we have reproducibility issues
     // across JVMs if the incoming collection is a hashSet etc.
     CollectionUtil.timSort(filesToCorrupt);
-    for(String name : filesToCorrupt) {
+    for (String name : filesToCorrupt) {
       int damage = randomState.nextInt(6);
       if (alwaysCorrupt && damage == 3) {
         damage = 4;
       }
       String action = null;
 
-      switch(damage) {
+      switch (damage) {
+        case 0:
+          action = "deleted";
+          deleteFile(name);
+          break;
 
-      case 0:
-        action = "deleted";
-        deleteFile(name);
-        break;
-
-      case 1:
-        action = "zeroed";
-        // Zero out file entirely
-        long length;
-        try {
-          length = fileLength(name);
-        } catch (IOException ioe) {
-          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
-        }
-
-        // Delete original and write zeros back:
-        deleteFile(name);
-        
-        byte[] zeroes = new byte[256];
-        long upto = 0;
-        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
-          while(upto < length) {
-            final int limit = (int) Math.min(length-upto, zeroes.length);
-            out.writeBytes(zeroes, 0, limit);
-            upto += limit;
-          }
-        } catch (IOException ioe) {
-          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
-        }
-        break;
-
-      case 2:
-        {
-          action = "partially truncated";
-          // Partially Truncate the file:
-
-          // First, make temp file and copy only half this
-          // file over:
-          String tempFileName = null;
-          try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
-               IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
-              tempFileName = tempOut.getName();
-              tempOut.copyBytes(ii, ii.length()/2);
+        case 1:
+          action = "zeroed";
+          // Zero out file entirely
+          long length;
+          try {
+            length = fileLength(name);
           } catch (IOException ioe) {
-            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
+            throw new RuntimeException(
+                "hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
-          // Delete original and copy bytes back:
+          // Delete original and write zeros back:
           deleteFile(name);
 
-          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-               IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
-              out.copyBytes(ii, ii.length());
-          } catch (IOException ioe) {
-            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
-          }
-          deleteFile(tempFileName);
-        }
-        break;
-      
-      case 3:
-        // The file survived intact:
-        action = "didn't change";
-        break;
-
-      case 4:
-        // Corrupt one bit randomly in the file:
-
-        {
-
-          String tempFileName = null;
-          try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
-               IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
-            tempFileName = tempOut.getName();
-            if (ii.length() > 0) {
-              // Copy first part unchanged:
-              long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
-              if (byteToCorrupt > 0) {
-                tempOut.copyBytes(ii, byteToCorrupt);
-              }
-
-              // Randomly flip one bit from this byte:
-              byte b = ii.readByte();
-              int bitToFlip = randomState.nextInt(8);
-              b = (byte) (b ^ (1 << bitToFlip));
-              tempOut.writeByte(b);
-
-              action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
-
-              // Copy last part unchanged:
-              long bytesLeft = ii.length() - byteToCorrupt - 1;
-              if (bytesLeft > 0) {
-                tempOut.copyBytes(ii, bytesLeft);
-              }
-            } else {
-              action = "didn't change";
+          byte[] zeroes = new byte[256];
+          long upto = 0;
+          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+            while (upto < length) {
+              final int limit = (int) Math.min(length - upto, zeroes.length);
+              out.writeBytes(zeroes, 0, limit);
+              upto += limit;
             }
           } catch (IOException ioe) {
-            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
+            throw new RuntimeException(
+                "hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
+          break;
 
-          // Delete original and copy bytes back:
+        case 2:
+          {
+            action = "partially truncated";
+            // Partially Truncate the file:
+
+            // First, make temp file and copy only half this
+            // file over:
+            String tempFileName = null;
+            try (IndexOutput tempOut =
+                    in.createTempOutput(
+                        "name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
+                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
+              tempFileName = tempOut.getName();
+              tempOut.copyBytes(ii, ii.length() / 2);
+            } catch (IOException ioe) {
+              throw new RuntimeException(
+                  "hit unexpected IOException while trying to corrupt file " + name, ioe);
+            }
+
+            // Delete original and copy bytes back:
+            deleteFile(name);
+
+            try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
+                IndexInput ii =
+                    in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
+              out.copyBytes(ii, ii.length());
+            } catch (IOException ioe) {
+              throw new RuntimeException(
+                  "hit unexpected IOException while trying to corrupt file " + name, ioe);
+            }
+            deleteFile(tempFileName);
+          }
+          break;
+
+        case 3:
+          // The file survived intact:
+          action = "didn't change";
+          break;
+
+        case 4:
+          // Corrupt one bit randomly in the file:
+
+          {
+            String tempFileName = null;
+            try (IndexOutput tempOut =
+                    in.createTempOutput(
+                        "name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
+                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
+              tempFileName = tempOut.getName();
+              if (ii.length() > 0) {
+                // Copy first part unchanged:
+                long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
+                if (byteToCorrupt > 0) {
+                  tempOut.copyBytes(ii, byteToCorrupt);
+                }
+
+                // Randomly flip one bit from this byte:
+                byte b = ii.readByte();
+                int bitToFlip = randomState.nextInt(8);
+                b = (byte) (b ^ (1 << bitToFlip));
+                tempOut.writeByte(b);
+
+                action =
+                    "flip bit "
+                        + bitToFlip
+                        + " of byte "
+                        + byteToCorrupt
+                        + " out of "
+                        + ii.length()
+                        + " bytes";
+
+                // Copy last part unchanged:
+                long bytesLeft = ii.length() - byteToCorrupt - 1;
+                if (bytesLeft > 0) {
+                  tempOut.copyBytes(ii, bytesLeft);
+                }
+              } else {
+                action = "didn't change";
+              }
+            } catch (IOException ioe) {
+              throw new RuntimeException(
+                  "hit unexpected IOException while trying to corrupt file " + name, ioe);
+            }
+
+            // Delete original and copy bytes back:
+            deleteFile(name);
+
+            try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
+                IndexInput ii =
+                    in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
+              out.copyBytes(ii, ii.length());
+            } catch (IOException ioe) {
+              throw new RuntimeException(
+                  "hit unexpected IOException while trying to corrupt file " + name, ioe);
+            }
+
+            deleteFile(tempFileName);
+          }
+          break;
+
+        case 5:
+          action = "fully truncated";
+          // Totally truncate the file to zero bytes
           deleteFile(name);
 
-          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-               IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
-            out.copyBytes(ii, ii.length());
+          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+            out.getFilePointer(); // just fake access to prevent compiler warning
           } catch (IOException ioe) {
-            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
+            throw new RuntimeException(
+                "hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
+          break;
 
-          deleteFile(tempFileName);
-        }
-        break;
-        
-      case 5:
-        action = "fully truncated";
-        // Totally truncate the file to zero bytes
-        deleteFile(name);
-
-        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
-          out.getFilePointer(); // just fake access to prevent compiler warning
-        } catch (IOException ioe) {
-          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
-        }
-        break;
-
-      default:
-        throw new AssertionError();
+        default:
+          throw new AssertionError();
       }
 
       if (LuceneTestCase.VERBOSE) {
@@ -471,19 +501,19 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
-  /** Simulates a crash of OS or machine by overwriting
-   *  unsynced files. */
+  /** Simulates a crash of OS or machine by overwriting unsynced files. */
   public synchronized void crash() throws IOException {
     openFiles = new HashMap<>();
     openFilesForWrite = new HashSet<>();
     openFilesDeleted = new HashSet<>();
     // first force-close all files, so we can corrupt on windows etc.
     // clone the file map, as these guys want to remove themselves on close.
-    Map<Closeable,Exception> m = new IdentityHashMap<>(openFileHandles);
+    Map<Closeable, Exception> m = new IdentityHashMap<>(openFileHandles);
     for (Closeable f : m.keySet()) {
       try {
         f.close();
-      } catch (Exception ignored) {}
+      } catch (Exception ignored) {
+      }
     }
     corruptFiles(unSyncedFiles);
     crashed = true;
@@ -498,67 +528,63 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setMaxSizeInBytes(long maxSize) {
     this.maxSize = maxSize;
   }
+
   public long getMaxSizeInBytes() {
     return this.maxSize;
   }
 
-  /**
-   * Returns the peek actual storage used (bytes) in this
-   * directory.
-   */
+  /** Returns the peek actual storage used (bytes) in this directory. */
   public long getMaxUsedSizeInBytes() {
     return this.maxUsedSize;
   }
+
   public void resetMaxUsedSizeInBytes() throws IOException {
     this.maxUsedSize = sizeInBytes();
   }
 
-  /**
-   * Trip a test assert if there is an attempt
-   * to delete an open file.
-  */
+  /** Trip a test assert if there is an attempt to delete an open file. */
   public void setAssertNoDeleteOpenFile(boolean value) {
     this.assertNoDeleteOpenFile = value;
   }
-  
+
   public boolean getAssertNoDeleteOpenFile() {
     return assertNoDeleteOpenFile;
   }
 
   /**
-   * If 0.0, no exceptions will be thrown.  Else this should
-   * be a double 0.0 - 1.0.  We will randomly throw an
-   * IOException on the first write to an OutputStream based
-   * on this probability.
+   * If 0.0, no exceptions will be thrown. Else this should be a double 0.0 - 1.0. We will randomly
+   * throw an IOException on the first write to an OutputStream based on this probability.
    */
   public void setRandomIOExceptionRate(double rate) {
     randomIOExceptionRate = rate;
   }
-  
+
   public double getRandomIOExceptionRate() {
     return randomIOExceptionRate;
   }
 
   /**
-   * If 0.0, no exceptions will be thrown during openInput
-   * and createOutput.  Else this should
-   * be a double 0.0 - 1.0 and we will randomly throw an
-   * IOException in openInput and createOutput with
+   * If 0.0, no exceptions will be thrown during openInput and createOutput. Else this should be a
+   * double 0.0 - 1.0 and we will randomly throw an IOException in openInput and createOutput with
    * this probability.
    */
   public void setRandomIOExceptionRateOnOpen(double rate) {
     randomIOExceptionRateOnOpen = rate;
   }
-  
+
   public double getRandomIOExceptionRateOnOpen() {
     return randomIOExceptionRateOnOpen;
   }
 
   void maybeThrowIOException(String message) throws IOException {
     if (randomState.nextDouble() < randomIOExceptionRate) {
-      IOException ioe = new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
+      IOException ioe =
+          new IOException("a random IOException" + (message == null ? "" : " (" + message + ")"));
       if (LuceneTestCase.VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception" + (message == null ? "" : " (" + message + ")"));
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": MockDirectoryWrapper: now throw random exception"
+                + (message == null ? "" : " (" + message + ")"));
         ioe.printStackTrace(System.out);
       }
       throw ioe;
@@ -568,17 +594,22 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   void maybeThrowIOExceptionOnOpen(String name) throws IOException {
     if (randomState.nextDouble() < randomIOExceptionRateOnOpen) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": MockDirectoryWrapper: now throw random exception during open file=" + name);
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": MockDirectoryWrapper: now throw random exception during open file="
+                + name);
         new Throwable().printStackTrace(System.out);
       }
       if (allowRandomFileNotFoundException == false || randomState.nextBoolean()) {
         throw new IOException("a random IOException (" + name + ")");
       } else {
-        throw randomState.nextBoolean() ? new FileNotFoundException("a random IOException (" + name + ")") : new NoSuchFileException("a random IOException (" + name + ")");
+        throw randomState.nextBoolean()
+            ? new FileNotFoundException("a random IOException (" + name + ")")
+            : new NoSuchFileException("a random IOException (" + name + ")");
       }
     }
   }
-  
+
   /** returns current open file handle count */
   public synchronized long getFileHandleCount() {
     return openFileHandles.size();
@@ -597,7 +628,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (openFiles.containsKey(name)) {
       openFilesDeleted.add(name);
       if (assertNoDeleteOpenFile) {
-        throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
+        throw fillOpenTrace(
+            new IOException(
+                "MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"),
+            name,
+            true);
       }
     } else {
       openFilesDeleted.remove(name);
@@ -611,11 +646,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   // sets the cause of the incoming ioe to be the stack
   // trace when the offending file name was opened
   private synchronized <T extends Throwable> T fillOpenTrace(T t, String name, boolean input) {
-    for(Map.Entry<Closeable,Exception> ent : openFileHandles.entrySet()) {
-      if (input && ent.getKey() instanceof MockIndexInputWrapper && ((MockIndexInputWrapper) ent.getKey()).name.equals(name)) {
+    for (Map.Entry<Closeable, Exception> ent : openFileHandles.entrySet()) {
+      if (input
+          && ent.getKey() instanceof MockIndexInputWrapper
+          && ((MockIndexInputWrapper) ent.getKey()).name.equals(name)) {
         t.initCause(ent.getValue());
         break;
-      } else if (!input && ent.getKey() instanceof MockIndexOutputWrapper && ((MockIndexOutputWrapper) ent.getKey()).name.equals(name)) {
+      } else if (!input
+          && ent.getKey() instanceof MockIndexOutputWrapper
+          && ((MockIndexOutputWrapper) ent.getKey()).name.equals(name)) {
         t.initCause(ent.getValue());
         break;
       }
@@ -638,7 +677,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public void setFailOnCreateOutput(boolean v) {
     failOnCreateOutput = v;
   }
-  
+
   @Override
   public synchronized IndexOutput createOutput(String name, IOContext context) throws IOException {
     maybeThrowDeterministicException();
@@ -657,26 +696,26 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
 
     if (assertNoDeleteOpenFile && openFiles.containsKey(name)) {
-      throw new AssertionError("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
+      throw new AssertionError(
+          "MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
     }
-    
+
     unSyncedFiles.add(name);
     createdFiles.add(name);
-    
-    //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput delegateOutput = in.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
+
+    // System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
+    IndexOutput delegateOutput =
+        in.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     return maybeThrottle(name, io);
-
-
   }
 
   private IndexOutput maybeThrottle(String name, IndexOutput output) {
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
-    if (throttling == Throttling.ALWAYS ||
-        (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
+    if (throttling == Throttling.ALWAYS
+        || (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
       }
@@ -687,7 +726,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+  public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
     maybeThrowDeterministicException();
     maybeThrowIOExceptionOnOpen("temp: prefix=" + prefix + " suffix=" + suffix);
     maybeYield();
@@ -698,11 +738,13 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot createTempOutput after crash");
     }
     init();
-    
-    IndexOutput delegateOutput = in.createTempOutput(prefix, suffix, LuceneTestCase.newIOContext(randomState, context));
+
+    IndexOutput delegateOutput =
+        in.createTempOutput(prefix, suffix, LuceneTestCase.newIOContext(randomState, context));
     String name = delegateOutput.getName();
     if (name.toLowerCase(Locale.ROOT).endsWith(".tmp") == false) {
-      throw new IllegalStateException("wrapped directory failed to use .tmp extension: got: " + name);
+      throw new IllegalStateException(
+          "wrapped directory failed to use .tmp extension: got: " + name);
     }
 
     unSyncedFiles.add(name);
@@ -710,23 +752,25 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
-    
+
     return maybeThrottle(name, io);
   }
 
   private static enum Handle {
-    Input, Output, Slice
+    Input,
+    Output,
+    Slice
   }
 
   synchronized void addFileHandle(Closeable c, String name, Handle handle) {
     Integer v = openFiles.get(name);
     if (v != null) {
-      v = Integer.valueOf(v.intValue()+1);
+      v = Integer.valueOf(v.intValue() + 1);
       openFiles.put(name, v);
     } else {
       openFiles.put(name, Integer.valueOf(1));
     }
-    
+
     openFileHandles.put(c, new RuntimeException("unclosed Index" + handle.name() + ": " + name));
   }
 
@@ -745,26 +789,35 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       maybeThrowDeterministicException();
     }
     if (!LuceneTestCase.slowFileExists(in, name)) {
-      throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
+      throw randomState.nextBoolean()
+          ? new FileNotFoundException(name + " in dir=" + in)
+          : new NoSuchFileException(name + " in dir=" + in);
     }
 
     // cannot open a file for input if it's still open for output.
     if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name)) {
-      throw fillOpenTrace(new AccessDeniedException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
+      throw fillOpenTrace(
+          new AccessDeniedException(
+              "MockDirectoryWrapper: file \"" + name + "\" is still open for writing"),
+          name,
+          false);
     }
 
-    IndexInput delegateInput = in.openInput(name, LuceneTestCase.newIOContext(randomState, context));
+    IndexInput delegateInput =
+        in.openInput(name, LuceneTestCase.newIOContext(randomState, context));
 
     final IndexInput ii;
     int randomInt = randomState.nextInt(500);
     if (useSlowOpenClosers && randomInt == 0) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: using SlowClosingMockIndexInputWrapper for file " + name);
+        System.out.println(
+            "MockDirectoryWrapper: using SlowClosingMockIndexInputWrapper for file " + name);
       }
       ii = new SlowClosingMockIndexInputWrapper(this, name, delegateInput);
-    } else if (useSlowOpenClosers && randomInt  == 1) { 
+    } else if (useSlowOpenClosers && randomInt == 1) {
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: using SlowOpeningMockIndexInputWrapper for file " + name);
+        System.out.println(
+            "MockDirectoryWrapper: using SlowOpeningMockIndexInputWrapper for file " + name);
       }
       ii = new SlowOpeningMockIndexInputWrapper(this, name, delegateInput);
     } else {
@@ -809,7 +862,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         }
         // RuntimeException instead of IOException because
         // super() does not throw IOException currently:
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still " + openFiles.size() + " open files: " + openFiles, cause);
+        throw new RuntimeException(
+            "MockDirectoryWrapper: cannot close: there are still "
+                + openFiles.size()
+                + " open files: "
+                + openFiles,
+            cause);
       }
       if (openLocks.size() > 0) {
         Exception cause = null;
@@ -817,12 +875,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         if (stacktraces.hasNext()) {
           cause = stacktraces.next();
         }
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
+        throw new RuntimeException(
+            "MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
       }
       randomIOExceptionRate = 0.0;
       randomIOExceptionRateOnOpen = 0.0;
 
-      if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose) && DirectoryReader.indexExists(this)) {
+      if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose)
+          && DirectoryReader.indexExists(this)) {
         if (getCheckIndexOnClose()) {
 
           if (LuceneTestCase.VERBOSE) {
@@ -831,11 +891,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           crash(); // corrupt any unsynced-files
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
-          } 
+          }
 
           TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
         }
-          
+
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
           if (LuceneTestCase.VERBOSE) {
@@ -847,47 +907,53 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           IndexWriterConfig iwc = new IndexWriterConfig(null);
           iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
 
-          // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
+          // We must do this before opening writer otherwise writer will be angry if there are
+          // pending deletions:
           TestUtil.disableVirusChecker(in);
 
           new IndexWriter(in, iwc).rollback();
           String[] endFiles = in.listAll();
-            
+
           Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
           Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
-            
+
           startFiles = startSet.toArray(new String[0]);
           endFiles = endSet.toArray(new String[0]);
-            
+
           if (!Arrays.equals(startFiles, endFiles)) {
             List<String> removed = new ArrayList<>();
-            for(String fileName : startFiles) {
+            for (String fileName : startFiles) {
               if (!endSet.contains(fileName)) {
                 removed.add(fileName);
               }
             }
-              
+
             List<String> added = new ArrayList<>();
-            for(String fileName : endFiles) {
+            for (String fileName : endFiles) {
               if (!startSet.contains(fileName)) {
                 added.add(fileName);
               }
             }
-              
+
             String extras;
             if (removed.size() != 0) {
               extras = "\n\nThese files were removed: " + removed;
             } else {
               extras = "";
             }
-              
+
             if (added.size() != 0) {
               extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
             }
-              
-            throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
+
+            throw new RuntimeException(
+                "unreferenced files: before delete:\n    "
+                    + Arrays.toString(startFiles)
+                    + "\n  after delete:\n    "
+                    + Arrays.toString(endFiles)
+                    + extras);
           }
-            
+
           DirectoryReader ir1 = DirectoryReader.open(this);
           int numDocs1 = ir1.numDocs();
           ir1.close();
@@ -895,7 +961,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           DirectoryReader ir2 = DirectoryReader.open(this);
           int numDocs2 = ir2.numDocs();
           ir2.close();
-          assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
+          assert numDocs1 == numDocs2
+              : "numDocs changed after opening/closing IW: before="
+                  + numDocs1
+                  + " after="
+                  + numDocs2;
         }
       }
       success = true;
@@ -915,49 +985,44 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       if (v.intValue() == 1) {
         openFiles.remove(name);
       } else {
-        v = Integer.valueOf(v.intValue()-1);
+        v = Integer.valueOf(v.intValue() - 1);
         openFiles.put(name, v);
       }
     }
 
     openFileHandles.remove(c);
   }
-  
+
   public synchronized void removeIndexOutput(IndexOutput out, String name) {
     openFilesForWrite.remove(name);
     removeOpenFile(out, name);
   }
-  
+
   public synchronized void removeIndexInput(IndexInput in, String name) {
     removeOpenFile(in, name);
   }
-  
+
   /**
-   * Objects that represent fail-able conditions. Objects of a derived
-   * class are created and registered with the mock directory. After
-   * register, each object will be invoked once for each first write
-   * of a file, giving the object a chance to throw an IOException.
+   * Objects that represent fail-able conditions. Objects of a derived class are created and
+   * registered with the mock directory. After register, each object will be invoked once for each
+   * first write of a file, giving the object a chance to throw an IOException.
    */
   public static class Failure {
-    /**
-     * eval is called on the first write of every new file.
-     */
-    public void eval(MockDirectoryWrapper dir) throws IOException { }
+    /** eval is called on the first write of every new file. */
+    public void eval(MockDirectoryWrapper dir) throws IOException {}
 
     /**
-     * reset should set the state of the failure to its default
-     * (freshly constructed) state. Reset is convenient for tests
-     * that want to create one failure object and then reuse it in
-     * multiple cases. This, combined with the fact that Failure
-     * subclasses are often anonymous classes makes reset difficult to
-     * do otherwise.
+     * reset should set the state of the failure to its default (freshly constructed) state. Reset
+     * is convenient for tests that want to create one failure object and then reuse it in multiple
+     * cases. This, combined with the fact that Failure subclasses are often anonymous classes makes
+     * reset difficult to do otherwise.
      *
-     * A typical example of use is
-     * Failure failure = new Failure() { ... };
-     * ...
+     * <p>A typical example of use is Failure failure = new Failure() { ... }; ...
      * mock.failOn(failure.reset())
      */
-    public Failure reset() { return this; }
+    public Failure reset() {
+      return this;
+    }
 
     protected boolean doFail;
 
@@ -973,23 +1038,19 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   ArrayList<Failure> failures;
 
   /**
-   * add a Failure object to the list of objects to be evaluated
-   * at every potential failure point
+   * add a Failure object to the list of objects to be evaluated at every potential failure point
    */
-  synchronized public void failOn(Failure fail) {
+  public synchronized void failOn(Failure fail) {
     if (failures == null) {
       failures = new ArrayList<>();
     }
     failures.add(fail);
   }
 
-  /**
-   * Iterate through the failures list, giving each object a
-   * chance to throw an IOE
-   */
+  /** Iterate through the failures list, giving each object a chance to throw an IOE */
   synchronized void maybeThrowDeterministicException() throws IOException {
     if (failures != null) {
-      for(int i = 0; i < failures.size(); i++) {
+      for (int i = 0; i < failures.size(); i++) {
         try {
           failures.get(i).eval(this);
         } catch (Throwable t) {
@@ -1002,7 +1063,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
   }
-  
+
   @Override
   public synchronized String[] listAll() throws IOException {
     maybeYield();
@@ -1021,11 +1082,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     return super.obtainLock(name);
     // TODO: consider mocking locks, but not all the time, can hide bugs
   }
-  
-  /** Use this when throwing fake {@code IOException},
-   *  e.g. from {@link MockDirectoryWrapper.Failure}. */
-  public static class FakeIOException extends IOException {
-  }
+
+  /**
+   * Use this when throwing fake {@code IOException}, e.g. from {@link
+   * MockDirectoryWrapper.Failure}.
+   */
+  public static class FakeIOException extends IOException {}
 
   @Override
   public String toString() {
@@ -1036,16 +1098,18 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
-  // don't override optional methods like copyFrom: we need the default impl for things like disk 
+  // don't override optional methods like copyFrom: we need the default impl for things like disk
   // full checks. we randomly exercise "raw" directories anyway. We ensure default impls are used:
-  
+
   @Override
-  public final ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
+  public final ChecksumIndexInput openChecksumInput(String name, IOContext context)
+      throws IOException {
     return super.openChecksumInput(name, context);
   }
 
   @Override
-  public final void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+  public final void copyFrom(Directory from, String src, String dest, IOContext context)
+      throws IOException {
     super.copyFrom(from, src, dest, context);
   }
 

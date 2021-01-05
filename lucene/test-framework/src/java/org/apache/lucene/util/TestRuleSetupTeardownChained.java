@@ -22,21 +22,16 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * Make sure {@link LuceneTestCase#setUp()} and {@link LuceneTestCase#tearDown()} were invoked even if they
- * have been overriden. We assume nobody will call these out of non-overriden
- * methods (they have to be public by contract, unfortunately). The top-level
- * methods just set a flag that is checked upon successful execution of each test
- * case.
+ * Make sure {@link LuceneTestCase#setUp()} and {@link LuceneTestCase#tearDown()} were invoked even
+ * if they have been overriden. We assume nobody will call these out of non-overriden methods (they
+ * have to be public by contract, unfortunately). The top-level methods just set a flag that is
+ * checked upon successful execution of each test case.
  */
 class TestRuleSetupTeardownChained implements TestRule {
-  /**
-   * @see TestRuleSetupTeardownChained  
-   */
+  /** @see TestRuleSetupTeardownChained */
   public boolean setupCalled;
 
-  /**
-   * @see TestRuleSetupTeardownChained
-   */
+  /** @see TestRuleSetupTeardownChained */
   public boolean teardownCalled;
 
   @Override
@@ -50,10 +45,10 @@ class TestRuleSetupTeardownChained implements TestRule {
 
         // I assume we don't want to check teardown chaining if something happens in the
         // test because this would obscure the original exception?
-        if (!setupCalled) { 
+        if (!setupCalled) {
           Assert.fail("One of the overrides of setUp does not propagate the call.");
         }
-        if (!teardownCalled) { 
+        if (!teardownCalled) {
           Assert.fail("One of the overrides of tearDown does not propagate the call.");
         }
       }

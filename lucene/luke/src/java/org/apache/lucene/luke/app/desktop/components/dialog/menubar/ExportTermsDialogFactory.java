@@ -17,16 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.SwingWorker;
 import java.awt.Color;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -42,7 +32,16 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.IndexHandler;
 import org.apache.lucene.luke.app.IndexObserver;
@@ -61,9 +60,7 @@ import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.SuppressForbidden;
 
-/**
- * Factory of export terms dialog
- */
+/** Factory of export terms dialog */
 public final class ExportTermsDialogFactory implements DialogOpener.DialogFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -94,7 +91,7 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
 
   private String selectedDelimiter;
 
-  public synchronized static ExportTermsDialogFactory getInstance() throws IOException {
+  public static synchronized ExportTermsDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new ExportTermsDialogFactory();
     }
@@ -105,8 +102,9 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
     this.prefs = PreferencesFactory.getInstance();
     this.indexHandler = IndexHandler.getInstance();
     indexHandler.addObserver(new Observer());
-    Stream.of(Delimiter.values()).forEachOrdered(delimiterVal -> delimiterCombo.addItem(delimiterVal.getDescription()));
-    delimiterCombo.setSelectedItem(Delimiter.COMMA.getDescription());//Set default delimiter
+    Stream.of(Delimiter.values())
+        .forEachOrdered(delimiterVal -> delimiterCombo.addItem(delimiterVal.getDescription()));
+    delimiterCombo.setSelectedItem(Delimiter.COMMA.getDescription()); // Set default delimiter
   }
 
   @Override
@@ -230,57 +228,68 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
     }
 
     void export(ActionEvent e) {
-      ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("export-terms-dialog"));
+      ExecutorService executor =
+          Executors.newSingleThreadExecutor(new NamedThreadFactory("export-terms-dialog"));
 
-      SwingWorker<Void, Void> task = new SwingWorker<Void, Void>() {
+      SwingWorker<Void, Void> task =
+          new SwingWorker<Void, Void>() {
 
-        String filename;
+            String filename;
 
-        @Override
-        protected Void doInBackground() {
-          setProgress(0);
-          statusLbl.setText("Exporting...");
-          indicatorLbl.setVisible(true);
-          String field = (String) fieldCombo.getSelectedItem();
-          selectedDelimiter = Delimiter.getSelectedDelimiterValue((String) delimiterCombo.getSelectedItem());
+            @Override
+            protected Void doInBackground() {
+              setProgress(0);
+              statusLbl.setText("Exporting...");
+              indicatorLbl.setVisible(true);
+              String field = (String) fieldCombo.getSelectedItem();
+              selectedDelimiter =
+                  Delimiter.getSelectedDelimiterValue((String) delimiterCombo.getSelectedItem());
 
-          String directory = destDir.getText();
-          try {
-            filename = toolsModel.exportTerms(directory, field, selectedDelimiter);
-          } catch (LukeException e) {
-            log.error("Error while exporting terms from field {}", field, e);
-            statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.error", e.getMessage()));
-          } catch (Exception e) {
-            log.error("Error while exporting terms from field {}", field, e);
-            statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
-            throw e;
-          } finally {
-            setProgress(100);
-          }
-          return null;
-        }
+              String directory = destDir.getText();
+              try {
+                filename = toolsModel.exportTerms(directory, field, selectedDelimiter);
+              } catch (LukeException e) {
+                log.error("Error while exporting terms from field {}", field, e);
+                statusLbl.setText(
+                    MessageUtils.getLocalizedMessage("export.terms.label.error", e.getMessage()));
+              } catch (Exception e) {
+                log.error("Error while exporting terms from field {}", field, e);
+                statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
+                throw e;
+              } finally {
+                setProgress(100);
+              }
+              return null;
+            }
 
-        @Override
-        protected void done() {
-          indicatorLbl.setVisible(false);
-          if (filename != null) {
-            statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.success", filename, "[term]" + selectedDelimiter + "[doc frequency]"));
-          }
-        }
-      };
+            @Override
+            protected void done() {
+              indicatorLbl.setVisible(false);
+              if (filename != null) {
+                statusLbl.setText(
+                    MessageUtils.getLocalizedMessage(
+                        "export.terms.label.success",
+                        filename,
+                        "[term]" + selectedDelimiter + "[doc frequency]"));
+              }
+            }
+          };
 
       executor.submit(task);
       executor.shutdown();
     }
-
   }
 
   private class Observer implements IndexObserver {
 
     @Override
     public void openIndex(LukeState state) {
-      toolsModel = indexToolsFactory.newInstance(state.getIndexReader(), state.useCompound(), state.keepAllCommits());
-      IndexUtils.getFieldNames(state.getIndexReader()).stream().sorted().forEach(fieldCombo::addItem);
+      toolsModel =
+          indexToolsFactory.newInstance(
+              state.getIndexReader(), state.useCompound(), state.keepAllCommits());
+      IndexUtils.getFieldNames(state.getIndexReader()).stream()
+          .sorted()
+          .forEach(fieldCombo::addItem);
     }
 
     @Override
@@ -288,14 +297,13 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
       fieldCombo.removeAllItems();
       toolsModel = null;
     }
-
   }
 
-  /**
-   * Delimiters that can be selected
-   */
+  /** Delimiters that can be selected */
   private enum Delimiter {
-    COMMA("Comma", ","), WHITESPACE("Whitespace", " "), TAB("Tab", "\t");
+    COMMA("Comma", ","),
+    WHITESPACE("Whitespace", " "),
+    TAB("Tab", "\t");
 
     private final String description;
     private final String separator;
@@ -321,5 +329,4 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
           .getSeparator();
     }
   }
-
 }

@@ -19,16 +19,16 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.Random;
 
-/** 
+/**
  * Throws IOException from random Tokenstream methods.
- * <p>
- * This can be used to simulate a buggy analyzer in IndexWriter,
- * where we must delete the document but not abort everything in the buffer.
+ *
+ * <p>This can be used to simulate a buggy analyzer in IndexWriter, where we must delete the
+ * document but not abort everything in the buffer.
  */
 public final class CrankyTokenFilter extends TokenFilter {
   final Random random;
   int thingToDo;
-  
+
   /** Creates a new CrankyTokenFilter */
   public CrankyTokenFilter(TokenStream input, Random random) {
     super(input);
@@ -42,7 +42,7 @@ public final class CrankyTokenFilter extends TokenFilter {
     }
     return input.incrementToken();
   }
-  
+
   @Override
   public void end() throws IOException {
     super.end();
@@ -50,7 +50,7 @@ public final class CrankyTokenFilter extends TokenFilter {
       throw new IOException("Fake IOException from TokenStream.end()");
     }
   }
-  
+
   @Override
   public void reset() throws IOException {
     super.reset();

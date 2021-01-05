@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -33,7 +25,14 @@ import java.awt.Window;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
@@ -58,7 +57,7 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
 
   private List<Analysis.TokenAttribute> attributes;
 
-  public synchronized static TokenAttributeDialogFactory getInstance() throws IOException {
+  public static synchronized TokenAttributeDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new TokenAttributeDialogFactory();
     }
@@ -98,10 +97,18 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
     header.add(new JLabel(term));
     panel.add(header, BorderLayout.PAGE_START);
 
-    List<TokenAttValue> attrValues = attributes.stream()
-        .flatMap(att -> att.getAttValues().entrySet().stream().map(e -> TokenAttValue.of(att.getAttClass(), e.getKey(), e.getValue())))
-        .collect(Collectors.toList());
-    TableUtils.setupTable(attributesTable, ListSelectionModel.SINGLE_SELECTION, new AttributeTableModel(attrValues), null);
+    List<TokenAttValue> attrValues =
+        attributes.stream()
+            .flatMap(
+                att ->
+                    att.getAttValues().entrySet().stream()
+                        .map(e -> TokenAttValue.of(att.getAttClass(), e.getKey(), e.getValue())))
+            .collect(Collectors.toList());
+    TableUtils.setupTable(
+        attributesTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new AttributeTableModel(attrValues),
+        null);
     panel.add(new JScrollPane(attributesTable), BorderLayout.CENTER);
 
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING));
@@ -117,7 +124,6 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
   static final class AttributeTableModel extends TableModelBase<AttributeTableModel.Column> {
 
     enum Column implements TableColumnInfo {
-
       ATTR("Attribute", 0, String.class),
       NAME("Name", 1, String.class),
       VALUE("Value", 2, String.class);
@@ -177,8 +183,7 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
       return attValue;
     }
 
-    private TokenAttValue() {
-    }
+    private TokenAttValue() {}
 
     String getAttClass() {
       return attClass;
@@ -192,5 +197,4 @@ public final class TokenAttributeDialogFactory implements DialogOpener.DialogFac
       return value;
     }
   }
-
 }

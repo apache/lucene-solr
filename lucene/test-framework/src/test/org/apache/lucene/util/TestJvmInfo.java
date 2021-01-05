@@ -17,22 +17,20 @@
 package org.apache.lucene.util;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.Locale;
 import org.junit.Test;
 
-import java.util.Locale;
-
-/**
- *
- */
+/** */
 public class TestJvmInfo extends RandomizedTest {
-   @Test
-   public void testEchoJvmInfo() {
-      System.out.println(String.format(Locale.ROOT,
-          "This test runs with Java %s (%s, %s %s).",
-          System.getProperty("java.version"),
-          System.getProperty("java.vendor"),
-          System.getProperty("java.vm.name"),
-          System.getProperty("java.vm.version")
-      ));
-   }
+  @Test
+  public void testEchoJvmInfo() {
+    System.out.println(
+        String.format(
+            Locale.ROOT,
+            "This test runs with Java %s (%s, %s %s).",
+            System.getProperty("java.version"),
+            System.getProperty("java.vendor"),
+            System.getProperty("java.vm.name"),
+            System.getProperty("java.vm.version")));
+  }
 }

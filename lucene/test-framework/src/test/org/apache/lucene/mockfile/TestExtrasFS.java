@@ -27,22 +27,24 @@ import java.util.List;
 
 /** Basic tests for ExtrasFS */
 public class TestExtrasFS extends MockFileSystemTestCase {
-  
+
   @Override
   protected Path wrap(Path path) {
     return wrap(path, random().nextBoolean(), random().nextBoolean());
   }
-  
+
   Path wrap(Path path, boolean active, boolean createDirectory) {
-    FileSystem fs = new ExtrasFS(path.getFileSystem(), active, createDirectory).getFileSystem(URI.create("file:///"));
+    FileSystem fs =
+        new ExtrasFS(path.getFileSystem(), active, createDirectory)
+            .getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** test where extra file is created */
   public void testExtraFile() throws Exception {
     Path dir = wrap(createTempDir(), true, false);
     Files.createDirectory(dir.resolve("foobar"));
-    
+
     List<String> seen = new ArrayList<>();
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir.resolve("foobar"))) {
       for (Path path : stream) {
@@ -52,12 +54,12 @@ public class TestExtrasFS extends MockFileSystemTestCase {
     assertEquals(Arrays.asList("extra0"), seen);
     assertTrue(Files.isRegularFile(dir.resolve("foobar").resolve("extra0")));
   }
-  
+
   /** test where extra directory is created */
   public void testExtraDirectory() throws Exception {
     Path dir = wrap(createTempDir(), true, true);
     Files.createDirectory(dir.resolve("foobar"));
-    
+
     List<String> seen = new ArrayList<>();
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir.resolve("foobar"))) {
       for (Path path : stream) {
@@ -67,7 +69,7 @@ public class TestExtrasFS extends MockFileSystemTestCase {
     assertEquals(Arrays.asList("extra0"), seen);
     assertTrue(Files.isDirectory(dir.resolve("foobar").resolve("extra0")));
   }
-  
+
   /** test where no extras are created: its a no-op */
   public void testNoExtras() throws Exception {
     Path dir = wrap(createTempDir(), false, false);

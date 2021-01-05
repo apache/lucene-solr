@@ -18,17 +18,17 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.TestUtil;
 
 // TODO: sometimes remove tokens too...?
 
-/** Randomly inserts overlapped (posInc=0) tokens with
- *  posLength sometimes &gt; 1.  The chain must have
- *  an OffsetAttribute.  */
-
-public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
+/**
+ * Randomly inserts overlapped (posInc=0) tokens with posLength sometimes &gt; 1. The chain must
+ * have an OffsetAttribute.
+ */
+public final class MockGraphTokenFilter
+    extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
 
   private static boolean DEBUG = false;
 
@@ -64,7 +64,7 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
 
       // Look ahead as needed until we figure out the right
       // endOffset:
-      while(!end && posEndData.endOffset == -1 && inputPos <= (outputPos + posLength)) {
+      while (!end && posEndData.endOffset == -1 && inputPos <= (outputPos + posLength)) {
         if (!peekToken()) {
           break;
         }
@@ -77,12 +77,17 @@ public final class MockGraphTokenFilter extends LookaheadTokenFilter<LookaheadTo
         posLenAtt.setPositionLength(posLength);
         termAtt.append(TestUtil.randomUnicodeString(random));
         posIncAtt.setPositionIncrement(0);
-        offsetAtt.setOffset(positions.get(outputPos).startOffset,
-                            posEndData.endOffset);
+        offsetAtt.setOffset(positions.get(outputPos).startOffset, posEndData.endOffset);
         if (DEBUG) {
-          System.out.println("  inject: outputPos=" + outputPos + " startOffset=" + offsetAtt.startOffset() +
-                             " endOffset=" + offsetAtt.endOffset() +
-                             " posLength=" + posLenAtt.getPositionLength());
+          System.out.println(
+              "  inject: outputPos="
+                  + outputPos
+                  + " startOffset="
+                  + offsetAtt.startOffset()
+                  + " endOffset="
+                  + offsetAtt.endOffset()
+                  + " posLength="
+                  + posLenAtt.getPositionLength());
         }
         // TODO: set TypeAtt too?
       } else {
