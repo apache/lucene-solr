@@ -34,7 +34,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildClusterState_Simple() {
-    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csr", "baseUrl1_")) {
+    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csr", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
@@ -48,10 +48,10 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
       assertEquals(1, slice1.getReplicas().size());
       Replica replica1 = slice1.getReplica("replica1");
       assertNotNull(replica1);
-      assertEquals("baseUrl1_", replica1.getNodeName());
+      assertEquals("baseUrl1:8983_", replica1.getNodeName());
       assertEquals("slice1_replica1", replica1.getCoreName());
-      assertEquals("http://baseUrl1", replica1.getBaseUrl());
-      assertEquals("http://baseUrl1/slice1_replica1/", replica1.getCoreUrl());
+      assertEquals("http://baseUrl1:8983", replica1.getBaseUrl());
+      assertEquals("http://baseUrl1:8983/slice1_replica1/", replica1.getCoreUrl());
       assertEquals(Replica.State.ACTIVE, replica1.getState());
       assertEquals(Replica.Type.NRT, replica1.getType());
     }
@@ -59,7 +59,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildClusterState_ReplicaTypes() {
-    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1_")) {
+    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csntp", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
@@ -79,7 +79,7 @@ public class ClusterStateMockUtilTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildClusterState_ReplicaStateAndType() {
-    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1_")) {
+    try (ZkStateReader zkStateReader = ClusterStateMockUtil.buildClusterState("csrStRpDnF", "baseUrl1:8983_")) {
       ClusterState clusterState = zkStateReader.getClusterState();
       assertNotNull(clusterState);
       assertEquals(1, clusterState.getCollectionStates().size());
