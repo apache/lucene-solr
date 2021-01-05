@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.blockterms;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -33,18 +32,18 @@ import org.apache.lucene.index.SegmentWriteState;
 // any PostingsFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene84PostingsFormat} that uses
- * {@link VariableGapTermsIndexWriter} with a fixed interval, but
- * forcing high docfreq terms to be indexed terms.
+ * Customized version of {@link Lucene84PostingsFormat} that uses {@link
+ * VariableGapTermsIndexWriter} with a fixed interval, but forcing high docfreq terms to be indexed
+ * terms.
  */
 public final class LuceneVarGapDocFreqInterval extends PostingsFormat {
   final int termIndexInterval;
   final int docFreqThreshold;
-  
+
   public LuceneVarGapDocFreqInterval() {
     this(1000000, FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
   }
-  
+
   public LuceneVarGapDocFreqInterval(int docFreqThreshold, int termIndexInterval) {
     super("LuceneVarGapDocFreqInterval");
     this.termIndexInterval = termIndexInterval;
@@ -62,7 +61,11 @@ public final class LuceneVarGapDocFreqInterval extends PostingsFormat {
     TermsIndexWriterBase indexWriter;
     boolean success = false;
     try {
-      indexWriter = new VariableGapTermsIndexWriter(state, new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThreshold, termIndexInterval));
+      indexWriter =
+          new VariableGapTermsIndexWriter(
+              state,
+              new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(
+                  docFreqThreshold, termIndexInterval));
       success = true;
     } finally {
       if (!success) {

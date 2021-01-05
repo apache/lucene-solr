@@ -25,8 +25,6 @@ class ExtensionStub extends ParserExtension {
 
   @Override
   public Query parse(ExtensionQuery components) throws ParseException {
-    return new TermQuery(new Term(components.getField(), components
-        .getRawQueryString()));
+    return new TermQuery(new Term(components.getField(), components.getRawQueryString()));
   }
-
 }

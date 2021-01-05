@@ -22,13 +22,13 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.misc.CollectorMemoryTracker;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.misc.CollectorMemoryTracker;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMemoryAccountingBitsetCollector extends LuceneTestCase {
@@ -61,13 +61,17 @@ public class TestMemoryAccountingBitsetCollector extends LuceneTestCase {
 
   public void testMemoryAccountingBitsetCollectorMemoryLimit() {
     long perCollectorMemoryLimit = 150;
-    CollectorMemoryTracker tracker = new CollectorMemoryTracker("testMemoryTracker", perCollectorMemoryLimit);
+    CollectorMemoryTracker tracker =
+        new CollectorMemoryTracker("testMemoryTracker", perCollectorMemoryLimit);
     MemoryAccountingBitsetCollector bitSetCollector = new MemoryAccountingBitsetCollector(tracker);
     TotalHitCountCollector hitCountCollector = new TotalHitCountCollector();
 
     IndexSearcher searcher = new IndexSearcher(reader);
-    expectThrows(IllegalStateException.class, () -> {
-      searcher.search(new MatchAllDocsQuery(), MultiCollector.wrap(hitCountCollector, bitSetCollector));
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          searcher.search(
+              new MatchAllDocsQuery(), MultiCollector.wrap(hitCountCollector, bitSetCollector));
+        });
   }
 }

@@ -27,12 +27,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.sandbox.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -46,6 +44,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.sandbox.codecs.idversion.StringAndPayloadField.SingleTokenWithPayloadTokenStream;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LiveFieldValues;
 import org.apache.lucene.search.SearcherFactory;
@@ -56,9 +55,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Basic tests for IDVersionPostingsFormat
- */
+/** Basic tests for IDVersionPostingsFormat */
 // Cannot extend BasePostingsFormatTestCase because this PF is not
 // general (it requires payloads, only allows 1 doc per term, etc.)
 public class TestIDVersionPostingsFormat extends LuceneTestCase {
@@ -75,7 +72,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     doc.add(makeIDField("id1", 110));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    IDVersionSegmentTermsEnum termsEnum = (IDVersionSegmentTermsEnum) r.leaves().get(0).reader().terms("id").iterator();
+    IDVersionSegmentTermsEnum termsEnum =
+        (IDVersionSegmentTermsEnum) r.leaves().get(0).reader().terms("id").iterator();
     assertTrue(termsEnum.seekExact(new BytesRef("id0"), 50));
     assertTrue(termsEnum.seekExact(new BytesRef("id0"), 100));
     assertFalse(termsEnum.seekExact(new BytesRef("id0"), 101));
@@ -95,90 +93,104 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
   private IDSource getRandomIDs() {
     IDSource ids;
     switch (random().nextInt(6)) {
-    case 0:
-      // random simple
-      if (VERBOSE) {
-        System.out.println("TEST: use random simple ids");
-      }
-      ids = new IDSource() {
-          @Override
-          public String next() {
-            return TestUtil.randomSimpleString(random());
-          }
-        };
-      break;
-    case 1:
-      // random realistic unicode
-      if (VERBOSE) {
-        System.out.println("TEST: use random realistic unicode ids");
-      }
-      ids = new IDSource() {
-          @Override
-          public String next() {
-            return TestUtil.randomRealisticUnicodeString(random());
-          }
-        };
-      break;
-    case 2:
-      // sequential
-      if (VERBOSE) {
-        System.out.println("TEST: use seuquential ids");
-      }
-      ids = new IDSource() {
-          int upto;
-          @Override
-          public String next() {
-            return Integer.toString(upto++);
-          }
-        };
-      break;
-    case 3:
-      // zero-pad sequential
-      if (VERBOSE) {
-        System.out.println("TEST: use zero-pad seuquential ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          final String zeroPad = String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 5, 20) + "d", 0);
-          int upto;
-          @Override
-          public String next() {
-            String s = Integer.toString(upto++);
-            return zeroPad.substring(zeroPad.length() - s.length()) + s;
-          }
-        };
-      break;
-    case 4:
-      // random long
-      if (VERBOSE) {
-        System.out.println("TEST: use random long ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          int upto;
-          @Override
-          public String next() {
-            return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
-          }
-        };
-      break;
-    case 5:
-      // zero-pad random long
-      if (VERBOSE) {
-        System.out.println("TEST: use zero-pad random long ids");
-      }
-      ids = new IDSource() {
-          final int radix = TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
-          final String zeroPad = String.format(Locale.ROOT, "%015d", 0);
-          int upto;
-          @Override
-          public String next() {
-            return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
-          }
-        };
-      break;
-    default:
-      throw new AssertionError();
+      case 0:
+        // random simple
+        if (VERBOSE) {
+          System.out.println("TEST: use random simple ids");
+        }
+        ids =
+            new IDSource() {
+              @Override
+              public String next() {
+                return TestUtil.randomSimpleString(random());
+              }
+            };
+        break;
+      case 1:
+        // random realistic unicode
+        if (VERBOSE) {
+          System.out.println("TEST: use random realistic unicode ids");
+        }
+        ids =
+            new IDSource() {
+              @Override
+              public String next() {
+                return TestUtil.randomRealisticUnicodeString(random());
+              }
+            };
+        break;
+      case 2:
+        // sequential
+        if (VERBOSE) {
+          System.out.println("TEST: use seuquential ids");
+        }
+        ids =
+            new IDSource() {
+              int upto;
+
+              @Override
+              public String next() {
+                return Integer.toString(upto++);
+              }
+            };
+        break;
+      case 3:
+        // zero-pad sequential
+        if (VERBOSE) {
+          System.out.println("TEST: use zero-pad seuquential ids");
+        }
+        ids =
+            new IDSource() {
+              final int radix =
+                  TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+              final String zeroPad =
+                  String.format(Locale.ROOT, "%0" + TestUtil.nextInt(random(), 5, 20) + "d", 0);
+              int upto;
+
+              @Override
+              public String next() {
+                String s = Integer.toString(upto++);
+                return zeroPad.substring(zeroPad.length() - s.length()) + s;
+              }
+            };
+        break;
+      case 4:
+        // random long
+        if (VERBOSE) {
+          System.out.println("TEST: use random long ids");
+        }
+        ids =
+            new IDSource() {
+              final int radix =
+                  TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+              int upto;
+
+              @Override
+              public String next() {
+                return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
+              }
+            };
+        break;
+      case 5:
+        // zero-pad random long
+        if (VERBOSE) {
+          System.out.println("TEST: use zero-pad random long ids");
+        }
+        ids =
+            new IDSource() {
+              final int radix =
+                  TestUtil.nextInt(random(), Character.MIN_RADIX, Character.MAX_RADIX);
+              final String zeroPad = String.format(Locale.ROOT, "%015d", 0);
+              int upto;
+
+              @Override
+              public String next() {
+                return Long.toString(random().nextLong() & 0x3ffffffffffffffL, radix);
+              }
+            };
+        break;
+      default:
+        throw new AssertionError();
     }
 
     return ids;
@@ -190,12 +202,14 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     int minItemsInBlock = TestUtil.nextInt(random(), 2, 50);
-    int maxItemsInBlock = 2*(minItemsInBlock-1) + random().nextInt(50);
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
+    int maxItemsInBlock = 2 * (minItemsInBlock - 1) + random().nextInt(50);
+    iwc.setCodec(
+        TestUtil.alwaysPostingsFormat(
+            new IDVersionPostingsFormat(minItemsInBlock, maxItemsInBlock)));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
-    //IndexWriter w = new IndexWriter(dir, iwc);
+    // IndexWriter w = new IndexWriter(dir, iwc);
     int numDocs = atLeast(1000);
-    Map<String,Long> idValues = new HashMap<String,Long>();
+    Map<String, Long> idValues = new HashMap<String, Long>();
     int docUpto = 0;
     if (VERBOSE) {
       System.out.println("TEST: numDocs=" + numDocs);
@@ -261,19 +275,19 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
           }
           w.deleteDocuments(new Term("id", idValue));
           idValues.remove(idValue);
-        }        
+        }
       }
 
       docUpto++;
     }
 
     IndexReader r = w.getReader();
-    //IndexReader r = DirectoryReader.open(w);
+    // IndexReader r = DirectoryReader.open(w);
     PerThreadVersionPKLookup lookup = new PerThreadVersionPKLookup(r, "id");
 
-    List<Map.Entry<String,Long>> idValuesList = new ArrayList<>(idValues.entrySet());
+    List<Map.Entry<String, Long>> idValuesList = new ArrayList<>(idValues.entrySet());
     int iters = numDocs * 5;
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       String idValue;
 
       if (random().nextBoolean()) {
@@ -289,23 +303,30 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       Long expectedVersion = idValues.get(idValue);
 
       if (VERBOSE) {
-        System.out.println("\nTEST: iter=" + iter + " id=" + idValue + " expectedVersion=" + expectedVersion);
+        System.out.println(
+            "\nTEST: iter=" + iter + " id=" + idValue + " expectedVersion=" + expectedVersion);
       }
-      
+
       if (expectedVersion == null) {
-        assertEquals("term should not have been found (doesn't exist)", -1, lookup.lookup(idValueBytes));
+        assertEquals(
+            "term should not have been found (doesn't exist)", -1, lookup.lookup(idValueBytes));
       } else {
         if (random().nextBoolean()) {
           if (VERBOSE) {
             System.out.println("  lookup exact version (should be found)");
           }
-          assertTrue("term should have been found (version too old)", lookup.lookup(idValueBytes, expectedVersion.longValue()) != -1);
+          assertTrue(
+              "term should have been found (version too old)",
+              lookup.lookup(idValueBytes, expectedVersion.longValue()) != -1);
           assertEquals(expectedVersion.longValue(), lookup.getVersion());
         } else {
           if (VERBOSE) {
             System.out.println("  lookup version+1 (should not be found)");
           }
-          assertEquals("term should not have been found (version newer)", -1, lookup.lookup(idValueBytes, expectedVersion.longValue()+1));
+          assertEquals(
+              "term should not have been found (version newer)",
+              -1,
+              lookup.lookup(idValueBytes, expectedVersion.longValue() + 1));
         }
       }
     }
@@ -324,14 +345,15 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
     /** Returns docID if found, else -1. */
     public int lookup(BytesRef id, long version) throws IOException {
-      for(int seg=0;seg<numSegs;seg++) {
+      for (int seg = 0; seg < numSegs; seg++) {
         if (((IDVersionSegmentTermsEnum) termsEnums[seg]).seekExact(id, version)) {
           if (VERBOSE) {
             System.out.println("  found in seg=" + termsEnums[seg]);
           }
           postingsEnums[seg] = termsEnums[seg].postings(postingsEnums[seg], 0);
           int docID = postingsEnums[seg].nextDoc();
-          if (docID != PostingsEnum.NO_MORE_DOCS && (liveDocs[seg] == null || liveDocs[seg].get(docID))) {
+          if (docID != PostingsEnum.NO_MORE_DOCS
+              && (liveDocs[seg] == null || liveDocs[seg].get(docID))) {
             lastVersion = ((IDVersionSegmentTermsEnum) termsEnums[seg]).getVersion();
             return docBases[seg] + docID;
           }
@@ -366,10 +388,12 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
     Document duplicate = new Document();
     duplicate.add(makeIDField("id", 17));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(duplicate);
-      w.commit(false);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(duplicate);
+          w.commit(false);
+        });
 
     w.close();
     dir.close();
@@ -382,12 +406,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     iwc.setMergePolicy(new TieredMergePolicy());
     MergeScheduler ms = iwc.getMergeScheduler();
     if (ms instanceof ConcurrentMergeScheduler) {
-      iwc.setMergeScheduler(new ConcurrentMergeScheduler() {
-          @Override
-          protected void handleMergeException(Throwable exc) {
-            assertTrue(exc instanceof IllegalArgumentException);
-          }
-        });
+      iwc.setMergeScheduler(
+          new ConcurrentMergeScheduler() {
+            @Override
+            protected void handleMergeException(Throwable exc) {
+              assertTrue(exc instanceof IllegalArgumentException);
+            }
+          });
     }
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
@@ -449,25 +474,28 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Directory dir = newDirectory();
 
     // MockAnalyzer minus maybePayload else it sometimes stuffs in an 8-byte payload!
-    Analyzer a = new Analyzer() {
-        @Override
-        public TokenStreamComponents createComponents(String fieldName) {
-          MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
-          tokenizer.setEnableChecks(true);
-          MockTokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
-          return new TokenStreamComponents(tokenizer, filt);
-        }
-      };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          public TokenStreamComponents createComponents(String fieldName) {
+            MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true, 100);
+            tokenizer.setEnableChecks(true);
+            MockTokenFilter filt = new MockTokenFilter(tokenizer, MockTokenFilter.EMPTY_STOPSET);
+            return new TokenStreamComponents(tokenizer, filt);
+          }
+        };
     IndexWriterConfig iwc = newIndexWriterConfig(a);
     iwc.setCodec(TestUtil.alwaysPostingsFormat(new IDVersionPostingsFormat()));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(newTextField("id", "id", Field.Store.NO));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
-             
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
+
     w.close();
     dir.close();
   }
@@ -479,12 +507,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
 
-             
     w.close();
     dir.close();
   }
@@ -496,11 +525,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     doc.add(new StringAndPayloadField("id", "id", new BytesRef("foo")));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
-             
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
+
     w.close();
     dir.close();
   }
@@ -523,7 +554,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     dir.close();
   }
 
-  // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
+  // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs,
+  // and because our PF only indexes the
   // non-deleted documents on flush, CheckIndex will see this as corruption:
   public void testCannotIndexTermVectors() throws Exception {
     Directory dir = newDirectory();
@@ -541,11 +573,13 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     ts.setValue("foo", payload);
     Field field = new Field("id", ts, ft);
     doc.add(new Field("id", ts, ft));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-      fail("didn't hit expected exception");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+          fail("didn't hit expected exception");
+        });
 
     w.close();
     dir.close();
@@ -559,10 +593,12 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     Document doc = new Document();
     doc.add(makeIDField("id", 17));
     doc.add(makeIDField("id", 17));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
 
     w.close();
     dir.close();
@@ -575,14 +611,32 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     // -1
-    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
-    expectThrows(AlreadyClosedException.class, () -> {
-      w.addDocument(doc);
-    });
+    doc.add(
+        new StringAndPayloadField(
+            "id",
+            "id",
+            new BytesRef(
+                new byte[] {
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff
+                })));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          w.addDocument(doc);
+        });
     dir.close();
   }
 
@@ -593,19 +647,38 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc, false);
     Document doc = new Document();
     // Long.MAX_VALUE:
-    doc.add(new StringAndPayloadField("id", "id", new BytesRef(new byte[] {(byte)0x7f, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff})));
-    expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-      w.commit(false);
-    });
-    expectThrows(AlreadyClosedException.class, () -> {
-      w.addDocument(doc);
-    });
+    doc.add(
+        new StringAndPayloadField(
+            "id",
+            "id",
+            new BytesRef(
+                new byte[] {
+                  (byte) 0x7f,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff,
+                  (byte) 0xff
+                })));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          w.addDocument(doc);
+          w.commit(false);
+        });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          w.addDocument(doc);
+        });
 
     dir.close();
   }
 
-  // Simulates optimistic concurrency in a distributed indexing app and confirms the latest version always wins:
+  // Simulates optimistic concurrency in a distributed indexing app and confirms the latest version
+  // always wins:
   public void testGlobalVersions() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -624,7 +697,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     final String[] ids = idsSeen.toArray(new String[numIDs]);
 
     final Object[] locks = new Object[ids.length];
-    for(int i=0;i<locks.length;i++) {
+    for (int i = 0; i < locks.length; i++) {
       locks[i] = new Object();
     }
 
@@ -634,17 +707,18 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
 
     final Long missingValue = -1L;
 
-    final LiveFieldValues<IndexSearcher,Long> versionValues = new LiveFieldValues<IndexSearcher,Long>(mgr, missingValue) {
-      @Override
-      protected Long lookupFromSearcher(IndexSearcher s, String id) {
-        // TODO: would be cleaner if we could do our PerThreadLookup here instead of "up above":
-        // We always return missing: the caller then does a lookup against the current reader
-        return missingValue;
-      }
-    };
+    final LiveFieldValues<IndexSearcher, Long> versionValues =
+        new LiveFieldValues<IndexSearcher, Long>(mgr, missingValue) {
+          @Override
+          protected Long lookupFromSearcher(IndexSearcher s, String id) {
+            // TODO: would be cleaner if we could do our PerThreadLookup here instead of "up above":
+            // We always return missing: the caller then does a lookup against the current reader
+            return missingValue;
+          }
+        };
 
     // Maps to the version the id was lasted indexed with:
-    final Map<String,Long> truth = new ConcurrentHashMap<>();
+    final Map<String, Long> truth = new ConcurrentHashMap<>();
 
     final CountDownLatch startingGun = new CountDownLatch(1);
 
@@ -665,118 +739,161 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     // Run for .5 sec in normal tests, else 60 seconds for nightly:
     final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 60000 : 500);
 
-    for(int i=0;i<threads.length;i++) {
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              runForReal();
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }
-
-          private void runForReal() throws IOException, InterruptedException {
-            startingGun.await();
-            PerThreadVersionPKLookup lookup = null;
-            IndexReader lookupReader = null;
-            while (System.currentTimeMillis() < stopTime) {
-
-              // Intentionally pull version first, and then sleep/yield, to provoke version conflicts:
-              long newVersion;
-              if (versionType == 0) {
-                // Random:
-                newVersion = random().nextLong() & 0x3fffffffffffffffL;
-              } else if (versionType == 1) {
-                // Monotonic
-                newVersion = nextVersion.getAndIncrement();
-              } else {
-                newVersion = System.nanoTime();
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                runForReal();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
+            }
 
-              if (versionType != 0) {
-                if (random().nextBoolean()) {
-                  Thread.yield();
+            private void runForReal() throws IOException, InterruptedException {
+              startingGun.await();
+              PerThreadVersionPKLookup lookup = null;
+              IndexReader lookupReader = null;
+              while (System.currentTimeMillis() < stopTime) {
+
+                // Intentionally pull version first, and then sleep/yield, to provoke version
+                // conflicts:
+                long newVersion;
+                if (versionType == 0) {
+                  // Random:
+                  newVersion = random().nextLong() & 0x3fffffffffffffffL;
+                } else if (versionType == 1) {
+                  // Monotonic
+                  newVersion = nextVersion.getAndIncrement();
                 } else {
-                  Thread.sleep(TestUtil.nextInt(random(), 1, 4));
+                  newVersion = System.nanoTime();
                 }
-              }
 
-              int x = random().nextInt(ids.length);
-
-              // TODO: we could relax this, if e.g. we assign indexer thread based on ID.  This would ensure a given ID cannot be indexed at
-              // the same time in multiple threads:
-
-              // Only one thread can update an ID at once:
-              synchronized (locks[x]) {
-
-                String id = ids[x];
-
-                // We will attempt to index id with newVersion, but only do so if id wasn't yet indexed, or it was indexed with an older
-                // version (< newVersion):
-
-                // Must lookup the RT value before pulling from the index, in case a reopen happens just after we lookup:
-                Long currentVersion = versionValues.get(id);
-
-                IndexSearcher s = mgr.acquire();
-                try {
-                  if (VERBOSE) System.out.println("\n" + Thread.currentThread().getName() + ": update id=" + id + " newVersion=" + newVersion);
-
-                  if (lookup == null || lookupReader != s.getIndexReader()) {
-                    // TODO: sort of messy; we could add reopen to PerThreadVersionPKLookup?
-                    // TODO: this is thin ice .... that we don't incRef/decRef this reader we are implicitly holding onto:
-                    lookupReader = s.getIndexReader();
-                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ": open new PK lookup reader=" + lookupReader);
-                    lookup = new PerThreadVersionPKLookup(lookupReader, "id");
+                if (versionType != 0) {
+                  if (random().nextBoolean()) {
+                    Thread.yield();
+                  } else {
+                    Thread.sleep(TestUtil.nextInt(random(), 1, 4));
                   }
+                }
 
-                  Long truthVersion = truth.get(id);
-                  if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   truthVersion=" + truthVersion);
+                int x = random().nextInt(ids.length);
 
-                  boolean doIndex;
-                  if (currentVersion == missingValue) {
-                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id not in RT cache");
-                    int otherDocID = lookup.lookup(new BytesRef(id), newVersion+1);
-                    if (otherDocID == -1) {
-                      if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id not in index, or version is <= newVersion; will index");
-                      doIndex = true;
-                    } else {
-                      if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id is in index with version=" + lookup.getVersion() + "; will not index");
-                      doIndex = false;
-                      if (truthVersion.longValue() !=lookup.getVersion()) {
-                        System.out.println(Thread.currentThread() + ": now fail0!");
+                // TODO: we could relax this, if e.g. we assign indexer thread based on ID.  This
+                // would ensure a given ID cannot be indexed at
+                // the same time in multiple threads:
+
+                // Only one thread can update an ID at once:
+                synchronized (locks[x]) {
+                  String id = ids[x];
+
+                  // We will attempt to index id with newVersion, but only do so if id wasn't yet
+                  // indexed, or it was indexed with an older
+                  // version (< newVersion):
+
+                  // Must lookup the RT value before pulling from the index, in case a reopen
+                  // happens just after we lookup:
+                  Long currentVersion = versionValues.get(id);
+
+                  IndexSearcher s = mgr.acquire();
+                  try {
+                    if (VERBOSE) {
+                      System.out.println(
+                          "\n"
+                              + Thread.currentThread().getName()
+                              + ": update id="
+                              + id
+                              + " newVersion="
+                              + newVersion);
+                    }
+                    if (lookup == null || lookupReader != s.getIndexReader()) {
+                      // TODO: sort of messy; we could add reopen to PerThreadVersionPKLookup?
+                      // TODO: this is thin ice .... that we don't incRef/decRef this reader we are
+                      // implicitly holding onto:
+                      lookupReader = s.getIndexReader();
+                      if (VERBOSE) {
+                        System.out.println(
+                            Thread.currentThread().getName()
+                                + ": open new PK lookup reader="
+                                + lookupReader);
                       }
-                      assertEquals(truthVersion.longValue(), lookup.getVersion());
+                      lookup = new PerThreadVersionPKLookup(lookupReader, "id");
                     }
-                  } else {
-                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   id is in RT cache: currentVersion=" + currentVersion);
-                    doIndex = newVersion > currentVersion;
-                  }
 
-                  if (doIndex) {
-                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   now index");
-                    boolean passes = truthVersion == null || truthVersion.longValue() <= newVersion;
-                    if (passes == false) {
-                      System.out.println(Thread.currentThread() + ": now fail!");
+                    Long truthVersion = truth.get(id);
+                    if (VERBOSE) {
+                      System.out.println(
+                          Thread.currentThread().getName() + ":   truthVersion=" + truthVersion);
                     }
-                    assertTrue(passes);
-                    Document doc = new Document();
-                    doc.add(makeIDField(id, newVersion));
-                    w.updateDocument(new Term("id", id), doc);
-                    truth.put(id, newVersion);
-                    versionValues.add(id, newVersion);
-                  } else {
-                    if (VERBOSE) System.out.println(Thread.currentThread().getName() + ":   skip index");
-                    assertNotNull(truthVersion);
-                    assertTrue(truthVersion.longValue() >= newVersion);
+
+                    boolean doIndex;
+                    if (currentVersion == missingValue) {
+                      if (VERBOSE) {
+                        System.out.println(
+                            Thread.currentThread().getName() + ":   id not in RT cache");
+                      }
+                      int otherDocID = lookup.lookup(new BytesRef(id), newVersion + 1);
+                      if (otherDocID == -1) {
+                        if (VERBOSE) {
+                          System.out.println(
+                              Thread.currentThread().getName()
+                                  + ":   id not in index, or version is <= newVersion; will index");
+                        }
+                        doIndex = true;
+                      } else {
+                        if (VERBOSE) {
+                          System.out.println(
+                              Thread.currentThread().getName()
+                                  + ":   id is in index with version="
+                                  + lookup.getVersion()
+                                  + "; will not index");
+                        }
+                        doIndex = false;
+                        if (truthVersion.longValue() != lookup.getVersion()) {
+                          System.out.println(Thread.currentThread() + ": now fail0!");
+                        }
+                        assertEquals(truthVersion.longValue(), lookup.getVersion());
+                      }
+                    } else {
+                      if (VERBOSE) {
+                        System.out.println(
+                            Thread.currentThread().getName()
+                                + ":   id is in RT cache: currentVersion="
+                                + currentVersion);
+                      }
+                      doIndex = newVersion > currentVersion;
+                    }
+
+                    if (doIndex) {
+                      if (VERBOSE) {
+                        System.out.println(Thread.currentThread().getName() + ":   now index");
+                      }
+                      boolean passes =
+                          truthVersion == null || truthVersion.longValue() <= newVersion;
+                      if (passes == false) {
+                        System.out.println(Thread.currentThread() + ": now fail!");
+                      }
+                      assertTrue(passes);
+                      Document doc = new Document();
+                      doc.add(makeIDField(id, newVersion));
+                      w.updateDocument(new Term("id", id), doc);
+                      truth.put(id, newVersion);
+                      versionValues.add(id, newVersion);
+                    } else {
+                      if (VERBOSE) {
+                        System.out.println(Thread.currentThread().getName() + ":   skip index");
+                      }
+                      assertNotNull(truthVersion);
+                      assertTrue(truthVersion.longValue() >= newVersion);
+                    }
+                  } finally {
+                    mgr.release(s);
                   }
-                } finally {
-                  mgr.release(s);
                 }
               }
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
@@ -797,7 +914,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
     }
 
     // Verify final index against truth:
-    for(int i=0;i<2;i++) {
+    for (int i = 0; i < 2; i++) {
       mgr.maybeRefresh();
       IndexSearcher s = mgr.acquire();
       try {
@@ -811,7 +928,7 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
         }
         */
         PerThreadVersionPKLookup lookup = new PerThreadVersionPKLookup(r, "id");
-        for(Map.Entry<String,Long> ent : truth.entrySet()) {
+        for (Map.Entry<String, Long> ent : truth.entrySet()) {
           assertTrue(lookup.lookup(new BytesRef(ent.getKey()), -1L) != -1);
           assertEquals(ent.getValue().longValue(), lookup.getVersion());
         }

@@ -17,6 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -26,13 +32,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableModelEvent;
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 import org.apache.lucene.luke.app.desktop.components.TableModelBase;
@@ -81,7 +80,11 @@ public final class FieldValuesPaneProvider implements FieldValuesTabOperator {
     header.add(loadAllCB);
     panel.add(header, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(fieldsTable, ListSelectionModel.SINGLE_SELECTION, new FieldsTableModel(), null,
+    TableUtils.setupTable(
+        fieldsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new FieldsTableModel(),
+        null,
         FieldsTableModel.Column.LOAD.getColumnWidth());
     fieldsTable.setShowGrid(true);
     fieldsTable.setPreferredScrollableViewportSize(fieldsTable.getPreferredSize());
@@ -93,8 +96,14 @@ public final class FieldValuesPaneProvider implements FieldValuesTabOperator {
   @Override
   public void setFields(Collection<String> fields) {
     fieldsTable.setModel(new FieldsTableModel(fields));
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.LOAD.getIndex()).setMinWidth(FieldsTableModel.Column.LOAD.getColumnWidth());
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.LOAD.getIndex()).setMaxWidth(FieldsTableModel.Column.LOAD.getColumnWidth());
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.LOAD.getIndex())
+        .setMinWidth(FieldsTableModel.Column.LOAD.getColumnWidth());
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.LOAD.getIndex())
+        .setMaxWidth(FieldsTableModel.Column.LOAD.getColumnWidth());
     fieldsTable.getModel().addTableModelListener(listners::tableDataChenged);
   }
 
@@ -102,9 +111,11 @@ public final class FieldValuesPaneProvider implements FieldValuesTabOperator {
   public Set<String> getFieldsToLoad() {
     Set<String> fieldsToLoad = new HashSet<>();
     for (int row = 0; row < fieldsTable.getRowCount(); row++) {
-      boolean loaded = (boolean) fieldsTable.getValueAt(row, FieldsTableModel.Column.LOAD.getIndex());
+      boolean loaded =
+          (boolean) fieldsTable.getValueAt(row, FieldsTableModel.Column.LOAD.getIndex());
       if (loaded) {
-        fieldsToLoad.add((String) fieldsTable.getValueAt(row, FieldsTableModel.Column.FIELD.getIndex()));
+        fieldsToLoad.add(
+            (String) fieldsTable.getValueAt(row, FieldsTableModel.Column.FIELD.getIndex()));
       }
     }
     return fieldsToLoad;

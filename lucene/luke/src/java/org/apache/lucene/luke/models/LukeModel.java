@@ -20,7 +20,6 @@ package org.apache.lucene.luke.models;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
@@ -29,7 +28,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
 /**
- * Abstract model class. It holds index reader object and provides basic features for all concrete sub classes.
+ * Abstract model class. It holds index reader object and provides basic features for all concrete
+ * sub classes.
  */
 public abstract class LukeModel {
 
@@ -60,12 +60,11 @@ public abstract class LukeModel {
     this.liveDocs = IndexUtils.getLiveDocs(reader);
   }
 
-  protected LukeModel (Directory dir) {
+  protected LukeModel(Directory dir) {
     this.dir = Objects.requireNonNull(dir);
   }
 
   public Collection<String> getFieldNames() {
     return IndexUtils.getFieldNames(reader);
   }
-
 }

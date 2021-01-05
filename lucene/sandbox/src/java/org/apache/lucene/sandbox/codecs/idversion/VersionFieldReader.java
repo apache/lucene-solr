@@ -19,7 +19,6 @@ package org.apache.lucene.sandbox.codecs.idversion;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -42,40 +41,56 @@ final class VersionFieldReader extends Terms implements Accountable {
   final int docCount;
   final long indexStartFP;
   final long rootBlockFP;
-  final Pair<BytesRef,Long> rootCode;
+  final Pair<BytesRef, Long> rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
   final VersionBlockTreeTermsReader parent;
 
-  final FST<Pair<BytesRef,Long>> index;
-  //private boolean DEBUG;
+  final FST<Pair<BytesRef, Long>> index;
+  // private boolean DEBUG;
 
-  VersionFieldReader(VersionBlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, Pair<BytesRef,Long> rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+  VersionFieldReader(
+      VersionBlockTreeTermsReader parent,
+      FieldInfo fieldInfo,
+      long numTerms,
+      Pair<BytesRef, Long> rootCode,
+      long sumTotalTermFreq,
+      long sumDocFreq,
+      int docCount,
+      long indexStartFP,
+      IndexInput indexIn,
+      BytesRef minTerm,
+      BytesRef maxTerm)
+      throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
-    //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
+    // DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
     this.parent = parent;
     this.numTerms = numTerms;
-    this.sumTotalTermFreq = sumTotalTermFreq; 
-    this.sumDocFreq = sumDocFreq; 
+    this.sumTotalTermFreq = sumTotalTermFreq;
+    this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {
-    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
+    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode="
+    // + rootCode + " divisor=" + indexDivisor);
     // }
 
-    rootBlockFP = (new ByteArrayDataInput(rootCode.output1.bytes, rootCode.output1.offset, rootCode.output1.length)).readVLong() >>> VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+    rootBlockFP =
+        (new ByteArrayDataInput(
+                    rootCode.output1.bytes, rootCode.output1.offset, rootCode.output1.length))
+                .readVLong()
+            >>> VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
 
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
-      //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
+      // System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
       index = new FST<>(clone, clone, VersionBlockTreeTermsWriter.FST_OUTPUTS);
-        
+
       /*
         if (false) {
         final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
@@ -117,14 +132,17 @@ final class VersionFieldReader extends Terms implements Accountable {
 
   @Override
   public boolean hasOffsets() {
-    return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    return fieldInfo
+            .getIndexOptions()
+            .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+        >= 0;
   }
 
   @Override
   public boolean hasPositions() {
     return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
   }
-    
+
   @Override
   public boolean hasPayloads() {
     return fieldInfo.hasPayloads();
@@ -157,9 +175,9 @@ final class VersionFieldReader extends Terms implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return ((index!=null)? index.ramBytesUsed() : 0);
+    return ((index != null) ? index.ramBytesUsed() : 0);
   }
-  
+
   @Override
   public Collection<Accountable> getChildResources() {
     if (index == null) {
@@ -171,6 +189,14 @@ final class VersionFieldReader extends Terms implements Accountable {
 
   @Override
   public String toString() {
-    return "IDVersionTerms(terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+    return "IDVersionTerms(terms="
+        + numTerms
+        + ",postings="
+        + sumDocFreq
+        + ",positions="
+        + sumTotalTermFreq
+        + ",docs="
+        + docCount
+        + ")";
   }
 }

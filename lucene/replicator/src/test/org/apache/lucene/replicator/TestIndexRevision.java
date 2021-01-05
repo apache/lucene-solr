@@ -19,7 +19,6 @@ package org.apache.lucene.replicator;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
@@ -33,7 +32,7 @@ import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 public class TestIndexRevision extends ReplicatorTestCase {
-  
+
   @Test
   public void testNoSnapshotDeletionPolicy() throws Exception {
     Directory dir = newDirectory();
@@ -41,14 +40,16 @@ public class TestIndexRevision extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
     // should fail when IndexDeletionPolicy is not Snapshot
-    expectThrows(IllegalArgumentException.class, () -> {
-      new IndexRevision(writer);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new IndexRevision(writer);
+        });
 
     writer.close();
     IOUtils.close(dir);
   }
-  
+
   @Test
   public void testNoCommit() throws Exception {
     Directory dir = newDirectory();
@@ -56,14 +57,16 @@ public class TestIndexRevision extends ReplicatorTestCase {
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
     // should fail when there are no commits to snapshot"
-    expectThrows(IllegalStateException.class, () -> {
-      new IndexRevision(writer);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new IndexRevision(writer);
+        });
 
     writer.close();
     IOUtils.close(dir);
   }
-  
+
   @Test
   public void testRevisionRelease() throws Exception {
     Directory dir = newDirectory();
@@ -77,7 +80,7 @@ public class TestIndexRevision extends ReplicatorTestCase {
       // releasing that revision should not delete the files
       rev1.release();
       assertTrue(slowFileExists(dir, IndexFileNames.SEGMENTS + "_1"));
-      
+
       rev1 = new IndexRevision(writer); // create revision again, so the files are snapshotted
       writer.addDocument(new Document());
       writer.commit();
@@ -88,7 +91,7 @@ public class TestIndexRevision extends ReplicatorTestCase {
       IOUtils.close(writer, dir);
     }
   }
-  
+
   @Test
   public void testSegmentsFileLast() throws Exception {
     Directory dir = newDirectory();
@@ -110,7 +113,7 @@ public class TestIndexRevision extends ReplicatorTestCase {
       IOUtils.close(dir);
     }
   }
-  
+
   @Test
   public void testOpen() throws Exception {
     Directory dir = newDirectory();
@@ -150,5 +153,4 @@ public class TestIndexRevision extends ReplicatorTestCase {
       IOUtils.close(dir);
     }
   }
-  
 }

@@ -23,7 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.LukeException;
@@ -130,8 +129,11 @@ public final class OverviewImpl extends LukeModel implements Overview {
     }
     return Optional.of(
         commit.getSegmentsFileName()
-            + " (generation=" + commit.getGeneration()
-            + ", segs=" + commit.getSegmentCount() + ")");
+            + " (generation="
+            + commit.getGeneration()
+            + ", segs="
+            + commit.getSegmentCount()
+            + ")");
   }
 
   @Override
@@ -159,13 +161,17 @@ public final class OverviewImpl extends LukeModel implements Overview {
     Objects.requireNonNull(field);
 
     if (numTerms < 0) {
-      throw new IllegalArgumentException(String.format(Locale.ENGLISH, "'numTerms' must be a positive integer: %d is not accepted.", numTerms));
+      throw new IllegalArgumentException(
+          String.format(
+              Locale.ENGLISH,
+              "'numTerms' must be a positive integer: %d is not accepted.",
+              numTerms));
     }
     try {
       return topTerms.getTopTerms(field, numTerms);
     } catch (Exception e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Top terms for field %s not available.", field), e);
+      throw new LukeException(
+          String.format(Locale.ENGLISH, "Top terms for field %s not available.", field), e);
     }
   }
-
 }

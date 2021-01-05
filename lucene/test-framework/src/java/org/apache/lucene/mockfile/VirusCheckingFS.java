@@ -23,14 +23,14 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** 
- * Acts like a virus checker on Windows, where random programs may open the files you just wrote in an unfriendly
- * way preventing deletion (e.g. not passing FILE_SHARE_DELETE) or renaming or overwriting etc.  This is more evil
- * than WindowsFS which just prevents deletion of files you still old open.
+/**
+ * Acts like a virus checker on Windows, where random programs may open the files you just wrote in
+ * an unfriendly way preventing deletion (e.g. not passing FILE_SHARE_DELETE) or renaming or
+ * overwriting etc. This is more evil than WindowsFS which just prevents deletion of files you still
+ * old open.
  */
 public class VirusCheckingFS extends FilterFileSystemProvider {
 
@@ -38,9 +38,7 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
 
   private final AtomicLong state;
 
-  /** 
-   * Create a new instance, wrapping {@code delegate}.
-   */
+  /** Create a new instance, wrapping {@code delegate}. */
   public VirusCheckingFS(FileSystem delegate, long salt) {
     super("viruschecking://", delegate);
     this.state = new AtomicLong(salt);
@@ -63,15 +61,18 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
 
     // Fake but deterministic and hopefully portable like-randomness:
     long hash = state.incrementAndGet() * path.getFileName().hashCode();
-    
-    if (enabled // test infra disables when it's "really" time to delete after test is done, so it can reclaim temp dirs
+
+    if (enabled // test infra disables when it's "really" time to delete after test is done, so it
+        // can reclaim temp dirs
         && Files.exists(path) // important that we NOT delay a NoSuchFileException until later
-        && path.getFileName().toString().equals(IndexWriter.WRITE_LOCK_NAME) == false // life is particularly difficult if the virus checker hits our lock file
+        && path.getFileName().toString().equals(IndexWriter.WRITE_LOCK_NAME)
+            == false // life is particularly difficult if the virus checker hits our lock file
         && (hash % 5) == 1) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("NOTE: VirusCheckingFS now refusing to delete " + path);
       }
-      throw new AccessDeniedException("VirusCheckingFS is randomly refusing to delete file \"" + path + "\"");
+      throw new AccessDeniedException(
+          "VirusCheckingFS is randomly refusing to delete file \"" + path + "\"");
     }
     super.delete(path);
   }

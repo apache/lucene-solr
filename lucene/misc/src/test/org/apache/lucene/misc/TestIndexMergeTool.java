@@ -24,42 +24,52 @@ import org.apache.lucene.util.PrintStreamInfoStream;
 public class TestIndexMergeTool extends LuceneTestCase {
 
   public void testNoParameters() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      Options.parse(new String[] {});
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Options.parse(new String[] {});
+        });
   }
 
   public void testOneParameter() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      Options.parse(new String[] { "target" });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Options.parse(new String[] {"target"});
+        });
   }
 
   public void testTwoParameters() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      Options.parse(new String[] { "target", "source1" });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          Options.parse(new String[] {"target", "source1"});
+        });
   }
 
   public void testThreeParameters() throws Exception {
-    Options options = Options.parse(new String[] { "target", "source1", "source2" });
+    Options options = Options.parse(new String[] {"target", "source1", "source2"});
     assertEquals("target", options.mergedIndexPath);
-    assertArrayEquals(new String[] { "source1", "source2" }, options.indexPaths);
+    assertArrayEquals(new String[] {"source1", "source2"}, options.indexPaths);
   }
 
   public void testVerboseOption() throws Exception {
-    Options options = Options.parse(new String[] { "-verbose", "target", "source1", "source2" });
+    Options options = Options.parse(new String[] {"-verbose", "target", "source1", "source2"});
     assertEquals(PrintStreamInfoStream.class, options.config.getInfoStream().getClass());
   }
 
   public void testMergePolicyOption() throws Exception {
-    Options options = Options.parse(new String[] { "-merge-policy", LogDocMergePolicy.class.getName(), "target", "source1", "source2" });
+    Options options =
+        Options.parse(
+            new String[] {
+              "-merge-policy", LogDocMergePolicy.class.getName(), "target", "source1", "source2"
+            });
     assertEquals(LogDocMergePolicy.class, options.config.getMergePolicy().getClass());
   }
 
   public void testMaxSegmentsOption() throws Exception {
-    Options options = Options.parse(new String[] { "-max-segments", "42", "target", "source1", "source2" });
+    Options options =
+        Options.parse(new String[] {"-max-segments", "42", "target", "source1", "source2"});
     assertEquals(42, options.maxSegments);
   }
-
 }

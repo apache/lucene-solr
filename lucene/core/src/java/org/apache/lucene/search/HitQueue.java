@@ -76,7 +76,10 @@ public final class HitQueue extends PriorityQueue<ScoreDoc> {
 
   @Override
   protected final boolean lessThan(ScoreDoc hitA, ScoreDoc hitB) {
-    if (hitA.score == hitB.score) return hitA.doc > hitB.doc;
-    else return hitA.score < hitB.score;
+    if (hitA.score == hitB.score) {
+      return hitA.doc > hitB.doc;
+    } else {
+      return hitA.score < hitB.score;
+    }
   }
 }

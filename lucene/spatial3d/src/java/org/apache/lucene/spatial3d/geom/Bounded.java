@@ -17,8 +17,7 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * This interface describes methods that determine what the bounds are
- * for a shape.
+ * This interface describes methods that determine what the bounds are for a shape.
  *
  * @lucene.experimental
  */
@@ -27,9 +26,7 @@ public interface Bounded {
   /**
    * Compute bounds for the shape.
    *
-   * @param bounds is the input bounds object.
-   *             The input object will be modified.
+   * @param bounds is the input bounds object. The input object will be modified.
    */
   public void getBounds(final Bounds bounds);
-
 }

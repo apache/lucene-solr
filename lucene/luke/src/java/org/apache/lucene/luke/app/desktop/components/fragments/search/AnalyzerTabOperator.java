@@ -24,4 +24,3 @@ import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 public interface AnalyzerTabOperator extends ComponentOperatorRegistry.ComponentOperator {
   void setAnalyzer(Analyzer analyzer);
 }
-

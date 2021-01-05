@@ -23,9 +23,9 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.Query;
 
 /**
- * This interface should be implemented by every class that wants to build
- * {@link Query} objects from {@link QueryNode} objects.
- * 
+ * This interface should be implemented by every class that wants to build {@link Query} objects
+ * from {@link QueryNode} objects.
+ *
  * @see QueryBuilder
  * @see QueryTreeBuilder
  */
@@ -33,5 +33,4 @@ public interface StandardQueryBuilder extends QueryBuilder {
 
   @Override
   public Query build(QueryNode queryNode) throws QueryNodeException;
-
 }

@@ -14,22 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Implementation of the {@linkplain org.apache.lucene.queryparser.classic Lucene classic query parser} using the flexible query parser frameworks
- * 
+
+/**
+ * Implementation of the {@linkplain org.apache.lucene.queryparser.classic Lucene classic query
+ * parser} using the flexible query parser frameworks
+ *
  * <h2>Lucene Flexible Query Parser Implementation</h2>
- * <p>
- * The old Lucene query parser used to have only one class that performed 
- * all the parsing operations. In the new query parser structure, the 
- * parsing was divided in 3 steps: parsing (syntax), processing (semantic)
- * and building.
- * <p>
- * The classes contained in the package org.apache.lucene.queryParser.standard
- * are used to reproduce the same behavior as the old query parser.
- * 
- * <p>
- * Check {@link org.apache.lucene.queryparser.flexible.standard.StandardQueryParser} to quick start using the Lucene query parser.
+ *
+ * <p>The old Lucene query parser used to have only one class that performed all the parsing
+ * operations. In the new query parser structure, the parsing was divided in 3 steps: parsing
+ * (syntax), processing (semantic) and building.
+ *
+ * <p>The classes contained in the package org.apache.lucene.queryParser.standard are used to
+ * reproduce the same behavior as the old query parser.
+ *
+ * <p>Check {@link org.apache.lucene.queryparser.flexible.standard.StandardQueryParser} to quick
+ * start using the Lucene query parser.
  */
 package org.apache.lucene.queryparser.flexible.standard;
-

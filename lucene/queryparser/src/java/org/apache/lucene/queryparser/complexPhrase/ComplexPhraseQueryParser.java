@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -47,25 +46,19 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
 /**
- * QueryParser which permits complex phrase query syntax eg "(john jon
- * jonathan~) peters*".
- * <p>
- * Performs potentially multiple passes over Query text to parse any nested
- * logic in PhraseQueries. - First pass takes any PhraseQuery content between
- * quotes and stores for subsequent pass. All other query content is parsed as
- * normal - Second pass parses any stored PhraseQuery content, checking all
- * embedded clauses are referring to the same field and therefore can be
- * rewritten as Span queries. All PhraseQuery clauses are expressed as
- * ComplexPhraseQuery objects
- * </p>
- * <p>
- * This could arguably be done in one pass using a new QueryParser but here I am
- * working within the constraints of the existing parser as a base class. This
- * currently simply feeds all phrase content through an analyzer to select
- * phrase terms - any "special" syntax such as * ~ * etc are not given special
- * status
- * </p>
- * 
+ * QueryParser which permits complex phrase query syntax eg "(john jon jonathan~) peters*".
+ *
+ * <p>Performs potentially multiple passes over Query text to parse any nested logic in
+ * PhraseQueries. - First pass takes any PhraseQuery content between quotes and stores for
+ * subsequent pass. All other query content is parsed as normal - Second pass parses any stored
+ * PhraseQuery content, checking all embedded clauses are referring to the same field and therefore
+ * can be rewritten as Span queries. All PhraseQuery clauses are expressed as ComplexPhraseQuery
+ * objects
+ *
+ * <p>This could arguably be done in one pass using a new QueryParser but here I am working within
+ * the constraints of the existing parser as a base class. This currently simply feeds all phrase
+ * content through an analyzer to select phrase terms - any "special" syntax such as * ~ * etc are
+ * not given special status
  */
 public class ComplexPhraseQueryParser extends QueryParser {
   private ArrayList<ComplexPhraseQuery> complexPhrases = null;
@@ -75,8 +68,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
   private boolean inOrder = true;
 
   /**
-   * When <code>inOrder</code> is true, the search terms must
-   * exists in the documents as the same order as in query.
+   * When <code>inOrder</code> is true, the search terms must exists in the documents as the same
+   * order as in query.
    *
    * @param inOrder parameter to choose between ordered or un-ordered proximity search
    */
@@ -130,7 +123,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
     // set of syntax restrictions (i.e. all fields must be same)
     isPass2ResolvingPhrases = true;
     try {
-      for (Iterator<ComplexPhraseQuery> iterator = complexPhrases.iterator(); iterator.hasNext();) {
+      for (Iterator<ComplexPhraseQuery> iterator = complexPhrases.iterator();
+          iterator.hasNext(); ) {
         currentPhraseQuery = iterator.next();
         // in each phrase, now parse the contents between quotes as a
         // separate parse operation
@@ -159,18 +153,20 @@ public class ComplexPhraseQueryParser extends QueryParser {
   }
 
   // Helper method used to report on any clauses that appear in query syntax
-  private void checkPhraseClauseIsForSameField(String field)
-      throws ParseException {
+  private void checkPhraseClauseIsForSameField(String field) throws ParseException {
     if (!field.equals(currentPhraseQuery.field)) {
-      throw new ParseException("Cannot have clause for field \"" + field
-          + "\" nested in phrase " + " for field \"" + currentPhraseQuery.field
-          + "\"");
+      throw new ParseException(
+          "Cannot have clause for field \""
+              + field
+              + "\" nested in phrase "
+              + " for field \""
+              + currentPhraseQuery.field
+              + "\"");
     }
   }
 
   @Override
-  protected Query getWildcardQuery(String field, String termStr)
-      throws ParseException {
+  protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     if (isPass2ResolvingPhrases) {
       checkPhraseClauseIsForSameField(field);
     }
@@ -178,8 +174,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
   }
 
   @Override
-  protected Query getRangeQuery(String field, String part1, String part2,
-      boolean startInclusive, boolean endInclusive) throws ParseException {
+  protected Query getRangeQuery(
+      String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
+      throws ParseException {
     if (isPass2ResolvingPhrases) {
       checkPhraseClauseIsForSameField(field);
     }
@@ -187,8 +184,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
   }
 
   @Override
-  protected Query newRangeQuery(String field, String part1, String part2,
-      boolean startInclusive, boolean endInclusive) {
+  protected Query newRangeQuery(
+      String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
     RewriteMethod originalRewriteMethod = getMultiTermRewriteMethod();
     try {
       if (isPass2ResolvingPhrases) {
@@ -201,8 +198,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
   }
 
   @Override
-  protected Query getFuzzyQuery(String field, String termStr,
-      float minSimilarity) throws ParseException {
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)
+      throws ParseException {
     if (isPass2ResolvingPhrases) {
       checkPhraseClauseIsForSameField(field);
     }
@@ -225,8 +222,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     private final Query[] contents = new Query[1];
 
-    public ComplexPhraseQuery(String field, String phrasedQueryStringContents,
-        int slopFactor, boolean inOrder) {
+    public ComplexPhraseQuery(
+        String field, String phrasedQueryStringContents, int slopFactor, boolean inOrder) {
       this.field = Objects.requireNonNull(field);
       this.phrasedQueryStringContents = Objects.requireNonNull(phrasedQueryStringContents);
       this.slopFactor = slopFactor;
@@ -245,11 +242,11 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
       String oldDefaultParserField = qp.field;
       try {
-        //temporarily set the QueryParser to be parsing the default field for this phrase e.g author:"fred* smith"
+        // temporarily set the QueryParser to be parsing the default field for this phrase e.g
+        // author:"fred* smith"
         qp.field = this.field;
         contents[0] = qp.parse(phrasedQueryStringContents);
-      }
-      finally {
+      } finally {
         qp.field = oldDefaultParserField;
       }
     }
@@ -263,10 +260,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
     public Query rewrite(IndexReader reader) throws IOException {
       final Query contents = this.contents[0];
       // ArrayList spanClauses = new ArrayList();
-      if (contents instanceof TermQuery 
+      if (contents instanceof TermQuery
           || contents instanceof MultiTermQuery
-          || contents instanceof SynonymQuery
-          ) {
+          || contents instanceof SynonymQuery) {
         return contents;
       }
       // Build a sequence of Span clauses arranged in a SpanNear - child
@@ -274,10 +270,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // Booleans e.g. nots and ors etc
       int numNegatives = 0;
       if (!(contents instanceof BooleanQuery)) {
-        throw new IllegalArgumentException("Unknown query type \""
-            + contents.getClass().getName()
-            + "\" found in phrase query string \"" + phrasedQueryStringContents
-            + "\"");
+        throw new IllegalArgumentException(
+            "Unknown query type \""
+                + contents.getClass().getName()
+                + "\" found in phrase query string \""
+                + phrasedQueryStringContents
+                + "\"");
       }
       BooleanQuery bq = (BooleanQuery) contents;
       SpanQuery[] allSpanClauses = new SpanQuery[bq.clauses().size()];
@@ -298,8 +296,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
         if (qc instanceof BooleanQuery || qc instanceof SynonymQuery) {
           ArrayList<SpanQuery> sc = new ArrayList<>();
-          BooleanQuery booleanCaluse = qc instanceof BooleanQuery ?
-              (BooleanQuery) qc : convert((SynonymQuery) qc);
+          BooleanQuery booleanCaluse =
+              qc instanceof BooleanQuery ? (BooleanQuery) qc : convert((SynonymQuery) qc);
           addComplexPhraseClause(sc, booleanCaluse);
           if (sc.size() > 0) {
             allSpanClauses[i] = sc.get(0);
@@ -307,24 +305,28 @@ public class ComplexPhraseQueryParser extends QueryParser {
             // Insert fake term e.g. phrase query was for "Fred Smithe*" and
             // there were no "Smithe*" terms - need to
             // prevent match on just "Fred".
-            allSpanClauses[i] = new SpanTermQuery(new Term(field,
-                "Dummy clause because no terms found - must match nothing"));
+            allSpanClauses[i] =
+                new SpanTermQuery(
+                    new Term(field, "Dummy clause because no terms found - must match nothing"));
           }
         } else if (qc instanceof MatchNoDocsQuery) {
           // Insert fake term e.g. phrase query was for "Fred Smithe*" and
           // there were no "Smithe*" terms - need to
           // prevent match on just "Fred".
-          allSpanClauses[i] = new SpanTermQuery(new Term(field,
-                                                         "Dummy clause because no terms found - must match nothing"));
+          allSpanClauses[i] =
+              new SpanTermQuery(
+                  new Term(field, "Dummy clause because no terms found - must match nothing"));
         } else {
           if (qc instanceof TermQuery) {
             TermQuery tq = (TermQuery) qc;
             allSpanClauses[i] = new SpanTermQuery(tq.getTerm());
-            } else { 
-            throw new IllegalArgumentException("Unknown query type \""
-                + qc.getClass().getName()
-                + "\" found in phrase query string \""
-                + phrasedQueryStringContents + "\"");
+          } else {
+            throw new IllegalArgumentException(
+                "Unknown query type \""
+                    + qc.getClass().getName()
+                    + "\" found in phrase query string \""
+                    + phrasedQueryStringContents
+                    + "\"");
           }
         }
 
@@ -346,8 +348,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         i += 1;
       }
 
-      SpanQuery[] includeClauses = positiveClauses
-          .toArray(new SpanQuery[positiveClauses.size()]);
+      SpanQuery[] includeClauses = positiveClauses.toArray(new SpanQuery[positiveClauses.size()]);
 
       SpanQuery include = null;
       if (includeClauses.length == 1) {
@@ -355,19 +356,17 @@ public class ComplexPhraseQueryParser extends QueryParser {
       } else {
         // need to increase slop factor based on gaps introduced by
         // negatives
-        include = new SpanNearQuery(includeClauses, slopFactor + numNegatives,
-            inOrder);
+        include = new SpanNearQuery(includeClauses, slopFactor + numNegatives, inOrder);
       }
       // Use sequence of positive and negative values as the exclude.
-      SpanNearQuery exclude = new SpanNearQuery(allSpanClauses, slopFactor,
-          inOrder);
+      SpanNearQuery exclude = new SpanNearQuery(allSpanClauses, slopFactor, inOrder);
       SpanNotQuery snot = new SpanNotQuery(include, exclude);
       return snot;
     }
 
     private BooleanQuery convert(SynonymQuery qc) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
-      for (Term t : qc.getTerms()){
+      for (Term t : qc.getTerms()) {
         bqb.add(new BooleanClause(new TermQuery(t), Occur.SHOULD));
       }
       return bqb.build();
@@ -408,25 +407,24 @@ public class ComplexPhraseQueryParser extends QueryParser {
           // Insert fake term e.g. phrase query was for "Fred Smithe*" and
           // there were no "Smithe*" terms - need to
           // prevent match on just "Fred".
-          SpanQuery stq = new SpanTermQuery(new Term(field,
-                                                     "Dummy clause because no terms found - must match nothing"));
+          SpanQuery stq =
+              new SpanTermQuery(
+                  new Term(field, "Dummy clause because no terms found - must match nothing"));
           chosenList.add(stq);
         } else {
           // TODO alternatively could call extract terms here?
-          throw new IllegalArgumentException("Unknown query type:"
-              + childQuery.getClass().getName());
+          throw new IllegalArgumentException(
+              "Unknown query type:" + childQuery.getClass().getName());
         }
       }
       if (ors.size() == 0) {
         return;
       }
-      SpanOrQuery soq = new SpanOrQuery(ors
-          .toArray(new SpanQuery[ors.size()]));
+      SpanOrQuery soq = new SpanOrQuery(ors.toArray(new SpanQuery[ors.size()]));
       if (nots.size() == 0) {
         spanClauses.add(soq);
       } else {
-        SpanOrQuery snqs = new SpanOrQuery(nots
-            .toArray(new SpanQuery[nots.size()]));
+        SpanOrQuery snqs = new SpanOrQuery(nots.toArray(new SpanQuery[nots.size()]));
         SpanNotQuery snq = new SpanNotQuery(soq, snqs);
         spanClauses.add(snq);
       }
@@ -458,15 +456,14 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(ComplexPhraseQuery other) {
-      return field.equals(other.field) &&
-             phrasedQueryStringContents.equals(other.phrasedQueryStringContents) &&
-             slopFactor == other.slopFactor &&
-             inOrder == other.inOrder;
+      return field.equals(other.field)
+          && phrasedQueryStringContents.equals(other.phrasedQueryStringContents)
+          && slopFactor == other.slopFactor
+          && inOrder == other.inOrder;
     }
   }
 }

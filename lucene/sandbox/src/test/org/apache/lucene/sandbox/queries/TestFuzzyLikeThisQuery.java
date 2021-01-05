@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.queries;
 
 import java.io.IOException;
 import java.util.HashSet;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -47,9 +46,13 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
 
     analyzer = new MockAnalyzer(random());
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
 
-    //Add series of docs with misspelt names
+    // Add series of docs with misspelt names
     addDoc(writer, "jonathon smythe", "1");
     addDoc(writer, "jonathan smith", "2");
     addDoc(writer, "johnathon smyth", "3");
@@ -74,8 +77,7 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
     writer.addDocument(doc);
   }
 
-
-  //Tests that idf ranking is not favouring rare mis-spellings over a strong edit-distance match
+  // Tests that idf ranking is not favouring rare mis-spellings over a strong edit-distance match
   public void testClosestEditDistanceMatchComesFirst() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
     flt.addTerms("smith", "name", 2, 1);
@@ -92,7 +94,7 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
     assertEquals("Should match most similar not most rare variant", "2", doc.get("id"));
   }
 
-  //Test multiple input words are having variants produced
+  // Test multiple input words are having variants produced
   public void testMultiWord() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
     flt.addTerms("jonathin smoth", "name", 2, 1);
@@ -107,7 +109,7 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
     Document doc = searcher.doc(sd[0].doc);
     assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
   }
-  
+
   // LUCENE-4809
   public void testNonExistingField() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
@@ -126,8 +128,7 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
     assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
   }
 
-
-  //Test bug found when first query word does not match anything
+  // Test bug found when first query word does not match anything
   public void testNoMatchFirstWordBug() throws Throwable {
     FuzzyLikeThisQuery flt = new FuzzyLikeThisQuery(10, analyzer);
     flt.addTerms("fernando smith", "name", 2, 1);
@@ -148,7 +149,6 @@ public class TestFuzzyLikeThisQuery extends LuceneTestCase {
     fltq1.addTerms("javi", "subject", 2, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);
     fltq2.addTerms("javi", "subject", 2, 2);
-    assertEquals("FuzzyLikeThisQuery with same attributes is not equal", fltq1,
-        fltq2);
+    assertEquals("FuzzyLikeThisQuery with same attributes is not equal", fltq1, fltq2);
   }
 }

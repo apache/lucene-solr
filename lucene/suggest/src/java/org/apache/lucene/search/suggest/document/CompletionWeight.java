@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
@@ -31,13 +30,10 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 
 /**
- * Expert: the Weight for CompletionQuery, used to
- * score and explain these queries.
+ * Expert: the Weight for CompletionQuery, used to score and explain these queries.
  *
- * Subclasses can override {@link #setNextMatch(IntsRef)},
- * {@link #boost()} and {@link #context()}
- * to calculate the boost and extract the context of
- * a matched path prefix.
+ * <p>Subclasses can override {@link #setNextMatch(IntsRef)}, {@link #boost()} and {@link
+ * #context()} to calculate the boost and extract the context of a matched path prefix.
  *
  * @lucene.experimental
  */
@@ -46,18 +42,18 @@ public class CompletionWeight extends Weight {
   private final Automaton automaton;
 
   /**
-   * Creates a weight for <code>query</code> with an <code>automaton</code>,
-   * using the <code>reader</code> for index stats
+   * Creates a weight for <code>query</code> with an <code>automaton</code>, using the <code>reader
+   * </code> for index stats
    */
-  public CompletionWeight(final CompletionQuery query, final Automaton automaton) throws IOException {
+  public CompletionWeight(final CompletionQuery query, final Automaton automaton)
+      throws IOException {
     super(query);
     this.completionQuery = query;
     this.automaton = automaton;
   }
 
   /**
-   * Returns the automaton specified
-   * by the {@link CompletionQuery}
+   * Returns the automaton specified by the {@link CompletionQuery}
    *
    * @return query automaton
    */
@@ -96,16 +92,14 @@ public class CompletionWeight extends Weight {
   }
 
   /**
-   * Set for every partial path in the index that matched the query
-   * automaton.
+   * Set for every partial path in the index that matched the query automaton.
    *
-   * Subclasses should override {@link #boost()} and {@link #context()}
-   * to return an appropriate value with respect to the current pathPrefix.
+   * <p>Subclasses should override {@link #boost()} and {@link #context()} to return an appropriate
+   * value with respect to the current pathPrefix.
    *
    * @param pathPrefix the prefix of a matched path
    */
-  protected void setNextMatch(IntsRef pathPrefix) {
-  }
+  protected void setNextMatch(IntsRef pathPrefix) {}
 
   /**
    * Returns the boost of the partial path set by {@link #setNextMatch(IntsRef)}
@@ -132,7 +126,7 @@ public class CompletionWeight extends Weight {
 
   /**
    * This object can be cached
-   * 
+   *
    * @see org.apache.lucene.search.SegmentCacheable#isCacheable(LeafReaderContext)
    */
   @Override
@@ -142,8 +136,7 @@ public class CompletionWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    //TODO
+    // TODO
     return null;
   }
-
 }

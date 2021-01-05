@@ -29,18 +29,21 @@ public class TestSimilarities extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", MonitorTestBase.parse("test")));
 
-      Similarity similarity = new ClassicSimilarity() {
-        @Override
-        public float tf(float freq) {
-          return 1000f;
-        }
-      };
+      Similarity similarity =
+          new ClassicSimilarity() {
+            @Override
+            public float tf(float freq) {
+              return 1000f;
+            }
+          };
 
       Document doc = new Document();
       doc.add(newTextField("field", "this is a test", Field.Store.NO));
 
-      MatchingQueries<ScoringMatch> standard = monitor.match(doc, ScoringMatch.matchWithSimilarity(new ClassicSimilarity()));
-      MatchingQueries<ScoringMatch> withSim = monitor.match(doc, ScoringMatch.matchWithSimilarity(similarity));
+      MatchingQueries<ScoringMatch> standard =
+          monitor.match(doc, ScoringMatch.matchWithSimilarity(new ClassicSimilarity()));
+      MatchingQueries<ScoringMatch> withSim =
+          monitor.match(doc, ScoringMatch.matchWithSimilarity(similarity));
 
       float standScore = standard.getMatches().iterator().next().getScore();
       float simScore = withSim.getMatches().iterator().next().getScore();

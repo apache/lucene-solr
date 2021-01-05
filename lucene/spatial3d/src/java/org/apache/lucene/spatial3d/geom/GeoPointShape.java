@@ -18,8 +18,7 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * Interface describing a GeoPointShape shape.It may represents a degenerated
- * bounding box or a degenerated circle, hence it extends such interfaces.
+ * Interface describing a GeoPointShape shape.It may represents a degenerated bounding box or a
+ * degenerated circle, hence it extends such interfaces.
  */
-public interface GeoPointShape extends GeoCircle, GeoBBox {
-}
+public interface GeoPointShape extends GeoCircle, GeoBBox {}

@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -30,17 +29,19 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
-/**
- * A {@link FilterLeafReader} that can be used to apply
- * additional checks for tests.
- */
+/** A {@link FilterLeafReader} that can be used to apply additional checks for tests. */
 public class AssertingLeafReader extends FilterLeafReader {
 
   private static void assertThread(String object, Thread creationThread) {
     if (creationThread != Thread.currentThread()) {
-      throw new AssertionError(object + " are only supposed to be consumed in "
-          + "the thread in which they have been acquired. But was acquired in "
-          + creationThread + " and consumed in " + Thread.currentThread() + ".");
+      throw new AssertionError(
+          object
+              + " are only supposed to be consumed in "
+              + "the thread in which they have been acquired. But was acquired in "
+              + creationThread
+              + " and consumed in "
+              + Thread.currentThread()
+              + ".");
     }
   }
 
@@ -54,20 +55,28 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     CacheHelper coreCacheHelper = in.getCoreCacheHelper();
     if (coreCacheHelper != null) {
-      coreCacheHelper.addClosedListener(cacheKey -> {
-        final Object expectedKey = coreCacheHelper.getKey();
-        assert expectedKey == cacheKey
-            : "Core closed listener called on a different key " + expectedKey + " <> " + cacheKey;
-      });
+      coreCacheHelper.addClosedListener(
+          cacheKey -> {
+            final Object expectedKey = coreCacheHelper.getKey();
+            assert expectedKey == cacheKey
+                : "Core closed listener called on a different key "
+                    + expectedKey
+                    + " <> "
+                    + cacheKey;
+          });
     }
 
     CacheHelper readerCacheHelper = in.getReaderCacheHelper();
     if (readerCacheHelper != null) {
-      readerCacheHelper.addClosedListener(cacheKey -> {
-        final Object expectedKey = readerCacheHelper.getKey();
-        assert expectedKey == cacheKey
-            : "Core closed listener called on a different key " + expectedKey + " <> " + cacheKey;
-      });
+      readerCacheHelper.addClosedListener(
+          cacheKey -> {
+            final Object expectedKey = readerCacheHelper.getKey();
+            assert expectedKey == cacheKey
+                : "Core closed listener called on a different key "
+                    + expectedKey
+                    + " <> "
+                    + cacheKey;
+          });
     }
   }
 
@@ -83,9 +92,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     return fields == null ? null : new AssertingFields(fields);
   }
 
-  /**
-   * Wraps a Fields but with additional asserts
-   */
+  /** Wraps a Fields but with additional asserts */
   public static class AssertingFields extends FilterFields {
     public AssertingFields(Fields in) {
       super(in);
@@ -104,10 +111,8 @@ public class AssertingLeafReader extends FilterLeafReader {
       return terms == null ? null : new AssertingTerms(terms);
     }
   }
-  
-  /**
-   * Wraps a Terms but with additional asserts
-   */
+
+  /** Wraps a Terms but with additional asserts */
   public static class AssertingTerms extends FilterTerms {
     public AssertingTerms(Terms in) {
       super(in);
@@ -171,12 +176,19 @@ public class AssertingLeafReader extends FilterLeafReader {
       return "AssertingTerms(" + in + ")";
     }
   }
-  
-  static final VirtualMethod<TermsEnum> SEEK_EXACT = new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
+
+  static final VirtualMethod<TermsEnum> SEEK_EXACT =
+      new VirtualMethod<>(TermsEnum.class, "seekExact", BytesRef.class);
 
   static class AssertingTermsEnum extends FilterTermsEnum {
     private final Thread creationThread = Thread.currentThread();
-    private enum State {INITIAL, POSITIONED, UNPOSITIONED};
+
+    private enum State {
+      INITIAL,
+      POSITIONED,
+      UNPOSITIONED
+    };
+
     private State state = State.INITIAL;
     private final boolean delegateOverridesSeekExact;
     private final boolean hasFreqs;
@@ -190,7 +202,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
       assertThread("Terms enums", creationThread);
-      assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
+      assert state == State.POSITIONED : "docs(...) called on unpositioned TermsEnum";
 
       // reuse if the codec reused
       final PostingsEnum actualReuse;
@@ -203,7 +215,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert docs != null;
       if (docs == actualReuse) {
         // codec reused, reset asserting state
-        ((AssertingPostingsEnum)reuse).reset();
+        ((AssertingPostingsEnum) reuse).reset();
         return reuse;
       } else {
         return new AssertingPostingsEnum(docs);
@@ -213,7 +225,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public ImpactsEnum impacts(int flags) throws IOException {
       assertThread("Terms enums", creationThread);
-      assert state == State.POSITIONED: "docs(...) called on unpositioned TermsEnum";
+      assert state == State.POSITIONED : "docs(...) called on unpositioned TermsEnum";
       assert (flags & PostingsEnum.FREQS) != 0 : "Freqs should be requested on impacts";
 
       return new AssertingImpactsEnum(super.impacts(flags));
@@ -224,7 +236,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public BytesRef next() throws IOException {
       assertThread("Terms enums", creationThread);
-      assert state == State.INITIAL || state == State.POSITIONED: "next() called on unpositioned TermsEnum";
+      assert state == State.INITIAL || state == State.POSITIONED
+          : "next() called on unpositioned TermsEnum";
       BytesRef result = super.next();
       if (result == null) {
         state = State.UNPOSITIONED;
@@ -330,13 +343,17 @@ public class AssertingLeafReader extends FilterLeafReader {
     public String toString() {
       return "AssertingTermsEnum(" + in + ")";
     }
-    
+
     void reset() {
       state = State.INITIAL;
     }
   }
-  
-  static enum DocsEnumState { START, ITERATING, FINISHED };
+
+  static enum DocsEnumState {
+    START,
+    ITERATING,
+    FINISHED
+  };
 
   /** Wraps a docsenum with additional checks */
   public static class AssertingPostingsEnum extends FilterPostingsEnum {
@@ -391,7 +408,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public int docID() {
       assertThread("Docs enums", creationThread);
-      assert doc == super.docID() : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
+      assert doc == super.docID()
+          : " invalid docID() in " + in.getClass() + " " + super.docID() + " instead of " + doc;
       return doc;
     }
 
@@ -438,10 +456,11 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert state != DocsEnumState.FINISHED : "getPayload() called after NO_MORE_DOCS";
       assert positionCount > 0 : "getPayload() called before nextPosition()!";
       BytesRef payload = super.getPayload();
-      assert payload == null || payload.length > 0 : "getPayload() returned payload with invalid length!";
+      assert payload == null || payload.length > 0
+          : "getPayload() returned payload with invalid length!";
       return payload;
     }
-    
+
     void reset() {
       state = DocsEnumState.START;
       doc = in.docID();
@@ -464,7 +483,11 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public void advanceShallow(int target) throws IOException {
-      assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
+      assert target >= lastShallowTarget
+          : "called on decreasing targets: target = "
+              + target
+              + " < last target = "
+              + lastShallowTarget;
       assert target >= docID() : "target = " + target + " < docID = " + docID();
       lastShallowTarget = target;
       in.advanceShallow(target);
@@ -472,7 +495,8 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public Impacts getImpacts() throws IOException {
-      assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get impacts until the iterator is positioned or advanceShallow has been called";
+      assert docID() >= 0 || lastShallowTarget >= 0
+          : "Cannot get impacts until the iterator is positioned or advanceShallow has been called";
       Impacts impacts = in.getImpacts();
       CheckIndex.checkImpacts(impacts, Math.max(docID(), lastShallowTarget));
       return new AssertingImpacts(impacts, this);
@@ -510,13 +534,15 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int nextDoc() throws IOException {
-      assert docID() + 1 >= lastShallowTarget : "target = " + (docID() + 1) + " < last shallow target = " + lastShallowTarget;
+      assert docID() + 1 >= lastShallowTarget
+          : "target = " + (docID() + 1) + " < last shallow target = " + lastShallowTarget;
       return assertingPostings.nextDoc();
     }
 
     @Override
     public int advance(int target) throws IOException {
-      assert target >= lastShallowTarget : "target = " + target + " < last shallow target = " + lastShallowTarget;
+      assert target >= lastShallowTarget
+          : "target = " + target + " < last shallow target = " + lastShallowTarget;
       return assertingPostings.advance(target);
     }
 
@@ -540,22 +566,24 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public int numLevels() {
-      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget)
+          : "Cannot reuse impacts after advancing the iterator";
       return in.numLevels();
     }
 
     @Override
     public int getDocIdUpTo(int level) {
-      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget)
+          : "Cannot reuse impacts after advancing the iterator";
       return in.getDocIdUpTo(level);
     }
 
     @Override
     public List<Impact> getImpacts(int level) {
-      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget) : "Cannot reuse impacts after advancing the iterator";
+      assert validFor == Math.max(impactsEnum.docID(), impactsEnum.lastShallowTarget)
+          : "Cannot reuse impacts after advancing the iterator";
       return in.getImpacts(level);
     }
-
   }
 
   /** Wraps a NumericDocValues but with additional asserts */
@@ -565,7 +593,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int maxDoc;
     private int lastDocID = -1;
     private boolean exists;
-    
+
     public AssertingNumericDocValues(NumericDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -629,14 +657,14 @@ public class AssertingLeafReader extends FilterLeafReader {
       assertThread("Numeric doc values", creationThread);
       assert exists;
       return in.longValue();
-    }    
+    }
 
     @Override
     public String toString() {
       return "AssertingNumericDocValues(" + in + ")";
     }
   }
-  
+
   /** Wraps a BinaryDocValues but with additional asserts */
   public static class AssertingBinaryDocValues extends BinaryDocValues {
     private final Thread creationThread = Thread.currentThread();
@@ -644,7 +672,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int maxDoc;
     private int lastDocID = -1;
     private boolean exists;
-    
+
     public AssertingBinaryDocValues(BinaryDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -724,7 +752,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private final int valueCount;
     private int lastDocID = -1;
     private boolean exists;
-    
+
     public AssertingSortedDocValues(SortedDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -847,7 +875,8 @@ public class AssertingLeafReader extends FilterLeafReader {
       if (singleDocValues == null) {
         return new AssertingSortedNumericDocValues(in, maxDoc);
       } else {
-        NumericDocValues assertingDocValues = new AssertingNumericDocValues(singleDocValues, maxDoc);
+        NumericDocValues assertingDocValues =
+            new AssertingNumericDocValues(singleDocValues, maxDoc);
         return DocValues.singleton(assertingDocValues);
       }
     }
@@ -910,7 +939,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     public long nextValue() throws IOException {
       assertThread("Sorted numeric doc values", creationThread);
       assert exists;
-      assert valueUpto < in.docValueCount(): "valueUpto=" + valueUpto + " in.docValueCount()=" + in.docValueCount();
+      assert valueUpto < in.docValueCount()
+          : "valueUpto=" + valueUpto + " in.docValueCount()=" + in.docValueCount();
       valueUpto++;
       return in.nextValue();
     }
@@ -921,9 +951,9 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert exists;
       assert in.docValueCount() > 0;
       return in.docValueCount();
-    } 
+    }
   }
-  
+
   /** Wraps a SortedSetDocValues but with additional asserts */
   public static class AssertingSortedSetDocValues extends SortedSetDocValues {
     private final Thread creationThread = Thread.currentThread();
@@ -933,7 +963,7 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int lastDocID = -1;
     private long lastOrd = NO_MORE_ORDS;
     private boolean exists;
-    
+
     private AssertingSortedSetDocValues(SortedSetDocValues in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -1005,7 +1035,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       assert cost >= 0;
       return cost;
     }
-    
+
     @Override
     public long nextOrd() throws IOException {
       assertThread("Sorted set doc values", creationThread);
@@ -1057,7 +1087,9 @@ public class AssertingLeafReader extends FilterLeafReader {
       assertStats(maxDoc);
     }
 
-    public PointValues getWrapped() { return in; }
+    public PointValues getWrapped() {
+      return in;
+    }
 
     private void assertStats(int maxDoc) {
       assert in.size() > 0;
@@ -1069,7 +1101,12 @@ public class AssertingLeafReader extends FilterLeafReader {
     @Override
     public void intersect(IntersectVisitor visitor) throws IOException {
       assertThread("Points", creationThread);
-      in.intersect(new AssertingIntersectVisitor(in.getNumDimensions(), in.getNumIndexDimensions(), in.getBytesPerDimension(), visitor));
+      in.intersect(
+          new AssertingIntersectVisitor(
+              in.getNumDimensions(),
+              in.getNumIndexDimensions(),
+              in.getBytesPerDimension(),
+              visitor));
     }
 
     @Override
@@ -1121,10 +1158,12 @@ public class AssertingLeafReader extends FilterLeafReader {
       assertThread("Points", creationThread);
       return in.getDocCount();
     }
-
   }
 
-  /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
+  /**
+   * Validates in the 1D case that all points are visited in order, and point values are in bounds
+   * of the last cell checked
+   */
   static class AssertingIntersectVisitor implements IntersectVisitor {
     final IntersectVisitor in;
     final int numDataDims;
@@ -1137,13 +1176,14 @@ public class AssertingLeafReader extends FilterLeafReader {
     private int lastDocID = -1;
     private int docBudget;
 
-    AssertingIntersectVisitor(int numDataDims, int numIndexDims, int bytesPerDim, IntersectVisitor in) {
+    AssertingIntersectVisitor(
+        int numDataDims, int numIndexDims, int bytesPerDim, IntersectVisitor in) {
       this.in = in;
       this.numDataDims = numDataDims;
       this.numIndexDims = numIndexDims;
       this.bytesPerDim = bytesPerDim;
-      lastMaxPackedValue = new byte[numDataDims*bytesPerDim];
-      lastMinPackedValue = new byte[numDataDims*bytesPerDim];
+      lastMaxPackedValue = new byte[numDataDims * bytesPerDim];
+      lastMinPackedValue = new byte[numDataDims * bytesPerDim];
       if (numDataDims == 1) {
         lastDocValue = new byte[bytesPerDim];
       } else {
@@ -1155,7 +1195,8 @@ public class AssertingLeafReader extends FilterLeafReader {
     public void visit(int docID) throws IOException {
       assert --docBudget >= 0 : "called add() more times than the last call to grow() reserved";
 
-      // This method, not filtering each hit, should only be invoked when the cell is inside the query shape:
+      // This method, not filtering each hit, should only be invoked when the cell is inside the
+      // query shape:
       assert lastCompareResult == Relation.CELL_INSIDE_QUERY;
       in.visit(docID);
     }
@@ -1164,26 +1205,44 @@ public class AssertingLeafReader extends FilterLeafReader {
     public void visit(int docID, byte[] packedValue) throws IOException {
       assert --docBudget >= 0 : "called add() more times than the last call to grow() reserved";
 
-      // This method, to filter each doc's value, should only be invoked when the cell crosses the query shape:
+      // This method, to filter each doc's value, should only be invoked when the cell crosses the
+      // query shape:
       assert lastCompareResult == PointValues.Relation.CELL_CROSSES_QUERY;
 
       // This doc's packed value should be contained in the last cell passed to compare:
-      for(int dim=0;dim<numIndexDims;dim++) {
-        assert Arrays.compareUnsigned(lastMinPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
-        assert Arrays.compareUnsigned(lastMaxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, packedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) >= 0: "dim=" + dim + " of " +  numDataDims + " value=" + new BytesRef(packedValue);
+      for (int dim = 0; dim < numIndexDims; dim++) {
+        assert Arrays.compareUnsigned(
+                    lastMinPackedValue,
+                    dim * bytesPerDim,
+                    dim * bytesPerDim + bytesPerDim,
+                    packedValue,
+                    dim * bytesPerDim,
+                    dim * bytesPerDim + bytesPerDim)
+                <= 0
+            : "dim=" + dim + " of " + numDataDims + " value=" + new BytesRef(packedValue);
+        assert Arrays.compareUnsigned(
+                    lastMaxPackedValue,
+                    dim * bytesPerDim,
+                    dim * bytesPerDim + bytesPerDim,
+                    packedValue,
+                    dim * bytesPerDim,
+                    dim * bytesPerDim + bytesPerDim)
+                >= 0
+            : "dim=" + dim + " of " + numDataDims + " value=" + new BytesRef(packedValue);
       }
 
-      // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
+      // TODO: we should assert that this "matches" whatever relation the last call to compare had
+      // returned
       assert packedValue.length == numDataDims * bytesPerDim;
       if (numDataDims == 1) {
         int cmp = Arrays.compareUnsigned(lastDocValue, 0, bytesPerDim, packedValue, 0, bytesPerDim);
         if (cmp < 0) {
           // ok
         } else if (cmp == 0) {
-          assert lastDocID <= docID: "doc ids are out of order when point values are the same!";
+          assert lastDocID <= docID : "doc ids are out of order when point values are the same!";
         } else {
           // out of order!
-          assert false: "point values are out of order";
+          assert false : "point values are out of order";
         }
         System.arraycopy(packedValue, 0, lastDocValue, 0, bytesPerDim);
         lastDocID = docID;
@@ -1199,11 +1258,18 @@ public class AssertingLeafReader extends FilterLeafReader {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      for(int dim=0;dim<numIndexDims;dim++) {
-        assert Arrays.compareUnsigned(minPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim, maxPackedValue, dim * bytesPerDim, dim * bytesPerDim + bytesPerDim) <= 0;
+      for (int dim = 0; dim < numIndexDims; dim++) {
+        assert Arrays.compareUnsigned(
+                minPackedValue,
+                dim * bytesPerDim,
+                dim * bytesPerDim + bytesPerDim,
+                maxPackedValue,
+                dim * bytesPerDim,
+                dim * bytesPerDim + bytesPerDim)
+            <= 0;
       }
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numIndexDims*bytesPerDim);
-      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numIndexDims*bytesPerDim);
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numIndexDims * bytesPerDim);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numIndexDims * bytesPerDim);
       lastCompareResult = in.compare(minPackedValue, maxPackedValue);
       return lastCompareResult;
     }
@@ -1250,7 +1316,7 @@ public class AssertingLeafReader extends FilterLeafReader {
       return null;
     }
   }
-  
+
   @Override
   public SortedNumericDocValues getSortedNumericDocValues(String field) throws IOException {
     FieldInfo fi = getFieldInfos().fieldInfo(field);
@@ -1306,11 +1372,11 @@ public class AssertingLeafReader extends FilterLeafReader {
   public static class AssertingBits implements Bits {
     private final Thread creationThread = Thread.currentThread();
     final Bits in;
-    
+
     public AssertingBits(Bits in) {
       this.in = in;
     }
-    
+
     @Override
     public boolean get(int index) {
       assertThread("Bits", creationThread);

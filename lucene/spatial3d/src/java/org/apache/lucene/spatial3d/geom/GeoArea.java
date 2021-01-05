@@ -17,10 +17,9 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * A GeoArea represents a standard 2-D breakdown of a part of sphere.  It can
- * be bounded in latitude, or bounded in both latitude and longitude, or not
- * bounded at all.  The purpose of the interface is to describe bounding shapes used for
- * computation of geo hashes.
+ * A GeoArea represents a standard 2-D breakdown of a part of sphere. It can be bounded in latitude,
+ * or bounded in both latitude and longitude, or not bounded at all. The purpose of the interface is
+ * to describe bounding shapes used for computation of geo hashes.
  *
  * @lucene.experimental
  */
@@ -31,7 +30,7 @@ public interface GeoArea extends Membership {
   // the underlying GeoShape class.
 
   // Relationship values for "getRelationship()"
-  
+
   /** The referenced shape CONTAINS this area */
   public static final int CONTAINS = 0;
   /** The referenced shape IS WITHIN this area */
@@ -42,26 +41,23 @@ public interface GeoArea extends Membership {
   public static final int DISJOINT = 3;
 
   /**
-   * Find the spatial relationship between a shape and the current geo area.
-   * Note: return value is how the GeoShape relates to the GeoArea, not the
-   * other way around. For example, if this GeoArea is entirely within the
-   * shape, then CONTAINS should be returned.  If the shape is entirely enclosed
-   * by this GeoArea, then WITHIN should be returned.
+   * Find the spatial relationship between a shape and the current geo area. Note: return value is
+   * how the GeoShape relates to the GeoArea, not the other way around. For example, if this GeoArea
+   * is entirely within the shape, then CONTAINS should be returned. If the shape is entirely
+   * enclosed by this GeoArea, then WITHIN should be returned.
    *
-   * It is permissible to return OVERLAPS instead of WITHIN if the shape
-   * intersects with the area at even a single point.  So, a circle inscribed in
-   * a rectangle could return either OVERLAPS or WITHIN, depending on
-   * implementation.  It is not permissible to return CONTAINS or DISJOINT
-   * in this circumstance, however.
+   * <p>It is permissible to return OVERLAPS instead of WITHIN if the shape intersects with the area
+   * at even a single point. So, a circle inscribed in a rectangle could return either OVERLAPS or
+   * WITHIN, depending on implementation. It is not permissible to return CONTAINS or DISJOINT in
+   * this circumstance, however.
    *
-   * Similarly, it is permissible to return OVERLAPS instead of CONTAINS
-   * under conditions where the shape consists of multiple independent overlapping
-   * subshapes, and the area overlaps one of the subshapes.  It is not permissible
-   * to return WITHIN or DISJOINT in this circumstance, however.
+   * <p>Similarly, it is permissible to return OVERLAPS instead of CONTAINS under conditions where
+   * the shape consists of multiple independent overlapping subshapes, and the area overlaps one of
+   * the subshapes. It is not permissible to return WITHIN or DISJOINT in this circumstance,
+   * however.
    *
    * @param shape is the shape to consider.
    * @return the relationship, from the perspective of the shape.
    */
   public int getRelationship(GeoShape shape);
 }
-

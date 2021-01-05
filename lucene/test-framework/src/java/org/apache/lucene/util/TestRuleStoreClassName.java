@@ -20,10 +20,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-/**
- * Stores the suite name so you can retrieve it
- * from {@link #getTestClass()}
- */
+/** Stores the suite name so you can retrieve it from {@link #getTestClass()} */
 public class TestRuleStoreClassName implements TestRule {
   private volatile Description description;
 
@@ -37,7 +34,7 @@ public class TestRuleStoreClassName implements TestRule {
       @Override
       public void evaluate() throws Throwable {
         try {
-          description = d; 
+          description = d;
           s.evaluate();
         } finally {
           description = null;
@@ -45,10 +42,8 @@ public class TestRuleStoreClassName implements TestRule {
       }
     };
   }
-  
-  /**
-   * Returns the test class currently executing in this rule.
-   */
+
+  /** Returns the test class currently executing in this rule. */
   public Class<?> getTestClass() {
     Description localDescription = description;
     if (localDescription == null) {

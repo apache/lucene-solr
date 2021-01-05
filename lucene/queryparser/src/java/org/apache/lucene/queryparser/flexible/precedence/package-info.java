@@ -14,19 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Precedence Query Parser Implementation
- * 
+ *
  * <h2>Lucene Precedence Query Parser</h2>
- * 
- * <p>
- * The Precedence Query Parser extends the Standard Query Parser and enables 
- * the boolean precedence. So, the query &lt;a AND b OR c AND d&gt; is parsed to 
- * &lt;(+a +b) (+c +d)&gt; instead of &lt;+a +b +c +d&gt;.
- * <p>
- * Check {@link org.apache.lucene.queryparser.flexible.standard.StandardQueryParser} for more details about the
- * supported syntax and query parser functionalities. 
+ *
+ * <p>The Precedence Query Parser extends the Standard Query Parser and enables the boolean
+ * precedence. So, the query &lt;a AND b OR c AND d&gt; is parsed to &lt;(+a +b) (+c +d)&gt; instead
+ * of &lt;+a +b +c +d&gt;.
+ *
+ * <p>Check {@link org.apache.lucene.queryparser.flexible.standard.StandardQueryParser} for more
+ * details about the supported syntax and query parser functionalities.
  */
 package org.apache.lucene.queryparser.flexible.precedence;
-

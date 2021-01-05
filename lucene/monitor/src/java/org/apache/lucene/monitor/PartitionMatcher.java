@@ -25,21 +25,18 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
- * A multi-threaded matcher that collects all possible matches in one pass, and
- * then partitions them amongst a number of worker threads to perform the actual
- * matching.
- * <p>
- * This class delegates the matching to separate CandidateMatcher classes,
- * built from a passed in MatcherFactory.
- * <p>
- * Use this if your query sets contain large numbers of very fast queries, where
- * the synchronization overhead of {@link ParallelMatcher}
- * can outweigh the benefit of multithreading.
+ * A multi-threaded matcher that collects all possible matches in one pass, and then partitions them
+ * amongst a number of worker threads to perform the actual matching.
+ *
+ * <p>This class delegates the matching to separate CandidateMatcher classes, built from a passed in
+ * MatcherFactory.
+ *
+ * <p>Use this if your query sets contain large numbers of very fast queries, where the
+ * synchronization overhead of {@link ParallelMatcher} can outweigh the benefit of multithreading.
  *
  * @param <T> the type of QueryMatch to return
  * @see ParallelMatcher
@@ -69,7 +66,11 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
 
   private final List<MatchTask> tasks = new ArrayList<>();
 
-  private PartitionMatcher(IndexSearcher searcher, ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
+  private PartitionMatcher(
+      IndexSearcher searcher,
+      ExecutorService executor,
+      MatcherFactory<T> matcherFactory,
+      int threads) {
     super(searcher);
     this.executor = executor;
     this.matcherFactory = matcherFactory;
@@ -109,7 +110,6 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException("Interrupted during match", e);
     }
-
   }
 
   private class MatcherWorker implements Callable<MultiMatchingQueries<T>> {
@@ -141,8 +141,8 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     private final MatcherFactory<T> matcherFactory;
     private final int threads;
 
-    PartitionMatcherFactory(ExecutorService executor, MatcherFactory<T> matcherFactory,
-                                   int threads) {
+    PartitionMatcherFactory(
+        ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
       this.executor = executor;
       this.matcherFactory = matcherFactory;
       this.threads = threads;
@@ -157,28 +157,28 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
   /**
    * Create a new MatcherFactory for a PartitionMatcher
    *
-   * @param executor       the ExecutorService to use
+   * @param executor the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
-   * @param threads        the number of threads to use
-   * @param <T>            the type of QueryMatch generated
+   * @param threads the number of threads to use
+   * @param <T> the type of QueryMatch generated
    */
-  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
-                                                                          MatcherFactory<T> matcherFactory, int threads) {
+  public static <T extends QueryMatch> MatcherFactory<T> factory(
+      ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
     return new PartitionMatcherFactory<>(executor, matcherFactory, threads);
   }
 
   /**
    * Create a new MatcherFactory for a PartitionMatcher
-   * <p>
-   * This factory will create a PartitionMatcher that uses as many threads as there are cores available
-   * to the JVM (as determined by {@code Runtime.getRuntime().availableProcessors()}).
    *
-   * @param executor       the ExecutorService to use
+   * <p>This factory will create a PartitionMatcher that uses as many threads as there are cores
+   * available to the JVM (as determined by {@code Runtime.getRuntime().availableProcessors()}).
+   *
+   * @param executor the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
-   * @param <T>            the type of QueryMatch generated
+   * @param <T> the type of QueryMatch generated
    */
-  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
-                                                                          MatcherFactory<T> matcherFactory) {
+  public static <T extends QueryMatch> MatcherFactory<T> factory(
+      ExecutorService executor, MatcherFactory<T> matcherFactory) {
     int threads = Runtime.getRuntime().availableProcessors();
     return new PartitionMatcherFactory<>(executor, matcherFactory, threads);
   }
@@ -190,13 +190,11 @@ public class PartitionMatcher<T extends QueryMatch> extends CandidateMatcher<T> 
     List<List<T>> list = new ArrayList<>(slices);
     for (int i = 0; i < slices; i++) {
       int end = (int) Math.floor(accum + size);
-      if (i == slices - 1)
-        end = items.size();
+      if (i == slices - 1) end = items.size();
       list.add(items.subList(start, end));
       accum += size;
       start = (int) Math.floor(accum);
     }
     return list;
   }
-
 }

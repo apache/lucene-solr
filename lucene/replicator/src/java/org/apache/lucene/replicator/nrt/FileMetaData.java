@@ -17,13 +17,16 @@
 
 package org.apache.lucene.replicator.nrt;
 
-/** Holds metadata details about a single file that we use to confirm two files (one remote, one local) are in fact "identical".
+/**
+ * Holds metadata details about a single file that we use to confirm two files (one remote, one
+ * local) are in fact "identical".
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ */
 public class FileMetaData {
 
-  // Header and footer of the file must be identical between primary and replica to consider the files equal:
+  // Header and footer of the file must be identical between primary and replica to consider the
+  // files equal:
   public final byte[] header;
   public final byte[] footer;
 
@@ -44,4 +47,3 @@ public class FileMetaData {
     return "FileMetaData(length=" + length + ")";
   }
 }
-

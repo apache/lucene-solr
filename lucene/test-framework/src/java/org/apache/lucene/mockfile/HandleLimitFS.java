@@ -22,17 +22,14 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** 
- * FileSystem that throws exception if file handles 
- * in use exceeds a specified limit 
- */
+/** FileSystem that throws exception if file handles in use exceeds a specified limit */
 public class HandleLimitFS extends HandleTrackingFS {
   final int limit;
   final AtomicInteger count = new AtomicInteger();
-  
+
   /**
-   * Create a new instance, limiting the maximum number
-   * of open files to {@code limit}
+   * Create a new instance, limiting the maximum number of open files to {@code limit}
+   *
    * @param delegate delegate filesystem to wrap.
    * @param limit maximum number of open files.
    */

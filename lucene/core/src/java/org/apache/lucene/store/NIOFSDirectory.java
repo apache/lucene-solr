@@ -177,9 +177,8 @@ public class NIOFSDirectory extends FSDirectory {
           b.limit(b.position() + toRead);
           assert b.remaining() == toRead;
           final int i = channel.read(b, pos);
-          if (i
-              < 0) { // be defensive here, even though we checked before hand, something could have
-            // changed
+          if (i < 0) {
+            // be defensive here, even though we checked before hand, something could have changed
             throw new EOFException(
                 "read past EOF: "
                     + this
@@ -191,7 +190,8 @@ public class NIOFSDirectory extends FSDirectory {
                     + end);
           }
           assert i > 0
-              : "FileChannel.read with non zero-length bb.remaining() must always read at least one byte (FileChannel is in blocking mode, see spec of ReadableByteChannel)";
+              : "FileChannel.read with non zero-length bb.remaining() must always read at least "
+                  + "one byte (FileChannel is in blocking mode, see spec of ReadableByteChannel)";
           pos += i;
           readLength -= i;
         }

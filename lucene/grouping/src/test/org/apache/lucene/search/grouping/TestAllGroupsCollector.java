@@ -17,7 +17,6 @@
 package org.apache.lucene.search.grouping;
 
 import java.util.HashMap;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,10 +42,11 @@ public class TestAllGroupsCollector extends LuceneTestCase {
     customType.setStored(true);
 
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(
-        random(),
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     // 0
     Document doc = new Document();
@@ -124,11 +124,9 @@ public class TestAllGroupsCollector extends LuceneTestCase {
   private AllGroupsCollector<?> createRandomCollector(String groupField) {
     if (random().nextBoolean()) {
       return new AllGroupsCollector<>(new TermGroupSelector(groupField));
-    }
-    else {
+    } else {
       ValueSource vs = new BytesRefFieldSource(groupField);
       return new AllGroupsCollector<>(new ValueSourceGroupSelector(vs, new HashMap<>()));
     }
   }
-
 }

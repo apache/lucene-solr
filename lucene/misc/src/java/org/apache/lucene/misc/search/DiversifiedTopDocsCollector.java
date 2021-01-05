@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.misc.search.DiversifiedTopDocsCollector.ScoreDocKey;
@@ -34,39 +33,38 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * A {@link TopDocsCollector} that controls diversity in results by ensuring no
- * more than maxHitsPerKey results from a common source are collected in the
- * final results.
- * 
- * An example application might be a product search in a marketplace where no
- * more than 3 results per retailer are permitted in search results.
- * 
- * <p>
- * To compare behaviour with other forms of collector, a useful analogy might be
- * the problem of making a compilation album of 1967's top hit records:
+ * A {@link TopDocsCollector} that controls diversity in results by ensuring no more than
+ * maxHitsPerKey results from a common source are collected in the final results.
+ *
+ * <p>An example application might be a product search in a marketplace where no more than 3 results
+ * per retailer are permitted in search results.
+ *
+ * <p>To compare behaviour with other forms of collector, a useful analogy might be the problem of
+ * making a compilation album of 1967's top hit records:
+ *
  * <ol>
- * <li>A vanilla query's results might look like a "Best of the Beatles" album -
- * high quality but not much diversity</li>
- * <li>A GroupingSearch would produce the equivalent of "The 10 top-selling
- * artists of 1967 - some killer and quite a lot of filler"</li>
- * <li>A "diversified" query would be the top 20 hit records of that year - with
- * a max of 3 Beatles hits in order to maintain diversity</li>
+ *   <li>A vanilla query's results might look like a "Best of the Beatles" album - high quality but
+ *       not much diversity
+ *   <li>A GroupingSearch would produce the equivalent of "The 10 top-selling artists of 1967 - some
+ *       killer and quite a lot of filler"
+ *   <li>A "diversified" query would be the top 20 hit records of that year - with a max of 3
+ *       Beatles hits in order to maintain diversity
  * </ol>
+ *
  * This collector improves on the "GroupingSearch" type queries by
+ *
  * <ul>
- * <li>Working in one pass over the data</li>
- * <li>Not requiring the client to guess how many groups are required</li>
- * <li>Removing low-scoring "filler" which sits at the end of each group's hits</li>
+ *   <li>Working in one pass over the data
+ *   <li>Not requiring the client to guess how many groups are required
+ *   <li>Removing low-scoring "filler" which sits at the end of each group's hits
  * </ul>
- * 
- * This is an abstract class and subclasses have to provide a source of keys for
- * documents which is then used to help identify duplicate sources.
- * 
+ *
+ * This is an abstract class and subclasses have to provide a source of keys for documents which is
+ * then used to help identify duplicate sources.
+ *
  * @lucene.experimental
- * 
  */
-public abstract class DiversifiedTopDocsCollector extends
-    TopDocsCollector<ScoreDocKey> {
+public abstract class DiversifiedTopDocsCollector extends TopDocsCollector<ScoreDocKey> {
   ScoreDocKey spare;
   private ScoreDocKeyQueue globalQueue;
   private int numHits;
@@ -83,9 +81,7 @@ public abstract class DiversifiedTopDocsCollector extends
     this.maxNumPerKey = maxHitsPerKey;
   }
 
-  /**
-   * Get a source of values used for grouping keys
-   */
+  /** Get a source of values used for grouping keys */
   protected abstract NumericDocValues getKeys(LeafReaderContext context);
 
   @Override
@@ -102,10 +98,9 @@ public abstract class DiversifiedTopDocsCollector extends
     return new TopDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), results);
   }
 
-  protected ScoreDocKey insert(ScoreDocKey addition, int docBase,
-      NumericDocValues keys) throws IOException {
-    if ((globalQueue.size() >= numHits)
-        && (globalQueue.lessThan(addition, globalQueue.top()))) {
+  protected ScoreDocKey insert(ScoreDocKey addition, int docBase, NumericDocValues keys)
+      throws IOException {
+    if ((globalQueue.size() >= numHits) && (globalQueue.lessThan(addition, globalQueue.top()))) {
       // Queue is full and proposed addition is not a globally
       // competitive score
       return addition;
@@ -176,8 +171,7 @@ public abstract class DiversifiedTopDocsCollector extends
   }
 
   @Override
-  public LeafCollector getLeafCollector(LeafReaderContext context)
-      throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     final int base = context.docBase;
     final NumericDocValues keySource = getKeys(context);
 
@@ -219,18 +213,17 @@ public abstract class DiversifiedTopDocsCollector extends
 
     @Override
     protected final boolean lessThan(ScoreDocKey hitA, ScoreDocKey hitB) {
-      if (hitA.score == hitB.score)
+      if (hitA.score == hitB.score) {
         return hitA.doc > hitB.doc;
-      else
+      } else {
         return hitA.score < hitB.score;
+      }
     }
   }
 
-  // 
-  /**
-   * An extension to ScoreDoc that includes a key used for grouping purposes
-   */
-  static public class ScoreDocKey extends ScoreDoc {
+  //
+  /** An extension to ScoreDoc that includes a key used for grouping purposes */
+  public static class ScoreDocKey extends ScoreDoc {
     Long key;
 
     protected ScoreDocKey(int doc, float score) {
@@ -245,7 +238,5 @@ public abstract class DiversifiedTopDocsCollector extends
     public String toString() {
       return "key:" + key + " doc=" + doc + " s=" + score;
     }
-
   }
-
 }
