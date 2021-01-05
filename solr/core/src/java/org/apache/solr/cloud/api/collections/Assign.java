@@ -339,7 +339,7 @@ public class Assign {
     return nodeNameVsShardCount;
   }
 
-  // throw an exception if any node int the supplied list is not live.
+  // throw an exception if any node in the supplied list is not live.
   // Empty or null list always succeeds and returns the input.
   private static List<String> checkLiveNodes(List<String> createNodeList, ClusterState clusterState) {
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -392,7 +392,8 @@ public class Assign {
     public final int numTlogReplicas;
     public final int numPullReplicas;
 
-    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
+    public AssignRequest(String collectionName, List<String> shardNames, List<String> nodes,
+                         int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
@@ -453,6 +454,7 @@ public class Assign {
     public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
       ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
       List<String> nodeList = assignRequest.nodes; // can this be empty list?
+      String collectionName = assignRequest.collectionName;
 
       if (nodeList == null || nodeList.isEmpty()) {
         HashMap<String, Assign.ReplicaCount> nodeNameVsShardCount =
@@ -471,7 +473,7 @@ public class Assign {
       for (String aShard : assignRequest.shardNames) {
         for (Map.Entry<Replica.Type, Integer> e : countsPerReplicaType(assignRequest).entrySet()) {
           for (int j = 0; j < e.getValue(); j++) {
-            result.add(new ReplicaPosition(aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
+            result.add(new ReplicaPosition(collectionName, aShard, j, e.getKey(), nodeList.get(i % nodeList.size())));
             i++;
           }
         }

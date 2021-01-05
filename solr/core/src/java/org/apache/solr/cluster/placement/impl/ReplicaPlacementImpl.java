@@ -80,7 +80,10 @@ class ReplicaPlacementImpl implements ReplicaPlacement {
     List<ReplicaPosition> replicaPositions = new ArrayList<>(replicaPlacementSet.size());
     int index = 0; // This really an arbitrary value when adding replicas and a possible source of core name collisions
     for (ReplicaPlacement placement : replicaPlacementSet) {
-      replicaPositions.add(new ReplicaPosition(placement.getShardName(), index++, SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(placement.getReplicaType()), placement.getNode().getName()));
+      replicaPositions.add(new ReplicaPosition(placement.getCollection().getName(),
+          placement.getShardName(), index++,
+          SimpleClusterAbstractionsImpl.ReplicaImpl.toCloudReplicaType(placement.getReplicaType()),
+          placement.getNode().getName()));
     }
 
     return replicaPositions;

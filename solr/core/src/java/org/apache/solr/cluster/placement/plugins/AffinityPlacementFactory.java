@@ -22,11 +22,13 @@ import com.google.common.collect.TreeMultimap;
 import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -193,6 +195,22 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       Set<Node> nodes = request.getTargetNodes();
       SolrCollection solrCollection = request.getCollection();
 
+      final SolrCollection secondaryCollection;
+      String withCollection = solrCollection.getCustomProperty(CollectionAdminParams.WITH_COLLECTION);
+      if (withCollection != null) {
+        try {
+          secondaryCollection = cluster.getCollection(withCollection);
+          int numShards = secondaryCollection.getShardNames().size();
+          if (numShards != 1) {
+            throw new PlacementException("Secondary collection '" + withCollection + "' has " + numShards + " but must have exactly 1.");
+          }
+        } catch (IOException e) {
+          throw new PlacementException("Error retrieving secondary collection '" + withCollection + "' information", e);
+        }
+      } else {
+        secondaryCollection = null;
+      }
+
       // Request all needed attributes
       attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
       attributeFetcher
@@ -240,6 +258,37 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
               attrValues, replicaTypeToNodes, nodesWithReplicas, coresOnNodes, placementPlanFactory, replicaPlacements);
         }
+      }
+
+      if (secondaryCollection != null) {
+        // 2nd phase to allocate required secondary collection replicas
+        Set<Node> secondaryNodes = new HashSet<>();
+        Shard shard1 = secondaryCollection.iterator().next();
+        shard1.replicas().forEach(r -> {
+          secondaryNodes.add(r.getNode());
+        });
+        Set<ReplicaPlacement> secondaryPlacements = new HashSet<>();
+        Set<Node> alreadyAdded = new HashSet<>();
+        replicaPlacements.forEach(primaryPlacement -> {
+          if (!secondaryNodes.contains(primaryPlacement.getNode())) {
+            if (!alreadyAdded.contains(primaryPlacement.getNode())) {
+              // missing secondary replica on the node - add it
+              secondaryPlacements.add(placementPlanFactory
+                  .createReplicaPlacement(
+                      secondaryCollection,
+                      shard1.getShardName(),
+                      primaryPlacement.getNode(),
+                      // TODO: make this configurable
+                      // we default to PULL because if additional indexing
+                      // capacity is required the admin can manually
+                      // add NRT/TLOG replicas as needed
+                      Replica.ReplicaType.PULL));
+              // avoid adding multiple replicas for multiple shards
+              alreadyAdded.add(primaryPlacement.getNode());
+            }
+          }
+        });
+        replicaPlacements.addAll(secondaryPlacements);
       }
 
       return placementPlanFactory.createPlacementPlan(request, replicaPlacements);

@@ -27,6 +27,7 @@ import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -648,6 +649,67 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
     }
+  }
+
+  @Test
+  public void testWithCollection() throws Exception {
+    String primaryCollectionName = "testWithCollection_primary";
+    String secondaryCollectionName = "testWithCollection_secondary";
+    int NUM_NODES = 5;
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+
+    // create the 1-shard secondary collection first
+    Builders.CollectionBuilder secondaryCollectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
+    secondaryCollectionBuilder.initializeShardsReplicas(1, 1, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(secondaryCollectionBuilder);
+    // create an empty primary collection
+    Builders.CollectionBuilder primaryCollectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    primaryCollectionBuilder.addCustomProperty(CollectionAdminParams.WITH_COLLECTION, secondaryCollectionName);
+    clusterBuilder.addCollection(primaryCollectionBuilder);
+
+    Cluster cluster = clusterBuilder.build();
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+
+    // use one node where secondary replica exists and one empty node
+    Set<Node> nodes = new HashSet<>();
+    Node secondaryNode = secondaryCollection.iterator().next().iterator().next().getNode();
+    nodes.add(secondaryNode);
+    for (Node n : cluster.getLiveNodes()) {
+      nodes.add(n);
+      if (nodes.size() > 1) {
+        break;
+      }
+    }
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(primaryCollection,
+        Set.of("shard1", "shard2"), nodes, 2, 0, 0);
+    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
+    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    assertEquals(5, pp.getReplicaPlacements().size());
+    Map<String, Map<String, AtomicInteger>> collShardReplicas = new HashMap<>();
+    Map<Node, Map<String, Map<String, AtomicInteger>>> nodeCollShardReplicas = new HashMap<>();
+    pp.getReplicaPlacements().forEach(p -> {
+      collShardReplicas
+          .computeIfAbsent(p.getCollection().getName(), c -> new HashMap<>())
+          .computeIfAbsent(p.getShardName(), s -> new AtomicInteger())
+          .incrementAndGet();
+      nodeCollShardReplicas
+          .computeIfAbsent(p.getNode(), n -> new HashMap<>())
+          .computeIfAbsent(p.getCollection().getName(), c -> new HashMap<>())
+          .computeIfAbsent(p.getShardName(), s -> new AtomicInteger())
+          .incrementAndGet();
+    });
+    assertEquals("2 collections", 2, collShardReplicas.size());
+    assertEquals("2 nodes", 2, nodeCollShardReplicas.size());
+    nodeCollShardReplicas.forEach((node, colls) -> {
+      assertTrue("should have primary placement on node " + node, colls.containsKey(primaryCollectionName));
+      if (node.equals(secondaryNode)) {
+        assertFalse("should not have the secondary placement on node " + node, colls.containsKey(secondaryCollectionName));
+      } else {
+        assertTrue("should have the secondary placement on node " + node, colls.containsKey(secondaryCollectionName));
+      }
+    });
   }
 
   @Test @Slow

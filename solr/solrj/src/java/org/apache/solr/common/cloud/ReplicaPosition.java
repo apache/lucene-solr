@@ -19,17 +19,20 @@ package org.apache.solr.common.cloud;
 
 
 public class ReplicaPosition implements Comparable<ReplicaPosition> {
+  public final String collection;
   public final String shard;
   public final int index;
   public final Replica.Type type;
   public String node;
 
-  public ReplicaPosition(String shard, int replicaIdx, Replica.Type type) {
+  public ReplicaPosition(String collection, String shard, int replicaIdx, Replica.Type type) {
+    this.collection = collection;
     this.shard = shard;
     this.index = replicaIdx;
     this.type = type;
   }
-  public ReplicaPosition(String shard, int replicaIdx, Replica.Type type, String node) {
+  public ReplicaPosition(String collection, String shard, int replicaIdx, Replica.Type type, String node) {
+    this.collection = collection;
     this.shard = shard;
     this.index = replicaIdx;
     this.type = type;
