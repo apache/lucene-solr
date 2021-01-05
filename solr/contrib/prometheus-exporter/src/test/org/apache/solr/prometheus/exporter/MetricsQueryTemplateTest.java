@@ -92,17 +92,17 @@ public class MetricsQueryTemplateTest {
 
     ObjectMapper objectMapper = new ObjectMapper();
     JsonNode parsedMetrics = objectMapper.readTree(SolrTestCaseJ4.getFile("query-metrics.json"));
-    String[] queryMetrics = new String[]{
-        "$jq:core-query(1minRate, endswith(\".distrib.requestTimes\"))",
-        "$jq:core-query(p75_ms, endswith(\".distrib.requestTimes\"))",
-        "$jq:core-query(mean_rate, endswith(\".distrib.requestTimes\"), meanRate)",
-        "$jq:core-query(local_5minRate, endswith(\".local.requestTimes\"), 5minRate)",
-        "$jq:core-query(local_median_ms, endswith(\".local.requestTimes\"), median_ms)",
-        "$jq:core-query(local_p95_ms, endswith(\".local.requestTimes\"), p95_ms)",
-        "$jq:core-query(local_count, endswith(\".local.requestTimes\"), count, COUNTER)"
+    final String[] queryMetrics = new String[]{
+        "$jq:core-query(1minRate, select(.key | endswith(\".distrib.requestTimes\")), 1minRate)",
+        "$jq:core-query(p75_ms, select(.key | endswith(\".distrib.requestTimes\")), p75_ms)",
+        "$jq:core-query(mean_rate, select(.key | endswith(\".distrib.requestTimes\")), meanRate)",
+        "$jq:core-query(local_5minRate, select(.key | endswith(\".local.requestTimes\")), 5minRate)",
+        "$jq:core-query(local_median_ms, select(.key | endswith(\".local.requestTimes\")), median_ms)",
+        "$jq:core-query(local_p95_ms, select(.key | endswith(\".local.requestTimes\")), p95_ms)",
+        "$jq:core-query(local_count, select(.key | endswith(\".local.requestTimes\")), count, COUNTER)"
     };
 
-    double[] expectedMetrics = new double[]{
+    final double[] expectedMetrics = new double[]{
         5.156897804421665,
         1.31788,
         0.0031956674240800156,
