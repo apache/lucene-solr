@@ -283,6 +283,8 @@ Bug Fixes
 
 * SOLR-15061: Fix NPE in SearchHandler when shards.info and no QueryComponent configured. (Bruno Roustant)
 
+* SOLR-14571: Download speed was hard-coded in the "Replication" screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
+
 Other Changes
 ---------------------
 
