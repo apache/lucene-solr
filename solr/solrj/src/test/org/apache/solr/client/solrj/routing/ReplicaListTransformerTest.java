@@ -137,7 +137,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final Map<String,Object> propMap = new HashMap<String,Object>();
       propMap.put("base_url", url);
       propMap.put("core", "test_core");
-      propMap.put("node_name", "test_node");
+      propMap.put("node_name", "test_node:80_");
       propMap.put("type", "NRT");
       // a skeleton replica, good enough for this test's purposes
       final Replica replica = new Replica(name, propMap,"c1","s1");
