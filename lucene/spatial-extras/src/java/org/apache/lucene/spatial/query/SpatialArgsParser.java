@@ -16,29 +16,31 @@
  */
 package org.apache.lucene.spatial.query;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.exception.InvalidShapeException;
-import org.locationtech.spatial4j.shape.Shape;
-
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.exception.InvalidShapeException;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs}
- * object. The set of operations supported are defined in {@link SpatialOperation}, such
- * as "Intersects" being a common one. The shape portion is defined by WKT {@link org.locationtech.spatial4j.io.WktShapeParser},
- * but it can be overridden/customized via {@link #parseShape(String, org.locationtech.spatial4j.context.SpatialContext)}.
- * There are some optional name-value pair parameters that follow the closing parenthesis.  Example:
+ * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs} object. The
+ * set of operations supported are defined in {@link SpatialOperation}, such as "Intersects" being a
+ * common one. The shape portion is defined by WKT {@link
+ * org.locationtech.spatial4j.io.WktShapeParser}, but it can be overridden/customized via {@link
+ * #parseShape(String, org.locationtech.spatial4j.context.SpatialContext)}. There are some optional
+ * name-value pair parameters that follow the closing parenthesis. Example:
+ *
  * <pre>
  *   Intersects(ENVELOPE(-10,-8,22,20)) distErrPct=0.025
  * </pre>
- * <p>
- * In the future it would be good to support something at least semi-standardized like a
- * variant of <a href="http://docs.geoserver.org/latest/en/user/filter/ecql_reference.html#spatial-predicate">
- *   [E]CQL</a>.
+ *
+ * <p>In the future it would be good to support something at least semi-standardized like a variant
+ * of <a
+ * href="http://docs.geoserver.org/latest/en/user/filter/ecql_reference.html#spatial-predicate">
+ * [E]CQL</a>.
  *
  * @lucene.experimental
  */
@@ -54,9 +56,9 @@ public class SpatialArgsParser {
     str.append('(');
     str.append(args.getShape().toString());
     if (args.getDistErrPct() != null)
-      str.append(" distErrPct=").append(String.format(Locale.ROOT, "%.2f%%", args.getDistErrPct() * 100d));
-    if (args.getDistErr() != null)
-      str.append(" distErr=").append(args.getDistErr());
+      str.append(" distErrPct=")
+          .append(String.format(Locale.ROOT, "%.2f%%", args.getDistErrPct() * 100d));
+    if (args.getDistErr() != null) str.append(" distErr=").append(args.getDistErr());
     str.append(')');
     return str.toString();
   }
@@ -64,14 +66,16 @@ public class SpatialArgsParser {
   /**
    * Parses a string such as "Intersects(ENVELOPE(-10,-8,22,20)) distErrPct=0.025".
    *
-   * @param v   The string to parse. Mandatory.
+   * @param v The string to parse. Mandatory.
    * @param ctx The spatial context. Mandatory.
    * @return Not null.
-   * @throws IllegalArgumentException if the parameters don't make sense or an add-on parameter is unknown
+   * @throws IllegalArgumentException if the parameters don't make sense or an add-on parameter is
+   *     unknown
    * @throws ParseException If there is a problem parsing the string
    * @throws InvalidShapeException When the coordinates are invalid for the shape
    */
-  public SpatialArgs parse(String v, SpatialContext ctx) throws ParseException, InvalidShapeException {
+  public SpatialArgs parse(String v, SpatialContext ctx)
+      throws ParseException, InvalidShapeException {
     int idx = v.indexOf('(');
     int edx = v.lastIndexOf(')');
 
@@ -113,7 +117,7 @@ public class SpatialArgsParser {
   }
 
   protected Shape parseShape(String str, SpatialContext ctx) throws ParseException {
-    //return ctx.readShape(str);//still in Spatial4j 0.4 but will be deleted
+    // return ctx.readShape(str);//still in Spatial4j 0.4 but will be deleted
     return ctx.readShapeFromWkt(str);
   }
 
@@ -125,8 +129,10 @@ public class SpatialArgsParser {
     return v == null ? defaultValue : Boolean.parseBoolean(v);
   }
 
-  /** Parses "a=b zScaling=d f" (whitespace separated) into name-value pairs. If there
-   * is no '=' as in 'f' above then it's short for f=f. */
+  /**
+   * Parses "a=b zScaling=d f" (whitespace separated) into name-value pairs. If there is no '=' as
+   * in 'f' above then it's short for f=f.
+   */
   protected static Map<String, String> parseMap(String body) {
     Map<String, String> map = new HashMap<>();
     StringTokenizer st = new StringTokenizer(body, " \n\t");

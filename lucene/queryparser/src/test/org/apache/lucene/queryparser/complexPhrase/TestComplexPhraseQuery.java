@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.complexPhrase;
 
 import java.util.HashSet;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockSynonymAnalyzer;
@@ -37,14 +36,14 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   Directory rd;
   Analyzer analyzer;
   DocData docsContent[] = {
-      new DocData("john smith", "1", "developer"),
-      new DocData("johathon smith", "2", "developer"),
-      new DocData("john percival smith", "3", "designer"),
-      new DocData("jackson waits tom", "4", "project manager"),
-      new DocData("johny perkins", "5", "orders pizza"),
-      new DocData("hapax neverson", "6", "never matches"),
-      new DocData("dog cigar", "7", "just for synonyms"),
-      new DocData("dogs don't smoke cigarettes", "8", "just for synonyms"),
+    new DocData("john smith", "1", "developer"),
+    new DocData("johathon smith", "2", "developer"),
+    new DocData("john percival smith", "3", "designer"),
+    new DocData("jackson waits tom", "4", "project manager"),
+    new DocData("johny perkins", "5", "orders pizza"),
+    new DocData("hapax neverson", "6", "never matches"),
+    new DocData("dog cigar", "7", "just for synonyms"),
+    new DocData("dogs don't smoke cigarettes", "8", "just for synonyms"),
   };
 
   private IndexSearcher searcher;
@@ -80,30 +79,29 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   public void testSingleTermPhrase() throws Exception {
-    checkMatches("\"joh*\"","1,2,3,5");
-    checkMatches("\"joh~\"","1,3,5");
-    checkMatches("\"joh*\" \"tom\"", "1,2,3,4,5"); 
-    checkMatches("+\"j*\" +\"tom\"", "4"); 
+    checkMatches("\"joh*\"", "1,2,3,5");
+    checkMatches("\"joh~\"", "1,3,5");
+    checkMatches("\"joh*\" \"tom\"", "1,2,3,4,5");
+    checkMatches("+\"j*\" +\"tom\"", "4");
     checkMatches("\"jo*\" \"[sma TO smZ]\" ", "1,2,3,5,8");
-    checkMatches("+\"j*hn\" +\"sm*h\"", "1,3"); 
+    checkMatches("+\"j*hn\" +\"sm*h\"", "1,3");
   }
 
   public void testSynonyms() throws Exception {
-    checkMatches("\"dogs\"","8");
+    checkMatches("\"dogs\"", "8");
     MockSynonymAnalyzer synonym = new MockSynonymAnalyzer();
-    checkMatches("\"dogs\"","7,8",synonym);
-    // synonym is unidirectional 
-    checkMatches("\"dog\"","7",synonym);
-    checkMatches("\"dogs cigar*\"","");
-    checkMatches("\"dog cigar*\"","7");
-    checkMatches("\"dogs cigar*\"","7", synonym);
-    checkMatches("\"dog cigar*\"","7", synonym);
-    checkMatches("\"dogs cigar*\"~2","7,8", synonym);
+    checkMatches("\"dogs\"", "7,8", synonym);
     // synonym is unidirectional
-    checkMatches("\"dog cigar*\"~2","7", synonym);
-    
+    checkMatches("\"dog\"", "7", synonym);
+    checkMatches("\"dogs cigar*\"", "");
+    checkMatches("\"dog cigar*\"", "7");
+    checkMatches("\"dogs cigar*\"", "7", synonym);
+    checkMatches("\"dog cigar*\"", "7", synonym);
+    checkMatches("\"dogs cigar*\"~2", "7,8", synonym);
+    // synonym is unidirectional
+    checkMatches("\"dog cigar*\"~2", "7", synonym);
   }
-  
+
   public void testUnOrderedProximitySearches() throws Exception {
 
     inOrder = true;
@@ -111,19 +109,19 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
     inOrder = false;
     checkMatches("\"smith jo*\"~2", "1,2,3"); // un-ordered proximity
-
   }
 
   private void checkBadQuery(String qString) {
     ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(inOrder);
-    expectThrows(Throwable.class, () -> {
-      qp.parse(qString);
-    });
+    expectThrows(
+        Throwable.class,
+        () -> {
+          qp.parse(qString);
+        });
   }
 
-  private void checkMatches(String qString, String expectedVals)
-  throws Exception {
+  private void checkMatches(String qString, String expectedVals) throws Exception {
     checkMatches(qString, expectedVals, analyzer);
   }
 
@@ -138,8 +136,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     HashSet<String> expecteds = new HashSet<>();
     String[] vals = expectedVals.split(",");
     for (int i = 0; i < vals.length; i++) {
-      if (vals[i].length() > 0)
-        expecteds.add(vals[i]);
+      if (vals[i].length() > 0) expecteds.add(vals[i]);
     }
 
     TopDocs td = searcher.search(q, 10);
@@ -147,15 +144,13 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     for (int i = 0; i < sd.length; i++) {
       Document doc = searcher.doc(sd[i].doc);
       String id = doc.get("id");
-      assertTrue(qString + "matched doc#" + id + " not expected", expecteds
-          .contains(id));
+      assertTrue(qString + "matched doc#" + id + " not expected", expecteds.contains(id));
       expecteds.remove(id);
     }
 
     assertEquals(qString + " missing some matches ", 0, expecteds.size());
-
   }
-  
+
   public void testFieldedQuery() throws Exception {
     checkMatches("name:\"john smith\"", "1");
     checkMatches("name:\"j*   smyth~\"", "1,2");
@@ -200,18 +195,20 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
 
     q2 = qp.parse(qString);
 
-    // although the general contract of hashCode can't guarantee different values, if we only change one thing
-    // about a single query, it normally should result in a different value (and will with the current
+    // although the general contract of hashCode can't guarantee different values, if we only change
+    // one thing
+    // about a single query, it normally should result in a different value (and will with the
+    // current
     // implementation in ComplexPhraseQuery)
     assertTrue(q.hashCode() != q2.hashCode());
     assertTrue(!q.equals(q2));
     assertTrue(!q2.equals(q));
   }
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
+
     analyzer = new MockAnalyzer(random());
     rd = newDirectory();
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(analyzer));
@@ -238,7 +235,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     String name;
 
     String id;
-    
+
     String role;
 
     public DocData(String name, String id, String role) {
@@ -248,5 +245,4 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
       this.role = role;
     }
   }
-
 }

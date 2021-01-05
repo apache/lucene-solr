@@ -20,19 +20,16 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-/** 
- * Saves the executing thread and method name of the test case.
- */
+/** Saves the executing thread and method name of the test case. */
 final class TestRuleThreadAndTestName implements TestRule {
-  /** 
+  /**
    * The thread executing the current test case.
+   *
    * @see LuceneTestCase#isTestThread()
    */
   public volatile Thread testCaseThread;
 
-  /**
-   * Test method name.
-   */
+  /** Test method name. */
   public volatile String testMethodName = "<unknown>";
 
   @Override

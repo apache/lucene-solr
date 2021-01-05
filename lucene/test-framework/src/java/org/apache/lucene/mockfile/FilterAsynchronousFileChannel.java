@@ -24,30 +24,27 @@ import java.nio.channels.FileLock;
 import java.util.Objects;
 import java.util.concurrent.Future;
 
-/**  
- * A {@code FilterAsynchronousFileChannel} contains another 
- * {@code AsynchronousFileChannel}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterAsynchronousFileChannel} contains another {@code AsynchronousFileChannel}, which
+ * it uses as its basic source of data, possibly transforming the data along the way or providing
+ * additional functionality.
  */
 public class FilterAsynchronousFileChannel extends AsynchronousFileChannel {
-  
-  /** 
-   * The underlying {@code AsynchronousFileChannel} instance. 
-   */
+
+  /** The underlying {@code AsynchronousFileChannel} instance. */
   protected final AsynchronousFileChannel delegate;
-  
+
   /**
-   * Construct a {@code FilterAsynchronousFileChannel} based on 
-   * the specified base channel.
-   * <p>
-   * Note that base channel is closed if this channel is closed.
+   * Construct a {@code FilterAsynchronousFileChannel} based on the specified base channel.
+   *
+   * <p>Note that base channel is closed if this channel is closed.
+   *
    * @param delegate specified base channel.
    */
   public FilterAsynchronousFileChannel(AsynchronousFileChannel delegate) {
     this.delegate = Objects.requireNonNull(delegate);
   }
-  
+
   @Override
   public void close() throws IOException {
     delegate.close();
@@ -75,7 +72,12 @@ public class FilterAsynchronousFileChannel extends AsynchronousFileChannel {
   }
 
   @Override
-  public <A> void lock(long position, long size, boolean shared, A attachment, CompletionHandler<FileLock,? super A> handler) {
+  public <A> void lock(
+      long position,
+      long size,
+      boolean shared,
+      A attachment,
+      CompletionHandler<FileLock, ? super A> handler) {
     delegate.lock(position, size, shared, attachment, handler);
   }
 
@@ -90,7 +92,8 @@ public class FilterAsynchronousFileChannel extends AsynchronousFileChannel {
   }
 
   @Override
-  public <A> void read(ByteBuffer dst, long position, A attachment, CompletionHandler<Integer,? super A> handler) {
+  public <A> void read(
+      ByteBuffer dst, long position, A attachment, CompletionHandler<Integer, ? super A> handler) {
     delegate.read(dst, position, attachment, handler);
   }
 
@@ -100,7 +103,8 @@ public class FilterAsynchronousFileChannel extends AsynchronousFileChannel {
   }
 
   @Override
-  public <A> void write(ByteBuffer src, long position, A attachment, CompletionHandler<Integer,? super A> handler) {
+  public <A> void write(
+      ByteBuffer src, long position, A attachment, CompletionHandler<Integer, ? super A> handler) {
     delegate.write(src, position, attachment, handler);
   }
 

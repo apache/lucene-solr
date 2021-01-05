@@ -23,34 +23,25 @@ import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * A {@link RegexpQueryNode} represents {@link RegexpQuery} query Examples: /[a-z]|[0-9]/
- */
-public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode, FieldableNode {
+/** A {@link RegexpQueryNode} represents {@link RegexpQuery} query Examples: /[a-z]|[0-9]/ */
+public class RegexpQueryNode extends QueryNodeImpl implements TextableQueryNode, FieldableNode {
   private CharSequence text;
   private CharSequence field;
 
   /**
-   * @param field
-   *          - field name
-   * @param text
-   *          - value that contains a regular expression
-   * @param begin
-   *          - position in the query string
-   * @param end
-   *          - position in the query string
+   * @param field - field name
+   * @param text - value that contains a regular expression
+   * @param begin - position in the query string
+   * @param end - position in the query string
    */
-  public RegexpQueryNode(CharSequence field, CharSequence text, int begin,
-      int end) {
+  public RegexpQueryNode(CharSequence field, CharSequence text, int begin, int end) {
     this.field = field;
     this.text = text.subSequence(begin, end);
   }
 
   /**
-   * @param field
-   *          - field name
-   * @param text
-   *          - value that contains a regular expression
+   * @param field - field name
+   * @param text - value that contains a regular expression
    */
   public RegexpQueryNode(CharSequence field, CharSequence text) {
     this(field, text, 0, text.length());
@@ -87,7 +78,7 @@ public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode
   public CharSequence getField() {
     return field;
   }
-  
+
   public String getFieldAsString() {
     return field.toString();
   }
@@ -99,7 +90,6 @@ public class RegexpQueryNode extends QueryNodeImpl  implements TextableQueryNode
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    return isDefaultField(field)? "/"+text+"/": field + ":/" + text + "/";
+    return isDefaultField(field) ? "/" + text + "/" : field + ":/" + text + "/";
   }
-
 }

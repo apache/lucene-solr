@@ -29,16 +29,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
  * Utility class for concurrently loading queries into a Monitor.
- * <p>
- * This is useful to speed up startup times for a Monitor.  You can use multiple
- * threads to parse and index queries before starting matches.
- * <p>
- * Use as follows:
+ *
+ * <p>This is useful to speed up startup times for a Monitor. You can use multiple threads to parse
+ * and index queries before starting matches.
+ *
+ * <p>Use as follows:
+ *
  * <pre class="prettyprint">
  *     List&lt;QueryError&gt; errors = new ArrayList&lt;&gt;();
  *     try (ConcurrentQueryLoader loader = new ConcurrentQueryLoader(monitor, errors)) {
@@ -47,8 +47,8 @@ import org.apache.lucene.util.NamedThreadFactory;
  *         }
  *     }
  * </pre>
- * <p>
- * The Monitor's MonitorQueryParser must be thread-safe for this to work correctly.
+ *
+ * <p>The Monitor's MonitorQueryParser must be thread-safe for this to work correctly.
  */
 public class ConcurrentQueryLoader implements Closeable {
 
@@ -74,8 +74,8 @@ public class ConcurrentQueryLoader implements Closeable {
   /**
    * Create a new ConcurrentQueryLoader
    *
-   * @param monitor   the Monitor to load queries to
-   * @param threads   the number of threads to use
+   * @param monitor the Monitor to load queries to
+   * @param threads the number of threads to use
    * @param queueSize the size of the buffer to hold queries in
    */
   public ConcurrentQueryLoader(Monitor monitor, int threads, int queueSize) {
@@ -90,16 +90,16 @@ public class ConcurrentQueryLoader implements Closeable {
 
   /**
    * Add a MonitorQuery to the loader's internal buffer
-   * <p>
-   * If the buffer is full, this will block until there is room to add
-   * the MonitorQuery
+   *
+   * <p>If the buffer is full, this will block until there is room to add the MonitorQuery
    *
    * @param mq the monitor query
    * @throws InterruptedException if interrupted while waiting
    */
   public void add(MonitorQuery mq) throws InterruptedException {
     if (shutdown)
-      throw new IllegalStateException("ConcurrentQueryLoader has been shutdown, cannot add new queries");
+      throw new IllegalStateException(
+          "ConcurrentQueryLoader has been shutdown, cannot add new queries");
     this.queue.put(mq);
   }
 
@@ -136,8 +136,7 @@ public class ConcurrentQueryLoader implements Closeable {
         while (running) {
           workerQueue.clear();
           drain(queue, workerQueue, queueSize, 100, TimeUnit.MILLISECONDS);
-          if (workerQueue.size() == 0 && shutdown)
-            running = false;
+          if (workerQueue.size() == 0 && shutdown) running = false;
           if (workerQueue.size() > 0) {
             monitor.register(workerQueue);
           }
@@ -153,23 +152,27 @@ public class ConcurrentQueryLoader implements Closeable {
   }
 
   /**
-   * Drains the queue as {@link BlockingQueue#drainTo(Collection, int)}, but if the requested
-   * {@code numElements} elements are not available, it will wait for them up to the specified
-   * timeout.
-   * <p>
-   * Taken from Google Guava 18.0 Queues
+   * Drains the queue as {@link BlockingQueue#drainTo(Collection, int)}, but if the requested {@code
+   * numElements} elements are not available, it will wait for them up to the specified timeout.
    *
-   * @param q           the blocking queue to be drained
-   * @param buffer      where to add the transferred elements
+   * <p>Taken from Google Guava 18.0 Queues
+   *
+   * @param q the blocking queue to be drained
+   * @param buffer where to add the transferred elements
    * @param numElements the number of elements to be waited for
-   * @param timeout     how long to wait before giving up, in units of {@code unit}
-   * @param unit        a {@code TimeUnit} determining how to interpret the timeout parameter
-   * @param <E>         the type of the queue
+   * @param timeout how long to wait before giving up, in units of {@code unit}
+   * @param unit a {@code TimeUnit} determining how to interpret the timeout parameter
+   * @param <E> the type of the queue
    * @return the number of elements transferred
    * @throws InterruptedException if interrupted while waiting
    */
-  private static <E> int drain(BlockingQueue<E> q, Collection<? super E> buffer, int numElements,
-                              long timeout, TimeUnit unit) throws InterruptedException {
+  private static <E> int drain(
+      BlockingQueue<E> q,
+      Collection<? super E> buffer,
+      int numElements,
+      long timeout,
+      TimeUnit unit)
+      throws InterruptedException {
     Objects.requireNonNull(buffer);
     /*
      * This code performs one System.nanoTime() more than necessary, and in return, the time to

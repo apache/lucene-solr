@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
@@ -39,47 +38,39 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * A {@link CompletionQuery} that matches documents specified by
- * a wrapped {@link CompletionQuery} supporting boosting and/or filtering
- * by specified contexts.
- * <p>
- * Use this query against {@link ContextSuggestField}
- * <p>
- * Example of using a {@link CompletionQuery} with boosted
- * contexts:
+ * A {@link CompletionQuery} that matches documents specified by a wrapped {@link CompletionQuery}
+ * supporting boosting and/or filtering by specified contexts.
+ *
+ * <p>Use this query against {@link ContextSuggestField}
+ *
+ * <p>Example of using a {@link CompletionQuery} with boosted contexts:
+ *
  * <pre class="prettyprint">
  *  CompletionQuery completionQuery = ...;
  *  ContextQuery query = new ContextQuery(completionQuery);
  *  query.addContext("context1", 2);
  *  query.addContext("context2", 1);
  * </pre>
- * <p>
- * NOTE:
+ *
+ * <p>NOTE:
+ *
  * <ul>
- *   <li>
- *    This query can be constructed with
- *    {@link PrefixCompletionQuery}, {@link RegexCompletionQuery}
- *    or {@link FuzzyCompletionQuery} query.
- *   </li>
- *   <li>
- *     To suggest across all contexts, use {@link #addAllContexts()}.
- *     When no context is added, the default behaviour is to suggest across
- *     all contexts.
- *   </li>
- *   <li>
- *     To apply the same boost to multiple contexts sharing the same prefix,
- *     Use {@link #addContext(CharSequence, float, boolean)} with the common
- *     context prefix, boost and set <code>exact</code> to false.
- *   <li>
- *     Using this query against a {@link SuggestField} (not context enabled),
- *     would yield results ignoring any context filtering/boosting
- *   </li>
+ *   <li>This query can be constructed with {@link PrefixCompletionQuery}, {@link
+ *       RegexCompletionQuery} or {@link FuzzyCompletionQuery} query.
+ *   <li>To suggest across all contexts, use {@link #addAllContexts()}. When no context is added,
+ *       the default behaviour is to suggest across all contexts.
+ *   <li>To apply the same boost to multiple contexts sharing the same prefix, Use {@link
+ *       #addContext(CharSequence, float, boolean)} with the common context prefix, boost and set
+ *       <code>exact</code> to false.
+ *   <li>Using this query against a {@link SuggestField} (not context enabled), would yield results
+ *       ignoring any context filtering/boosting
  * </ul>
  *
  * @lucene.experimental
  */
 public class ContextQuery extends CompletionQuery implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(ContextQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(ContextQuery.class);
 
   private IntsRefBuilder scratch = new IntsRefBuilder();
   private Map<IntsRef, ContextMetaData> contexts;
@@ -90,17 +81,15 @@ public class ContextQuery extends CompletionQuery implements Accountable {
   private long ramBytesUsed;
 
   /**
-   * Constructs a context completion query that matches
-   * documents specified by <code>query</code>.
-   * <p>
-   * Use {@link #addContext(CharSequence, float, boolean)}
-   * to add context(s) with boost
+   * Constructs a context completion query that matches documents specified by <code>query</code>.
+   *
+   * <p>Use {@link #addContext(CharSequence, float, boolean)} to add context(s) with boost
    */
   public ContextQuery(CompletionQuery query) {
     super(query.getTerm(), query.getFilter());
     if (query instanceof ContextQuery) {
-      throw new IllegalArgumentException("'query' parameter must not be of type "
-              + this.getClass().getSimpleName());
+      throw new IllegalArgumentException(
+          "'query' parameter must not be of type " + this.getClass().getSimpleName());
     }
     this.innerQuery = query;
     contexts = new HashMap<>();
@@ -108,28 +97,26 @@ public class ContextQuery extends CompletionQuery implements Accountable {
   }
 
   private void updateRamBytesUsed() {
-    ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(contexts) +
-        RamUsageEstimator.sizeOfObject(innerQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+    ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(contexts)
+            + RamUsageEstimator.sizeOfObject(
+                innerQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
-  /**
-   * Adds an exact context with default boost of 1
-   */
+  /** Adds an exact context with default boost of 1 */
   public void addContext(CharSequence context) {
     addContext(context, 1f, true);
   }
 
-  /**
-   * Adds an exact context with boost
-   */
+  /** Adds an exact context with boost */
   public void addContext(CharSequence context, float boost) {
     addContext(context, boost, true);
   }
 
   /**
-   * Adds a context with boost, set <code>exact</code> to false
-   * if the context is a prefix of any indexed contexts
+   * Adds a context with boost, set <code>exact</code> to false if the context is a prefix of any
+   * indexed contexts
    */
   public void addContext(CharSequence context, float boost, boolean exact) {
     if (boost < 0f) {
@@ -137,17 +124,23 @@ public class ContextQuery extends CompletionQuery implements Accountable {
     }
     for (int i = 0; i < context.length(); i++) {
       if (ContextSuggestField.CONTEXT_SEPARATOR == context.charAt(i)) {
-        throw new IllegalArgumentException("Illegal value [" + context + "] UTF-16 codepoint [0x"
-            + Integer.toHexString((int) context.charAt(i))+ "] at position " + i + " is a reserved character");
+        throw new IllegalArgumentException(
+            "Illegal value ["
+                + context
+                + "] UTF-16 codepoint [0x"
+                + Integer.toHexString((int) context.charAt(i))
+                + "] at position "
+                + i
+                + " is a reserved character");
       }
     }
-    contexts.put(IntsRef.deepCopyOf(Util.toIntsRef(new BytesRef(context), scratch)), new ContextMetaData(boost, exact));
+    contexts.put(
+        IntsRef.deepCopyOf(Util.toIntsRef(new BytesRef(context), scratch)),
+        new ContextMetaData(boost, exact));
     updateRamBytesUsed();
   }
 
-  /**
-   * Add all contexts with a boost of 1f
-   */
+  /** Add all contexts with a boost of 1f */
   public void addAllContexts() {
     matchAllContexts = true;
   }
@@ -181,8 +174,10 @@ public class ContextQuery extends CompletionQuery implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final CompletionWeight innerWeight = ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    final CompletionWeight innerWeight =
+        ((CompletionWeight) innerQuery.createWeight(searcher, scoreMode, boost));
     final Automaton innerAutomaton = innerWeight.getAutomaton();
 
     // If the inner automaton matches nothing, then we return an empty weight to avoid
@@ -194,10 +189,13 @@ public class ContextQuery extends CompletionQuery implements Accountable {
     // if separators are preserved the fst contains a SEP_LABEL
     // behind each gap. To have a matching automaton, we need to
     // include the SEP_LABEL in the query as well
-    Automaton optionalSepLabel = Operations.optional(Automata.makeChar(ConcatenateGraphFilter.SEP_LABEL));
+    Automaton optionalSepLabel =
+        Operations.optional(Automata.makeChar(ConcatenateGraphFilter.SEP_LABEL));
     Automaton prefixAutomaton = Operations.concatenate(optionalSepLabel, innerAutomaton);
-    Automaton contextsAutomaton = Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
-    contextsAutomaton = Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+    Automaton contextsAutomaton =
+        Operations.concatenate(toContextAutomaton(contexts, matchAllContexts), prefixAutomaton);
+    contextsAutomaton =
+        Operations.determinize(contextsAutomaton, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
 
     final Map<IntsRef, Float> contextMap = new HashMap<>(contexts.size());
     final TreeSet<Integer> contextLengths = new TreeSet<>();
@@ -211,10 +209,12 @@ public class ContextQuery extends CompletionQuery implements Accountable {
     for (int i = 0; iterator.hasNext(); i++) {
       contextLengthArray[i] = iterator.next();
     }
-    return new ContextCompletionWeight(this, contextsAutomaton, innerWeight, contextMap, contextLengthArray);
+    return new ContextCompletionWeight(
+        this, contextsAutomaton, innerWeight, contextMap, contextLengthArray);
   }
 
-  private static Automaton toContextAutomaton(final Map<IntsRef, ContextMetaData> contexts, final boolean matchAllContexts) {
+  private static Automaton toContextAutomaton(
+      final Map<IntsRef, ContextMetaData> contexts, final boolean matchAllContexts) {
     final Automaton matchAllAutomaton = Operations.repeat(Automata.makeAnyString());
     final Automaton sep = Automata.makeChar(ContextSuggestField.CONTEXT_SEPARATOR);
     if (matchAllContexts || contexts.size() == 0) {
@@ -239,21 +239,15 @@ public class ContextQuery extends CompletionQuery implements Accountable {
     }
   }
 
-  /**
-   * Holder for context value meta data
-   */
+  /** Holder for context value meta data */
   private static class ContextMetaData {
 
-    /**
-     * Boost associated with a
-     * context value
-     */
+    /** Boost associated with a context value */
     private final float boost;
 
     /**
-     * flag to indicate whether the context
-     * value should be treated as an exact
-     * value or a context prefix
+     * flag to indicate whether the context value should be treated as an exact value or a context
+     * prefix
      */
     private final boolean exact;
 
@@ -273,9 +267,13 @@ public class ContextQuery extends CompletionQuery implements Accountable {
     private float currentBoost;
     private CharSequence currentContext;
 
-    public ContextCompletionWeight(CompletionQuery query, Automaton automaton, CompletionWeight innerWeight,
-                                   Map<IntsRef, Float> contextMap,
-                                   int[] contextLengths) throws IOException {
+    public ContextCompletionWeight(
+        CompletionQuery query,
+        Automaton automaton,
+        CompletionWeight innerWeight,
+        Map<IntsRef, Float> contextMap,
+        int[] contextLengths)
+        throws IOException {
       super(query, automaton);
       this.contextMap = contextMap;
       this.contextLengths = contextLengths;
@@ -320,7 +318,8 @@ public class ContextQuery extends CompletionQuery implements Accountable {
           assert ref.offset < ref.length : "input should not end with the context separator";
           if (ref.ints[i] == ConcatenateGraphFilter.SEP_LABEL) {
             ref.offset++;
-            assert ref.offset < ref.length : "input should not end with a context separator followed by SEP_LABEL";
+            assert ref.offset < ref.length
+                : "input should not end with a context separator followed by SEP_LABEL";
           }
           ref.length = ref.length - ref.offset;
           refBuilder.copyInts(ref.ints, ref.offset, ref.length);

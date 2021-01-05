@@ -33,7 +33,5 @@ public class TestDoubleRangeFactory extends LuceneTestCase {
     assertEquals(new DoubleRange(30, 40), factory.getRange(35, scratch));
     assertEquals(new DoubleRange(50, Double.MAX_VALUE), factory.getRange(50, scratch));
     assertEquals(new DoubleRange(50, Double.MAX_VALUE), factory.getRange(500, scratch));
-
   }
-
 }

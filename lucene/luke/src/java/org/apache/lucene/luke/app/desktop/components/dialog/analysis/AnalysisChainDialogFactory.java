@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dialog;
@@ -35,11 +27,18 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.io.IOException;
-
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -56,7 +55,7 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
 
   private CustomAnalyzer analyzer;
 
-  public synchronized static AnalysisChainDialogFactory getInstance() throws IOException {
+  public static synchronized AnalysisChainDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new AnalysisChainDialogFactory();
     }
@@ -110,11 +109,16 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.gridy = 0;
     c.weightx = 0.1;
     c.weighty = 0.5;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.charfilters")), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.charfilters")), c);
 
-    String[] charFilters = analyzer.getCharFilterFactories().stream().map(f -> CharFilterFactory.findSPIName(f.getClass())).toArray(String[]::new);
+    String[] charFilters =
+        analyzer.getCharFilterFactories().stream()
+            .map(f -> CharFilterFactory.findSPIName(f.getClass()))
+            .toArray(String[]::new);
     JList<String> charFilterList = new JList<>(charFilters);
-    charFilterList.setVisibleRowCount(charFilters.length == 0 ? 1 : Math.min(charFilters.length, 5));
+    charFilterList.setVisibleRowCount(
+        charFilters.length == 0 ? 1 : Math.min(charFilters.length, 5));
     c.gridx = 1;
     c.gridy = 0;
     c.weightx = 0.5;
@@ -125,7 +129,8 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.gridy = 1;
     c.weightx = 0.1;
     c.weighty = 0.1;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenizer")), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenizer")), c);
 
     String tokenizer = TokenizerFactory.findSPIName(analyzer.getTokenizerFactory().getClass());
     JTextField tokenizerTF = new JTextField(tokenizer);
@@ -143,11 +148,17 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.gridy = 2;
     c.weightx = 0.1;
     c.weighty = 0.5;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenfilters")), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenfilters")),
+        c);
 
-    String[] tokenFilters = analyzer.getTokenFilterFactories().stream().map(f -> TokenFilterFactory.findSPIName(f.getClass())).toArray(String[]::new);
+    String[] tokenFilters =
+        analyzer.getTokenFilterFactories().stream()
+            .map(f -> TokenFilterFactory.findSPIName(f.getClass()))
+            .toArray(String[]::new);
     JList<String> tokenFilterList = new JList<>(tokenFilters);
-    tokenFilterList.setVisibleRowCount(tokenFilters.length == 0 ? 1 : Math.min(tokenFilters.length, 5));
+    tokenFilterList.setVisibleRowCount(
+        tokenFilters.length == 0 ? 1 : Math.min(tokenFilters.length, 5));
     tokenFilterList.setMinimumSize(new Dimension(300, 25));
     c.gridx = 1;
     c.gridy = 2;
@@ -157,5 +168,4 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
 
     return panel;
   }
-
 }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -39,13 +38,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestIndexReplicationClient extends ReplicatorTestCase {
-  
+
   private static class IndexReadyCallback implements Callable<Boolean>, Closeable {
-    
+
     private final Directory indexDir;
-    private DirectoryReader reader; 
+    private DirectoryReader reader;
     private long lastGeneration = -1;
-    
+
     public IndexReadyCallback(Directory indexDir) throws IOException {
       this.indexDir = indexDir;
       if (DirectoryReader.indexExists(indexDir)) {
@@ -53,7 +52,7 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
         lastGeneration = reader.getIndexCommit().getGeneration();
       }
     }
-    
+
     @Override
     public Boolean call() throws Exception {
       if (reader == null) {
@@ -61,9 +60,12 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
         lastGeneration = reader.getIndexCommit().getGeneration();
       } else {
         DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
-        assertNotNull("should not have reached here if no changes were made to the index", newReader);
+        assertNotNull(
+            "should not have reached here if no changes were made to the index", newReader);
         long newGeneration = newReader.getIndexCommit().getGeneration();
-        assertTrue("expected newer generation; current=" + lastGeneration + " new=" + newGeneration, newGeneration > lastGeneration);
+        assertTrue(
+            "expected newer generation; current=" + lastGeneration + " new=" + newGeneration,
+            newGeneration > lastGeneration);
         reader.close();
         reader = newReader;
         lastGeneration = newGeneration;
@@ -71,13 +73,13 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
       }
       return null;
     }
-    
+
     @Override
     public void close() throws IOException {
       IOUtils.close(reader);
     }
   }
-  
+
   private MockDirectoryWrapper publishDir, handlerDir;
   private Replicator replicator;
   private SourceDirectoryFactory sourceDirFactory;
@@ -85,9 +87,9 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
   private ReplicationHandler handler;
   private IndexWriter publishWriter;
   private IndexReadyCallback callback;
-  
+
   private static final String VERSION_ID = "version";
-  
+
   private void assertHandlerRevision(int expectedID, Directory dir) throws IOException {
     // loop as long as client is alive. test-framework will terminate us if
     // there's a serious bug, e.g. client doesn't really update. otherwise,
@@ -103,11 +105,18 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
       try {
         DirectoryReader reader = DirectoryReader.open(dir);
         try {
-          int handlerID = Integer.parseInt(reader.getIndexCommit().getUserData().get(VERSION_ID), 16);
+          int handlerID =
+              Integer.parseInt(reader.getIndexCommit().getUserData().get(VERSION_ID), 16);
           if (expectedID == handlerID) {
             return;
           } else if (VERBOSE) {
-            System.out.println("expectedID=" + expectedID + " actual=" + handlerID + " generation=" + reader.getIndexCommit().getGeneration());
+            System.out.println(
+                "expectedID="
+                    + expectedID
+                    + " actual="
+                    + handlerID
+                    + " generation="
+                    + reader.getIndexCommit().getGeneration());
           }
         } finally {
           reader.close();
@@ -119,16 +128,19 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
       }
     }
   }
-  
+
   private Revision createRevision(final int id) throws IOException {
     publishWriter.addDocument(new Document());
-    publishWriter.setLiveCommitData(new HashMap<String, String>() {{
-      put(VERSION_ID, Integer.toString(id, 16));
-    }}.entrySet());
+    publishWriter.setLiveCommitData(
+        new HashMap<String, String>() {
+          {
+            put(VERSION_ID, Integer.toString(id, 16));
+          }
+        }.entrySet());
     publishWriter.commit();
     return new IndexRevision(publishWriter);
   }
-  
+
   @Override
   @Before
   public void setUp() throws Exception {
@@ -140,12 +152,12 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
     callback = new IndexReadyCallback(handlerDir);
     handler = new IndexReplicationHandler(handlerDir, callback);
     client = new ReplicationClient(replicator, handler, sourceDirFactory);
-    
+
     IndexWriterConfig conf = newIndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     publishWriter = new IndexWriter(publishDir, conf);
   }
-  
+
   @After
   @Override
   public void tearDown() throws Exception {
@@ -153,52 +165,52 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
     IOUtils.close(client, callback, replicator, publishDir, handlerDir);
     super.tearDown();
   }
-  
+
   @Test
   public void testNoUpdateThread() throws Exception {
     assertNull("no version expected at start", handler.currentVersion());
-    
+
     // Callback validates the replicated index
     replicator.publish(createRevision(1));
     client.updateNow();
-    
+
     replicator.publish(createRevision(2));
     client.updateNow();
-    
+
     // Publish two revisions without update, handler should be upgraded to latest
     replicator.publish(createRevision(3));
     replicator.publish(createRevision(4));
     client.updateNow();
   }
-  
+
   @Test
   public void testUpdateThread() throws Exception {
     client.startUpdateThread(10, "index");
-    
+
     replicator.publish(createRevision(1));
     assertHandlerRevision(1, handlerDir);
-    
+
     replicator.publish(createRevision(2));
     assertHandlerRevision(2, handlerDir);
-    
+
     // Publish two revisions without update, handler should be upgraded to latest
     replicator.publish(createRevision(3));
     replicator.publish(createRevision(4));
     assertHandlerRevision(4, handlerDir);
   }
-  
+
   @Test
   public void testRestart() throws Exception {
     replicator.publish(createRevision(1));
     client.updateNow();
-    
+
     replicator.publish(createRevision(2));
     client.updateNow();
-    
+
     client.stopUpdateThread();
     client.close();
     client = new ReplicationClient(replicator, handler, sourceDirFactory);
-    
+
     // Publish two revisions without update, handler should be upgraded to latest
     replicator.publish(createRevision(3));
     replicator.publish(createRevision(4));
@@ -218,105 +230,112 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
     client.updateNow();
     client.close();
     callback.close();
-    
+
     // wrap sourceDirFactory to return a MockDirWrapper so we can simulate errors
     final SourceDirectoryFactory in = sourceDirFactory;
     final AtomicInteger failures = new AtomicInteger(atLeast(10));
-    sourceDirFactory = new SourceDirectoryFactory() {
-      
-      private long clientMaxSize = 100, handlerMaxSize = 100;
-      private double clientExRate = 1.0, handlerExRate = 1.0;
-      
-      @Override
-      public void cleanupSession(String sessionID) throws IOException {
-        in.cleanupSession(sessionID);
-      }
-      
-      @SuppressWarnings("synthetic-access")
-      @Override
-      public Directory getDirectory(String sessionID, String source) throws IOException {
-        Directory dir = in.getDirectory(sessionID, source);
-        if (random().nextBoolean() && failures.get() > 0) { // client should fail, return wrapped dir
-          MockDirectoryWrapper mdw = new MockDirectoryWrapper(random(), dir);
-          mdw.setRandomIOExceptionRateOnOpen(clientExRate);
-          mdw.setMaxSizeInBytes(clientMaxSize);
-          mdw.setRandomIOExceptionRate(clientExRate);
-          mdw.setCheckIndexOnClose(false);
-          clientMaxSize *= 2;
-          clientExRate /= 2;
-          return mdw;
-        }
+    sourceDirFactory =
+        new SourceDirectoryFactory() {
 
-        if (failures.get() > 0 && random().nextBoolean()) { // handler should fail
-          handlerDir.setMaxSizeInBytes(handlerMaxSize);
-          handlerDir.setRandomIOExceptionRateOnOpen(handlerExRate);
-          handlerDir.setRandomIOExceptionRate(handlerExRate);
-          handlerMaxSize *= 2;
-          handlerExRate /= 2;
-        } else {
-          // disable errors
-          handlerDir.setMaxSizeInBytes(0);
-          handlerDir.setRandomIOExceptionRate(0.0);
-          handlerDir.setRandomIOExceptionRateOnOpen(0.0);
-        }
-        return dir;
-      }
-    };
-    
-    handler = new IndexReplicationHandler(handlerDir, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        if (random().nextDouble() < 0.2 && failures.get() > 0) {
-          throw new RuntimeException("random exception from callback");
-        }
-        return null;
-      }
-    });
-    
-    // wrap handleUpdateException so we can act on the thrown exception
-    client = new ReplicationClient(replicator, handler, sourceDirFactory) {
-      @SuppressWarnings("synthetic-access")
-      @Override
-      protected void handleUpdateException(Throwable t) {
-        if (t instanceof IOException) {
-          if (VERBOSE) {
-            System.out.println("hit exception during update: " + t);
-            t.printStackTrace(System.out);
+          private long clientMaxSize = 100, handlerMaxSize = 100;
+          private double clientExRate = 1.0, handlerExRate = 1.0;
+
+          @Override
+          public void cleanupSession(String sessionID) throws IOException {
+            in.cleanupSession(sessionID);
           }
-          try {
-            // test that the index can be read and also some basic statistics
-            DirectoryReader reader = DirectoryReader.open(handlerDir.getDelegate());
-            try {
-              int numDocs = reader.numDocs();
-              int version = Integer.parseInt(reader.getIndexCommit().getUserData().get(VERSION_ID), 16);
-              assertEquals(numDocs, version);
-            } finally {
-              reader.close();
+
+          @SuppressWarnings("synthetic-access")
+          @Override
+          public Directory getDirectory(String sessionID, String source) throws IOException {
+            Directory dir = in.getDirectory(sessionID, source);
+            if (random().nextBoolean()
+                && failures.get() > 0) { // client should fail, return wrapped dir
+              MockDirectoryWrapper mdw = new MockDirectoryWrapper(random(), dir);
+              mdw.setRandomIOExceptionRateOnOpen(clientExRate);
+              mdw.setMaxSizeInBytes(clientMaxSize);
+              mdw.setRandomIOExceptionRate(clientExRate);
+              mdw.setCheckIndexOnClose(false);
+              clientMaxSize *= 2;
+              clientExRate /= 2;
+              return mdw;
             }
-            // verify index consistency
-            TestUtil.checkIndex(handlerDir.getDelegate());
-          } catch (IOException e) {
-            // exceptions here are bad, don't ignore them
-            throw new RuntimeException(e);
-          } finally {
-            // count-down number of failures
-            failures.decrementAndGet();
-            assert failures.get() >= 0 : "handler failed too many times: " + failures.get();
-            if (VERBOSE) {
-              if (failures.get() == 0) {
-                System.out.println("no more failures expected");
-              } else {
-                System.out.println("num failures left: " + failures.get());
+
+            if (failures.get() > 0 && random().nextBoolean()) { // handler should fail
+              handlerDir.setMaxSizeInBytes(handlerMaxSize);
+              handlerDir.setRandomIOExceptionRateOnOpen(handlerExRate);
+              handlerDir.setRandomIOExceptionRate(handlerExRate);
+              handlerMaxSize *= 2;
+              handlerExRate /= 2;
+            } else {
+              // disable errors
+              handlerDir.setMaxSizeInBytes(0);
+              handlerDir.setRandomIOExceptionRate(0.0);
+              handlerDir.setRandomIOExceptionRateOnOpen(0.0);
+            }
+            return dir;
+          }
+        };
+
+    handler =
+        new IndexReplicationHandler(
+            handlerDir,
+            new Callable<Boolean>() {
+              @Override
+              public Boolean call() throws Exception {
+                if (random().nextDouble() < 0.2 && failures.get() > 0) {
+                  throw new RuntimeException("random exception from callback");
+                }
+                return null;
               }
+            });
+
+    // wrap handleUpdateException so we can act on the thrown exception
+    client =
+        new ReplicationClient(replicator, handler, sourceDirFactory) {
+          @SuppressWarnings("synthetic-access")
+          @Override
+          protected void handleUpdateException(Throwable t) {
+            if (t instanceof IOException) {
+              if (VERBOSE) {
+                System.out.println("hit exception during update: " + t);
+                t.printStackTrace(System.out);
+              }
+              try {
+                // test that the index can be read and also some basic statistics
+                DirectoryReader reader = DirectoryReader.open(handlerDir.getDelegate());
+                try {
+                  int numDocs = reader.numDocs();
+                  int version =
+                      Integer.parseInt(reader.getIndexCommit().getUserData().get(VERSION_ID), 16);
+                  assertEquals(numDocs, version);
+                } finally {
+                  reader.close();
+                }
+                // verify index consistency
+                TestUtil.checkIndex(handlerDir.getDelegate());
+              } catch (IOException e) {
+                // exceptions here are bad, don't ignore them
+                throw new RuntimeException(e);
+              } finally {
+                // count-down number of failures
+                failures.decrementAndGet();
+                assert failures.get() >= 0 : "handler failed too many times: " + failures.get();
+                if (VERBOSE) {
+                  if (failures.get() == 0) {
+                    System.out.println("no more failures expected");
+                  } else {
+                    System.out.println("num failures left: " + failures.get());
+                  }
+                }
+              }
+            } else {
+              if (t instanceof RuntimeException) throw (RuntimeException) t;
+              throw new RuntimeException(t);
             }
           }
-        } else {
-          if (t instanceof RuntimeException) throw (RuntimeException) t;
-          throw new RuntimeException(t);
-        }
-      }
-    };
-    
+        };
+
     client.startUpdateThread(10, "index");
 
     final Directory baseHandlerDir = handlerDir.getDelegate();
@@ -325,12 +344,11 @@ public class TestIndexReplicationClient extends ReplicatorTestCase {
       replicator.publish(createRevision(i));
       assertHandlerRevision(i, baseHandlerDir);
     }
-    
+
     // disable errors -- maybe randomness didn't exhaust all allowed failures,
-    // and we don't want e.g. CheckIndex to hit false errors. 
+    // and we don't want e.g. CheckIndex to hit false errors.
     handlerDir.setMaxSizeInBytes(0);
     handlerDir.setRandomIOExceptionRate(0.0);
     handlerDir.setRandomIOExceptionRateOnOpen(0.0);
   }
-  
 }

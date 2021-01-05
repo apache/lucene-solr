@@ -17,7 +17,6 @@
 package org.apache.lucene.sandbox.codecs.idversion;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -33,11 +32,13 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   @Override
   public void init(IndexInput termsIn, SegmentReadState state) throws IOException {
     // Make sure we are talking to the matching postings writer
-    CodecUtil.checkIndexHeader(termsIn,
-                                 IDVersionPostingsWriter.TERMS_CODEC,
-                                 IDVersionPostingsWriter.VERSION_START,
-                                 IDVersionPostingsWriter.VERSION_CURRENT,
-                                 state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.checkIndexHeader(
+        termsIn,
+        IDVersionPostingsWriter.TERMS_CODEC,
+        IDVersionPostingsWriter.VERSION_START,
+        IDVersionPostingsWriter.VERSION_CURRENT,
+        state.segmentInfo.getId(),
+        state.segmentSuffix);
   }
 
   @Override
@@ -46,12 +47,12 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void close() throws IOException {
-  }
+  public void close() throws IOException {}
 
   @Override
-  public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
-    throws IOException {
+  public void decodeTerm(
+      DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
+      throws IOException {
     final IDVersionTermState termState = (IDVersionTermState) _termState;
     termState.docID = in.readVInt();
     if (absolute) {
@@ -62,7 +63,9 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags) throws IOException {
+  public PostingsEnum postings(
+      FieldInfo fieldInfo, BlockTermState termState, PostingsEnum reuse, int flags)
+      throws IOException {
     SingleDocsEnum docsEnum;
 
     if (PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
@@ -89,8 +92,10 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, int flags) throws IOException {
-    throw new UnsupportedOperationException("Should never be called, IDVersionSegmentTermsEnum implements impacts directly");
+  public ImpactsEnum impacts(FieldInfo fieldInfo, BlockTermState state, int flags)
+      throws IOException {
+    throw new UnsupportedOperationException(
+        "Should never be called, IDVersionSegmentTermsEnum implements impacts directly");
   }
 
   @Override
@@ -99,8 +104,7 @@ final class IDVersionPostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void checkIntegrity() throws IOException {
-  }
+  public void checkIntegrity() throws IOException {}
 
   @Override
   public String toString() {

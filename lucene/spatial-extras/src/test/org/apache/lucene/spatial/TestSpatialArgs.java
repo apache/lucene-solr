@@ -27,14 +27,15 @@ public class TestSpatialArgs extends LuceneTestCase {
 
   @Test
   public void calcDistanceFromErrPct() {
-    final SpatialContext ctx = usually() ? SpatialContext.GEO : new Geo3dSpatialContextFactory().newSpatialContext();
-    final double DEP = 0.5;//distErrPct
+    final SpatialContext ctx =
+        usually() ? SpatialContext.GEO : new Geo3dSpatialContextFactory().newSpatialContext();
+    final double DEP = 0.5; // distErrPct
 
-    //the result is the diagonal distance from the center to the closest corner,
+    // the result is the diagonal distance from the center to the closest corner,
     // times distErrPct
 
     Shape superwide = ctx.makeRectangle(-180, 180, 0, 0);
-    //0 distErrPct means 0 distance always
+    // 0 distErrPct means 0 distance always
     assertEquals(0, SpatialArgs.calcDistanceFromErrPct(superwide, 0, ctx), 0);
     assertEquals(180 * DEP, SpatialArgs.calcDistanceFromErrPct(superwide, DEP, ctx), 0);
 

@@ -17,15 +17,14 @@
 
 package org.apache.lucene.monitor;
 
-import java.io.IOException;
+import static org.hamcrest.CoreMatchers.containsString;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class TestDocumentBatch extends LuceneTestCase {
 
@@ -36,20 +35,22 @@ public class TestDocumentBatch extends LuceneTestCase {
     DocumentBatch.of(ANALYZER);
   }
 
-  public void testSingleDocumentAndArrayOfOneDocumentResultInSameDocumentBatch() throws IOException {
+  public void testSingleDocumentAndArrayOfOneDocumentResultInSameDocumentBatch()
+      throws IOException {
     Document doc = new Document();
     try (DocumentBatch batchDoc = DocumentBatch.of(ANALYZER, doc);
-         DocumentBatch batchArr = DocumentBatch.of(ANALYZER, new Document[] {doc})) {
+        DocumentBatch batchArr = DocumentBatch.of(ANALYZER, new Document[] {doc})) {
       assertThat(batchDoc.getClass().getName(), containsString("SingletonDocumentBatch"));
       assertEquals(batchDoc.getClass(), batchArr.getClass());
     }
   }
 
-  public void testDocumentBatchClassDiffersWhetherItContainsOneOrMoreDocuments() throws IOException {
+  public void testDocumentBatchClassDiffersWhetherItContainsOneOrMoreDocuments()
+      throws IOException {
     Document doc = new Document();
     try (DocumentBatch batch1 = DocumentBatch.of(ANALYZER, new Document[] {doc});
-         DocumentBatch batch2 = DocumentBatch.of(ANALYZER, doc, doc);
-         DocumentBatch batch3 = DocumentBatch.of(ANALYZER, doc, doc, doc)) {
+        DocumentBatch batch2 = DocumentBatch.of(ANALYZER, doc, doc);
+        DocumentBatch batch3 = DocumentBatch.of(ANALYZER, doc, doc, doc)) {
       assertNotEquals(batch1.getClass(), batch2.getClass());
       assertEquals(batch2.getClass(), batch3.getClass());
       assertThat(batch3.getClass().getName(), containsString("MultiDocumentBatch"));

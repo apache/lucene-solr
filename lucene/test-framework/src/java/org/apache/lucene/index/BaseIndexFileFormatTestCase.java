@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -77,13 +76,12 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-/**
- * Common tests to all index formats.
- */
+/** Common tests to all index formats. */
 abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   // metadata or Directory-level objects
-  private static final Set<Class<?>> EXCLUDED_CLASSES = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
+  private static final Set<Class<?>> EXCLUDED_CLASSES =
+      Collections.newSetFromMap(new IdentityHashMap<Class<?>, Boolean>());
 
   static {
     // Directory objects, don't take into account eg. the NIO buffers
@@ -118,7 +116,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       this.root = root;
     }
 
-    public long accumulateObject(Object o, long shallowSize, Map<java.lang.reflect.Field, Object> fieldValues, Collection<Object> queue) {
+    public long accumulateObject(
+        Object o,
+        long shallowSize,
+        Map<java.lang.reflect.Field, Object> fieldValues,
+        Collection<Object> queue) {
       for (Class<?> clazz = o.getClass(); clazz != null; clazz = clazz.getSuperclass()) {
         if (EXCLUDED_CLASSES.contains(clazz) && o != root) {
           return 0;
@@ -134,7 +136,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         queue.addAll((Collection<?>) o);
         v = (long) coll.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       } else if (o instanceof Map) {
-        final Map<?, ?> map = (Map<?,?>) o;
+        final Map<?, ?> map = (Map<?, ?>) o;
         queue.addAll(map.keySet());
         queue.addAll(map.values());
         v = 2L * map.size() * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
@@ -142,7 +144,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         List<Object> references = new ArrayList<>();
         v = super.accumulateObject(o, shallowSize, fieldValues, references);
         for (Object r : references) {
-          // AssertingCodec adds Thread references to make sure objects are consumed in the right thread
+          // AssertingCodec adds Thread references to make sure objects are consumed in the right
+          // thread
           if (r instanceof Thread == false) {
             queue.add(r);
           }
@@ -152,14 +155,13 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
 
     @Override
-    public long accumulateArray(Object array, long shallowSize,
-        List<Object> values, Collection<Object> queue) {
+    public long accumulateArray(
+        Object array, long shallowSize, List<Object> values, Collection<Object> queue) {
       long v = super.accumulateArray(array, shallowSize, values, queue);
       // System.out.println(array.getClass() + "=" + v);
       return v;
     }
-
-  };
+  }
 
   /** Returns the codec to run tests against */
   protected abstract Codec getCodec();
@@ -172,7 +174,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   /** Set the created version of the given {@link Directory} and return it. */
   protected final <D extends Directory> D applyCreatedVersionMajor(D d) throws IOException {
     if (SegmentInfos.getLastCommitGeneration(d) != -1) {
-      throw new IllegalArgumentException("Cannot set the created version on a Directory that already has segments");
+      throw new IllegalArgumentException(
+          "Cannot set the created version on a Directory that already has segments");
     }
     if (getCreatedVersionMajor() != Version.LATEST.major || random().nextBoolean()) {
       new SegmentInfos(getCreatedVersionMajor()).commit(d);
@@ -202,7 +205,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     for (String file : d.listAll()) {
       if (IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
         final String ext = IndexFileNames.getExtension(file);
-        final long previousLength = bytesUsedByExtension.containsKey(ext) ? bytesUsedByExtension.get(ext) : 0;
+        final long previousLength =
+            bytesUsedByExtension.containsKey(ext) ? bytesUsedByExtension.get(ext) : 0;
         bytesUsedByExtension.put(ext, previousLength + d.fileLength(file));
       }
     }
@@ -212,20 +216,26 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   }
 
   /**
-   * Return the list of extensions that should be excluded from byte counts when
-   * comparing indices that store the same content.
+   * Return the list of extensions that should be excluded from byte counts when comparing indices
+   * that store the same content.
    */
   protected Collection<String> excludedExtensionsFromByteCounts() {
-    return new HashSet<String>(Arrays.asList(new String[] {
-    // segment infos store various pieces of information that don't solely depend
-    // on the content of the index in the diagnostics (such as a timestamp) so we
-    // exclude this file from the bytes counts
-                        "si",
-    // lock files are 0 bytes (one directory in the test could be RAMDir, the other FSDir)
-                        "lock" }));
+    return new HashSet<String>(
+        Arrays.asList(
+            new String[] {
+              // segment infos store various pieces of information that don't solely depend
+              // on the content of the index in the diagnostics (such as a timestamp) so we
+              // exclude this file from the bytes counts
+              "si",
+              // lock files are 0 bytes (one directory in the test could be RAMDir, the other FSDir)
+              "lock"
+            }));
   }
 
-  /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */
+  /**
+   * The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over
+   * runs.
+   */
   public void testMergeStability() throws Exception {
     assumeTrue("merge is not stable", mergeIsStable());
     Directory dir = applyCreatedVersionMajor(newDirectory());
@@ -234,7 +244,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    IndexWriterConfig cfg =
+        new IndexWriterConfig(new MockAnalyzer(random()))
+            .setUseCompoundFile(false)
+            .setMergePolicy(mp);
     IndexWriter w = new IndexWriter(dir, cfg);
     final int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; ++i) {
@@ -250,7 +263,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     Directory dir2 = applyCreatedVersionMajor(newDirectory());
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
-    cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
+    cfg =
+        new IndexWriterConfig(new MockAnalyzer(random()))
+            .setUseCompoundFile(false)
+            .setMergePolicy(mp);
     w = new IndexWriter(dir2, cfg);
     TestUtil.addIndexesSlowly(w, reader);
 
@@ -314,14 +330,18 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     final long absoluteError = Math.abs(measuredBytes - reportedBytes);
     final double relativeError = (double) absoluteError / measuredBytes;
-    final String message = String.format(Locale.ROOT,
-        "RamUsageTester reports %d bytes but ramBytesUsed() returned %d (%.1f error). " +
-        " [Measured: %d, %d. Reported: %d, %d]",
-        measuredBytes,
-        reportedBytes,
-        (100 * relativeError),
-        act1, act2,
-        reported1, reported2);
+    final String message =
+        String.format(
+            Locale.ROOT,
+            "RamUsageTester reports %d bytes but ramBytesUsed() returned %d (%.1f error). "
+                + " [Measured: %d, %d. Reported: %d, %d]",
+            measuredBytes,
+            reportedBytes,
+            (100 * relativeError),
+            act1,
+            act2,
+            reported1,
+            reported2);
 
     assertTrue(message, relativeError < 0.20d || absoluteError < 1000);
 
@@ -329,12 +349,13 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     reader2.close();
     dir.close();
   }
-  
+
   /** Calls close multiple times on closeable codec apis */
   public void testMultiClose() throws IOException {
     // first make a one doc index
     Directory oneDocIndex = applyCreatedVersionMajor(newDirectory());
-    IndexWriter iw = new IndexWriter(oneDocIndex, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter iw =
+        new IndexWriter(oneDocIndex, new IndexWriterConfig(new MockAnalyzer(random())));
     Document oneDoc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
@@ -344,69 +365,97 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     iw.addDocument(oneDoc);
     LeafReader oneDocReader = getOnlyLeafReader(DirectoryReader.open(iw));
     iw.close();
-    
+
     // now feed to codec apis manually
-    // we use FSDir, things like ramdir are not guaranteed to cause fails if you write to them after close(), etc
+    // we use FSDir, things like ramdir are not guaranteed to cause fails if you write to them after
+    // close(), etc
     Directory dir = newFSDirectory(createTempDir("justSoYouGetSomeChannelErrors"));
     Codec codec = getCodec();
-    
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", 1, false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
+
+    SegmentInfo segmentInfo =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "_0",
+            1,
+            false,
+            codec,
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            Collections.emptyMap(),
+            null);
     FieldInfo proto = oneDocReader.getFieldInfos().fieldInfo("field");
-    FieldInfo field = new FieldInfo(proto.name, proto.number, proto.hasVectors(), proto.omitsNorms(), proto.hasPayloads(), 
-                                    proto.getIndexOptions(), proto.getDocValuesType(), proto.getDocValuesGen(), new HashMap<>(),
-                                    proto.getPointDimensionCount(), proto.getPointIndexDimensionCount(), proto.getPointNumBytes(),
-                                    proto.getVectorDimension(), proto.getVectorSearchStrategy(), proto.isSoftDeletesField());
+    FieldInfo field =
+        new FieldInfo(
+            proto.name,
+            proto.number,
+            proto.hasVectors(),
+            proto.omitsNorms(),
+            proto.hasPayloads(),
+            proto.getIndexOptions(),
+            proto.getDocValuesType(),
+            proto.getDocValuesGen(),
+            new HashMap<>(),
+            proto.getPointDimensionCount(),
+            proto.getPointIndexDimensionCount(),
+            proto.getPointNumBytes(),
+            proto.getVectorDimension(),
+            proto.getVectorSearchStrategy(),
+            proto.isSoftDeletesField());
 
-    FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { field } );
+    FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] {field});
 
-    SegmentWriteState writeState = new SegmentWriteState(null, dir,
-                                                         segmentInfo, fieldInfos,
-                                                         null, new IOContext(new FlushInfo(1, 20)));
-    
+    SegmentWriteState writeState =
+        new SegmentWriteState(
+            null, dir, segmentInfo, fieldInfos, null, new IOContext(new FlushInfo(1, 20)));
+
     SegmentReadState readState = new SegmentReadState(dir, segmentInfo, fieldInfos, IOContext.READ);
 
     // PostingsFormat
-    NormsProducer fakeNorms = new NormsProducer() {
+    NormsProducer fakeNorms =
+        new NormsProducer() {
 
-      @Override
-      public void close() throws IOException {}
+          @Override
+          public void close() throws IOException {}
 
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
 
-      @Override
-      public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        if (field.hasNorms() == false) {
-          return null;
-        }
-        return oneDocReader.getNormValues(field.name);
-      }
+          @Override
+          public NumericDocValues getNorms(FieldInfo field) throws IOException {
+            if (field.hasNorms() == false) {
+              return null;
+            }
+            return oneDocReader.getNormValues(field.name);
+          }
 
-      @Override
-      public void checkIntegrity() throws IOException {}
-      
-    };
+          @Override
+          public void checkIntegrity() throws IOException {}
+        };
     try (FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState)) {
-      final Fields fields = new Fields() {
-        TreeSet<String> indexedFields = new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
+      final Fields fields =
+          new Fields() {
+            TreeSet<String> indexedFields =
+                new TreeSet<>(FieldInfos.getIndexedFields(oneDocReader));
 
-        @Override
-        public Iterator<String> iterator() {
-          return indexedFields.iterator();
-        }
+            @Override
+            public Iterator<String> iterator() {
+              return indexedFields.iterator();
+            }
 
-        @Override
-        public Terms terms(String field) throws IOException {
-          return oneDocReader.terms(field);
-        }
+            @Override
+            public Terms terms(String field) throws IOException {
+              return oneDocReader.terms(field);
+            }
 
-        @Override
-        public int size() {
-          return indexedFields.size();
-        }
-      };
+            @Override
+            public int size() {
+              return indexedFields.size();
+            }
+          };
       consumer.write(fields, fakeNorms);
       IOUtils.close(consumer);
       IOUtils.close(consumer);
@@ -415,58 +464,59 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       IOUtils.close(producer);
       IOUtils.close(producer);
     }
-    
+
     // DocValuesFormat
     try (DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(writeState)) {
-      consumer.addNumericField(field,
-                               new EmptyDocValuesProducer() {
-                                 @Override
-                                 public NumericDocValues getNumeric(FieldInfo field) {
-                                   return new NumericDocValues() {
-                                     int docID = -1;
-                                 
-                                     @Override
-                                     public int docID() {
-                                       return docID;
-                                     }
-                                 
-                                     @Override
-                                     public int nextDoc() {
-                                       docID++;
-                                       if (docID == 1) {
-                                         docID = NO_MORE_DOCS;
-                                       }
-                                       return docID;
-                                     }
+      consumer.addNumericField(
+          field,
+          new EmptyDocValuesProducer() {
+            @Override
+            public NumericDocValues getNumeric(FieldInfo field) {
+              return new NumericDocValues() {
+                int docID = -1;
 
-                                     @Override
-                                     public int advance(int target) {
-                                       if (docID <= 0 && target == 0) {
-                                         docID = 0;
-                                       } else {
-                                         docID = NO_MORE_DOCS;
-                                       }
-                                       return docID;
-                                     }
+                @Override
+                public int docID() {
+                  return docID;
+                }
 
-                                     @Override
-                                    public boolean advanceExact(int target) throws IOException {
-                                      docID = target;
-                                      return target == 0;
-                                    }
+                @Override
+                public int nextDoc() {
+                  docID++;
+                  if (docID == 1) {
+                    docID = NO_MORE_DOCS;
+                  }
+                  return docID;
+                }
 
-                                     @Override
-                                     public long cost() {
-                                       return 1;
-                                     }
+                @Override
+                public int advance(int target) {
+                  if (docID <= 0 && target == 0) {
+                    docID = 0;
+                  } else {
+                    docID = NO_MORE_DOCS;
+                  }
+                  return docID;
+                }
 
-                                     @Override
-                                     public long longValue() {
-                                       return 5;
-                                     }
-                                   };
-                                 }
-                               });
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                  docID = target;
+                  return target == 0;
+                }
+
+                @Override
+                public long cost() {
+                  return 1;
+                }
+
+                @Override
+                public long longValue() {
+                  return 5;
+                }
+              };
+            }
+          });
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
@@ -474,71 +524,70 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       IOUtils.close(producer);
       IOUtils.close(producer);
     }
-    
+
     // NormsFormat
     try (NormsConsumer consumer = codec.normsFormat().normsConsumer(writeState)) {
-      consumer.addNormsField(field,
-                             new NormsProducer() {
-                                 @Override
-                                 public NumericDocValues getNorms(FieldInfo field) {
-                                   return new NumericDocValues() {
-                                     int docID = -1;
-                                 
-                                     @Override
-                                     public int docID() {
-                                       return docID;
-                                     }
-                                 
-                                     @Override
-                                     public int nextDoc() {
-                                       docID++;
-                                       if (docID == 1) {
-                                         docID = NO_MORE_DOCS;
-                                       }
-                                       return docID;
-                                     }
+      consumer.addNormsField(
+          field,
+          new NormsProducer() {
+            @Override
+            public NumericDocValues getNorms(FieldInfo field) {
+              return new NumericDocValues() {
+                int docID = -1;
 
-                                     @Override
-                                     public int advance(int target) {
-                                       if (docID <= 0 && target == 0) {
-                                         docID = 0;
-                                       } else {
-                                         docID = NO_MORE_DOCS;
-                                       }
-                                       return docID;
-                                     }
+                @Override
+                public int docID() {
+                  return docID;
+                }
 
-                                     @Override
-                                    public boolean advanceExact(int target) throws IOException {
-                                      docID = target;
-                                      return target == 0;
-                                    }
+                @Override
+                public int nextDoc() {
+                  docID++;
+                  if (docID == 1) {
+                    docID = NO_MORE_DOCS;
+                  }
+                  return docID;
+                }
 
-                                     @Override
-                                     public long cost() {
-                                       return 1;
-                                     }
+                @Override
+                public int advance(int target) {
+                  if (docID <= 0 && target == 0) {
+                    docID = 0;
+                  } else {
+                    docID = NO_MORE_DOCS;
+                  }
+                  return docID;
+                }
 
-                                     @Override
-                                     public long longValue() {
-                                       return 5;
-                                     }
-                                   };
-                                 }
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                  docID = target;
+                  return target == 0;
+                }
 
-                               @Override
-                               public void checkIntegrity() {
-                               }
+                @Override
+                public long cost() {
+                  return 1;
+                }
 
-                               @Override
-                               public void close() {
-                               }
+                @Override
+                public long longValue() {
+                  return 5;
+                }
+              };
+            }
 
-                               @Override
-                               public long ramBytesUsed() {
-                                 return 0;
-                               }
-                             });
+            @Override
+            public void checkIntegrity() {}
+
+            @Override
+            public void close() {}
+
+            @Override
+            public long ramBytesUsed() {
+              return 0;
+            }
+          });
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
@@ -546,9 +595,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       IOUtils.close(producer);
       IOUtils.close(producer);
     }
-    
+
     // TermVectorsFormat
-    try (TermVectorsWriter consumer = codec.termVectorsFormat().vectorsWriter(dir, segmentInfo, writeState.context)) {
+    try (TermVectorsWriter consumer =
+        codec.termVectorsFormat().vectorsWriter(dir, segmentInfo, writeState.context)) {
       consumer.startDocument(1);
       consumer.startField(field, 1, false, false, false);
       consumer.startTerm(new BytesRef("testing"), 2);
@@ -559,13 +609,15 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
-    try (TermVectorsReader producer = codec.termVectorsFormat().vectorsReader(dir, segmentInfo, fieldInfos, readState.context)) {
+    try (TermVectorsReader producer =
+        codec.termVectorsFormat().vectorsReader(dir, segmentInfo, fieldInfos, readState.context)) {
       IOUtils.close(producer);
       IOUtils.close(producer);
     }
-    
+
     // StoredFieldsFormat
-    try (StoredFieldsWriter consumer = codec.storedFieldsFormat().fieldsWriter(dir, segmentInfo, writeState.context)) {
+    try (StoredFieldsWriter consumer =
+        codec.storedFieldsFormat().fieldsWriter(dir, segmentInfo, writeState.context)) {
       consumer.startDocument();
       consumer.writeField(field, customField);
       consumer.finishDocument();
@@ -573,14 +625,15 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       IOUtils.close(consumer);
       IOUtils.close(consumer);
     }
-    try (StoredFieldsReader producer = codec.storedFieldsFormat().fieldsReader(dir, segmentInfo, fieldInfos, readState.context)) {
+    try (StoredFieldsReader producer =
+        codec.storedFieldsFormat().fieldsReader(dir, segmentInfo, fieldInfos, readState.context)) {
       IOUtils.close(producer);
       IOUtils.close(producer);
     }
-            
+
     IOUtils.close(oneDocReader, oneDocIndex, dir);
   }
-  
+
   /** Tests exception handling on write and openInput/createOutput */
   // TODO: this is really not ideal. each BaseXXXTestCase should have unit tests doing this.
   // but we use this shotgun approach to prevent bugs in the meantime: it just ensures the
@@ -591,31 +644,31 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setUseSlowOpenClosers(false);
     dir.setRandomIOExceptionRate(0.001); // more rare
-    
+
     // log all exceptions we hit, in case we fail (for debugging)
     ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
     PrintStream exceptionStream = new PrintStream(exceptionLog, true, "UTF-8");
-    //PrintStream exceptionStream = System.out;
-    
+    // PrintStream exceptionStream = System.out;
+
     Analyzer analyzer = new MockAnalyzer(random());
-    
+
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     // just for now, try to keep this test reproducible
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(getCodec());
-    
+
     int numDocs = atLeast(500);
-    
+
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
       boolean allowAlreadyClosed = false;
       for (int i = 0; i < numDocs; i++) {
         dir.setRandomIOExceptionRateOnOpen(0.02); // turn on exceptions for openInput/createOutput
-        
+
         Document doc = new Document();
         doc.add(newStringField("id", Integer.toString(i), Field.Store.NO));
         addRandomFields(doc);
-        
+
         // single doc
         try {
           iw.addDocument(doc);
@@ -623,7 +676,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           iw.deleteDocuments(new Term("id", Integer.toString(i)));
         } catch (AlreadyClosedException ace) {
           // OK: writer was closed by abort; we just reopen now:
-          dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+          dir.setRandomIOExceptionRateOnOpen(
+              0.0); // disable exceptions on openInput until next iteration
           assertTrue(iw.isDeleterClosed());
           assertTrue(allowAlreadyClosed);
           allowAlreadyClosed = false;
@@ -631,7 +685,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           // just for now, try to keep this test reproducible
           conf.setMergeScheduler(new SerialMergeScheduler());
           conf.setCodec(getCodec());
-          iw = new IndexWriter(dir, conf);            
+          iw = new IndexWriter(dir, conf);
         } catch (IOException e) {
           handleFakeIOException(e, exceptionStream);
           allowAlreadyClosed = true;
@@ -644,14 +698,16 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
               DirectoryReader ir = null;
               try {
                 ir = DirectoryReader.open(iw, random().nextBoolean(), false);
-                dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+                dir.setRandomIOExceptionRateOnOpen(
+                    0.0); // disable exceptions on openInput until next iteration
                 TestUtil.checkReader(ir);
               } finally {
                 IOUtils.closeWhileHandlingException(ir);
               }
             } else {
-              dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration: 
-                                                       // or we make slowExists angry and trip a scarier assert!
+              dir.setRandomIOExceptionRateOnOpen(
+                  0.0); // disable exceptions on openInput until next iteration:
+              // or we make slowExists angry and trip a scarier assert!
               iw.commit();
             }
             if (DirectoryReader.indexExists(dir)) {
@@ -659,7 +715,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
-            dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
+            dir.setRandomIOExceptionRateOnOpen(
+                0.0); // disable exceptions on openInput until next iteration
             assertTrue(iw.isDeleterClosed());
             assertTrue(allowAlreadyClosed);
             allowAlreadyClosed = false;
@@ -667,23 +724,25 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             // just for now, try to keep this test reproducible
             conf.setMergeScheduler(new SerialMergeScheduler());
             conf.setCodec(getCodec());
-            iw = new IndexWriter(dir, conf);            
+            iw = new IndexWriter(dir, conf);
           } catch (IOException e) {
             handleFakeIOException(e, exceptionStream);
             allowAlreadyClosed = true;
           }
         }
       }
-      
+
       try {
-        dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration: 
-                                                 // or we make slowExists angry and trip a scarier assert!
+        dir.setRandomIOExceptionRateOnOpen(
+            0.0); // disable exceptions on openInput until next iteration:
+        // or we make slowExists angry and trip a scarier assert!
         iw.close();
       } catch (IOException e) {
         handleFakeIOException(e, exceptionStream);
         try {
           iw.rollback();
-        } catch (Throwable t) {}
+        } catch (Throwable t) {
+        }
       }
       dir.close();
     } catch (Throwable t) {
@@ -693,13 +752,13 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       System.out.flush();
       Rethrow.rethrow(t);
     }
-    
+
     if (VERBOSE) {
       System.out.println("TEST PASSED: dumping fake-exception-log:...");
       System.out.println(exceptionLog.toString("UTF-8"));
     }
   }
-  
+
   private void handleFakeIOException(IOException e, PrintStream exceptionStream) {
     Throwable ex = e;
     while (ex != null) {
@@ -710,13 +769,13 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       }
       ex = ex.getCause();
     }
-    
+
     Rethrow.rethrow(e);
   }
 
   /**
-   * Returns {@code false} if only the regular fields reader should be tested,
-   * and {@code true} if only the merge instance should be tested.
+   * Returns {@code false} if only the regular fields reader should be tested, and {@code true} if
+   * only the merge instance should be tested.
    */
   protected boolean shouldTestMergeInstance() {
     return false;
@@ -729,12 +788,11 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     return r;
   }
 
-  /**
-   * A directory that tracks created files that haven't been deleted.
-   */
+  /** A directory that tracks created files that haven't been deleted. */
   protected static class FileTrackingDirectoryWrapper extends FilterDirectory {
 
-    private final Set<String> files = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+    private final Set<String> files =
+        Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /** Sole constructor. */
     FileTrackingDirectoryWrapper(Directory in) {
@@ -764,7 +822,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       files.remove(name);
       super.deleteFile(name);
     }
-
   }
 
   private static class ReadBytesIndexInputWrapper extends IndexInput {
@@ -806,7 +863,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     @Override
     public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
       IndexInput slice = in.slice(sliceDescription, offset, length);
-      return new ReadBytesIndexInputWrapper(slice, o -> readByte.accept(Math.toIntExact(offset + o)));
+      return new ReadBytesIndexInputWrapper(
+          slice, o -> readByte.accept(Math.toIntExact(offset + o)));
     }
 
     @Override
@@ -823,7 +881,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       }
       in.readBytes(b, offset, len);
     }
-
   }
 
   /** A directory that tracks read bytes. */
@@ -844,7 +901,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
       IndexInput in = super.openInput(name, context);
-      final FixedBitSet set = readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
+      final FixedBitSet set =
+          readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
       if (set.length() != in.length()) {
         throw new IllegalStateException();
       }
@@ -854,7 +912,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     @Override
     public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
       ChecksumIndexInput in = super.openChecksumInput(name, context);
-      final FixedBitSet set = readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
+      final FixedBitSet set =
+          readBytes.computeIfAbsent(name, n -> new FixedBitSet(Math.toIntExact(in.length())));
       if (set.length() != in.length()) {
         throw new IllegalStateException();
       }
@@ -874,7 +933,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         }
 
         @Override
-        public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+        public IndexInput slice(String sliceDescription, long offset, long length)
+            throws IOException {
           throw new UnsupportedOperationException();
         }
 
@@ -906,15 +966,20 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     }
 
     @Override
-    public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+    public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+        throws IOException {
       throw new UnsupportedOperationException();
     }
   }
 
-  /** This test is a best effort at verifying that checkIntegrity doesn't miss any files. It tests that the
-   *  combination of opening a reader and calling checkIntegrity on it reads all bytes of all files. */
+  /**
+   * This test is a best effort at verifying that checkIntegrity doesn't miss any files. It tests
+   * that the combination of opening a reader and calling checkIntegrity on it reads all bytes of
+   * all files.
+   */
   public void testCheckIntegrityReadsAllBytes() throws Exception {
-    assumeFalse("SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
+    assumeFalse(
+        "SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
     FileTrackingDirectoryWrapper dir = new FileTrackingDirectoryWrapper(newDirectory());
     applyCreatedVersionMajor(dir);
 
@@ -937,7 +1002,8 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
     Map<String, FixedBitSet> readBytesMap = readBytesWrapperDir.getReadBytes();
 
-    Set<String> unreadFiles = new HashSet<>(dir.getFiles());System.out.println(Arrays.toString(dir.listAll()));
+    Set<String> unreadFiles = new HashSet<>(dir.getFiles());
+    System.out.println(Arrays.toString(dir.listAll()));
     unreadFiles.removeAll(readBytesMap.keySet());
     unreadFiles.remove(IndexWriter.WRITE_LOCK_NAME);
     assertTrue("Some files have not been open: " + unreadFiles, unreadFiles.isEmpty());
@@ -949,7 +1015,14 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       unreadBytes.flip(0, unreadBytes.length());
       int unread = unreadBytes.nextSetBit(0);
       if (unread != Integer.MAX_VALUE) {
-        messages.add("Offset " + unread + " of file " + name + "(" + unreadBytes.length() + "bytes) was not read.");
+        messages.add(
+            "Offset "
+                + unread
+                + " of file "
+                + name
+                + "("
+                + unreadBytes.length()
+                + "bytes) was not read.");
       }
     }
     assertTrue(String.join("\n", messages), messages.isEmpty());

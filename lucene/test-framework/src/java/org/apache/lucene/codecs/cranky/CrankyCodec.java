@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.cranky;
 
 import java.util.Random;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -34,11 +33,8 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 /** Codec for testing that throws random IOExceptions */
 public class CrankyCodec extends FilterCodec {
   final Random random;
-  
-  /** 
-   * Wrap the provided codec with crankiness.
-   * Try passing Asserting for the most fun.
-   */
+
+  /** Wrap the provided codec with crankiness. Try passing Asserting for the most fun. */
   public CrankyCodec(Codec delegate, Random random) {
     // we impersonate the passed-in codec, so we don't need to be in SPI,
     // and so we dont change file formats

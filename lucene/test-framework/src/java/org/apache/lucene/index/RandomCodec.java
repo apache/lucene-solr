@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -55,34 +54,35 @@ import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
  * Codec that assigns per-field random postings formats.
- * <p>
- * The same field/format assignment will happen regardless of order,
- * a hash is computed up front that determines the mapping.
- * This means fields can be put into things like HashSets and added to
- * documents in different orders and the test will still be deterministic
- * and reproducable.
+ *
+ * <p>The same field/format assignment will happen regardless of order, a hash is computed up front
+ * that determines the mapping. This means fields can be put into things like HashSets and added to
+ * documents in different orders and the test will still be deterministic and reproducable.
  */
 public class RandomCodec extends AssertingCodec {
   /** Shuffled list of postings formats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<>();
-  
+
   /** Shuffled list of docvalues formats to use for new mappings */
   private List<DocValuesFormat> dvFormats = new ArrayList<>();
-  
+
   /** unique set of format names this codec knows about */
   public Set<String> formatNames = new HashSet<>();
-  
+
   /** unique set of docvalues format names this codec knows about */
   public Set<String> dvFormatNames = new HashSet<>();
 
   public final Set<String> avoidCodecs;
 
   /** memorized field to postingsformat mappings */
-  // note: we have to sync this map even though it's just for debugging/toString, 
-  // otherwise DWPT's .toString() calls that iterate over the map can 
+  // note: we have to sync this map even though it's just for debugging/toString,
+  // otherwise DWPT's .toString() calls that iterate over the map can
   // cause concurrentmodificationexception if indexwriter's infostream is on
-  private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());
-  private Map<String,DocValuesFormat> previousDVMappings = Collections.synchronizedMap(new HashMap<String,DocValuesFormat>());
+  private Map<String, PostingsFormat> previousMappings =
+      Collections.synchronizedMap(new HashMap<String, PostingsFormat>());
+
+  private Map<String, DocValuesFormat> previousDVMappings =
+      Collections.synchronizedMap(new HashMap<String, DocValuesFormat>());
   private final int perFieldSeed;
 
   // a little messy: randomize the default codec's parameters here.
@@ -95,63 +95,70 @@ public class RandomCodec extends AssertingCodec {
 
   @Override
   public PointsFormat pointsFormat() {
-    return new AssertingPointsFormat(new PointsFormat() {
-      @Override
-      public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-
-        // Randomize how BKDWriter chooses its splits:
-
-        return new Lucene86PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
+    return new AssertingPointsFormat(
+        new PointsFormat() {
           @Override
-          public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
+          public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
 
-            PointValues values = reader.getValues(fieldInfo.name);
+            // Randomize how BKDWriter chooses its splits:
 
-            BKDConfig config = new BKDConfig(fieldInfo.getPointDimensionCount(),
-                fieldInfo.getPointIndexDimensionCount(),
-                fieldInfo.getPointNumBytes(),
-                maxPointsInLeafNode);
+            return new Lucene86PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
+              @Override
+              public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
+                PointValues values = reader.getValues(fieldInfo.name);
 
-            try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
-                                                                   writeState.directory,
-                                                                   writeState.segmentInfo.name,
-                                                                   config,
-                                                                   maxMBSortInHeap,
-                                                                   values.size(),
-                                                                   bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
-                values.intersect(new IntersectVisitor() {
-                    @Override
-                    public void visit(int docID) {
-                      throw new IllegalStateException();
-                    }
+                BKDConfig config =
+                    new BKDConfig(
+                        fieldInfo.getPointDimensionCount(),
+                        fieldInfo.getPointIndexDimensionCount(),
+                        fieldInfo.getPointNumBytes(),
+                        maxPointsInLeafNode);
 
-                    public void visit(int docID, byte[] packedValue) throws IOException {
-                      writer.add(packedValue, docID);
-                    }
+                try (BKDWriter writer =
+                    new RandomlySplittingBKDWriter(
+                        writeState.segmentInfo.maxDoc(),
+                        writeState.directory,
+                        writeState.segmentInfo.name,
+                        config,
+                        maxMBSortInHeap,
+                        values.size(),
+                        bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
+                  values.intersect(
+                      new IntersectVisitor() {
+                        @Override
+                        public void visit(int docID) {
+                          throw new IllegalStateException();
+                        }
 
-                    @Override
-                    public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                      return PointValues.Relation.CELL_CROSSES_QUERY;
-                    }
-                  });
+                        public void visit(int docID, byte[] packedValue) throws IOException {
+                          writer.add(packedValue, docID);
+                        }
 
-                // We could have 0 points on merge since all docs with dimensional fields may be deleted:
-                Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
-                if (finalizer != null) {
-                  metaOut.writeInt(fieldInfo.number);
-                  finalizer.run();
+                        @Override
+                        public PointValues.Relation compare(
+                            byte[] minPackedValue, byte[] maxPackedValue) {
+                          return PointValues.Relation.CELL_CROSSES_QUERY;
+                        }
+                      });
+
+                  // We could have 0 points on merge since all docs with dimensional fields may be
+                  // deleted:
+                  Runnable finalizer = writer.finish(metaOut, indexOut, dataOut);
+                  if (finalizer != null) {
+                    metaOut.writeInt(fieldInfo.number);
+                    finalizer.run();
+                  }
                 }
               }
+            };
           }
-        };
-      }
 
-      @Override
-      public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-        return new Lucene86PointsReader(readState);
-      }
-    });
+          @Override
+          public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+            return new Lucene86PointsReader(readState);
+          }
+        });
   }
 
   @Override
@@ -161,7 +168,7 @@ public class RandomCodec extends AssertingCodec {
       codec = formats.get(Math.abs(perFieldSeed ^ name.hashCode()) % formats.size());
       previousMappings.put(name, codec);
       // Safety:
-      assert previousMappings.size() < 10000: "test went insane";
+      assert previousMappings.size() < 10000 : "test went insane";
     }
     return codec;
   }
@@ -173,7 +180,7 @@ public class RandomCodec extends AssertingCodec {
       codec = dvFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % dvFormats.size());
       previousDVMappings.put(name, codec);
       // Safety:
-      assert previousDVMappings.size() < 10000: "test went insane";
+      assert previousDVMappings.size() < 10000 : "test went insane";
     }
     return codec;
   }
@@ -184,31 +191,41 @@ public class RandomCodec extends AssertingCodec {
     // TODO: make it possible to specify min/max iterms per
     // block via CL:
     int minItemsPerBlock = TestUtil.nextInt(random, 2, 100);
-    int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
+    int maxItemsPerBlock = 2 * (Math.max(2, minItemsPerBlock - 1)) + random.nextInt(100);
     int lowFreqCutoff = TestUtil.nextInt(random, 2, 100);
 
     maxPointsInLeafNode = TestUtil.nextInt(random, 16, 2048);
-    maxMBSortInHeap = 5.0 + (3*random.nextDouble());
+    maxMBSortInHeap = 5.0 + (3 * random.nextDouble());
     bkdSplitRandomSeed = random.nextInt();
 
-    add(avoidCodecs,
+    add(
+        avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new FSTPostingsFormat(),
-        new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
-                                 LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
-        //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucenePostings to be constructed 
-        //with a choice of concrete PostingsFormats. Maybe useful to have a generic means of marking and dealing 
-        //with such "wrapper" classes?
-        new TestBloomFilteredLucenePostings(),                
+        new DirectPostingsFormat(
+            LuceneTestCase.rarely(random)
+                ? 1
+                : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
+            LuceneTestCase.rarely(random)
+                ? 1
+                : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
+        // TODO as a PostingsFormat which wraps others, we should allow
+        // TestBloomFilteredLucenePostings to be constructed
+        // with a choice of concrete PostingsFormats. Maybe useful to have a generic means of
+        // marking and dealing
+        // with such "wrapper" classes?
+        new TestBloomFilteredLucenePostings(),
         new MockRandomPostingsFormat(random),
         new BlockTreeOrdsPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new LuceneFixedGap(TestUtil.nextInt(random, 1, 1000)),
         new LuceneVarGapFixedInterval(TestUtil.nextInt(random, 1, 1000)),
-        new LuceneVarGapDocFreqInterval(TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
+        new LuceneVarGapDocFreqInterval(
+            TestUtil.nextInt(random, 1, 100), TestUtil.nextInt(random, 1, 1000)),
         TestUtil.getDefaultPostingsFormat(),
         new AssertingPostingsFormat());
-    
-    addDocValues(avoidCodecs,
+
+    addDocValues(
+        avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
         new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION),
         new AssertingDocValuesFormat());
@@ -226,7 +243,7 @@ public class RandomCodec extends AssertingCodec {
   }
 
   public RandomCodec(Random random) {
-    this(random, Collections.<String> emptySet());
+    this(random, Collections.<String>emptySet());
   }
 
   private final void add(Set<String> avoidCodecs, PostingsFormat... postings) {
@@ -237,7 +254,7 @@ public class RandomCodec extends AssertingCodec {
       }
     }
   }
-  
+
   private final void addDocValues(Set<String> avoidCodecs, DocValuesFormat... docvalues) {
     for (DocValuesFormat d : docvalues) {
       if (!avoidCodecs.contains(d.getName())) {
@@ -249,20 +266,34 @@ public class RandomCodec extends AssertingCodec {
 
   @Override
   public String toString() {
-    return super.toString() + ": " + previousMappings.toString() +
-           ", docValues:" + previousDVMappings.toString() +
-           ", maxPointsInLeafNode=" + maxPointsInLeafNode +
-           ", maxMBSortInHeap=" + maxMBSortInHeap;
+    return super.toString()
+        + ": "
+        + previousMappings.toString()
+        + ", docValues:"
+        + previousDVMappings.toString()
+        + ", maxPointsInLeafNode="
+        + maxPointsInLeafNode
+        + ", maxMBSortInHeap="
+        + maxMBSortInHeap;
   }
 
-  /** Just like {@link BKDWriter} except it evilly picks random ways to split cells on
-   *  recursion to try to provoke geo APIs that get upset at fun rectangles. */
+  /**
+   * Just like {@link BKDWriter} except it evilly picks random ways to split cells on recursion to
+   * try to provoke geo APIs that get upset at fun rectangles.
+   */
   private static class RandomlySplittingBKDWriter extends BKDWriter {
 
     final Random random;
 
-    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, BKDConfig config, double maxMBSortInHeap,
-                                      long totalPointCount, int randomSeed) throws IOException {
+    public RandomlySplittingBKDWriter(
+        int maxDoc,
+        Directory tempDir,
+        String tempFileNamePrefix,
+        BKDConfig config,
+        double maxMBSortInHeap,
+        long totalPointCount,
+        int randomSeed)
+        throws IOException {
       super(maxDoc, tempDir, tempFileNamePrefix, config, maxMBSortInHeap, totalPointCount);
       this.random = new Random(randomSeed);
     }
@@ -272,9 +303,13 @@ public class RandomCodec extends AssertingCodec {
       return singleValuePerDoc && (new Random(randomSeed).nextBoolean());
     }
 
-    private static boolean getRandomLongOrds(long totalPointCount, boolean singleValuePerDoc, int randomSeed) {
-      // Always use long ords if we have too many points, but sometimes randomly use it anyway when singleValuePerDoc is false:
-      return totalPointCount > Integer.MAX_VALUE || (getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed) == false && new Random(randomSeed).nextBoolean());
+    private static boolean getRandomLongOrds(
+        long totalPointCount, boolean singleValuePerDoc, int randomSeed) {
+      // Always use long ords if we have too many points, but sometimes randomly use it anyway when
+      // singleValuePerDoc is false:
+      return totalPointCount > Integer.MAX_VALUE
+          || (getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed) == false
+              && new Random(randomSeed).nextBoolean());
     }
 
     private static long getRandomOfflineSorterBufferMB(int randomSeed) {
@@ -287,7 +322,8 @@ public class RandomCodec extends AssertingCodec {
 
     @Override
     protected int split(byte[] minPackedValue, byte[] maxPackedValue, int[] parentDims) {
-      // BKD normally defaults by the widest dimension, to try to make as squarish cells as possible, but we just pick a random one ;)
+      // BKD normally defaults by the widest dimension, to try to make as squarish cells as
+      // possible, but we just pick a random one ;)
       return random.nextInt(config.numIndexDims);
     }
   }

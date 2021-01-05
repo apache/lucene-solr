@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.vector;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -40,9 +39,7 @@ public class DistanceValueSource extends DoubleValuesSource {
   private final double multiplier;
   private final double nullValue;
 
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   public DistanceValueSource(PointVectorStrategy strategy, Point from, double multiplier) {
     this.strategy = strategy;
     this.from = from;
@@ -50,42 +47,40 @@ public class DistanceValueSource extends DoubleValuesSource {
     this.nullValue = 180 * multiplier;
   }
 
-  /**
-   * Returns the ValueSource description.
-   */
+  /** Returns the ValueSource description. */
   @Override
   public String toString() {
-    return "DistanceValueSource("+strategy+", "+from+")";
+    return "DistanceValueSource(" + strategy + ", " + from + ")";
   }
 
-  /**
-   * Returns the FunctionValues used by the function query.
-   */
+  /** Returns the FunctionValues used by the function query. */
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
     LeafReader reader = readerContext.reader();
 
     final NumericDocValues ptX = DocValues.getNumeric(reader, strategy.getFieldNameX());
     final NumericDocValues ptY = DocValues.getNumeric(reader, strategy.getFieldNameY());
 
-    return DoubleValues.withDefault(new DoubleValues() {
+    return DoubleValues.withDefault(
+        new DoubleValues() {
 
-      private final Point from = DistanceValueSource.this.from;
-      private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
+          private final Point from = DistanceValueSource.this.from;
+          private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
 
-      @Override
-      public double doubleValue() throws IOException {
-        double x = Double.longBitsToDouble(ptX.longValue());
-        double y = Double.longBitsToDouble(ptY.longValue());
-        return calculator.distance(from, x, y) * multiplier;
-      }
+          @Override
+          public double doubleValue() throws IOException {
+            double x = Double.longBitsToDouble(ptX.longValue());
+            double y = Double.longBitsToDouble(ptY.longValue());
+            return calculator.distance(from, x, y) * multiplier;
+          }
 
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        return ptX.advanceExact(doc) && ptY.advanceExact(doc);
-      }
-
-    }, nullValue);
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return ptX.advanceExact(doc) && ptY.advanceExact(doc);
+          }
+        },
+        nullValue);
   }
 
   @Override

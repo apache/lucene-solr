@@ -16,16 +16,13 @@
  */
 package org.apache.lucene.search;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Random;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 
-/**
- * A {@link Query} that adds random approximations to its scorers.
- */
+/** A {@link Query} that adds random approximations to its scorers. */
 public class RandomApproximationQuery extends Query {
 
   private final Query query;
@@ -52,8 +49,7 @@ public class RandomApproximationQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           query.equals(((RandomApproximationQuery) other).query);
+    return sameClassAs(other) && query.equals(((RandomApproximationQuery) other).query);
   }
 
   @Override
@@ -67,7 +63,8 @@ public class RandomApproximationQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Weight weight = query.createWeight(searcher, scoreMode, boost);
     return new RandomApproximationWeight(weight, new Random(random.nextLong()));
   }
@@ -89,7 +86,6 @@ public class RandomApproximationQuery extends Query {
       }
       return new RandomApproximationScorer(scorer, new Random(random.nextLong()));
     }
-
   }
 
   private static class RandomApproximationScorer extends Scorer {
@@ -136,9 +132,8 @@ public class RandomApproximationQuery extends Query {
 
     @Override
     public DocIdSetIterator iterator() {
-      return  TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);
+      return TwoPhaseIterator.asDocIdSetIterator(twoPhaseView);
     }
-
   }
 
   private static class RandomTwoPhaseView extends TwoPhaseIterator {
@@ -156,10 +151,12 @@ public class RandomApproximationQuery extends Query {
     @Override
     public boolean matches() throws IOException {
       if (approximation.docID() == -1 || approximation.docID() == DocIdSetIterator.NO_MORE_DOCS) {
-        throw new AssertionError("matches() should not be called on doc ID " + approximation.docID());
+        throw new AssertionError(
+            "matches() should not be called on doc ID " + approximation.docID());
       }
       if (lastDoc == approximation.docID()) {
-        throw new AssertionError("matches() has been called twice on doc ID " + approximation.docID());
+        throw new AssertionError(
+            "matches() has been called twice on doc ID " + approximation.docID());
       }
       lastDoc = approximation.docID();
       return approximation.docID() == disi.docID();
@@ -209,5 +206,4 @@ public class RandomApproximationQuery extends Query {
       return disi.cost();
     }
   }
-
 }

@@ -17,21 +17,18 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
 
-/**
- * Test to check Serialization
- */
+/** Test to check Serialization */
 public class TestRandomBinaryCodec extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 10)
-  public void testRandomPointCodec() throws IOException{
+  public void testRandomPointCodec() throws IOException {
     PlanetModel planetModel = randomPlanetModel();
     GeoPoint shape = randomGeoPoint(planetModel);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -43,7 +40,7 @@ public class TestRandomBinaryCodec extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 100)
-  public void testRandomPlanetObjectCodec() throws IOException{
+  public void testRandomPlanetObjectCodec() throws IOException {
     PlanetModel planetModel = randomPlanetModel();
     int type = randomShapeType();
     GeoShape shape = randomGeoShape(type, planetModel);
@@ -56,7 +53,7 @@ public class TestRandomBinaryCodec extends RandomGeo3dShapeGenerator {
 
   @Test
   @Repeat(iterations = 100)
-  public void testRandomShapeCodec() throws IOException{
+  public void testRandomShapeCodec() throws IOException {
     PlanetModel planetModel = randomPlanetModel();
     int type = randomShapeType();
     GeoShape shape = randomGeoShape(type, planetModel);

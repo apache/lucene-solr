@@ -24,9 +24,7 @@ import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewri
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.RegexpQuery;
 
-/**
- * Builds a {@link RegexpQuery} object from a {@link RegexpQueryNode} object.
- */
+/** Builds a {@link RegexpQuery} object from a {@link RegexpQueryNode} object. */
 public class RegexpQueryNodeBuilder implements StandardQueryBuilder {
 
   public RegexpQueryNodeBuilder() {
@@ -38,16 +36,15 @@ public class RegexpQueryNodeBuilder implements StandardQueryBuilder {
     RegexpQueryNode regexpNode = (RegexpQueryNode) queryNode;
 
     // TODO: make the maxStates configurable w/ a reasonable default (QueryParserBase uses 10000)
-    RegexpQuery q = new RegexpQuery(new Term(regexpNode.getFieldAsString(),
-        regexpNode.textToBytesRef()));
+    RegexpQuery q =
+        new RegexpQuery(new Term(regexpNode.getFieldAsString(), regexpNode.textToBytesRef()));
 
-    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode
-        .getTag(MultiTermRewriteMethodProcessor.TAG_ID);
+    MultiTermQuery.RewriteMethod method =
+        (MultiTermQuery.RewriteMethod) queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       q.setRewriteMethod(method);
     }
 
     return q;
   }
-
 }

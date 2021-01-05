@@ -281,6 +281,16 @@ Bug Fixes
 * SOLR-15031: Fix preventing null being wrapped in a QueryValueSource subQuery. Such null queries can be caused by query text
   resulting in an empty token stream. (Pieter van Boxtel via Mike Drob)
 
+* SOLR-15061: Fix NPE in SearchHandler when shards.info and no QueryComponent configured. (Bruno Roustant)
+
+* SOLR-14571: Download speed was hard-coded in the "Replication" screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
+
+* SOLR-15048: Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent that are in the
+  null group to treat them consistently regardless of collapse field type or group head selector. (hossman)
+
+* SOLR-15058: Enforce node_name contains colon and port and find first underscore after colon to parse context
+  when converting a node_name to a base URL. (Timothy Potter, Su Sasa)
+
 Other Changes
 ---------------------
 

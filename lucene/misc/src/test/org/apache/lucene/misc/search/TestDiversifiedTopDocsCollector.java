@@ -19,7 +19,6 @@ package org.apache.lucene.misc.search;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -54,12 +53,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Demonstrates an application of the {@link DiversifiedTopDocsCollector} in
- * assembling a collection of top results but without over-representation of any
- * one source (in this case top-selling singles from the 60s without having them
- * all be Beatles records...). Results are ranked by the number of weeks a
- * single is top of the charts and de-duped by the artist name.
- * 
+ * Demonstrates an application of the {@link DiversifiedTopDocsCollector} in assembling a collection
+ * of top results but without over-representation of any one source (in this case top-selling
+ * singles from the 60s without having them all be Beatles records...). Results are ranked by the
+ * number of weeks a single is top of the charts and de-duped by the artist name.
  */
 public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
@@ -68,7 +65,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     int expectedMinNumOfBeatlesHits = 5;
     TopDocs res = searcher.search(getTestQuery(), numberOfTracksOnCompilation);
     assertEquals(numberOfTracksOnCompilation, res.scoreDocs.length);
-    // due to randomization of segment merging in tests the exact number of Beatles hits 
+    // due to randomization of segment merging in tests the exact number of Beatles hits
     // selected varies between 5 and 6 but we prove the point they are over-represented
     // in our result set using a standard search.
     assertTrue(getMaxNumRecordsPerArtist(res.scoreDocs) >= expectedMinNumOfBeatlesHits);
@@ -79,8 +76,8 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     // any one artist.
     int requiredMaxHitsPerArtist = 2;
     int numberOfTracksOnCompilation = 10;
-    DiversifiedTopDocsCollector tdc = doDiversifiedSearch(
-        numberOfTracksOnCompilation, requiredMaxHitsPerArtist);
+    DiversifiedTopDocsCollector tdc =
+        doDiversifiedSearch(numberOfTracksOnCompilation, requiredMaxHitsPerArtist);
     ScoreDoc[] sd = tdc.topDocs(0).scoreDocs;
     assertEquals(numberOfTracksOnCompilation, sd.length);
     assertTrue(getMaxNumRecordsPerArtist(sd) <= requiredMaxHitsPerArtist);
@@ -92,14 +89,13 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     int requiredMaxHitsPerArtist = 1;
 
     // Volume 2 of our hits compilation - start at position 10
-    DiversifiedTopDocsCollector tdc = doDiversifiedSearch(
-        numberOfTracksPerCompilation * numberOfCompilations,
-        requiredMaxHitsPerArtist);
-    ScoreDoc[] volume2 = tdc.topDocs(numberOfTracksPerCompilation,
-        numberOfTracksPerCompilation).scoreDocs;
+    DiversifiedTopDocsCollector tdc =
+        doDiversifiedSearch(
+            numberOfTracksPerCompilation * numberOfCompilations, requiredMaxHitsPerArtist);
+    ScoreDoc[] volume2 =
+        tdc.topDocs(numberOfTracksPerCompilation, numberOfTracksPerCompilation).scoreDocs;
     assertEquals(numberOfTracksPerCompilation, volume2.length);
     assertTrue(getMaxNumRecordsPerArtist(volume2) <= requiredMaxHitsPerArtist);
-
   }
 
   public void testInvalidArguments() throws Exception {
@@ -107,11 +103,15 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     DiversifiedTopDocsCollector tdc = doDiversifiedSearch(numResults, 15);
 
     // start < 0
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tdc.topDocs(-1);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tdc.topDocs(-1);
+            });
 
-    assertEquals("Expected value of starting position is between 0 and 5, got -1", expected.getMessage());
+    assertEquals(
+        "Expected value of starting position is between 0 and 5, got -1", expected.getMessage());
 
     // start > pq.size()
     assertEquals(0, tdc.topDocs(numResults + 1).scoreDocs.length);
@@ -120,25 +120,26 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     assertEquals(0, tdc.topDocs(numResults).scoreDocs.length);
 
     // howMany < 0
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      tdc.topDocs(0, -1);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tdc.topDocs(0, -1);
+            });
 
-    assertEquals("Number of hits requested must be greater than 0 but value was -1", expected.getMessage());
+    assertEquals(
+        "Number of hits requested must be greater than 0 but value was -1", expected.getMessage());
 
     // howMany == 0
     assertEquals(0, tdc.topDocs(0, 0).scoreDocs.length);
-
   }
 
   // Diversifying collector that looks up de-dup keys using SortedDocValues
   // from a top-level Reader
-  private static final class DocValuesDiversifiedCollector extends
-      DiversifiedTopDocsCollector {
+  private static final class DocValuesDiversifiedCollector extends DiversifiedTopDocsCollector {
     private final SortedDocValues sdv;
 
-    public DocValuesDiversifiedCollector(int size, int maxHitsPerKey,
-        SortedDocValues sdv) {
+    public DocValuesDiversifiedCollector(int size, int maxHitsPerKey, SortedDocValues sdv) {
       super(size, maxHitsPerKey);
       this.sdv = sdv;
     }
@@ -172,7 +173,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         public long cost() {
           return 0;
         }
-        
+
         @Override
         public long longValue() throws IOException {
           // Keys are always expressed as a long so we obtain the
@@ -185,13 +186,13 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
   // Alternative, faster implementation for converting String keys to longs
   // but with the potential for hash collisions
-  private static final class HashedDocValuesDiversifiedCollector extends DiversifiedTopDocsCollector {
+  private static final class HashedDocValuesDiversifiedCollector
+      extends DiversifiedTopDocsCollector {
 
     private final String field;
     private BinaryDocValues vals;
 
-    public HashedDocValuesDiversifiedCollector(int size, int maxHitsPerKey,
-        String field) {
+    public HashedDocValuesDiversifiedCollector(int size, int maxHitsPerKey, String field) {
       super(size, maxHitsPerKey);
       this.field = field;
     }
@@ -203,22 +204,27 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
         public int docID() {
           return vals.docID();
         }
+
         @Override
         public int nextDoc() throws IOException {
           return vals.nextDoc();
         }
+
         @Override
         public int advance(int target) throws IOException {
           return vals.advance(target);
         }
+
         @Override
         public boolean advanceExact(int target) throws IOException {
           return vals.advanceExact(target);
         }
+
         @Override
         public long cost() {
           return vals.cost();
         }
+
         @Override
         public long longValue() throws IOException {
           return vals == null ? -1 : vals.binaryValue().hashCode();
@@ -227,8 +233,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context)
-        throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       this.vals = DocValues.getBinary(context.reader(), field);
       return super.getLeafCollector(context);
     }
@@ -236,78 +241,82 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
   // Test data - format is artist, song, weeks at top of charts
   private static String[] hitsOfThe60s = {
-      "1966\tSPENCER DAVIS GROUP\tKEEP ON RUNNING\t1",
-      "1966\tOVERLANDERS\tMICHELLE\t3",
-      "1966\tNANCY SINATRA\tTHESE BOOTS ARE MADE FOR WALKIN'\t4",
-      "1966\tWALKER BROTHERS\tTHE SUN AIN'T GONNA SHINE ANYMORE\t4",
-      "1966\tSPENCER DAVIS GROUP\tSOMEBODY HELP ME\t2",
-      "1966\tDUSTY SPRINGFIELD\tYOU DON'T HAVE TO SAY YOU LOVE ME\t1",
-      "1966\tMANFRED MANN\tPRETTY FLAMINGO\t3",
-      "1966\tROLLING STONES\tPAINT IT, BLACK\t1",
-      "1966\tFRANK SINATRA\tSTRANGERS IN THE NIGHT\t3",
-      "1966\tBEATLES\tPAPERBACK WRITER\t5",
-      "1966\tKINKS\tSUNNY AFTERNOON\t2",
-      "1966\tGEORGIE FAME AND THE BLUE FLAMES\tGETAWAY\t1",
-      "1966\tCHRIS FARLOWE\tOUT OF TIME\t1",
-      "1966\tTROGGS\tWITH A GIRL LIKE YOU\t2",
-      "1966\tBEATLES\tYELLOW SUBMARINE/ELEANOR RIGBY\t4",
-      "1966\tSMALL FACES\tALL OR NOTHING\t1",
-      "1966\tJIM REEVES\tDISTANT DRUMS\t5",
-      "1966\tFOUR TOPS\tREACH OUT I'LL BE THERE\t3",
-      "1966\tBEACH BOYS\tGOOD VIBRATIONS\t2",
-      "1966\tTOM JONES\tGREEN GREEN GRASS OF HOME\t4",
-      "1967\tMONKEES\tI'M A BELIEVER\t4",
-      "1967\tPETULA CLARK\tTHIS IS MY SONG\t2",
-      "1967\tENGELBERT HUMPERDINCK\tRELEASE ME\t4",
-      "1967\tNANCY SINATRA AND FRANK SINATRA\tSOMETHIN' STUPID\t2",
-      "1967\tSANDIE SHAW\tPUPPET ON A STRING\t3",
-      "1967\tTREMELOES\tSILENCE IS GOLDEN\t3",
-      "1967\tPROCOL HARUM\tA WHITER SHADE OF PALE\t4",
-      "1967\tBEATLES\tALL YOU NEED IS LOVE\t7",
-      "1967\tSCOTT MCKENZIE\tSAN FRANCISCO (BE SURE TO WEAR SOME FLOWERS INYOUR HAIR)\t4",
-      "1967\tENGELBERT HUMPERDINCK\tTHE LAST WALTZ\t5",
-      "1967\tBEE GEES\tMASSACHUSETTS (THE LIGHTS WENT OUT IN)\t4",
-      "1967\tFOUNDATIONS\tBABY NOW THAT I'VE FOUND YOU\t2",
-      "1967\tLONG JOHN BALDRY\tLET THE HEARTACHES BEGIN\t2",
-      "1967\tBEATLES\tHELLO GOODBYE\t5",
-      "1968\tGEORGIE FAME\tTHE BALLAD OF BONNIE AND CLYDE\t1",
-      "1968\tLOVE AFFAIR\tEVERLASTING LOVE\t2",
-      "1968\tMANFRED MANN\tMIGHTY QUINN\t2",
-      "1968\tESTHER AND ABI OFARIM\tCINDERELLA ROCKEFELLA\t3",
-      "1968\tDAVE DEE, DOZY, BEAKY, MICK AND TICH\tTHE LEGEND OF XANADU\t1",
-      "1968\tBEATLES\tLADY MADONNA\t2",
-      "1968\tCLIFF RICHARD\tCONGRATULATIONS\t2",
-      "1968\tLOUIS ARMSTRONG\tWHAT A WONDERFUL WORLD/CABARET\t4",
-      "1968\tGARRY PUCKETT AND THE UNION GAP\tYOUNG GIRL\t4",
-      "1968\tROLLING STONES\tJUMPING JACK FLASH\t2",
-      "1968\tEQUALS\tBABY COME BACK\t3", "1968\tDES O'CONNOR\tI PRETEND\t1",
-      "1968\tTOMMY JAMES AND THE SHONDELLS\tMONY MONY\t2",
-      "1968\tCRAZY WORLD OF ARTHUR BROWN\tFIRE!\t1",
-      "1968\tTOMMY JAMES AND THE SHONDELLS\tMONY MONY\t1",
-      "1968\tBEACH BOYS\tDO IT AGAIN\t1",
-      "1968\tBEE GEES\tI'VE GOTTA GET A MESSAGE TO YOU\t1",
-      "1968\tBEATLES\tHEY JUDE\t8",
-      "1968\tMARY HOPKIN\tTHOSE WERE THE DAYS\t6",
-      "1968\tJOE COCKER\tWITH A LITTLE HELP FROM MY FRIENDS\t1",
-      "1968\tHUGO MONTENEGRO\tTHE GOOD THE BAD AND THE UGLY\t4",
-      "1968\tSCAFFOLD\tLILY THE PINK\t3",
-      "1969\tMARMALADE\tOB-LA-DI, OB-LA-DA\t1",
-      "1969\tSCAFFOLD\tLILY THE PINK\t1",
-      "1969\tMARMALADE\tOB-LA-DI, OB-LA-DA\t2",
-      "1969\tFLEETWOOD MAC\tALBATROSS\t1", "1969\tMOVE\tBLACKBERRY WAY\t1",
-      "1969\tAMEN CORNER\t(IF PARADISE IS) HALF AS NICE\t2",
-      "1969\tPETER SARSTEDT\tWHERE DO YOU GO TO (MY LOVELY)\t4",
-      "1969\tMARVIN GAYE\tI HEARD IT THROUGH THE GRAPEVINE\t3",
-      "1969\tDESMOND DEKKER AND THE ACES\tTHE ISRAELITES\t1",
-      "1969\tBEATLES\tGET BACK\t6", "1969\tTOMMY ROE\tDIZZY\t1",
-      "1969\tBEATLES\tTHE BALLAD OF JOHN AND YOKO\t3",
-      "1969\tTHUNDERCLAP NEWMAN\tSOMETHING IN THE AIR\t3",
-      "1969\tROLLING STONES\tHONKY TONK WOMEN\t5",
-      "1969\tZAGER AND EVANS\tIN THE YEAR 2525 (EXORDIUM AND TERMINUS)\t3",
-      "1969\tCREEDENCE CLEARWATER REVIVAL\tBAD MOON RISING\t3",
-      "1969\tJANE BIRKIN AND SERGE GAINSBOURG\tJE T'AIME... MOI NON PLUS\t1",
-      "1969\tBOBBIE GENTRY\tI'LL NEVER FALL IN LOVE AGAIN\t1",
-      "1969\tARCHIES\tSUGAR, SUGAR\t4" };
+    "1966\tSPENCER DAVIS GROUP\tKEEP ON RUNNING\t1",
+    "1966\tOVERLANDERS\tMICHELLE\t3",
+    "1966\tNANCY SINATRA\tTHESE BOOTS ARE MADE FOR WALKIN'\t4",
+    "1966\tWALKER BROTHERS\tTHE SUN AIN'T GONNA SHINE ANYMORE\t4",
+    "1966\tSPENCER DAVIS GROUP\tSOMEBODY HELP ME\t2",
+    "1966\tDUSTY SPRINGFIELD\tYOU DON'T HAVE TO SAY YOU LOVE ME\t1",
+    "1966\tMANFRED MANN\tPRETTY FLAMINGO\t3",
+    "1966\tROLLING STONES\tPAINT IT, BLACK\t1",
+    "1966\tFRANK SINATRA\tSTRANGERS IN THE NIGHT\t3",
+    "1966\tBEATLES\tPAPERBACK WRITER\t5",
+    "1966\tKINKS\tSUNNY AFTERNOON\t2",
+    "1966\tGEORGIE FAME AND THE BLUE FLAMES\tGETAWAY\t1",
+    "1966\tCHRIS FARLOWE\tOUT OF TIME\t1",
+    "1966\tTROGGS\tWITH A GIRL LIKE YOU\t2",
+    "1966\tBEATLES\tYELLOW SUBMARINE/ELEANOR RIGBY\t4",
+    "1966\tSMALL FACES\tALL OR NOTHING\t1",
+    "1966\tJIM REEVES\tDISTANT DRUMS\t5",
+    "1966\tFOUR TOPS\tREACH OUT I'LL BE THERE\t3",
+    "1966\tBEACH BOYS\tGOOD VIBRATIONS\t2",
+    "1966\tTOM JONES\tGREEN GREEN GRASS OF HOME\t4",
+    "1967\tMONKEES\tI'M A BELIEVER\t4",
+    "1967\tPETULA CLARK\tTHIS IS MY SONG\t2",
+    "1967\tENGELBERT HUMPERDINCK\tRELEASE ME\t4",
+    "1967\tNANCY SINATRA AND FRANK SINATRA\tSOMETHIN' STUPID\t2",
+    "1967\tSANDIE SHAW\tPUPPET ON A STRING\t3",
+    "1967\tTREMELOES\tSILENCE IS GOLDEN\t3",
+    "1967\tPROCOL HARUM\tA WHITER SHADE OF PALE\t4",
+    "1967\tBEATLES\tALL YOU NEED IS LOVE\t7",
+    "1967\tSCOTT MCKENZIE\tSAN FRANCISCO (BE SURE TO WEAR SOME FLOWERS INYOUR HAIR)\t4",
+    "1967\tENGELBERT HUMPERDINCK\tTHE LAST WALTZ\t5",
+    "1967\tBEE GEES\tMASSACHUSETTS (THE LIGHTS WENT OUT IN)\t4",
+    "1967\tFOUNDATIONS\tBABY NOW THAT I'VE FOUND YOU\t2",
+    "1967\tLONG JOHN BALDRY\tLET THE HEARTACHES BEGIN\t2",
+    "1967\tBEATLES\tHELLO GOODBYE\t5",
+    "1968\tGEORGIE FAME\tTHE BALLAD OF BONNIE AND CLYDE\t1",
+    "1968\tLOVE AFFAIR\tEVERLASTING LOVE\t2",
+    "1968\tMANFRED MANN\tMIGHTY QUINN\t2",
+    "1968\tESTHER AND ABI OFARIM\tCINDERELLA ROCKEFELLA\t3",
+    "1968\tDAVE DEE, DOZY, BEAKY, MICK AND TICH\tTHE LEGEND OF XANADU\t1",
+    "1968\tBEATLES\tLADY MADONNA\t2",
+    "1968\tCLIFF RICHARD\tCONGRATULATIONS\t2",
+    "1968\tLOUIS ARMSTRONG\tWHAT A WONDERFUL WORLD/CABARET\t4",
+    "1968\tGARRY PUCKETT AND THE UNION GAP\tYOUNG GIRL\t4",
+    "1968\tROLLING STONES\tJUMPING JACK FLASH\t2",
+    "1968\tEQUALS\tBABY COME BACK\t3",
+    "1968\tDES O'CONNOR\tI PRETEND\t1",
+    "1968\tTOMMY JAMES AND THE SHONDELLS\tMONY MONY\t2",
+    "1968\tCRAZY WORLD OF ARTHUR BROWN\tFIRE!\t1",
+    "1968\tTOMMY JAMES AND THE SHONDELLS\tMONY MONY\t1",
+    "1968\tBEACH BOYS\tDO IT AGAIN\t1",
+    "1968\tBEE GEES\tI'VE GOTTA GET A MESSAGE TO YOU\t1",
+    "1968\tBEATLES\tHEY JUDE\t8",
+    "1968\tMARY HOPKIN\tTHOSE WERE THE DAYS\t6",
+    "1968\tJOE COCKER\tWITH A LITTLE HELP FROM MY FRIENDS\t1",
+    "1968\tHUGO MONTENEGRO\tTHE GOOD THE BAD AND THE UGLY\t4",
+    "1968\tSCAFFOLD\tLILY THE PINK\t3",
+    "1969\tMARMALADE\tOB-LA-DI, OB-LA-DA\t1",
+    "1969\tSCAFFOLD\tLILY THE PINK\t1",
+    "1969\tMARMALADE\tOB-LA-DI, OB-LA-DA\t2",
+    "1969\tFLEETWOOD MAC\tALBATROSS\t1",
+    "1969\tMOVE\tBLACKBERRY WAY\t1",
+    "1969\tAMEN CORNER\t(IF PARADISE IS) HALF AS NICE\t2",
+    "1969\tPETER SARSTEDT\tWHERE DO YOU GO TO (MY LOVELY)\t4",
+    "1969\tMARVIN GAYE\tI HEARD IT THROUGH THE GRAPEVINE\t3",
+    "1969\tDESMOND DEKKER AND THE ACES\tTHE ISRAELITES\t1",
+    "1969\tBEATLES\tGET BACK\t6",
+    "1969\tTOMMY ROE\tDIZZY\t1",
+    "1969\tBEATLES\tTHE BALLAD OF JOHN AND YOKO\t3",
+    "1969\tTHUNDERCLAP NEWMAN\tSOMETHING IN THE AIR\t3",
+    "1969\tROLLING STONES\tHONKY TONK WOMEN\t5",
+    "1969\tZAGER AND EVANS\tIN THE YEAR 2525 (EXORDIUM AND TERMINUS)\t3",
+    "1969\tCREEDENCE CLEARWATER REVIVAL\tBAD MOON RISING\t3",
+    "1969\tJANE BIRKIN AND SERGE GAINSBOURG\tJE T'AIME... MOI NON PLUS\t1",
+    "1969\tBOBBIE GENTRY\tI'LL NEVER FALL IN LOVE AGAIN\t1",
+    "1969\tARCHIES\tSUGAR, SUGAR\t4"
+  };
 
   private static final Map<String, Record> parsedRecords = new HashMap<String, Record>();
   private Directory dir;
@@ -322,8 +331,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     float weeks;
     String id;
 
-    public Record(String id, String year, String artist, String song,
-        float weeks) {
+    public Record(String id, String year, String artist, String song, float weeks) {
       super();
       this.id = id;
       this.year = year;
@@ -334,14 +342,22 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "Record [id=" + id + ", artist=" + artist + ", weeks=" + weeks
-          + ", year=" + year + ", song=" + song + "]";
+      return "Record [id="
+          + id
+          + ", artist="
+          + artist
+          + ", weeks="
+          + weeks
+          + ", year="
+          + year
+          + ", song="
+          + song
+          + "]";
     }
-
   }
 
-  private DiversifiedTopDocsCollector doDiversifiedSearch(int numResults,
-      int maxResultsPerArtist) throws IOException {
+  private DiversifiedTopDocsCollector doDiversifiedSearch(int numResults, int maxResultsPerArtist)
+      throws IOException {
     // Alternate between implementations used for key lookups
     if (random().nextBoolean()) {
       // Faster key lookup but with potential for collisions on larger datasets
@@ -352,32 +368,28 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
   }
 
-  private DiversifiedTopDocsCollector doFuzzyDiversifiedSearch(int numResults,
-      int maxResultsPerArtist) throws IOException {
-    DiversifiedTopDocsCollector tdc = new HashedDocValuesDiversifiedCollector(
-        numResults, maxResultsPerArtist, "artist");
+  private DiversifiedTopDocsCollector doFuzzyDiversifiedSearch(
+      int numResults, int maxResultsPerArtist) throws IOException {
+    DiversifiedTopDocsCollector tdc =
+        new HashedDocValuesDiversifiedCollector(numResults, maxResultsPerArtist, "artist");
     searcher.search(getTestQuery(), tdc);
     return tdc;
   }
 
   private DiversifiedTopDocsCollector doAccurateDiversifiedSearch(
       int numResults, int maxResultsPerArtist) throws IOException {
-    DiversifiedTopDocsCollector tdc = new DocValuesDiversifiedCollector(
-        numResults, maxResultsPerArtist, artistDocValues);
+    DiversifiedTopDocsCollector tdc =
+        new DocValuesDiversifiedCollector(numResults, maxResultsPerArtist, artistDocValues);
     searcher.search(getTestQuery(), tdc);
     return tdc;
   }
 
   private Query getTestQuery() {
     BooleanQuery.Builder testQuery = new BooleanQuery.Builder();
-    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1966")),
-        Occur.SHOULD));
-    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1967")),
-        Occur.SHOULD));
-    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1968")),
-        Occur.SHOULD));
-    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1969")),
-        Occur.SHOULD));
+    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1966")), Occur.SHOULD));
+    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1967")), Occur.SHOULD));
+    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1968")), Occur.SHOULD));
+    testQuery.add(new BooleanClause(new TermQuery(new Term("year", "1969")), Occur.SHOULD));
     return new DocValueScoreQuery(testQuery.build(), "weeksAtNumberOne");
   }
 
@@ -391,10 +403,8 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     Document doc = new Document();
 
     Field yearField = newTextField("year", "", Field.Store.NO);
-    SortedDocValuesField artistField = new SortedDocValuesField("artist",
-        new BytesRef(""));
-    Field weeksAtNumberOneField = new FloatDocValuesField("weeksAtNumberOne",
-        0.0F);
+    SortedDocValuesField artistField = new SortedDocValuesField("artist", new BytesRef(""));
+    Field weeksAtNumberOneField = new FloatDocValuesField("weeksAtNumberOne", 0.0F);
     Field weeksStoredField = new StoredField("weeks", 0.0F);
     Field idField = newStringField("id", "", Field.Store.YES);
     Field songField = newTextField("song", "", Field.Store.NO);
@@ -411,8 +421,8 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     parsedRecords.clear();
     for (int i = 0; i < hitsOfThe60s.length; i++) {
       String cols[] = hitsOfThe60s[i].split("\t");
-      Record record = new Record(String.valueOf(i), cols[0], cols[1], cols[2],
-          Float.parseFloat(cols[3]));
+      Record record =
+          new Record(String.valueOf(i), cols[0], cols[1], cols[2], Float.parseFloat(cols[3]));
       parsedRecords.put(record.id, record);
       idField.setStringValue(record.id);
       yearField.setStringValue(record.year);
@@ -462,12 +472,12 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
 
     private final Query query;
     private final String scoreField;
-    
+
     DocValueScoreQuery(Query query, String scoreField) {
       this.query = query;
       this.scoreField = scoreField;
     }
-    
+
     @Override
     public String toString(String field) {
       return "DocValueScore(" + query.toString(field) + ")";
@@ -504,24 +514,25 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       if (scoreMode.needsScores() == false) {
         return query.createWeight(searcher, scoreMode, boost);
       }
       Weight inner = query.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);
       return new Weight(this) {
-        
+
         @Override
         public boolean isCacheable(LeafReaderContext ctx) {
           return true;
         }
-        
+
         @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           Scorer innerScorer = inner.scorer(context);
           NumericDocValues scoreFactors = DocValues.getNumeric(context.reader(), scoreField);
           return new Scorer(this) {
-            
+
             @Override
             public float score() throws IOException {
               if (scoreFactors.advanceExact(docID())) {
@@ -529,17 +540,17 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
               }
               return 0;
             }
-            
+
             @Override
             public float getMaxScore(int upTo) throws IOException {
               return Float.POSITIVE_INFINITY;
             }
-            
+
             @Override
             public DocIdSetIterator iterator() {
               return innerScorer.iterator();
             }
-            
+
             @Override
             public int docID() {
               return innerScorer.docID();
@@ -561,5 +572,4 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
       };
     }
   }
-
 }

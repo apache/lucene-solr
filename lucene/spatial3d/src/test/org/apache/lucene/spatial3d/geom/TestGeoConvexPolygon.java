@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestGeoConvexPolygon {
+import org.junit.Test;
 
+public class TestGeoConvexPolygon {
 
   @Test
   public void testPolygonPointWithin() {
@@ -48,9 +47,9 @@ public class TestGeoConvexPolygon {
     // Sample some nearby points outside, and compute distance-to-shape for them as well
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
     assertFalse(c.isWithin(gp));
-    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.ARC,gp),1e-12);
-    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.NORMAL,gp),1e-3);
-    assertEquals(0.05,c.computeOutsideDistance(DistanceStyle.LINEAR,gp),1e-3);
+    assertEquals(0.05, c.computeOutsideDistance(DistanceStyle.ARC, gp), 1e-12);
+    assertEquals(0.05, c.computeOutsideDistance(DistanceStyle.NORMAL, gp), 1e-3);
+    assertEquals(0.05, c.computeOutsideDistance(DistanceStyle.LINEAR, gp), 1e-3);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
@@ -87,5 +86,4 @@ public class TestGeoConvexPolygon {
     assertEquals(-0.1, b.getMinLatitude(), 0.000001);
     assertEquals(0.1, b.getMaxLatitude(), 0.000001);
   }
-
 }

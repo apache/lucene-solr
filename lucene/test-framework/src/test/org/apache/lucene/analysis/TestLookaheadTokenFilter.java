@@ -22,20 +22,22 @@ import java.util.Random;
 public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
 
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Random random = random();
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random.nextBoolean());
-        TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
-        return new TokenStreamComponents(tokenizer, output);
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Random random = random();
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random.nextBoolean());
+            TokenStream output = new MockRandomLookaheadTokenFilter(random, tokenizer);
+            return new TokenStreamComponents(tokenizer, output);
+          }
+        };
     int maxLength = TEST_NIGHTLY ? 8192 : 1024;
-    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, maxLength);
+    checkRandomData(random(), a, 50 * RANDOM_MULTIPLIER, maxLength);
   }
 
-  private static class NeverPeeksLookaheadTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
+  private static class NeverPeeksLookaheadTokenFilter
+      extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
     public NeverPeeksLookaheadTokenFilter(TokenStream input) {
       super(input);
     }
@@ -52,45 +54,49 @@ public class TestLookaheadTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testNeverCallingPeek() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, random().nextBoolean());
-        TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
-        return new TokenStreamComponents(tokenizer, output);
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new MockTokenizer(MockTokenizer.WHITESPACE, random().nextBoolean());
+            TokenStream output = new NeverPeeksLookaheadTokenFilter(tokenizer);
+            return new TokenStreamComponents(tokenizer, output);
+          }
+        };
     int maxLength = TEST_NIGHTLY ? 8192 : 1024;
-    checkRandomData(random(), a, 50*RANDOM_MULTIPLIER, maxLength);
+    checkRandomData(random(), a, 50 * RANDOM_MULTIPLIER, maxLength);
   }
 
   public void testMissedFirstToken() throws Exception {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TrivialLookaheadFilter filter = new TrivialLookaheadFilter(source);
-        return new TokenStreamComponents(source, filter);
-     }
-    };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TrivialLookaheadFilter filter = new TrivialLookaheadFilter(source);
+            return new TokenStreamComponents(source, filter);
+          }
+        };
 
-    assertAnalyzesTo(analyzer,
+    assertAnalyzesTo(
+        analyzer,
         "Only he who is running knows .",
-        new String[]{
-            "Only",
-            "Only-huh?",
-            "he",
-            "he-huh?",
-            "who",
-            "who-huh?",
-            "is",
-            "is-huh?",
-            "running",
-            "running-huh?",
-            "knows",
-            "knows-huh?",
-            ".",
-            ".-huh?"
+        new String[] {
+          "Only",
+          "Only-huh?",
+          "he",
+          "he-huh?",
+          "who",
+          "who-huh?",
+          "is",
+          "is-huh?",
+          "running",
+          "running-huh?",
+          "knows",
+          "knows-huh?",
+          ".",
+          ".-huh?"
         });
   }
 }

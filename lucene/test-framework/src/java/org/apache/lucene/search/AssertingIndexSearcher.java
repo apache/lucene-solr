@@ -20,33 +20,33 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * Helper class that adds some extra checks to ensure correct
- * usage of {@code IndexSearcher} and {@code Weight}.
+ * Helper class that adds some extra checks to ensure correct usage of {@code IndexSearcher} and
+ * {@code Weight}.
  */
 public class AssertingIndexSearcher extends IndexSearcher {
   final Random random;
-  public  AssertingIndexSearcher(Random random, IndexReader r) {
+
+  public AssertingIndexSearcher(Random random, IndexReader r) {
     super(r);
     this.random = new Random(random.nextLong());
   }
-  
-  public  AssertingIndexSearcher(Random random, IndexReaderContext context) {
+
+  public AssertingIndexSearcher(Random random, IndexReaderContext context) {
     super(context);
     this.random = new Random(random.nextLong());
   }
-  
-  public  AssertingIndexSearcher(Random random, IndexReader r, ExecutorService ex) {
+
+  public AssertingIndexSearcher(Random random, IndexReader r, ExecutorService ex) {
     super(r, ex);
     this.random = new Random(random.nextLong());
   }
-  
-  public  AssertingIndexSearcher(Random random, IndexReaderContext context, ExecutorService ex) {
+
+  public AssertingIndexSearcher(Random random, IndexReaderContext context, ExecutorService ex) {
     super(context, ex);
     this.random = new Random(random.nextLong());
   }
@@ -67,7 +67,8 @@ public class AssertingIndexSearcher extends IndexSearcher {
   }
 
   @Override
-  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector) throws IOException {
+  protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
+      throws IOException {
     assert weight instanceof AssertingWeight;
     super.search(leaves, weight, AssertingCollector.wrap(collector));
   }
@@ -76,5 +77,4 @@ public class AssertingIndexSearcher extends IndexSearcher {
   public String toString() {
     return "AssertingIndexSearcher(" + super.toString() + ")";
   }
-
 }

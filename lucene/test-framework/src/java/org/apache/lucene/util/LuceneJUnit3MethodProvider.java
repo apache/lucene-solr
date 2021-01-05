@@ -16,33 +16,30 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.ClassModel;
+import com.carrotsearch.randomizedtesting.ClassModel.MethodModel;
+import com.carrotsearch.randomizedtesting.TestMethodProvider;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-import com.carrotsearch.randomizedtesting.ClassModel;
-import com.carrotsearch.randomizedtesting.ClassModel.MethodModel;
-import com.carrotsearch.randomizedtesting.TestMethodProvider;
-
-/**
- * Backwards compatible test* method provider (public, non-static).
- */
+/** Backwards compatible test* method provider (public, non-static). */
 public final class LuceneJUnit3MethodProvider implements TestMethodProvider {
   @Override
   public Collection<Method> getTestMethods(Class<?> suiteClass, ClassModel classModel) {
-    Map<Method,MethodModel> methods = classModel.getMethods();
+    Map<Method, MethodModel> methods = classModel.getMethods();
     ArrayList<Method> result = new ArrayList<>();
     for (MethodModel mm : methods.values()) {
       // Skip any methods that have overrieds/ shadows.
       if (mm.getDown() != null) continue;
 
       Method m = mm.element;
-      if (m.getName().startsWith("test") &&
-          Modifier.isPublic(m.getModifiers()) &&
-          !Modifier.isStatic(m.getModifiers()) &&
-          m.getParameterTypes().length == 0) {
+      if (m.getName().startsWith("test")
+          && Modifier.isPublic(m.getModifiers())
+          && !Modifier.isStatic(m.getModifiers())
+          && m.getParameterTypes().length == 0) {
         result.add(m);
       }
     }

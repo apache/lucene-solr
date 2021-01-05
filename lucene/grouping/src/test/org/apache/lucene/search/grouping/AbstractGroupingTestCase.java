@@ -18,7 +18,6 @@ package org.apache.lucene.search.grouping;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -28,10 +27,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Base class for grouping related tests.
- */
-// TODO (MvG) : The grouping tests contain a lot of code duplication. Try to move the common code to this class..
+/** Base class for grouping related tests. */
+// TODO (MvG) : The grouping tests contain a lot of code duplication. Try to move the common code to
+// this class..
 public abstract class AbstractGroupingTestCase extends LuceneTestCase {
 
   protected String generateRandomNonEmptyString() {
@@ -41,7 +39,7 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
       // For that reason we don't generate empty string
       // groups.
       randomValue = TestUtil.randomRealisticUnicodeString(random());
-      //randomValue = _TestUtil.randomSimpleString(random());
+      // randomValue = _TestUtil.randomSimpleString(random());
     } while ("".equals(randomValue));
     return randomValue;
   }
@@ -62,8 +60,11 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
 
     Shard() throws IOException {
       this.directory = newDirectory();
-      this.writer = new RandomIndexWriter(random(), directory,
-          newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+      this.writer =
+          new RandomIndexWriter(
+              random(),
+              directory,
+              newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     }
 
     IndexSearcher getIndexSearcher() throws IOException {

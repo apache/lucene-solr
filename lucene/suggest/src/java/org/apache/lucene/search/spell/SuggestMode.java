@@ -18,24 +18,19 @@ package org.apache.lucene.search.spell;
 
 /**
  * Set of strategies for suggesting related terms
+ *
  * @lucene.experimental
  */
 public enum SuggestMode {
-  /**
-   * Generate suggestions only for terms not in the index (default)
-   */
+  /** Generate suggestions only for terms not in the index (default) */
   SUGGEST_WHEN_NOT_IN_INDEX,
 
-  /**
-   * Return only suggested words that are as frequent or more frequent than the
-   * searched word
-   */
+  /** Return only suggested words that are as frequent or more frequent than the searched word */
   SUGGEST_MORE_POPULAR,
 
   /**
-   * Always attempt to offer suggestions (however, other parameters may limit
-   * suggestions. For example, see
-   * {@link DirectSpellChecker#setMaxQueryFrequency(float)} ).
+   * Always attempt to offer suggestions (however, other parameters may limit suggestions. For
+   * example, see {@link DirectSpellChecker#setMaxQueryFrequency(float)} ).
    */
   SUGGEST_ALWAYS
 }

@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiPredicate;
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -96,41 +95,45 @@ class QueryIndex implements Closeable {
     populateQueryCache(serializer, decomposer);
   }
 
-  private void populateQueryCache(MonitorQuerySerializer serializer, QueryDecomposer decomposer) throws IOException {
+  private void populateQueryCache(MonitorQuerySerializer serializer, QueryDecomposer decomposer)
+      throws IOException {
     if (serializer == null) {
       // No query serialization happening here - check that the cache is empty
       IndexSearcher searcher = manager.acquire();
       try {
         if (searcher.count(new MatchAllDocsQuery()) != 0) {
-          throw new IllegalStateException("Attempting to open a non-empty monitor query index with no MonitorQuerySerializer");
+          throw new IllegalStateException(
+              "Attempting to open a non-empty monitor query index with no MonitorQuerySerializer");
         }
-      }
-      finally {
+      } finally {
         manager.release(searcher);
       }
       return;
     }
     Set<String> ids = new HashSet<>();
     List<Exception> errors = new ArrayList<>();
-    purgeCache(newCache -> scan((id, cacheEntry, dataValues) -> {
-      if (ids.contains(id)) {
-        // this is a branch of a query that has already been reconstructed, but
-        // then split by decomposition - we don't need to parse it again
-        return;
-      }
-      ids.add(id);
-      try {
-        MonitorQuery mq = serializer.deserialize(dataValues.mq.binaryValue());
-        for (QueryCacheEntry entry : QueryCacheEntry.decompose(mq, decomposer)) {
-          newCache.put(entry.cacheId, entry);
-        }
-      }
-      catch (Exception e) {
-        errors.add(e);
-      }
-    }));
+    purgeCache(
+        newCache ->
+            scan(
+                (id, cacheEntry, dataValues) -> {
+                  if (ids.contains(id)) {
+                    // this is a branch of a query that has already been reconstructed, but
+                    // then split by decomposition - we don't need to parse it again
+                    return;
+                  }
+                  ids.add(id);
+                  try {
+                    MonitorQuery mq = serializer.deserialize(dataValues.mq.binaryValue());
+                    for (QueryCacheEntry entry : QueryCacheEntry.decompose(mq, decomposer)) {
+                      newCache.put(entry.cacheId, entry);
+                    }
+                  } catch (Exception e) {
+                    errors.add(e);
+                  }
+                }));
     if (errors.size() > 0) {
-      IllegalStateException e = new IllegalStateException("Couldn't parse some queries from the index");
+      IllegalStateException e =
+          new IllegalStateException("Couldn't parse some queries from the index");
       for (Exception parseError : errors) {
         e.addSuppressed(parseError);
       }
@@ -140,7 +143,8 @@ class QueryIndex implements Closeable {
 
   private class TermsHashBuilder extends SearcherFactory {
     @Override
-    public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) throws IOException {
+    public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader)
+        throws IOException {
       IndexSearcher searcher = super.newSearcher(reader, previousReader);
       searcher.setQueryCache(null);
       termFilters.put(reader.getReaderCacheHelper().getKey(), new QueryTermFilter(reader));
@@ -193,7 +197,8 @@ class QueryIndex implements Closeable {
     List<Indexable> indexables = new ArrayList<>();
     for (MonitorQuery mq : updates) {
       if (serializer != null && mq.getQueryString() == null) {
-        throw new IllegalArgumentException("Cannot add a MonitorQuery with a null string representation to a non-ephemeral Monitor");
+        throw new IllegalArgumentException(
+            "Cannot add a MonitorQuery with a null string representation to a non-ephemeral Monitor");
       }
       BytesRef serialized = serializer == null ? EMPTY : serializer.serialize(mq);
       for (QueryCacheEntry qce : QueryCacheEntry.decompose(mq, decomposer)) {
@@ -244,10 +249,12 @@ class QueryIndex implements Closeable {
 
   MonitorQuery getQuery(String queryId) throws IOException {
     if (serializer == null) {
-      throw new IllegalStateException("Cannot get queries from an index with no MonitorQuerySerializer");
+      throw new IllegalStateException(
+          "Cannot get queries from an index with no MonitorQuerySerializer");
     }
     BytesRef[] bytesHolder = new BytesRef[1];
-    search(new TermQuery(new Term(FIELDS.query_id, queryId)),
+    search(
+        new TermQuery(new Term(FIELDS.query_id, queryId)),
         (id, query, dataValues) -> bytesHolder[0] = dataValues.mq.binaryValue());
     return serializer.deserialize(bytesHolder[0]);
   }
@@ -276,7 +283,9 @@ class QueryIndex implements Closeable {
 
       MonitorQueryCollector collector = new MonitorQueryCollector(queries, matcher);
       long buildTime = System.nanoTime();
-      Query query = queryBuilder.buildQuery(termFilters.get(searcher.getIndexReader().getReaderCacheHelper().getKey()));
+      Query query =
+          queryBuilder.buildQuery(
+              termFilters.get(searcher.getIndexReader().getReaderCacheHelper().getKey()));
       buildTime = System.nanoTime() - buildTime;
       searcher.search(query, collector);
       return buildTime;
@@ -292,16 +301,18 @@ class QueryIndex implements Closeable {
   }
 
   void purgeCache() throws IOException {
-    purgeCache(newCache -> scan((id, query, dataValues) -> {
-      if (query != null)
-        newCache.put(query.cacheId, query);
-    }));
+    purgeCache(
+        newCache ->
+            scan(
+                (id, query, dataValues) -> {
+                  if (query != null) newCache.put(query.cacheId, query);
+                }));
   }
 
   /**
    * Remove unused queries from the query cache.
-   * <p>
-   * This is normally called from a background thread at a rate set by configurePurgeFrequency().
+   *
+   * <p>This is normally called from a background thread at a rate set by configurePurgeFrequency().
    *
    * @throws IOException on IO errors
    */
@@ -343,7 +354,6 @@ class QueryIndex implements Closeable {
     }
   }
 
-
   // ---------------------------------------------
   //  Proxy trivial operations...
   // ---------------------------------------------
@@ -380,7 +390,6 @@ class QueryIndex implements Closeable {
     default ScoreMode scoreMode() {
       return ScoreMode.COMPLETE_NO_SCORES;
     }
-
   }
 
   // ---------------------------------------------
@@ -404,9 +413,7 @@ class QueryIndex implements Closeable {
     }
   }
 
-  /**
-   * A Collector that decodes the stored query for each document hit.
-   */
+  /** A Collector that decodes the stored query for each document hit. */
   static final class MonitorQueryCollector extends SimpleCollector {
 
     private final Map<String, QueryCacheEntry> queries;
@@ -444,6 +451,5 @@ class QueryIndex implements Closeable {
     public ScoreMode scoreMode() {
       return matcher.scoreMode();
     }
-
   }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.cranky;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Random;
-
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
@@ -29,19 +28,22 @@ import org.apache.lucene.util.Bits;
 class CrankyLiveDocsFormat extends LiveDocsFormat {
   final LiveDocsFormat delegate;
   final Random random;
-  
+
   CrankyLiveDocsFormat(LiveDocsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
   }
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context)
+      throws IOException {
     return delegate.readLiveDocs(dir, info, context);
   }
 
   @Override
-  public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(
+      Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context)
+      throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from LiveDocsFormat.writeLiveDocs()");
     }
