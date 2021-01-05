@@ -104,6 +104,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
     }
   }
 
+  /** Converts the state string to a State instance.
+   * @param shortName shortName in {@link State#shortName}
+   *
+   */
+  public static State getState(String shortName) {
+    return shortName == null ? null : Replica.State.valueOf(shortName.toUpperCase(Locale.ROOT));
+  }
+
   public enum Type {
     /**
      * Writes updates to transaction log and indexes locally. Replicas of type {@link Type#NRT} support NRT (soft commits) and RTG. 
