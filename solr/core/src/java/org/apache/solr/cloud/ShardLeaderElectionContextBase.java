@@ -19,12 +19,14 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -179,7 +181,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;
       assert zkController.getOverseer() != null;
-      zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+      DocCollection coll = zkStateReader.getCollection(this.collection);
+      if (coll == null || coll.getStateFormat() < 2 || ZkController.sendToOverseer(coll, id)) {
+        zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+      } else {
+        PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStates.WriteOps writeOps = PerReplicaStates.WriteOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs);
+        PerReplicaStates.persist(writeOps, coll.getZNode(), zkStateReader.getZkClient());
+      }
     }
   }
 
@@ -187,9 +196,4 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     return leaderElector;
   }
 
-  Integer getLeaderZkNodeParentVersion() {
-    synchronized (lock) {
-      return leaderZkNodeParentVersion;
-    }
-  }
 }

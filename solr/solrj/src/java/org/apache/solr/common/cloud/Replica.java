@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -29,13 +30,15 @@ import java.util.function.BiPredicate;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
 import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class Replica extends ZkNodeProps implements MapWriter {
-  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   /**
    * The replica's state. In general, if the node the replica is hosted on is
    * not under {@code /live_nodes} in ZK, the replica's state should be
@@ -53,7 +56,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * {@link ClusterState#liveNodesContain(String)}).
      * </p>
      */
-    ACTIVE,
+    ACTIVE("A"),
     
     /**
      * The first state before {@link State#RECOVERING}. A node in this state
@@ -64,13 +67,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * should not be relied on.
      * </p>
      */
-    DOWN,
+    DOWN("D"),
     
     /**
      * The node is recovering from the leader. This might involve peer-sync,
      * full replication or finding out things are already in sync.
      */
-    RECOVERING,
+    RECOVERING("R"),
     
     /**
      * Recovery attempts have not worked, something is not right.
@@ -80,8 +83,16 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * cluster and it's state should be discarded.
      * </p>
      */
-    RECOVERY_FAILED;
-    
+    RECOVERY_FAILED("F");
+
+    /**short name for a state. Used to encode this in the state node see {@link PerReplicaStates.State}
+     */
+    public final String shortName;
+
+    State(String c) {
+      this.shortName = c;
+    }
+
     @Override
     public String toString() {
       return super.toString().toLowerCase(Locale.ROOT);
@@ -89,7 +100,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     
     /** Converts the state string to a State instance. */
     public static State getState(String stateStr) {
-      return stateStr == null ? null : State.valueOf(stateStr.toUpperCase(Locale.ROOT));
+      return stateStr == null ? null : Replica.State.valueOf(stateStr.toUpperCase(Locale.ROOT));
     }
   }
 
@@ -124,6 +135,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
+  private PerReplicaStates.State replicaState;
 
   // mutable
   private State state;
@@ -159,7 +171,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
       this.propMap.putAll(props);
     }
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
@@ -181,7 +192,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     state = State.getState(String.valueOf(details.getOrDefault(ZkStateReader.STATE_PROP, "active")));
     this.propMap.putAll(details);
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
+
   }
 
   private final void validate() {
@@ -201,6 +212,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
     propMap.put(ZkStateReader.REPLICA_TYPE, type.toString());
     propMap.put(ZkStateReader.STATE_PROP, state.toString());
   }
+
+
 
   public String getCollection() {
     return collection;
@@ -237,11 +250,11 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getCoreUrl() {
-    return ZkCoreNodeProps.getCoreUrl(getBaseUrl(), core);
+    return ZkCoreNodeProps.getCoreUrl(getStr(ZkStateReader.BASE_URL_PROP), core);
   }
 
   public String getBaseUrl() {
-    return getStr(BASE_URL_PROP);
+    return getStr(ZkStateReader.BASE_URL_PROP);
   }
 
   /** SolrCore name. */
@@ -296,6 +309,25 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return propertyValue;
   }
 
+  public Replica copyWith(PerReplicaStates.State state) {
+    log.debug("A replica is updated with new state : {}", state);
+    Map<String, Object> props = new LinkedHashMap<>(propMap);
+    if (state == null) {
+      props.put(ZkStateReader.STATE_PROP, State.DOWN.toString());
+      props.remove(Slice.LEADER);
+    } else {
+      props.put(ZkStateReader.STATE_PROP, state.state.toString());
+      if (state.isLeader) props.put(Slice.LEADER, "true");
+    }
+    Replica r = new Replica(name, props, collection, shard);
+    r.replicaState = state;
+    return r;
+  }
+
+  public PerReplicaStates.State getReplicaState() {
+    return replicaState;
+  }
+
   public Object clone() {
     return new Replica(name, node, collection, shard, core, state, type, propMap);
   }
@@ -315,13 +347,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
       // propMap takes precedence because it's mutable and we can't control its
       // contents, so a third party may override some declared fields
       for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        final String key = e.getKey();
-        // don't store the base_url as we can compute it from the node_name
-        if (!BASE_URL_PROP.equals(key)) {
-          writer.put(e.getKey(), e.getValue(), p);
-        }
+        writer.put(e.getKey(), e.getValue(), p);
       }
-
       writer.put(ZkStateReader.CORE_NAME_PROP, core, p)
           .put(ZkStateReader.SHARD_ID_PROP, shard, p)
           .put(ZkStateReader.COLLECTION_PROP, collection, p)

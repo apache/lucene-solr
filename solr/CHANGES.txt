@@ -328,6 +328,8 @@ New Features
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
 
+* SOLR-15052: Reducing overseer bottlenecks using per-replica states (noble, Ishan Chattopadhyaya)
+
 Improvements
 ---------------------
 

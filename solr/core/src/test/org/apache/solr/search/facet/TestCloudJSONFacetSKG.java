@@ -45,17 +45,16 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
-import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
-
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 import org.noggit.JSONWriter.Writable;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
+import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
 
 /** 
  * <p>
@@ -139,6 +138,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
