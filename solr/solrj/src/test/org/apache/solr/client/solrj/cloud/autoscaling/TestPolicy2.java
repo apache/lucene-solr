@@ -109,10 +109,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     List<Suggester.SuggestionInfo> suggestions = null;
     assertEquals(2, violations.size());
     for (Violation violation : violations) {
-      if (violation.node.equals("node1_")) {
+      if (violation.node.equals("node1:80_")) {
         assertEquals(1.0d, violation.replicaCountDelta, 0.001);
         assertEquals(3, violation.getViolatingReplicas().size());
-      } else if (violation.node.equals("node5_")) {
+      } else if (violation.node.equals("node5:80_")) {
         assertEquals(-1.0d, violation.replicaCountDelta, 0.001);
         assertEquals(0, violation.getViolatingReplicas().size());
       } else {
@@ -126,7 +126,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     String repName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     AtomicBoolean found = new AtomicBoolean(false);
-    session.getNode("node1_").forEachReplica(replicaInfo -> {
+    session.getNode("node1:80_").forEachReplica(replicaInfo -> {
       if (replicaInfo.getName().equals(repName)) {
         found.set(true);
       }
@@ -142,10 +142,10 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     violations = session.getViolations();
     assertEquals(2, violations.size());
     for (Violation violation : violations) {
-      if(violation.node.equals("node1_")) {
+      if(violation.node.equals("node1:80_")) {
         assertEquals(1.0d, violation.replicaCountDelta, 0.001);
         assertEquals(3, violation.getViolatingReplicas().size());
-      } else if(violation.node.equals("node5_")){
+      } else if(violation.node.equals("node5:80_")){
         assertEquals(-1.0d, violation.replicaCountDelta, 0.001);
         assertEquals(0, violation.getViolatingReplicas().size());
       } else {
@@ -157,12 +157,12 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
     suggestions = PolicyHelper.getSuggestions(new AutoScalingConfig((Map<String, Object>) Utils.fromJSONString(autoScalingjson)),
         createCloudManager(l.get(0), l.get(1)));
     assertEquals(1, suggestions.size());
-    assertEquals("node5_", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
+    assertEquals("node5:80_", suggestions.get(0)._get("operation/command/move-replica/targetNode", null));
 
     String rName = (String) suggestions.get(0)._get("operation/command/move-replica/replica", null);
 
     found.set(false);
-    session.getNode("node1_").forEachReplica(replicaInfo -> {
+    session.getNode("node1:80_").forEachReplica(replicaInfo -> {
       if (replicaInfo.getName().equals(rName)) {
         found.set(true);
       }
