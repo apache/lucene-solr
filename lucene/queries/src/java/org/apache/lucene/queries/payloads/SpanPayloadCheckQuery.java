@@ -243,7 +243,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       buffer.append(", operation:").append(operation).append(";");
     }
     buffer.append(")");
-    // TODO: update the toString for this.
     return buffer.toString();
   }
 
