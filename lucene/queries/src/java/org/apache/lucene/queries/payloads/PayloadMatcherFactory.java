@@ -98,7 +98,6 @@ public class PayloadMatcherFactory {
     }
 
     private String decodeString(byte[] bytes, int offset, int length) {
-      // TODO: consider just the raw byte array instead of a decoded String
       return new String(
           ArrayUtil.copyOfSubArray(bytes, offset, offset + length), StandardCharsets.UTF_8);
     }
