@@ -135,6 +135,9 @@ The url context path.
 
 `hostPort`::
 The port Solr uses to access cores, and advertise Solr node locations through liveNodes.
+This option is only necessary if a Solr instance is listening on a different port than it wants other nodes to contact it at.
+For example, if the Solr node is running behind a proxy or in a cloud environment that allows for port mapping, such as Kuberentes.
+`hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
 In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
 If no port is passed via the `solr.xml` (i.e. `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
