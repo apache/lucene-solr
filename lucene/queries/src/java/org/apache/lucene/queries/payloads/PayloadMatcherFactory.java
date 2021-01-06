@@ -17,10 +17,10 @@
 package org.apache.lucene.queries.payloads;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -79,6 +79,7 @@ public class PayloadMatcherFactory {
     }
   }
   
+  // Equality is the same for all payload types
   private static class EQPayloadMatcher implements PayloadMatcher {
     @Override
     public boolean comparePayload(BytesRef source, BytesRef payload) {
@@ -95,7 +96,7 @@ public class PayloadMatcherFactory {
     
     private String decodeString(byte[] bytes, int offset, int length) {
       // TODO: consider just the raw byte array instead of a decoded String
-      return new String(Arrays.copyOfRange(bytes, offset, offset+length), StandardCharsets.UTF_8);    
+      return new String(ArrayUtil.copyOfSubArray(bytes, offset, offset+length), StandardCharsets.UTF_8);    
     }
     
     protected abstract boolean stringCompare(String val, String threshold);
