@@ -16,36 +16,32 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
-
 import java.io.Reader;
 import java.io.StringReader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure this factory is working
- */
+/** Simple tests to ensure this factory is working */
 public class TestPatternReplaceFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testReplaceAll() throws Exception {
     Reader reader = new StringReader("aabfooaabfooabfoob ab caaaaaaaaab");
     TokenStream stream = whitespaceMockTokenizer(reader);
-    stream = tokenFilterFactory("PatternReplace",
-        "pattern", "a*b",
-        "replacement", "-").create(stream);
-                   
-    assertTokenStreamContents(stream, 
-        new String[] { "-foo-foo-foo-", "-", "c-" });
+    stream =
+        tokenFilterFactory("PatternReplace", "pattern", "a*b", "replacement", "-").create(stream);
+
+    assertTokenStreamContents(stream, new String[] {"-foo-foo-foo-", "-", "c-"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("PatternReplace",
-          "pattern", "something",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "PatternReplace", "pattern", "something", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

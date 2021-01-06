@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene86;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.index.CorruptIndexException;
@@ -42,38 +41,43 @@ import org.apache.lucene.util.Version;
 
 /**
  * Lucene 8.6 Segment info format.
- * <p>
- * Files:
+ *
+ * <p>Files:
+ *
  * <ul>
- *   <li><code>.si</code>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, IndexSort, Footer
+ *   <li><code>.si</code>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files,
+ *       Attributes, IndexSort, Footer
  * </ul>
+ *
  * Data types:
+ *
  * <ul>
- *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
- *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
- *   <li>SegMinVersion --&gt; {@link DataOutput#writeString String}</li>
- *   <li>Files --&gt; {@link DataOutput#writeSetOfStrings Set&lt;String&gt;}</li>
- *   <li>Diagnostics,Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}</li>
- *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
- *   <li>IndexSort --&gt; {@link DataOutput#writeVInt Int32} count, followed by {@code count} SortField</li>
- *   <li>SortField --&gt; {@link DataOutput#writeString String} sort class, followed by a per-sort bytestream
- *    (see {@link SortFieldProvider#readSortField(DataInput)})
- *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}
+ *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}
+ *   <li>SegVersion --&gt; {@link DataOutput#writeString String}
+ *   <li>SegMinVersion --&gt; {@link DataOutput#writeString String}
+ *   <li>Files --&gt; {@link DataOutput#writeSetOfStrings Set&lt;String&gt;}
+ *   <li>Diagnostics,Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}
+ *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}
+ *   <li>IndexSort --&gt; {@link DataOutput#writeVInt Int32} count, followed by {@code count}
+ *       SortField
+ *   <li>SortField --&gt; {@link DataOutput#writeString String} sort class, followed by a per-sort
+ *       bytestream (see {@link SortFieldProvider#readSortField(DataInput)})
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}
  * </ul>
+ *
  * Field Descriptions:
+ *
  * <ul>
- *   <li>SegVersion is the code version that created the segment.</li>
- *   <li>SegMinVersion is the minimum code version that contributed documents to the segment.</li>
- *   <li>SegSize is the number of documents contained in the segment index.</li>
- *   <li>IsCompoundFile records whether the segment is written as a compound file or
- *       not. If this is -1, the segment is not a compound file. If it is 1, the segment
- *       is a compound file.</li>
- *   <li>The Diagnostics Map is privately written by {@link IndexWriter}, as a debugging aid,
- *       for each segment it creates. It includes metadata like the current Lucene
- *       version, OS, Java version, why the segment was created (merge, flush,
- *       addIndexes), etc.</li>
- *   <li>Files is a list of files referred to by this segment.</li>
+ *   <li>SegVersion is the code version that created the segment.
+ *   <li>SegMinVersion is the minimum code version that contributed documents to the segment.
+ *   <li>SegSize is the number of documents contained in the segment index.
+ *   <li>IsCompoundFile records whether the segment is written as a compound file or not. If this is
+ *       -1, the segment is not a compound file. If it is 1, the segment is a compound file.
+ *   <li>The Diagnostics Map is privately written by {@link IndexWriter}, as a debugging aid, for
+ *       each segment it creates. It includes metadata like the current Lucene version, OS, Java
+ *       version, why the segment was created (merge, flush, addIndexes), etc.
+ *   <li>Files is a list of files referred to by this segment.
  * </ul>
  *
  * @see SegmentInfos
@@ -82,29 +86,29 @@ import org.apache.lucene.util.Version;
 public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
 
   /** File extension used to store {@link SegmentInfo}. */
-  public final static String SI_EXTENSION = "si";
+  public static final String SI_EXTENSION = "si";
+
   static final String CODEC_NAME = "Lucene86SegmentInfo";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor. */
-  public Lucene86SegmentInfoFormat() {
-  }
+  public Lucene86SegmentInfoFormat() {}
 
   @Override
-  public SegmentInfo read(Directory dir, String segment, byte[] segmentID, IOContext context) throws IOException {
+  public SegmentInfo read(Directory dir, String segment, byte[] segmentID, IOContext context)
+      throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", SI_EXTENSION);
     try (ChecksumIndexInput input = dir.openChecksumInput(fileName, context)) {
       Throwable priorE = null;
       SegmentInfo si = null;
       try {
-        int format = CodecUtil.checkIndexHeader(input, CODEC_NAME,
-            VERSION_START,
-            VERSION_CURRENT,
-            segmentID, "");
-        
+        int format =
+            CodecUtil.checkIndexHeader(
+                input, CODEC_NAME, VERSION_START, VERSION_CURRENT, segmentID, "");
+
         si = parseSegmentInfo(dir, input, segment, segmentID);
-        
+
       } catch (Throwable exception) {
         priorE = exception;
       } finally {
@@ -114,7 +118,8 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
     }
   }
 
-  private SegmentInfo parseSegmentInfo(Directory dir, DataInput input, String segment, byte[] segmentID) throws IOException {
+  private SegmentInfo parseSegmentInfo(
+      Directory dir, DataInput input, String segment, byte[] segmentID) throws IOException {
     final Version version = Version.fromBits(input.readInt(), input.readInt(), input.readInt());
     byte hasMinVersion = input.readByte();
     final Version minVersion;
@@ -135,15 +140,15 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
     }
     final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
 
-    final Map<String,String> diagnostics = input.readMapOfStrings();
+    final Map<String, String> diagnostics = input.readMapOfStrings();
     final Set<String> files = input.readSetOfStrings();
-    final Map<String,String> attributes = input.readMapOfStrings();
+    final Map<String, String> attributes = input.readMapOfStrings();
 
     int numSortFields = input.readVInt();
     Sort indexSort;
     if (numSortFields > 0) {
       SortField[] sortFields = new SortField[numSortFields];
-      for(int i=0;i<numSortFields;i++) {
+      for (int i = 0; i < numSortFields; i++) {
         String name = input.readString();
         sortFields[i] = SortFieldProvider.forName(name).readSortField(input);
       }
@@ -154,11 +159,23 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
       indexSort = null;
     }
 
-    SegmentInfo si = new SegmentInfo(dir, version, minVersion, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, indexSort);
+    SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            version,
+            minVersion,
+            segment,
+            docCount,
+            isCompoundFile,
+            null,
+            diagnostics,
+            segmentID,
+            attributes,
+            indexSort);
     si.setFiles(files);
     return si;
   }
-  
+
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", SI_EXTENSION);
@@ -177,7 +194,8 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
   private void writeSegmentInfo(DataOutput output, SegmentInfo si) throws IOException {
     Version version = si.getVersion();
     if (version.major < 7) {
-      throw new IllegalArgumentException("invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
+      throw new IllegalArgumentException(
+          "invalid major version: should be >= 7 but got: " + version.major + " segment=" + si);
     }
     // Write the Lucene version that created this segment, since 3.1
     output.writeInt(version.major);
@@ -203,7 +221,8 @@ public class Lucene86SegmentInfoFormat extends SegmentInfoFormat {
     Set<String> files = si.files();
     for (String file : files) {
       if (!IndexFileNames.parseSegmentName(file).equals(si.name)) {
-        throw new IllegalArgumentException("invalid files: expected segment=" + si.name + ", got=" + files);
+        throw new IllegalArgumentException(
+            "invalid files: expected segment=" + si.name + ", got=" + files);
       }
     }
     output.writeSetOfStrings(files);

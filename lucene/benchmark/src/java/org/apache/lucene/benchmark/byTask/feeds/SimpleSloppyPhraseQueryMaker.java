@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.util.ArrayList;
 import java.util.StringTokenizer;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -38,23 +36,23 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
     String words[];
     ArrayList<String> w = new ArrayList<>();
     StringTokenizer st = new StringTokenizer(SingleDocSource.DOC_TEXT);
-    while (st.hasMoreTokens() && w.size()<100) {
+    while (st.hasMoreTokens() && w.size() < 100) {
       w.add(st.nextToken());
     }
     words = w.toArray(new String[0]);
 
     // create queries (that would find stuff) with varying slops
     ArrayList<Query> queries = new ArrayList<>();
-    for (int slop=0; slop<8; slop++) {
-      for (int qlen=2; qlen<6; qlen++) {
-        for (int wd=0; wd<words.length-qlen-slop; wd++) {
+    for (int slop = 0; slop < 8; slop++) {
+      for (int qlen = 2; qlen < 6; qlen++) {
+        for (int wd = 0; wd < words.length - qlen - slop; wd++) {
           // ordered
           int remainedSlop = slop;
           int wind = wd;
           PhraseQuery.Builder builder = new PhraseQuery.Builder();
-          for (int i=0; i<qlen; i++) {
+          for (int i = 0; i < qlen; i++) {
             builder.add(new Term(DocMaker.BODY_FIELD, words[wind++]), i);
-            if (remainedSlop>0) {
+            if (remainedSlop > 0) {
               remainedSlop--;
               wind++;
             }
@@ -64,11 +62,11 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
           queries.add(q);
           // reversed
           remainedSlop = slop;
-          wind = wd+qlen+remainedSlop-1;
+          wind = wd + qlen + remainedSlop - 1;
           builder = new PhraseQuery.Builder();
-          for (int i=0; i<qlen; i++) {
+          for (int i = 0; i < qlen; i++) {
             builder.add(new Term(DocMaker.BODY_FIELD, words[wind--]), i);
-            if (remainedSlop>0) {
+            if (remainedSlop > 0) {
               remainedSlop--;
               wind--;
             }
@@ -81,5 +79,4 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
     }
     return queries.toArray(new Query[0]);
   }
-
 }

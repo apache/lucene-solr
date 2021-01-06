@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.Bits;
 
 final class ReqExclBulkScorer extends BulkScorer {
@@ -60,5 +58,4 @@ final class ReqExclBulkScorer extends BulkScorer {
   public long cost() {
     return req.cost();
   }
-
 }

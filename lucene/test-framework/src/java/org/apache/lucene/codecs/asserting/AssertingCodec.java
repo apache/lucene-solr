@@ -28,33 +28,38 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Acts like the default codec but with additional asserts.
- */
+/** Acts like the default codec but with additional asserts. */
 public class AssertingCodec extends FilterCodec {
 
   static void assertThread(String object, Thread creationThread) {
     if (creationThread != Thread.currentThread()) {
-      throw new AssertionError(object + " are only supposed to be consumed in "
-          + "the thread in which they have been acquired. But was acquired in "
-          + creationThread + " and consumed in " + Thread.currentThread() + ".");
+      throw new AssertionError(
+          object
+              + " are only supposed to be consumed in "
+              + "the thread in which they have been acquired. But was acquired in "
+              + creationThread
+              + " and consumed in "
+              + Thread.currentThread()
+              + ".");
     }
   }
 
-  private final PostingsFormat postings = new PerFieldPostingsFormat() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return AssertingCodec.this.getPostingsFormatForField(field);
-    }
-  };
-  
-  private final DocValuesFormat docValues = new PerFieldDocValuesFormat() {
-    @Override
-    public DocValuesFormat getDocValuesFormatForField(String field) {
-      return AssertingCodec.this.getDocValuesFormatForField(field);
-    }
-  };
-  
+  private final PostingsFormat postings =
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return AssertingCodec.this.getPostingsFormatForField(field);
+        }
+      };
+
+  private final DocValuesFormat docValues =
+      new PerFieldDocValuesFormat() {
+        @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return AssertingCodec.this.getDocValuesFormatForField(field);
+        }
+      };
+
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
   private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
   private final NormsFormat norms = new AssertingNormsFormat();
@@ -106,20 +111,21 @@ public class AssertingCodec extends FilterCodec {
   public String toString() {
     return "Asserting(" + delegate + ")";
   }
-  
-  /** Returns the postings format that should be used for writing 
-   *  new segments of <code>field</code>.
-   *  
-   *  The default implementation always returns "Asserting"
+
+  /**
+   * Returns the postings format that should be used for writing new segments of <code>field</code>.
+   *
+   * <p>The default implementation always returns "Asserting"
    */
   public PostingsFormat getPostingsFormatForField(String field) {
     return defaultFormat;
   }
-  
-  /** Returns the docvalues format that should be used for writing 
-   *  new segments of <code>field</code>.
-   *  
-   *  The default implementation always returns "Asserting"
+
+  /**
+   * Returns the docvalues format that should be used for writing new segments of <code>field</code>
+   * .
+   *
+   * <p>The default implementation always returns "Asserting"
    */
   public DocValuesFormat getDocValuesFormatForField(String field) {
     return defaultDVFormat;

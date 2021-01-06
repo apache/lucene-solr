@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -32,21 +34,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 
-
 /**
  * This test rule serves two purposes:
- *  <ul>
- *    <li>it fails the test if it prints too much to stdout and stderr (tests that chatter too much
- *    are discouraged)</li>
- *    <li>the rule ensures an absolute hard limit of stuff written to stdout and stderr to prevent
- *    accidental infinite loops from filling all available disk space with persisted output.</li>
- *  </ul>
+ *
+ * <ul>
+ *   <li>it fails the test if it prints too much to stdout and stderr (tests that chatter too much
+ *       are discouraged)
+ *   <li>the rule ensures an absolute hard limit of stuff written to stdout and stderr to prevent
+ *       accidental infinite loops from filling all available disk space with persisted output.
+ * </ul>
  *
  * The rule is not enforced for certain test types (see {@link #isEnforced()}).
  */
@@ -56,25 +55,20 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   private static final long GB = MB * 1024;
 
   /**
-   * Max limit of bytes printed to either {@link System#out} or {@link System#err}. 
-   * This limit is enforced per-class (suite).
+   * Max limit of bytes printed to either {@link System#out} or {@link System#err}. This limit is
+   * enforced per-class (suite).
    */
-  public final static long DEFAULT_LIMIT = 8 * KB;
+  public static final long DEFAULT_LIMIT = 8 * KB;
+
+  /** Max hard limit of sysout bytes. */
+  public static final long DEFAULT_HARD_LIMIT = 2 * GB;
 
   /**
-   * Max hard limit of sysout bytes.
+   * Maximum limit allowed for {@link Limit#bytes()} before sysout check suppression is suggested.
    */
-  public final static long DEFAULT_HARD_LIMIT = 2 * GB;
+  public static final int MAX_LIMIT = 1 * 1024 * 1024;
 
-  /**
-   * Maximum limit allowed for {@link Limit#bytes()} before sysout check suppression
-   * is suggested.
-   */
-  public final static int MAX_LIMIT = 1 * 1024 * 1024;
-
-  /**
-   * An annotation specifying the limit of bytes per class.
-   */
+  /** An annotation specifying the limit of bytes per class. */
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
@@ -87,27 +81,26 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     long bytes();
 
     /**
-     * Maximum number of bytes passed to actual stdout or stderr. Any writes beyond this limit will be
-     * ignored (will actually cause an IOException on the underlying output, but this is silently ignored
-     * by PrintStreams).
+     * Maximum number of bytes passed to actual stdout or stderr. Any writes beyond this limit will
+     * be ignored (will actually cause an IOException on the underlying output, but this is silently
+     * ignored by PrintStreams).
      */
     long hardLimit() default DEFAULT_HARD_LIMIT;
   }
 
-  private final static AtomicLong bytesWritten = new AtomicLong();
+  private static final AtomicLong bytesWritten = new AtomicLong();
 
-  private final static PrintStream capturedSystemOut;
-  private final static PrintStream capturedSystemErr;
+  private static final PrintStream capturedSystemOut;
+  private static final PrintStream capturedSystemErr;
 
-  private final static AtomicLong hardLimit;
+  private static final AtomicLong hardLimit;
 
   /**
-   * We capture system output and error streams as early as possible because
-   * certain components (like the Java logging system) steal these references and
-   * never refresh them.
-   * 
-   * Also, for this exact reason, we cannot change delegate streams for every suite.
-   * This isn't as elegant as it should be, but there's no workaround for this.
+   * We capture system output and error streams as early as possible because certain components
+   * (like the Java logging system) steal these references and never refresh them.
+   *
+   * <p>Also, for this exact reason, we cannot change delegate streams for every suite. This isn't
+   * as elegant as it should be, but there's no workaround for this.
    */
   static {
     PrintStream sout = System.out;
@@ -117,22 +110,25 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     serr.flush();
 
     hardLimit = new AtomicLong(Integer.MAX_VALUE);
-    LimitPredicate limitCheck = (before, after) -> {
-      long limit = hardLimit.get();
-      if (after > limit) {
-        if (before < limit) {
-          // Crossing the boundary. Write directly to stderr.
-          serr.println("\nNOTE: Hard limit on sysout exceeded, further output truncated.\n");
-          serr.flush();
-        }
-        throw new IOException("Hard limit on sysout exceeded.");
-      }
-    };
+    LimitPredicate limitCheck =
+        (before, after) -> {
+          long limit = hardLimit.get();
+          if (after > limit) {
+            if (before < limit) {
+              // Crossing the boundary. Write directly to stderr.
+              serr.println("\nNOTE: Hard limit on sysout exceeded, further output truncated.\n");
+              serr.flush();
+            }
+            throw new IOException("Hard limit on sysout exceeded.");
+          }
+        };
 
     final String csn = Charset.defaultCharset().name();
     try {
-      capturedSystemOut = new PrintStream(new DelegateStream(sout, bytesWritten, limitCheck), true, csn);
-      capturedSystemErr = new PrintStream(new DelegateStream(serr, bytesWritten, limitCheck), true, csn);
+      capturedSystemOut =
+          new PrintStream(new DelegateStream(sout, bytesWritten, limitCheck), true, csn);
+      capturedSystemErr =
+          new PrintStream(new DelegateStream(serr, bytesWritten, limitCheck), true, csn);
     } catch (UnsupportedEncodingException e) {
       throw new UncheckedIOException(e);
     }
@@ -141,9 +137,7 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     System.setErr(capturedSystemErr);
   }
 
-  /**
-   * Test failures from any tests or rules before.
-   */
+  /** Test failures from any tests or rules before. */
   private final TestRuleMarkFailure failureMarker;
 
   static interface LimitPredicate {
@@ -151,15 +145,16 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   }
 
   /**
-   * Tracks the number of bytes written to an underlying stream by
-   * incrementing an {@link AtomicInteger}.
+   * Tracks the number of bytes written to an underlying stream by incrementing an {@link
+   * AtomicInteger}.
    */
-  final static class DelegateStream extends OutputStream {
+  static final class DelegateStream extends OutputStream {
     private final OutputStream delegate;
     private final LimitPredicate limitPredicate;
     private final AtomicLong bytesCounter;
 
-    public DelegateStream(OutputStream delegate, AtomicLong bytesCounter, LimitPredicate limitPredicate) {
+    public DelegateStream(
+        OutputStream delegate, AtomicLong bytesCounter, LimitPredicate limitPredicate) {
       this.delegate = delegate;
       this.bytesCounter = bytesCounter;
       this.limitPredicate = limitPredicate;
@@ -169,7 +164,7 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     public void write(byte[] b) throws IOException {
       this.write(b, 0, b.length);
     }
-    
+
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
       if (len > 0) {
@@ -221,38 +216,43 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
       Limit limitAnn = target.getAnnotation(Limit.class);
       long bytes = limitAnn.bytes();
       if (bytes < 0 || bytes > MAX_LIMIT) {
-        throw new AssertionError("This sysout limit is very high: " + bytes + ". Did you want to use "
-            + "@" + LuceneTestCase.SuppressSysoutChecks.class.getName() + " annotation to "
-            + "avoid sysout checks entirely (this is discouraged)?");
+        throw new AssertionError(
+            "This sysout limit is very high: "
+                + bytes
+                + ". Did you want to use "
+                + "@"
+                + LuceneTestCase.SuppressSysoutChecks.class.getName()
+                + " annotation to "
+                + "avoid sysout checks entirely (this is discouraged)?");
       }
 
       hardLimit.set(limitAnn.hardLimit());
     }
   }
 
-  /**
-   * Ensures {@link System#out} and {@link System#err} point to delegate streams.
-   */
+  /** Ensures {@link System#out} and {@link System#err} point to delegate streams. */
   public static void checkCaptureStreams() {
     // Make sure we still hold the right references to wrapper streams.
     if (System.out != capturedSystemOut) {
-      throw new AssertionError("Something has changed System.out to: " + System.out.getClass().getName());
+      throw new AssertionError(
+          "Something has changed System.out to: " + System.out.getClass().getName());
     }
     if (System.err != capturedSystemErr) {
-      throw new AssertionError("Something has changed System.err to: " + System.err.getClass().getName());
+      throw new AssertionError(
+          "Something has changed System.err to: " + System.err.getClass().getName());
     }
   }
 
   protected boolean isEnforced() {
     Class<?> target = RandomizedTest.getContext().getTargetClass();
 
-    if (LuceneTestCase.VERBOSE || 
-        LuceneTestCase.INFOSTREAM ||
-        target.isAnnotationPresent(Monster.class) ||
-        target.isAnnotationPresent(SuppressSysoutChecks.class)) {
+    if (LuceneTestCase.VERBOSE
+        || LuceneTestCase.INFOSTREAM
+        || target.isAnnotationPresent(Monster.class)
+        || target.isAnnotationPresent(SuppressSysoutChecks.class)) {
       return false;
     }
-    
+
     if (!target.isAnnotationPresent(Limit.class)) {
       return false;
     }
@@ -261,33 +261,35 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
   }
 
   /**
-   * We're only interested in failing the suite if it was successful (otherwise
-   * just propagate the original problem and don't bother doing anything else).
+   * We're only interested in failing the suite if it was successful (otherwise just propagate the
+   * original problem and don't bother doing anything else).
    */
   @Override
   protected void afterIfSuccessful() throws Throwable {
     if (isEnforced()) {
       checkCaptureStreams();
-  
+
       // Flush any buffers.
       capturedSystemOut.flush();
       capturedSystemErr.flush();
-  
+
       // Check for offenders, but only if everything was successful so far.
       Limit ann = RandomizedTest.getContext().getTargetClass().getAnnotation(Limit.class);
       long limit = ann.bytes();
       long hardLimit = ann.hardLimit();
       long written = bytesWritten.get();
       if (written >= limit && failureMarker.wasSuccessful()) {
-        throw new AssertionError(String.format(Locale.ENGLISH, 
-            "The test or suite printed %d bytes to stdout and stderr," +
-            " even though the limit was set to %d bytes.%s Increase the limit with @%s, ignore it completely" +
-            " with @%s or run with -Dtests.verbose=true",
-            written,
-            limit,
-            written <= hardLimit ? "" : "Hard limit was enforced so output is truncated.",
-            Limit.class.getSimpleName(),
-            SuppressSysoutChecks.class.getSimpleName()));
+        throw new AssertionError(
+            String.format(
+                Locale.ENGLISH,
+                "The test or suite printed %d bytes to stdout and stderr,"
+                    + " even though the limit was set to %d bytes.%s Increase the limit with @%s, ignore it completely"
+                    + " with @%s or run with -Dtests.verbose=true",
+                written,
+                limit,
+                written <= hardLimit ? "" : "Hard limit was enforced so output is truncated.",
+                Limit.class.getSimpleName(),
+                SuppressSysoutChecks.class.getSimpleName()));
       }
     }
   }
@@ -304,4 +306,3 @@ public class TestRuleLimitSysouts extends TestRuleAdapter {
     hardLimit.set(Integer.MAX_VALUE);
   }
 }
-

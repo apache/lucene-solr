@@ -16,28 +16,23 @@
  */
 package org.apache.lucene.util.fst;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * An FST {@link Outputs} implementation where each output
- * is a sequence of ints.
+ * An FST {@link Outputs} implementation where each output is a sequence of ints.
  *
  * @lucene.experimental
  */
-
 public final class IntSequenceOutputs extends Outputs<IntsRef> {
 
-  private final static IntsRef NO_OUTPUT = new IntsRef();
-  private final static IntSequenceOutputs singleton = new IntSequenceOutputs();
+  private static final IntsRef NO_OUTPUT = new IntsRef();
+  private static final IntSequenceOutputs singleton = new IntSequenceOutputs();
 
-  private IntSequenceOutputs() {
-  }
+  private IntSequenceOutputs() {}
 
   public static IntSequenceOutputs getSingleton() {
     return singleton;
@@ -51,7 +46,7 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
     int pos1 = output1.offset;
     int pos2 = output2.offset;
     int stopAt1 = pos1 + Math.min(output1.length, output2.length);
-    while(pos1 < stopAt1) {
+    while (pos1 < stopAt1) {
       if (output1.ints[pos1] != output2.ints[pos2]) {
         break;
       }
@@ -69,7 +64,7 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
       // output2 is a prefix of output1
       return output2;
     } else {
-      return new IntsRef(output1.ints, output1.offset, pos1-output1.offset);
+      return new IntsRef(output1.ints, output1.offset, pos1 - output1.offset);
     }
   }
 
@@ -84,9 +79,10 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
       // entire output removed
       return NO_OUTPUT;
     } else {
-      assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
+      assert inc.length < output.length
+          : "inc.length=" + inc.length + " vs output.length=" + output.length;
       assert inc.length > 0;
-      return new IntsRef(output.ints, output.offset + inc.length, output.length-inc.length);
+      return new IntsRef(output.ints, output.offset + inc.length, output.length - inc.length);
     }
   }
 
@@ -113,8 +109,8 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
   public void write(IntsRef prefix, DataOutput out) throws IOException {
     assert prefix != null;
     out.writeVInt(prefix.length);
-    for(int idx=0;idx<prefix.length;idx++) {
-      out.writeVInt(prefix.ints[prefix.offset+idx]);
+    for (int idx = 0; idx < prefix.length; idx++) {
+      out.writeVInt(prefix.ints[prefix.offset + idx]);
     }
   }
 
@@ -125,21 +121,21 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
       return NO_OUTPUT;
     } else {
       final IntsRef output = new IntsRef(len);
-      for(int idx=0;idx<len;idx++) {
+      for (int idx = 0; idx < len; idx++) {
         output.ints[idx] = in.readVInt();
       }
       output.length = len;
       return output;
     }
   }
-  
+
   @Override
   public void skipOutput(DataInput in) throws IOException {
     final int len = in.readVInt();
     if (len == 0) {
       return;
     }
-    for(int idx=0;idx<len;idx++) {
+    for (int idx = 0; idx < len; idx++) {
       in.readVInt();
     }
   }
@@ -160,7 +156,7 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
   public long ramBytesUsed(IntsRef output) {
     return BASE_NUM_BYTES + RamUsageEstimator.sizeOf(output.ints);
   }
-  
+
   @Override
   public String toString() {
     return "IntSequenceOutputs";

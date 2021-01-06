@@ -23,7 +23,10 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Point;
 
-/** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
+/**
+ * random bounding box, line, and polygon query tests for random generated {@code latitude,
+ * longitude} points
+ */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
@@ -34,8 +37,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Line randomQueryLine(Object... shapes) {
     if (random().nextInt(100) == 42) {
-      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
-      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      // we want to ensure some cross, so randomly generate lines that share vertices with the
+      // indexed point set
+      int maxBound = (int) Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
@@ -58,7 +62,7 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object point) {
-    Point p = (Point)point;
+    Point p = (Point) point;
     return LatLonShape.createIndexableFields(field, p.getLat(), p.getLon());
   }
 
@@ -71,14 +75,17 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     protected PointValidator(Encoder encoder) {
       super(encoder);
     }
-    
+
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Point p = (Point) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon())) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(
+                query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()))
+            == Component2D.WithinRelation.CANDIDATE;
       }
-      return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()));
+      return testComponentQuery(
+          query, LatLonShape.createIndexableFields("dummy", p.getLat(), p.getLon()));
     }
   }
 }

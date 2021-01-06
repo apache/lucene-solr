@@ -16,26 +16,20 @@
  */
 package org.apache.lucene.analysis.snowball;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-
-/**
- * Test the snowball filters against the snowball data tests
- */
+/** Test the snowball filters against the snowball data tests */
 public class TestSnowballVocab extends LuceneTestCase {
-  /**
-   * Run all languages against their snowball vocabulary tests.
-   */
+  /** Run all languages against their snowball vocabulary tests. */
   public void testStemmers() throws IOException {
     try (InputStream in = getClass().getResourceAsStream("test_languages.txt")) {
       for (String datafile : WordlistLoader.getLines(in, StandardCharsets.UTF_8)) {
@@ -44,23 +38,24 @@ public class TestSnowballVocab extends LuceneTestCase {
       }
     }
   }
-    
+
   /**
-   * For the supplied language, run the stemmer against all strings in voc.txt
-   * The output should be the same as the string in output.txt
+   * For the supplied language, run the stemmer against all strings in voc.txt The output should be
+   * the same as the string in output.txt
    */
   private void assertCorrectOutput(final String snowballLanguage, String zipfile)
       throws IOException {
     if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
-    
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer t = new KeywordTokenizer();
-        return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
-      }  
-    };
-    
+
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer t = new KeywordTokenizer();
+            return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
+          }
+        };
+
     assertVocabulary(a, getDataPath(zipfile), "voc.txt", "output.txt");
     a.close();
   }

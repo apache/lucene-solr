@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,26 +28,24 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
 
   /** Default buffer size set to {@value #BUFFER_SIZE}. */
   public static final int BUFFER_SIZE = 1024;
-  
+
   /** Minimum buffer size allowed */
   public static final int MIN_BUFFER_SIZE = 8;
-  
+
   // The normal read buffer size defaults to 1024, but
   // increasing this during merging seems to yield
   // performance gains.  However we don't want to increase
   // it too much because there are quite a few
   // BufferedIndexInputs created during merging.  See
   // LUCENE-888 for details.
-  /**
-   * A buffer size for merges set to {@value #MERGE_BUFFER_SIZE}.
-   */
+  /** A buffer size for merges set to {@value #MERGE_BUFFER_SIZE}. */
   public static final int MERGE_BUFFER_SIZE = 4096;
 
   private int bufferSize = BUFFER_SIZE;
-  
+
   private ByteBuffer buffer = EMPTY_BYTEBUFFER;
 
-  private long bufferStart = 0;       // position in file of buffer
+  private long bufferStart = 0; // position in file of buffer
 
   @Override
   public final byte readByte() throws IOException {
@@ -73,14 +70,15 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     this.bufferSize = bufferSize;
   }
 
-  /** Returns buffer size.  @see #setBufferSize */
+  /** Returns buffer size. @see #setBufferSize */
   public final int getBufferSize() {
     return bufferSize;
   }
 
   private void checkBufferSize(int bufferSize) {
     if (bufferSize < MIN_BUFFER_SIZE)
-      throw new IllegalArgumentException("bufferSize must be at least MIN_BUFFER_SIZE (got " + bufferSize + ")");
+      throw new IllegalArgumentException(
+          "bufferSize must be at least MIN_BUFFER_SIZE (got " + bufferSize + ")");
   }
 
   @Override
@@ -91,24 +89,24 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   @Override
   public final void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
     int available = buffer.remaining();
-    if(len <= available){
+    if (len <= available) {
       // the buffer contains enough data to satisfy this request
-      if(len>0) // to allow b to be null if len is 0...
-        buffer.get(b, offset, len);
+      if (len > 0) // to allow b to be null if len is 0...
+      buffer.get(b, offset, len);
     } else {
       // the buffer does not have enough data. First serve all we've got.
-      if(available > 0){
+      if (available > 0) {
         buffer.get(b, offset, available);
         offset += available;
         len -= available;
       }
       // and now, read the remaining 'len' bytes:
-      if (useBuffer && len<bufferSize){
+      if (useBuffer && len < bufferSize) {
         // If the amount left to read is small enough, and
         // we are allowed to use our buffer, do it in the usual
         // buffered way: fill the buffer and copy from it:
         refill();
-        if(buffer.remaining()<len){
+        if (buffer.remaining() < len) {
           // Throw an exception when refill() could not read len bytes:
           buffer.get(b, offset, buffer.remaining());
           throw new EOFException("read past EOF: " + this);
@@ -123,12 +121,11 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
         // this function, there is no need to do a seek
         // here, because there's no need to reread what we
         // had in the buffer.
-        long after = bufferStart+buffer.position()+len;
-        if(after > length())
-          throw new EOFException("read past EOF: " + this);
+        long after = bufferStart + buffer.position() + len;
+        if (after > length()) throw new EOFException("read past EOF: " + this);
         readInternal(ByteBuffer.wrap(b, offset, len));
         bufferStart = after;
-        buffer.limit(0);  // trigger refill() on read
+        buffer.limit(0); // trigger refill() on read
       }
     }
   }
@@ -141,7 +138,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readShort();
     }
   }
-  
+
   @Override
   public final int readInt() throws IOException {
     if (Integer.BYTES <= buffer.remaining()) {
@@ -150,7 +147,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readInt();
     }
   }
-  
+
   @Override
   public final long readLong() throws IOException {
     if (Long.BYTES <= buffer.remaining()) {
@@ -184,7 +181,7 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readVInt();
     }
   }
-  
+
   @Override
   public final long readVLong() throws IOException {
     if (9 <= buffer.remaining()) {
@@ -220,13 +217,13 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       return super.readVLong();
     }
   }
-  
+
   @Override
   public final byte readByte(long pos) throws IOException {
     long index = pos - bufferStart;
     if (index < 0 || index >= buffer.limit()) {
       bufferStart = pos;
-      buffer.limit(0);  // trigger refill() on read
+      buffer.limit(0); // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -237,9 +234,9 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   @Override
   public final short readShort(long pos) throws IOException {
     long index = pos - bufferStart;
-    if (index < 0 || index >= buffer.limit()-1) {
+    if (index < 0 || index >= buffer.limit() - 1) {
       bufferStart = pos;
-      buffer.limit(0);  // trigger refill() on read
+      buffer.limit(0); // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -250,9 +247,9 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   @Override
   public final int readInt(long pos) throws IOException {
     long index = pos - bufferStart;
-    if (index < 0 || index >= buffer.limit()-3) {
+    if (index < 0 || index >= buffer.limit() - 3) {
       bufferStart = pos;
-      buffer.limit(0);  // trigger refill() on read
+      buffer.limit(0); // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
@@ -263,27 +260,26 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
   @Override
   public final long readLong(long pos) throws IOException {
     long index = pos - bufferStart;
-    if (index < 0 || index >= buffer.limit()-7) {
+    if (index < 0 || index >= buffer.limit() - 7) {
       bufferStart = pos;
-      buffer.limit(0);  // trigger refill() on read
+      buffer.limit(0); // trigger refill() on read
       seekInternal(pos);
       refill();
       index = 0;
     }
     return buffer.getLong((int) index);
   }
-  
+
   private void refill() throws IOException {
     long start = bufferStart + buffer.position();
     long end = start + bufferSize;
-    if (end > length())  // don't read past EOF
-      end = length();
-    int newLength = (int)(end - start);
-    if (newLength <= 0)
-      throw new EOFException("read past EOF: " + this);
+    if (end > length()) // don't read past EOF
+    end = length();
+    int newLength = (int) (end - start);
+    if (newLength <= 0) throw new EOFException("read past EOF: " + this);
 
     if (buffer == EMPTY_BYTEBUFFER) {
-      buffer = ByteBuffer.allocate(bufferSize);  // allocate buffer lazily
+      buffer = ByteBuffer.allocate(bufferSize); // allocate buffer lazily
       seekInternal(bufferStart);
     }
     buffer.position(0);
@@ -297,94 +293,102 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
     buffer.flip();
   }
 
-  /** Expert: implements buffer refill.  Reads bytes from the current position
-   * in the input.
+  /**
+   * Expert: implements buffer refill. Reads bytes from the current position in the input.
+   *
    * @param b the buffer to read bytes into
    */
   protected abstract void readInternal(ByteBuffer b) throws IOException;
 
   @Override
-  public final long getFilePointer() { return bufferStart + buffer.position(); }
+  public final long getFilePointer() {
+    return bufferStart + buffer.position();
+  }
 
   @Override
   public final void seek(long pos) throws IOException {
     if (pos >= bufferStart && pos < (bufferStart + buffer.limit()))
-      buffer.position((int)(pos - bufferStart));  // seek within buffer
+      buffer.position((int) (pos - bufferStart)); // seek within buffer
     else {
       bufferStart = pos;
-      buffer.limit(0);  // trigger refill() on read
+      buffer.limit(0); // trigger refill() on read
       seekInternal(pos);
     }
   }
 
-  /** Expert: implements seek.  Sets current position in this file, where the
-   * next {@link #readInternal(ByteBuffer)} will occur.
+  /**
+   * Expert: implements seek. Sets current position in this file, where the next {@link
+   * #readInternal(ByteBuffer)} will occur.
+   *
    * @see #readInternal(ByteBuffer)
    */
   protected abstract void seekInternal(long pos) throws IOException;
 
   @Override
   public BufferedIndexInput clone() {
-    BufferedIndexInput clone = (BufferedIndexInput)super.clone();
+    BufferedIndexInput clone = (BufferedIndexInput) super.clone();
 
     clone.buffer = EMPTY_BYTEBUFFER;
     clone.bufferStart = getFilePointer();
 
     return clone;
   }
-  
+
   @Override
   public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
     return wrap(sliceDescription, this, offset, length);
   }
-  
-  /**
-   * Returns default buffer sizes for the given {@link IOContext}
-   */
+
+  /** Returns default buffer sizes for the given {@link IOContext} */
   public static int bufferSize(IOContext context) {
     switch (context.context) {
-    case MERGE:
-      return MERGE_BUFFER_SIZE;
-    default:
-      return BUFFER_SIZE;
+      case MERGE:
+        return MERGE_BUFFER_SIZE;
+      default:
+        return BUFFER_SIZE;
     }
   }
-  
-  /** 
+
+  /**
    * Wraps a portion of another IndexInput with buffering.
+   *
    * <p><b>Please note:</b> This is in most cases ineffective, because it may double buffer!
    */
-  public static BufferedIndexInput wrap(String sliceDescription, IndexInput other, long offset, long length) {
+  public static BufferedIndexInput wrap(
+      String sliceDescription, IndexInput other, long offset, long length) {
     return new SlicedIndexInput(sliceDescription, other, offset, length);
   }
-  
-  /** 
-   * Implementation of an IndexInput that reads from a portion of a file.
-   */
+
+  /** Implementation of an IndexInput that reads from a portion of a file. */
   private static final class SlicedIndexInput extends BufferedIndexInput {
     IndexInput base;
     long fileOffset;
     long length;
-    
+
     SlicedIndexInput(String sliceDescription, IndexInput base, long offset, long length) {
-      super((sliceDescription == null) ? base.toString() : (base.toString() + " [slice=" + sliceDescription + "]"), BufferedIndexInput.BUFFER_SIZE);
+      super(
+          (sliceDescription == null)
+              ? base.toString()
+              : (base.toString() + " [slice=" + sliceDescription + "]"),
+          BufferedIndexInput.BUFFER_SIZE);
       if (offset < 0 || length < 0 || offset + length > base.length()) {
-        throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + base);
+        throw new IllegalArgumentException(
+            "slice() " + sliceDescription + " out of bounds: " + base);
       }
       this.base = base.clone();
       this.fileOffset = offset;
       this.length = length;
     }
-    
+
     @Override
     public SlicedIndexInput clone() {
-      SlicedIndexInput clone = (SlicedIndexInput)super.clone();
+      SlicedIndexInput clone = (SlicedIndexInput) super.clone();
       clone.base = base.clone();
       clone.fileOffset = fileOffset;
       clone.length = length;
       return clone;
     }
-    
+
     @Override
     protected void readInternal(ByteBuffer b) throws IOException {
       long start = getFilePointer();
@@ -395,15 +399,15 @@ public abstract class BufferedIndexInput extends IndexInput implements RandomAcc
       base.readBytes(b.array(), b.position(), b.remaining());
       b.position(b.position() + b.remaining());
     }
-    
+
     @Override
     protected void seekInternal(long pos) {}
-    
+
     @Override
     public void close() throws IOException {
       base.close();
     }
-    
+
     @Override
     public long length() {
       return length;

@@ -16,24 +16,23 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.MathUtil;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
- * Utility class to propagate scoring information in {@link BooleanQuery}, which
- * compute the score as the sum of the scores of its matching clauses.
- * This helps propagate information about the maximum produced score
+ * Utility class to propagate scoring information in {@link BooleanQuery}, which compute the score
+ * as the sum of the scores of its matching clauses. This helps propagate information about the
+ * maximum produced score
  */
 final class MaxScoreSumPropagator {
 
   /**
-   * Return an array which, at index i, stores the sum of all entries of
-   * {@code v} except the one at index i.
+   * Return an array which, at index i, stores the sum of all entries of {@code v} except the one at
+   * index i.
    */
   private static double[] computeSumOfComplement(float[] v) {
     // We do not use subtraction on purpose because it would defeat the
@@ -112,7 +111,7 @@ final class MaxScoreSumPropagator {
 
   void setMinCompetitiveScore(float minScore) throws IOException {
     if (minScore == 0) {
-      return ;
+      return;
     }
     // A double that is less than 'minScore' might still be converted to 'minScore'
     // when casted to a float, so we go to the previous float to avoid this issue
@@ -129,10 +128,7 @@ final class MaxScoreSumPropagator {
     }
   }
 
-  /**
-   * Return the minimum score that a Scorer must produce in order for a hit to
-   * be competitive.
-   */
+  /** Return the minimum score that a Scorer must produce in order for a hit to be competitive. */
   private float getMinCompetitiveScore(float minScoreSum, double sumOfOtherMaxScores) {
     assert numClauses > 0;
     if (minScoreSum <= sumOfOtherMaxScores) {

@@ -20,35 +20,27 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import org.xml.sax.InputSource;
 
 /**
- * This tree structure stores the hyphenation patterns in an efficient way for
- * fast lookup. It provides the provides the method to hyphenate a word.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ * This tree structure stores the hyphenation patterns in an efficient way for fast lookup. It
+ * provides the provides the method to hyphenate a word.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
 public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
-  /**
-   * value space: stores the interletter values
-   */
+  /** value space: stores the interletter values */
   protected ByteVector vspace;
 
-  /**
-   * This map stores hyphenation exceptions
-   */
-  protected HashMap<String,ArrayList<Object>> stoplist;
+  /** This map stores hyphenation exceptions */
+  protected HashMap<String, ArrayList<Object>> stoplist;
 
-  /**
-   * This map stores the character classes
-   */
+  /** This map stores the character classes */
   protected TernaryTree classmap;
 
-  /**
-   * Temporary map to store interletter values on pattern loading.
-   */
+  /** Temporary map to store interletter values on pattern loading. */
   private transient TernaryTree ivalues;
 
   public HyphenationTree() {
@@ -59,12 +51,10 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   /**
-   * Packs the values by storing them in 4 bits, two values into a byte Values
-   * range is from 0 to 9. We use zero as terminator, so we'll add 1 to the
-   * value.
-   * 
-   * @param values a string of digits from '0' to '9' representing the
-   *        interletter values.
+   * Packs the values by storing them in 4 bits, two values into a byte Values range is from 0 to 9.
+   * We use zero as terminator, so we'll add 1 to the value.
+   *
+   * @param values a string of digits from '0' to '9' representing the interletter values.
    * @return the index into the vspace array where the packed values are stored.
    */
   protected int packValues(String values) {
@@ -89,7 +79,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
     StringBuilder buf = new StringBuilder();
     byte v = vspace.get(k++);
     while (v != 0) {
-      char c = (char) (((v & 0xf0 )>>> 4) - 1 + '0');
+      char c = (char) (((v & 0xf0) >>> 4) - 1 + '0');
       buf.append(c);
       c = (char) (v & 0x0f);
       if (c == 0) {
@@ -104,7 +94,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
   /**
    * Read hyphenation patterns from an XML file.
-   * 
+   *
    * @param source the InputSource for the file
    * @throws IOException In case the parsing fails
    */
@@ -132,9 +122,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
     return "";
   }
 
-  /**
-   * String compare, returns 0 if equal or t is a substring of s
-   */
+  /** String compare, returns 0 if equal or t is a substring of s */
   protected int hstrcmp(char[] s, int si, char[] t, int ti) {
     for (; s[si] == t[ti]; si++, ti++) {
       if (s[si] == 0) {
@@ -151,7 +139,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
     StringBuilder buf = new StringBuilder();
     byte v = vspace.get(k++);
     while (v != 0) {
-      char c = (char) (((v & 0xf0 )>>> 4) - 1);
+      char c = (char) (((v & 0xf0) >>> 4) - 1);
       buf.append(c);
       c = (char) (v & 0x0f);
       if (c == 0) {
@@ -169,27 +157,21 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   /**
-   * <p>
-   * Search for all possible partial matches of word starting at index an update
-   * interletter values. In other words, it does something like:
-   * </p>
-   * <code>
+   * Search for all possible partial matches of word starting at index an update interletter values.
+   * In other words, it does something like: <code>
    * for(i=0; i&lt;patterns.length; i++) {
    * if ( word.substring(index).startsWidth(patterns[i]) )
    * update_interletter_values(patterns[i]);
    * }
    * </code>
-   * <p>
-   * But it is done in an efficient way since the patterns are stored in a
-   * ternary tree. In fact, this is the whole purpose of having the tree: doing
-   * this search without having to test every single pattern. The number of
-   * patterns for languages such as English range from 4000 to 10000. Thus,
-   * doing thousands of string comparisons for each word to hyphenate would be
-   * really slow without the tree. The tradeoff is memory, but using a ternary
-   * tree instead of a trie, almost halves the memory used by Lout or TeX.
-   * It's also faster than using a hash table
-   * </p>
-   * 
+   *
+   * <p>But it is done in an efficient way since the patterns are stored in a ternary tree. In fact,
+   * this is the whole purpose of having the tree: doing this search without having to test every
+   * single pattern. The number of patterns for languages such as English range from 4000 to 10000.
+   * Thus, doing thousands of string comparisons for each word to hyphenate would be really slow
+   * without the tree. The tradeoff is memory, but using a ternary tree instead of a trie, almost
+   * halves the memory used by Lout or TeX. It's also faster than using a hash table
+   *
    * @param word null terminated word to match
    * @param index start index from word
    * @param il interletter values array to update
@@ -244,8 +226,8 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
             q = lo[q];
 
             /**
-             * actually the code should be: q = sc[q] < 0 ? hi[q] : lo[q]; but
-             * java chars are unsigned
+             * actually the code should be: q = sc[q] < 0 ? hi[q] : lo[q]; but java chars are
+             * unsigned
              */
           }
         }
@@ -257,50 +239,42 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
   /**
    * Hyphenate word and return a Hyphenation object.
-   * 
+   *
    * @param word the word to be hyphenated
-   * @param remainCharCount Minimum number of characters allowed before the
-   *        hyphenation point.
-   * @param pushCharCount Minimum number of characters allowed after the
-   *        hyphenation point.
-   * @return a {@link Hyphenation Hyphenation} object representing the
-   *         hyphenated word or null if word is not hyphenated.
+   * @param remainCharCount Minimum number of characters allowed before the hyphenation point.
+   * @param pushCharCount Minimum number of characters allowed after the hyphenation point.
+   * @return a {@link Hyphenation Hyphenation} object representing the hyphenated word or null if
+   *     word is not hyphenated.
    */
-  public Hyphenation hyphenate(String word, int remainCharCount,
-      int pushCharCount) {
+  public Hyphenation hyphenate(String word, int remainCharCount, int pushCharCount) {
     char[] w = word.toCharArray();
     return hyphenate(w, 0, w.length, remainCharCount, pushCharCount);
   }
 
   /**
-   * w = "****nnllllllnnn*****", where n is a non-letter, l is a letter, all n
-   * may be absent, the first n is at offset, the first l is at offset +
-   * iIgnoreAtBeginning; word = ".llllll.'\0'***", where all l in w are copied
-   * into word. In the first part of the routine len = w.length, in the second
-   * part of the routine len = word.length. Three indices are used: index(w),
-   * the index in w, index(word), the index in word, letterindex(word), the
-   * index in the letter part of word. The following relations exist: index(w) =
-   * offset + i - 1 index(word) = i - iIgnoreAtBeginning letterindex(word) =
-   * index(word) - 1 (see first loop). It follows that: index(w) - index(word) =
-   * offset - 1 + iIgnoreAtBeginning index(w) = letterindex(word) + offset +
-   * iIgnoreAtBeginning
+   * w = "****nnllllllnnn*****", where n is a non-letter, l is a letter, all n may be absent, the
+   * first n is at offset, the first l is at offset + iIgnoreAtBeginning; word = ".llllll.'\0'***",
+   * where all l in w are copied into word. In the first part of the routine len = w.length, in the
+   * second part of the routine len = word.length. Three indices are used: index(w), the index in w,
+   * index(word), the index in word, letterindex(word), the index in the letter part of word. The
+   * following relations exist: index(w) = offset + i - 1 index(word) = i - iIgnoreAtBeginning
+   * letterindex(word) = index(word) - 1 (see first loop). It follows that: index(w) - index(word) =
+   * offset - 1 + iIgnoreAtBeginning index(w) = letterindex(word) + offset + iIgnoreAtBeginning
    */
 
   /**
    * Hyphenate word and return an array of hyphenation points.
-   * 
+   *
    * @param w char array that contains the word
    * @param offset Offset to first character in word
    * @param len Length of word
-   * @param remainCharCount Minimum number of characters allowed before the
-   *        hyphenation point.
-   * @param pushCharCount Minimum number of characters allowed after the
-   *        hyphenation point.
-   * @return a {@link Hyphenation Hyphenation} object representing the
-   *         hyphenated word or null if word is not hyphenated.
+   * @param remainCharCount Minimum number of characters allowed before the hyphenation point.
+   * @param pushCharCount Minimum number of characters allowed after the hyphenation point.
+   * @return a {@link Hyphenation Hyphenation} object representing the hyphenated word or null if
+   *     word is not hyphenated.
    */
-  public Hyphenation hyphenate(char[] w, int offset, int len,
-      int remainCharCount, int pushCharCount) {
+  public Hyphenation hyphenate(
+      char[] w, int offset, int len, int remainCharCount, int pushCharCount) {
     int i;
     char[] word = new char[len + 3];
 
@@ -370,8 +344,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
       // i + 1 is index(word),
       // result[k] = corresponding index(w)
       for (i = 0; i < len; i++) {
-        if (((il[i + 1] & 1) == 1) && i >= remainCharCount
-            && i <= (len - pushCharCount)) {
+        if (((il[i + 1] & 1) == 1) && i >= remainCharCount && i <= (len - pushCharCount)) {
           result[k++] = i + iIgnoreAtBeginning;
         }
       }
@@ -379,12 +352,12 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
     if (k > 0) {
       // trim result array
-      int[] res = new int[k+2];
+      int[] res = new int[k + 2];
       System.arraycopy(result, 0, res, 1, k);
       // We add the synthetical hyphenation points
       // at the beginning and end of the word
-      res[0]=0;
-      res[k+1]=len;
+      res[0] = 0;
+      res[k + 1] = len;
       return new Hyphenation(res);
     } else {
       return null;
@@ -392,14 +365,13 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   /**
-   * Add a character class to the tree. It is used by
-   * {@link PatternParser PatternParser} as callback to add character classes.
-   * Character classes define the valid word characters for hyphenation. If a
-   * word contains a character not defined in any of the classes, it is not
-   * hyphenated. It also defines a way to normalize the characters in order to
-   * compare them with the stored patterns. Usually pattern files use only lower
-   * case characters, in this case a class for letter 'a', for example, should
-   * be defined as "aA", the first character being the normalization char.
+   * Add a character class to the tree. It is used by {@link PatternParser PatternParser} as
+   * callback to add character classes. Character classes define the valid word characters for
+   * hyphenation. If a word contains a character not defined in any of the classes, it is not
+   * hyphenated. It also defines a way to normalize the characters in order to compare them with the
+   * stored patterns. Usually pattern files use only lower case characters, in this case a class for
+   * letter 'a', for example, should be defined as "aA", the first character being the normalization
+   * char.
    */
   @Override
   public void addClass(String chargroup) {
@@ -415,13 +387,11 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   /**
-   * Add an exception to the tree. It is used by
-   * {@link PatternParser PatternParser} class as callback to store the
-   * hyphenation exceptions.
-   * 
+   * Add an exception to the tree. It is used by {@link PatternParser PatternParser} class as
+   * callback to store the hyphenation exceptions.
+   *
    * @param word normalized word
-   * @param hyphenatedword a vector of alternating strings and
-   *        {@link Hyphen hyphen} objects.
+   * @param hyphenatedword a vector of alternating strings and {@link Hyphen hyphen} objects.
    */
   @Override
   public void addException(String word, ArrayList<Object> hyphenatedword) {
@@ -429,14 +399,13 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
   }
 
   /**
-   * Add a pattern to the tree. Mainly, to be used by
-   * {@link PatternParser PatternParser} class as callback to add a pattern to
-   * the tree.
-   * 
+   * Add a pattern to the tree. Mainly, to be used by {@link PatternParser PatternParser} class as
+   * callback to add a pattern to the tree.
+   *
    * @param pattern the hyphenation pattern
-   * @param ivalue interletter weight values indicating the desirability and
-   *        priority of hyphenating at a given point within the pattern. It
-   *        should contain only digit characters. (i.e. '0' to '9').
+   * @param ivalue interletter weight values indicating the desirability and priority of hyphenating
+   *     at a given point within the pattern. It should contain only digit characters. (i.e. '0' to
+   *     '9').
    */
   @Override
   public void addPattern(String pattern, String ivalue) {
@@ -450,9 +419,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
 
   @Override
   public void printStats(PrintStream out) {
-    out.println("Value space size = "
-        + Integer.toString(vspace.length()));
+    out.println("Value space size = " + Integer.toString(vspace.length()));
     super.printStats(out);
-
   }
 }

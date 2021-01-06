@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -43,7 +41,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -62,13 +60,13 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
-    //After adding the document, we should be able to read it back in
+    // After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
 
-    //System.out.println("Document: " + doc);
+    // System.out.println("Document: " + doc);
     IndexableField[] fields = doc.getFields("textField2");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
@@ -102,17 +100,18 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testPositionIncrementGap() throws IOException {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
-      }
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          public TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new MockTokenizer(MockTokenizer.WHITESPACE, false));
+          }
 
-      @Override
-      public int getPositionIncrementGap(String fieldName) {
-        return 500;
-      }
-    };
+          @Override
+          public int getPositionIncrementGap(String fieldName) {
+            return 500;
+          }
+        };
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
 
@@ -126,7 +125,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
 
-    PostingsEnum termPositions = MultiTerms.getTermPostingsEnum(reader, "repeated", new BytesRef("repeated"));
+    PostingsEnum termPositions =
+        MultiTerms.getTermPostingsEnum(reader, "repeated", new BytesRef("repeated"));
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     int freq = termPositions.freq();
     assertEquals(2, freq);
@@ -136,55 +136,58 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   public void testTokenReuse() throws IOException {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new TokenFilter(tokenizer) {
-          boolean first = true;
-          AttributeSource.State state;
-
+    Analyzer analyzer =
+        new Analyzer() {
           @Override
-          public boolean incrementToken() throws IOException {
-            if (state != null) {
-              restoreState(state);
-              payloadAtt.setPayload(null);
-              posIncrAtt.setPositionIncrement(0);
-              termAtt.setEmpty().append("b");
-              state = null;
-              return true;
-            }
+          public TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(
+                tokenizer,
+                new TokenFilter(tokenizer) {
+                  boolean first = true;
+                  AttributeSource.State state;
 
-            boolean hasNext = input.incrementToken();
-            if (!hasNext) return false;
-            if (Character.isDigit(termAtt.buffer()[0])) {
-              posIncrAtt.setPositionIncrement(termAtt.buffer()[0] - '0');
-            }
-            if (first) {
-              // set payload on first position only
-              payloadAtt.setPayload(new BytesRef(new byte[]{100}));
-              first = false;
-            }
+                  @Override
+                  public boolean incrementToken() throws IOException {
+                    if (state != null) {
+                      restoreState(state);
+                      payloadAtt.setPayload(null);
+                      posIncrAtt.setPositionIncrement(0);
+                      termAtt.setEmpty().append("b");
+                      state = null;
+                      return true;
+                    }
 
-            // index a "synonym" for every token
-            state = captureState();
-            return true;
+                    boolean hasNext = input.incrementToken();
+                    if (!hasNext) return false;
+                    if (Character.isDigit(termAtt.buffer()[0])) {
+                      posIncrAtt.setPositionIncrement(termAtt.buffer()[0] - '0');
+                    }
+                    if (first) {
+                      // set payload on first position only
+                      payloadAtt.setPayload(new BytesRef(new byte[] {100}));
+                      first = false;
+                    }
 
+                    // index a "synonym" for every token
+                    state = captureState();
+                    return true;
+                  }
+
+                  @Override
+                  public void reset() throws IOException {
+                    super.reset();
+                    first = true;
+                    state = null;
+                  }
+
+                  final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+                  final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+                  final PositionIncrementAttribute posIncrAtt =
+                      addAttribute(PositionIncrementAttribute.class);
+                });
           }
-
-          @Override
-          public void reset() throws IOException {
-            super.reset();
-            first = true;
-            state = null;
-          }
-
-          final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-          final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
-          final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-        });
-      }
-    };
+        };
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer));
 
@@ -210,36 +213,39 @@ public class TestDocumentWriter extends LuceneTestCase {
     reader.close();
   }
 
-
   public void testPreAnalyzedField() throws IOException {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
 
-    doc.add(new TextField("preanalyzed", new TokenStream() {
-      private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
-      private int index = 0;
-      
-      private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-      
-      @Override
-      public boolean incrementToken() {
-        if (index == tokens.length) {
-          return false;
-        } else {
-          clearAttributes();
-          termAtt.setEmpty().append(tokens[index++]);
-          return true;
-        }        
-      }
-      }));
-    
+    doc.add(
+        new TextField(
+            "preanalyzed",
+            new TokenStream() {
+              private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
+              private int index = 0;
+
+              private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+              @Override
+              public boolean incrementToken() {
+                if (index == tokens.length) {
+                  return false;
+                } else {
+                  clearAttributes();
+                  termAtt.setEmpty().append(tokens[index++]);
+                  return true;
+                }
+              }
+            }));
+
     writer.addDocument(doc);
     writer.commit();
     SegmentCommitInfo info = writer.newestSegment();
     writer.close();
     SegmentReader reader = new SegmentReader(info, Version.LATEST.major, newIOContext(random()));
 
-    PostingsEnum termPositions = reader.postings(new Term("preanalyzed", "term1"), PostingsEnum.ALL);
+    PostingsEnum termPositions =
+        reader.postings(new Term("preanalyzed", "term1"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
@@ -249,7 +255,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
-    
+
     termPositions = reader.postings(new Term("preanalyzed", "term3"), PostingsEnum.ALL);
     assertTrue(termPositions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
@@ -258,9 +264,9 @@ public class TestDocumentWriter extends LuceneTestCase {
   }
 
   /**
-   * Test adding two fields with the same name, one indexed
-   * the other stored only. The omitNorms and omitTermFreqAndPositions setting
-   * of the stored field should not affect the indexed one (LUCENE-1590)
+   * Test adding two fields with the same name, one indexed the other stored only. The omitNorms and
+   * omitTermFreqAndPositions setting of the stored field should not affect the indexed one
+   * (LUCENE-1590)
    */
   public void testLUCENE_1590() throws Exception {
     Document doc = new Document();
@@ -289,10 +295,16 @@ public class TestDocumentWriter extends LuceneTestCase {
     FieldInfos fi = reader.getFieldInfos();
     // f1
     assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());
-    assertEquals("omitTermFreqAndPositions field bit should not be set for f1", IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, fi.fieldInfo("f1").getIndexOptions());
+    assertEquals(
+        "omitTermFreqAndPositions field bit should not be set for f1",
+        IndexOptions.DOCS_AND_FREQS_AND_POSITIONS,
+        fi.fieldInfo("f1").getIndexOptions());
     // f2
     assertTrue("f2 should have norms", fi.fieldInfo("f2").hasNorms());
-    assertEquals("omitTermFreqAndPositions field bit should be set for f2", IndexOptions.DOCS, fi.fieldInfo("f2").getIndexOptions());
+    assertEquals(
+        "omitTermFreqAndPositions field bit should be set for f2",
+        IndexOptions.DOCS,
+        fi.fieldInfo("f2").getIndexOptions());
     reader.close();
   }
 }

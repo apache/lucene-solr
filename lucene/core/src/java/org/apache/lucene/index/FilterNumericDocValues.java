@@ -20,14 +20,12 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Objects;
 
-/**
- * Delegates all methods to a wrapped {@link NumericDocValues}.
- */
+/** Delegates all methods to a wrapped {@link NumericDocValues}. */
 public abstract class FilterNumericDocValues extends NumericDocValues {
 
   /** Wrapped values */
   protected final NumericDocValues in;
-  
+
   /** Sole constructor */
   protected FilterNumericDocValues(NumericDocValues in) {
     Objects.requireNonNull(in);
@@ -38,7 +36,7 @@ public abstract class FilterNumericDocValues extends NumericDocValues {
   public int docID() {
     return in.docID();
   }
-  
+
   @Override
   public int nextDoc() throws IOException {
     return in.nextDoc();
@@ -48,12 +46,12 @@ public abstract class FilterNumericDocValues extends NumericDocValues {
   public int advance(int target) throws IOException {
     return in.advance(target);
   }
-  
+
   @Override
   public boolean advanceExact(int target) throws IOException {
     return in.advanceExact(target);
   }
-  
+
   @Override
   public long cost() {
     return in.cost();

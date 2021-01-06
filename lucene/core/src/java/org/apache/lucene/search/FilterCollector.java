@@ -17,9 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
-
 
 /**
  * {@link Collector} delegator.

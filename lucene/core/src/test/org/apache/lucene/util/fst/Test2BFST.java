@@ -16,10 +16,9 @@
  */
 package org.apache.lucene.util.fst;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import java.util.Arrays;
 import java.util.Random;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -31,24 +30,22 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
 import org.junit.Ignore;
 
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-
 @Ignore("Requires tons of heap to run (30 GB hits OOME but 35 GB passes after ~4.5 hours)")
 @TimeoutSuite(millis = 100 * TimeUnits.HOUR)
 public class Test2BFST extends LuceneTestCase {
 
-  private static long LIMIT = 3L*1024*1024*1024;
+  private static long LIMIT = 3L * 1024 * 1024 * 1024;
 
   public void test() throws Exception {
     assumeWorkingMMapOnWindows();
-    
+
     int[] ints = new int[7];
     IntsRef input = new IntsRef(ints, 0, ints.length);
     long seed = random().nextLong();
 
     Directory dir = new MMapDirectory(createTempDir("2BFST"));
 
-    for(int iter=0;iter<1;iter++) {
+    for (int iter = 0; iter < 1; iter++) {
       // Build FST w/ NoOutputs and stop when nodeCount > 2.2B
       {
         System.out.println("\nTEST: 3B nodes; doPack=false output=NO_OUTPUTS");
@@ -60,15 +57,21 @@ public class Test2BFST extends LuceneTestCase {
         Random r = new Random(seed);
         int[] ints2 = new int[200];
         IntsRef input2 = new IntsRef(ints2, 0, ints2.length);
-        while(true) {
-          //System.out.println("add: " + input + " -> " + output);
-          for(int i=10;i<ints2.length;i++) {
+        while (true) {
+          // System.out.println("add: " + input + " -> " + output);
+          for (int i = 10; i < ints2.length; i++) {
             ints2[i] = r.nextInt(256);
           }
           fstCompiler.add(input2, NO_OUTPUT);
           count++;
           if (count % 100000 == 0) {
-            System.out.println(count + ": " + fstCompiler.fstRamBytesUsed() + " bytes; " + fstCompiler.getNodeCount() + " nodes");
+            System.out.println(
+                count
+                    + ": "
+                    + fstCompiler.fstRamBytesUsed()
+                    + " bytes; "
+                    + fstCompiler.getNodeCount()
+                    + " nodes");
           }
           if (fstCompiler.getNodeCount() > Integer.MAX_VALUE + 100L * 1024 * 1024) {
             break;
@@ -78,17 +81,24 @@ public class Test2BFST extends LuceneTestCase {
 
         FST<Object> fst = fstCompiler.compile();
 
-        for(int verify=0;verify<2;verify++) {
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fstCompiler.getNodeCount() + "; arcCount=" + fstCompiler.getArcCount() + "]");
+        for (int verify = 0; verify < 2; verify++) {
+          System.out.println(
+              "\nTEST: now verify [fst size="
+                  + fst.ramBytesUsed()
+                  + "; nodeCount="
+                  + fstCompiler.getNodeCount()
+                  + "; arcCount="
+                  + fstCompiler.getArcCount()
+                  + "]");
 
           Arrays.fill(ints2, 0);
           r = new Random(seed);
 
-          for(int i=0;i<count;i++) {
+          for (int i = 0; i < count; i++) {
             if (i % 1000000 == 0) {
               System.out.println(i + "...: ");
             }
-            for(int j=10;j<ints2.length;j++) {
+            for (int j = 10; j < ints2.length; j++) {
               ints2[j] = r.nextInt(256);
             }
             assertEquals(NO_OUTPUT, Util.get(fst, input2));
@@ -101,12 +111,12 @@ public class Test2BFST extends LuceneTestCase {
           Arrays.fill(ints2, 0);
           r = new Random(seed);
           int upto = 0;
-          while(true) {
+          while (true) {
             IntsRefFSTEnum.InputOutput<Object> pair = fstEnum.next();
             if (pair == null) {
               break;
             }
-            for(int j=10;j<ints2.length;j++) {
+            for (int j = 10; j < ints2.length; j++) {
               ints2[j] = r.nextInt(256);
             }
             assertEquals(input2, pair.input);
@@ -142,9 +152,9 @@ public class Test2BFST extends LuceneTestCase {
         Arrays.fill(ints, 0);
         int count = 0;
         Random r = new Random(seed);
-        while(true) {
+        while (true) {
           r.nextBytes(outputBytes);
-          //System.out.println("add: " + input + " -> " + output);
+          // System.out.println("add: " + input + " -> " + output);
           fstCompiler.add(input, BytesRef.deepCopyOf(output));
           count++;
           if (count % 10000 == 0) {
@@ -160,14 +170,21 @@ public class Test2BFST extends LuceneTestCase {
         }
 
         FST<BytesRef> fst = fstCompiler.compile();
-        for(int verify=0;verify<2;verify++) {
+        for (int verify = 0; verify < 2; verify++) {
 
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fstCompiler.getNodeCount() + "; arcCount=" + fstCompiler.getArcCount() + "]");
+          System.out.println(
+              "\nTEST: now verify [fst size="
+                  + fst.ramBytesUsed()
+                  + "; nodeCount="
+                  + fstCompiler.getNodeCount()
+                  + "; arcCount="
+                  + fstCompiler.getArcCount()
+                  + "]");
 
           r = new Random(seed);
           Arrays.fill(ints, 0);
 
-          for(int i=0;i<count;i++) {
+          for (int i = 0; i < count; i++) {
             if (i % 1000000 == 0) {
               System.out.println(i + "...: ");
             }
@@ -182,7 +199,7 @@ public class Test2BFST extends LuceneTestCase {
           Arrays.fill(ints, 0);
           r = new Random(seed);
           int upto = 0;
-          while(true) {
+          while (true) {
             IntsRefFSTEnum.InputOutput<BytesRef> pair = fstEnum.next();
             if (pair == null) {
               break;
@@ -221,10 +238,10 @@ public class Test2BFST extends LuceneTestCase {
         Arrays.fill(ints, 0);
         int count = 0;
         Random r = new Random(seed);
-        while(true) {
-          //System.out.println("add: " + input + " -> " + output);
+        while (true) {
+          // System.out.println("add: " + input + " -> " + output);
           fstCompiler.add(input, output);
-          output += 1+r.nextInt(10);
+          output += 1 + r.nextInt(10);
           count++;
           if (count % 10000 == 0) {
             long size = fstCompiler.fstRamBytesUsed();
@@ -240,15 +257,22 @@ public class Test2BFST extends LuceneTestCase {
 
         FST<Long> fst = fstCompiler.compile();
 
-        for(int verify=0;verify<2;verify++) {
+        for (int verify = 0; verify < 2; verify++) {
 
-          System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fstCompiler.getNodeCount() + "; arcCount=" + fstCompiler.getArcCount() + "]");
+          System.out.println(
+              "\nTEST: now verify [fst size="
+                  + fst.ramBytesUsed()
+                  + "; nodeCount="
+                  + fstCompiler.getNodeCount()
+                  + "; arcCount="
+                  + fstCompiler.getArcCount()
+                  + "]");
 
           Arrays.fill(ints, 0);
 
           output = 1;
           r = new Random(seed);
-          for(int i=0;i<count;i++) {
+          for (int i = 0; i < count; i++) {
             if (i % 1000000 == 0) {
               System.out.println(i + "...: ");
             }
@@ -270,7 +294,7 @@ public class Test2BFST extends LuceneTestCase {
           r = new Random(seed);
           int upto = 0;
           output = 1;
-          while(true) {
+          while (true) {
             IntsRefFSTEnum.InputOutput<Long> pair = fstEnum.next();
             if (pair == null) {
               break;
@@ -302,10 +326,10 @@ public class Test2BFST extends LuceneTestCase {
 
   private void nextInput(Random r, int[] ints) {
     int downTo = 6;
-    while(downTo >= 0) {
+    while (downTo >= 0) {
       // Must add random amounts (and not just 1) because
       // otherwise FST outsmarts us and remains tiny:
-      ints[downTo] += 1+r.nextInt(10);
+      ints[downTo] += 1 + r.nextInt(10);
       if (ints[downTo] < 256) {
         break;
       } else {

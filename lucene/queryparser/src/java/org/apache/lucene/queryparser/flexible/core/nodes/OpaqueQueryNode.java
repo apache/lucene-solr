@@ -19,9 +19,9 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
 /**
- * A {@link OpaqueQueryNode} is used for specify values that are not supposed to
- * be parsed by the parser. For example: and XPATH query in the middle of a
- * query string a b @xpath:'/bookstore/book[1]/title' c d
+ * A {@link OpaqueQueryNode} is used for specify values that are not supposed to be parsed by the
+ * parser. For example: and XPATH query in the middle of a query string a
+ * b @xpath:'/bookstore/book[1]/title' c d
  */
 public class OpaqueQueryNode extends QueryNodeImpl {
 
@@ -30,17 +30,14 @@ public class OpaqueQueryNode extends QueryNodeImpl {
   private CharSequence value = null;
 
   /**
-   * @param schema
-   *          - schema identifier
-   * @param value
-   *          - value that was not parsed
+   * @param schema - schema identifier
+   * @param value - value that was not parsed
    */
   public OpaqueQueryNode(CharSequence schema, CharSequence value) {
     this.setLeaf(true);
 
     this.schema = schema;
     this.value = value;
-
   }
 
   @Override
@@ -63,18 +60,13 @@ public class OpaqueQueryNode extends QueryNodeImpl {
     return clone;
   }
 
-  /**
-   * @return the schema
-   */
+  /** @return the schema */
   public CharSequence getSchema() {
     return this.schema;
   }
 
-  /**
-   * @return the value
-   */
+  /** @return the value */
   public CharSequence getValue() {
     return this.value;
   }
-
 }

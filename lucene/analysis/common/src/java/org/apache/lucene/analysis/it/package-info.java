@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Italian.
- */
+/** Analyzer for Italian. */
 package org.apache.lucene.analysis.it;

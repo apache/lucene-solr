@@ -16,26 +16,21 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 /**
- * Lets all tokens pass through until it sees one with a start offset &lt;= a
- * configured limit, which won't pass and ends the stream.  This can be useful to
- * limit highlighting, for example.
- * <p>
- * By default, this filter ignores any tokens in the wrapped {@code TokenStream}
- * once the limit has been exceeded, which can result in {@code reset()} being
- * called prior to {@code incrementToken()} returning {@code false}.  For most
- * {@code TokenStream} implementations this should be acceptable, and faster
- * then consuming the full stream. If you are wrapping a {@code TokenStream}
- * which requires that the full stream of tokens be exhausted in order to
- * function properly, use the
- * {@link #LimitTokenOffsetFilter(TokenStream, int, boolean)} option.
+ * Lets all tokens pass through until it sees one with a start offset &lt;= a configured limit,
+ * which won't pass and ends the stream. This can be useful to limit highlighting, for example.
+ *
+ * <p>By default, this filter ignores any tokens in the wrapped {@code TokenStream} once the limit
+ * has been exceeded, which can result in {@code reset()} being called prior to {@code
+ * incrementToken()} returning {@code false}. For most {@code TokenStream} implementations this
+ * should be acceptable, and faster then consuming the full stream. If you are wrapping a {@code
+ * TokenStream} which requires that the full stream of tokens be exhausted in order to function
+ * properly, use the {@link #LimitTokenOffsetFilter(TokenStream, int, boolean)} option.
  */
 public final class LimitTokenOffsetFilter extends TokenFilter {
 

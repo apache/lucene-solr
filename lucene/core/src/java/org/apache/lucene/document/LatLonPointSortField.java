@@ -20,9 +20,7 @@ import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 
-/**
- * Sorts by distance from an origin location.
- */
+/** Sorts by distance from an origin location. */
 final class LatLonPointSortField extends SortField {
   final double latitude;
   final double longitude;
@@ -38,7 +36,7 @@ final class LatLonPointSortField extends SortField {
     this.longitude = longitude;
     setMissingValue(Double.POSITIVE_INFINITY);
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     return new LatLonPointDistanceComparator(getField(), latitude, longitude, numHits);
@@ -52,11 +50,13 @@ final class LatLonPointSortField extends SortField {
   @Override
   public void setMissingValue(Object missingValue) {
     if (Double.valueOf(Double.POSITIVE_INFINITY).equals(missingValue) == false) {
-      throw new IllegalArgumentException("Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got " + missingValue);
+      throw new IllegalArgumentException(
+          "Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got "
+              + missingValue);
     }
     this.missingValue = missingValue;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -76,7 +76,8 @@ final class LatLonPointSortField extends SortField {
     if (getClass() != obj.getClass()) return false;
     LatLonPointSortField other = (LatLonPointSortField) obj;
     if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;
-    if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude)) return false;
+    if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude))
+      return false;
     return true;
   }
 

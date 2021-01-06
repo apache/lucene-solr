@@ -23,11 +23,11 @@ public abstract class BasicModelTestCase extends BaseSimilarityTestCase {
   @Override
   protected final Similarity getSimilarity(Random random) {
     final AfterEffect afterEffect;
-    switch(random.nextInt(2)) {
-      case 0: 
+    switch (random.nextInt(2)) {
+      case 0:
         afterEffect = new AfterEffectL();
         break;
-      default: 
+      default:
         afterEffect = new AfterEffectB();
         break;
     }
@@ -95,7 +95,7 @@ public abstract class BasicModelTestCase extends BaseSimilarityTestCase {
         break;
     }
     final Normalization normalization;
-    switch(random.nextInt(5)) {
+    switch (random.nextInt(5)) {
       case 0:
         normalization = new Normalization.NoNormalization();
         break;
@@ -114,8 +114,7 @@ public abstract class BasicModelTestCase extends BaseSimilarityTestCase {
     }
     return new DFRSimilarity(getBasicModel(), afterEffect, normalization);
   }
-  
+
   /** return BasicModel under test */
   protected abstract BasicModel getBasicModel();
-
 }

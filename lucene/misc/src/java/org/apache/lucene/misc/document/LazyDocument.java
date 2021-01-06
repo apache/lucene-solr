@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -34,9 +33,10 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
 
-/** Defers actually loading a field's value until you ask
- *  for it.  You must not use the returned Field instances
- *  after the provided reader has been closed. 
+/**
+ * Defers actually loading a field's value until you ask for it. You must not use the returned Field
+ * instances after the provided reader has been closed.
+ *
  * @see #getField
  */
 public class LazyDocument {
@@ -46,7 +46,7 @@ public class LazyDocument {
   // null until first field is loaded
   private Document doc;
 
-  private Map<Integer,List<LazyField>> fields = new HashMap<>();
+  private Map<Integer, List<LazyField>> fields = new HashMap<>();
   private Set<String> fieldNames = new HashSet<>();
 
   public LazyDocument(IndexReader reader, int docID) {
@@ -55,28 +55,23 @@ public class LazyDocument {
   }
 
   /**
-   * Creates a StorableField whose value will be lazy loaded if and 
-   * when it is used. 
-   * <p>
-   * <b>NOTE:</b> This method must be called once for each value of the field 
-   * name specified in sequence that the values exist.  This method may not be 
-   * used to generate multiple, lazy, StorableField instances referring to 
-   * the same underlying StorableField instance.
-   * </p>
-   * <p>
-   * The lazy loading of field values from all instances of StorableField 
-   * objects returned by this method are all backed by a single StoredDocument 
-   * per LazyDocument instance.
-   * </p>
+   * Creates a StorableField whose value will be lazy loaded if and when it is used.
+   *
+   * <p><b>NOTE:</b> This method must be called once for each value of the field name specified in
+   * sequence that the values exist. This method may not be used to generate multiple, lazy,
+   * StorableField instances referring to the same underlying StorableField instance.
+   *
+   * <p>The lazy loading of field values from all instances of StorableField objects returned by
+   * this method are all backed by a single StoredDocument per LazyDocument instance.
    */
-  public IndexableField getField(FieldInfo fieldInfo) {  
+  public IndexableField getField(FieldInfo fieldInfo) {
 
     fieldNames.add(fieldInfo.name);
     List<LazyField> values = fields.get(fieldInfo.number);
     if (null == values) {
       values = new ArrayList<>();
       fields.put(fieldInfo.number, values);
-    } 
+    }
 
     LazyField value = new LazyField(fieldInfo.name, fieldInfo.number);
     values.add(value);
@@ -91,9 +86,10 @@ public class LazyDocument {
     return value;
   }
 
-  /** 
+  /**
    * non-private for test only access
-   * @lucene.internal 
+   *
+   * @lucene.internal
    */
   synchronized Document getDocument() {
     if (doc == null) {
@@ -112,10 +108,10 @@ public class LazyDocument {
 
     List<LazyField> lazyValues = fields.get(fieldNum);
     IndexableField[] realValues = d.getFields(name);
-    
-    assert realValues.length <= lazyValues.size() 
-      : "More lazy values then real values for field: " + name;
-    
+
+    assert realValues.length <= lazyValues.size()
+        : "More lazy values then real values for field: " + name;
+
     for (int i = 0; i < lazyValues.size(); i++) {
       LazyField f = lazyValues.get(i);
       if (null != f) {
@@ -124,10 +120,10 @@ public class LazyDocument {
     }
   }
 
-
-  /** 
+  /**
    * Lazy-loaded field
-   * @lucene.internal 
+   *
+   * @lucene.internal
    */
   public class LazyField implements IndexableField {
     private String name;
@@ -139,9 +135,10 @@ public class LazyDocument {
       this.fieldNum = fieldNum;
     }
 
-    /** 
+    /**
      * non-private for test only access
-     * @lucene.internal 
+     *
+     * @lucene.internal
      */
     public boolean hasBeenLoaded() {
       return null != realValue;
@@ -152,8 +149,8 @@ public class LazyDocument {
         fetchRealValues(name, fieldNum);
       }
       assert hasBeenLoaded() : "field value was not lazy loaded";
-      assert realValue.name().equals(name()) : 
-        "realvalue name != name: " + realValue.name() + " != " + name();
+      assert realValue.name().equals(name())
+          : "realvalue name != name: " + realValue.name() + " != " + name();
 
       return realValue;
     }

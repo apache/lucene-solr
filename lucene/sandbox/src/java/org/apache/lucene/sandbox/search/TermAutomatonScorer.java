@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.sandbox.search.TermAutomatonQuery.EnumAndScorer;
 import org.apache.lucene.sandbox.search.TermAutomatonQuery.TermAutomatonWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -38,7 +37,7 @@ class TermAutomatonScorer extends Scorer {
   private final PriorityQueue<EnumAndScorer> docIDQueue;
   private final PriorityQueue<EnumAndScorer> posQueue;
   private final RunAutomaton runAutomaton;
-  private final Map<Integer,BytesRef> idToTerm;
+  private final Map<Integer, BytesRef> idToTerm;
 
   // We reuse this array to check for matches starting from an initial
   // position; we increase posShift every time we move to a new possible
@@ -58,9 +57,15 @@ class TermAutomatonScorer extends Scorer {
   private int docID = -1;
   private int freq;
 
-  public TermAutomatonScorer(TermAutomatonWeight weight, EnumAndScorer[] subs, int anyTermID, Map<Integer,BytesRef> idToTerm, LeafSimScorer docScorer) throws IOException {
+  public TermAutomatonScorer(
+      TermAutomatonWeight weight,
+      EnumAndScorer[] subs,
+      int anyTermID,
+      Map<Integer, BytesRef> idToTerm,
+      LeafSimScorer docScorer)
+      throws IOException {
     super(weight);
-    //System.out.println("  automaton:\n" + weight.automaton.toDot());
+    // System.out.println("  automaton:\n" + weight.automaton.toDot());
     this.runAutomaton = new TermRunAutomaton(weight.automaton, subs.length);
     this.docScorer = docScorer;
     this.idToTerm = idToTerm;
@@ -70,13 +75,13 @@ class TermAutomatonScorer extends Scorer {
     this.anyTermID = anyTermID;
     this.subsOnDoc = new EnumAndScorer[subs.length];
     this.positions = new PosState[4];
-    for(int i=0;i<this.positions.length;i++) {
+    for (int i = 0; i < this.positions.length; i++) {
       this.positions[i] = new PosState();
     }
     long cost = 0;
 
     // Init docIDQueue:
-    for(EnumAndScorer sub : subs) {
+    for (EnumAndScorer sub : subs) {
       if (sub != null) {
         cost += sub.posEnum.cost();
         subsOnDoc[numSubsOnDoc++] = sub;
@@ -85,8 +90,7 @@ class TermAutomatonScorer extends Scorer {
     this.cost = cost;
   }
 
-  /** Sorts by docID so we can quickly pull out all scorers that are on
-   *  the same (lowest) docID. */
+  /** Sorts by docID so we can quickly pull out all scorers that are on the same (lowest) docID. */
   private static class DocIDQueue extends PriorityQueue<EnumAndScorer> {
     public DocIDQueue(int maxSize) {
       super(maxSize);
@@ -98,8 +102,7 @@ class TermAutomatonScorer extends Scorer {
     }
   }
 
-  /** Sorts by position so we can visit all scorers on one doc, by
-   *  position. */
+  /** Sorts by position so we can visit all scorers on one doc, by position. */
   private static class PositionQueue extends PriorityQueue<EnumAndScorer> {
     public PositionQueue(int maxSize) {
       super(maxSize);
@@ -124,7 +127,7 @@ class TermAutomatonScorer extends Scorer {
 
   /** Pushes all previously pop'd enums back into the docIDQueue */
   private void pushCurrentDoc() {
-    for(int i=0;i<numSubsOnDoc;i++) {
+    for (int i = 0; i < numSubsOnDoc; i++) {
       docIDQueue.add(subsOnDoc[i]);
     }
     numSubsOnDoc = 0;
@@ -147,10 +150,10 @@ class TermAutomatonScorer extends Scorer {
       public int nextDoc() throws IOException {
         // we only need to advance docs that are positioned since all docs in the
         // pq are guaranteed to be beyond the current doc already
-        for(int i=0;i<numSubsOnDoc;i++) {
+        for (int i = 0; i < numSubsOnDoc; i++) {
           EnumAndScorer sub = subsOnDoc[i];
           if (sub.posEnum.nextDoc() != NO_MORE_DOCS) {
-            sub.posLeft = sub.posEnum.freq()-1;
+            sub.posLeft = sub.posEnum.freq() - 1;
             sub.pos = sub.posEnum.nextPosition();
           }
         }
@@ -167,7 +170,7 @@ class TermAutomatonScorer extends Scorer {
           EnumAndScorer top = docIDQueue.top();
           while (top.posEnum.docID() < target) {
             if (top.posEnum.advance(target) != NO_MORE_DOCS) {
-              top.posLeft = top.posEnum.freq()-1;
+              top.posLeft = top.posEnum.freq() - 1;
               top.pos = top.posEnum.nextPosition();
             }
             top = docIDQueue.updateTop();
@@ -175,10 +178,10 @@ class TermAutomatonScorer extends Scorer {
         }
 
         // 2. Advance subsOnDoc
-        for(int i=0;i<numSubsOnDoc;i++) {
+        for (int i = 0; i < numSubsOnDoc; i++) {
           EnumAndScorer sub = subsOnDoc[i];
           if (sub.posEnum.advance(target) != NO_MORE_DOCS) {
-            sub.posLeft = sub.posEnum.freq()-1;
+            sub.posLeft = sub.posEnum.freq() - 1;
             sub.pos = sub.posEnum.nextPosition();
           }
         }
@@ -190,9 +193,9 @@ class TermAutomatonScorer extends Scorer {
         assert numSubsOnDoc == 0;
         assert docIDQueue.top().posEnum.docID() > docID;
         while (true) {
-          //System.out.println("  doNext: cycle");
+          // System.out.println("  doNext: cycle");
           popCurrentDoc();
-          //System.out.println("    docID=" + docID);
+          // System.out.println("    docID=" + docID);
           if (docID == NO_MORE_DOCS) {
             return docID;
           }
@@ -200,10 +203,10 @@ class TermAutomatonScorer extends Scorer {
           if (freq > 0) {
             return docID;
           }
-          for(int i=0;i<numSubsOnDoc;i++) {
+          for (int i = 0; i < numSubsOnDoc; i++) {
             EnumAndScorer sub = subsOnDoc[i];
             if (sub.posEnum.nextDoc() != NO_MORE_DOCS) {
-              sub.posLeft = sub.posEnum.freq()-1;
+              sub.posLeft = sub.posEnum.freq() - 1;
               sub.pos = sub.posEnum.nextPosition();
             }
           }
@@ -214,12 +217,12 @@ class TermAutomatonScorer extends Scorer {
   }
 
   private PosState getPosition(int pos) {
-    return positions[pos-posShift];
+    return positions[pos - posShift];
   }
 
   private void shift(int pos) {
-    int limit = pos-posShift;
-    for(int i=0;i<limit;i++) {
+    int limit = pos - posShift;
+    for (int i = 0; i < limit; i++) {
       positions[i].count = 0;
     }
     posShift = pos;
@@ -227,11 +230,13 @@ class TermAutomatonScorer extends Scorer {
 
   private void countMatches() throws IOException {
     freq = 0;
-    for(int i=0;i<numSubsOnDoc;i++) {
+    for (int i = 0; i < numSubsOnDoc; i++) {
       posQueue.add(subsOnDoc[i]);
     }
-    // System.out.println("\ncountMatches: " + numSubsOnDoc + " terms in doc=" + docID + " anyTermID=" + anyTermID + " id=" + reader.document(docID).get("id"));
-    // System.out.println("\ncountMatches: " + numSubsOnDoc + " terms in doc=" + docID + " anyTermID=" + anyTermID);
+    // System.out.println("\ncountMatches: " + numSubsOnDoc + " terms in doc=" + docID + "
+    // anyTermID=" + anyTermID + " id=" + reader.document(docID).get("id"));
+    // System.out.println("\ncountMatches: " + numSubsOnDoc + " terms in doc=" + docID + "
+    // anyTermID=" + anyTermID);
 
     int lastPos = -1;
 
@@ -250,16 +255,20 @@ class TermAutomatonScorer extends Scorer {
         posShift = pos;
       }
 
-      if (pos+1-posShift >= positions.length) {
-        PosState[] newPositions = new PosState[ArrayUtil.oversize(pos+1-posShift, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      if (pos + 1 - posShift >= positions.length) {
+        PosState[] newPositions =
+            new PosState
+                [ArrayUtil.oversize(pos + 1 - posShift, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
         System.arraycopy(positions, 0, newPositions, 0, positions.length);
-        for(int i=positions.length;i<newPositions.length;i++) {
+        for (int i = positions.length; i < newPositions.length; i++) {
           newPositions[i] = new PosState();
         }
         positions = newPositions;
       }
 
-      // System.out.println("  term=" + idToTerm.get(sub.termID).utf8ToString() + " pos=" + pos + " (count=" + getPosition(pos).count + " lastPos=" + lastPos + ") posQueue.size=" + posQueue.size() + " posShift=" + posShift);
+      // System.out.println("  term=" + idToTerm.get(sub.termID).utf8ToString() + " pos=" + pos + "
+      // (count=" + getPosition(pos).count + " lastPos=" + lastPos + ") posQueue.size=" +
+      // posQueue.size() + " posShift=" + posShift);
 
       PosState posState;
       PosState nextPosState;
@@ -277,10 +286,10 @@ class TermAutomatonScorer extends Scorer {
             }
             // System.out.println("  iter lastPos=" + lastPos + " count=" + posState.count);
 
-            nextPosState = getPosition(lastPos+1);
+            nextPosState = getPosition(lastPos + 1);
 
             // Advance all states from lastPos -> pos, if they had an any arc:
-            for(int i=0;i<posState.count;i++) {
+            for (int i = 0; i < posState.count; i++) {
               int state = runAutomaton.step(posState.states[i], anyTermID);
               if (state != -1) {
                 // System.out.println("    add pos=" + (lastPos+1) + " state=" + state);
@@ -294,18 +303,18 @@ class TermAutomatonScorer extends Scorer {
       }
 
       posState = getPosition(pos);
-      nextPosState = getPosition(pos+1);
+      nextPosState = getPosition(pos + 1);
 
       // If there are no pending matches at neither this position or the
       // next position, then it's safe to shift back to positions[0]:
       if (posState.count == 0 && nextPosState.count == 0) {
         shift(pos);
         posState = getPosition(pos);
-        nextPosState = getPosition(pos+1);
+        nextPosState = getPosition(pos + 1);
       }
 
       // Match current token:
-      for(int i=0;i<posState.count;i++) {
+      for (int i = 0; i < posState.count; i++) {
         // System.out.println("    check cur state=" + posState.states[i]);
         int state = runAutomaton.step(posState.states[i], sub.termID);
         if (state != -1) {
@@ -339,9 +348,9 @@ class TermAutomatonScorer extends Scorer {
       lastPos = pos;
     }
 
-    int limit = lastPos+1-posShift;
+    int limit = lastPos + 1 - posShift;
     // reset
-    for(int i=0;i<=limit;i++) {
+    for (int i = 0; i <= limit; i++) {
       positions[i].count = 0;
     }
   }
@@ -358,7 +367,8 @@ class TermAutomatonScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    // TODO: we could probably do better here, e.g. look @ freqs of actual terms involved in this doc and score differently
+    // TODO: we could probably do better here, e.g. look @ freqs of actual terms involved in this
+    // doc and score differently
     return docScorer.score(docID, freq);
   }
 

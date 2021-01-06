@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Compression utilities.
- */
+/** Compression utilities. */
 package org.apache.lucene.util.compress;

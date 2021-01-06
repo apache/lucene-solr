@@ -18,34 +18,29 @@ package org.apache.lucene.util;
 
 import static org.apache.lucene.util.LuceneTestCase.*;
 
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
-import com.carrotsearch.randomizedtesting.LifecycleScope;
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-
 /**
- * A suite listener printing a "reproduce string". This ensures test result
- * events are always captured properly even if exceptions happen at
- * initialization or suite/ hooks level.
+ * A suite listener printing a "reproduce string". This ensures test result events are always
+ * captured properly even if exceptions happen at initialization or suite/ hooks level.
  */
 public final class RunListenerPrintReproduceInfo extends RunListener {
   /**
-   * A list of all test suite classes executed so far in this JVM (ehm, 
-   * under this class's classloader).
+   * A list of all test suite classes executed so far in this JVM (ehm, under this class's
+   * classloader).
    */
   private static List<String> testClassesRun = new ArrayList<>();
 
-  /**
-   * The currently executing scope.
-   */
+  /** The currently executing scope. */
   private LifecycleScope scope;
 
   /** Current test failed. */
@@ -56,10 +51,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
 
   /** A marker to print full env. diagnostics after the suite. */
   private boolean printDiagnosticsAfterClass;
-  
+
   /** true if we should skip the reproduce string (diagnostics are independent) */
   private boolean suppressReproduceLine;
-
 
   @Override
   public void testRunStarted(Description description) throws Exception {
@@ -68,7 +62,8 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     scope = LifecycleScope.SUITE;
 
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
-    suppressReproduceLine = targetClass.isAnnotationPresent(LuceneTestCase.SuppressReproduceLine.class);
+    suppressReproduceLine =
+        targetClass.isAnnotationPresent(LuceneTestCase.SuppressReproduceLine.class);
     testClassesRun.add(targetClass.getSimpleName());
   }
 
@@ -91,19 +86,17 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   @Override
   public void testFinished(Description description) throws Exception {
     if (testFailed) {
-      reportAdditionalFailureInfo(
-          stripTestNameAugmentations(
-              description.getMethodName()));
+      reportAdditionalFailureInfo(stripTestNameAugmentations(description.getMethodName()));
     }
     scope = LifecycleScope.SUITE;
     testFailed = false;
   }
 
   /**
-   * The {@link Description} object in JUnit does not expose the actual test method,
-   * instead it has the concept of a unique "name" of a test. To run the same method (tests)
-   * repeatedly, randomizedtesting must make those "names" unique: it appends the current iteration
-   * and seeds to the test method's name. We strip this information here.   
+   * The {@link Description} object in JUnit does not expose the actual test method, instead it has
+   * the concept of a unique "name" of a test. To run the same method (tests) repeatedly,
+   * randomizedtesting must make those "names" unique: it appends the current iteration and seeds to
+   * the test method's name. We strip this information here.
    */
   private String stripTestNameAugmentations(String methodName) {
     if (methodName != null) {
@@ -126,22 +119,30 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   /** print some useful debugging information about the environment */
   private static void printDebuggingInformation() {
     if (classEnvRule != null && classEnvRule.isInitialized()) {
-      System.err.println("NOTE: test params are: codec=" + classEnvRule.codec +
-          ", sim=" + classEnvRule.similarity +
-          ", locale=" + classEnvRule.locale.toLanguageTag() +
-          ", timezone=" + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID()));
+      System.err.println(
+          ("NOTE: test params are: codec=" + classEnvRule.codec)
+              + (", sim=" + classEnvRule.similarity)
+              + (", locale=" + classEnvRule.locale.toLanguageTag())
+              + (", timezone="
+                  + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID())));
     }
-    System.err.println("NOTE: " + System.getProperty("os.name") + " "
-        + System.getProperty("os.version") + " "
-        + System.getProperty("os.arch") + "/"
-        + System.getProperty("java.vendor") + " "
-        + System.getProperty("java.version") + " "
-        + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)") + "/"
-        + "cpus=" + Runtime.getRuntime().availableProcessors() + ","
-        + "threads=" + Thread.activeCount() + ","
-        + "free=" + Runtime.getRuntime().freeMemory() + ","
-        + "total=" + Runtime.getRuntime().totalMemory());
-    System.err.println("NOTE: All tests run in this JVM: " + Arrays.toString(testClassesRun.toArray()));
+    System.err.println(
+        "NOTE: "
+            + (System.getProperty("os.name") + " ")
+            + (System.getProperty("os.version") + " ")
+            + (System.getProperty("os.arch") + "/" + System.getProperty("java.vendor"))
+            + (" " + System.getProperty("java.version"))
+            + (" "
+                + (Constants.JRE_IS_64BIT ? "(64-bit)" : "(32-bit)")
+                + "/"
+                + "cpus="
+                + Runtime.getRuntime().availableProcessors()
+                + ",")
+            + ("threads=" + Thread.activeCount() + ",")
+            + ("free=" + Runtime.getRuntime().freeMemory() + ",")
+            + ("total=" + Runtime.getRuntime().totalMemory()));
+    System.err.println(
+        "NOTE: All tests run in this JVM: " + Arrays.toString(testClassesRun.toArray()));
   }
 
   private void reportAdditionalFailureInfo(final String testName) {
@@ -149,8 +150,9 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
       return;
     }
     if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
-      System.err.println("NOTE: download the large Jenkins line-docs file by running " +
-        "'ant get-jenkins-line-docs' in the lucene directory.");
+      System.err.println(
+          "NOTE: download the large Jenkins line-docs file by running "
+              + "'ant get-jenkins-line-docs' in the lucene directory.");
     }
 
     final StringBuilder b = new StringBuilder();
@@ -178,12 +180,15 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
 
     // Codec, postings, directories.
     if (!TEST_CODEC.equals("random")) addVmOpt(b, "tests.codec", TEST_CODEC);
-    if (!TEST_POSTINGSFORMAT.equals("random")) addVmOpt(b, "tests.postingsformat", TEST_POSTINGSFORMAT);
-    if (!TEST_DOCVALUESFORMAT.equals("random")) addVmOpt(b, "tests.docvaluesformat", TEST_DOCVALUESFORMAT);
+    if (!TEST_POSTINGSFORMAT.equals("random"))
+      addVmOpt(b, "tests.postingsformat", TEST_POSTINGSFORMAT);
+    if (!TEST_DOCVALUESFORMAT.equals("random"))
+      addVmOpt(b, "tests.docvaluesformat", TEST_DOCVALUESFORMAT);
     if (!TEST_DIRECTORY.equals("random")) addVmOpt(b, "tests.directory", TEST_DIRECTORY);
 
     // Environment.
-    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) addVmOpt(b, "tests.linedocsfile", TEST_LINE_DOCS_FILE);
+    if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE))
+      addVmOpt(b, "tests.linedocsfile", TEST_LINE_DOCS_FILE);
     if (classEnvRule != null && classEnvRule.isInitialized()) {
       addVmOpt(b, "tests.locale", classEnvRule.locale.toLanguageTag());
       if (classEnvRule.timeZone != null) {
@@ -203,8 +208,8 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   }
 
   /**
-   * Append a VM option (-Dkey=value) to a {@link StringBuilder}. Add quotes if 
-   * spaces or other funky characters are detected.
+   * Append a VM option (-Dkey=value) to a {@link StringBuilder}. Add quotes if spaces or other
+   * funky characters are detected.
    */
   static void addVmOpt(StringBuilder b, String key, Object value) {
     if (value == null) return;

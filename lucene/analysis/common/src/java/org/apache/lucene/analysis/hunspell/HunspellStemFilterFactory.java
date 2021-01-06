@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -25,28 +24,30 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
- * TokenFilterFactory that creates instances of {@link HunspellStemFilter}.
- * Example config for British English:
+ * TokenFilterFactory that creates instances of {@link HunspellStemFilter}. Example config for
+ * British English:
+ *
  * <pre class="prettyprint">
  * &lt;filter class=&quot;solr.HunspellStemFilterFactory&quot;
  *         dictionary=&quot;en_GB.dic,my_custom.dic&quot;
- *         affix=&quot;en_GB.aff&quot; 
+ *         affix=&quot;en_GB.aff&quot;
  *         ignoreCase=&quot;false&quot;
  *         longestOnly=&quot;false&quot; /&gt;</pre>
- * Both parameters dictionary and affix are mandatory.
- * Dictionaries for many languages are available through the OpenOffice project.
- * 
- * See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
+ *
+ * Both parameters dictionary and affix are mandatory. Dictionaries for many languages are available
+ * through the OpenOffice project.
+ *
+ * <p>See <a href="http://wiki.apache.org/solr/Hunspell">http://wiki.apache.org/solr/Hunspell</a>
+ *
  * @lucene.experimental
  * @since 3.5.0
  * @lucene.spi {@value #NAME}
@@ -56,21 +57,21 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
   /** SPI name */
   public static final String NAME = "hunspellStem";
 
-  private static final String PARAM_DICTIONARY    = "dictionary";
-  private static final String PARAM_AFFIX         = "affix";
+  private static final String PARAM_DICTIONARY = "dictionary";
+  private static final String PARAM_AFFIX = "affix";
   // NOTE: this one is currently unused?:
   private static final String PARAM_RECURSION_CAP = "recursionCap";
-  private static final String PARAM_IGNORE_CASE   = "ignoreCase";
-  private static final String PARAM_LONGEST_ONLY  = "longestOnly";
+  private static final String PARAM_IGNORE_CASE = "ignoreCase";
+  private static final String PARAM_LONGEST_ONLY = "longestOnly";
 
   private final String dictionaryFiles;
   private final String affixFile;
   private final boolean ignoreCase;
   private final boolean longestOnly;
   private Dictionary dictionary;
-  
+
   /** Creates a new HunspellStemFilterFactory */
-  public HunspellStemFilterFactory(Map<String,String> args) {
+  public HunspellStemFilterFactory(Map<String, String> args) {
     super(args);
     dictionaryFiles = require(args, PARAM_DICTIONARY);
     affixFile = get(args, PARAM_AFFIX);
@@ -79,7 +80,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
     // this isnt necessary: we properly load all dictionaries.
     // but recognize and ignore for back compat
     getBoolean(args, "strictAffixParsing", true);
-    // this isn't necessary: multi-stage stripping is fixed and 
+    // this isn't necessary: multi-stage stripping is fixed and
     // flags like COMPLEXPREFIXES in the data itself control this.
     // but recognize and ignore for back compat
     getInt(args, "recursionCap", 0);
@@ -111,10 +112,12 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
       try (Directory tempDir = FSDirectory.open(tempPath)) {
         this.dictionary = new Dictionary(tempDir, "hunspell", affix, dictionaries, ignoreCase);
       } finally {
-        IOUtils.rm(tempPath); 
+        IOUtils.rm(tempPath);
       }
     } catch (ParseException e) {
-      throw new IOException("Unable to load hunspell data! [dictionary=" + dictionaries + ",affix=" + affixFile + "]", e);
+      throw new IOException(
+          "Unable to load hunspell data! [dictionary=" + dictionaries + ",affix=" + affixFile + "]",
+          e);
     } finally {
       IOUtils.closeWhileHandlingException(affix);
       IOUtils.closeWhileHandlingException(dictionaries);

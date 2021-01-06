@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 
-/** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
- * matches any character sequence (including the empty one), and <code>?</code>,
- * which matches any single character. '\' is the escape character.
- * <p>
- * Note this query can be slow, as it
- * needs to iterate over many terms. In order to prevent extremely slow WildcardQueries,
- * a Wildcard term should not start with the wildcard <code>*</code>
- * 
- * <p>This query uses the {@link
- * MultiTermQuery#CONSTANT_SCORE_REWRITE}
- * rewrite method.
+/**
+ * Implements the wildcard search query. Supported wildcards are <code>*</code>, which matches any
+ * character sequence (including the empty one), and <code>?</code>, which matches any single
+ * character. '\' is the escape character.
+ *
+ * <p>Note this query can be slow, as it needs to iterate over many terms. In order to prevent
+ * extremely slow WildcardQueries, a Wildcard term should not start with the wildcard <code>*</code>
+ *
+ * <p>This query uses the {@link MultiTermQuery#CONSTANT_SCORE_REWRITE} rewrite method.
  *
  * @see AutomatonQuery
  */
@@ -48,20 +44,18 @@ public class WildcardQuery extends AutomatonQuery {
 
   /** Escape character */
   public static final char WILDCARD_ESCAPE = '\\';
-  
-  /**
-   * Constructs a query for terms matching <code>term</code>. 
-   */
+
+  /** Constructs a query for terms matching <code>term</code>. */
   public WildcardQuery(Term term) {
     super(term, toAutomaton(term));
   }
-  
+
   /**
    * Constructs a query for terms matching <code>term</code>.
-   * @param maxDeterminizedStates maximum number of states in the resulting
-   *   automata.  If the automata would need more than this many states
-   *   TooComplextToDeterminizeException is thrown.  Higher number require more
-   *   space but can process more complex automata.
+   *
+   * @param maxDeterminizedStates maximum number of states in the resulting automata. If the
+   *     automata would need more than this many states TooComplextToDeterminizeException is thrown.
+   *     Higher number require more space but can process more complex automata.
    */
   public WildcardQuery(Term term, int maxDeterminizedStates) {
     super(term, toAutomaton(term), maxDeterminizedStates);
@@ -69,19 +63,20 @@ public class WildcardQuery extends AutomatonQuery {
 
   /**
    * Convert Lucene wildcard syntax into an automaton.
+   *
    * @lucene.internal
    */
   @SuppressWarnings("fallthrough")
   public static Automaton toAutomaton(Term wildcardquery) {
     List<Automaton> automata = new ArrayList<>();
-    
+
     String wildcardText = wildcardquery.text();
-    
-    for (int i = 0; i < wildcardText.length();) {
+
+    for (int i = 0; i < wildcardText.length(); ) {
       final int c = wildcardText.codePointAt(i);
       int length = Character.charCount(c);
-      switch(c) {
-        case WILDCARD_STRING: 
+      switch (c) {
+        case WILDCARD_STRING:
           automata.add(Automata.makeAnyString());
           break;
         case WILDCARD_CHAR:
@@ -100,17 +95,15 @@ public class WildcardQuery extends AutomatonQuery {
       }
       i += length;
     }
-    
+
     return Operations.concatenate(automata);
   }
-  
-  /**
-   * Returns the pattern term.
-   */
+
+  /** Returns the pattern term. */
   public Term getTerm() {
     return term;
   }
-  
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

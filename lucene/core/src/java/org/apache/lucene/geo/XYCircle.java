@@ -20,12 +20,14 @@ import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
 
 /**
  * Represents a circle on the XY plane.
- * <p>
- * NOTES:
+ *
+ * <p>NOTES:
+ *
  * <ol>
- *   <li> X/Y precision is float.
- *   <li> Radius precision is float.
+ *   <li>X/Y precision is float.
+ *   <li>Radius precision is float.
  * </ol>
+ *
  * @lucene.experimental
  */
 public final class XYCircle extends XYGeometry {
@@ -36,12 +38,10 @@ public final class XYCircle extends XYGeometry {
   /** radius */
   private final float radius;
 
-  /**
-   * Creates a new circle from the supplied x/y center and radius.
-   */
+  /** Creates a new circle from the supplied x/y center and radius. */
   public XYCircle(float x, float y, float radius) {
     if (radius <= 0) {
-       throw new IllegalArgumentException("radius must be bigger than 0, got " + radius);
+      throw new IllegalArgumentException("radius must be bigger than 0, got " + radius);
     }
     if (Float.isFinite(radius) == false) {
       throw new IllegalArgumentException("radius must be finite, got " + radius);

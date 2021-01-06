@@ -23,5 +23,4 @@ public interface DirectoryObserver extends Observer {
   void openDirectory(LukeState state);
 
   void closeDirectory();
-
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +23,8 @@ import java.util.Map;
 
 public class TestFrequencyTrackingRingBuffer extends LuceneTestCase {
 
-  private static void assertBuffer(FrequencyTrackingRingBuffer buffer, int maxSize, int sentinel, List<Integer> items) {
+  private static void assertBuffer(
+      FrequencyTrackingRingBuffer buffer, int maxSize, int sentinel, List<Integer> items) {
     final List<Integer> recentItems;
     if (items.size() <= maxSize) {
       recentItems = new ArrayList<>();
@@ -74,5 +74,4 @@ public class TestFrequencyTrackingRingBuffer extends LuceneTestCase {
     }
     assertEquals(RamUsageTester.sizeOf(buffer), buffer.ramBytesUsed());
   }
-
 }

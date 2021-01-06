@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarInputStream;
 import java.util.zip.ZipEntry;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.util.LoggerFactory;
 
@@ -65,8 +64,10 @@ final class SubtypeCollector<T> implements Runnable {
         ZipEntry entry;
         while ((entry = jis.getNextEntry()) != null) {
           String name = entry.getName();
-          if (name.endsWith(".class") && name.indexOf('$') < 0
-              && !name.contains("package-info") && !name.startsWith("META-INF")) {
+          if (name.endsWith(".class")
+              && name.indexOf('$') < 0
+              && !name.contains("package-info")
+              && !name.startsWith("META-INF")) {
             String fqcn = convertToFQCN(name);
             if (!fqcn.startsWith(packageName)) {
               continue;
@@ -96,5 +97,4 @@ final class SubtypeCollector<T> implements Runnable {
     int index = name.lastIndexOf(".class");
     return name.replace('/', '.').substring(0, index);
   }
-
 }

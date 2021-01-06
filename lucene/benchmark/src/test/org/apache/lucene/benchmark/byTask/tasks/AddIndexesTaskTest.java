@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.nio.file.Path;
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
@@ -38,11 +36,11 @@ import org.junit.BeforeClass;
 public class AddIndexesTaskTest extends BenchmarkTestCase {
 
   private static Path testDir, inputDir;
-  
+
   @BeforeClass
   public static void beforeClassAddIndexesTaskTest() throws Exception {
     testDir = createTempDir("addIndexesTask");
-    
+
     // create a dummy index under inputDir
     inputDir = testDir.resolve("input");
     Directory tmpDir = newFSDirectory(inputDir);
@@ -56,12 +54,12 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
       tmpDir.close();
     }
   }
-  
+
   @AfterClass
   public static void afterClassAddIndexesTaskTest() {
     testDir = inputDir = null;
   }
-  
+
   private PerfRunData createPerfRunData() throws Exception {
     Properties props = new Properties();
     props.setProperty("writer.version", Version.LATEST.toString());
@@ -82,64 +80,63 @@ public class AddIndexesTaskTest extends BenchmarkTestCase {
       r.close();
     }
   }
-  
+
   public void testAddIndexesDefault() throws Exception {
     PerfRunData runData = createPerfRunData();
     // create the target index first
     new CreateIndexTask(runData).doLogic();
-    
+
     AddIndexesTask task = new AddIndexesTask(runData);
     task.setup();
-    
+
     // add the input index
     task.doLogic();
-    
+
     // close the index
     new CloseIndexTask(runData).doLogic();
-    
+
     assertIndex(runData);
-    
+
     runData.close();
   }
-  
+
   public void testAddIndexesDir() throws Exception {
     PerfRunData runData = createPerfRunData();
     // create the target index first
     new CreateIndexTask(runData).doLogic();
-    
+
     AddIndexesTask task = new AddIndexesTask(runData);
     task.setup();
-    
+
     // add the input index
     task.setParams("true");
     task.doLogic();
-    
+
     // close the index
     new CloseIndexTask(runData).doLogic();
-    
+
     assertIndex(runData);
-    
+
     runData.close();
   }
-  
+
   public void testAddIndexesReader() throws Exception {
     PerfRunData runData = createPerfRunData();
     // create the target index first
     new CreateIndexTask(runData).doLogic();
-    
+
     AddIndexesTask task = new AddIndexesTask(runData);
     task.setup();
-    
+
     // add the input index
     task.setParams("false");
     task.doLogic();
-    
+
     // close the index
     new CloseIndexTask(runData).doLogic();
-    
+
     assertIndex(runData);
-    
+
     runData.close();
   }
-  
 }

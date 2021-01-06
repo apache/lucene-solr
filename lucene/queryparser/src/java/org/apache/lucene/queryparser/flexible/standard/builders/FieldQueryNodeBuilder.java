@@ -22,9 +22,7 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.TermQuery;
 
-/**
- * Builds a {@link TermQuery} object from a {@link FieldQueryNode} object.
- */
+/** Builds a {@link TermQuery} object from a {@link FieldQueryNode} object. */
 public class FieldQueryNodeBuilder implements StandardQueryBuilder {
 
   public FieldQueryNodeBuilder() {
@@ -35,9 +33,6 @@ public class FieldQueryNodeBuilder implements StandardQueryBuilder {
   public TermQuery build(QueryNode queryNode) throws QueryNodeException {
     FieldQueryNode fieldNode = (FieldQueryNode) queryNode;
 
-    return new TermQuery(new Term(fieldNode.getFieldAsString(), fieldNode
-        .getTextAsString()));
-
+    return new TermQuery(new Term(fieldNode.getFieldAsString(), fieldNode.getTextAsString()));
   }
-
 }

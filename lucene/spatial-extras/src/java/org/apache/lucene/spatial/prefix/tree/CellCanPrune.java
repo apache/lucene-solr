@@ -20,13 +20,14 @@ package org.apache.lucene.spatial.prefix.tree;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- *  Grid cells that share nothing with other cells when calling {@link #getNextLevelCells(Shape)}
- *  might implement this interface. Children cells for this cell will be eligible for pruning via
- *  {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)}.
+ * Grid cells that share nothing with other cells when calling {@link #getNextLevelCells(Shape)}
+ * might implement this interface. Children cells for this cell will be eligible for pruning via
+ * {@link
+ * org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)}.
  *
  * @lucene.experimental
  */
-public interface CellCanPrune extends Cell{
+public interface CellCanPrune extends Cell {
 
   /**
    * Returns the number of children for this cell.

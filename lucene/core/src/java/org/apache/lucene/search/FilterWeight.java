@@ -17,36 +17,31 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * A {@code FilterWeight} contains another {@code Weight} and implements
- * all abstract methods by calling the contained weight's method.
+ * A {@code FilterWeight} contains another {@code Weight} and implements all abstract methods by
+ * calling the contained weight's method.
  *
- * Note that {@code FilterWeight} does not override the non-abstract
- * {@link Weight#bulkScorer(LeafReaderContext)} method and subclasses of
- * {@code FilterWeight} must provide their bulkScorer implementation
- * if required.
+ * <p>Note that {@code FilterWeight} does not override the non-abstract {@link
+ * Weight#bulkScorer(LeafReaderContext)} method and subclasses of {@code FilterWeight} must provide
+ * their bulkScorer implementation if required.
  *
  * @lucene.internal
  */
 public abstract class FilterWeight extends Weight {
 
-  final protected Weight in;
+  protected final Weight in;
 
-  /**
-   * Default constructor.
-   */
+  /** Default constructor. */
   protected FilterWeight(Weight weight) {
     this(weight.getQuery(), weight);
   }
 
   /**
-   * Alternative constructor.
-   * Use this variant only if the <code>weight</code> was not obtained
-   * via the {@link Query#createWeight(IndexSearcher, ScoreMode, float)}
-   * method of the <code>query</code> object.
+   * Alternative constructor. Use this variant only if the <code>weight</code> was not obtained via
+   * the {@link Query#createWeight(IndexSearcher, ScoreMode, float)} method of the <code>query
+   * </code> object.
    */
   protected FilterWeight(Query query, Weight weight) {
     super(query);

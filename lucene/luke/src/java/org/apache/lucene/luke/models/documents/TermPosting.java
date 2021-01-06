@@ -18,13 +18,10 @@
 package org.apache.lucene.luke.models.documents;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Holder for a term's position information, and optionally, offsets and payloads.
- */
+/** Holder for a term's position information, and optionally, offsets and payloads. */
 public final class TermPosting {
 
   // position
@@ -77,14 +74,17 @@ public final class TermPosting {
 
   @Override
   public String toString() {
-    return "TermPosting{" +
-        "position=" + position +
-        ", startOffset=" + startOffset +
-        ", endOffset=" + endOffset +
-        ", payload=" + payload +
-        '}';
+    return "TermPosting{"
+        + "position="
+        + position
+        + ", startOffset="
+        + startOffset
+        + ", endOffset="
+        + endOffset
+        + ", payload="
+        + payload
+        + '}';
   }
 
-  private TermPosting() {
-  }
+  private TermPosting() {}
 }

@@ -24,8 +24,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -107,19 +105,18 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
       }
 
       @Override
-      public VectorValues getVectorValues(String field) { return null; }
-
-      @Override
-      protected void doClose() {
+      public VectorValues getVectorValues(String field) {
+        return null;
       }
 
       @Override
-      public void document(int doc, StoredFieldVisitor visitor) {
-      }
+      protected void doClose() {}
 
       @Override
-      public void checkIntegrity() throws IOException {
-      }
+      public void document(int doc, StoredFieldVisitor visitor) {}
+
+      @Override
+      public void checkIntegrity() throws IOException {}
 
       @Override
       public LeafMetaData getMetaData() {
@@ -229,9 +226,14 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestSegmentToThreadMapping"));
+    ExecutorService service =
+        new ThreadPoolExecutor(
+            4,
+            4,
+            0L,
+            TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(),
+            new NamedThreadFactory("TestSegmentToThreadMapping"));
     IndexSearcher s = new IndexSearcher(r, service);
     Query query = new MatchAllDocsQuery();
 
@@ -261,7 +263,8 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     int numSegments = 1 + random().nextInt(50);
 
     for (int i = 0; i < numSegments; i++) {
-      leafReaderContexts.add(new LeafReaderContext(dummyIndexReader(random().nextInt((max - min) + 1) + min)));
+      leafReaderContexts.add(
+          new LeafReaderContext(dummyIndexReader(random().nextInt((max - min) + 1) + min)));
     }
 
     IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5);

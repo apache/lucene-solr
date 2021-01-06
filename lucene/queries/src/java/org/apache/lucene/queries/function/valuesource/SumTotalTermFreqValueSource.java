@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -23,12 +25,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.Map;
-
 /**
- * <code>SumTotalTermFreqValueSource</code> returns the number of tokens.
- * (sum of term freqs across all documents, across all terms).
+ * <code>SumTotalTermFreqValueSource</code> returns the number of tokens. (sum of term freqs across
+ * all documents, across all terms).
+ *
  * @lucene.internal
  */
 public class SumTotalTermFreqValueSource extends ValueSource {
@@ -48,8 +48,9 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    return (FunctionValues)context.get(this);
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    return (FunctionValues) context.get(this);
   }
 
   @Override
@@ -63,12 +64,14 @@ public class SumTotalTermFreqValueSource extends ValueSource {
       sumTotalTermFreq += v;
     }
     final long ttf = sumTotalTermFreq;
-    context.put(this, new LongDocValues(this) {
-      @Override
-      public long longVal(int doc) {
-        return ttf;
-      }
-    });
+    context.put(
+        this,
+        new LongDocValues(this) {
+          @Override
+          public long longVal(int doc) {
+            return ttf;
+          }
+        });
   }
 
   @Override
@@ -79,7 +82,7 @@ public class SumTotalTermFreqValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    SumTotalTermFreqValueSource other = (SumTotalTermFreqValueSource)o;
+    SumTotalTermFreqValueSource other = (SumTotalTermFreqValueSource) o;
     return this.indexedField.equals(other.indexedField);
   }
 }

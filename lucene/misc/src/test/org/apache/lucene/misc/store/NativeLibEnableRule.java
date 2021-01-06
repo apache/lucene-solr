@@ -17,10 +17,9 @@
 package org.apache.lucene.misc.store;
 
 import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
+import java.util.Set;
 import org.apache.lucene.util.Constants;
 import org.junit.Assume;
-
-import java.util.Set;
 
 public class NativeLibEnableRule extends TestRuleAdapter {
   enum OperatingSystem {
@@ -45,10 +44,12 @@ public class NativeLibEnableRule extends TestRuleAdapter {
 
   @Override
   protected void before() {
-    Assume.assumeTrue("Test ignored (tests.native is false)",
+    Assume.assumeTrue(
+        "Test ignored (tests.native is false)",
         Boolean.parseBoolean(System.getProperty("tests.native", "false")));
 
-    Assume.assumeTrue("Test ignored, only applies to architectures: " + runOn,
+    Assume.assumeTrue(
+        "Test ignored, only applies to architectures: " + runOn,
         runOn.stream().anyMatch(os -> os.enabled));
   }
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/** 
- * Codec for testing that never writes to disk.
- */
+/** Codec for testing that never writes to disk. */
 package org.apache.lucene.codecs.ramonly;

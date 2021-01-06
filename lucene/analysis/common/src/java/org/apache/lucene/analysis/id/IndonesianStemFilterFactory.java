@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.id;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
- * Factory for {@link IndonesianStemFilter}. 
+/**
+ * Factory for {@link IndonesianStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_idstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.IndonesianStemFilterFactory" stemDerivational="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -43,7 +43,7 @@ public class IndonesianStemFilterFactory extends TokenFilterFactory {
   private final boolean stemDerivational;
 
   /** Creates a new IndonesianStemFilterFactory */
-  public IndonesianStemFilterFactory(Map<String,String> args) {
+  public IndonesianStemFilterFactory(Map<String, String> args) {
     super(args);
     stemDerivational = getBoolean(args, "stemDerivational", true);
     if (!args.isEmpty()) {

@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.codecs.idversion;
 
 import java.io.IOException;
 import java.io.PrintStream;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
@@ -35,10 +34,11 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.Util;
 
-/** Iterates through terms in this field; this class is public so users
- *  can cast it to call {@link #seekExact(BytesRef, long)} for
- *  optimistic-concurrency, and also {@link #getVersion} to get the
- *  version of the currently seek'd term. */
+/**
+ * Iterates through terms in this field; this class is public so users can cast it to call {@link
+ * #seekExact(BytesRef, long)} for optimistic-concurrency, and also {@link #getVersion} to get the
+ * version of the currently seek'd term.
+ */
 public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
   // Lazy init:
@@ -65,15 +65,15 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
   final BytesRefBuilder term = new BytesRefBuilder();
   private final FST.BytesReader fstReader;
 
-  @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<Pair<BytesRef,Long>>[] arcs =
-  new FST.Arc[1];
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private FST.Arc<Pair<BytesRef, Long>>[] arcs = new FST.Arc[1];
 
   IDVersionSegmentTermsEnum(VersionFieldReader fr) throws IOException {
     this.fr = fr;
 
-    //if (DEBUG) System.out.println("BTTR.init seg=" + segment);
+    // if (DEBUG) System.out.println("BTTR.init seg=" + segment);
     stack = new IDVersionSegmentTermsEnumFrame[0];
-        
+
     // Used to hold seek by TermState, or cached seek
     staticFrame = new IDVersionSegmentTermsEnumFrame(this, -1);
 
@@ -85,12 +85,12 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
     // Init w/ root block; don't use index since it may
     // not (and need not) have been loaded
-    for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
+    for (int arcIdx = 0; arcIdx < arcs.length; arcIdx++) {
       arcs[arcIdx] = new FST.Arc<>();
     }
 
     currentFrame = staticFrame;
-    final FST.Arc<Pair<BytesRef,Long>> arc;
+    final FST.Arc<Pair<BytesRef, Long>> arc;
     if (fr.index != null) {
       arc = fr.index.getFirstArc(arcs[0]);
       // Empty string prefix must have an output in the index!
@@ -99,18 +99,18 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       arc = null;
     }
     currentFrame = staticFrame;
-    //currentFrame = pushFrame(arc, rootCode, 0);
-    //currentFrame.loadBlock();
+    // currentFrame = pushFrame(arc, rootCode, 0);
+    // currentFrame.loadBlock();
     validIndexPrefix = 0;
     // if (DEBUG) {
     //   System.out.println("init frame state " + currentFrame.ord);
     //   printSeekState();
     // }
 
-    //System.out.println();
+    // System.out.println();
     // computeBlockStats().print(System.out);
   }
-      
+
   // Not private to avoid synthetic access$NNN methods
   void initIndexInput() {
     if (this.in == null) {
@@ -120,9 +120,11 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
   private IDVersionSegmentTermsEnumFrame getFrame(int ord) throws IOException {
     if (ord >= stack.length) {
-      final IDVersionSegmentTermsEnumFrame[] next = new IDVersionSegmentTermsEnumFrame[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      final IDVersionSegmentTermsEnumFrame[] next =
+          new IDVersionSegmentTermsEnumFrame
+              [ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(stack, 0, next, 0, stack.length);
-      for(int stackOrd=stack.length;stackOrd<next.length;stackOrd++) {
+      for (int stackOrd = stack.length; stackOrd < next.length; stackOrd++) {
         next[stackOrd] = new IDVersionSegmentTermsEnumFrame(this, stackOrd);
       }
       stack = next;
@@ -131,12 +133,13 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
     return stack[ord];
   }
 
-  private FST.Arc<Pair<BytesRef,Long>> getArc(int ord) {
+  private FST.Arc<Pair<BytesRef, Long>> getArc(int ord) {
     if (ord >= arcs.length) {
-      @SuppressWarnings({"rawtypes","unchecked"}) final FST.Arc<Pair<BytesRef,Long>>[] next =
-      new FST.Arc[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      final FST.Arc<Pair<BytesRef, Long>>[] next =
+          new FST.Arc[ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(arcs, 0, next, 0, arcs.length);
-      for(int arcOrd=arcs.length;arcOrd<next.length;arcOrd++) {
+      for (int arcOrd = arcs.length; arcOrd < next.length; arcOrd++) {
         next[arcOrd] = new FST.Arc<>();
       }
       arcs = next;
@@ -145,11 +148,14 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
   }
 
   // Pushes a frame we seek'd to
-  IDVersionSegmentTermsEnumFrame pushFrame(FST.Arc<Pair<BytesRef,Long>> arc, Pair<BytesRef,Long> frameData, int length) throws IOException {
-    scratchReader.reset(frameData.output1.bytes, frameData.output1.offset, frameData.output1.length);
+  IDVersionSegmentTermsEnumFrame pushFrame(
+      FST.Arc<Pair<BytesRef, Long>> arc, Pair<BytesRef, Long> frameData, int length)
+      throws IOException {
+    scratchReader.reset(
+        frameData.output1.bytes, frameData.output1.offset, frameData.output1.length);
     final long code = scratchReader.readVLong();
     final long fpSeek = code >>> VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
-    final IDVersionSegmentTermsEnumFrame f = getFrame(1+currentFrame.ord);
+    final IDVersionSegmentTermsEnumFrame f = getFrame(1 + currentFrame.ord);
     f.maxIDVersion = Long.MAX_VALUE - frameData.output2;
     f.hasTerms = (code & VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS) != 0;
     f.hasTermsOrig = f.hasTerms;
@@ -164,11 +170,15 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
   // Pushes next'd frame or seek'd frame; we later
   // lazy-load the frame only when needed
-  IDVersionSegmentTermsEnumFrame pushFrame(FST.Arc<Pair<BytesRef,Long>> arc, long fp, int length) throws IOException {
-    final IDVersionSegmentTermsEnumFrame f = getFrame(1+currentFrame.ord);
+  IDVersionSegmentTermsEnumFrame pushFrame(FST.Arc<Pair<BytesRef, Long>> arc, long fp, int length)
+      throws IOException {
+    final IDVersionSegmentTermsEnumFrame f = getFrame(1 + currentFrame.ord);
     f.arc = arc;
     if (f.fpOrig == fp && f.nextEnt != -1) {
-      //if (DEBUG) System.out.println("      push reused frame ord=" + f.ord + " fp=" + f.fp + " isFloor?=" + f.isFloor + " hasTerms=" + f.hasTerms + " pref=" + term + " nextEnt=" + f.nextEnt + " targetBeforeCurrentLength=" + targetBeforeCurrentLength + " term.length=" + term.length + " vs prefix=" + f.prefix);
+      // if (DEBUG) System.out.println("      push reused frame ord=" + f.ord + " fp=" + f.fp + "
+      // isFloor?=" + f.isFloor + " hasTerms=" + f.hasTerms + " pref=" + term + " nextEnt=" +
+      // f.nextEnt + " targetBeforeCurrentLength=" + targetBeforeCurrentLength + " term.length=" +
+      // term.length + " vs prefix=" + f.prefix);
       if (f.prefix > targetBeforeCurrentLength) {
         f.rewind();
       } else {
@@ -186,7 +196,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       // if (DEBUG) {
       //   final int sav = term.length;
       //   term.length = length;
-      //   System.out.println("      push new frame ord=" + f.ord + " fp=" + f.fp + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " pref=" + brToString(term));
+      //   System.out.println("      push new frame ord=" + f.ord + " fp=" + f.fp + " hasTerms=" +
+      // f.hasTerms + " isFloor=" + f.isFloor + " pref=" + brToString(term));
       //   term.length = sav;
       // }
     }
@@ -224,17 +235,17 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
     }
   }
 
-  /** Get the version of the currently seek'd term; only valid if we are
-   *  positioned. */
+  /** Get the version of the currently seek'd term; only valid if we are positioned. */
   public long getVersion() {
     return ((IDVersionTermState) currentFrame.state).idVersion;
   }
 
-  /** Optimized version of {@link #seekExact(BytesRef)} that can
-   *  sometimes fail-fast if the version indexed with the requested ID
-   *  is less than the specified minIDVersion.  Applications that index
-   *  a monotonically increasing global version with each document can
-   *  use this for fast optimistic concurrency. */
+  /**
+   * Optimized version of {@link #seekExact(BytesRef)} that can sometimes fail-fast if the version
+   * indexed with the requested ID is less than the specified minIDVersion. Applications that index
+   * a monotonically increasing global version with each document can use this for fast optimistic
+   * concurrency.
+   */
   public boolean seekExact(final BytesRef target, long minIDVersion) throws IOException {
 
     if (fr.index == null) {
@@ -246,13 +257,15 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
     assert clearEOF();
 
     //  if (DEBUG) {
-    //    System.out.println("\nBTTR.seekExact seg=" + fr.parent.segment + " target=" + fr.fieldInfo.name + ":" + brToString(target) + " minIDVersion=" + minIDVersion + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
+    //    System.out.println("\nBTTR.seekExact seg=" + fr.parent.segment + " target=" +
+    // fr.fieldInfo.name + ":" + brToString(target) + " minIDVersion=" + minIDVersion + " current="
+    // + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=" + validIndexPrefix);
     //   printSeekState(System.out);
     //  }
 
-    FST.Arc<Pair<BytesRef,Long>> arc;
+    FST.Arc<Pair<BytesRef, Long>> arc;
     int targetUpto;
-    Pair<BytesRef,Long> output;
+    Pair<BytesRef, Long> output;
 
     long startFrameFP = currentFrame.fp;
 
@@ -260,7 +273,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
     boolean changed = false;
 
-    // TODO: we could stop earlier w/ the version check, every time we traverse an index arc we can check?
+    // TODO: we could stop earlier w/ the version check, every time we traverse an index arc we can
+    // check?
 
     if (currentFrame != staticFrame) {
 
@@ -281,7 +295,13 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       targetUpto = 0;
 
       IDVersionSegmentTermsEnumFrame lastFrame = stack[0];
-      assert validIndexPrefix <= term.length(): "validIndexPrefix=" + validIndexPrefix + " term.length=" + term.length() + " seg=" + fr.parent;
+      assert validIndexPrefix <= term.length()
+          : "validIndexPrefix="
+              + validIndexPrefix
+              + " term.length="
+              + term.length()
+              + " seg="
+              + fr.parent;
 
       final int targetLimit = Math.min(target.length, validIndexPrefix);
 
@@ -292,23 +312,31 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+        cmp = (term.byteAt(targetUpto) & 0xFF) - (target.bytes[target.offset + targetUpto] & 0xFF);
         // if (DEBUG) {
-        //    System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
+        //    System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit
+        // + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) +
+        // " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output
+        // + " output=" + output);
         // }
         if (cmp != 0) {
           break;
         }
-        arc = arcs[1+targetUpto];
-        //if (arc.label != (target.bytes[target.offset + targetUpto] & 0xFF)) {
-        //System.out.println("FAIL: arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF));
-        //}
-        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label() + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
+        arc = arcs[1 + targetUpto];
+        // if (arc.label != (target.bytes[target.offset + targetUpto] & 0xFF)) {
+        // System.out.println("FAIL: arc.label=" + (char) arc.label + " targetLabel=" + (char)
+        // (target.bytes[target.offset + targetUpto] & 0xFF));
+        // }
+        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF)
+            : "arc.label="
+                + (char) arc.label()
+                + " targetLabel="
+                + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
         if (arc.output() != VersionBlockTreeTermsWriter.NO_OUTPUT) {
           output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
-          lastFrame = stack[1+lastFrame.ord];
+          lastFrame = stack[1 + lastFrame.ord];
         }
         targetUpto++;
       }
@@ -322,9 +350,12 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // equal or after the current term
         final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
+          cmp =
+              (term.byteAt(targetUpto) & 0xFF) - (target.bytes[target.offset + targetUpto] & 0xFF);
           // if (DEBUG) {
-          //    System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
+          //    System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" +
+          // targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset +
+          // targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
           // }
           if (cmp != 0) {
             break;
@@ -343,7 +374,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // term, ie, app is seeking multiple terms
         // in sorted order
         // if (DEBUG) {
-        //    System.out.println("  target is after current (shares prefixLen=" + targetUpto + "); frame.ord=" + lastFrame.ord + "; targetUpto=" + targetUpto);
+        //    System.out.println("  target is after current (shares prefixLen=" + targetUpto + ");
+        // frame.ord=" + lastFrame.ord + "; targetUpto=" + targetUpto);
         //  }
         currentFrame = lastFrame;
 
@@ -355,7 +387,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         targetBeforeCurrentLength = 0;
         changed = true;
         // if (DEBUG) {
-        //    System.out.println("  target is before current (shares prefixLen=" + targetUpto + "); rewind frame ord=" + lastFrame.ord);
+        //    System.out.println("  target is before current (shares prefixLen=" + targetUpto + ");
+        // rewind frame ord=" + lastFrame.ord);
         //  }
         currentFrame = lastFrame;
         currentFrame.rewind();
@@ -367,7 +400,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           if (currentFrame.maxIDVersion < minIDVersion) {
             // The max version for all terms in this block is lower than the minVersion
             // if (DEBUG) {
-            //   System.out.println("  target is same as current maxIDVersion=" + currentFrame.maxIDVersion + " is < minIDVersion=" + minIDVersion + "; return false");
+            //   System.out.println("  target is same as current maxIDVersion=" +
+            // currentFrame.maxIDVersion + " is < minIDVersion=" + minIDVersion + "; return false");
             // }
             return false;
           }
@@ -376,11 +410,15 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           if (((IDVersionTermState) currentFrame.state).idVersion < minIDVersion) {
             // This term's version is lower than the minVersion
             // if (DEBUG) {
-            //   System.out.println("  target is same as current but version=" + ((IDVersionTermState) currentFrame.state).idVersion + " is < minIDVersion=" + minIDVersion + "; return false");
+            //   System.out.println("  target is same as current but version=" +
+            // ((IDVersionTermState) currentFrame.state).idVersion + " is < minIDVersion=" +
+            // minIDVersion + "; return false");
             // }
             return false;
           }
-          // System.out.println("  term version=" + ((IDVersionTermState) currentFrame.state).idVersion + " frame version=" + currentFrame.maxIDVersion + " frame ord=" + currentFrame.ord);
+          // System.out.println("  term version=" + ((IDVersionTermState)
+          // currentFrame.state).idVersion + " frame version=" + currentFrame.maxIDVersion + " frame
+          // ord=" + currentFrame.ord);
 
           // if (DEBUG) {
           //    System.out.println("  target is same as current; return true");
@@ -391,16 +429,16 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           //    System.out.println("  target is same as current but term doesn't exist");
           //  }
         }
-        //validIndexPrefix = currentFrame.depth;
-        //term.length = target.length;
-        //return termExists;
+        // validIndexPrefix = currentFrame.depth;
+        // term.length = target.length;
+        // return termExists;
       }
 
     } else {
 
       targetBeforeCurrentLength = -1;
       arc = fr.index.getFirstArc(arcs[0]);
-      //System.out.println("first arc=" + arc);
+      // System.out.println("first arc=" + arc);
 
       // Empty string prefix must have an output (block) in the index!
       assert arc.isFinal();
@@ -414,66 +452,78 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
       currentFrame = staticFrame;
 
-      //term.length = 0;
+      // term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
+      currentFrame =
+          pushFrame(
+              arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
     // if (DEBUG) {
-    //   System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength + " termExists=" + termExists);
+    //   System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + "
+    // currentFrame.ord=" + currentFrame.ord + " targetBeforeCurrentLength=" +
+    // targetBeforeCurrentLength + " termExists=" + termExists);
     // }
 
-    // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
+    // We are done sharing the common prefix with the incoming target and where we are currently
+    // seek'd; now continue walking the index:
     while (targetUpto < target.length) {
 
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
-      final FST.Arc<Pair<BytesRef,Long>> nextArc = fr.index.findTargetArc(targetLabel, arc, getArc(1+targetUpto), fstReader);
+      final FST.Arc<Pair<BytesRef, Long>> nextArc =
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
 
       if (nextArc == null) {
 
         // Index is exhausted
         // if (DEBUG) {
-        //    System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + Integer.toHexString(targetLabel) + " termExists=" + termExists);
+        //    System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " +
+        // Integer.toHexString(targetLabel) + " termExists=" + termExists);
         //  }
-            
+
         validIndexPrefix = currentFrame.prefix;
-        //validIndexPrefix = targetUpto;
+        // validIndexPrefix = targetUpto;
 
         currentFrame.scanToFloorFrame(target);
 
         if (!currentFrame.hasTerms) {
           termExists = false;
           term.setByteAt(targetUpto, (byte) targetLabel);
-          term.setLength(1+targetUpto);
+          term.setLength(1 + targetUpto);
           // if (DEBUG) {
           //    System.out.println("  FAST NOT_FOUND term=" + brToString(term));
           //  }
           return false;
         }
-        //System.out.println("  check maxVersion=" + currentFrame.maxIDVersion + " vs " + minIDVersion);
+        // System.out.println("  check maxVersion=" + currentFrame.maxIDVersion + " vs " +
+        // minIDVersion);
 
         // if (DEBUG) {
-        //   System.out.println("  frame.maxIDVersion=" + currentFrame.maxIDVersion +  " vs minIDVersion=" + minIDVersion);
+        //   System.out.println("  frame.maxIDVersion=" + currentFrame.maxIDVersion +  " vs
+        // minIDVersion=" + minIDVersion);
         // }
 
         if (currentFrame.maxIDVersion < minIDVersion) {
           // The max version for all terms in this block is lower than the minVersion
           if (currentFrame.fp != startFrameFP || changed) {
-          //if (targetUpto+1 > term.length) {
+            // if (targetUpto+1 > term.length) {
             termExists = false;
             term.setByteAt(targetUpto, (byte) targetLabel);
-            term.setLength(1+targetUpto);
+            term.setLength(1 + targetUpto);
             // if (DEBUG) {
             //   System.out.println("    reset current term");
             // }
             validIndexPrefix = Math.min(validIndexPrefix, term.length());
           }
-            //if (currentFrame.ord != startFrameOrd) {
-            //termExists = false;
-            //}
+          // if (currentFrame.ord != startFrameOrd) {
+          // termExists = false;
+          // }
           // if (DEBUG) {
-          //   System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + " targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion + " validIndexPrefix=" + validIndexPrefix + " startFrameFP=" + startFrameFP + " vs " + currentFrame.fp + " termExists=" + termExists);
+          //   System.out.println("    FAST version NOT_FOUND term=" + brToString(term) + "
+          // targetUpto=" + targetUpto + " currentFrame.maxIDVersion=" + currentFrame.maxIDVersion +
+          // " validIndexPrefix=" + validIndexPrefix + " startFrameFP=" + startFrameFP + " vs " +
+          // currentFrame.fp + " termExists=" + termExists);
           // }
           return false;
         }
@@ -483,13 +533,14 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // if (DEBUG) {
         //   System.out.println("    scan currentFrame ord=" + currentFrame.ord);
         // }
-        final SeekStatus result = currentFrame.scanToTerm(target, true);            
+        final SeekStatus result = currentFrame.scanToTerm(target, true);
         if (result == SeekStatus.FOUND) {
           currentFrame.decodeMetaData();
           if (((IDVersionTermState) currentFrame.state).idVersion < minIDVersion) {
             // This term's version is lower than the minVersion
             // if (DEBUG) {
-            //   System.out.println("    return NOT_FOUND: idVersion=" + ((IDVersionTermState) currentFrame.state).idVersion + " vs minIDVersion=" + minIDVersion);
+            //   System.out.println("    return NOT_FOUND: idVersion=" + ((IDVersionTermState)
+            // currentFrame.state).idVersion + " vs minIDVersion=" + minIDVersion);
             // }
             return false;
           }
@@ -501,7 +552,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           return true;
         } else {
           // if (DEBUG) {
-          //    System.out.println("  got " + result + "; return NOT_FOUND term=" + brToString(term));
+          //    System.out.println("  got " + result + "; return NOT_FOUND term=" +
+          // brToString(term));
           // }
           return false;
         }
@@ -510,7 +562,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         arc = nextArc;
         if (term.byteAt(targetUpto) != (byte) targetLabel) {
           // if (DEBUG) {
-          //   System.out.println("  now set termExists=false targetUpto=" + targetUpto + " term=" + term.bytes[targetUpto] + " targetLabel=" + targetLabel);
+          //   System.out.println("  now set termExists=false targetUpto=" + targetUpto + " term=" +
+          // term.bytes[targetUpto] + " targetLabel=" + targetLabel);
           // }
           changed = true;
           term.setByteAt(targetUpto, (byte) targetLabel);
@@ -523,19 +576,25 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         }
 
         // if (DEBUG) {
-        //    System.out.println("    index: follow label=" + (char) ((target.bytes[target.offset + targetUpto]&0xff)) + " arc.output=" + arc.output + " arc.nfo=" + arc.nextFinalOutput);
+        //    System.out.println("    index: follow label=" + (char) ((target.bytes[target.offset +
+        // targetUpto]&0xff)) + " arc.output=" + arc.output + " arc.nfo=" + arc.nextFinalOutput);
         //  }
         targetUpto++;
 
         if (arc.isFinal()) {
           // if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), targetUpto);
-          // if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
+          currentFrame =
+              pushFrame(
+                  arc,
+                  VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
+                  targetUpto);
+          // if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" +
+          // currentFrame.hasTerms);
         }
       }
     }
 
-    //validIndexPrefix = targetUpto;
+    // validIndexPrefix = targetUpto;
     validIndexPrefix = currentFrame.prefix;
 
     currentFrame.scanToFloorFrame(target);
@@ -551,7 +610,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
     }
 
     // if (DEBUG) {
-    //   System.out.println("  frame.maxIDVersion=" + currentFrame.maxIDVersion +  " vs minIDVersion=" + minIDVersion);
+    //   System.out.println("  frame.maxIDVersion=" + currentFrame.maxIDVersion +  " vs
+    // minIDVersion=" + minIDVersion);
     // }
 
     if (currentFrame.maxIDVersion < minIDVersion) {
@@ -563,7 +623,7 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
     currentFrame.loadBlock();
 
-    final SeekStatus result = currentFrame.scanToTerm(target, true);            
+    final SeekStatus result = currentFrame.scanToTerm(target, true);
     if (result == SeekStatus.FOUND) {
       // if (DEBUG) {
       //    System.out.println("  return FOUND term=" + term.utf8ToString() + " " + term);
@@ -576,7 +636,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       return true;
     } else {
       // if (DEBUG) {
-      //    System.out.println("  got result " + result + "; return NOT_FOUND term=" + term.utf8ToString());
+      //    System.out.println("  got result " + result + "; return NOT_FOUND term=" +
+      // term.utf8ToString());
       //  }
 
       return false;
@@ -593,14 +654,16 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
     assert clearEOF();
 
-    //if (DEBUG) {
-    //System.out.println("\nBTTR.seekCeil seg=" + segment + " target=" + fieldInfo.name + ":" + target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" + termExists + ") validIndexPrefix=  " + validIndexPrefix);
-    //printSeekState();
-    //}
+    // if (DEBUG) {
+    // System.out.println("\nBTTR.seekCeil seg=" + segment + " target=" + fieldInfo.name + ":" +
+    // target.utf8ToString() + " " + target + " current=" + brToString(term) + " (exists?=" +
+    // termExists + ") validIndexPrefix=  " + validIndexPrefix);
+    // printSeekState();
+    // }
 
-    FST.Arc<Pair<BytesRef,Long>> arc;
+    FST.Arc<Pair<BytesRef, Long>> arc;
     int targetUpto;
-    Pair<BytesRef,Long> output;
+    Pair<BytesRef, Long> output;
 
     targetBeforeCurrentLength = currentFrame.ord;
 
@@ -613,15 +676,15 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       // seeks to foobaz, we can re-use the seek state
       // for the first 5 bytes.
 
-      //if (DEBUG) {
-      //System.out.println("  re-use current seek state validIndexPrefix=" + validIndexPrefix);
-      //}
+      // if (DEBUG) {
+      // System.out.println("  re-use current seek state validIndexPrefix=" + validIndexPrefix);
+      // }
 
       arc = arcs[0];
       assert arc.isFinal();
       output = arc.output();
       targetUpto = 0;
-          
+
       IDVersionSegmentTermsEnumFrame lastFrame = stack[0];
       assert validIndexPrefix <= term.length();
 
@@ -634,15 +697,22 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
 
       // First compare up to valid seek frames:
       while (targetUpto < targetLimit) {
-        cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-        //if (DEBUG) {
-        //System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output + " output=" + output);
-        //}
+        cmp = (term.byteAt(targetUpto) & 0xFF) - (target.bytes[target.offset + targetUpto] & 0xFF);
+        // if (DEBUG) {
+        // System.out.println("    cycle targetUpto=" + targetUpto + " (vs limit=" + targetLimit +
+        // ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + "
+        // vs termLabel=" + (char) (term.bytes[targetUpto]) + ")"   + " arc.output=" + arc.output +
+        // " output=" + output);
+        // }
         if (cmp != 0) {
           break;
         }
-        arc = arcs[1+targetUpto];
-        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label() + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
+        arc = arcs[1 + targetUpto];
+        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF)
+            : "arc.label="
+                + (char) arc.label()
+                + " targetLabel="
+                + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
         // TODO: we could save the outputs in local
         // byte[][] instead of making new objs ever
         // seek; but, often the FST doesn't have any
@@ -652,11 +722,10 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
-          lastFrame = stack[1+lastFrame.ord];
+          lastFrame = stack[1 + lastFrame.ord];
         }
         targetUpto++;
       }
-
 
       if (cmp == 0) {
         final int targetUptoMid = targetUpto;
@@ -664,10 +733,13 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // don't save arc/output/frame:
         final int targetLimit2 = Math.min(target.length, term.length());
         while (targetUpto < targetLimit2) {
-          cmp = (term.byteAt(targetUpto)&0xFF) - (target.bytes[target.offset + targetUpto]&0xFF);
-          //if (DEBUG) {
-          //System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto]) + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
-          //}
+          cmp =
+              (term.byteAt(targetUpto) & 0xFF) - (target.bytes[target.offset + targetUpto] & 0xFF);
+          // if (DEBUG) {
+          // System.out.println("    cycle2 targetUpto=" + targetUpto + " (vs limit=" + targetLimit
+          // + ") cmp=" + cmp + " (targetLabel=" + (char) (target.bytes[target.offset + targetUpto])
+          // + " vs termLabel=" + (char) (term.bytes[targetUpto]) + ")");
+          // }
           if (cmp != 0) {
             break;
           }
@@ -684,9 +756,10 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // Common case: target term is after current
         // term, ie, app is seeking multiple terms
         // in sorted order
-        //if (DEBUG) {
-        //System.out.println("  target is after current (shares prefixLen=" + targetUpto + "); clear frame.scanned ord=" + lastFrame.ord);
-        //}
+        // if (DEBUG) {
+        // System.out.println("  target is after current (shares prefixLen=" + targetUpto + ");
+        // clear frame.scanned ord=" + lastFrame.ord);
+        // }
         currentFrame = lastFrame;
 
       } else if (cmp > 0) {
@@ -695,23 +768,24 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // keep the currentFrame but we must rewind it
         // (so we scan from the start)
         targetBeforeCurrentLength = 0;
-        //if (DEBUG) {
-        //System.out.println("  target is before current (shares prefixLen=" + targetUpto + "); rewind frame ord=" + lastFrame.ord);
-        //}
+        // if (DEBUG) {
+        // System.out.println("  target is before current (shares prefixLen=" + targetUpto + ");
+        // rewind frame ord=" + lastFrame.ord);
+        // }
         currentFrame = lastFrame;
         currentFrame.rewind();
       } else {
         // Target is exactly the same as current term
         assert term.length() == target.length;
         if (termExists) {
-          //if (DEBUG) {
-          //System.out.println("  target is same as current; return FOUND");
-          //}
+          // if (DEBUG) {
+          // System.out.println("  target is same as current; return FOUND");
+          // }
           return SeekStatus.FOUND;
         } else {
-          //if (DEBUG) {
-          //System.out.println("  target is same as current but term doesn't exist");
-          //}
+          // if (DEBUG) {
+          // System.out.println("  target is same as current but term doesn't exist");
+          // }
         }
       }
 
@@ -724,39 +798,46 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       assert arc.isFinal();
       assert arc.output() != null;
 
-      //if (DEBUG) {
-      //System.out.println("    no seek state; push root frame");
-      //}
+      // if (DEBUG) {
+      // System.out.println("    no seek state; push root frame");
+      // }
 
       output = arc.output();
 
       currentFrame = staticFrame;
 
-      //term.length = 0;
+      // term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
+      currentFrame =
+          pushFrame(
+              arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
-    //if (DEBUG) {
-    //System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + " currentFrame.ord+1=" + currentFrame.ord + " targetBeforeCurrentLength=" + targetBeforeCurrentLength);
-    //}
+    // if (DEBUG) {
+    // System.out.println("  start index loop targetUpto=" + targetUpto + " output=" + output + "
+    // currentFrame.ord+1=" + currentFrame.ord + " targetBeforeCurrentLength=" +
+    // targetBeforeCurrentLength);
+    // }
 
-    // We are done sharing the common prefix with the incoming target and where we are currently seek'd; now continue walking the index:
+    // We are done sharing the common prefix with the incoming target and where we are currently
+    // seek'd; now continue walking the index:
     while (targetUpto < target.length) {
 
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
-      final FST.Arc<Pair<BytesRef,Long>> nextArc = fr.index.findTargetArc(targetLabel, arc, getArc(1+targetUpto), fstReader);
+      final FST.Arc<Pair<BytesRef, Long>> nextArc =
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
 
       if (nextArc == null) {
 
         // Index is exhausted
         // if (DEBUG) {
-        //   System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " + toHex(targetLabel));
+        //   System.out.println("    index: index exhausted label=" + ((char) targetLabel) + " " +
+        // toHex(targetLabel));
         // }
-            
+
         validIndexPrefix = currentFrame.prefix;
-        //validIndexPrefix = targetUpto;
+        // validIndexPrefix = targetUpto;
 
         currentFrame.scanToFloorFrame(target);
 
@@ -768,20 +849,20 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           termExists = false;
 
           if (next() != null) {
-            //if (DEBUG) {
-            //System.out.println("  return NOT_FOUND term=" + brToString(term) + " " + term);
-            //}
+            // if (DEBUG) {
+            // System.out.println("  return NOT_FOUND term=" + brToString(term) + " " + term);
+            // }
             return SeekStatus.NOT_FOUND;
           } else {
-            //if (DEBUG) {
-            //System.out.println("  return END");
-            //}
+            // if (DEBUG) {
+            // System.out.println("  return END");
+            // }
             return SeekStatus.END;
           }
         } else {
-          //if (DEBUG) {
-          //System.out.println("  return " + result + " term=" + brToString(term) + " " + term);
-          //}
+          // if (DEBUG) {
+          // System.out.println("  return " + result + " term=" + brToString(term) + " " + term);
+          // }
           return result;
         }
       } else {
@@ -794,20 +875,26 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           output = VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.output());
         }
 
-        //if (DEBUG) {
-        //System.out.println("    index: follow label=" + toHex(target.bytes[target.offset + targetUpto]&0xff) + " arc.output=" + arc.output + " arc.nfo=" + arc.nextFinalOutput);
-        //}
+        // if (DEBUG) {
+        // System.out.println("    index: follow label=" + toHex(target.bytes[target.offset +
+        // targetUpto]&0xff) + " arc.output=" + arc.output + " arc.nfo=" + arc.nextFinalOutput);
+        // }
         targetUpto++;
 
         if (arc.isFinal()) {
-          //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()), targetUpto);
-          //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
+          // if (DEBUG) System.out.println("    arc is final!");
+          currentFrame =
+              pushFrame(
+                  arc,
+                  VersionBlockTreeTermsWriter.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
+                  targetUpto);
+          // if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" +
+          // currentFrame.hasTerms);
         }
       }
     }
 
-    //validIndexPrefix = targetUpto;
+    // validIndexPrefix = targetUpto;
     validIndexPrefix = currentFrame.prefix;
 
     currentFrame.scanToFloorFrame(target);
@@ -820,14 +907,14 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       term.copyBytes(target);
       termExists = false;
       if (next() != null) {
-        //if (DEBUG) {
-        //System.out.println("  return NOT_FOUND term=" + term.utf8ToString() + " " + term);
-        //}
+        // if (DEBUG) {
+        // System.out.println("  return NOT_FOUND term=" + term.utf8ToString() + " " + term);
+        // }
         return SeekStatus.NOT_FOUND;
       } else {
-        //if (DEBUG) {
-        //System.out.println("  return END");
-        //}
+        // if (DEBUG) {
+        // System.out.println("  return END");
+        // }
         return SeekStatus.END;
       }
     } else {
@@ -843,31 +930,100 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       out.println("  prior seek state:");
       int ord = 0;
       boolean isSeekFrame = true;
-      while(true) {
+      while (true) {
         IDVersionSegmentTermsEnumFrame f = getFrame(ord);
         assert f != null;
         final BytesRef prefix = new BytesRef(term.bytes(), 0, f.prefix);
         if (f.nextEnt == -1) {
-          out.println("    frame " + (isSeekFrame ? "(seek)" : "(next)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + brToString(prefix) + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+          out.println(
+              "    frame "
+                  + (isSeekFrame ? "(seek)" : "(next)")
+                  + " ord="
+                  + ord
+                  + " fp="
+                  + f.fp
+                  + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "")
+                  + " prefixLen="
+                  + f.prefix
+                  + " prefix="
+                  + brToString(prefix)
+                  + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")"))
+                  + " hasTerms="
+                  + f.hasTerms
+                  + " isFloor="
+                  + f.isFloor
+                  + " code="
+                  + ((f.fp << VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS)
+                      + (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS : 0)
+                      + (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR : 0))
+                  + " isLastInFloor="
+                  + f.isLastInFloor
+                  + " mdUpto="
+                  + f.metaDataUpto
+                  + " tbOrd="
+                  + f.getTermBlockOrd());
         } else {
-          out.println("    frame " + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)") + " ord=" + ord + " fp=" + f.fp + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "") + " prefixLen=" + f.prefix + " prefix=" + brToString(prefix) + " nextEnt=" + f.nextEnt + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")")) + " hasTerms=" + f.hasTerms + " isFloor=" + f.isFloor + " code=" + ((f.fp<<VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) + (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) + (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0)) + " lastSubFP=" + f.lastSubFP + " isLastInFloor=" + f.isLastInFloor + " mdUpto=" + f.metaDataUpto + " tbOrd=" + f.getTermBlockOrd());
+          out.println(
+              "    frame "
+                  + (isSeekFrame ? "(seek, loaded)" : "(next, loaded)")
+                  + " ord="
+                  + ord
+                  + " fp="
+                  + f.fp
+                  + (f.isFloor ? (" (fpOrig=" + f.fpOrig + ")") : "")
+                  + " prefixLen="
+                  + f.prefix
+                  + " prefix="
+                  + brToString(prefix)
+                  + " nextEnt="
+                  + f.nextEnt
+                  + (f.nextEnt == -1 ? "" : (" (of " + f.entCount + ")"))
+                  + " hasTerms="
+                  + f.hasTerms
+                  + " isFloor="
+                  + f.isFloor
+                  + " code="
+                  + ((f.fp << VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS)
+                      + (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS : 0)
+                      + (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR : 0))
+                  + " lastSubFP="
+                  + f.lastSubFP
+                  + " isLastInFloor="
+                  + f.isLastInFloor
+                  + " mdUpto="
+                  + f.metaDataUpto
+                  + " tbOrd="
+                  + f.getTermBlockOrd());
         }
         if (fr.index != null) {
-          assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
-          if (f.prefix > 0 && isSeekFrame && f.arc.label() != (term.byteAt(f.prefix-1)&0xFF)) {
-            out.println("      broken seek state: arc.label=" + (char) f.arc.label() + " vs term byte=" + (char) (term.byteAt(f.prefix-1)&0xFF));
+          assert !isSeekFrame || f.arc != null : "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
+          if (f.prefix > 0 && isSeekFrame && f.arc.label() != (term.byteAt(f.prefix - 1) & 0xFF)) {
+            out.println(
+                "      broken seek state: arc.label="
+                    + (char) f.arc.label()
+                    + " vs term byte="
+                    + (char) (term.byteAt(f.prefix - 1) & 0xFF));
             throw new RuntimeException("seek state is broken");
           }
-          Pair<BytesRef,Long> output = Util.get(fr.index, prefix);
+          Pair<BytesRef, Long> output = Util.get(fr.index, prefix);
           if (output == null) {
             out.println("      broken seek state: prefix is not final in index");
             throw new RuntimeException("seek state is broken");
           } else if (isSeekFrame && !f.isFloor) {
-            final ByteArrayDataInput reader = new ByteArrayDataInput(output.output1.bytes, output.output1.offset, output.output1.length);
+            final ByteArrayDataInput reader =
+                new ByteArrayDataInput(
+                    output.output1.bytes, output.output1.offset, output.output1.length);
             final long codeOrig = reader.readVLong();
-            final long code = (f.fp << VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS) | (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS:0) | (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR:0);
+            final long code =
+                (f.fp << VersionBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS)
+                    | (f.hasTerms ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_HAS_TERMS : 0)
+                    | (f.isFloor ? VersionBlockTreeTermsWriter.OUTPUT_FLAG_IS_FLOOR : 0);
             if (codeOrig != code) {
-              out.println("      broken seek state: output code=" + codeOrig + " doesn't match frame code=" + code);
+              out.println(
+                  "      broken seek state: output code="
+                      + codeOrig
+                      + " doesn't match frame code="
+                      + code);
               throw new RuntimeException("seek state is broken");
             }
           }
@@ -884,14 +1040,14 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
   }
 
   /* Decodes only the term bytes of the next term.  If caller then asks for
-     metadata, ie docFreq, totalTermFreq or pulls a D/&PEnum, we then (lazily)
-     decode all metadata up to the current term. */
+  metadata, ie docFreq, totalTermFreq or pulls a D/&PEnum, we then (lazily)
+  decode all metadata up to the current term. */
   @Override
   public BytesRef next() throws IOException {
 
     if (in == null) {
       // Fresh TermsEnum; seek to first term:
-      final FST.Arc<Pair<BytesRef,Long>> arc;
+      final FST.Arc<Pair<BytesRef, Long>> arc;
       if (fr.index != null) {
         arc = fr.index.getFirstArc(arcs[0]);
         // Empty string prefix must have an output in the index!
@@ -906,10 +1062,12 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
     targetBeforeCurrentLength = currentFrame.ord;
 
     assert !eof;
-    //if (DEBUG) {
-    //System.out.println("\nBTTR.next seg=" + segment + " term=" + brToString(term) + " termExists?=" + termExists + " field=" + fieldInfo.name + " termBlockOrd=" + currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
-    //printSeekState();
-    //}
+    // if (DEBUG) {
+    // System.out.println("\nBTTR.next seg=" + segment + " term=" + brToString(term) + "
+    // termExists?=" + termExists + " field=" + fieldInfo.name + " termBlockOrd=" +
+    // currentFrame.state.termBlockOrd + " validIndexPrefix=" + validIndexPrefix);
+    // printSeekState();
+    // }
 
     if (currentFrame == staticFrame) {
       // If seek was previously called and the term was
@@ -918,7 +1076,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       // docFreq, etc.  But, if they then call next(),
       // this method catches up all internal state so next()
       // works properly:
-      //if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " + term);
+      // if (DEBUG) System.out.println("  re-seek to pending term=" + term.utf8ToString() + " " +
+      // term);
       final boolean result = seekExact(term.get());
       assert result;
     }
@@ -928,9 +1087,9 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       if (!currentFrame.isLastInFloor) {
         currentFrame.loadNextFloorBlock();
       } else {
-        //if (DEBUG) System.out.println("  pop frame");
+        // if (DEBUG) System.out.println("  pop frame");
         if (currentFrame.ord == 0) {
-          //if (DEBUG) System.out.println("  return null");
+          // if (DEBUG) System.out.println("  return null");
           assert setEOF();
           term.clear();
           validIndexPrefix = 0;
@@ -939,7 +1098,7 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
           return null;
         }
         final long lastFP = currentFrame.fpOrig;
-        currentFrame = stack[currentFrame.ord-1];
+        currentFrame = stack[currentFrame.ord - 1];
 
         if (currentFrame.nextEnt == -1 || currentFrame.lastSubFP != lastFP) {
           // We popped into a frame that's not loaded
@@ -952,25 +1111,26 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
         // Note that the seek state (last seek) has been
         // invalidated beyond this depth
         validIndexPrefix = Math.min(validIndexPrefix, currentFrame.prefix);
-        //if (DEBUG) {
-        //System.out.println("  reset validIndexPrefix=" + validIndexPrefix);
-        //}
+        // if (DEBUG) {
+        // System.out.println("  reset validIndexPrefix=" + validIndexPrefix);
+        // }
       }
     }
 
-    while(true) {
+    while (true) {
       if (currentFrame.next()) {
         // Push to new block:
-        //if (DEBUG) System.out.println("  push frame");
+        // if (DEBUG) System.out.println("  push frame");
         currentFrame = pushFrame(null, currentFrame.lastSubFP, term.length());
         // This is a "next" frame -- even if it's
         // floor'd we must pretend it isn't so we don't
         // try to scan to the right floor frame:
         currentFrame.isFloor = false;
-        //currentFrame.hasTerms = true;
+        // currentFrame.hasTerms = true;
         currentFrame.loadBlock();
       } else {
-        //if (DEBUG) System.out.println("  return term=" + term.utf8ToString() + " " + term + " currentFrame.ord=" + currentFrame.ord);
+        // if (DEBUG) System.out.println("  return term=" + term.utf8ToString() + " " + term + "
+        // currentFrame.ord=" + currentFrame.ord);
         return term.get();
       }
     }
@@ -997,13 +1157,13 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
   @Override
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     assert !eof;
-    //if (DEBUG) {
-    //System.out.println("BTTR.docs seg=" + segment);
-    //}
+    // if (DEBUG) {
+    // System.out.println("BTTR.docs seg=" + segment);
+    // }
     currentFrame.decodeMetaData();
-    //if (DEBUG) {
-    //System.out.println("  state=" + currentFrame.state);
-    //}
+    // if (DEBUG) {
+    // System.out.println("  state=" + currentFrame.state);
+    // }
     return fr.parent.postingsReader.postings(fr.fieldInfo, currentFrame.state, reuse, flags);
   }
 
@@ -1017,7 +1177,8 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
   @Override
   public void seekExact(BytesRef target, TermState otherState) {
     // if (DEBUG) {
-    //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" + target.utf8ToString() + " " + target + " state=" + otherState);
+    //   System.out.println("BTTR.seekExact termState seg=" + segment + " target=" +
+    // target.utf8ToString() + " " + target + " state=" + otherState);
     // }
     assert clearEOF();
     if (target.compareTo(term.get()) != 0 || !termExists) {
@@ -1034,13 +1195,13 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       // }
     }
   }
-      
+
   @Override
   public TermState termState() throws IOException {
     assert !eof;
     currentFrame.decodeMetaData();
     TermState ts = currentFrame.state.clone();
-    //if (DEBUG) System.out.println("BTTR.termState seg=" + segment + " state=" + ts);
+    // if (DEBUG) System.out.println("BTTR.termState seg=" + segment + " state=" + ts);
     return ts;
   }
 

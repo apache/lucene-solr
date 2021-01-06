@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Serbian.
- */
+/** Analyzer for Serbian. */
 package org.apache.lucene.analysis.sr;

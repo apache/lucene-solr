@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Bengali Language.
- */
+/** Analyzer for Bengali Language. */
 package org.apache.lucene.analysis.bn;

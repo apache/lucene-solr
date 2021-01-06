@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link LimitTokenCountFilter}. 
+ * Factory for {@link LimitTokenCountFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lngthcnt" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,9 +30,10 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10" consumeAllTokens="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * <p>
- * The {@code consumeAllTokens} property is optional and defaults to {@code false}.  
- * See {@link LimitTokenCountFilter} for an explanation of its use.
+ *
+ * <p>The {@code consumeAllTokens} property is optional and defaults to {@code false}. See {@link
+ * LimitTokenCountFilter} for an explanation of its use.
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -66,5 +66,4 @@ public class LimitTokenCountFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new LimitTokenCountFilter(input, maxTokenCount, consumeAllTokens);
   }
-
 }

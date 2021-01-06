@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.util.Locale;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 
 /**
- * Add a document, optionally of a certain size.
- * <br>Other side effects: none.
- * <br>Takes optional param: document size. 
+ * Add a document, optionally of a certain size. <br>
+ * Other side effects: none. <br>
+ * Takes optional param: document size.
  */
 public class AddDocTask extends PerfTask {
 
@@ -35,10 +33,10 @@ public class AddDocTask extends PerfTask {
   }
 
   private int docSize = 0;
-  
-  /** 
-   * volatile data passed between setup(), doLogic(), tearDown().
-   * the doc is created at setup() and added at doLogic(). 
+
+  /**
+   * volatile data passed between setup(), doLogic(), tearDown(). the doc is created at setup() and
+   * added at doLogic().
    */
   protected Document doc = null;
 
@@ -61,9 +59,9 @@ public class AddDocTask extends PerfTask {
 
   @Override
   protected String getLogMessage(int recsCount) {
-    return String.format(Locale.ROOT, "added %9d docs",recsCount);
+    return String.format(Locale.ROOT, "added %9d docs", recsCount);
   }
-  
+
   @Override
   public int doLogic() throws Exception {
     getRunData().getIndexWriter().addDocument(doc);
@@ -72,12 +70,13 @@ public class AddDocTask extends PerfTask {
 
   /**
    * Set the params (docSize only)
+   *
    * @param params docSize, or 0 for no limit.
    */
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    docSize = (int) Float.parseFloat(params); 
+    docSize = (int) Float.parseFloat(params);
   }
 
   /* (non-Javadoc)
@@ -87,5 +86,4 @@ public class AddDocTask extends PerfTask {
   public boolean supportsParams() {
     return true;
   }
-  
 }

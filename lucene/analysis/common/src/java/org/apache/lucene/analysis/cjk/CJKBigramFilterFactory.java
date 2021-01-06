@@ -16,25 +16,25 @@
  */
 package org.apache.lucene.analysis.cjk;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link CJKBigramFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_cjk" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.CJKWidthFilterFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
- *     &lt;filter class="solr.CJKBigramFilterFactory" 
- *       han="true" hiragana="true" 
+ *     &lt;filter class="solr.CJKBigramFilterFactory"
+ *       han="true" hiragana="true"
  *       katakana="true" hangul="true" outputUnigrams="false" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -47,7 +47,7 @@ public class CJKBigramFilterFactory extends TokenFilterFactory {
   final boolean outputUnigrams;
 
   /** Creates a new CJKBigramFilterFactory */
-  public CJKBigramFilterFactory(Map<String,String> args) {
+  public CJKBigramFilterFactory(Map<String, String> args) {
     super(args);
     int flags = 0;
     if (getBoolean(args, "han", true)) {
@@ -68,7 +68,7 @@ public class CJKBigramFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public CJKBigramFilterFactory() {
     throw defaultCtorException();

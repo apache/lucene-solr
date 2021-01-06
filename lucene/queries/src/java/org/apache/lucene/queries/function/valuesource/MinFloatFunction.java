@@ -17,26 +17,23 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
-/**
- * <code>MinFloatFunction</code> returns the min of its components.
- */
+/** <code>MinFloatFunction</code> returns the min of its components. */
 public class MinFloatFunction extends MultiFloatFunction {
   public MinFloatFunction(ValueSource[] sources) {
     super(sources);
   }
 
-  @Override  
+  @Override
   protected String name() {
     return "min";
   }
 
   @Override
   protected float func(int doc, FunctionValues[] valsArr) throws IOException {
-    if ( ! exists(doc, valsArr) ) return 0.0f;
+    if (!exists(doc, valsArr)) return 0.0f;
 
     float val = Float.POSITIVE_INFINITY;
     for (FunctionValues vals : valsArr) {
@@ -46,10 +43,10 @@ public class MinFloatFunction extends MultiFloatFunction {
     }
     return val;
   }
-  
-  /** 
-   * True if <em>any</em> of the specified <code>values</code> 
-   * {@link FunctionValues#exists} for the specified doc, else false.
+
+  /**
+   * True if <em>any</em> of the specified <code>values</code> {@link FunctionValues#exists} for the
+   * specified doc, else false.
    *
    * @see MultiFunction#anyExists
    */
@@ -57,5 +54,4 @@ public class MinFloatFunction extends MultiFloatFunction {
   protected boolean exists(int doc, FunctionValues[] valsArr) throws IOException {
     return MultiFunction.anyExists(doc, valsArr);
   }
-
 }

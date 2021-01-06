@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+// LUCENE-9650: Errorprone on master/gradle no longer works with JDK-16
+if (rootProject.runtimeJavaVersion > JavaVersion.VERSION_15) {
+  logger.warn("WARNING: errorprone disabled (won't work with JDK ${rootProject.runtimeJavaVersion})")
+  return
+}
+
 allprojects { prj ->
   plugins.withType(JavaPlugin) {
     prj.apply plugin: 'net.ltgt.errorprone'

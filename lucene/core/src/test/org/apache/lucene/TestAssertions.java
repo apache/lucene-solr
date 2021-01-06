@@ -16,28 +16,31 @@
  */
 package org.apache.lucene;
 
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * validate that assertions are enabled during tests
- */
+/** validate that assertions are enabled during tests */
 public class TestAssertions extends LuceneTestCase {
 
   static class TestTokenStream1 extends TokenStream {
     @Override
-    public final boolean incrementToken() { return false; }
+    public final boolean incrementToken() {
+      return false;
+    }
   }
 
   static final class TestTokenStream2 extends TokenStream {
     @Override
-    public boolean incrementToken() { return false; }
+    public boolean incrementToken() {
+      return false;
+    }
   }
 
   static class TestTokenStream3 extends TokenStream {
     @Override
-    public boolean incrementToken() { return false; }
+    public boolean incrementToken() {
+      return false;
+    }
   }
 
   public void testTokenStreams() {

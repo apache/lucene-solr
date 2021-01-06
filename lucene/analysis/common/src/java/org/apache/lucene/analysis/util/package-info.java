@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utility functions for text analysis.
- */
+/** Utility functions for text analysis. */
 package org.apache.lucene.analysis.util;

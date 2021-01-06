@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Locale;
-
 import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -34,7 +32,8 @@ public class DateRecognizerFilter extends FilteringTokenFilter {
   private final DateFormat dateFormat;
 
   /**
-   * Uses {@link DateFormat#DEFAULT} and {@link Locale#ENGLISH} to create a {@link DateFormat} instance.
+   * Uses {@link DateFormat#DEFAULT} and {@link Locale#ENGLISH} to create a {@link DateFormat}
+   * instance.
    */
   public DateRecognizerFilter(TokenStream input) {
     this(input, null);
@@ -42,7 +41,10 @@ public class DateRecognizerFilter extends FilteringTokenFilter {
 
   public DateRecognizerFilter(TokenStream input, DateFormat dateFormat) {
     super(input);
-    this.dateFormat = dateFormat != null ? dateFormat : DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.ENGLISH);
+    this.dateFormat =
+        dateFormat != null
+            ? dateFormat
+            : DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.ENGLISH);
   }
 
   @Override
@@ -57,5 +59,4 @@ public class DateRecognizerFilter extends FilteringTokenFilter {
 
     return false;
   }
-
 }

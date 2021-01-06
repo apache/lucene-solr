@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link JapaneseKatakanaStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -33,6 +32,7 @@ import java.util.Map;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -43,13 +43,15 @@ public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
 
   private static final String MINIMUM_LENGTH_PARAM = "minimumLength";
   private final int minimumLength;
-  
+
   /** Creates a new JapaneseKatakanaStemFilterFactory */
-  public JapaneseKatakanaStemFilterFactory(Map<String,String> args) {
+  public JapaneseKatakanaStemFilterFactory(Map<String, String> args) {
     super(args);
-    minimumLength = getInt(args, MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);
+    minimumLength =
+        getInt(args, MINIMUM_LENGTH_PARAM, JapaneseKatakanaStemFilter.DEFAULT_MINIMUM_LENGTH);
     if (minimumLength < 2) {
-      throw new IllegalArgumentException("Illegal " + MINIMUM_LENGTH_PARAM + " " + minimumLength + " (must be 2 or greater)");
+      throw new IllegalArgumentException(
+          "Illegal " + MINIMUM_LENGTH_PARAM + " " + minimumLength + " (must be 2 or greater)");
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

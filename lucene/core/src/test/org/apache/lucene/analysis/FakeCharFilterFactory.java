@@ -19,9 +19,7 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.util.Map;
 
-/**
- * Fake char filter factory for testing
- */
+/** Fake char filter factory for testing */
 public class FakeCharFilterFactory extends CharFilterFactory {
 
   public static final String NAME = "fake";

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for French.
- */
+/** Analyzer for French. */
 package org.apache.lucene.analysis.fr;

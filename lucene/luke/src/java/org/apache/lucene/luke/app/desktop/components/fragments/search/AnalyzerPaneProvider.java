@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -35,7 +26,15 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextField;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -90,13 +89,15 @@ public final class AnalyzerPaneProvider implements AnalyzerTabOperator {
 
     panel.add(analyzerNameLbl);
 
-    JLabel changeLbl = new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.hyperlink.change"));
-    changeLbl.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
-      }
-    });
+    JLabel changeLbl =
+        new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.hyperlink.change"));
+    changeLbl.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
+          }
+        });
     panel.add(FontUtils.toLinkText(changeLbl));
 
     return panel;
@@ -122,7 +123,8 @@ public final class AnalyzerPaneProvider implements AnalyzerTabOperator {
     c.gridx = 0;
     c.gridy = 0;
     c.weightx = 0.1;
-    center.add(new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.label.charfilters")), c);
+    center.add(
+        new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.label.charfilters")), c);
 
     charFilterList.setVisibleRowCount(3);
     JScrollPane charFilterSP = new JScrollPane(charFilterList);
@@ -147,7 +149,8 @@ public final class AnalyzerPaneProvider implements AnalyzerTabOperator {
     c.gridx = 0;
     c.gridy = 2;
     c.weightx = 0.1;
-    center.add(new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.label.tokenfilters")), c);
+    center.add(
+        new JLabel(MessageUtils.getLocalizedMessage("search_analyzer.label.tokenfilters")), c);
 
     tokenFilterList.setVisibleRowCount(3);
     JScrollPane tokenFilterSP = new JScrollPane(tokenFilterList);
@@ -195,6 +198,4 @@ public final class AnalyzerPaneProvider implements AnalyzerTabOperator {
       tokenFilterList.setBackground(Color.lightGray);
     }
   }
-
-
 }

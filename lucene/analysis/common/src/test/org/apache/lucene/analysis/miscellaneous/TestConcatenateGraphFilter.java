@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
@@ -35,14 +34,14 @@ import org.junit.Test;
 public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
 
   private static final char SEP_LABEL = (char) ConcatenateGraphFilter.SEP_LABEL;
-  
+
   @Test
   public void testBasic() throws Exception {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword";
     tokenStream.setReader(new StringReader(input));
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream);
-    assertTokenStreamContents(stream, new String[] {input}, null, null, new int[] { 1 });
+    assertTokenStreamContents(stream, new String[] {input}, null, null, new int[] {1});
   }
 
   @Test
@@ -51,7 +50,8 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     String input = "mykeyword another keyword";
     tokenStream.setReader(new StringReader(input));
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream, null, false, 100);
-    assertTokenStreamContents(stream, new String[] {"mykeywordanotherkeyword"}, null, null, new int[] { 1 });
+    assertTokenStreamContents(
+        stream, new String[] {"mykeywordanotherkeyword"}, null, null, new int[] {1});
   }
 
   @Test
@@ -66,7 +66,8 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     builder.append("another");
     builder.append(SEP_LABEL);
     builder.append("keyword");
-    assertTokenStreamContents(stream, new String[]{builder.toCharsRef().toString()}, null, null, new int[]{1});
+    assertTokenStreamContents(
+        stream, new String[] {builder.toCharsRef().toString()}, null, null, new int[] {1});
   }
 
   @Test
@@ -78,7 +79,8 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     @SuppressWarnings("deprecation")
     SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter);
-    assertTokenStreamContents(stream, new String[] {"mykeyword", "mysynonym"}, null, null, new int[] { 1, 0 });
+    assertTokenStreamContents(
+        stream, new String[] {"mykeyword", "mysynonym"}, null, null, new int[] {1, 0});
   }
 
   @Test
@@ -106,17 +108,18 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     expectedOutput.append(SEP_LABEL);
     expectedOutput.append("keyword");
     expectedOutputs[1] = expectedOutput.toCharsRef().toString();
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new int[]{1, 0});
+    assertTokenStreamContents(stream, expectedOutputs, null, null, new int[] {1, 0});
   }
 
   @Test
   public void testWithStopword() throws Exception {
-    for (boolean preservePosInc : new boolean[]{true, false}) {
+    for (boolean preservePosInc : new boolean[] {true, false}) {
       Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
-      String input = "a mykeyword a keyword"; //LUCENE-8344 add "a"
+      String input = "a mykeyword a keyword"; // LUCENE-8344 add "a"
       tokenStream.setReader(new StringReader(input));
       TokenFilter tokenFilter = new StopFilter(tokenStream, StopFilter.makeStopSet("a"));
-      ConcatenateGraphFilter concatStream = new ConcatenateGraphFilter(tokenFilter, SEP_LABEL, preservePosInc, 10);
+      ConcatenateGraphFilter concatStream =
+          new ConcatenateGraphFilter(tokenFilter, SEP_LABEL, preservePosInc, 10);
       CharsRefBuilder builder = new CharsRefBuilder();
       if (preservePosInc) {
         builder.append(SEP_LABEL);
@@ -127,10 +130,10 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
         builder.append(SEP_LABEL);
       }
       builder.append("keyword");
-//      if (preservePosInc) { LUCENE-8344 uncomment
-//        builder.append(SEP_LABEL);
-//      }
-      assertTokenStreamContents(concatStream, new String[]{builder.toCharsRef().toString()});
+      //      if (preservePosInc) { LUCENE-8344 uncomment
+      //        builder.append(SEP_LABEL);
+      //      }
+      assertTokenStreamContents(concatStream, new String[] {builder.toCharsRef().toString()});
     }
   }
 
@@ -138,11 +141,11 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
   public void testValidNumberOfExpansions() throws IOException {
     SynonymMap.Builder builder = new SynonymMap.Builder(true);
     for (int i = 0; i < 256; i++) {
-      builder.add(new CharsRef("" + (i+1)), new CharsRef("" + (1000 + (i+1))), true);
+      builder.add(new CharsRef("" + (i + 1)), new CharsRef("" + (1000 + (i + 1))), true);
     }
     StringBuilder valueBuilder = new StringBuilder();
-    for (int i = 0 ; i < 8 ; i++) {
-      valueBuilder.append(i+1);
+    for (int i = 0; i < 8; i++) {
+      valueBuilder.append(i + 1);
       valueBuilder.append(" ");
     }
     MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
@@ -153,7 +156,8 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     int count;
     try (ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter)) {
       stream.reset();
-      ConcatenateGraphFilter.BytesRefBuilderTermAttribute attr = stream.addAttribute(ConcatenateGraphFilter.BytesRefBuilderTermAttribute.class);
+      ConcatenateGraphFilter.BytesRefBuilderTermAttribute attr =
+          stream.addAttribute(ConcatenateGraphFilter.BytesRefBuilderTermAttribute.class);
       count = 0;
       while (stream.incrementToken()) {
         count++;
@@ -175,8 +179,10 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.SIMPLE, true);
     String input = "...mykeyword.another.keyword.";
     tokenStream.setReader(new StringReader(input));
-    ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenStream, ' ', false, 100); //not \u001F
-    assertTokenStreamContents(stream, new String[] {"mykeyword another keyword"}, null, null, new int[] { 1 });
+    ConcatenateGraphFilter stream =
+        new ConcatenateGraphFilter(tokenStream, ' ', false, 100); // not \u001F
+    assertTokenStreamContents(
+        stream, new String[] {"mykeyword another keyword"}, null, null, new int[] {1});
   }
 
   @Test
@@ -184,10 +190,11 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     String input = "A B C D E F J H";
     tokenStream.setReader(new StringReader(input));
-    TokenStream tokenFilter = new StopFilter(tokenStream, StopFilter.makeStopSet("A", "D", "E", "J"));
+    TokenStream tokenFilter =
+        new StopFilter(tokenStream, StopFilter.makeStopSet("A", "D", "E", "J"));
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenFilter, '-', false, 100);
 
-    assertTokenStreamContents(stream, new String[] {"B-C-F-H"}, null, null, new int[] { 1 });
+    assertTokenStreamContents(stream, new String[] {"B-C-F-H"}, null, null, new int[] {1});
   }
 
   @Test
@@ -195,10 +202,11 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     String input = "A B C D E F J H";
     tokenStream.setReader(new StringReader(input));
-    TokenStream tokenFilter = new StopFilter(tokenStream, StopFilter.makeStopSet("A", "D", "E", "J"));
+    TokenStream tokenFilter =
+        new StopFilter(tokenStream, StopFilter.makeStopSet("A", "D", "E", "J"));
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(tokenFilter, '-', true, 100);
 
-    assertTokenStreamContents(stream, new String[] {"-B-C---F--H"}, null, null, new int[] { 1 });
+    assertTokenStreamContents(stream, new String[] {"-B-C---F--H"}, null, null, new int[] {1});
   }
 
   @Test
@@ -211,11 +219,15 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     tokenizer.setReader(new StringReader(input));
     SynonymGraphFilter filter = new SynonymGraphFilter(tokenizer, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter, '-', false, 100);
-    assertTokenStreamContents(stream, new String[] {
-        "mykeyword-another-keyword",
-        "mysynonym-another-keyword",
-        "three words synonym-another-keyword"
-    }, null, null, new int[] { 1, 0 ,0});
+    assertTokenStreamContents(
+        stream,
+        new String[] {
+          "mykeyword-another-keyword",
+          "mysynonym-another-keyword",
+          "three words synonym-another-keyword"
+        },
+        null,
+        null,
+        new int[] {1, 0, 0});
   }
-
 }

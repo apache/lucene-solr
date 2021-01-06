@@ -18,7 +18,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 
@@ -90,7 +89,9 @@ class BinaryRangeDocValues extends BinaryDocValues {
     BytesRef bytesRef = in.binaryValue();
 
     // We reuse the existing allocated memory for packed values since all docvalues in this iterator
-    // should be exactly same in indexed structure, hence the byte representations in length should be identical
-    System.arraycopy(bytesRef.bytes, bytesRef.offset, packedValue, 0, 2 * numDims * numBytesPerDimension);
+    // should be exactly same in indexed structure, hence the byte representations in length should
+    // be identical
+    System.arraycopy(
+        bytesRef.bytes, bytesRef.offset, packedValue, 0, 2 * numDims * numBytesPerDimension);
   }
 }

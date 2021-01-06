@@ -19,15 +19,15 @@ package org.apache.lucene.store;
 import java.io.IOException;
 
 /**
- * This exception is thrown when the <code>write.lock</code>
- * could not be released.
+ * This exception is thrown when the <code>write.lock</code> could not be released.
+ *
  * @see Lock#close()
  */
 public class LockReleaseFailedException extends IOException {
   public LockReleaseFailedException(String message) {
     super(message);
   }
-  
+
   public LockReleaseFailedException(String message, Throwable cause) {
     super(message, cause);
   }

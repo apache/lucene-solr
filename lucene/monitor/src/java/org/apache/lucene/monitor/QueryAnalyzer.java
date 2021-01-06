@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -29,8 +28,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
- * Class to analyze and extract terms from a lucene query, to be used by
- * a {@link Presearcher} in indexing.
+ * Class to analyze and extract terms from a lucene query, to be used by a {@link Presearcher} in
+ * indexing.
  */
 class QueryAnalyzer {
 
@@ -44,7 +43,8 @@ class QueryAnalyzer {
     this.unknownQueryMapper = (q, w) -> null;
   }
 
-  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(List<CustomQueryHandler> mappers) {
+  private static BiFunction<Query, TermWeightor, QueryTree> buildMapper(
+      List<CustomQueryHandler> mappers) {
     return (q, w) -> {
       for (CustomQueryHandler mapper : mappers) {
         QueryTree qt = mapper.handleQuery(q, w);
@@ -83,9 +83,10 @@ class QueryAnalyzer {
         // Check if we're in a pure negative disjunction
         if (parent instanceof BooleanQuery) {
           BooleanQuery bq = (BooleanQuery) parent;
-          long positiveCount = bq.clauses().stream()
-              .filter(c -> c.getOccur() != BooleanClause.Occur.MUST_NOT)
-              .count();
+          long positiveCount =
+              bq.clauses().stream()
+                  .filter(c -> c.getOccur() != BooleanClause.Occur.MUST_NOT)
+                  .count();
           if (positiveCount == 0) {
             children.add(w -> QueryTree.anyTerm("PURE NEGATIVE QUERY[" + parent + "]"));
           }
@@ -96,9 +97,13 @@ class QueryAnalyzer {
       // ignore it
       if (parent instanceof BooleanQuery) {
         BooleanQuery bq = (BooleanQuery) parent;
-        long requiredCount = bq.clauses().stream()
-            .filter(c -> c.getOccur() == BooleanClause.Occur.MUST || c.getOccur() == BooleanClause.Occur.FILTER)
-            .count();
+        long requiredCount =
+            bq.clauses().stream()
+                .filter(
+                    c ->
+                        c.getOccur() == BooleanClause.Occur.MUST
+                            || c.getOccur() == BooleanClause.Occur.FILTER)
+                .count();
         if (requiredCount > 0) {
           return QueryVisitor.EMPTY_VISITOR;
         }
@@ -117,13 +122,14 @@ class QueryAnalyzer {
 
     @Override
     public void visitLeaf(Query query) {
-      children.add(w -> {
-        QueryTree q = unknownQueryMapper.apply(query, w);
-        if (q == null) {
-          return QueryTree.anyTerm(query.toString());
-        }
-        return q;
-      });
+      children.add(
+          w -> {
+            QueryTree q = unknownQueryMapper.apply(query, w);
+            if (q == null) {
+              return QueryTree.anyTerm(query.toString());
+            }
+            return q;
+          });
     }
 
     @Override
@@ -139,5 +145,4 @@ class QueryAnalyzer {
       return QueryTree.disjunction(children, termWeightor);
     }
   }
-
 }

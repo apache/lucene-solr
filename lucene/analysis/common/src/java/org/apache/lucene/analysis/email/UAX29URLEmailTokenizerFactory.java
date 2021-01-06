@@ -16,21 +16,20 @@
  */
 package org.apache.lucene.analysis.email;
 
-
+import java.util.Map;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.util.Map;
-
 /**
- * Factory for {@link UAX29URLEmailTokenizer}. 
+ * Factory for {@link UAX29URLEmailTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_urlemail" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.UAX29URLEmailTokenizerFactory" maxTokenLength="255"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
+ * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
  * @lucene.spi {@value #NAME}
@@ -43,7 +42,7 @@ public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
   private final int maxTokenLength;
 
   /** Creates a new UAX29URLEmailTokenizerFactory */
-  public UAX29URLEmailTokenizerFactory(Map<String,String> args) {
+  public UAX29URLEmailTokenizerFactory(Map<String, String> args) {
     super(args);
     maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {

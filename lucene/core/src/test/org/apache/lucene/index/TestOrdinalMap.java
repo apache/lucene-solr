@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -28,13 +30,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageTester;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-
 public class TestOrdinalMap extends LuceneTestCase {
 
   private static final Field ORDINAL_MAP_OWNER_FIELD;
+
   static {
     try {
       ORDINAL_MAP_OWNER_FIELD = OrdinalMap.class.getDeclaredField("owner");
@@ -43,35 +42,45 @@ public class TestOrdinalMap extends LuceneTestCase {
     }
   }
 
-  private static final RamUsageTester.Accumulator ORDINAL_MAP_ACCUMULATOR = new RamUsageTester.Accumulator() {
+  private static final RamUsageTester.Accumulator ORDINAL_MAP_ACCUMULATOR =
+      new RamUsageTester.Accumulator() {
 
-    public long accumulateObject(Object o, long shallowSize, java.util.Map<Field,Object> fieldValues, java.util.Collection<Object> queue) {
-      if (o == LongValues.ZEROES || o == LongValues.IDENTITY) {
-        return 0L;
-      }
-      if (o instanceof OrdinalMap) {
-        fieldValues = new HashMap<>(fieldValues);
-        fieldValues.remove(ORDINAL_MAP_OWNER_FIELD);
-      }
-      return super.accumulateObject(o, shallowSize, fieldValues, queue);
-    }
-
-  };
+        public long accumulateObject(
+            Object o,
+            long shallowSize,
+            java.util.Map<Field, Object> fieldValues,
+            java.util.Collection<Object> queue) {
+          if (o == LongValues.ZEROES || o == LongValues.IDENTITY) {
+            return 0L;
+          }
+          if (o instanceof OrdinalMap) {
+            fieldValues = new HashMap<>(fieldValues);
+            fieldValues.remove(ORDINAL_MAP_OWNER_FIELD);
+          }
+          return super.accumulateObject(o, shallowSize, fieldValues, queue);
+        }
+      };
 
   public void testRamBytesUsed() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()));
+    IndexWriterConfig cfg =
+        new IndexWriterConfig(new MockAnalyzer(random()))
+            .setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, cfg);
     final int maxDoc = TestUtil.nextInt(random(), 10, 1000);
     final int maxTermLength = TestUtil.nextInt(random(), 1, 4);
     for (int i = 0; i < maxDoc; ++i) {
       Document d = new Document();
       if (random().nextBoolean()) {
-        d.add(new SortedDocValuesField("sdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
+        d.add(
+            new SortedDocValuesField(
+                "sdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
       }
       final int numSortedSet = random().nextInt(3);
       for (int j = 0; j < numSortedSet; ++j) {
-        d.add(new SortedSetDocValuesField("ssdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
+        d.add(
+            new SortedSetDocValuesField(
+                "ssdv", new BytesRef(TestUtil.randomSimpleString(random(), maxTermLength))));
       }
       iw.addDocument(d);
       if (rarely()) {
@@ -101,9 +110,10 @@ public class TestOrdinalMap extends LuceneTestCase {
    */
   public void testOneSegmentWithAllValues() throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig cfg = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()))
-        .setMergePolicy(NoMergePolicy.INSTANCE);
+    IndexWriterConfig cfg =
+        new IndexWriterConfig(new MockAnalyzer(random()))
+            .setCodec(TestUtil.alwaysDocValuesFormat(TestUtil.getDefaultDocValuesFormat()))
+            .setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter iw = new IndexWriter(dir, cfg);
 
     int numTerms = 1000;
@@ -144,5 +154,4 @@ public class TestOrdinalMap extends LuceneTestCase {
     r.close();
     dir.close();
   }
-
 }

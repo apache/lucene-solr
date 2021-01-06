@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,29 +39,39 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   public void testQueries() throws Exception {
     single = single(random(), false);
     parallel = parallel(random(), false);
-    
+
     queries();
-    
-    single.getIndexReader().close(); single = null;
-    parallel.getIndexReader().close(); parallel = null;
-    dir.close(); dir = null;
-    dir1.close(); dir1 = null;
-    dir2.close(); dir2 = null;
+
+    single.getIndexReader().close();
+    single = null;
+    parallel.getIndexReader().close();
+    parallel = null;
+    dir.close();
+    dir = null;
+    dir1.close();
+    dir1 = null;
+    dir2.close();
+    dir2 = null;
   }
 
   public void testQueriesCompositeComposite() throws Exception {
     single = single(random(), true);
     parallel = parallel(random(), true);
-    
+
     queries();
-    
-    single.getIndexReader().close(); single = null;
-    parallel.getIndexReader().close(); parallel = null;
-    dir.close(); dir = null;
-    dir1.close(); dir1 = null;
-    dir2.close(); dir2 = null;
+
+    single.getIndexReader().close();
+    single = null;
+    parallel.getIndexReader().close();
+    parallel = null;
+    dir.close();
+    dir = null;
+    dir1.close();
+    dir1 = null;
+    dir2.close();
+    dir2 = null;
   }
-  
+
   private void queries() throws Exception {
     queryTest(new TermQuery(new Term("f1", "v1")));
     queryTest(new TermQuery(new Term("f1", "v2")));
@@ -85,8 +93,9 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     Directory dir2 = getDir2(random());
     DirectoryReader ir1, ir2;
     // close subreaders, ParallelReader will not change refCounts, but close on its own close
-    ParallelCompositeReader pr = new ParallelCompositeReader(ir1 = DirectoryReader.open(dir1),
-                                                             ir2 = DirectoryReader.open(dir2));
+    ParallelCompositeReader pr =
+        new ParallelCompositeReader(
+            ir1 = DirectoryReader.open(dir1), ir2 = DirectoryReader.open(dir2));
     IndexReader psub1 = pr.getSequentialSubReaders().get(0);
     // check RefCounts
     assertEquals(1, ir1.getRefCount());
@@ -97,9 +106,9 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(0, ir2.getRefCount());
     assertEquals(0, psub1.getRefCount());
     dir1.close();
-    dir2.close();    
+    dir2.close();
   }
-  
+
   public void testRefCounts2() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
@@ -112,7 +121,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     // check RefCounts
     assertEquals(2, ir1.getRefCount());
     assertEquals(2, ir2.getRefCount());
-    assertEquals("refCount must be 1, as the synthetic reader was created by ParallelCompositeReader", 1, psub1.getRefCount());
+    assertEquals(
+        "refCount must be 1, as the synthetic reader was created by ParallelCompositeReader",
+        1,
+        psub1.getRefCount());
     pr.close();
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
@@ -123,10 +135,11 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(0, ir2.getRefCount());
     assertEquals("refcount should not change anymore", 0, psub1.getRefCount());
     dir1.close();
-    dir2.close();    
+    dir2.close();
   }
-  
-  private void testReaderClosedListener1(boolean closeSubReaders, int wrapMultiReaderType) throws IOException {
+
+  private void testReaderClosedListener1(boolean closeSubReaders, int wrapMultiReaderType)
+      throws IOException {
     final Directory dir1 = getDir1(random());
     final CompositeReader ir2, ir1 = DirectoryReader.open(dir1);
     switch (wrapMultiReaderType) {
@@ -135,23 +148,25 @@ public class TestParallelCompositeReader extends LuceneTestCase {
         break;
       case 1:
         // default case, does close subreaders:
-        ir2 = new MultiReader(ir1); break;
+        ir2 = new MultiReader(ir1);
+        break;
       case 2:
-        ir2 = new MultiReader(new CompositeReader[] {ir1}, false); break;
+        ir2 = new MultiReader(new CompositeReader[] {ir1}, false);
+        break;
       default:
         throw new AssertionError();
     }
-    
+
     // with overlapping
-    ParallelCompositeReader pr = new ParallelCompositeReader(closeSubReaders,
-     new CompositeReader[] {ir2},
-     new CompositeReader[] {ir2});
+    ParallelCompositeReader pr =
+        new ParallelCompositeReader(
+            closeSubReaders, new CompositeReader[] {ir2}, new CompositeReader[] {ir2});
 
     assertEquals(3, pr.leaves().size());
     assertEquals(ir1.getReaderCacheHelper(), pr.getReaderCacheHelper());
 
     int i = 0;
-    for(LeafReaderContext cxt : pr.leaves()) {
+    for (LeafReaderContext cxt : pr.leaves()) {
       LeafReader originalLeaf = ir1.leaves().get(i++).reader();
       assertEquals(originalLeaf.getCoreCacheHelper(), cxt.reader().getCoreCacheHelper());
       assertEquals(originalLeaf.getReaderCacheHelper(), cxt.reader().getReaderCacheHelper());
@@ -160,7 +175,7 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     if (!closeSubReaders) {
       ir1.close();
     }
-    
+
     // We have to close the extra MultiReader, because it will not close its own subreaders:
     if (wrapMultiReaderType == 2) {
       ir2.close();
@@ -180,11 +195,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     Directory dir1 = getDir1(random());
     CompositeReader ir1 = DirectoryReader.open(dir1);
     assertEquals(1, ir1.getSequentialSubReaders().get(0).getRefCount());
-    
+
     // with overlapping
-    ParallelCompositeReader pr = new ParallelCompositeReader(true,
-     new CompositeReader[] {ir1},
-     new CompositeReader[] {ir1});
+    ParallelCompositeReader pr =
+        new ParallelCompositeReader(true, new CompositeReader[] {ir1}, new CompositeReader[] {ir1});
 
     IndexReader psub = pr.getSequentialSubReaders().get(0);
     assertEquals(1, psub.getRefCount());
@@ -192,14 +206,18 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     ir1.close();
 
     assertEquals("refCount of synthetic subreader should be unchanged", 1, psub.getRefCount());
-    expectThrows(AlreadyClosedException.class, () -> {
-      psub.document(0);
-    });
-    
-    expectThrows(AlreadyClosedException.class, () -> {
-      pr.document(0);
-    });
-    
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          psub.document(0);
+        });
+
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          pr.document(0);
+        });
+
     // noop:
     pr.close();
     assertEquals(0, psub.getRefCount());
@@ -218,17 +236,20 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     d3.add(newTextField("f3", "v1", Field.Store.YES));
     w2.addDocument(d3);
     w2.close();
-    
-    DirectoryReader ir1 = DirectoryReader.open(dir1),
-        ir2 = DirectoryReader.open(dir2);
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(ir1, ir2);
-    });
+    DirectoryReader ir1 = DirectoryReader.open(dir1), ir2 = DirectoryReader.open(dir2);
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(random().nextBoolean(), ir1, ir2);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelCompositeReader(ir1, ir2);
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelCompositeReader(random().nextBoolean(), ir1, ir2);
+        });
 
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
@@ -239,21 +260,24 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-  
+
   public void testIncompatibleIndexes2() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getInvalidStructuredDir2(random());
 
-    DirectoryReader ir1 = DirectoryReader.open(dir1),
-        ir2 = DirectoryReader.open(dir2);
+    DirectoryReader ir1 = DirectoryReader.open(dir1), ir2 = DirectoryReader.open(dir2);
     CompositeReader[] readers = new CompositeReader[] {ir1, ir2};
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(readers);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelCompositeReader(readers);
+        });
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(random().nextBoolean(), readers, readers);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelCompositeReader(random().nextBoolean(), readers, readers);
+        });
 
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
@@ -264,17 +288,17 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     dir1.close();
     dir2.close();
   }
-  
+
   public void testIgnoreStoredFields() throws IOException {
     Directory dir1 = getDir1(random());
     Directory dir2 = getDir2(random());
     CompositeReader ir1 = DirectoryReader.open(dir1);
     CompositeReader ir2 = DirectoryReader.open(dir2);
-    
+
     // with overlapping
-    ParallelCompositeReader pr = new ParallelCompositeReader(false,
-     new CompositeReader[] {ir1, ir2},
-     new CompositeReader[] {ir1});
+    ParallelCompositeReader pr =
+        new ParallelCompositeReader(
+            false, new CompositeReader[] {ir1, ir2}, new CompositeReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -285,11 +309,9 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNotNull(MultiTerms.getTerms(pr, "f3"));
     assertNotNull(MultiTerms.getTerms(pr, "f4"));
     pr.close();
-    
+
     // no stored fields at all
-    pr = new ParallelCompositeReader(false,
-        new CompositeReader[] {ir2},
-        new CompositeReader[0]);
+    pr = new ParallelCompositeReader(false, new CompositeReader[] {ir2}, new CompositeReader[0]);
     assertNull(pr.document(0).get("f1"));
     assertNull(pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -300,11 +322,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNotNull(MultiTerms.getTerms(pr, "f3"));
     assertNotNull(MultiTerms.getTerms(pr, "f4"));
     pr.close();
-    
+
     // without overlapping
-    pr = new ParallelCompositeReader(true,
-      new CompositeReader[] {ir2},
-      new CompositeReader[] {ir1});
+    pr =
+        new ParallelCompositeReader(true, new CompositeReader[] {ir2}, new CompositeReader[] {ir1});
     assertEquals("v1", pr.document(0).get("f1"));
     assertEquals("v1", pr.document(0).get("f2"));
     assertNull(pr.document(0).get("f3"));
@@ -315,47 +336,51 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertNotNull(MultiTerms.getTerms(pr, "f3"));
     assertNotNull(MultiTerms.getTerms(pr, "f4"));
     pr.close();
-    
+
     // no main readers
-    expectThrows(IllegalArgumentException.class, () -> {
-      new ParallelCompositeReader(true,
-        new CompositeReader[0],
-        new CompositeReader[] {ir1});
-    });
-    
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new ParallelCompositeReader(true, new CompositeReader[0], new CompositeReader[] {ir1});
+        });
+
     dir1.close();
     dir2.close();
   }
-  
+
   public void testToString() throws IOException {
     Directory dir1 = getDir1(random());
     CompositeReader ir1 = DirectoryReader.open(dir1);
     ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {ir1});
-    
+
     final String s = pr.toString();
-    assertTrue("toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
+    assertTrue(
+        "toString incorrect: " + s, s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
 
     pr.close();
     dir1.close();
   }
-  
+
   public void testToStringCompositeComposite() throws IOException {
     Directory dir1 = getDir1(random());
     CompositeReader ir1 = DirectoryReader.open(dir1);
-    ParallelCompositeReader pr = new ParallelCompositeReader(new CompositeReader[] {new MultiReader(ir1)});
-    
+    ParallelCompositeReader pr =
+        new ParallelCompositeReader(new CompositeReader[] {new MultiReader(ir1)});
+
     final String s = pr.toString();
-    assertTrue("toString incorrect (should be flattened): " + s, s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
+    assertTrue(
+        "toString incorrect (should be flattened): " + s,
+        s.startsWith("ParallelCompositeReader(ParallelLeafReader("));
 
     pr.close();
     dir1.close();
   }
-  
+
   private void queryTest(Query query) throws IOException {
     ScoreDoc[] parallelHits = parallel.search(query, 1000).scoreDocs;
     ScoreDoc[] singleHits = single.search(query, 1000).scoreDocs;
     assertEquals(parallelHits.length, singleHits.length);
-    for(int i = 0; i < parallelHits.length; i++) {
+    for (int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
       Document docParallel = parallel.doc(parallelHits[i].doc);
       Document docSingle = single.doc(singleHits[i].doc);
@@ -425,11 +450,13 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     return newSearcher(pr);
   }
 
-  // subreader structure: (1,2,1) 
+  // subreader structure: (1,2,1)
   private Directory getDir1(Random random) throws IOException {
     Directory dir1 = newDirectory();
-    IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(new MockAnalyzer(random))
-                                             .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter w1 =
+        new IndexWriter(
+            dir1,
+            newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f1", "v1", Field.Store.YES));
     d1.add(newTextField("f2", "v1", Field.Store.YES));
@@ -452,11 +479,13 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     return dir1;
   }
 
-  // subreader structure: (1,2,1) 
+  // subreader structure: (1,2,1)
   private Directory getDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random))
-                                             .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter w2 =
+        new IndexWriter(
+            dir2,
+            newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f3", "v1", Field.Store.YES));
     d1.add(newTextField("f4", "v1", Field.Store.YES));
@@ -482,8 +511,10 @@ public class TestParallelCompositeReader extends LuceneTestCase {
   // this dir has a different subreader structure (1,1,2);
   private Directory getInvalidStructuredDir2(Random random) throws IOException {
     Directory dir2 = newDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(new MockAnalyzer(random))
-                                             .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter w2 =
+        new IndexWriter(
+            dir2,
+            newIndexWriterConfig(new MockAnalyzer(random)).setMergePolicy(NoMergePolicy.INSTANCE));
     Document d1 = new Document();
     d1.add(newTextField("f3", "v1", Field.Store.YES));
     d1.add(newTextField("f4", "v1", Field.Store.YES));
@@ -505,5 +536,4 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     w2.close();
     return dir2;
   }
-
 }

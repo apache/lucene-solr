@@ -24,16 +24,15 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-
 public class FileDictionaryTest extends LuceneTestCase {
-  
-  private Map.Entry<List<String>, String> generateFileEntry(String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
+
+  private Map.Entry<List<String>, String> generateFileEntry(
+      String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
     List<String> entryValues = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     String term = TestUtil.randomSimpleString(random(), 1, 300);
@@ -54,33 +53,40 @@ public class FileDictionaryTest extends LuceneTestCase {
     sb.append("\n");
     return new SimpleEntry<>(entryValues, sb.toString());
   }
-  
-  private Map.Entry<List<List<String>>,String> generateFileInput(int count, String fieldDelimiter, boolean hasWeights, boolean hasPayloads) {
+
+  private Map.Entry<List<List<String>>, String> generateFileInput(
+      int count, String fieldDelimiter, boolean hasWeights, boolean hasPayloads) {
     List<List<String>> entries = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     boolean hasPayload = hasPayloads;
     for (int i = 0; i < count; i++) {
       if (hasPayloads) {
-        hasPayload = (i==0) ? true : random().nextBoolean();
-      } 
-      Map.Entry<List<String>, String> entrySet = generateFileEntry(fieldDelimiter, (!hasPayloads && hasWeights) ? random().nextBoolean() : hasWeights, hasPayload);
+        hasPayload = (i == 0) ? true : random().nextBoolean();
+      }
+      Map.Entry<List<String>, String> entrySet =
+          generateFileEntry(
+              fieldDelimiter,
+              (!hasPayloads && hasWeights) ? random().nextBoolean() : hasWeights,
+              hasPayload);
       entries.add(entrySet.getKey());
       sb.append(entrySet.getValue());
     }
     return new SimpleEntry<>(entries, sb.toString());
   }
-  
+
   @Test
   public void testFileWithTerm() throws IOException {
-    Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, false, false);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
+    Map.Entry<List<List<String>>, String> fileInput =
+        generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, false, false);
+    InputStream inputReader =
+        new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
     assertFalse(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
-    while((term = inputIter.next()) != null) {
+    while ((term = inputIter.next()) != null) {
       assertTrue(entries.size() > count);
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 1); // at least a term
@@ -91,18 +97,20 @@ public class FileDictionaryTest extends LuceneTestCase {
     }
     assertEquals(count, entries.size());
   }
-  
+
   @Test
   public void testFileWithWeight() throws IOException {
-    Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, false);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
+    Map.Entry<List<List<String>>, String> fileInput =
+        generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, false);
+    InputStream inputReader =
+        new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
     assertFalse(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
-    while((term = inputIter.next()) != null) {
+    while ((term = inputIter.next()) != null) {
       assertTrue(entries.size() > count);
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 1); // at least a term
@@ -113,18 +121,20 @@ public class FileDictionaryTest extends LuceneTestCase {
     }
     assertEquals(count, entries.size());
   }
-  
+
   @Test
   public void testFileWithWeightAndPayload() throws IOException {
-    Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
+    Map.Entry<List<List<String>>, String> fileInput =
+        generateFileInput(atLeast(100), FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
+    InputStream inputReader =
+        new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
-    while((term = inputIter.next()) != null) {
+    while ((term = inputIter.next()) != null) {
       assertTrue(entries.size() > count);
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 2); // at least term and weight
@@ -139,18 +149,20 @@ public class FileDictionaryTest extends LuceneTestCase {
     }
     assertEquals(count, entries.size());
   }
-  
+
   @Test
   public void testFileWithOneEntry() throws IOException {
-    Map.Entry<List<List<String>>,String> fileInput = generateFileInput(1, FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
+    Map.Entry<List<List<String>>, String> fileInput =
+        generateFileInput(1, FileDictionary.DEFAULT_FIELD_DELIMITER, true, true);
+    InputStream inputReader =
+        new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader);
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
-    while((term = inputIter.next()) != null) {
+    while ((term = inputIter.next()) != null) {
       assertTrue(entries.size() > count);
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 2); // at least term and weight
@@ -165,19 +177,20 @@ public class FileDictionaryTest extends LuceneTestCase {
     }
     assertEquals(count, entries.size());
   }
-  
-  
+
   @Test
   public void testFileWithDifferentDelimiter() throws IOException {
-    Map.Entry<List<List<String>>,String> fileInput = generateFileInput(atLeast(100), " , ", true, true);
-    InputStream inputReader = new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
+    Map.Entry<List<List<String>>, String> fileInput =
+        generateFileInput(atLeast(100), " , ", true, true);
+    InputStream inputReader =
+        new ByteArrayInputStream(fileInput.getValue().getBytes(StandardCharsets.UTF_8));
     FileDictionary dictionary = new FileDictionary(inputReader, " , ");
     List<List<String>> entries = fileInput.getKey();
     InputIterator inputIter = dictionary.getEntryIterator();
     assertTrue(inputIter.hasPayloads());
     BytesRef term;
     int count = 0;
-    while((term = inputIter.next()) != null) {
+    while ((term = inputIter.next()) != null) {
       assertTrue(entries.size() > count);
       List<String> entry = entries.get(count);
       assertTrue(entry.size() >= 2); // at least term and weight
@@ -192,5 +205,4 @@ public class FileDictionaryTest extends LuceneTestCase {
     }
     assertEquals(count, entries.size());
   }
-  
 }

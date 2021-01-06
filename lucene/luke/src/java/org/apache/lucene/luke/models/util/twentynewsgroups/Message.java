@@ -20,11 +20,10 @@ package org.apache.lucene.luke.models.util.twentynewsgroups;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.email.UAX29URLEmailAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.email.UAX29URLEmailAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -139,7 +138,6 @@ public class Message {
       doc.add(new StoredField("date_raw", getDate()));
     }
 
-
     if (getOrganization() != null) {
       doc.add(new TextField("organization", getOrganization(), Field.Store.YES));
     }
@@ -161,9 +159,9 @@ public class Message {
     return new PerFieldAnalyzerWrapper(new StandardAnalyzer(), map);
   }
 
-  private final static FieldType SUBJECT_FIELD_TYPE;
+  private static final FieldType SUBJECT_FIELD_TYPE;
 
-  private final static FieldType BODY_FIELD_TYPE;
+  private static final FieldType BODY_FIELD_TYPE;
 
   static {
     SUBJECT_FIELD_TYPE = new FieldType();

@@ -24,9 +24,10 @@ package org.apache.lucene.index;
  */
 public interface RandomAccessVectorValuesProducer {
   /**
-   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
-   * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
-   * will retrieve independent copies that do not overwrite each others' returned values.
+   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods
+   * will have no effect on the progress of the iteration or the values returned by this iterator.
+   * Successive calls will retrieve independent copies that do not overwrite each others' returned
+   * values.
    */
   RandomAccessVectorValues randomAccess();
 }

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -31,20 +29,20 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Transition;
 
 /**
- * A FilteredTermsEnum that enumerates terms based upon what is accepted by a
- * DFA.
- * <p>
- * The algorithm is such:
+ * A FilteredTermsEnum that enumerates terms based upon what is accepted by a DFA.
+ *
+ * <p>The algorithm is such:
+ *
  * <ol>
  *   <li>As long as matches are successful, keep reading sequentially.
- *   <li>When a match fails, skip to the next string in lexicographic order that
- * does not enter a reject state.
+ *   <li>When a match fails, skip to the next string in lexicographic order that does not enter a
+ *       reject state.
  * </ol>
- * <p>
- * The algorithm does not attempt to actually skip to the next string that is
- * completely accepted. This is not possible when the language accepted by the
- * FSM is not finite (i.e. * operator).
- * </p>
+ *
+ * <p>The algorithm does not attempt to actually skip to the next string that is completely
+ * accepted. This is not possible when the language accepted by the FSM is not finite (i.e. *
+ * operator).
+ *
  * @lucene.internal
  */
 public class AutomatonTermsEnum extends FilteredTermsEnum {
@@ -61,7 +59,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private final short[] visited;
   private short curGen;
   // the reference used for seeking forwards through the term dictionary
-  private final BytesRefBuilder seekBytesRef = new BytesRefBuilder(); 
+  private final BytesRefBuilder seekBytesRef = new BytesRefBuilder();
   // true if we are enumerating an infinite portion of the DFA.
   // in this case it is faster to drive the query based on the terms dictionary.
   // when this is true, linearUpperBound indicate the end of range
@@ -72,10 +70,10 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private final IntsRefBuilder savedStates = new IntsRefBuilder();
 
   /**
-   * Construct an enumerator based upon an automaton, enumerating the specified
-   * field, working on a supplied TermsEnum
+   * Construct an enumerator based upon an automaton, enumerating the specified field, working on a
+   * supplied TermsEnum
    *
-   * @lucene.experimental 
+   * @lucene.experimental
    * @param compiled CompiledAutomaton
    */
   public AutomatonTermsEnum(TermsEnum tenum, CompiledAutomaton compiled) {
@@ -93,25 +91,21 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     visited = finite ? null : new short[runAutomaton.getSize()];
   }
 
-  /**
-   * Records the given state has been visited.
-   */
+  /** Records the given state has been visited. */
   private void setVisited(int state) {
     if (!finite) {
       visited[state] = curGen;
     }
   }
 
-  /**
-   * Indicates whether the given state has been visited.
-   */
+  /** Indicates whether the given state has been visited. */
   private boolean isVisited(int state) {
     return !finite && visited[state] == curGen;
   }
 
   /**
-   * Returns true if the term matches the automaton. Also stashes away the term
-   * to assist with smart enumeration.
+   * Returns true if the term matches the automaton. Also stashes away the term to assist with smart
+   * enumeration.
    */
   @Override
   protected AcceptStatus accept(final BytesRef term) {
@@ -119,21 +113,23 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       if (runAutomaton.run(term.bytes, term.offset, term.length))
         return linear ? AcceptStatus.YES : AcceptStatus.YES_AND_SEEK;
       else
-        return (linear && term.compareTo(linearUpperBound) < 0) ? 
-            AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
+        return (linear && term.compareTo(linearUpperBound) < 0)
+            ? AcceptStatus.NO
+            : AcceptStatus.NO_AND_SEEK;
     } else {
-      return (linear && term.compareTo(linearUpperBound) < 0) ? 
-          AcceptStatus.NO : AcceptStatus.NO_AND_SEEK;
+      return (linear && term.compareTo(linearUpperBound) < 0)
+          ? AcceptStatus.NO
+          : AcceptStatus.NO_AND_SEEK;
     }
   }
-  
+
   @Override
   protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
-    //System.out.println("ATE.nextSeekTerm term=" + term);
+    // System.out.println("ATE.nextSeekTerm term=" + term);
     if (term == null) {
       assert seekBytesRef.length() == 0;
       // return the empty term, as it's valid
-      if (runAutomaton.isAccept(0)) {   
+      if (runAutomaton.isAccept(0)) {
         return seekBytesRef.get();
       }
     } else {
@@ -142,40 +138,38 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
 
     // seek to the next possible string;
     if (nextString()) {
-      return seekBytesRef.get();  // reposition
+      return seekBytesRef.get(); // reposition
     } else {
-      return null;          // no more possible strings can match
+      return null; // no more possible strings can match
     }
   }
 
   /**
-   * Sets the enum to operate in linear fashion, as we have found
-   * a looping transition at position: we set an upper bound and 
-   * act like a TermRangeQuery for this portion of the term space.
+   * Sets the enum to operate in linear fashion, as we have found a looping transition at position:
+   * we set an upper bound and act like a TermRangeQuery for this portion of the term space.
    */
   private void setLinear(int position) {
     assert linear == false;
-    
+
     int state = 0;
     int maxInterval = 0xff;
-    //System.out.println("setLinear pos=" + position + " seekbytesRef=" + seekBytesRef);
+    // System.out.println("setLinear pos=" + position + " seekbytesRef=" + seekBytesRef);
     for (int i = 0; i < position; i++) {
       state = runAutomaton.step(state, seekBytesRef.byteAt(i) & 0xff);
-      assert state >= 0: "state=" + state;
+      assert state >= 0 : "state=" + state;
     }
     final int numTransitions = automaton.getNumTransitions(state);
     automaton.initTransition(state, transition);
     for (int i = 0; i < numTransitions; i++) {
       automaton.getNextTransition(transition);
-      if (transition.min <= (seekBytesRef.byteAt(position) & 0xff) && 
-          (seekBytesRef.byteAt(position) & 0xff) <= transition.max) {
+      if (transition.min <= (seekBytesRef.byteAt(position) & 0xff)
+          && (seekBytesRef.byteAt(position) & 0xff) <= transition.max) {
         maxInterval = transition.max;
         break;
       }
     }
     // 0xff terms don't get the optimization... not worth the trouble.
-    if (maxInterval != 0xff)
-      maxInterval++;
+    if (maxInterval != 0xff) maxInterval++;
     int length = position + 1; /* position + maxTransition */
     if (linearUpperBound.bytes.length < length) {
       linearUpperBound.bytes = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
@@ -183,29 +177,29 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     System.arraycopy(seekBytesRef.bytes(), 0, linearUpperBound.bytes, 0, position);
     linearUpperBound.bytes[position] = (byte) maxInterval;
     linearUpperBound.length = length;
-    
+
     linear = true;
   }
 
   /**
-   * Increments the byte buffer to the next String in binary order after s that will not put
-   * the machine into a reject state. If such a string does not exist, returns
-   * false.
-   * 
-   * The correctness of this method depends upon the automaton being deterministic,
-   * and having no transitions to dead states.
-   * 
+   * Increments the byte buffer to the next String in binary order after s that will not put the
+   * machine into a reject state. If such a string does not exist, returns false.
+   *
+   * <p>The correctness of this method depends upon the automaton being deterministic, and having no
+   * transitions to dead states.
+   *
    * @return true if more possible solutions exist for the DFA
    */
   private boolean nextString() {
     int state;
     int pos = 0;
-    savedStates.grow(seekBytesRef.length()+1);
+    savedStates.grow(seekBytesRef.length() + 1);
     savedStates.setIntAt(0, 0);
-    
+
     while (true) {
       if (!finite && ++curGen == 0) {
-        // Clear the visited states every time curGen wraps (so very infrequently to not impact average perf).
+        // Clear the visited states every time curGen wraps (so very infrequently to not impact
+        // average perf).
         Arrays.fill(visited, (short) -1);
       }
       linear = false;
@@ -213,9 +207,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       for (state = savedStates.intAt(pos); pos < seekBytesRef.length(); pos++) {
         setVisited(state);
         int nextState = runAutomaton.step(state, seekBytesRef.byteAt(pos) & 0xff);
-        if (nextState == -1)
-          break;
-        savedStates.setIntAt(pos+1, nextState);
+        if (nextState == -1) break;
+        savedStates.setIntAt(pos + 1, nextState);
         // we found a loop, record it for faster enumeration
         if (!linear && isVisited(nextState)) {
           setLinear(pos);
@@ -227,41 +220,45 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       // append characters that will match.
       if (nextString(state, pos)) {
         return true;
-      } else { /* no more solutions exist from this useful portion, backtrack */
-        if ((pos = backtrack(pos)) < 0) /* no more solutions at all */
+      } else {
+        /* no more solutions exist from this useful portion, backtrack */
+        if ((pos = backtrack(pos)) < 0) {
+          /* no more solutions at all */
           return false;
-        final int newState = runAutomaton.step(savedStates.intAt(pos), seekBytesRef.byteAt(pos) & 0xff);
-        if (newState >= 0 && runAutomaton.isAccept(newState))
+        }
+        final int newState =
+            runAutomaton.step(savedStates.intAt(pos), seekBytesRef.byteAt(pos) & 0xff);
+        if (newState >= 0 && runAutomaton.isAccept(newState)) {
           /* String is good to go as-is */
           return true;
+        }
         /* else advance further */
         // TODO: paranoia? if we backtrack thru an infinite DFA, the loop detection is important!
-        // for now, restart from scratch for all infinite DFAs 
+        // for now, restart from scratch for all infinite DFAs
         if (!finite) pos = 0;
       }
     }
   }
-  
+
   /**
-   * Returns the next String in lexicographic order that will not put
-   * the machine into a reject state. 
-   * 
-   * This method traverses the DFA from the given position in the String,
-   * starting at the given state.
-   * 
-   * If this cannot satisfy the machine, returns false. This method will
-   * walk the minimal path, in lexicographic order, as long as possible.
-   * 
-   * If this method returns false, then there might still be more solutions,
-   * it is necessary to backtrack to find out.
-   * 
+   * Returns the next String in lexicographic order that will not put the machine into a reject
+   * state.
+   *
+   * <p>This method traverses the DFA from the given position in the String, starting at the given
+   * state.
+   *
+   * <p>If this cannot satisfy the machine, returns false. This method will walk the minimal path,
+   * in lexicographic order, as long as possible.
+   *
+   * <p>If this method returns false, then there might still be more solutions, it is necessary to
+   * backtrack to find out.
+   *
    * @param state current non-reject state
    * @param position useful portion of the string
-   * @return true if more possible solutions exist for the DFA from this
-   *         position
+   * @return true if more possible solutions exist for the DFA from this position
    */
   private boolean nextString(int state, int position) {
-    /* 
+    /*
      * the next lexicographic character must be greater than the existing
      * character, if it exists.
      */
@@ -271,8 +268,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       // if the next byte is 0xff and is not part of the useful portion,
       // then by definition it puts us in a reject state, and therefore this
       // path is dead. there cannot be any higher transitions. backtrack.
-      if (c++ == 0xff)
-        return false;
+      if (c++ == 0xff) return false;
     }
 
     seekBytesRef.setLength(position);
@@ -281,7 +277,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     final int numTransitions = automaton.getNumTransitions(state);
     automaton.initTransition(state, transition);
     // find the minimal path (lexicographic order) that is >= c
-    
+
     for (int i = 0; i < numTransitions; i++) {
       automaton.getNextTransition(transition);
       if (transition.max >= c) {
@@ -290,13 +286,13 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
         seekBytesRef.grow(seekBytesRef.length() + 1);
         seekBytesRef.append((byte) nextChar);
         state = transition.dest;
-        /* 
+        /*
          * as long as is possible, continue down the minimal path in
          * lexicographic order. if a loop or accept state is encountered, stop.
          */
         while (!isVisited(state) && !runAutomaton.isAccept(state)) {
           setVisited(state);
-          /* 
+          /*
            * Note: we work with a DFA with no transitions to dead states.
            * so the below is ok, if it is not an accept state,
            * then there MUST be at least one transition.
@@ -304,14 +300,14 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
           automaton.initTransition(state, transition);
           automaton.getNextTransition(transition);
           state = transition.dest;
-          
+
           // append the minimum transition
           seekBytesRef.grow(seekBytesRef.length() + 1);
           seekBytesRef.append((byte) transition.min);
-          
+
           // we found a loop, record it for faster enumeration
           if (!linear && isVisited(state)) {
-            setLinear(seekBytesRef.length()-1);
+            setLinear(seekBytesRef.length() - 1);
           }
         }
         return true;
@@ -319,12 +315,11 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
     return false;
   }
-  
+
   /**
-   * Attempts to backtrack thru the string after encountering a dead end
-   * at some given position. Returns false if no more possible strings 
-   * can match.
-   * 
+   * Attempts to backtrack thru the string after encountering a dead end at some given position.
+   * Returns false if no more possible strings can match.
+   *
    * @param position current position in the input String
    * @return {@code position >= 0} if more possible solutions exist for the DFA
    */
@@ -335,7 +330,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       // because there is no higher character in binary sort order.
       if (nextChar++ != 0xff) {
         seekBytesRef.setByteAt(position, (byte) nextChar);
-        seekBytesRef.setLength(position+1);
+        seekBytesRef.setLength(position + 1);
         return position;
       }
     }

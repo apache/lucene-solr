@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.codecs.blockterms;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
@@ -33,51 +31,50 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * Selects index terms according to provided pluggable
- * {@link IndexTermSelector}, and stores them in a prefix trie that's
- * loaded entirely in RAM stored as an FST.  This terms
- * index only supports unsigned byte term sort order
- * (unicode codepoint order when the bytes are UTF8).
+ * Selects index terms according to provided pluggable {@link IndexTermSelector}, and stores them in
+ * a prefix trie that's loaded entirely in RAM stored as an FST. This terms index only supports
+ * unsigned byte term sort order (unicode codepoint order when the bytes are UTF8).
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   protected IndexOutput out;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tiv";
 
-  final static String CODEC_NAME = "VariableGapTermsIndex";
-  final static int VERSION_START = 3;
-  final static int VERSION_CURRENT = VERSION_START;
+  static final String CODEC_NAME = "VariableGapTermsIndex";
+  static final int VERSION_START = 3;
+  static final int VERSION_CURRENT = VERSION_START;
 
   private final List<FSTFieldWriter> fields = new ArrayList<>();
-  
-  @SuppressWarnings("unused") private final FieldInfos fieldInfos; // unread
+
+  @SuppressWarnings("unused")
+  private final FieldInfos fieldInfos; // unread
+
   private final IndexTermSelector policy;
 
-  /** 
+  /**
    * Hook for selecting which terms should be placed in the terms index.
-   * <p>
-   * {@link #newField} is called at the start of each new field, and
-   * {@link #isIndexTerm} for each term in that field.
-   * 
-   * @lucene.experimental 
+   *
+   * <p>{@link #newField} is called at the start of each new field, and {@link #isIndexTerm} for
+   * each term in that field.
+   *
+   * @lucene.experimental
    */
-  public static abstract class IndexTermSelector {
-    /** 
-     * Called sequentially on every term being written,
-     * returning true if this term should be indexed
+  public abstract static class IndexTermSelector {
+    /**
+     * Called sequentially on every term being written, returning true if this term should be
+     * indexed
      */
     public abstract boolean isIndexTerm(BytesRef term, TermStats stats);
-    /**
-     * Called when a new field is started.
-     */
+    /** Called when a new field is started. */
     public abstract void newField(FieldInfo fieldInfo);
   }
 
@@ -109,9 +106,10 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
-  /** Sets an index term when docFreq &gt;= docFreqThresh, or
-   *  every interval terms.  This should reduce seek time
-   *  to high docFreq terms.  */
+  /**
+   * Sets an index term when docFreq &gt;= docFreqThresh, or every interval terms. This should
+   * reduce seek time to high docFreq terms.
+   */
   public static final class EveryNOrDocFreqTermSelector extends IndexTermSelector {
     private int count;
     private final int docFreqThresh;
@@ -175,14 +173,18 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
   // terms or as rare as every <maxArcCount> * 10 (eg 2560),
   // in the extremes.
 
-  public VariableGapTermsIndexWriter(SegmentWriteState state, IndexTermSelector policy) throws IOException {
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
+  public VariableGapTermsIndexWriter(SegmentWriteState state, IndexTermSelector policy)
+      throws IOException {
+    final String indexFileName =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
       fieldInfos = state.fieldInfos;
       this.policy = policy;
-      CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       success = true;
     } finally {
       if (!success) {
@@ -193,16 +195,17 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
   @Override
   public FieldWriter addField(FieldInfo field, long termsFilePointer) throws IOException {
-    ////System.out.println("VGW: field=" + field.name);
+    //// System.out.println("VGW: field=" + field.name);
     policy.newField(field);
     FSTFieldWriter writer = new FSTFieldWriter(field, termsFilePointer);
     fields.add(writer);
     return writer;
   }
 
-  /** NOTE: if your codec does not sort in unicode code
-   *  point order, you must override this method, to simply
-   *  return indexedTerm.length. */
+  /**
+   * NOTE: if your codec does not sort in unicode code point order, you must override this method,
+   * to simply return indexedTerm.length.
+   */
   protected int indexedTermPrefixLength(final BytesRef priorTerm, final BytesRef indexedTerm) {
     // As long as codec sorts terms in unicode codepoint
     // order, we can safely strip off the non-distinguishing
@@ -210,12 +213,13 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     final int idxTermOffset = indexedTerm.offset;
     final int priorTermOffset = priorTerm.offset;
     final int limit = Math.min(priorTerm.length, indexedTerm.length);
-    for(int byteIdx=0;byteIdx<limit;byteIdx++) {
-      if (priorTerm.bytes[priorTermOffset+byteIdx] != indexedTerm.bytes[idxTermOffset+byteIdx]) {
-        return byteIdx+1;
+    for (int byteIdx = 0; byteIdx < limit; byteIdx++) {
+      if (priorTerm.bytes[priorTermOffset + byteIdx]
+          != indexedTerm.bytes[idxTermOffset + byteIdx]) {
+        return byteIdx + 1;
       }
     }
-    return Math.min(1+priorTerm.length, indexedTerm.length);
+    return Math.min(1 + priorTerm.length, indexedTerm.length);
   }
 
   private class FSTFieldWriter extends FieldWriter {
@@ -235,7 +239,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       fstOutputs = PositiveIntOutputs.getSingleton();
       fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, fstOutputs);
       indexStart = out.getFilePointer();
-      ////System.out.println("VGW: field=" + fieldInfo.name);
+      //// System.out.println("VGW: field=" + fieldInfo.name);
 
       // Always put empty string in
       fstCompiler.add(new IntsRef(), termsFilePointer);
@@ -244,12 +248,12 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
 
     @Override
     public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
-      //System.out.println("VGW: index term=" + text.utf8ToString());
+      // System.out.println("VGW: index term=" + text.utf8ToString());
       // NOTE: we must force the first term per field to be
       // indexed, in case policy doesn't:
       if (policy.isIndexTerm(text, stats) || first) {
         first = false;
-        //System.out.println("  YES");
+        // System.out.println("  YES");
         return true;
       } else {
         lastTerm.copyBytes(text);
@@ -291,17 +295,17 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
       try {
         final long dirStart = out.getFilePointer();
         final int fieldCount = fields.size();
-        
+
         int nonNullFieldCount = 0;
-        for(int i=0;i<fieldCount;i++) {
+        for (int i = 0; i < fieldCount; i++) {
           FSTFieldWriter field = fields.get(i);
           if (field.fst != null) {
             nonNullFieldCount++;
           }
         }
-        
+
         out.writeVInt(nonNullFieldCount);
-        for(int i=0;i<fieldCount;i++) {
+        for (int i = 0; i < fieldCount; i++) {
           FSTFieldWriter field = fields.get(i);
           if (field.fst != null) {
             out.writeVInt(field.fieldInfo.number);

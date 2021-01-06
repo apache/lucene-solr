@@ -17,16 +17,18 @@
 
 /**
  * Pluggable term index / block terms dictionary implementations.
- * <p>
- * Structure similar to {@link org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter}
+ *
+ * <p>Structure similar to {@link org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter}
  * with additional optimizations.
- *   <ul>
- *     <li>Designed to be extensible</li>
- *     <li>Reduced on-heap memory usage.</li>
- *     <li>Efficient to seek terms ({@link org.apache.lucene.search.TermQuery}, {@link org.apache.lucene.search.PhraseQuery})</li>
- *     <li>Quite efficient for {@link org.apache.lucene.search.PrefixQuery}</li>
- *     <li>Not efficient for spell-check and {@link org.apache.lucene.search.FuzzyQuery}, in this case prefer
- * {@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat}</li>
- *   </ul>
+ *
+ * <ul>
+ *   <li>Designed to be extensible
+ *   <li>Reduced on-heap memory usage.
+ *   <li>Efficient to seek terms ({@link org.apache.lucene.search.TermQuery}, {@link
+ *       org.apache.lucene.search.PhraseQuery})
+ *   <li>Quite efficient for {@link org.apache.lucene.search.PrefixQuery}
+ *   <li>Not efficient for spell-check and {@link org.apache.lucene.search.FuzzyQuery}, in this case
+ *       prefer {@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat}
+ * </ul>
  */
 package org.apache.lucene.codecs.uniformsplit;

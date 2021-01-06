@@ -18,13 +18,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
-/**
- * Delegates all methods to a wrapped {@link SortedSetDocValues}.
- */
+/** Delegates all methods to a wrapped {@link SortedSetDocValues}. */
 public class FilterSortedSetDocValues extends SortedSetDocValues {
 
   /** Wrapped values */
@@ -79,6 +76,4 @@ public class FilterSortedSetDocValues extends SortedSetDocValues {
   public long cost() {
     return in.cost();
   }
-  
-    
 }

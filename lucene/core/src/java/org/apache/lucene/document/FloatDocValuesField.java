@@ -16,22 +16,22 @@
  */
 package org.apache.lucene.document;
 
-
 /**
- * Syntactic sugar for encoding floats as NumericDocValues
- * via {@link Float#floatToRawIntBits(float)}.
- * <p>
- * Per-document floating point values can be retrieved via
- * {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
- * <p>
- * <b>NOTE</b>: In most all cases this will be rather inefficient,
- * requiring four bytes per document. Consider encoding floating
- * point values yourself with only as much precision as you require.
+ * Syntactic sugar for encoding floats as NumericDocValues via {@link
+ * Float#floatToRawIntBits(float)}.
+ *
+ * <p>Per-document floating point values can be retrieved via {@link
+ * org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
+ *
+ * <p><b>NOTE</b>: In most all cases this will be rather inefficient, requiring four bytes per
+ * document. Consider encoding floating point values yourself with only as much precision as you
+ * require.
  */
 public class FloatDocValuesField extends NumericDocValuesField {
 
-  /** 
-   * Creates a new DocValues field with the specified 32-bit float value 
+  /**
+   * Creates a new DocValues field with the specified 32-bit float value
+   *
    * @param name field name
    * @param value 32-bit float value
    * @throws IllegalArgumentException if the field name is null
@@ -44,7 +44,7 @@ public class FloatDocValuesField extends NumericDocValuesField {
   public void setFloatValue(float value) {
     super.setLongValue(Float.floatToRawIntBits(value));
   }
-  
+
   @Override
   public void setLongValue(long value) {
     throw new IllegalArgumentException("cannot change value type from Float to Long");

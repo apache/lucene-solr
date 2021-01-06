@@ -17,12 +17,13 @@
 
 package org.apache.lucene.codecs;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
@@ -32,11 +33,7 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/**
- * Writes vectors to an index.
- */
+/** Writes vectors to an index. */
 public abstract class VectorWriter implements Closeable {
 
   /** Sole constructor */
@@ -65,7 +62,8 @@ public abstract class VectorWriter implements Closeable {
     finish();
   }
 
-  private void mergeVectors(FieldInfo mergeFieldInfo, final MergeState mergeState) throws IOException {
+  private void mergeVectors(FieldInfo mergeFieldInfo, final MergeState mergeState)
+      throws IOException {
     if (mergeState.infoStream.isEnabled("VV")) {
       mergeState.infoStream.message("VV", "merging " + mergeState.segmentInfo);
     }
@@ -78,16 +76,27 @@ public abstract class VectorWriter implements Closeable {
       if (vectorReader != null) {
         if (mergeFieldInfo != null && mergeFieldInfo.hasVectorValues()) {
           int segmentDimension = mergeFieldInfo.getVectorDimension();
-          VectorValues.SearchStrategy segmentSearchStrategy = mergeFieldInfo.getVectorSearchStrategy();
+          VectorValues.SearchStrategy segmentSearchStrategy =
+              mergeFieldInfo.getVectorSearchStrategy();
           if (dimension == -1) {
             dimension = segmentDimension;
             searchStrategy = mergeFieldInfo.getVectorSearchStrategy();
           } else if (dimension != segmentDimension) {
-            throw new IllegalStateException("Varying dimensions for vector-valued field " + mergeFieldInfo.name
-                + ": " + dimension + "!=" + segmentDimension);
+            throw new IllegalStateException(
+                "Varying dimensions for vector-valued field "
+                    + mergeFieldInfo.name
+                    + ": "
+                    + dimension
+                    + "!="
+                    + segmentDimension);
           } else if (searchStrategy != segmentSearchStrategy) {
-            throw new IllegalStateException("Varying search strategys for vector-valued field " + mergeFieldInfo.name
-                + ": " + searchStrategy + "!=" + segmentSearchStrategy);
+            throw new IllegalStateException(
+                "Varying search strategys for vector-valued field "
+                    + mergeFieldInfo.name
+                    + ": "
+                    + searchStrategy
+                    + "!="
+                    + segmentSearchStrategy);
           }
           VectorValues values = vectorReader.getVectorValues(mergeFieldInfo.name);
           if (values != null) {
@@ -134,10 +143,12 @@ public abstract class VectorWriter implements Closeable {
   }
 
   /**
-   * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a reverse ordinal
-   * mapping for documents having values in order to support random access by dense ordinal.
+   * View over multiple VectorValues supporting iterator-style access via DocIdMerger. Maintains a
+   * reverse ordinal mapping for documents having values in order to support random access by dense
+   * ordinal.
    */
-  private static class VectorValuesMerger extends VectorValues implements RandomAccessVectorValuesProducer {
+  private static class VectorValuesMerger extends VectorValues
+      implements RandomAccessVectorValuesProducer {
     private final List<VectorValuesSub> subs;
     private final DocIDMerger<VectorValuesSub> docIdMerger;
     private final int[] ordBase;
@@ -146,7 +157,8 @@ public abstract class VectorWriter implements Closeable {
 
     private int docId;
     private VectorValuesSub current;
-    // For each doc with a vector, record its ord in the segments being merged. This enables random access into the
+    // For each doc with a vector, record its ord in the segments being merged. This enables random
+    // access into the
     // unmerged segments using the ords from the merged segment.
     private int[] ordMap;
     private int ord;
@@ -244,7 +256,8 @@ public abstract class VectorWriter implements Closeable {
           if (sub.values instanceof RandomAccessVectorValuesProducer) {
             raSubs.add(((RandomAccessVectorValuesProducer) sub.values).randomAccess());
           } else {
-            throw new IllegalStateException("Cannot merge VectorValues without support for random access");
+            throw new IllegalStateException(
+                "Cannot merge VectorValues without support for random access");
           }
         }
       }
@@ -272,7 +285,7 @@ public abstract class VectorWriter implements Closeable {
           // get the index of the greatest lower bound
           segmentOrd = -2 - segmentOrd;
         }
-        while(segmentOrd < ordBase.length - 1 && ordBase[segmentOrd + 1] == ordBase[segmentOrd]) {
+        while (segmentOrd < ordBase.length - 1 && ordBase[segmentOrd + 1] == ordBase[segmentOrd]) {
           // forward over empty segments which will share the same ordBase
           segmentOrd++;
         }

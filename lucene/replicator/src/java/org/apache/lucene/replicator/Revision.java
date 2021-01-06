@@ -20,55 +20,48 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.store.IndexInput;
 
 /**
- * A revision comprises lists of files that come from different sources and need
- * to be replicated together to e.g. guarantee that all resources are in sync.
- * In most cases an application will replicate a single index, and so the
- * revision will contain files from a single source. However, some applications
- * may require to treat a collection of indexes as a single entity so that the
- * files from all sources are replicated together, to guarantee consistency
- * between them. For example, an application which indexes facets will need to
- * replicate both the search and taxonomy indexes together, to guarantee that
- * they match at the client side.
- * 
+ * A revision comprises lists of files that come from different sources and need to be replicated
+ * together to e.g. guarantee that all resources are in sync. In most cases an application will
+ * replicate a single index, and so the revision will contain files from a single source. However,
+ * some applications may require to treat a collection of indexes as a single entity so that the
+ * files from all sources are replicated together, to guarantee consistency between them. For
+ * example, an application which indexes facets will need to replicate both the search and taxonomy
+ * indexes together, to guarantee that they match at the client side.
+ *
  * @lucene.experimental
  */
 public interface Revision extends Comparable<Revision> {
-  
+
   /**
-   * Compares the revision to the given version string. Behaves like
-   * {@link Comparable#compareTo(Object)}.
+   * Compares the revision to the given version string. Behaves like {@link
+   * Comparable#compareTo(Object)}.
    */
   public int compareTo(String version);
-  
+
   /**
-   * Returns a string representation of the version of this revision. The
-   * version is used by {@link #compareTo(String)} as well as to
-   * serialize/deserialize revision information. Therefore it must be self
-   * descriptive as well as be able to identify one revision from another.
+   * Returns a string representation of the version of this revision. The version is used by {@link
+   * #compareTo(String)} as well as to serialize/deserialize revision information. Therefore it must
+   * be self descriptive as well as be able to identify one revision from another.
    */
   public String getVersion();
-  
+
   /**
-   * Returns the files that comprise this revision, as a mapping from a source
-   * to a list of files.
+   * Returns the files that comprise this revision, as a mapping from a source to a list of files.
    */
-  public Map<String,List<RevisionFile>> getSourceFiles();
-  
+  public Map<String, List<RevisionFile>> getSourceFiles();
+
   /**
-   * Returns an {@link IndexInput} for the given fileName and source. It is the
-   * caller's responsibility to close the {@link IndexInput} when it has been
-   * consumed.
+   * Returns an {@link IndexInput} for the given fileName and source. It is the caller's
+   * responsibility to close the {@link IndexInput} when it has been consumed.
    */
   public InputStream open(String source, String fileName) throws IOException;
-  
+
   /**
-   * Called when this revision can be safely released, i.e. where there are no
-   * more references to it.
+   * Called when this revision can be safely released, i.e. where there are no more references to
+   * it.
    */
   public void release() throws IOException;
-  
 }

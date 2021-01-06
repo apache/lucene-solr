@@ -17,16 +17,13 @@
 package org.apache.lucene.queryparser.flexible.messages;
 
 import java.util.Locale;
-
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- */
+/** */
 public class TestNLS extends LuceneTestCase {
   public void testMessageLoading() {
-    Message invalidSyntax = new MessageImpl(
-        MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
-    /* 
+    Message invalidSyntax = new MessageImpl(MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
+    /*
      * if the default locale is ja, you get ja as a fallback:
      * see ResourceBundle.html#getBundle(java.lang.String, java.util.Locale, java.lang.ClassLoader)
      */
@@ -35,71 +32,70 @@ public class TestNLS extends LuceneTestCase {
   }
 
   public void testMessageLoading_ja() {
-    Message invalidSyntax = new MessageImpl(
-        MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
-    assertEquals("構文エラー: XXX", invalidSyntax
-        .getLocalizedMessage(Locale.JAPANESE));
+    Message invalidSyntax = new MessageImpl(MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
+    assertEquals("構文エラー: XXX", invalidSyntax.getLocalizedMessage(Locale.JAPANESE));
   }
 
   public void testNLSLoading() {
-    String message = NLS
-        .getLocalizedMessage(MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION, Locale.ENGLISH);
-    /* 
+    String message =
+        NLS.getLocalizedMessage(
+            MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION, Locale.ENGLISH);
+    /*
      * if the default locale is ja, you get ja as a fallback:
      * see ResourceBundle.html#getBundle(java.lang.String, java.util.Locale, java.lang.ClassLoader)
      */
     if (!Locale.getDefault().getLanguage().equals("ja"))
       assertEquals("Truncated unicode escape sequence.", message);
 
-    message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX, Locale.ENGLISH,
-        "XXX");
-    /* 
+    message =
+        NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX, Locale.ENGLISH, "XXX");
+    /*
      * if the default locale is ja, you get ja as a fallback:
      * see ResourceBundle.html#getBundle(java.lang.String, java.util.Locale, java.lang.ClassLoader)
      */
-    if (!Locale.getDefault().getLanguage().equals("ja"))
-      assertEquals("Syntax Error: XXX", message);
+    if (!Locale.getDefault().getLanguage().equals("ja")) assertEquals("Syntax Error: XXX", message);
   }
 
   public void testNLSLoading_ja() {
-    String message = NLS.getLocalizedMessage(
-        MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION,
-        Locale.JAPANESE);
+    String message =
+        NLS.getLocalizedMessage(
+            MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION, Locale.JAPANESE);
     assertEquals("切り捨てられたユニコード・エスケープ・シーケンス。", message);
 
-    message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX,
-        Locale.JAPANESE, "XXX");
+    message =
+        NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX, Locale.JAPANESE, "XXX");
     assertEquals("構文エラー: XXX", message);
   }
 
   public void testNLSLoading_xx_XX() {
     Locale locale = new Locale("xx", "XX", "");
-    String message = NLS.getLocalizedMessage(
-        MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION,
-        locale);
-    /* 
+    String message =
+        NLS.getLocalizedMessage(
+            MessagesTestBundle.Q0004E_INVALID_SYNTAX_ESCAPE_UNICODE_TRUNCATION, locale);
+    /*
      * if the default locale is ja, you get ja as a fallback:
      * see ResourceBundle.html#getBundle(java.lang.String, java.util.Locale, java.lang.ClassLoader)
      */
     if (!Locale.getDefault().getLanguage().equals("ja"))
       assertEquals("Truncated unicode escape sequence.", message);
 
-    message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX,
-        locale, "XXX");
-    /* 
+    message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX, locale, "XXX");
+    /*
      * if the default locale is ja, you get ja as a fallback:
      * see ResourceBundle.html#getBundle(java.lang.String, java.util.Locale, java.lang.ClassLoader)
      */
-    if (!Locale.getDefault().getLanguage().equals("ja"))
-      assertEquals("Syntax Error: XXX", message);
+    if (!Locale.getDefault().getLanguage().equals("ja")) assertEquals("Syntax Error: XXX", message);
   }
 
   public void testMissingMessage() {
     Locale locale = Locale.ENGLISH;
-    String message = NLS.getLocalizedMessage(
-        MessagesTestBundle.Q0005E_MESSAGE_NOT_IN_BUNDLE, locale);
+    String message =
+        NLS.getLocalizedMessage(MessagesTestBundle.Q0005E_MESSAGE_NOT_IN_BUNDLE, locale);
 
-    assertEquals("Message with key:Q0005E_MESSAGE_NOT_IN_BUNDLE and locale: "
-        + locale.toLanguageTag() + " not found.", message);
+    assertEquals(
+        "Message with key:Q0005E_MESSAGE_NOT_IN_BUNDLE and locale: "
+            + locale.toLanguageTag()
+            + " not found.",
+        message);
   }
 }

@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.classification.utils.NearestFuzzyQuery;
 import org.apache.lucene.index.IndexReader;
@@ -48,47 +47,48 @@ import org.apache.lucene.util.BytesRef;
  */
 public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
 
-  /**
-   * the name of the fields used as the input text
-   */
+  /** the name of the fields used as the input text */
   private final String[] textFieldNames;
 
-  /**
-   * the name of the field used as the output text
-   */
+  /** the name of the field used as the output text */
   private final String classFieldName;
 
-  /**
-   * an {@link IndexSearcher} used to perform queries
-   */
+  /** an {@link IndexSearcher} used to perform queries */
   private final IndexSearcher indexSearcher;
 
-  /**
-   * the no. of docs to compare in order to find the nearest neighbor to the input text
-   */
+  /** the no. of docs to compare in order to find the nearest neighbor to the input text */
   private final int k;
 
   /**
-   * a {@link Query} used to filter the documents that should be used from this classifier's underlying {@link LeafReader}
+   * a {@link Query} used to filter the documents that should be used from this classifier's
+   * underlying {@link LeafReader}
    */
   private final Query query;
+
   private final Analyzer analyzer;
 
   /**
    * Creates a {@link KNearestFuzzyClassifier}.
    *
-   * @param indexReader    the reader on the index to be used for classification
-   * @param analyzer       an {@link Analyzer} used to analyze unseen text
-   * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
-   *                       (defaults to {@link BM25Similarity})
-   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
-   * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
+   * @param indexReader the reader on the index to be used for classification
+   * @param analyzer an {@link Analyzer} used to analyze unseen text
+   * @param similarity the {@link Similarity} to be used by the underlying {@link IndexSearcher} or
+   *     {@code null} (defaults to {@link BM25Similarity})
+   * @param query a {@link Query} to eventually filter the docs used for training the classifier, or
+   *     {@code null} if all the indexed docs should be used
+   * @param k the no. of docs to select in the MLT results to find the nearest neighbor
    * @param classFieldName the name of the field used as the output for the classifier
-   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
+   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can
+   *     contain boosting indication e.g. title^10
    */
-  public KNearestFuzzyClassifier(IndexReader indexReader, Similarity similarity, Analyzer analyzer, Query query, int k,
-                                 String classFieldName, String... textFieldNames) {
+  public KNearestFuzzyClassifier(
+      IndexReader indexReader,
+      Similarity similarity,
+      Analyzer analyzer,
+      Query query,
+      int k,
+      String classFieldName,
+      String... textFieldNames) {
     this.textFieldNames = textFieldNames;
     this.classFieldName = classFieldName;
     this.analyzer = analyzer;
@@ -101,7 +101,6 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
     this.query = query;
     this.k = k;
   }
-
 
   @Override
   public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
@@ -156,17 +155,19 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
    * @return a {@link List} of {@link ClassificationResult}, one for each existing class
    * @throws IOException if it's not possible to get the stored value of class field
    */
-  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs) throws IOException {
+  private List<ClassificationResult<BytesRef>> buildListFromTopDocs(TopDocs topDocs)
+      throws IOException {
     Map<BytesRef, Integer> classCounts = new HashMap<>();
-    Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
+    Map<BytesRef, Double> classBoosts =
+        new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.totalHits.value == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
       IndexableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
       if (storableField != null) {
         BytesRef cl = new BytesRef(storableField.stringValue());
-        //update count
+        // update count
         classCounts.merge(cl, 1, (a, b) -> a + b);
-        //update boost, the boost is based on the best score
+        // update boost, the boost is based on the best score
         Double totalBoost = classBoosts.get(cl);
         double singleBoost = scoreDoc.score / maxScore;
         if (totalBoost != null) {
@@ -181,15 +182,18 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
     int sumdoc = 0;
     for (Map.Entry<BytesRef, Integer> entry : classCounts.entrySet()) {
       Integer count = entry.getValue();
-      Double normBoost = classBoosts.get(entry.getKey()) / count; //the boost is normalized to be 0<b<1
-      temporaryList.add(new ClassificationResult<>(entry.getKey().clone(), (count * normBoost) / (double) k));
+      Double normBoost =
+          classBoosts.get(entry.getKey()) / count; // the boost is normalized to be 0<b<1
+      temporaryList.add(
+          new ClassificationResult<>(entry.getKey().clone(), (count * normBoost) / (double) k));
       sumdoc += count;
     }
 
-    //correction
+    // correction
     if (sumdoc < k) {
       for (ClassificationResult<BytesRef> cr : temporaryList) {
-        returnList.add(new ClassificationResult<>(cr.getAssignedClass(), cr.getScore() * k / (double) sumdoc));
+        returnList.add(
+            new ClassificationResult<>(cr.getAssignedClass(), cr.getScore() * k / (double) sumdoc));
       }
     } else {
       returnList = temporaryList;
@@ -199,12 +203,18 @@ public class KNearestFuzzyClassifier implements Classifier<BytesRef> {
 
   @Override
   public String toString() {
-    return "KNearestFuzzyClassifier{" +
-        "textFieldNames=" + Arrays.toString(textFieldNames) +
-        ", classFieldName='" + classFieldName + '\'' +
-        ", k=" + k +
-        ", query=" + query +
-        ", similarity=" + indexSearcher.getSimilarity() +
-        '}';
+    return "KNearestFuzzyClassifier{"
+        + "textFieldNames="
+        + Arrays.toString(textFieldNames)
+        + ", classFieldName='"
+        + classFieldName
+        + '\''
+        + ", k="
+        + k
+        + ", query="
+        + query
+        + ", similarity="
+        + indexSearcher.getSimilarity()
+        + '}';
   }
 }

@@ -16,12 +16,13 @@
  */
 package org.apache.lucene.codecs;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -36,58 +37,58 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
  * Codec API for writing term vectors:
+ *
  * <ol>
- *   <li>For every document, {@link #startDocument(int)} is called,
- *       informing the Codec how many fields will be written.
- *   <li>{@link #startField(FieldInfo, int, boolean, boolean, boolean)} is called for 
- *       each field in the document, informing the codec how many terms
- *       will be written for that field, and whether or not positions,
- *       offsets, or payloads are enabled.
- *   <li>Within each field, {@link #startTerm(BytesRef, int)} is called
- *       for each term.
- *   <li>If offsets and/or positions are enabled, then 
- *       {@link #addPosition(int, int, int, BytesRef)} will be called for each term
- *       occurrence.
- *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
- *       is called for verification/sanity-checks.
+ *   <li>For every document, {@link #startDocument(int)} is called, informing the Codec how many
+ *       fields will be written.
+ *   <li>{@link #startField(FieldInfo, int, boolean, boolean, boolean)} is called for each field in
+ *       the document, informing the codec how many terms will be written for that field, and
+ *       whether or not positions, offsets, or payloads are enabled.
+ *   <li>Within each field, {@link #startTerm(BytesRef, int)} is called for each term.
+ *   <li>If offsets and/or positions are enabled, then {@link #addPosition(int, int, int, BytesRef)}
+ *       will be called for each term occurrence.
+ *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} is called for
+ *       verification/sanity-checks.
  *   <li>Finally the writer is closed ({@link #close()})
  * </ol>
- * 
+ *
  * @lucene.experimental
  */
 public abstract class TermVectorsWriter implements Closeable, Accountable {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected TermVectorsWriter() {
-  }
 
-  /** Called before writing the term vectors of the document.
-   *  {@link #startField(FieldInfo, int, boolean, boolean, boolean)} will 
-   *  be called <code>numVectorFields</code> times. Note that if term 
-   *  vectors are enabled, this is called even if the document 
-   *  has no vector fields, in this case <code>numVectorFields</code> 
-   *  will be zero. */
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected TermVectorsWriter() {}
+
+  /**
+   * Called before writing the term vectors of the document. {@link #startField(FieldInfo, int,
+   * boolean, boolean, boolean)} will be called <code>numVectorFields</code> times. Note that if
+   * term vectors are enabled, this is called even if the document has no vector fields, in this
+   * case <code>numVectorFields</code> will be zero.
+   */
   public abstract void startDocument(int numVectorFields) throws IOException;
 
   /** Called after a doc and all its fields have been added. */
-  public void finishDocument() throws IOException {};
+  public void finishDocument() throws IOException {}
+  ;
 
-  /** Called before writing the terms of the field.
-   *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
-  public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException;
+  /**
+   * Called before writing the terms of the field. {@link #startTerm(BytesRef, int)} will be called
+   * <code>numTerms</code> times.
+   */
+  public abstract void startField(
+      FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads)
+      throws IOException;
 
   /** Called after a field and all its terms have been added. */
-  public void finishField() throws IOException {};
+  public void finishField() throws IOException {}
+  ;
 
-  /** Adds a term and its term frequency <code>freq</code>.
-   * If this field has positions and/or offsets enabled, then
-   * {@link #addPosition(int, int, int, BytesRef)} will be called 
-   * <code>freq</code> times respectively.
+  /**
+   * Adds a term and its term frequency <code>freq</code>. If this field has positions and/or
+   * offsets enabled, then {@link #addPosition(int, int, int, BytesRef)} will be called <code>freq
+   * </code> times respectively.
    */
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
 
@@ -95,27 +96,29 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
   public void finishTerm() throws IOException {}
 
   /** Adds a term position and offsets */
-  public abstract void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException;
+  public abstract void addPosition(int position, int startOffset, int endOffset, BytesRef payload)
+      throws IOException;
 
-  /** Called before {@link #close()}, passing in the number
-   *  of documents that were written. Note that this is 
-   *  intentionally redundant (equivalent to the number of
-   *  calls to {@link #startDocument(int)}, but a Codec should
-   *  check that this is the case to detect the JRE bug described 
-   *  in LUCENE-1282. */
+  /**
+   * Called before {@link #close()}, passing in the number of documents that were written. Note that
+   * this is intentionally redundant (equivalent to the number of calls to {@link
+   * #startDocument(int)}, but a Codec should check that this is the case to detect the JRE bug
+   * described in LUCENE-1282.
+   */
   public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
 
-  /** 
+  /**
    * Called by IndexWriter when writing new segments.
-   * <p>
-   * This is an expert API that allows the codec to consume 
-   * positions and offsets directly from the indexer.
-   * <p>
-   * The default implementation calls {@link #addPosition(int, int, int, BytesRef)},
-   * but subclasses can override this if they want to efficiently write 
-   * all the positions, then all the offsets, for example.
-   * <p>
-   * NOTE: This API is extremely expert and subject to change or removal!!!
+   *
+   * <p>This is an expert API that allows the codec to consume positions and offsets directly from
+   * the indexer.
+   *
+   * <p>The default implementation calls {@link #addPosition(int, int, int, BytesRef)}, but
+   * subclasses can override this if they want to efficiently write all the positions, then all the
+   * offsets, for example.
+   *
+   * <p>NOTE: This API is extremely expert and subject to change or removal!!!
+   *
    * @lucene.internal
    */
   // TODO: we should probably nuke this and make a more efficient 4.x format
@@ -129,7 +132,7 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
       final int startOffset;
       final int endOffset;
       final BytesRef thisPayload;
-      
+
       if (positions == null) {
         position = -1;
         thisPayload = null;
@@ -152,7 +155,7 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
           thisPayload = null;
         }
       }
-      
+
       if (offsets == null) {
         startOffset = endOffset = -1;
       } else {
@@ -163,7 +166,7 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
       addPosition(position, startOffset, endOffset, thisPayload);
     }
   }
-  
+
   private static class TermVectorsMergeSub extends DocIDMerger.Sub {
     private final TermVectorsReader reader;
     private final int maxDoc;
@@ -186,19 +189,18 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
     }
   }
 
-  /** Merges in the term vectors from the readers in 
-   *  <code>mergeState</code>. The default implementation skips
-   *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #startField(FieldInfo, int, boolean, boolean, boolean)}, 
-   *  {@link #startTerm(BytesRef, int)}, {@link #addPosition(int, int, int, BytesRef)},
-   *  and {@link #finish(FieldInfos, int)},
-   *  returning the number of documents that were written.
-   *  Implementations can override this method for more sophisticated
-   *  merging (bulk-byte copying, etc). */
+  /**
+   * Merges in the term vectors from the readers in <code>mergeState</code>. The default
+   * implementation skips over deleted documents, and uses {@link #startDocument(int)}, {@link
+   * #startField(FieldInfo, int, boolean, boolean, boolean)}, {@link #startTerm(BytesRef, int)},
+   * {@link #addPosition(int, int, int, BytesRef)}, and {@link #finish(FieldInfos, int)}, returning
+   * the number of documents that were written. Implementations can override this method for more
+   * sophisticated merging (bulk-byte copying, etc).
+   */
   public int merge(MergeState mergeState) throws IOException {
 
     List<TermVectorsMergeSub> subs = new ArrayList<>();
-    for(int i=0;i<mergeState.termVectorsReaders.length;i++) {
+    for (int i = 0; i < mergeState.termVectorsReaders.length; i++) {
       TermVectorsReader reader = mergeState.termVectorsReaders[i];
       if (reader != null) {
         reader.checkIntegrity();
@@ -206,7 +208,8 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
       subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], reader, mergeState.maxDocs[i]));
     }
 
-    final DocIDMerger<TermVectorsMergeSub> docIDMerger = DocIDMerger.of(subs, mergeState.needsIndexSort);
+    final DocIDMerger<TermVectorsMergeSub> docIDMerger =
+        DocIDMerger.of(subs, mergeState.needsIndexSort);
 
     int docCount = 0;
     while (true) {
@@ -229,9 +232,8 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
     finish(mergeState.mergeFieldInfos, docCount);
     return docCount;
   }
-  
-  /** Safe (but, slowish) default method to write every
-   *  vector field in the document. */
+
+  /** Safe (but, slowish) default method to write every vector field in the document. */
   protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
@@ -249,18 +251,19 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
       }
     }
     startDocument(numFields);
-    
+
     String lastFieldName = null;
-    
+
     TermsEnum termsEnum = null;
     PostingsEnum docsAndPositionsEnum = null;
-    
+
     int fieldCount = 0;
-    for(String fieldName : vectors) {
+    for (String fieldName : vectors) {
       fieldCount++;
       final FieldInfo fieldInfo = mergeState.mergeFieldInfos.fieldInfo(fieldName);
 
-      assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
+      assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0
+          : "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
       lastFieldName = fieldName;
 
       final Terms terms = vectors.terms(fieldName);
@@ -268,49 +271,52 @@ public abstract class TermVectorsWriter implements Closeable, Accountable {
         // FieldsEnum shouldn't lie...
         continue;
       }
-      
+
       final boolean hasPositions = terms.hasPositions();
       final boolean hasOffsets = terms.hasOffsets();
       final boolean hasPayloads = terms.hasPayloads();
       assert !hasPayloads || hasPositions;
-      
+
       int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics
+        // function
         numTerms = 0;
         termsEnum = terms.iterator();
-        while(termsEnum.next() != null) {
+        while (termsEnum.next() != null) {
           numTerms++;
         }
       }
-      
+
       startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
       termsEnum = terms.iterator();
 
       int termCount = 0;
-      while(termsEnum.next() != null) {
+      while (termsEnum.next() != null) {
         termCount++;
 
         final int freq = (int) termsEnum.totalTermFreq();
-        
+
         startTerm(termsEnum.term(), freq);
 
         if (hasPositions || hasOffsets) {
-          docsAndPositionsEnum = termsEnum.postings(docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
+          docsAndPositionsEnum =
+              termsEnum.postings(
+                  docsAndPositionsEnum, PostingsEnum.OFFSETS | PostingsEnum.PAYLOADS);
           assert docsAndPositionsEnum != null;
-          
+
           final int docID = docsAndPositionsEnum.nextDoc();
           assert docID != DocIdSetIterator.NO_MORE_DOCS;
           assert docsAndPositionsEnum.freq() == freq;
 
-          for(int posUpto=0; posUpto<freq; posUpto++) {
+          for (int posUpto = 0; posUpto < freq; posUpto++) {
             final int pos = docsAndPositionsEnum.nextPosition();
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
-            
+
             final BytesRef payload = docsAndPositionsEnum.getPayload();
 
-            assert !hasPositions || pos >= 0 ;
+            assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset, payload);
           }
         }

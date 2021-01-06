@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.ja.tokenattributes;
 
-
 import org.apache.lucene.analysis.ja.Token;
 import org.apache.lucene.util.Attribute;
 
 /**
  * Attribute for {@link Token#getBaseForm()}.
- * <p>
- * Note: depending on part of speech, this value may not be applicable,
- * and will be null.
+ *
+ * <p>Note: depending on part of speech, this value may not be applicable, and will be null.
  */
 public interface BaseFormAttribute extends Attribute {
   public String getBaseForm();
+
   public void setToken(Token token);
 }

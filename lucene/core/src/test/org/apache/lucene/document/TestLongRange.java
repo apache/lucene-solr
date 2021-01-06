@@ -20,7 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestLongRange extends LuceneTestCase {
   public void testToString() {
-    LongRange range = new LongRange("foo", new long[] { 1, 11, 21, 31 }, new long[] { 2, 12, 22, 32 });
+    LongRange range = new LongRange("foo", new long[] {1, 11, 21, 31}, new long[] {2, 12, 22, 32});
     assertEquals("LongRange <foo: [1 : 2] [11 : 12] [21 : 22] [31 : 32]>", range.toString());
   }
 }

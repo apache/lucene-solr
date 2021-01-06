@@ -18,16 +18,13 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-
 import org.apache.lucene.search.suggest.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.*;
 
-/**
- * Unit tests for {@link FSTCompletion}.
- */
+/** Unit tests for {@link FSTCompletion}. */
 public class FSTCompletionTest extends LuceneTestCase {
 
   public static Input tf(String t, int v) {
@@ -50,82 +47,76 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   private Input[] evalKeys() {
-    final Input[] keys = new Input[] {
-        tf("one", 0),
-        tf("oneness", 1),
-        tf("onerous", 1),
-        tf("onesimus", 1),
-        tf("two", 1),
-        tf("twofold", 1),
-        tf("twonk", 1),
-        tf("thrive", 1),
-        tf("through", 1),
-        tf("threat", 1),
-        tf("three", 1),
-        tf("foundation", 1),
-        tf("fourblah", 1),
-        tf("fourteen", 1),
-        tf("four", 0),
-        tf("fourier", 0),
-        tf("fourty", 0),
-        tf("xo", 1),
-      };
+    final Input[] keys =
+        new Input[] {
+          tf("one", 0),
+          tf("oneness", 1),
+          tf("onerous", 1),
+          tf("onesimus", 1),
+          tf("two", 1),
+          tf("twofold", 1),
+          tf("twonk", 1),
+          tf("thrive", 1),
+          tf("through", 1),
+          tf("threat", 1),
+          tf("three", 1),
+          tf("foundation", 1),
+          tf("fourblah", 1),
+          tf("fourteen", 1),
+          tf("four", 0),
+          tf("fourier", 0),
+          tf("fourty", 0),
+          tf("xo", 1),
+        };
     return keys;
   }
 
   public void testExactMatchHighPriority() throws Exception {
-    assertMatchEquals(completion.lookup(stringToCharSequence("two"), 1),
-        "two/1.0");
+    assertMatchEquals(completion.lookup(stringToCharSequence("two"), 1), "two/1.0");
   }
 
   public void testExactMatchLowPriority() throws Exception {
-    assertMatchEquals(completion.lookup(stringToCharSequence("one"), 2), 
-        "one/0.0",
-        "oneness/1.0");
+    assertMatchEquals(completion.lookup(stringToCharSequence("one"), 2), "one/0.0", "oneness/1.0");
   }
-  
+
   public void testExactMatchReordering() throws Exception {
-    // Check reordering of exact matches. 
-    assertMatchEquals(completion.lookup(stringToCharSequence("four"), 4), 
+    // Check reordering of exact matches.
+    assertMatchEquals(
+        completion.lookup(stringToCharSequence("four"), 4),
         "four/0.0",
         "fourblah/1.0",
         "fourteen/1.0",
-        "fourier/0.0");    
+        "fourier/0.0");
   }
 
   public void testRequestedCount() throws Exception {
     // 'one' is promoted after collecting two higher ranking results.
-    assertMatchEquals(completion.lookup(stringToCharSequence("one"), 2), 
-        "one/0.0", 
-        "oneness/1.0");
+    assertMatchEquals(completion.lookup(stringToCharSequence("one"), 2), "one/0.0", "oneness/1.0");
 
-    // 'four' is collected in a bucket and then again as an exact match. 
-    assertMatchEquals(completion.lookup(stringToCharSequence("four"), 2), 
-        "four/0.0", 
-        "fourblah/1.0");
+    // 'four' is collected in a bucket and then again as an exact match.
+    assertMatchEquals(
+        completion.lookup(stringToCharSequence("four"), 2), "four/0.0", "fourblah/1.0");
 
-    // Check reordering of exact matches. 
-    assertMatchEquals(completion.lookup(stringToCharSequence("four"), 4), 
+    // Check reordering of exact matches.
+    assertMatchEquals(
+        completion.lookup(stringToCharSequence("four"), 4),
         "four/0.0",
         "fourblah/1.0",
         "fourteen/1.0",
         "fourier/0.0");
 
     // 'one' is at the top after collecting all alphabetical results.
-    assertMatchEquals(completionAlphabetical.lookup(stringToCharSequence("one"), 2), 
-        "one/0.0", 
-        "oneness/1.0");
-    
+    assertMatchEquals(
+        completionAlphabetical.lookup(stringToCharSequence("one"), 2), "one/0.0", "oneness/1.0");
+
     // 'one' is not promoted after collecting two higher ranking results.
     FSTCompletion noPromotion = new FSTCompletion(completion.getFST(), true, false);
-    assertMatchEquals(noPromotion.lookup(stringToCharSequence("one"), 2),  
-        "oneness/1.0",
-        "onerous/1.0");
+    assertMatchEquals(
+        noPromotion.lookup(stringToCharSequence("one"), 2), "oneness/1.0", "onerous/1.0");
 
-    // 'one' is at the top after collecting all alphabetical results. 
-    assertMatchEquals(completionAlphabetical.lookup(stringToCharSequence("one"), 2), 
-        "one/0.0", 
-        "oneness/1.0");
+    // 'one' is at the top after collecting all alphabetical results.
+    assertMatchEquals(
+        completionAlphabetical.lookup(stringToCharSequence("one"), 2), "one/0.0", "oneness/1.0");
   }
 
   public void testMiss() throws Exception {
@@ -137,16 +128,19 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   public void testFullMatchList() throws Exception {
-    assertMatchEquals(completion.lookup(stringToCharSequence("one"), Integer.MAX_VALUE),
-        "oneness/1.0", 
+    assertMatchEquals(
+        completion.lookup(stringToCharSequence("one"), Integer.MAX_VALUE),
+        "oneness/1.0",
         "onerous/1.0",
-        "onesimus/1.0", 
+        "onesimus/1.0",
         "one/0.0");
   }
 
   public void testThreeByte() throws Exception {
-    String key = new String(new byte[] {
-        (byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2}, StandardCharsets.UTF_8);
+    String key =
+        new String(
+            new byte[] {(byte) 0xF0, (byte) 0xA4, (byte) 0xAD, (byte) 0xA2},
+            StandardCharsets.UTF_8);
     FSTCompletionBuilder builder = new FSTCompletionBuilder();
     builder.add(new BytesRef(key), 0);
 
@@ -158,7 +152,7 @@ public class FSTCompletionTest extends LuceneTestCase {
   public void testLargeInputConstantWeights() throws Exception {
     Directory tempDir = getDirectory();
     FSTCompletionLookup lookup = new FSTCompletionLookup(tempDir, "fst", 10, true);
-    
+
     Random r = random();
     List<Input> keys = new ArrayList<>();
     for (int i = 0; i < 5000; i++) {
@@ -169,16 +163,17 @@ public class FSTCompletionTest extends LuceneTestCase {
 
     // All the weights were constant, so all returned buckets must be constant, whatever they
     // are.
-    Long previous = null; 
+    Long previous = null;
     for (Input tf : keys) {
-      Long current = ((Number)lookup.get(TestUtil.bytesToCharSequence(tf.term, random()))).longValue();
+      Long current =
+          ((Number) lookup.get(TestUtil.bytesToCharSequence(tf.term, random()))).longValue();
       if (previous != null) {
         assertEquals(previous, current);
       }
       previous = current;
     }
     tempDir.close();
-  }  
+  }
 
   @Slow
   public void testMultilingualInput() throws Exception {
@@ -189,13 +184,21 @@ public class FSTCompletionTest extends LuceneTestCase {
     lookup.build(new InputArrayIterator(input));
     assertEquals(input.size(), lookup.getCount());
     for (Input tf : input) {
-      assertNotNull("Not found: " + tf.term.toString(), lookup.get(TestUtil.bytesToCharSequence(tf.term, random())));
-      assertEquals(tf.term.utf8ToString(), lookup.lookup(TestUtil.bytesToCharSequence(tf.term, random()), true, 1).get(0).key.toString());
+      assertNotNull(
+          "Not found: " + tf.term.toString(),
+          lookup.get(TestUtil.bytesToCharSequence(tf.term, random())));
+      assertEquals(
+          tf.term.utf8ToString(),
+          lookup
+              .lookup(TestUtil.bytesToCharSequence(tf.term, random()), true, 1)
+              .get(0)
+              .key
+              .toString());
     }
 
     List<LookupResult> result = lookup.lookup(stringToCharSequence("wit"), true, 5);
     assertEquals(5, result.size());
-    assertTrue(result.get(0).key.toString().equals("wit"));  // exact match.
+    assertTrue(result.get(0).key.toString().equals("wit")); // exact match.
     assertTrue(result.get(1).key.toString().equals("with")); // highest count.
     tempDir.close();
   }
@@ -209,7 +212,7 @@ public class FSTCompletionTest extends LuceneTestCase {
     List<Input> freqs = new ArrayList<>();
     Random rnd = random();
     for (int i = 0; i < 2500 + rnd.nextInt(2500); i++) {
-      int weight = rnd.nextInt(100); 
+      int weight = rnd.nextInt(100);
       freqs.add(new Input("" + rnd.nextLong(), weight));
     }
 
@@ -234,21 +237,24 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   private void assertMatchEquals(List<Completion> res, String... expected) {
-    String [] result = new String [res.size()];
+    String[] result = new String[res.size()];
     for (int i = 0; i < res.size(); i++) {
       result[i] = res.get(i).toString();
     }
 
     if (!Arrays.equals(stripScore(expected), stripScore(result))) {
       int colLen = Math.max(maxLen(expected), maxLen(result));
-      
+
       StringBuilder b = new StringBuilder();
-      String format = "%" + colLen + "s  " + "%" + colLen + "s\n"; 
+      String format = "%" + colLen + "s  " + "%" + colLen + "s\n";
       b.append(String.format(Locale.ROOT, format, "Expected", "Result"));
       for (int i = 0; i < Math.max(result.length, expected.length); i++) {
-        b.append(String.format(Locale.ROOT, format, 
-            i < expected.length ? expected[i] : "--", 
-            i < result.length ? result[i] : "--"));
+        b.append(
+            String.format(
+                Locale.ROOT,
+                format,
+                i < expected.length ? expected[i] : "--",
+                i < result.length ? result[i] : "--"));
       }
 
       System.err.println(b.toString());
@@ -257,7 +263,7 @@ public class FSTCompletionTest extends LuceneTestCase {
   }
 
   private String[] stripScore(String[] expected) {
-    String [] result = new String [expected.length];
+    String[] result = new String[expected.length];
     for (int i = 0; i < result.length; i++) {
       result[i] = expected[i].replaceAll("\\/[0-9\\.]+", "");
     }
@@ -266,12 +272,13 @@ public class FSTCompletionTest extends LuceneTestCase {
 
   private int maxLen(String[] result) {
     int len = 0;
-    for (String s : result)
+    for (String s : result) {
       len = Math.max(len, s.length());
+    }
     return len;
   }
 
-  private Directory getDirectory() {     
+  private Directory getDirectory() {
     return newDirectory();
   }
 }

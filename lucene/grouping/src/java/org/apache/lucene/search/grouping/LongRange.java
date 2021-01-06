@@ -19,10 +19,7 @@ package org.apache.lucene.search.grouping;
 
 import java.util.Objects;
 
-/**
- * Represents a contiguous range of long values, with an inclusive minimum and
- * exclusive maximum
- */
+/** Represents a contiguous range of long values, with an inclusive minimum and exclusive maximum */
 public class LongRange {
 
   /** The inclusive minimum value of this range */
@@ -30,9 +27,7 @@ public class LongRange {
   /** The exclusive maximum value of this range */
   public long max;
 
-  /**
-   * Creates a new double range, running from {@code min} inclusive to {@code max} exclusive
-   */
+  /** Creates a new double range, running from {@code min} inclusive to {@code max} exclusive */
   public LongRange(long min, long max) {
     this.min = min;
     this.max = max;

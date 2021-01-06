@@ -22,7 +22,8 @@ import java.util.concurrent.ExecutorService;
 public class TestParallelMatcher extends ConcurrentMatcherTestBase {
 
   @Override
-  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(ExecutorService executor, MatcherFactory<T> factory, int threads) {
+  protected <T extends QueryMatch> MatcherFactory<T> matcherFactory(
+      ExecutorService executor, MatcherFactory<T> factory, int threads) {
     return ParallelMatcher.factory(executor, factory, threads);
   }
 }

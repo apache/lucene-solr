@@ -18,7 +18,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
@@ -32,9 +31,9 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitSet;
 
 /**
- * A query that returns all the matching child documents for a specific parent document
- * indexed together in the same block. The provided child query determines which matching
- * child doc is being returned.
+ * A query that returns all the matching child documents for a specific parent document indexed
+ * together in the same block. The provided child query determines which matching child doc is being
+ * returned.
  *
  * @lucene.experimental
  */
@@ -47,11 +46,12 @@ public class ParentChildrenBlockJoinQuery extends Query {
   /**
    * Creates a <code>ParentChildrenBlockJoinQuery</code> instance
    *
-   * @param parentFilter  A filter identifying parent documents.
-   * @param childQuery    A child query that determines which child docs are matching
-   * @param parentDocId   The top level doc id of that parent to return children documents for
+   * @param parentFilter A filter identifying parent documents.
+   * @param childQuery A child query that determines which child docs are matching
+   * @param parentDocId The top level doc id of that parent to return children documents for
    */
-  public ParentChildrenBlockJoinQuery(BitSetProducer parentFilter, Query childQuery, int parentDocId) {
+  public ParentChildrenBlockJoinQuery(
+      BitSetProducer parentFilter, Query childQuery, int parentDocId) {
     this.parentFilter = parentFilter;
     this.childQuery = childQuery;
     this.parentDocId = parentDocId;
@@ -72,7 +72,7 @@ public class ParentChildrenBlockJoinQuery extends Query {
   public int hashCode() {
     int hash = classHash();
     hash = 31 * hash + parentFilter.hashCode();
-    hash = 31 * hash +  childQuery.hashCode();
+    hash = 31 * hash + childQuery.hashCode();
     hash = 31 * hash + parentDocId;
     return hash;
   }
@@ -98,14 +98,17 @@ public class ParentChildrenBlockJoinQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(
+      IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
+      throws IOException {
     final Weight childWeight = childQuery.createWeight(searcher, scoreMode, boost);
     final int readerIndex = ReaderUtil.subIndex(parentDocId, searcher.getIndexReader().leaves());
     return new Weight(this) {
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-        return Explanation.noMatch("Not implemented, use ToParentBlockJoinQuery explain why a document matched");
+        return Explanation.noMatch(
+            "Not implemented, use ToParentBlockJoinQuery explain why a document matched");
       }
 
       @Override
@@ -116,8 +119,10 @@ public class ParentChildrenBlockJoinQuery extends Query {
         }
 
         final int localParentDocId = parentDocId - context.docBase;
-        // If parentDocId == 0 then a parent doc doesn't have child docs, because child docs are stored
-        // before the parent doc and because parent doc is 0 we can safely assume that there are no child docs.
+        // If parentDocId == 0 then a parent doc doesn't have child docs, because child docs are
+        // stored
+        // before the parent doc and because parent doc is 0 we can safely assume that there are no
+        // child docs.
         if (localParentDocId == 0) {
           return null;
         }
@@ -134,43 +139,43 @@ public class ParentChildrenBlockJoinQuery extends Query {
           return null;
         }
         DocIdSetIterator childrenIterator = childrenScorer.iterator();
-        final DocIdSetIterator it = new DocIdSetIterator() {
+        final DocIdSetIterator it =
+            new DocIdSetIterator() {
 
-          int doc = -1;
+              int doc = -1;
 
-          @Override
-          public int docID() {
-            return doc;
-          }
-
-          @Override
-          public int nextDoc() throws IOException {
-            return advance(doc + 1);
-          }
-
-          @Override
-          public int advance(int target) throws IOException {
-            target = Math.max(firstChildDocId, target);
-            if (target >= localParentDocId) {
-              // We're outside the child nested scope, so it is done
-              return doc = NO_MORE_DOCS;
-            } else {
-              int advanced = childrenIterator.advance(target);
-              if (advanced >= localParentDocId) {
-                // We're outside the child nested scope, so it is done
-                return doc = NO_MORE_DOCS;
-              } else {
-                return doc = advanced;
+              @Override
+              public int docID() {
+                return doc;
               }
-            }
-          }
 
-          @Override
-          public long cost() {
-            return Math.min(childrenIterator.cost(), localParentDocId - firstChildDocId);
-          }
+              @Override
+              public int nextDoc() throws IOException {
+                return advance(doc + 1);
+              }
 
-        };
+              @Override
+              public int advance(int target) throws IOException {
+                target = Math.max(firstChildDocId, target);
+                if (target >= localParentDocId) {
+                  // We're outside the child nested scope, so it is done
+                  return doc = NO_MORE_DOCS;
+                } else {
+                  int advanced = childrenIterator.advance(target);
+                  if (advanced >= localParentDocId) {
+                    // We're outside the child nested scope, so it is done
+                    return doc = NO_MORE_DOCS;
+                  } else {
+                    return doc = advanced;
+                  }
+                }
+              }
+
+              @Override
+              public long cost() {
+                return Math.min(childrenIterator.cost(), localParentDocId - firstChildDocId);
+              }
+            };
         return new Scorer(this) {
           @Override
           public int docID() {
@@ -186,6 +191,7 @@ public class ParentChildrenBlockJoinQuery extends Query {
           public float getMaxScore(int upTo) throws IOException {
             return Float.POSITIVE_INFINITY;
           }
+
           @Override
           public DocIdSetIterator iterator() {
             return it;
@@ -195,9 +201,8 @@ public class ParentChildrenBlockJoinQuery extends Query {
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
-        return false;   // TODO delegate to BitSetProducer?
+        return false; // TODO delegate to BitSetProducer?
       }
-
     };
   }
 }

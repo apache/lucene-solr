@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -30,8 +29,8 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermState;
+import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -43,23 +42,24 @@ public class TestTermQuery extends LuceneTestCase {
 
   public void testEquals() throws IOException {
     QueryUtils.checkEqual(
-        new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "bar")));
+        new TermQuery(new Term("foo", "bar")), new TermQuery(new Term("foo", "bar")));
     QueryUtils.checkUnequal(
-        new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "baz")));
+        new TermQuery(new Term("foo", "bar")), new TermQuery(new Term("foo", "baz")));
     final CompositeReaderContext context;
     try (MultiReader multiReader = new MultiReader()) {
       context = multiReader.getContext();
     }
     QueryUtils.checkEqual(
         new TermQuery(new Term("foo", "bar")),
-        new TermQuery(new Term("foo", "bar"), TermStates.build(context, new Term("foo", "bar"), true)));
+        new TermQuery(
+            new Term("foo", "bar"), TermStates.build(context, new Term("foo", "bar"), true)));
   }
 
   public void testCreateWeightDoesNotSeekIfScoresAreNotNeeded() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     // segment that contains the term
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Store.NO));
@@ -77,19 +77,25 @@ public class TestTermQuery extends LuceneTestCase {
     FilterDirectoryReader noSeekReader = new NoSeekDirectoryReader(reader);
     IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
     Query query = new TermQuery(new Term("foo", "bar"));
-    AssertionError e = expectThrows(AssertionError.class,
-        () -> noSeekSearcher.createWeight(noSeekSearcher.rewrite(query), ScoreMode.COMPLETE, 1));
+    AssertionError e =
+        expectThrows(
+            AssertionError.class,
+            () ->
+                noSeekSearcher.createWeight(noSeekSearcher.rewrite(query), ScoreMode.COMPLETE, 1));
     assertEquals("no seek", e.getMessage());
 
-    noSeekSearcher.createWeight(noSeekSearcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1); // no exception
+    noSeekSearcher.createWeight(
+        noSeekSearcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1); // no exception
     IndexSearcher searcher = new IndexSearcher(reader);
     // use a collector rather than searcher.count() which would just read the
     // doc freq instead of creating a scorer
     TotalHitCountCollector collector = new TotalHitCountCollector();
     searcher.search(query, collector);
     assertEquals(1, collector.getTotalHits());
-    TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
-        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
+    TermQuery queryWithContext =
+        new TermQuery(
+            new Term("foo", "bar"),
+            TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
     collector = new TotalHitCountCollector();
     searcher.search(queryWithContext, collector);
     assertEquals(1, collector.getTotalHits());
@@ -103,7 +109,9 @@ public class TestTermQuery extends LuceneTestCase {
     assertNull(new TermQuery(new Term("foo", "bar")).getTermStates());
 
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     // segment that contains the term
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Store.NO));
@@ -121,8 +129,10 @@ public class TestTermQuery extends LuceneTestCase {
     FilterDirectoryReader noSeekReader = new NoSeekDirectoryReader(reader);
     IndexSearcher noSeekSearcher = new IndexSearcher(noSeekReader);
     Query query = new TermQuery(new Term("foo", "bar"));
-    TermQuery queryWithContext = new TermQuery(new Term("foo", "bar"),
-        TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
+    TermQuery queryWithContext =
+        new TermQuery(
+            new Term("foo", "bar"),
+            TermStates.build(reader.getContext(), new Term("foo", "bar"), true));
     assertNotNull(queryWithContext.getTermStates());
     IOUtils.close(reader, w, dir);
   }
@@ -130,12 +140,14 @@ public class TestTermQuery extends LuceneTestCase {
   private static class NoSeekDirectoryReader extends FilterDirectoryReader {
 
     public NoSeekDirectoryReader(DirectoryReader in) throws IOException {
-      super(in, new SubReaderWrapper() {
-        @Override
-        public LeafReader wrap(LeafReader reader) {
-          return new NoSeekLeafReader(reader);
-        }
-      });
+      super(
+          in,
+          new SubReaderWrapper() {
+            @Override
+            public LeafReader wrap(LeafReader reader) {
+              return new NoSeekLeafReader(reader);
+            }
+          });
     }
 
     @Override
@@ -147,7 +159,6 @@ public class TestTermQuery extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
     }
-    
   }
 
   private static class NoSeekLeafReader extends FilterLeafReader {
@@ -159,29 +170,34 @@ public class TestTermQuery extends LuceneTestCase {
     @Override
     public Terms terms(String field) throws IOException {
       Terms terms = super.terms(field);
-      return terms==null ? null : new FilterTerms(terms) {
-        @Override
-        public TermsEnum iterator() throws IOException {
-          return new FilterTermsEnum(super.iterator()) {
+      return terms == null
+          ? null
+          : new FilterTerms(terms) {
             @Override
-            public SeekStatus seekCeil(BytesRef text) throws IOException {
-              throw new AssertionError("no seek");
-            }
-            @Override
-            public void seekExact(BytesRef term, TermState state) throws IOException {
-              throw new AssertionError("no seek");
-            }
-            @Override
-            public boolean seekExact(BytesRef text) throws IOException {
-              throw new AssertionError("no seek");
-            }
-            @Override
-            public void seekExact(long ord) throws IOException {
-              throw new AssertionError("no seek");
+            public TermsEnum iterator() throws IOException {
+              return new FilterTermsEnum(super.iterator()) {
+                @Override
+                public SeekStatus seekCeil(BytesRef text) throws IOException {
+                  throw new AssertionError("no seek");
+                }
+
+                @Override
+                public void seekExact(BytesRef term, TermState state) throws IOException {
+                  throw new AssertionError("no seek");
+                }
+
+                @Override
+                public boolean seekExact(BytesRef text) throws IOException {
+                  throw new AssertionError("no seek");
+                }
+
+                @Override
+                public void seekExact(long ord) throws IOException {
+                  throw new AssertionError("no seek");
+                }
+              };
             }
           };
-        }
-      };
     }
 
     @Override
@@ -193,7 +209,6 @@ public class TestTermQuery extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
     }
-
-  };
-
+  }
+  ;
 }

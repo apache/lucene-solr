@@ -17,22 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultCellEditor;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -51,7 +35,22 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultCellEditor;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
+import javax.swing.UIManager;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -98,13 +97,14 @@ import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.util.BytesRef;
 
 /** Factory of add document dialog */
-public final class AddDocumentDialogFactory implements DialogOpener.DialogFactory, AddDocumentDialogOperator {
+public final class AddDocumentDialogFactory
+    implements DialogOpener.DialogFactory, AddDocumentDialogOperator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static AddDocumentDialogFactory instance;
 
-  private final static int ROW_COUNT = 50;
+  private static final int ROW_COUNT = 50;
 
   private final Preferences prefs;
 
@@ -136,11 +136,11 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
   private JDialog dialog;
 
-  public synchronized static AddDocumentDialogFactory getInstance() throws IOException {
+  public static synchronized AddDocumentDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new AddDocumentDialogFactory();
     }
-    return  instance;
+    return instance;
   }
 
   private AddDocumentDialogFactory() throws IOException {
@@ -150,7 +150,10 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     this.operatorRegistry = ComponentOperatorRegistry.getInstance();
     this.indexOptionsDialogFactory = IndexOptionsDialogFactory.getInstance();
     this.helpDialogFactory = HelpDialogFactory.getInstance();
-    this.newFieldList = IntStream.range(0, ROW_COUNT).mapToObj(i -> NewField.newInstance()).collect(Collectors.toList());
+    this.newFieldList =
+        IntStream.range(0, ROW_COUNT)
+            .mapToObj(i -> NewField.newInstance())
+            .collect(Collectors.toList());
 
     operatorRegistry.register(AddDocumentDialogOperator.class, this);
     indexHandler.addObserver(new Observer());
@@ -204,14 +207,16 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     analyzerHeader.setOpaque(false);
     analyzerHeader.add(new JLabel(MessageUtils.getLocalizedMessage("add_document.label.analyzer")));
     analyzerHeader.add(analyzerNameLbl);
-    JLabel changeLbl = new JLabel(MessageUtils.getLocalizedMessage("add_document.hyperlink.change"));
-    changeLbl.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        dialog.dispose();
-        tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
-      }
-    });
+    JLabel changeLbl =
+        new JLabel(MessageUtils.getLocalizedMessage("add_document.hyperlink.change"));
+    changeLbl.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            dialog.dispose();
+            tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
+          }
+        });
     analyzerHeader.add(FontUtils.toLinkText(changeLbl));
     panel.add(analyzerHeader);
 
@@ -245,20 +250,46 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
   private JTable fieldsTable() {
     JTable fieldsTable = new JTable();
-    TableUtils.setupTable(fieldsTable, ListSelectionModel.SINGLE_SELECTION, new FieldsTableModel(newFieldList), null, 30, 150, 120, 80);
+    TableUtils.setupTable(
+        fieldsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new FieldsTableModel(newFieldList),
+        null,
+        30,
+        150,
+        120,
+        80);
     fieldsTable.setShowGrid(true);
     JComboBox<Class<? extends IndexableField>> typesCombo = new JComboBox<>(presetFieldClasses);
-    typesCombo.setRenderer((list, value, index, isSelected, cellHasFocus) -> new JLabel(value.getSimpleName()));
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.TYPE.getIndex()).setCellEditor(new DefaultCellEditor(typesCombo));
+    typesCombo.setRenderer(
+        (list, value, index, isSelected, cellHasFocus) -> new JLabel(value.getSimpleName()));
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.TYPE.getIndex())
+        .setCellEditor(new DefaultCellEditor(typesCombo));
     for (int i = 0; i < fieldsTable.getModel().getRowCount(); i++) {
-      fieldsTable.getModel().setValueAt(TextField.class, i, FieldsTableModel.Column.TYPE.getIndex());
+      fieldsTable
+          .getModel()
+          .setValueAt(TextField.class, i, FieldsTableModel.Column.TYPE.getIndex());
     }
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.TYPE.getIndex()).setHeaderRenderer(
-        new HelpHeaderRenderer(
-            "About Type", "Select Field Class:",
-            createTypeHelpDialog(), helpDialogFactory, dialog));
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.TYPE.getIndex()).setCellRenderer(new TypeCellRenderer());
-    fieldsTable.getColumnModel().getColumn(FieldsTableModel.Column.OPTIONS.getIndex()).setCellRenderer(new OptionsCellRenderer(dialog, indexOptionsDialogFactory, newFieldList));
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.TYPE.getIndex())
+        .setHeaderRenderer(
+            new HelpHeaderRenderer(
+                "About Type",
+                "Select Field Class:",
+                createTypeHelpDialog(),
+                helpDialogFactory,
+                dialog));
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.TYPE.getIndex())
+        .setCellRenderer(new TypeCellRenderer());
+    fieldsTable
+        .getColumnModel()
+        .getColumn(FieldsTableModel.Column.OPTIONS.getIndex())
+        .setCellRenderer(new OptionsCellRenderer(dialog, indexOptionsDialogFactory, newFieldList));
     return fieldsTable;
   }
 
@@ -271,28 +302,30 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
     JPanel header = new JPanel();
     header.setOpaque(false);
     header.setLayout(new BoxLayout(header, BoxLayout.PAGE_AXIS));
-    String[] typeList = new String[]{
-        "TextField",
-        "StringField",
-        "IntPoint",
-        "LongPoint",
-        "FloatPoint",
-        "DoublePoint",
-        "SortedDocValuesField",
-        "SortedSetDocValuesField",
-        "NumericDocValuesField",
-        "SortedNumericDocValuesField",
-        "StoredField",
-        "Field"
-    };
+    String[] typeList =
+        new String[] {
+          "TextField",
+          "StringField",
+          "IntPoint",
+          "LongPoint",
+          "FloatPoint",
+          "DoublePoint",
+          "SortedDocValuesField",
+          "SortedSetDocValuesField",
+          "NumericDocValuesField",
+          "SortedNumericDocValuesField",
+          "StoredField",
+          "Field"
+        };
     JPanel wrapper1 = new JPanel(new FlowLayout(FlowLayout.LEADING));
     wrapper1.setOpaque(false);
     JComboBox<String> typeCombo = new JComboBox<>(typeList);
     typeCombo.setSelectedItem(typeList[0]);
-    typeCombo.addActionListener(e -> {
-      String selected = (String) typeCombo.getSelectedItem();
-      descTA.setText(MessageUtils.getLocalizedMessage("help.fieldtype." + selected));
-    });
+    typeCombo.addActionListener(
+        e -> {
+          String selected = (String) typeCombo.getSelectedItem();
+          descTA.setText(MessageUtils.getLocalizedMessage("help.fieldtype." + selected));
+        });
     wrapper1.add(typeCombo);
     header.add(wrapper1);
     JPanel wrapper2 = new JPanel(new FlowLayout(FlowLayout.LEADING));
@@ -325,13 +358,21 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private final Class<? extends IndexableField>[] presetFieldClasses = new Class[]{
-      TextField.class, StringField.class,
-      IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class,
-      SortedDocValuesField.class, SortedSetDocValuesField.class,
-      NumericDocValuesField.class, SortedNumericDocValuesField.class,
-      StoredField.class, Field.class
-  };
+  private final Class<? extends IndexableField>[] presetFieldClasses =
+      new Class[] {
+        TextField.class,
+        StringField.class,
+        IntPoint.class,
+        LongPoint.class,
+        FloatPoint.class,
+        DoublePoint.class,
+        SortedDocValuesField.class,
+        SortedSetDocValuesField.class,
+        NumericDocValuesField.class,
+        SortedNumericDocValuesField.class,
+        StoredField.class,
+        Field.class
+      };
 
   @Override
   public void setAnalyzer(Analyzer analyzer) {
@@ -341,11 +382,12 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
   private class ListenerFunctions {
 
     void addDocument(ActionEvent e) {
-      List<NewField> validFields = newFieldList.stream()
-          .filter(nf -> !nf.isDeleted())
-          .filter(nf -> !StringUtils.isNullOrEmpty(nf.getName()))
-          .filter(nf -> !StringUtils.isNullOrEmpty(nf.getValue()))
-          .collect(Collectors.toList());
+      List<NewField> validFields =
+          newFieldList.stream()
+              .filter(nf -> !nf.isDeleted())
+              .filter(nf -> !StringUtils.isNullOrEmpty(nf.getName()))
+              .filter(nf -> !StringUtils.isNullOrEmpty(nf.getValue()))
+              .collect(Collectors.toList());
       if (validFields.isEmpty()) {
         infoTA.setText("Please add one or more fields. Name and Value are both required.");
         return;
@@ -391,12 +433,12 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
         constr = nf.getType().getConstructor(String.class, double[].class);
         double[] values = NumericUtils.convertToDoubleArray(nf.getValue(), false);
         return constr.newInstance(nf.getName(), values);
-      } else if (nf.getType().equals(SortedDocValuesField.class) ||
-          nf.getType().equals(SortedSetDocValuesField.class)) {
+      } else if (nf.getType().equals(SortedDocValuesField.class)
+          || nf.getType().equals(SortedSetDocValuesField.class)) {
         constr = nf.getType().getConstructor(String.class, BytesRef.class);
         return constr.newInstance(nf.getName(), new BytesRef(nf.getValue()));
-      } else if (nf.getType().equals(NumericDocValuesField.class) ||
-          nf.getType().equals(SortedNumericDocValuesField.class)) {
+      } else if (nf.getType().equals(NumericDocValuesField.class)
+          || nf.getType().equals(SortedNumericDocValuesField.class)) {
         constr = nf.getType().getConstructor(String.class, long.class);
         long value = NumericUtils.tryConvertToLongValue(nf.getValue());
         return constr.newInstance(nf.getName(), value);
@@ -414,12 +456,16 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
     private void addDocument(Document doc) {
       try {
-        Analyzer analyzer = operatorRegistry.get(AnalysisTabOperator.class)
-            .map(AnalysisTabOperator::getCurrentAnalyzer)
-            .orElse(new StandardAnalyzer());
+        Analyzer analyzer =
+            operatorRegistry
+                .get(AnalysisTabOperator.class)
+                .map(AnalysisTabOperator::getCurrentAnalyzer)
+                .orElse(new StandardAnalyzer());
         toolsModel.addDocument(doc, analyzer);
         indexHandler.reOpen();
-        operatorRegistry.get(DocumentsTabOperator.class).ifPresent(DocumentsTabOperator::displayLatestDoc);
+        operatorRegistry
+            .get(DocumentsTabOperator.class)
+            .ifPresent(DocumentsTabOperator::displayLatestDoc);
         tabSwitcher.switchTab(TabbedPaneProvider.Tab.DOCUMENTS);
         infoTA.setText(MessageUtils.getLocalizedMessage("add_document.message.success"));
         addBtn.setEnabled(false);
@@ -432,14 +478,15 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
         throw new LukeException(e.getMessage(), e);
       }
     }
-
   }
 
   private class Observer implements IndexObserver {
 
     @Override
     public void openIndex(LukeState state) {
-      toolsModel = toolsFactory.newInstance(state.getIndexReader(), state.useCompound(), state.keepAllCommits());
+      toolsModel =
+          toolsFactory.newInstance(
+              state.getIndexReader(), state.useCompound(), state.keepAllCommits());
     }
 
     @Override
@@ -481,7 +528,6 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
       public Class<?> getType() {
         return type;
       }
-
     }
 
     private final List<NewField> newFieldList;
@@ -533,7 +579,8 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
     @SuppressWarnings("unchecked")
     @Override
-    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+    public Component getTableCellRendererComponent(
+        JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
       String simpleName = ((Class<? extends IndexableField>) value).getSimpleName();
       return new JLabel(simpleName);
     }
@@ -551,7 +598,10 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
     private JTable table;
 
-    public OptionsCellRenderer(JDialog dialog, IndexOptionsDialogFactory indexOptionsDialogFactory, List<NewField> newFieldList) {
+    public OptionsCellRenderer(
+        JDialog dialog,
+        IndexOptionsDialogFactory indexOptionsDialogFactory,
+        List<NewField> newFieldList) {
       this.dialog = dialog;
       this.indexOptionsDialogFactory = indexOptionsDialogFactory;
       this.newFieldList = newFieldList;
@@ -559,7 +609,8 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
 
     @Override
     @SuppressWarnings("unchecked")
-    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+    public Component getTableCellRendererComponent(
+        JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
       if (table != null && this.table != table) {
         this.table = table;
         final JTableHeader header = table.getTableHeader();
@@ -569,25 +620,30 @@ public final class AddDocumentDialogFactory implements DialogOpener.DialogFactor
           panel.add(new JLabel(value.toString()));
 
           JLabel optionsLbl = new JLabel("options");
-          table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-              int row = table.rowAtPoint(e.getPoint());
-              int col = table.columnAtPoint(e.getPoint());
-              if (row >= 0 && col == FieldsTableModel.Column.OPTIONS.getIndex()) {
-                String title = "Index options for:";
-                new DialogOpener<>(indexOptionsDialogFactory).open(dialog, title, 500, 500,
-                    (factory) -> {
-                      factory.setNewField(newFieldList.get(row));
-                    });
-              }
-            }
-          });
+          table.addMouseListener(
+              new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                  int row = table.rowAtPoint(e.getPoint());
+                  int col = table.columnAtPoint(e.getPoint());
+                  if (row >= 0 && col == FieldsTableModel.Column.OPTIONS.getIndex()) {
+                    String title = "Index options for:";
+                    new DialogOpener<>(indexOptionsDialogFactory)
+                        .open(
+                            dialog,
+                            title,
+                            500,
+                            500,
+                            (factory) -> {
+                              factory.setNewField(newFieldList.get(row));
+                            });
+                  }
+                }
+              });
           panel.add(FontUtils.toLinkText(optionsLbl));
         }
       }
       return panel;
     }
-
   }
 }

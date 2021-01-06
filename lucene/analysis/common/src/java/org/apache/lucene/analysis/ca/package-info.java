@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Catalan.
- */
+/** Analyzer for Catalan. */
 package org.apache.lucene.analysis.ca;

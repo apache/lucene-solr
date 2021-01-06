@@ -26,35 +26,30 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Token for a replication session, for guaranteeing that source replicated
- * files will be kept safe until the replication completes.
- * 
+ * Token for a replication session, for guaranteeing that source replicated files will be kept safe
+ * until the replication completes.
+ *
  * @see Replicator#checkForUpdate(String)
  * @see Replicator#release(String)
  * @see LocalReplicator#DEFAULT_SESSION_EXPIRATION_THRESHOLD
- * 
  * @lucene.experimental
  */
 public final class SessionToken {
-  
+
   /**
-   * ID of this session.
-   * Should be passed when releasing the session, thereby acknowledging the 
+   * ID of this session. Should be passed when releasing the session, thereby acknowledging the
    * {@link Replicator Replicator} that this session is no longer in use.
+   *
    * @see Replicator#release(String)
    */
   public final String id;
-  
-  /**
-   * @see Revision#getVersion()
-   */
+
+  /** @see Revision#getVersion() */
   public final String version;
-  
-  /**
-   * @see Revision#getSourceFiles()
-   */
-  public final Map<String,List<RevisionFile>> sourceFiles;
-  
+
+  /** @see Revision#getSourceFiles() */
+  public final Map<String, List<RevisionFile>> sourceFiles;
+
   /** Constructor which deserializes from the given {@link DataInput}. */
   public SessionToken(DataInput in) throws IOException {
     this.id = in.readUTF();
@@ -75,20 +70,20 @@ public final class SessionToken {
       --numSources;
     }
   }
-  
+
   /** Constructor with the given id and revision. */
   public SessionToken(String id, Revision revision) {
     this.id = id;
     this.version = revision.getVersion();
     this.sourceFiles = revision.getSourceFiles();
   }
-  
+
   /** Serialize the token data for communication between server and client. */
   public void serialize(DataOutput out) throws IOException {
     out.writeUTF(id);
     out.writeUTF(version);
     out.writeInt(sourceFiles.size());
-    for (Entry<String,List<RevisionFile>> e : sourceFiles.entrySet()) {
+    for (Entry<String, List<RevisionFile>> e : sourceFiles.entrySet()) {
       out.writeUTF(e.getKey());
       List<RevisionFile> files = e.getValue();
       out.writeInt(files.size());
@@ -98,10 +93,9 @@ public final class SessionToken {
       }
     }
   }
-  
+
   @Override
   public String toString() {
     return "id=" + id + " version=" + version + " files=" + sourceFiles;
   }
-  
 }

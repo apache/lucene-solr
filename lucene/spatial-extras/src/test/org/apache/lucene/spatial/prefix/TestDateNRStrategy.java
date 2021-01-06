@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.spatial.prefix;
 
-import java.io.IOException;
-import java.util.Calendar;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import java.io.IOException;
+import java.util.Calendar;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.spatial4j.shape.Shape;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class TestDateNRStrategy extends RandomSpatialOpStrategyTestCase {
 
@@ -43,7 +42,7 @@ public class TestDateNRStrategy extends RandomSpatialOpStrategyTestCase {
     super.setUp();
     tree = new DateRangePrefixTree(DateRangePrefixTree.DEFAULT_CAL);
     strategy = new NumberRangePrefixTreeStrategy(tree, "dateRange");
-    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(randomInt() % 5 == 0);
+    ((NumberRangePrefixTreeStrategy) strategy).setPointsOnly(randomInt() % 5 == 0);
     Calendar tmpCal = tree.newCal();
     int randomCalWindowField = randomIntBetween(Calendar.YEAR, Calendar.MILLISECOND);
     tmpCal.add(randomCalWindowField, 2_000);
@@ -71,43 +70,43 @@ public class TestDateNRStrategy extends RandomSpatialOpStrategyTestCase {
   @Test
   public void testWithinSame() throws IOException {
     Shape shape = randomIndexedShape();
-    testOperation(
-        shape,
-        SpatialOperation.IsWithin,
-        shape, true);//is within itself
+    testOperation(shape, SpatialOperation.IsWithin, shape, true); // is within itself
   }
 
   @Test
   public void testWorld() throws IOException {
-    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(false);
+    ((NumberRangePrefixTreeStrategy) strategy).setPointsOnly(false);
     testOperation(
-        tree.toShape(tree.newCal()),//world matches everything
+        tree.toShape(tree.newCal()), // world matches everything
         SpatialOperation.Contains,
-        tree.toShape(randomCalendar()), true);
+        tree.toShape(randomCalendar()),
+        true);
   }
 
   @Test
   public void testBugInitIterOptimization() throws Exception {
-    ((NumberRangePrefixTreeStrategy)strategy).setPointsOnly(false);
-    //bug due to fast path initIter() optimization
+    ((NumberRangePrefixTreeStrategy) strategy).setPointsOnly(false);
+    // bug due to fast path initIter() optimization
     testOperation(
         tree.parseShape("[2014-03-27T23 TO 2014-04-01T01]"),
         SpatialOperation.Intersects,
-        tree.parseShape("[2014-04 TO 2014-04-01T02]"), true);
+        tree.parseShape("[2014-04 TO 2014-04-01T02]"),
+        true);
   }
 
   @Test
   public void testLastMillionYearPeriod() throws Exception {
     testOperation(
-        tree.parseShape("+292220922-05-17T18:01:57.572"), // a year in the last million year period (>=292M)
+        tree.parseShape(
+            "+292220922-05-17T18:01:57.572"), // a year in the last million year period (>=292M)
         SpatialOperation.Intersects,
-        tree.parseShape("[1970 TO *]"), true
-    );
+        tree.parseShape("[1970 TO *]"),
+        true);
   }
 
   @Override
   protected Shape randomIndexedShape() {
-    if (((NumberRangePrefixTreeStrategy)strategy).isPointsOnly()) {
+    if (((NumberRangePrefixTreeStrategy) strategy).isPointsOnly()) {
       Calendar cal = tree.newCal();
       cal.setTimeInMillis(random().nextLong());
       return tree.toShape(cal);
@@ -145,10 +144,9 @@ public class TestDateNRStrategy extends RandomSpatialOpStrategyTestCase {
     Calendar cal = tree.newCal();
     cal.setTimeInMillis(random().nextLong() % randomCalWindowMs);
     try {
-      tree.clearFieldsAfter(cal, random().nextInt(Calendar.FIELD_COUNT+1)-1);
+      tree.clearFieldsAfter(cal, random().nextInt(Calendar.FIELD_COUNT + 1) - 1);
     } catch (AssertionError e) {
-      if (!e.getMessage().equals("Calendar underflow"))
-        throw e;
+      if (!e.getMessage().equals("Calendar underflow")) throw e;
     }
     return cal;
   }

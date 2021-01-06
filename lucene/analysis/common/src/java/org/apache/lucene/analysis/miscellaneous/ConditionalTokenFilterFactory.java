@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Abstract parent class for analysis factories that create {@link ConditionalTokenFilter} instances
@@ -34,7 +33,8 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  * @since 7.4.0
  * @lucene.spi {@value #NAME}
  */
-public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   /** SPI name */
   public static final String NAME = "conditional";
@@ -51,8 +51,8 @@ public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory i
   }
 
   /**
-   * Set the inner filter factories to produce the {@link TokenFilter}s that will be
-   * wrapped by the {@link ConditionalTokenFilter}
+   * Set the inner filter factories to produce the {@link TokenFilter}s that will be wrapped by the
+   * {@link ConditionalTokenFilter}
    */
   public void setInnerFilters(List<TokenFilterFactory> innerFilters) {
     this.innerFilters = innerFilters;
@@ -63,34 +63,31 @@ public abstract class ConditionalTokenFilterFactory extends TokenFilterFactory i
     if (innerFilters == null || innerFilters.size() == 0) {
       return input;
     }
-    Function<TokenStream, TokenStream> innerStream = ts -> {
-      for (TokenFilterFactory factory : innerFilters) {
-        ts = factory.create(ts);
-      }
-      return ts;
-    };
+    Function<TokenStream, TokenStream> innerStream =
+        ts -> {
+          for (TokenFilterFactory factory : innerFilters) {
+            ts = factory.create(ts);
+          }
+          return ts;
+        };
     return create(input, innerStream);
   }
 
   @Override
   public final void inform(ResourceLoader loader) throws IOException {
-    if (innerFilters == null)
-      return;
+    if (innerFilters == null) return;
     for (TokenFilterFactory factory : innerFilters) {
       if (factory instanceof ResourceLoaderAware) {
-        ((ResourceLoaderAware)factory).inform(loader);
+        ((ResourceLoaderAware) factory).inform(loader);
       }
     }
     doInform(loader);
   }
 
-  /**
-   * Initialises this component with the corresponding {@link ResourceLoader}
-   */
-  protected void doInform(ResourceLoader loader) throws IOException { }
+  /** Initialises this component with the corresponding {@link ResourceLoader} */
+  protected void doInform(ResourceLoader loader) throws IOException {}
 
-  /**
-   * Modify the incoming {@link TokenStream} with a {@link ConditionalTokenFilter}
-   */
-  protected abstract ConditionalTokenFilter create(TokenStream input, Function<TokenStream, TokenStream> inner);
+  /** Modify the incoming {@link TokenStream} with a {@link ConditionalTokenFilter} */
+  protected abstract ConditionalTokenFilter create(
+      TokenStream input, Function<TokenStream, TokenStream> inner);
 }

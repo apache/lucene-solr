@@ -18,12 +18,12 @@
 package org.apache.lucene.analysis.minhash;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * {@link TokenFilterFactory} for {@link MinHashFilter}.
+ *
  * @since 6.2.0
  * @lucene.spi {@value #NAME}
  */
@@ -33,17 +33,15 @@ public class MinHashFilterFactory extends TokenFilterFactory {
   public static final String NAME = "minHash";
 
   private int hashCount = MinHashFilter.DEFAULT_HASH_COUNT;
-  
+
   private int bucketCount = MinHashFilter.DEFAULT_BUCKET_COUNT;
 
   private int hashSetSize = MinHashFilter.DEFAULT_HASH_SET_SIZE;
-  
+
   private boolean withRotation;
 
-  /**
-   * Create a {@link MinHashFilterFactory}.
-   */
-  public MinHashFilterFactory(Map<String,String> args) {
+  /** Create a {@link MinHashFilterFactory}. */
+  public MinHashFilterFactory(Map<String, String> args) {
     super(args);
     hashCount = getInt(args, "hashCount", MinHashFilter.DEFAULT_HASH_COUNT);
     bucketCount = getInt(args, "bucketCount", MinHashFilter.DEFAULT_BUCKET_COUNT);
@@ -58,12 +56,11 @@ public class MinHashFilterFactory extends TokenFilterFactory {
 
   /*
    * (non-Javadoc)
-   * 
+   *
    * @see org.apache.lucene.analysis.TokenFilterFactory#create(org.apache.lucene.analysis.TokenStream)
    */
   @Override
   public TokenStream create(TokenStream input) {
     return new MinHashFilter(input, hashCount, bucketCount, hashSetSize, withRotation);
   }
-
 }

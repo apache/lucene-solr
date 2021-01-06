@@ -51,7 +51,7 @@ Even though the child documents in these examples are provided syntactically as 
 
 //
 // DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
-// INCLUDING THE SEMI-EQUIVILENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
+// INCLUDING THE SEMI-EQUIVALENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
 //
 [.dynamic-tabs]
 --
@@ -228,21 +228,21 @@ There are several additional schema considerations that should be considered for
 
 * Nested child documents are very much documents in their own right even if certain nested documents hold different information from the parent, Therefore:
 ** All field names in the schema can only be configured in one -- different types of child documents can not have the same field name configured in different ways.
-** It may be infeasible to use `required` for any field names that aren't reqiured for all types of documents.
+** It may be infeasible to use `required` for any field names that aren't required for all types of documents.
 ** Even child documents need a _globally_ unique `id`.
 * `\_root_` must be configured to either be stored (`stored="true"`) or use doc values (`docValues="true"`) to enable <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>.
 ** Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
-* `\_nest_path_` is an optional field that (if definied) will be populated by Solr automatically with the ancestor path of each non-root document.
+* `\_nest_path_` is an optional field that (if defined) will be populated by Solr automatically with the ancestor path of each non-root document.
 +
 [source,xml]
 ----
 <fieldType name="_nest_path_" class="solr.NestPathField" />
 <field name="_nest_path_" type="_nest_path_" />`
 ----
-** This field is neccessary if you wish to use <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>
-** This field is neccessary in order for Solr to properly record & reconstruct the nested relationship of documents when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
+** This field is necessary if you wish to use <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>
+** This field is necessary in order for Solr to properly record & reconstruct the nested relationship of documents when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
 *** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
-** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
+** If you do not use `\_nest_path_` it is strongly recommended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
 * `\_nest_parent_` is an optional field that (if defined) will be populated by Solr automatically to store the `id` of each document's _immediate_ parent document (if there is one).
 +
 [source,xml]
@@ -258,13 +258,13 @@ When using SolrCloud it is a _VERY_ good idea to use <<shards-and-indexing-data-
 
 == Maintaining Integrity with Updates and Deletes
 
-Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externaly by an indexing client completely reindexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externally by an indexing client completely reindexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
 
 Clients should however be very careful to *never* add a root document that has the same `id` of a child document -- or vice-versa.  Solr does not prevent clients from attempting this, but *_it will violate integrity assumptions that Solr expects._*
 
 To delete an entire block of documents, you can simply delete-by-ID using the `id` of the root document.  Delete-by-ID will not work with the `id` of a child document, since only root document IDs are considered. (Instead, use <<updating-parts-of-documents#updating-child-documents,atomic updates>> to remove the child document from it's parent)
 
-If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is strutured to ensure no descendent children remain of any documents that are being deleted.  *_Doing otherwise will violate integrity assumptions that Solr expects._*
+If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is structured to ensure no descendent children remain of any documents that are being deleted.  *_Doing otherwise will violate integrity assumptions that Solr expects._*
 
 
 

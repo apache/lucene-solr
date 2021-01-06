@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
@@ -43,8 +42,7 @@ public final class Lucene90VectorFormat extends VectorFormat {
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor */
-  public Lucene90VectorFormat() {
-  }
+  public Lucene90VectorFormat() {}
 
   @Override
   public VectorWriter fieldsWriter(SegmentWriteState state) throws IOException {
@@ -55,5 +53,4 @@ public final class Lucene90VectorFormat extends VectorFormat {
   public VectorReader fieldsReader(SegmentReadState state) throws IOException {
     return new Lucene90VectorReader(state);
   }
-
 }

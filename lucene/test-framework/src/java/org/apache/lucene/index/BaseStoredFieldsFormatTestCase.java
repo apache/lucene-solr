@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,16 +30,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -47,20 +49,17 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-
 /**
- * Base class aiming at testing {@link StoredFieldsFormat stored fields formats}.
- * To test a new format, all you need is to register a new {@link Codec} which
- * uses it and extend this class and override {@link #getCodec()}.
+ * Base class aiming at testing {@link StoredFieldsFormat stored fields formats}. To test a new
+ * format, all you need is to register a new {@link Codec} which uses it and extend this class and
+ * override {@link #getCodec()}.
+ *
  * @lucene.experimental
  */
 public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormatTestCase {
@@ -76,8 +75,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testRandomStoredFields() throws IOException {
     Directory dir = newDirectory();
     Random rand = random();
-    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(TestUtil.nextInt(rand, 5, 20)));
-    //w.w.setNoCFSRatio(0.0);
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            rand,
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(TestUtil.nextInt(rand, 5, 20)));
+    // w.w.setNoCFSRatio(0.0);
     final int docCount = atLeast(200);
     final int fieldCount = TestUtil.nextInt(rand, 1, 5);
 
@@ -87,11 +91,11 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     customType.setTokenized(false);
     Field idField = newField("id", "", customType);
 
-    for(int i=0;i<fieldCount;i++) {
+    for (int i = 0; i < fieldCount; i++) {
       fieldIDs.add(i);
     }
 
-    final Map<String,Document> docs = new HashMap<>();
+    final Map<String, Document> docs = new HashMap<>();
 
     if (VERBOSE) {
       System.out.println("TEST: build index docCount=" + docCount);
@@ -99,21 +103,21 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
 
     FieldType customType2 = new FieldType();
     customType2.setStored(true);
-    for(int i=0;i<docCount;i++) {
+    for (int i = 0; i < docCount; i++) {
       Document doc = new Document();
       doc.add(idField);
-      final String id = ""+i;
+      final String id = "" + i;
       idField.setStringValue(id);
       docs.put(id, doc);
       if (VERBOSE) {
         System.out.println("TEST: add doc id=" + id);
       }
 
-      for(int field: fieldIDs) {
+      for (int field : fieldIDs) {
         final String s;
         if (rand.nextInt(4) != 3) {
           s = TestUtil.randomUnicodeString(rand, 1000);
-          doc.add(newField("f"+field, s, customType2));
+          doc.add(newField("f" + field, s, customType2));
         } else {
           s = null;
         }
@@ -124,7 +128,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         Collections.shuffle(fieldIDs, random());
       }
       if (rand.nextInt(5) == 3 && i > 0) {
-        final String delID = ""+rand.nextInt(i);
+        final String delID = "" + rand.nextInt(i);
         if (VERBOSE) {
           System.out.println("TEST: delete doc id=" + delID);
         }
@@ -139,7 +143,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     if (docs.size() > 0) {
       String[] idsList = docs.keySet().toArray(new String[docs.size()]);
 
-      for(int x=0;x<2;x++) {
+      for (int x = 0; x < 2; x++) {
         DirectoryReader r = maybeWrapWithMergingReader(w.getReader());
         IndexSearcher s = newSearcher(r);
 
@@ -148,7 +152,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         }
 
         int num = atLeast(100);
-        for(int iter=0;iter<num;iter++) {
+        for (int iter = 0; iter < num; iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
           if (VERBOSE) {
             System.out.println("TEST: test id=" + testID);
@@ -157,8 +161,11 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
           assertEquals(1, hits.totalHits.value);
           Document doc = r.document(hits.scoreDocs[0].doc);
           Document docExp = docs.get(testID);
-          for(int i=0;i<fieldCount;i++) {
-            assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
+          for (int i = 0; i < fieldCount; i++) {
+            assertEquals(
+                "doc " + testID + ", field f" + fieldCount + " is wrong",
+                docExp.get("f" + i),
+                doc.get("f" + i));
           }
         }
         r.close();
@@ -168,7 +175,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     w.close();
     dir.close();
   }
-  
+
   // LUCENE-1727: make sure doc fields are stored in order
   public void testStoredFieldsOrder() throws Throwable {
     Directory d = newDirectory();
@@ -203,14 +210,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     w.close();
     d.close();
   }
-  
+
   // LUCENE-1219
   public void testBinaryFieldOffsetLength() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     byte[] b = new byte[50];
-    for(int i=0;i<50;i++)
-      b[i] = (byte) (i+77);
+    for (int i = 0; i < 50; i++) b[i] = (byte) (i + 77);
 
     Document doc = new Document();
     Field f = new StoredField("binary", b, 10, 17);
@@ -233,14 +239,14 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     ir.close();
     dir.close();
   }
-  
+
   public void testNumericField() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
     final Class<?>[] typeAnswers = new Class<?>[numDocs];
-    for(int id=0;id<numDocs;id++) {
+    for (int id = 0; id < numDocs; id++) {
       Document doc = new Document();
       final Field nf;
       final Number answer;
@@ -282,13 +288,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     final DirectoryReader r = maybeWrapWithMergingReader(w.getReader());
     w.close();
-    
+
     assertEquals(numDocs, r.numDocs());
 
-    for(LeafReaderContext ctx : r.leaves()) {
+    for (LeafReaderContext ctx : r.leaves()) {
       final LeafReader sub = ctx.reader();
       final NumericDocValues ids = DocValues.getNumeric(sub, "id");
-      for(int docID=0;docID<sub.numDocs();docID++) {
+      for (int docID = 0; docID < sub.numDocs(); docID++) {
         final Document doc = sub.document(docID);
         final Field f = (Field) doc.getField("nf");
         assertTrue("got f=" + f, f instanceof StoredField);
@@ -316,13 +322,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     r.close();
     dir.close();
   }
-  
+
   public void testReadSkip() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-    
+
     FieldType ft = new FieldType();
     ft.setStored(true);
     ft.freeze();
@@ -334,14 +340,14 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final float f = random().nextFloat();
     final double d = random().nextDouble();
 
-    List<Field> fields = Arrays.asList(
-        new Field("bytes", bytes, ft),
-        new Field("string", string, ft),
-        new StoredField("long", l),
-        new StoredField("int", i),
-        new StoredField("float", f),
-        new StoredField("double", d)
-    );
+    List<Field> fields =
+        Arrays.asList(
+            new Field("bytes", bytes, ft),
+            new Field("string", string, ft),
+            new StoredField("long", l),
+            new StoredField("int", i),
+            new StoredField("float", f),
+            new StoredField("double", d));
 
     for (int k = 0; k < 100; ++k) {
       Document doc = new Document();
@@ -369,13 +375,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.close();
     dir.close();
   }
-  
+
   public void testEmptyDocs() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-    
+
     // make sure that the fact that documents might be empty is not a problem
     final Document emptyDoc = new Document();
     final int numDocs = random().nextBoolean() ? 1 : atLeast(1000);
@@ -390,17 +396,17 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       assertTrue(doc.getFields().isEmpty());
     }
     rd.close();
-    
+
     iw.close();
     dir.close();
   }
-  
+
   public void testConcurrentReads() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-    
+
     // make sure the readers are properly cloned
     final Document doc = new Document();
     final Field field = new StringField("fld", "", Store.YES);
@@ -419,39 +425,42 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final List<Thread> readThreads = new ArrayList<>();
     final AtomicReference<Exception> ex = new AtomicReference<>();
     for (int i = 0; i < concurrentReads; ++i) {
-      readThreads.add(new Thread() {
+      readThreads.add(
+          new Thread() {
 
-        int[] queries;
+            int[] queries;
 
-        {
-          queries = new int[readsPerThread];
-          for (int i = 0; i < queries.length; ++i) {
-            queries[i] = random().nextInt(numDocs);
-          }
-        }
-
-        @Override
-        public void run() {
-          for (int q : queries) {
-            final Query query = new TermQuery(new Term("fld", "" + q));
-            try {
-              final TopDocs topDocs = searcher.search(query, 1);
-              if (topDocs.totalHits.value != 1) {
-                throw new IllegalStateException("Expected 1 hit, got " + topDocs.totalHits.value);
+            {
+              queries = new int[readsPerThread];
+              for (int i = 0; i < queries.length; ++i) {
+                queries[i] = random().nextInt(numDocs);
               }
-              final Document sdoc = rd.document(topDocs.scoreDocs[0].doc);
-              if (sdoc == null || sdoc.get("fld") == null) {
-                throw new IllegalStateException("Could not find document " + q);
-              }
-              if (!Integer.toString(q).equals(sdoc.get("fld"))) {
-                throw new IllegalStateException("Expected " + q + ", but got " + sdoc.get("fld"));
-              }
-            } catch (Exception e) {
-              ex.compareAndSet(null, e);
             }
-          }
-        }
-      });
+
+            @Override
+            public void run() {
+              for (int q : queries) {
+                final Query query = new TermQuery(new Term("fld", "" + q));
+                try {
+                  final TopDocs topDocs = searcher.search(query, 1);
+                  if (topDocs.totalHits.value != 1) {
+                    throw new IllegalStateException(
+                        "Expected 1 hit, got " + topDocs.totalHits.value);
+                  }
+                  final Document sdoc = rd.document(topDocs.scoreDocs[0].doc);
+                  if (sdoc == null || sdoc.get("fld") == null) {
+                    throw new IllegalStateException("Could not find document " + q);
+                  }
+                  if (!Integer.toString(q).equals(sdoc.get("fld"))) {
+                    throw new IllegalStateException(
+                        "Expected " + q + ", but got " + sdoc.get("fld"));
+                  }
+                } catch (Exception e) {
+                  ex.compareAndSet(null, e);
+                }
+              }
+            }
+          });
     }
     for (Thread thread : readThreads) {
       thread.start();
@@ -463,11 +472,11 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     if (ex.get() != null) {
       throw ex.get();
     }
-    
+
     iw.close();
     dir.close();
   }
-  
+
   private byte[] randomByteArray(int length, int max) {
     final byte[] result = new byte[length];
     for (int i = 0; i < length; ++i) {
@@ -475,7 +484,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     return result;
   }
-  
+
   public void testWriteReadMerge() throws IOException {
     // get another codec, other than the default: so we are merging segments across different codecs
     final Codec otherCodec;
@@ -490,16 +499,15 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
 
     final int docCount = atLeast(200);
-    final byte[][][] data = new byte [docCount][][];
+    final byte[][][] data = new byte[docCount][][];
     for (int i = 0; i < docCount; ++i) {
-      final int fieldCount = rarely()
-          ? RandomNumbers.randomIntBetween(random(), 1, 500)
-          : RandomNumbers.randomIntBetween(random(), 1, 5);
+      final int fieldCount =
+          rarely()
+              ? RandomNumbers.randomIntBetween(random(), 1, 500)
+              : RandomNumbers.randomIntBetween(random(), 1, 5);
       data[i] = new byte[fieldCount][];
       for (int j = 0; j < fieldCount; ++j) {
-        final int length = rarely()
-            ? random().nextInt(1000)
-            : random().nextInt(10);
+        final int length = rarely() ? random().nextInt(1000) : random().nextInt(10);
         final int max = rarely() ? 256 : 2;
         data[i][j] = randomByteArray(length, max);
       }
@@ -538,7 +546,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for (int i = 0; i < 10; ++i) {
       final int min = random().nextInt(data.length);
       final int max = min + random().nextInt(20);
-      iw.deleteDocuments(IntPoint.newRangeQuery("id", min, max-1));
+      iw.deleteDocuments(IntPoint.newRangeQuery("id", min, max - 1));
     }
 
     iw.forceMerge(2); // force merges with deletions
@@ -553,7 +561,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       if (doc == null) {
         continue;
       }
-      ++ numDocs;
+      ++numDocs;
       final int docId = doc.getField("id").numericValue().intValue();
       assertEquals(data[docId].length + 1, doc.getFields().size());
       for (int j = 0; j < data[docId].length; ++j) {
@@ -569,7 +577,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.deleteAll();
     iw.commit();
     iw.forceMerge(1);
-    
+
     iw.close();
     dir.close();
   }
@@ -595,18 +603,19 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     public CacheHelper getReaderCacheHelper() {
       return null;
     }
-
   }
 
   private static class DummyFilterDirectoryReader extends FilterDirectoryReader {
 
     public DummyFilterDirectoryReader(DirectoryReader in) throws IOException {
-      super(in, new SubReaderWrapper() {
-        @Override
-        public LeafReader wrap(LeafReader reader) {
-          return new DummyFilterLeafReader(reader);
-        }
-      });
+      super(
+          in,
+          new SubReaderWrapper() {
+            @Override
+            public LeafReader wrap(LeafReader reader) {
+              return new DummyFilterLeafReader(reader);
+            }
+          });
     }
 
     @Override
@@ -618,7 +627,6 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     public CacheHelper getReaderCacheHelper() {
       return null;
     }
-    
   }
 
   public void testMergeFilterReader() throws IOException {
@@ -648,9 +656,10 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     }
     w.commit();
     w.close();
-    
-    DirectoryReader reader = new DummyFilterDirectoryReader(maybeWrapWithMergingReader(DirectoryReader.open(dir)));
-    
+
+    DirectoryReader reader =
+        new DummyFilterDirectoryReader(maybeWrapWithMergingReader(DirectoryReader.open(dir)));
+
     Directory dir2 = newDirectory();
     w = new RandomIndexWriter(random(), dir2);
     TestUtil.addIndexesSlowly(w.w, reader);
@@ -679,12 +688,13 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   @Nightly
   public void testBigDocuments() throws IOException {
     assumeWorkingMMapOnWindows();
-    
+
     // "big" as "much bigger than the chunk size"
     // for this test we force a FS dir
     // we can't just use newFSDirectory, because this test doesn't really index anything.
     // so if we get NRTCachingDir+SimpleText, we make massive stored fields and OOM (LUCENE-4484)
-    Directory dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("testBigDocuments")));
+    Directory dir =
+        new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("testBigDocuments")));
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
@@ -705,13 +715,18 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final FieldType onlyStored = new FieldType(StringField.TYPE_STORED);
     onlyStored.setIndexOptions(IndexOptions.NONE);
 
-    final Field smallField = new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
+    final Field smallField =
+        new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
     final int numFields = RandomNumbers.randomIntBetween(random(), 500000, 1000000);
     for (int i = 0; i < numFields; ++i) {
       bigDoc1.add(smallField);
     }
 
-    final Field bigField = new Field("fld", randomByteArray(RandomNumbers.randomIntBetween(random(), 1000000, 5000000), 2), onlyStored);
+    final Field bigField =
+        new Field(
+            "fld",
+            randomByteArray(RandomNumbers.randomIntBetween(random(), 1000000, 5000000), 2),
+            onlyStored);
     bigDoc2.add(bigField);
 
     final int numDocs = atLeast(5);
@@ -750,7 +765,12 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
   public void testBulkMergeWithDeletes() throws IOException {
     final int numDocs = atLeast(200);
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Store.YES));
@@ -787,7 +807,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       for (int j = 0; j < 10; j++) {
         iw.addDocument(doc);
       }
-      
+
       DirectoryReader reader = maybeWrapWithMergingReader(DirectoryReader.open(iw));
       // mix up fields explicitly
       if (random().nextBoolean()) {
@@ -798,15 +818,15 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       TestUtil.addIndexesSlowly(adder, reader);
       adder.commit();
       adder.close();
-      
+
       IOUtils.close(reader, iw, dir);
     }
-    
+
     Directory everything = newDirectory();
     IndexWriter iw = new IndexWriter(everything, new IndexWriterConfig(null));
     iw.addIndexes(dirs);
     iw.forceMerge(1);
-    
+
     LeafReader ir = getOnlyLeafReader(DirectoryReader.open(iw));
     for (int i = 0; i < ir.maxDoc(); i++) {
       Document doc = ir.document(i);

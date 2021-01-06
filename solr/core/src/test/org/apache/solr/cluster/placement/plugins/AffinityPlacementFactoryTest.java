@@ -79,8 +79,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(2);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
-    nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+    nodeBuilders.get(0).setCoreCount(1).setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 1));
+    nodeBuilders.get(1).setCoreCount(10).setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 1));
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
 
@@ -126,11 +126,11 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < nodeBuilders.size(); i++) {
       if (i == LOW_SPACE_NODE_INDEX) {
-        nodeBuilders.get(i).setCoreCount(1).setFreeDiskGB(MINIMAL_FREE_DISK_GB + 1); // Low space
+        nodeBuilders.get(i).setCoreCount(1).setFreeDiskGB((double)(MINIMAL_FREE_DISK_GB + 1)); // Low space
       } else if (i == NO_SPACE_NODE_INDEX) {
-        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB(1L); // Really not enough space
+        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB(1.0); // Really not enough space
       } else {
-        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+        nodeBuilders.get(i).setCoreCount(10).setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 1));
       }
     }
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -190,7 +190,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coresOnNode = 10;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coresOnNode).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+      nodeBuilder.setCoreCount(coresOnNode).setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 1));
       coresOnNode += 10;
     }
 
@@ -262,7 +262,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 9; i++) {
       final String az;
       final int numcores;
-      final long freedisk;
+      final double freedisk;
       final String acceptedReplicaType;
 
       if (i == AZ1_NRT_LOWCORES || i == AZ1_NRT_HIGHCORES || i == AZ1_TLOGPULL_LOWFREEDISK) {
@@ -347,7 +347,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 9; i++) {
       nodeBuilders.get(i).setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "AZ" + (i / 3))
           .setCoreCount(i)
-          .setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+          .setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 10));
     }
 
     // The collection does not exist, has 1 shard.
@@ -390,7 +390,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     int coreCount = 0;
     for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coreCount++).setFreeDiskGB(PRIORITIZED_FREE_DISK_GB + 1);
+      nodeBuilder.setCoreCount(coreCount++).setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 1));
     }
 
     // The collection already exists with shards and replicas
@@ -493,7 +493,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < NUM_NODES; i++) {
       Builders.NodeBuilder nodeBuilder = clusterBuilder.getLiveNodeBuilders().get(i);
       nodeBuilder.setCoreCount(0);
-      nodeBuilder.setFreeDiskGB(100L);
+      nodeBuilder.setFreeDiskGB(100.0);
       if (i < NUM_NODES / 2) {
         nodeBuilder.setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "az1");
       } else {
@@ -551,7 +551,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < NUM_NODES; i++) {
       Builders.NodeBuilder nodeBuilder = clusterBuilder.getLiveNodeBuilders().get(i);
       nodeBuilder.setCoreCount(0);
-      nodeBuilder.setFreeDiskGB(100L);
+      nodeBuilder.setFreeDiskGB(100.0);
       if (i < NUM_NODES / 3 * 2) {
         nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Nrt, TlOg");
         nodeBuilder.setSysprop("group", "one");
@@ -621,10 +621,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       nodeBuilder.setCoreCount(0);
       if (i == 0) {
         // default minimalFreeDiskGB == 20
-        nodeBuilder.setFreeDiskGB(1L);
+        nodeBuilder.setFreeDiskGB(1.0);
         smallNode = nodeBuilder.build();
       } else {
-        nodeBuilder.setFreeDiskGB(100L);
+        nodeBuilder.setFreeDiskGB(100.0);
       }
     }
 
@@ -678,7 +678,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(numNodes);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < numNodes; i++) {
-      nodeBuilders.get(i).setCoreCount(0).setFreeDiskGB(Long.valueOf(numNodes));
+      nodeBuilders.get(i).setCoreCount(0).setFreeDiskGB((double) numNodes);
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);

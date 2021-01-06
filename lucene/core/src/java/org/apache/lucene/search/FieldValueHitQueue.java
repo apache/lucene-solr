@@ -16,25 +16,21 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Expert: A hit queue for sorting by hits by terms in more than one field.
- * 
+ *
  * @lucene.experimental
  * @since 2.9
  * @see IndexSearcher#search(Query,int,Sort)
  */
-public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends PriorityQueue<T> {
+public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry>
+    extends PriorityQueue<T> {
 
-  /**
-   * Extension of ScoreDoc to also store the 
-   * {@link FieldComparator} slot.
-   */
+  /** Extension of ScoreDoc to also store the {@link FieldComparator} slot. */
   public static class Entry extends ScoreDoc {
     public int slot;
 
@@ -42,7 +38,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       super(doc, Float.NaN);
       this.slot = slot;
     }
-    
+
     @Override
     public String toString() {
       return "slot:" + slot + " " + super.toString();
@@ -50,14 +46,15 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
   }
 
   /**
-   * An implementation of {@link FieldValueHitQueue} which is optimized in case
-   * there is just one comparator.
+   * An implementation of {@link FieldValueHitQueue} which is optimized in case there is just one
+   * comparator.
    */
-  private static final class OneComparatorFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
-    
+  private static final class OneComparatorFieldValueHitQueue<T extends FieldValueHitQueue.Entry>
+      extends FieldValueHitQueue<T> {
+
     private final int oneReverseMul;
     private final FieldComparator<?> oneComparator;
-    
+
     public OneComparatorFieldValueHitQueue(SortField[] fields, int size) {
       super(fields, size);
 
@@ -68,9 +65,11 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
 
     /**
      * Returns whether <code>hitA</code> is less relevant than <code>hitB</code>.
+     *
      * @param hitA Entry
      * @param hitB Entry
-     * @return <code>true</code> if document <code>hitA</code> should be sorted after document <code>hitB</code>.
+     * @return <code>true</code> if document <code>hitA</code> should be sorted after document
+     *     <code>hitB</code>.
      */
     @Override
     protected boolean lessThan(final Entry hitA, final Entry hitB) {
@@ -86,19 +85,19 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       // avoid random sort order that could lead to duplicates (bug #31241):
       return hitA.doc > hitB.doc;
     }
-
   }
-  
+
   /**
-   * An implementation of {@link FieldValueHitQueue} which is optimized in case
-   * there is more than one comparator.
+   * An implementation of {@link FieldValueHitQueue} which is optimized in case there is more than
+   * one comparator.
    */
-  private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends FieldValueHitQueue<T> {
+  private static final class MultiComparatorsFieldValueHitQueue<T extends FieldValueHitQueue.Entry>
+      extends FieldValueHitQueue<T> {
 
     public MultiComparatorsFieldValueHitQueue(SortField[] fields, int size) {
       super(fields, size);
     }
-  
+
     @Override
     protected boolean lessThan(final Entry hitA, final Entry hitB) {
 
@@ -117,7 +116,6 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       // avoid random sort order that could lead to duplicates (bug #31241):
       return hitA.doc > hitB.doc;
     }
-    
   }
 
   // prevent instantiation and extension.
@@ -125,7 +123,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     super(size);
     // When we get here, fields.length is guaranteed to be > 0, therefore no
     // need to check it again.
-    
+
     // All these are required by this class's API - need to return arrays.
     // Therefore even in the case of a single comparator, create an array
     // anyway.
@@ -147,17 +145,16 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
 
   /**
    * Creates a hit queue sorted by the given list of fields.
-   * 
-   * <p><b>NOTE</b>: The instances returned by this method
-   * pre-allocate a full array of length <code>numHits</code>.
-   * 
-   * @param fields
-   *          SortField array we are sorting by in priority order (highest
-   *          priority first); cannot be <code>null</code> or empty
-   * @param size
-   *          The number of hits to retain. Must be greater than zero.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method pre-allocate a full array of length
+   * <code>numHits</code>.
+   *
+   * @param fields SortField array we are sorting by in priority order (highest priority first);
+   *     cannot be <code>null</code> or empty
+   * @param size The number of hits to retain. Must be greater than zero.
    */
-  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) {
+  public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(
+      SortField[] fields, int size) {
 
     if (fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -169,7 +166,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
       return new MultiComparatorsFieldValueHitQueue<>(fields, size);
     }
   }
-  
+
   public FieldComparator<?>[] getComparators() {
     return comparators;
   }
@@ -188,19 +185,19 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
 
   /** Stores the sort criteria being used. */
   protected final SortField[] fields;
+
   protected final FieldComparator<?>[] comparators;
   protected final int[] reverseMul;
 
   @Override
-  protected abstract boolean lessThan (final Entry a, final Entry b);
+  protected abstract boolean lessThan(final Entry a, final Entry b);
 
   /**
-   * Given a queue Entry, creates a corresponding FieldDoc
-   * that contains the values used to sort the given document.
-   * These values are not the raw values out of the index, but the internal
-   * representation of them. This is so the given search hit can be collated by
-   * a MultiSearcher with other search hits.
-   * 
+   * Given a queue Entry, creates a corresponding FieldDoc that contains the values used to sort the
+   * given document. These values are not the raw values out of the index, but the internal
+   * representation of them. This is so the given search hit can be collated by a MultiSearcher with
+   * other search hits.
+   *
    * @param entry The Entry used to create a FieldDoc
    * @return The newly created FieldDoc
    * @see IndexSearcher#search(Query,int,Sort)
@@ -211,7 +208,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
     for (int i = 0; i < n; ++i) {
       fields[i] = comparators[i].value(entry.slot);
     }
-    //if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
+    // if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
     return new FieldDoc(entry.doc, entry.score, fields);
   }
 

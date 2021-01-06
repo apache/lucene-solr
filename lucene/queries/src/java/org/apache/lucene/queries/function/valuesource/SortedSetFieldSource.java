@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -31,31 +30,32 @@ import org.apache.lucene.search.SortedSetSortField;
 
 /**
  * Retrieves {@link FunctionValues} instances for multi-valued string based fields.
- * <p>
- * A SortedSetDocValues contains multiple values for a field, so this 
- * technique "selects" a value as the representative value for the document.
- * 
+ *
+ * <p>A SortedSetDocValues contains multiple values for a field, so this technique "selects" a value
+ * as the representative value for the document.
+ *
  * @see SortedSetSelector
  */
 public class SortedSetFieldSource extends FieldCacheSource {
   protected final SortedSetSelector.Type selector;
-  
+
   public SortedSetFieldSource(String field) {
     this(field, SortedSetSelector.Type.MIN);
   }
-  
+
   public SortedSetFieldSource(String field, SortedSetSelector.Type selector) {
     super(field);
     this.selector = selector;
   }
-  
+
   @Override
   public SortField getSortField(boolean reverse) {
     return new SortedSetSortField(this.field, reverse, this.selector);
   }
-  
+
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
     SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
     return new DocTermsIndexDocValues(this, view) {
@@ -70,7 +70,7 @@ public class SortedSetFieldSource extends FieldCacheSource {
       }
     };
   }
-  
+
   @Override
   public String description() {
     return "sortedset(" + field + ",selector=" + selector + ')';

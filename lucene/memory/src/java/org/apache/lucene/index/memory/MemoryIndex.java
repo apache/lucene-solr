@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -60,57 +59,50 @@ import org.apache.lucene.util.RecyclingIntBlockAllocator;
 import org.apache.lucene.util.Version;
 
 /**
- * High-performance single-document main memory Apache Lucene fulltext search index. 
- * <p>
- * <b>Overview</b>
- * <p>
- * This class is a replacement/substitute for RAM-resident {@link Directory} implementations.
- * It is designed to
- * enable maximum efficiency for on-the-fly matchmaking combining structured and 
- * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML 
- * message queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and 
- * distribution systems, application level routers, firewalls, classifiers, etc. 
- * Rather than targeting fulltext search of infrequent queries over huge persistent 
- * data archives (historic search), this class targets fulltext search of huge 
- * numbers of queries over comparatively small transient realtime data (prospective 
- * search). 
- * For example as in 
+ * High-performance single-document main memory Apache Lucene fulltext search index.
+ *
+ * <p><b>Overview</b>
+ *
+ * <p>This class is a replacement/substitute for RAM-resident {@link Directory} implementations. It
+ * is designed to enable maximum efficiency for on-the-fly matchmaking combining structured and
+ * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML message
+ * queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and
+ * distribution systems, application level routers, firewalls, classifiers, etc. Rather than
+ * targeting fulltext search of infrequent queries over huge persistent data archives (historic
+ * search), this class targets fulltext search of huge numbers of queries over comparatively small
+ * transient realtime data (prospective search). For example as in
+ *
  * <pre class="prettyprint">
  * float score = search(String text, Query query)
  * </pre>
- * <p>
- * Each instance can hold at most one Lucene "document", with a document containing
- * zero or more "fields", each field having a name and a fulltext value. The
- * fulltext value is tokenized (split and transformed) into zero or more index terms 
- * (aka words) on <code>addField()</code>, according to the policy implemented by an
- * Analyzer. For example, Lucene analyzers can split on whitespace, normalize to lower case
- * for case insensitivity, ignore common terms with little discriminatory value such as "he", "in", "and" (stop
- * words), reduce the terms to their natural linguistic root form such as "fishing"
- * being reduced to "fish" (stemming), resolve synonyms/inflexions/thesauri 
- * (upon indexing and/or querying), etc. For details, see
- * <a target="_blank" href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Analyzer Intro</a>.
- * <p>
- * Arbitrary Lucene queries can be run against this class - see <a target="_blank" 
+ *
+ * <p>Each instance can hold at most one Lucene "document", with a document containing zero or more
+ * "fields", each field having a name and a fulltext value. The fulltext value is tokenized (split
+ * and transformed) into zero or more index terms (aka words) on <code>addField()</code>, according
+ * to the policy implemented by an Analyzer. For example, Lucene analyzers can split on whitespace,
+ * normalize to lower case for case insensitivity, ignore common terms with little discriminatory
+ * value such as "he", "in", "and" (stop words), reduce the terms to their natural linguistic root
+ * form such as "fishing" being reduced to "fish" (stemming), resolve synonyms/inflexions/thesauri
+ * (upon indexing and/or querying), etc. For details, see <a target="_blank"
+ * href="http://today.java.net/pub/a/today/2003/07/30/LuceneIntro.html">Lucene Analyzer Intro</a>.
+ *
+ * <p>Arbitrary Lucene queries can be run against this class - see <a target="_blank"
  * href="{@docRoot}/../queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package.description">
- * Lucene Query Syntax</a>
- * as well as <a target="_blank" 
+ * Lucene Query Syntax</a> as well as <a target="_blank"
  * href="http://today.java.net/pub/a/today/2003/11/07/QueryParserRules.html">Query Parser Rules</a>.
- * Note that a Lucene query selects on the field names and associated (indexed) 
- * tokenized terms, not on the original fulltext(s) - the latter are not stored 
- * but rather thrown away immediately after tokenization.
- * <p>
- * For some interesting background information on search technology, see Bob Wyman's
- * <a target="_blank" 
- * href="http://bobwyman.pubsub.com/main/2005/05/mary_hodder_poi.html">Prospective Search</a>, 
- * Jim Gray's
- * <a target="_blank" href="http://www.acmqueue.org/modules.php?name=Content&amp;pa=showpage&amp;pid=293&amp;page=4">
- * A Call to Arms - Custom subscriptions</a>, and Tim Bray's
- * <a target="_blank" 
+ * Note that a Lucene query selects on the field names and associated (indexed) tokenized terms, not
+ * on the original fulltext(s) - the latter are not stored but rather thrown away immediately after
+ * tokenization.
+ *
+ * <p>For some interesting background information on search technology, see Bob Wyman's <a
+ * target="_blank" href="http://bobwyman.pubsub.com/main/2005/05/mary_hodder_poi.html">Prospective
+ * Search</a>, Jim Gray's <a target="_blank"
+ * href="http://www.acmqueue.org/modules.php?name=Content&amp;pa=showpage&amp;pid=293&amp;page=4">A
+ * Call to Arms - Custom subscriptions</a>, and Tim Bray's <a target="_blank"
  * href="http://www.tbray.org/ongoing/When/200x/2003/07/30/OnSearchTOC">On Search, the Series</a>.
- * 
- * <p>
- * <b>Example Usage</b> 
- * <br>
+ *
+ * <p><b>Example Usage</b> <br>
+ *
  * <pre class="prettyprint">
  * Analyzer analyzer = new SimpleAnalyzer(version);
  * MemoryIndex index = new MemoryIndex();
@@ -125,71 +117,62 @@ import org.apache.lucene.util.Version;
  * }
  * System.out.println("indexData=" + index.toString());
  * </pre>
- * 
- * <p>
- * <b>Example XQuery Usage</b> 
- * 
+ *
+ * <p><b>Example XQuery Usage</b>
+ *
  * <pre class="prettyprint">
  * (: An XQuery that finds all books authored by James that have something to do with "salmon fishing manuals", sorted by relevance :)
  * declare namespace lucene = "java:nux.xom.pool.FullTextUtil";
  * declare variable $query := "+salmon~ +fish* manual~"; (: any arbitrary Lucene query can go here :)
- * 
+ *
  * for $book in /books/book[author="James" and lucene:match(abstract, $query) &gt; 0.0]
  * let $score := lucene:match($book/abstract, $query)
  * order by $score descending
  * return $book
  * </pre>
- * 
- * <p>
- * <b>Thread safety guarantees</b>
- * <p>
- * MemoryIndex is not normally thread-safe for adds or queries.  However, queries
- * are thread-safe after {@code freeze()} has been called.
  *
- * <p>
- * <b>Performance Notes</b>
- * <p>
- * Internally there's a new data structure geared towards efficient indexing 
- * and searching, plus the necessary support code to seamlessly plug into the Lucene 
- * framework.
- * <p>
- * This class performs very well for very small texts (e.g. 10 chars) 
- * as well as for large texts (e.g. 10 MB) and everything in between. 
- * Typically, it is about 10-100 times faster than RAM-resident directory.
+ * <p><b>Thread safety guarantees</b>
  *
- * Note that other <code>Directory</code> implementations have particularly
- * large efficiency overheads for small to medium sized texts, both in time and space.
- * Indexing a field with N tokens takes O(N) in the best case, and O(N logN) in the worst 
- * case.
- * <p>
- * Example throughput of many simple term queries over a single MemoryIndex: 
- * ~500000 queries/sec on a MacBook Pro, jdk 1.5.0_06, server VM. 
- * As always, your mileage may vary.
- * <p>
- * If you're curious about
- * the whereabouts of bottlenecks, run java 1.5 with the non-perturbing '-server
- * -agentlib:hprof=cpu=samples,depth=10' flags, then study the trace log and
- * correlate its hotspot trailer with its call stack headers (see <a
- * target="_blank"
- * href="http://java.sun.com/developer/technicalArticles/Programming/HPROF.html">
- * hprof tracing </a>).
+ * <p>MemoryIndex is not normally thread-safe for adds or queries. However, queries are thread-safe
+ * after {@code freeze()} has been called.
  *
+ * <p><b>Performance Notes</b>
+ *
+ * <p>Internally there's a new data structure geared towards efficient indexing and searching, plus
+ * the necessary support code to seamlessly plug into the Lucene framework.
+ *
+ * <p>This class performs very well for very small texts (e.g. 10 chars) as well as for large texts
+ * (e.g. 10 MB) and everything in between. Typically, it is about 10-100 times faster than
+ * RAM-resident directory.
+ *
+ * <p>Note that other <code>Directory</code> implementations have particularly large efficiency
+ * overheads for small to medium sized texts, both in time and space. Indexing a field with N tokens
+ * takes O(N) in the best case, and O(N logN) in the worst case.
+ *
+ * <p>Example throughput of many simple term queries over a single MemoryIndex: ~500000 queries/sec
+ * on a MacBook Pro, jdk 1.5.0_06, server VM. As always, your mileage may vary.
+ *
+ * <p>If you're curious about the whereabouts of bottlenecks, run java 1.5 with the non-perturbing
+ * '-server -agentlib:hprof=cpu=samples,depth=10' flags, then study the trace log and correlate its
+ * hotspot trailer with its call stack headers (see <a target="_blank"
+ * href="http://java.sun.com/developer/technicalArticles/Programming/HPROF.html">hprof tracing
+ * </a>).
  */
 public class MemoryIndex {
 
   private static final boolean DEBUG = false;
 
   /** info for each field: Map&lt;String fieldName, Info field&gt; */
-  private final SortedMap<String,Info> fields = new TreeMap<>();
-  
+  private final SortedMap<String, Info> fields = new TreeMap<>();
+
   private final boolean storeOffsets;
   private final boolean storePayloads;
 
   private final ByteBlockPool byteBlockPool;
   private final IntBlockPool intBlockPool;
-//  private final IntBlockPool.SliceReader postingsReader;
+  //  private final IntBlockPool.SliceReader postingsReader;
   private final IntBlockPool.SliceWriter postingsWriter;
-  private final BytesRefArray payloadsBytesRefs;//non null only when storePayloads
+  private final BytesRefArray payloadsBytesRefs; // non null only when storePayloads
 
   private Counter bytesUsed;
 
@@ -199,22 +182,18 @@ public class MemoryIndex {
 
   private FieldType defaultFieldType = new FieldType();
 
-  /**
-   * Constructs an empty instance that will not store offsets or payloads.
-   */
+  /** Constructs an empty instance that will not store offsets or payloads. */
   public MemoryIndex() {
     this(false);
   }
-  
+
   /**
-   * Constructs an empty instance that can optionally store the start and end
-   * character offset of each token term in the text. This can be useful for
-   * highlighting of hit locations with the Lucene highlighter package.  But
-   * it will not store payloads; use another constructor for that.
-   * 
-   * @param storeOffsets
-   *            whether or not to store the start and end character offset of
-   *            each token term in the text
+   * Constructs an empty instance that can optionally store the start and end character offset of
+   * each token term in the text. This can be useful for highlighting of hit locations with the
+   * Lucene highlighter package. But it will not store payloads; use another constructor for that.
+   *
+   * @param storeOffsets whether or not to store the start and end character offset of each token
+   *     term in the text
    */
   public MemoryIndex(boolean storeOffsets) {
     this(storeOffsets, false);
@@ -231,53 +210,66 @@ public class MemoryIndex {
   }
 
   /**
-   * Expert: This constructor accepts an upper limit for the number of bytes that should be reused if this instance is {@link #reset()}.
-   * The payload storage, if used, is unaffected by maxReusuedBytes, however.
+   * Expert: This constructor accepts an upper limit for the number of bytes that should be reused
+   * if this instance is {@link #reset()}. The payload storage, if used, is unaffected by
+   * maxReusuedBytes, however.
+   *
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param storePayloads <code>true</code> if payloads should be stored
-   * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
+   * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after
+   *     {@link #reset()} is called
    */
   MemoryIndex(boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
     this.storeOffsets = storeOffsets;
     this.storePayloads = storePayloads;
-    this.defaultFieldType.setIndexOptions(storeOffsets ?
-        IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    this.defaultFieldType.setIndexOptions(
+        storeOffsets
+            ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS
+            : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
     this.defaultFieldType.setStoreTermVectors(true);
     this.bytesUsed = Counter.newCounter();
-    final int maxBufferedByteBlocks = (int)((maxReusedBytes/2) / ByteBlockPool.BYTE_BLOCK_SIZE );
-    final int maxBufferedIntBlocks = (int) ((maxReusedBytes - (maxBufferedByteBlocks*ByteBlockPool.BYTE_BLOCK_SIZE))/(IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES));
-    assert (maxBufferedByteBlocks * ByteBlockPool.BYTE_BLOCK_SIZE) + (maxBufferedIntBlocks * IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES) <= maxReusedBytes;
-    byteBlockPool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, maxBufferedByteBlocks, bytesUsed));
-    intBlockPool = new IntBlockPool(new RecyclingIntBlockAllocator(IntBlockPool.INT_BLOCK_SIZE, maxBufferedIntBlocks, bytesUsed));
+    final int maxBufferedByteBlocks = (int) ((maxReusedBytes / 2) / ByteBlockPool.BYTE_BLOCK_SIZE);
+    final int maxBufferedIntBlocks =
+        (int)
+            ((maxReusedBytes - (maxBufferedByteBlocks * ByteBlockPool.BYTE_BLOCK_SIZE))
+                / (IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES));
+    assert (maxBufferedByteBlocks * ByteBlockPool.BYTE_BLOCK_SIZE)
+            + (maxBufferedIntBlocks * IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES)
+        <= maxReusedBytes;
+    byteBlockPool =
+        new ByteBlockPool(
+            new RecyclingByteBlockAllocator(
+                ByteBlockPool.BYTE_BLOCK_SIZE, maxBufferedByteBlocks, bytesUsed));
+    intBlockPool =
+        new IntBlockPool(
+            new RecyclingIntBlockAllocator(
+                IntBlockPool.INT_BLOCK_SIZE, maxBufferedIntBlocks, bytesUsed));
     postingsWriter = new SliceWriter(intBlockPool);
-    //TODO refactor BytesRefArray to allow us to apply maxReusedBytes option
+    // TODO refactor BytesRefArray to allow us to apply maxReusedBytes option
     payloadsBytesRefs = storePayloads ? new BytesRefArray(bytesUsed) : null;
   }
-  
+
   /**
-   * Convenience method; Tokenizes the given field text and adds the resulting
-   * terms to the index; Equivalent to adding an indexed non-keyword Lucene
-   * {@link org.apache.lucene.document.Field} that is tokenized, not stored,
-   * termVectorStored with positions (or termVectorStored with positions and offsets),
-   * 
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param text
-   *            the text to tokenize and index.
-   * @param analyzer
-   *            the analyzer to use for tokenization
+   * Convenience method; Tokenizes the given field text and adds the resulting terms to the index;
+   * Equivalent to adding an indexed non-keyword Lucene {@link org.apache.lucene.document.Field}
+   * that is tokenized, not stored, termVectorStored with positions (or termVectorStored with
+   * positions and offsets),
+   *
+   * @param fieldName a name to be associated with the text
+   * @param text the text to tokenize and index.
+   * @param analyzer the analyzer to use for tokenization
    */
   public void addField(String fieldName, String text, Analyzer analyzer) {
-    if (fieldName == null)
-      throw new IllegalArgumentException("fieldName must not be null");
-    if (text == null)
-      throw new IllegalArgumentException("text must not be null");
-    if (analyzer == null)
-      throw new IllegalArgumentException("analyzer must not be null");
-    
+    if (fieldName == null) throw new IllegalArgumentException("fieldName must not be null");
+    if (text == null) throw new IllegalArgumentException("text must not be null");
+    if (analyzer == null) throw new IllegalArgumentException("analyzer must not be null");
+
     TokenStream stream = analyzer.tokenStream(fieldName, text);
-    storeTerms(getInfo(fieldName, defaultFieldType), stream,
-        analyzer.getPositionIncrementGap(fieldName), analyzer.getOffsetGap(fieldName));
+    storeTerms(
+        getInfo(fieldName, defaultFieldType),
+        stream,
+        analyzer.getPositionIncrementGap(fieldName),
+        analyzer.getOffsetGap(fieldName));
   }
 
   /**
@@ -287,32 +279,45 @@ public class MemoryIndex {
    * @param analyzer the analyzer to use
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer) {
+  public static MemoryIndex fromDocument(
+      Iterable<? extends IndexableField> document, Analyzer analyzer) {
     return fromDocument(document, analyzer, false, false, 0);
   }
 
   /**
    * Builds a MemoryIndex from a lucene {@link Document} using an analyzer
+   *
    * @param document the document to index
    * @param analyzer the analyzer to use
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param storePayloads <code>true</code> if payloads should be stored
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads) {
+  public static MemoryIndex fromDocument(
+      Iterable<? extends IndexableField> document,
+      Analyzer analyzer,
+      boolean storeOffsets,
+      boolean storePayloads) {
     return fromDocument(document, analyzer, storeOffsets, storePayloads, 0);
   }
 
   /**
    * Builds a MemoryIndex from a lucene {@link Document} using an analyzer
+   *
    * @param document the document to index
    * @param analyzer the analyzer to use
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param storePayloads <code>true</code> if payloads should be stored
-   * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
+   * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after
+   *     {@link #reset()} is called
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
+  public static MemoryIndex fromDocument(
+      Iterable<? extends IndexableField> document,
+      Analyzer analyzer,
+      boolean storeOffsets,
+      boolean storePayloads,
+      long maxReusedBytes) {
     MemoryIndex mi = new MemoryIndex(storeOffsets, storePayloads, maxReusedBytes);
     for (IndexableField field : document) {
       mi.addField(field, analyzer);
@@ -321,49 +326,44 @@ public class MemoryIndex {
   }
 
   /**
-   * Convenience method; Creates and returns a token stream that generates a
-   * token for each keyword in the given collection, "as is", without any
-   * transforming text analysis. The resulting token stream can be fed into
-   * {@link #addField(String, TokenStream)}, perhaps wrapped into another
+   * Convenience method; Creates and returns a token stream that generates a token for each keyword
+   * in the given collection, "as is", without any transforming text analysis. The resulting token
+   * stream can be fed into {@link #addField(String, TokenStream)}, perhaps wrapped into another
    * {@link org.apache.lucene.analysis.TokenFilter}, as desired.
-   * 
-   * @param keywords
-   *            the keywords to generate tokens for
+   *
+   * @param keywords the keywords to generate tokens for
    * @return the corresponding token stream
    */
   public <T> TokenStream keywordTokenStream(final Collection<T> keywords) {
     // TODO: deprecate & move this method into AnalyzerUtil?
-    if (keywords == null)
-      throw new IllegalArgumentException("keywords must not be null");
-    
+    if (keywords == null) throw new IllegalArgumentException("keywords must not be null");
+
     return new TokenStream() {
       private Iterator<T> iter = keywords.iterator();
       private int start = 0;
       private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-      
+
       @Override
       public boolean incrementToken() {
         if (!iter.hasNext()) return false;
-        
+
         T obj = iter.next();
-        if (obj == null) 
-          throw new IllegalArgumentException("keyword must not be null");
-        
+        if (obj == null) throw new IllegalArgumentException("keyword must not be null");
+
         String term = obj.toString();
         clearAttributes();
         termAtt.setEmpty().append(term);
-        offsetAtt.setOffset(start, start+termAtt.length());
+        offsetAtt.setOffset(start, start + termAtt.length());
         start += term.length() + 1; // separate words by 1 (blank) character
         return true;
       }
     };
   }
 
-
   /**
-   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer.
-   * Also stores doc values based on {@link IndexableFieldType#docValuesType()} if set.
+   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer. Also
+   * stores doc values based on {@link IndexableFieldType#docValuesType()} if set.
    *
    * @param field the field to add
    * @param analyzer the analyzer to use for term analysis
@@ -413,64 +413,54 @@ public class MemoryIndex {
     if (field.fieldType().pointDimensionCount() > 0) {
       storePointValues(info, field.binaryValue());
     }
-
   }
-  
+
   /**
-   * Iterates over the given token stream and adds the resulting terms to the index;
-   * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
-   * Lucene {@link org.apache.lucene.document.Field}.
-   * Finally closes the token stream. Note that untokenized keywords can be added with this method via 
-   * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
-   * 
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param stream
-   *            the token stream to retrieve tokens from.
+   * Iterates over the given token stream and adds the resulting terms to the index; Equivalent to
+   * adding a tokenized, indexed, termVectorStored, unstored, Lucene {@link
+   * org.apache.lucene.document.Field}. Finally closes the token stream. Note that untokenized
+   * keywords can be added with this method via {@link #keywordTokenStream(Collection)}, the Lucene
+   * <code>KeywordTokenizer</code> or similar utilities.
+   *
+   * @param fieldName a name to be associated with the text
+   * @param stream the token stream to retrieve tokens from.
    */
   public void addField(String fieldName, TokenStream stream) {
     addField(fieldName, stream, 0);
   }
 
-
   /**
-   * Iterates over the given token stream and adds the resulting terms to the index;
-   * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
-   * Lucene {@link org.apache.lucene.document.Field}.
-   * Finally closes the token stream. Note that untokenized keywords can be added with this method via
-   * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
+   * Iterates over the given token stream and adds the resulting terms to the index; Equivalent to
+   * adding a tokenized, indexed, termVectorStored, unstored, Lucene {@link
+   * org.apache.lucene.document.Field}. Finally closes the token stream. Note that untokenized
+   * keywords can be added with this method via {@link #keywordTokenStream(Collection)}, the Lucene
+   * <code>KeywordTokenizer</code> or similar utilities.
    *
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param stream
-   *            the token stream to retrieve tokens from.
-   *
-   * @param positionIncrementGap
-   *            the position increment gap if fields with the same name are added more than once
-   *
+   * @param fieldName a name to be associated with the text
+   * @param stream the token stream to retrieve tokens from.
+   * @param positionIncrementGap the position increment gap if fields with the same name are added
+   *     more than once
    */
   public void addField(String fieldName, TokenStream stream, int positionIncrementGap) {
     addField(fieldName, stream, positionIncrementGap, 1);
   }
 
   /**
-   * Iterates over the given token stream and adds the resulting terms to the index;
-   * Equivalent to adding a tokenized, indexed, termVectorStored, unstored,
-   * Lucene {@link org.apache.lucene.document.Field}.
-   * Finally closes the token stream. Note that untokenized keywords can be added with this method via 
-   * {@link #keywordTokenStream(Collection)}, the Lucene <code>KeywordTokenizer</code> or similar utilities.
-   * 
+   * Iterates over the given token stream and adds the resulting terms to the index; Equivalent to
+   * adding a tokenized, indexed, termVectorStored, unstored, Lucene {@link
+   * org.apache.lucene.document.Field}. Finally closes the token stream. Note that untokenized
+   * keywords can be added with this method via {@link #keywordTokenStream(Collection)}, the Lucene
+   * <code>KeywordTokenizer</code> or similar utilities.
    *
-   * @param fieldName
-   *            a name to be associated with the text
-   * @param tokenStream
-   *            the token stream to retrieve tokens from. It's guaranteed to be closed no matter what.
-   * @param positionIncrementGap
-   *            the position increment gap if fields with the same name are added more than once
-   * @param offsetGap
-   *            the offset gap if fields with the same name are added more than once
+   * @param fieldName a name to be associated with the text
+   * @param tokenStream the token stream to retrieve tokens from. It's guaranteed to be closed no
+   *     matter what.
+   * @param positionIncrementGap the position increment gap if fields with the same name are added
+   *     more than once
+   * @param offsetGap the offset gap if fields with the same name are added more than once
    */
-  public void addField(String fieldName, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
+  public void addField(
+      String fieldName, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
     Info info = getInfo(fieldName, defaultFieldType);
     storeTerms(info, tokenStream, positionIncrementGap, offsetGap);
   }
@@ -484,11 +474,16 @@ public class MemoryIndex {
     }
     Info info = fields.get(fieldName);
     if (info == null) {
-      fields.put(fieldName, info = new Info(createFieldInfo(fieldName, fields.size(), fieldType), byteBlockPool));
+      fields.put(
+          fieldName,
+          info = new Info(createFieldInfo(fieldName, fields.size(), fieldType), byteBlockPool));
     }
     if (fieldType.pointDimensionCount() != info.fieldInfo.getPointDimensionCount()) {
       if (fieldType.pointDimensionCount() > 0)
-        info.fieldInfo.setPointDimensions(fieldType.pointDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes());
+        info.fieldInfo.setPointDimensions(
+            fieldType.pointDimensionCount(),
+            fieldType.pointIndexDimensionCount(),
+            fieldType.pointNumBytes());
     }
     if (fieldType.docValuesType() != info.fieldInfo.getDocValuesType()) {
       if (fieldType.docValuesType() != DocValuesType.NONE)
@@ -498,11 +493,26 @@ public class MemoryIndex {
   }
 
   private FieldInfo createFieldInfo(String fieldName, int ord, IndexableFieldType fieldType) {
-    IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-    return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
-        indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
-        fieldType.pointDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes(),
-        fieldType.vectorDimension(), fieldType.vectorSearchStrategy(), false);
+    IndexOptions indexOptions =
+        storeOffsets
+            ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS
+            : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+    return new FieldInfo(
+        fieldName,
+        ord,
+        fieldType.storeTermVectors(),
+        fieldType.omitNorms(),
+        storePayloads,
+        indexOptions,
+        fieldType.docValuesType(),
+        -1,
+        Collections.emptyMap(),
+        fieldType.pointDimensionCount(),
+        fieldType.pointIndexDimensionCount(),
+        fieldType.pointNumBytes(),
+        fieldType.vectorDimension(),
+        fieldType.vectorSearchStrategy(),
+        false);
   }
 
   private void storePointValues(Info info, BytesRef pointValue) {
@@ -518,41 +528,74 @@ public class MemoryIndex {
     DocValuesType existingDocValuesType = info.fieldInfo.getDocValuesType();
     if (existingDocValuesType == DocValuesType.NONE) {
       // first time we add doc values for this field:
-      info.fieldInfo = new FieldInfo(
-          info.fieldInfo.name, info.fieldInfo.number, info.fieldInfo.hasVectors(), info.fieldInfo.hasPayloads(),
-          info.fieldInfo.hasPayloads(), info.fieldInfo.getIndexOptions(), docValuesType, -1, info.fieldInfo.attributes(),
-          info.fieldInfo.getPointDimensionCount(), info.fieldInfo.getPointIndexDimensionCount(), info.fieldInfo.getPointNumBytes(),
-          info.fieldInfo.getVectorDimension(), info.fieldInfo.getVectorSearchStrategy(),
-          info.fieldInfo.isSoftDeletesField()
-      );
+      info.fieldInfo =
+          new FieldInfo(
+              info.fieldInfo.name,
+              info.fieldInfo.number,
+              info.fieldInfo.hasVectors(),
+              info.fieldInfo.hasPayloads(),
+              info.fieldInfo.hasPayloads(),
+              info.fieldInfo.getIndexOptions(),
+              docValuesType,
+              -1,
+              info.fieldInfo.attributes(),
+              info.fieldInfo.getPointDimensionCount(),
+              info.fieldInfo.getPointIndexDimensionCount(),
+              info.fieldInfo.getPointNumBytes(),
+              info.fieldInfo.getVectorDimension(),
+              info.fieldInfo.getVectorSearchStrategy(),
+              info.fieldInfo.isSoftDeletesField());
     } else if (existingDocValuesType != docValuesType) {
-      throw new IllegalArgumentException("Can't add [" + docValuesType + "] doc values field [" + fieldName + "], because [" + existingDocValuesType + "] doc values field already exists");
+      throw new IllegalArgumentException(
+          "Can't add ["
+              + docValuesType
+              + "] doc values field ["
+              + fieldName
+              + "], because ["
+              + existingDocValuesType
+              + "] doc values field already exists");
     }
     switch (docValuesType) {
       case NUMERIC:
         if (info.numericProducer.dvLongValues != null) {
-          throw new IllegalArgumentException("Only one value per field allowed for [" + docValuesType + "] doc values field [" + fieldName + "]");
+          throw new IllegalArgumentException(
+              "Only one value per field allowed for ["
+                  + docValuesType
+                  + "] doc values field ["
+                  + fieldName
+                  + "]");
         }
-        info.numericProducer.dvLongValues = new long[]{(long) docValuesValue};
+        info.numericProducer.dvLongValues = new long[] {(long) docValuesValue};
         info.numericProducer.count++;
         break;
       case SORTED_NUMERIC:
         if (info.numericProducer.dvLongValues == null) {
           info.numericProducer.dvLongValues = new long[4];
         }
-        info.numericProducer.dvLongValues = ArrayUtil.grow(info.numericProducer.dvLongValues, info.numericProducer.count + 1);
+        info.numericProducer.dvLongValues =
+            ArrayUtil.grow(info.numericProducer.dvLongValues, info.numericProducer.count + 1);
         info.numericProducer.dvLongValues[info.numericProducer.count++] = (long) docValuesValue;
         break;
       case BINARY:
         if (info.binaryProducer.dvBytesValuesSet != null) {
-          throw new IllegalArgumentException("Only one value per field allowed for [" + docValuesType + "] doc values field [" + fieldName + "]");
+          throw new IllegalArgumentException(
+              "Only one value per field allowed for ["
+                  + docValuesType
+                  + "] doc values field ["
+                  + fieldName
+                  + "]");
         }
         info.binaryProducer.dvBytesValuesSet = new BytesRefHash(byteBlockPool);
         info.binaryProducer.dvBytesValuesSet.add((BytesRef) docValuesValue);
         break;
       case SORTED:
         if (info.binaryProducer.dvBytesValuesSet != null) {
-          throw new IllegalArgumentException("Only one value per field allowed for [" + docValuesType + "] doc values field [" + fieldName + "]");
+          throw new IllegalArgumentException(
+              "Only one value per field allowed for ["
+                  + docValuesType
+                  + "] doc values field ["
+                  + fieldName
+                  + "]");
         }
         info.binaryProducer.dvBytesValuesSet = new BytesRefHash(byteBlockPool);
         info.binaryProducer.dvBytesValuesSet.add((BytesRef) docValuesValue);
@@ -568,7 +611,8 @@ public class MemoryIndex {
     }
   }
 
-  private void storeTerms(Info info, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
+  private void storeTerms(
+      Info info, TokenStream tokenStream, int positionIncrementGap, int offsetGap) {
 
     int pos = -1;
     int offset = 0;
@@ -579,13 +623,15 @@ public class MemoryIndex {
 
     try (TokenStream stream = tokenStream) {
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
-      PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
+      PositionIncrementAttribute posIncrAttribute =
+          stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-      PayloadAttribute payloadAtt = storePayloads ? stream.addAttribute(PayloadAttribute.class) : null;
+      PayloadAttribute payloadAtt =
+          storePayloads ? stream.addAttribute(PayloadAttribute.class) : null;
       stream.reset();
 
       while (stream.incrementToken()) {
-//        if (DEBUG) System.err.println("token='" + term + "'");
+        //        if (DEBUG) System.err.println("token='" + term + "'");
         info.numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
         if (posIncr == 0) {
@@ -631,24 +677,26 @@ public class MemoryIndex {
 
   /**
    * Set the Similarity to be used for calculating field norms
+   *
    * @param similarity instance with custom {@link Similarity#computeNorm} implementation
    */
   public void setSimilarity(Similarity similarity) {
     if (frozen)
       throw new IllegalArgumentException("Cannot set Similarity when MemoryIndex is frozen");
-    if (this.normSimilarity == similarity)
+    if (this.normSimilarity == similarity) {
       return;
+    }
     this.normSimilarity = similarity;
-    //invalidate any cached norms that may exist
+    // invalidate any cached norms that may exist
     for (Info info : fields.values()) {
       info.norm = null;
     }
   }
 
   /**
-   * Creates and returns a searcher that can be used to execute arbitrary
-   * Lucene queries and to collect the resulting query results as hits.
-   * 
+   * Creates and returns a searcher that can be used to execute arbitrary Lucene queries and to
+   * collect the resulting query results as hits.
+   *
    * @return a searcher
    */
   public IndexSearcher createSearcher() {
@@ -661,9 +709,9 @@ public class MemoryIndex {
 
   /**
    * Prepares the MemoryIndex for querying in a non-lazy way.
-   * <p>
-   * After calling this you can query the MemoryIndex from multiple threads, but you
-   * cannot subsequently add new data.
+   *
+   * <p>After calling this you can query the MemoryIndex from multiple threads, but you cannot
+   * subsequently add new data.
    */
   public void freeze() {
     this.frozen = true;
@@ -671,43 +719,43 @@ public class MemoryIndex {
       info.freeze();
     }
   }
-  
+
   /**
-   * Convenience method that efficiently returns the relevance score by
-   * matching this index against the given Lucene query expression.
-   * 
-   * @param query
-   *            an arbitrary Lucene query to run against this index
-   * @return the relevance score of the matchmaking; A number in the range
-   *         [0.0 .. 1.0], with 0.0 indicating no match. The higher the number
-   *         the better the match.
+   * Convenience method that efficiently returns the relevance score by matching this index against
+   * the given Lucene query expression.
    *
+   * @param query an arbitrary Lucene query to run against this index
+   * @return the relevance score of the matchmaking; A number in the range [0.0 .. 1.0], with 0.0
+   *     indicating no match. The higher the number the better the match.
    */
   public float search(Query query) {
-    if (query == null) 
+    if (query == null) {
       throw new IllegalArgumentException("query must not be null");
-    
+    }
+
     IndexSearcher searcher = createSearcher();
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
-      searcher.search(query, new SimpleCollector() {
-        private Scorable scorer;
+      searcher.search(
+          query,
+          new SimpleCollector() {
+            private Scorable scorer;
 
-        @Override
-        public void collect(int doc) throws IOException {
-          scores[0] = scorer.score();
-        }
+            @Override
+            public void collect(int doc) throws IOException {
+              scores[0] = scorer.score();
+            }
 
-        @Override
-        public void setScorer(Scorable scorer) {
-          this.scorer = scorer;
-        }
-        
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE;
-        }
-      });
+            @Override
+            public void setScorer(Scorable scorer) {
+              this.scorer = scorer;
+            }
+
+            @Override
+            public ScoreMode scoreMode() {
+              return ScoreMode.COMPLETE;
+            }
+          });
       float score = scores[0];
       return score;
     } catch (IOException e) {
@@ -717,7 +765,7 @@ public class MemoryIndex {
 
   /**
    * Returns a String representation of the index data for debugging purposes.
-   * 
+   *
    * @return the string representation
    * @lucene.experimental
    */
@@ -755,7 +803,7 @@ public class MemoryIndex {
           if (storePayloads) {
             int payloadIndex = postingsReader.readInt();
             if (payloadIndex != -1) {
-                result.append(", ").append(payloadsBytesRefs.get(payloadBuilder, payloadIndex));
+              result.append(", ").append(payloadsBytesRefs.get(payloadBuilder, payloadIndex));
             }
           }
           result.append(")");
@@ -763,7 +811,6 @@ public class MemoryIndex {
           if (!postingsReader.endOfSlice()) {
             result.append(", ");
           }
-
         }
         result.append("]");
         result.append("\n");
@@ -776,17 +823,14 @@ public class MemoryIndex {
       sumPositions += numPositions;
       sumTerms += info.terms.size();
     }
-    
+
     result.append("\nfields=").append(fields.size());
     result.append(", terms=").append(sumTerms);
     result.append(", positions=").append(sumPositions);
     return result.toString();
   }
-  
-  /**
-   * Index data structure for a field; contains the tokenized term texts and
-   * their positions.
-   */
+
+  /** Index data structure for a field; contains the tokenized term texts and their positions. */
   private final class Info {
 
     private FieldInfo fieldInfo;
@@ -794,30 +838,30 @@ public class MemoryIndex {
     private Long norm;
 
     /**
-     * Term strings and their positions for this field: Map &lt;String
-     * termText, ArrayIntList positions&gt;
+     * Term strings and their positions for this field: Map &lt;String termText, ArrayIntList
+     * positions&gt;
      */
     private BytesRefHash terms; // note unfortunate variable name class with Terms type
-    
+
     private SliceByteStartArray sliceArray;
 
     /** Terms sorted ascending by term text; computed on demand */
     private transient int[] sortedTerms;
-    
+
     /** Number of added tokens for this field */
     private int numTokens;
-    
+
     /** Number of overlapping tokens for this field */
     private int numOverlapTokens;
 
     private long sumTotalTermFreq;
-    
+
     private int maxTermFrequency;
 
-    /** the last position encountered in this field for multi field support*/
+    /** the last position encountered in this field for multi field support */
     private int lastPosition;
 
-    /** the last offset encountered in this field for multi field support*/
+    /** the last offset encountered in this field for multi field support */
     private int lastOffset;
 
     private BinaryDocValuesProducer binaryProducer;
@@ -837,7 +881,8 @@ public class MemoryIndex {
     private Info(FieldInfo fieldInfo, ByteBlockPool byteBlockPool) {
       this.fieldInfo = fieldInfo;
       this.sliceArray = new SliceByteStartArray(BytesRefHash.DEFAULT_CAPACITY);
-      this.terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);;
+      this.terms = new BytesRefHash(byteBlockPool, BytesRefHash.DEFAULT_CAPACITY, sliceArray);
+      ;
       this.binaryProducer = new BinaryDocValuesProducer();
       this.numericProducer = new NumericDocValuesProducer();
     }
@@ -849,12 +894,11 @@ public class MemoryIndex {
     }
 
     /**
-     * Sorts hashed terms into ascending order, reusing memory along the
-     * way. Note that sorting is lazily delayed until required (often it's
-     * not required at all). If a sorted view is required then hashing +
-     * sort + binary search is still faster and smaller than TreeMap usage
-     * (which would be an alternative and somewhat more elegant approach,
-     * apart from more sophisticated Tries / prefix trees).
+     * Sorts hashed terms into ascending order, reusing memory along the way. Note that sorting is
+     * lazily delayed until required (often it's not required at all). If a sorted view is required
+     * then hashing + sort + binary search is still faster and smaller than TreeMap usage (which
+     * would be an alternative and somewhat more elegant approach, apart from more sophisticated
+     * Tries / prefix trees).
      */
     void sortTerms() {
       if (sortedTerms == null) {
@@ -868,11 +912,14 @@ public class MemoryIndex {
         if (dvType == DocValuesType.NUMERIC || dvType == DocValuesType.SORTED_NUMERIC) {
           numericProducer.prepareForUsage();
         }
-        if (dvType == DocValuesType.BINARY || dvType == DocValuesType.SORTED || dvType == DocValuesType.SORTED_SET) {
+        if (dvType == DocValuesType.BINARY
+            || dvType == DocValuesType.SORTED
+            || dvType == DocValuesType.SORTED_SET) {
           binaryProducer.prepareForUsage();
         }
         if (pointValues != null) {
-          assert pointValues[0].bytes.length == pointValues[0].length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
+          assert pointValues[0].bytes.length == pointValues[0].length
+              : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
 
           final int numDimensions = fieldInfo.getPointDimensionCount();
           final int numBytesPerDimension = fieldInfo.getPointNumBytes();
@@ -888,14 +935,31 @@ public class MemoryIndex {
             maxPackedValue = pointValues[0].bytes.clone();
             for (int i = 0; i < pointValuesCount; i++) {
               BytesRef pointValue = pointValues[i];
-              assert pointValue.bytes.length == pointValue.length : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
+              assert pointValue.bytes.length == pointValue.length
+                  : "BytesRef should wrap a precise byte[], BytesRef.deepCopyOf() should take care of this";
               for (int dim = 0; dim < numDimensions; ++dim) {
                 int offset = dim * numBytesPerDimension;
-                if (Arrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, minPackedValue, offset, offset + numBytesPerDimension) < 0) {
-                  System.arraycopy(pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
+                if (Arrays.compareUnsigned(
+                        pointValue.bytes,
+                        offset,
+                        offset + numBytesPerDimension,
+                        minPackedValue,
+                        offset,
+                        offset + numBytesPerDimension)
+                    < 0) {
+                  System.arraycopy(
+                      pointValue.bytes, offset, minPackedValue, offset, numBytesPerDimension);
                 }
-                if (Arrays.compareUnsigned(pointValue.bytes, offset, offset + numBytesPerDimension, maxPackedValue, offset, offset + numBytesPerDimension) > 0) {
-                  System.arraycopy(pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
+                if (Arrays.compareUnsigned(
+                        pointValue.bytes,
+                        offset,
+                        offset + numBytesPerDimension,
+                        maxPackedValue,
+                        offset,
+                        offset + numBytesPerDimension)
+                    > 0) {
+                  System.arraycopy(
+                      pointValue.bytes, offset, maxPackedValue, offset, numBytesPerDimension);
                 }
               }
             }
@@ -907,17 +971,28 @@ public class MemoryIndex {
 
     NumericDocValues getNormDocValues() {
       if (norm == null) {
-        FieldInvertState invertState = new FieldInvertState(Version.LATEST.major, fieldInfo.name, fieldInfo.getIndexOptions(), lastPosition,
-            numTokens, numOverlapTokens, 0, maxTermFrequency, terms.size());
+        FieldInvertState invertState =
+            new FieldInvertState(
+                Version.LATEST.major,
+                fieldInfo.name,
+                fieldInfo.getIndexOptions(),
+                lastPosition,
+                numTokens,
+                numOverlapTokens,
+                0,
+                maxTermFrequency,
+                terms.size());
         final long value = normSimilarity.computeNorm(invertState);
-        if (DEBUG) System.err.println("MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
+        if (DEBUG)
+          System.err.println(
+              "MemoryIndexReader.norms: " + fieldInfo.name + ":" + value + ":" + numTokens);
 
         norm = value;
       }
       return numericDocValues(norm);
     }
   }
-  
+
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:
   ///////////////////////////////////////////////////////////////////////////////
@@ -939,7 +1014,6 @@ public class MemoryIndex {
     int docId() {
       return doc > 0 ? NumericDocValues.NO_MORE_DOCS : doc;
     }
-
   }
 
   private static SortedNumericDocValues numericDocValues(long[] values, int count) {
@@ -1074,8 +1148,7 @@ public class MemoryIndex {
 
       @Override
       public long nextOrd() throws IOException {
-        if (ord >= values.size())
-          return NO_MORE_ORDS;
+        if (ord >= values.size()) return NO_MORE_ORDS;
         return ord++;
       }
 
@@ -1125,7 +1198,6 @@ public class MemoryIndex {
     private void prepareForUsage() {
       bytesIds = dvBytesValuesSet.sort();
     }
-
   }
 
   private static final class NumericDocValuesProducer {
@@ -1139,8 +1211,8 @@ public class MemoryIndex {
   }
 
   /**
-   * Search support for Lucene framework integration; implements all methods
-   * required by the Lucene IndexReader contracts.
+   * Search support for Lucene framework integration; implements all methods required by the Lucene
+   * IndexReader contracts.
    */
   private final class MemoryIndexReader extends LeafReader {
 
@@ -1179,7 +1251,7 @@ public class MemoryIndex {
     public Bits getLiveDocs() {
       return null;
     }
-    
+
     @Override
     public FieldInfos getFieldInfos() {
       return fieldInfos;
@@ -1213,7 +1285,7 @@ public class MemoryIndex {
         return null;
       }
     }
-    
+
     @Override
     public SortedNumericDocValues getSortedNumericDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_NUMERIC);
@@ -1223,12 +1295,13 @@ public class MemoryIndex {
         return null;
       }
     }
-    
+
     @Override
     public SortedSetDocValues getSortedSetDocValues(String field) {
       Info info = getInfoForExpectedDocValuesType(field, DocValuesType.SORTED_SET);
       if (info != null) {
-        return sortedSetDocValues(info.binaryProducer.dvBytesValuesSet, info.binaryProducer.bytesIds);
+        return sortedSetDocValues(
+            info.binaryProducer.dvBytesValuesSet, info.binaryProducer.bytesIds);
       } else {
         return null;
       }
@@ -1349,9 +1422,9 @@ public class MemoryIndex {
         this.info = info;
         info.sortTerms();
       }
-      
-      private final int binarySearch(BytesRef b, BytesRef bytesRef, int low,
-          int high, BytesRefHash hash, int[] ords) {
+
+      private final int binarySearch(
+          BytesRef b, BytesRef bytesRef, int low, int high, BytesRefHash hash, int[] ords) {
         int mid = 0;
         while (low <= high) {
           mid = (low + high) >>> 1;
@@ -1368,19 +1441,18 @@ public class MemoryIndex {
         assert bytesRef.compareTo(b) != 0;
         return -(low + 1);
       }
-    
 
       @Override
       public boolean seekExact(BytesRef text) {
-        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms);
+        termUpto = binarySearch(text, br, 0, info.terms.size() - 1, info.terms, info.sortedTerms);
         return termUpto >= 0;
       }
 
       @Override
       public SeekStatus seekCeil(BytesRef text) {
-        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms);
+        termUpto = binarySearch(text, br, 0, info.terms.size() - 1, info.terms, info.sortedTerms);
         if (termUpto < 0) { // not found; choose successor
-          termUpto = -termUpto-1;
+          termUpto = -termUpto - 1;
           if (termUpto >= info.terms.size()) {
             return SeekStatus.END;
           } else {
@@ -1398,7 +1470,7 @@ public class MemoryIndex {
         termUpto = (int) ord;
         info.terms.get(info.sortedTerms[termUpto], br);
       }
-      
+
       @Override
       public BytesRef next() {
         termUpto++;
@@ -1436,7 +1508,8 @@ public class MemoryIndex {
           reuse = new MemoryPostingsEnum();
         }
         final int ord = info.sortedTerms[termUpto];
-        return ((MemoryPostingsEnum) reuse).reset(info.sliceArray.start[ord], info.sliceArray.end[ord], info.sliceArray.freq[ord]);
+        return ((MemoryPostingsEnum) reuse)
+            .reset(info.sliceArray.start[ord], info.sliceArray.end[ord], info.sliceArray.freq[ord]);
       }
 
       @Override
@@ -1447,7 +1520,7 @@ public class MemoryIndex {
       @Override
       public void seekExact(BytesRef term, TermState state) throws IOException {
         assert state != null;
-        this.seekExact(((OrdTermState)state).ord);
+        this.seekExact(((OrdTermState) state).ord);
       }
 
       @Override
@@ -1457,7 +1530,7 @@ public class MemoryIndex {
         return ts;
       }
     }
-    
+
     private class MemoryPostingsEnum extends PostingsEnum {
 
       private final SliceReader sliceReader;
@@ -1469,7 +1542,7 @@ public class MemoryIndex {
       private int startOffset;
       private int endOffset;
       private int payloadIndex;
-      private final BytesRefBuilder payloadBuilder;//only non-null when storePayloads
+      private final BytesRefBuilder payloadBuilder; // only non-null when storePayloads
 
       public MemoryPostingsEnum() {
         this.sliceReader = new SliceReader(intBlockPool);
@@ -1484,7 +1557,6 @@ public class MemoryIndex {
         this.freq = freq;
         return this;
       }
-
 
       @Override
       public int docID() {
@@ -1519,7 +1591,7 @@ public class MemoryIndex {
         assert !sliceReader.endOfSlice() : " stores offsets : " + startOffset;
         int pos = sliceReader.readInt();
         if (storeOffsets) {
-          //pos = sliceReader.readInt();
+          // pos = sliceReader.readInt();
           startOffset = sliceReader.readInt();
           endOffset = sliceReader.readInt();
         }
@@ -1546,7 +1618,7 @@ public class MemoryIndex {
         }
         return payloadsBytesRefs.get(payloadBuilder, payloadIndex);
       }
-      
+
       @Override
       public long cost() {
         return 1;
@@ -1611,9 +1683,8 @@ public class MemoryIndex {
       public int getDocCount() {
         return 1;
       }
-
     }
-    
+
     @Override
     public Fields getTermVectors(int docID) {
       if (docID == 0) {
@@ -1622,30 +1693,30 @@ public class MemoryIndex {
         return null;
       }
     }
-  
+
     @Override
     public int numDocs() {
       if (DEBUG) System.err.println("MemoryIndexReader.numDocs");
       return 1;
     }
-  
+
     @Override
     public int maxDoc() {
       if (DEBUG) System.err.println("MemoryIndexReader.maxDoc");
       return 1;
     }
-  
+
     @Override
     public void document(int docID, StoredFieldVisitor visitor) {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       // no-op: there are no stored fields
     }
-  
+
     @Override
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }
-    
+
     @Override
     public NumericDocValues getNormValues(String field) {
       Info info = fields.get(field);
@@ -1671,9 +1742,7 @@ public class MemoryIndex {
     }
   }
 
-  /**
-   * Resets the {@link MemoryIndex} to its initial state and recycles all internal buffers.
-   */
+  /** Resets the {@link MemoryIndex} to its initial state and recycles all internal buffers. */
   public void reset() {
     fields.clear();
     this.normSimilarity = IndexSearcher.getDefaultSimilarity();
@@ -1684,16 +1753,16 @@ public class MemoryIndex {
     }
     this.frozen = false;
   }
-  
+
   private static final class SliceByteStartArray extends DirectBytesStartArray {
     int[] start; // the start offset in the IntBlockPool per term
     int[] end; // the end pointer in the IntBlockPool for the postings slice per term
     int[] freq; // the term frequency
-    
+
     public SliceByteStartArray(int initSize) {
       super(initSize);
     }
-    
+
     @Override
     public int[] init() {
       final int[] ord = super.init();
@@ -1713,7 +1782,7 @@ public class MemoryIndex {
         start = ArrayUtil.grow(start, ord.length);
         end = ArrayUtil.grow(end, ord.length);
         freq = ArrayUtil.grow(freq, ord.length);
-      }      
+      }
       assert start.length >= ord.length;
       assert end.length >= ord.length;
       assert freq.length >= ord.length;
@@ -1722,9 +1791,8 @@ public class MemoryIndex {
 
     @Override
     public int[] clear() {
-     start = end = null;
-     return super.clear();
+      start = end = null;
+      return super.clear();
     }
-    
   }
 }

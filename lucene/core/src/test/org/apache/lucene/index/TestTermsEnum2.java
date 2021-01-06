@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -38,8 +38,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.*;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 public class TestTermsEnum2 extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;
@@ -53,14 +51,17 @@ public class TestTermsEnum2 extends LuceneTestCase {
     super.setUp();
     numIterations = atLeast(50);
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-            .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.YES);
     doc.add(field);
     terms = new TreeSet<>();
- 
+
     int num = atLeast(200);
     for (int i = 0; i < num; i++) {
       String s = TestUtil.randomUnicodeString(random());
@@ -68,39 +69,41 @@ public class TestTermsEnum2 extends LuceneTestCase {
       terms.add(new BytesRef(s));
       writer.addDocument(doc);
     }
-    
+
     termsAutomaton = Automata.makeStringUnion(terms);
-    
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
     dir.close();
     super.tearDown();
   }
-  
+
   /** tests a pre-intersected automaton against the original */
   public void testFiniteVersusInfinite() throws Exception {
 
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton(),
-        DEFAULT_MAX_DETERMINIZED_STATES);
+      Automaton automaton =
+          Operations.determinize(
+              new RegExp(reg, RegExp.NONE).toAutomaton(), DEFAULT_MAX_DETERMINIZED_STATES);
       final List<BytesRef> matchedTerms = new ArrayList<>();
-      for(BytesRef t : terms) {
+      for (BytesRef t : terms) {
         if (Operations.run(automaton, t.utf8ToString())) {
           matchedTerms.add(t);
         }
       }
 
       Automaton alternate = Automata.makeStringUnion(matchedTerms);
-      //System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + " states, sigma=" + alternate.getStartPoints().length);
-      //AutomatonTestUtil.minimizeSimple(alternate);
-      //System.out.println("minimize done");
+      // System.out.println("match " + matchedTerms.size() + " " + alternate.getNumberOfStates() + "
+      // states, sigma=" + alternate.getStartPoints().length);
+      // AutomatonTestUtil.minimizeSimple(alternate);
+      // System.out.println("minimize done");
       AutomatonQuery a1 = new AutomatonQuery(new Term("field", ""), automaton);
       AutomatonQuery a2 = new AutomatonQuery(new Term("field", ""), alternate, Integer.MAX_VALUE);
 
@@ -109,13 +112,14 @@ public class TestTermsEnum2 extends LuceneTestCase {
       CheckHits.checkEqual(a1, origHits, newHits);
     }
   }
-  
+
   /** seeks to every term accepted by some automata */
   public void testSeeking() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
-      Automaton automaton = Operations.determinize(new RegExp(reg, RegExp.NONE).toAutomaton(),
-        DEFAULT_MAX_DETERMINIZED_STATES);
+      Automaton automaton =
+          Operations.determinize(
+              new RegExp(reg, RegExp.NONE).toAutomaton(), DEFAULT_MAX_DETERMINIZED_STATES);
       TermsEnum te = MultiTerms.getTerms(reader, "field").iterator();
       ArrayList<BytesRef> unsortedTerms = new ArrayList<>(terms);
       Collections.shuffle(unsortedTerms, random());
@@ -135,7 +139,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
       }
     }
   }
-  
+
   /** mixes up seek and next for all terms */
   public void testSeekingAndNexting() throws Exception {
     for (int i = 0; i < numIterations; i++) {
@@ -154,23 +158,25 @@ public class TestTermsEnum2 extends LuceneTestCase {
       }
     }
   }
-  
+
   /** tests intersect: TODO start at a random term! */
   public void testIntersect() throws Exception {
     for (int i = 0; i < numIterations; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random());
       Automaton automaton = new RegExp(reg, RegExp.NONE).toAutomaton();
-      CompiledAutomaton ca = new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
+      CompiledAutomaton ca =
+          new CompiledAutomaton(automaton, Operations.isFinite(automaton), false);
       TermsEnum te = MultiTerms.getTerms(reader, "field").intersect(ca, null);
-      Automaton expected = Operations.determinize(Operations.intersection(termsAutomaton, automaton),
-        DEFAULT_MAX_DETERMINIZED_STATES);
+      Automaton expected =
+          Operations.determinize(
+              Operations.intersection(termsAutomaton, automaton), DEFAULT_MAX_DETERMINIZED_STATES);
       TreeSet<BytesRef> found = new TreeSet<>();
       while (te.next() != null) {
         found.add(BytesRef.deepCopyOf(te.term()));
       }
-      
-      Automaton actual = Operations.determinize(Automata.makeStringUnion(found),
-        DEFAULT_MAX_DETERMINIZED_STATES);
+
+      Automaton actual =
+          Operations.determinize(Automata.makeStringUnion(found), DEFAULT_MAX_DETERMINIZED_STATES);
       assertTrue(Operations.sameLanguage(expected, actual));
     }
   }

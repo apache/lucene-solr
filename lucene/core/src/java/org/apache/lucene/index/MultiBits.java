@@ -17,15 +17,13 @@
 package org.apache.lucene.index;
 
 import java.util.List;
-
 import org.apache.lucene.util.Bits;
-
 
 /**
  * Concatenates multiple Bits together, on every lookup.
  *
- * <p><b>NOTE</b>: This is very costly, as every lookup must
- * do a binary search to locate the right sub-reader.
+ * <p><b>NOTE</b>: This is very costly, as every lookup must do a binary search to locate the right
+ * sub-reader.
  *
  * @lucene.experimental
  */
@@ -38,21 +36,19 @@ public final class MultiBits implements Bits {
   private final boolean defaultValue;
 
   private MultiBits(Bits[] subs, int[] starts, boolean defaultValue) {
-    assert starts.length == 1+subs.length;
+    assert starts.length == 1 + subs.length;
     this.subs = subs;
     this.starts = starts;
     this.defaultValue = defaultValue;
   }
 
-  /** Returns a single {@link Bits} instance for this
-   *  reader, merging live Documents on the
-   *  fly.  This method will return null if the reader
-   *  has no deletions.
+  /**
+   * Returns a single {@link Bits} instance for this reader, merging live Documents on the fly. This
+   * method will return null if the reader has no deletions.
    *
-   *  <p><b>NOTE</b>: this is a very slow way to access live docs.
-   *  For example, each Bits access will require a binary search.
-   *  It's better to get the sub-readers and iterate through them
-   *  yourself. */
+   * <p><b>NOTE</b>: this is a very slow way to access live docs. For example, each Bits access will
+   * require a binary search. It's better to get the sub-readers and iterate through them yourself.
+   */
   public static Bits getLiveDocs(IndexReader reader) {
     if (reader.hasDeletions()) {
       final List<LeafReaderContext> leaves = reader.leaves();
@@ -77,8 +73,16 @@ public final class MultiBits implements Bits {
   }
 
   private boolean checkLength(int reader, int doc) {
-    final int length = starts[1+reader]-starts[reader];
-    assert doc - starts[reader] < length: "doc=" + doc + " reader=" + reader + " starts[reader]=" + starts[reader] + " length=" + length;
+    final int length = starts[1 + reader] - starts[reader];
+    assert doc - starts[reader] < length
+        : "doc="
+            + doc
+            + " reader="
+            + reader
+            + " starts[reader]="
+            + starts[reader]
+            + " length="
+            + length;
     return true;
   }
 
@@ -91,22 +95,27 @@ public final class MultiBits implements Bits {
       return defaultValue;
     } else {
       assert checkLength(reader, doc);
-      return bits.get(doc-starts[reader]);
+      return bits.get(doc - starts[reader]);
     }
   }
-  
+
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
     b.append(subs.length).append(" subs: ");
-    for(int i=0;i<subs.length;i++) {
+    for (int i = 0; i < subs.length; i++) {
       if (i != 0) {
         b.append("; ");
       }
       if (subs[i] == null) {
         b.append("s=").append(starts[i]).append(" l=null");
       } else {
-        b.append("s=").append(starts[i]).append(" l=").append(subs[i].length()).append(" b=").append(subs[i]);
+        b.append("s=")
+            .append(starts[i])
+            .append(" l=")
+            .append(subs[i].length())
+            .append(" b=")
+            .append(subs[i]);
       }
     }
     b.append(" end=").append(starts[subs.length]);
@@ -115,6 +124,6 @@ public final class MultiBits implements Bits {
 
   @Override
   public int length() {
-    return starts[starts.length-1];
+    return starts[starts.length - 1];
   }
 }

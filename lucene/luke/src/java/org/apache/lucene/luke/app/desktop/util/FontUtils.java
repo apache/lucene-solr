@@ -17,18 +17,19 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.JLabel;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.awt.font.TextAttribute;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import javax.swing.JLabel;
 
 /** Font utilities */
 public class FontUtils {
 
-  public static final String TTF_RESOURCE_NAME = "org/apache/lucene/luke/app/desktop/font/ElegantIcons.ttf";
+  public static final String TTF_RESOURCE_NAME =
+      "org/apache/lucene/luke/app/desktop/font/ElegantIcons.ttf";
 
   @SuppressWarnings("unchecked")
   public static JLabel toLinkText(JLabel label) {
@@ -46,8 +47,8 @@ public class FontUtils {
   }
 
   /**
-   * Generates HTML text with embedded Elegant Icon Font.
-   * See: https://www.elegantthemes.com/blog/resources/elegant-icon-font
+   * Generates HTML text with embedded Elegant Icon Font. See:
+   * https://www.elegantthemes.com/blog/resources/elegant-icon-font
    *
    * @param iconRef HTML numeric character reference of the icon
    */
@@ -65,7 +66,5 @@ public class FontUtils {
     return "<html><font face=\"ElegantIcons\">" + iconRef + "</font>&nbsp;" + text + "</html>";
   }
 
-  private FontUtils() {
-  }
-
+  private FontUtils() {}
 }

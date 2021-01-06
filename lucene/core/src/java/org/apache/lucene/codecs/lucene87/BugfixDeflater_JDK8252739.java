@@ -20,25 +20,24 @@ import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
- * This class is a workaround for JDK bug
- * <a href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK-8252739</a>.
+ * This class is a workaround for JDK bug <a
+ * href="https://bugs.openjdk.java.net/browse/JDK-8252739">JDK-8252739</a>.
  */
 @FunctionalInterface
 interface BugfixDeflater_JDK8252739 {
-  
+
   public static final boolean IS_BUGGY_JDK = detectBuggyJDK();
 
   /**
    * Creates a bugfix for {@link Deflater} instances, which works around JDK-8252739.
-   * <p>
-   * Use this whenever you intend to call {@link Deflater#setDictionary(byte[], int, int)}
-   * on a {@code Deflater}.
-   * */
+   *
+   * <p>Use this whenever you intend to call {@link Deflater#setDictionary(byte[], int, int)} on a
+   * {@code Deflater}.
+   */
   @SuppressForbidden(reason = "Works around bug, so it must call forbidden method")
   public static BugfixDeflater_JDK8252739 createBugfix(Deflater deflater) {
     if (IS_BUGGY_JDK) {
@@ -56,13 +55,13 @@ interface BugfixDeflater_JDK8252739 {
       return deflater::setDictionary;
     }
   }
-  
+
   /** Call this method as a workaround */
   void setDictionary(byte[] dictBytes, int off, int len);
-  
+
   @SuppressForbidden(reason = "Detector for the bug, so it must call buggy method")
   private static boolean detectBuggyJDK() {
-    final byte[] testData = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+    final byte[] testData = new byte[] {1, 2, 3, 4, 5, 6, 7, 8};
     final byte[] compressed = new byte[32]; // way enough space
     final Deflater deflater = new Deflater(6, true);
     int compressedSize;
@@ -75,11 +74,11 @@ interface BugfixDeflater_JDK8252739 {
     } finally {
       deflater.end();
     }
-    
+
     // in nowrap mode we need extra 0-byte as padding, add explicit:
     compressed[compressedSize] = 0;
     compressedSize++;
-    
+
     final Inflater inflater = new Inflater(true);
     final byte[] restored = new byte[testData.length];
     try {
@@ -92,7 +91,7 @@ interface BugfixDeflater_JDK8252739 {
       }
     } catch (DataFormatException e) {
       return true;
-    } catch(RuntimeException e) {
+    } catch (RuntimeException e) {
       return true;
     } finally {
       inflater.end();
@@ -101,9 +100,8 @@ interface BugfixDeflater_JDK8252739 {
     if (Arrays.equals(testData, restored) == false) {
       return true;
     }
-    
+
     // all fine
     return false;
   }
-  
 }

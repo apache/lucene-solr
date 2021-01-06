@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
-
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
@@ -32,99 +30,122 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.TestUtil;
 
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-
-/**
- * Tests {@link NGramTokenizer} for correctness.
- */
+/** Tests {@link NGramTokenizer} for correctness. */
 public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   private StringReader input;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     input = new StringReader("abcde");
   }
-  
+
   public void testInvalidInput() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      NGramTokenizer tok = new NGramTokenizer(2, 1);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          NGramTokenizer tok = new NGramTokenizer(2, 1);
+        });
   }
-  
+
   public void testInvalidInput2() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      NGramTokenizer tok = new NGramTokenizer(0, 1);
-      tok.setReader(input);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          NGramTokenizer tok = new NGramTokenizer(0, 1);
+          tok.setReader(input);
+        });
   }
-  
+
   public void testUnigrams() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(1, 1);
     tokenizer.setReader(input);
-    assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
+    assertTokenStreamContents(
+        tokenizer,
+        new String[] {"a", "b", "c", "d", "e"},
+        new int[] {0, 1, 2, 3, 4},
+        new int[] {1, 2, 3, 4, 5},
+        5 /* abcde */);
   }
-  
+
   public void testBigrams() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(2, 2);
     tokenizer.setReader(input);
-    assertTokenStreamContents(tokenizer, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5}, 5 /* abcde */);
+    assertTokenStreamContents(
+        tokenizer,
+        new String[] {"ab", "bc", "cd", "de"},
+        new int[] {0, 1, 2, 3},
+        new int[] {2, 3, 4, 5},
+        5 /* abcde */);
   }
-  
+
   public void testNgrams() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(1, 3);
     tokenizer.setReader(input);
-    assertTokenStreamContents(tokenizer,
-        new String[]{"a","ab", "abc", "b", "bc", "bcd", "c", "cd", "cde", "d", "de", "e"},
-        new int[]{0,0,0,1,1,1,2,2,2,3,3,4},
-        new int[]{1,2,3,2,3,4,3,4,5,4,5,5},
+    assertTokenStreamContents(
+        tokenizer,
+        new String[] {"a", "ab", "abc", "b", "bc", "bcd", "c", "cd", "cde", "d", "de", "e"},
+        new int[] {0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 4},
+        new int[] {1, 2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 5},
         null,
         null,
         null,
         5 /* abcde */,
-        false
-        );
+        false);
   }
-  
+
   public void testOversizedNgrams() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(6, 7);
     tokenizer.setReader(input);
     assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0], 5 /* abcde */);
   }
-  
+
   public void testReset() throws Exception {
     NGramTokenizer tokenizer = new NGramTokenizer(1, 1);
     tokenizer.setReader(input);
-    assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
+    assertTokenStreamContents(
+        tokenizer,
+        new String[] {"a", "b", "c", "d", "e"},
+        new int[] {0, 1, 2, 3, 4},
+        new int[] {1, 2, 3, 4, 5},
+        5 /* abcde */);
     tokenizer.setReader(new StringReader("abcde"));
-    assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, 5 /* abcde */);
+    assertTokenStreamContents(
+        tokenizer,
+        new String[] {"a", "b", "c", "d", "e"},
+        new int[] {0, 1, 2, 3, 4},
+        new int[] {1, 2, 3, 4, 5},
+        5 /* abcde */);
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     int numIters = TEST_NIGHTLY ? 10 : 1;
     for (int i = 0; i < numIters; i++) {
       final int min = TestUtil.nextInt(random(), 2, 10);
       final int max = TestUtil.nextInt(random(), min, 20);
-      Analyzer a = new Analyzer() {
-        @Override
-        protected TokenStreamComponents createComponents(String fieldName) {
-          Tokenizer tokenizer = new NGramTokenizer(min, max);
-          return new TokenStreamComponents(tokenizer, tokenizer);
-        }    
-      };
+      Analyzer a =
+          new Analyzer() {
+            @Override
+            protected TokenStreamComponents createComponents(String fieldName) {
+              Tokenizer tokenizer = new NGramTokenizer(min, max);
+              return new TokenStreamComponents(tokenizer, tokenizer);
+            }
+          };
       checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER, 20);
-      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 1027);
+      checkRandomData(random(), a, 10 * RANDOM_MULTIPLIER, 1027);
       a.close();
     }
   }
 
-  private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars) throws IOException {
+  private static void testNGrams(int minGram, int maxGram, int length, final String nonTokenChars)
+      throws IOException {
     final String s = RandomStrings.randomAsciiLettersOfLengthBetween(random(), length, length);
     testNGrams(minGram, maxGram, s, nonTokenChars);
   }
 
-  private static void testNGrams(int minGram, int maxGram, String s, String nonTokenChars) throws IOException {
+  private static void testNGrams(int minGram, int maxGram, String s, String nonTokenChars)
+      throws IOException {
     testNGrams(minGram, maxGram, s, nonTokenChars, false);
   }
 
@@ -148,22 +169,26 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     return true;
   }
 
-  static void testNGrams(int minGram, int maxGram, String s, final String nonTokenChars, boolean edgesOnly) throws IOException {
+  static void testNGrams(
+      int minGram, int maxGram, String s, final String nonTokenChars, boolean edgesOnly)
+      throws IOException {
     // convert the string to code points
     final int[] codePoints = toCodePoints(s);
     final int[] offsets = new int[codePoints.length + 1];
     for (int i = 0; i < codePoints.length; ++i) {
-      offsets[i+1] = offsets[i] + Character.charCount(codePoints[i]);
+      offsets[i + 1] = offsets[i] + Character.charCount(codePoints[i]);
     }
-    final Tokenizer grams = new NGramTokenizer(minGram, maxGram, edgesOnly) {
-      @Override
-      protected boolean isTokenChar(int chr) {
-        return nonTokenChars.indexOf(chr) < 0;
-      }
-    };
+    final Tokenizer grams =
+        new NGramTokenizer(minGram, maxGram, edgesOnly) {
+          @Override
+          protected boolean isTokenChar(int chr) {
+            return nonTokenChars.indexOf(chr) < 0;
+          }
+        };
     grams.setReader(new StringReader(s));
     final CharTermAttribute termAtt = grams.addAttribute(CharTermAttribute.class);
-    final PositionIncrementAttribute posIncAtt = grams.addAttribute(PositionIncrementAttribute.class);
+    final PositionIncrementAttribute posIncAtt =
+        grams.addAttribute(PositionIncrementAttribute.class);
     final PositionLengthAttribute posLenAtt = grams.addAttribute(PositionLengthAttribute.class);
     final OffsetAttribute offsetAtt = grams.addAttribute(OffsetAttribute.class);
     grams.reset();

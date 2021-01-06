@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -38,10 +37,9 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Holds buffered deletes and updates by term or query, once pushed. Pushed
- * deletes/updates are write-once, so we shift to more memory efficient data
- * structure to hold them.  We don't hold docIDs because these are applied on
- * flush.
+ * Holds buffered deletes and updates by term or query, once pushed. Pushed deletes/updates are
+ * write-once, so we shift to more memory efficient data structure to hold them. We don't hold
+ * docIDs because these are applied on flush.
  */
 final class FrozenBufferedUpdates {
 
@@ -50,38 +48,43 @@ final class FrozenBufferedUpdates {
    * we run this before applying the deletes/updates. */
 
   /* Query we often undercount (say 24 bytes), plus int. */
-  final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + Integer.BYTES + 24;
-  
+  static final int BYTES_PER_DEL_QUERY =
+      RamUsageEstimator.NUM_BYTES_OBJECT_REF + Integer.BYTES + 24;
+
   // Terms, in sorted order:
   final PrefixCodedTerms deleteTerms;
 
   // Parallel array of deleted query, and the docIDUpto for each
   final Query[] deleteQueries;
   final int[] deleteQueryLimits;
-  
+
   /** Counts down once all deletes/updates have been applied */
   public final CountDownLatch applied = new CountDownLatch(1);
+
   private final ReentrantLock applyLock = new ReentrantLock();
   private final Map<String, FieldUpdatesBuffer> fieldUpdates;
 
   /** How many total documents were deleted/updated. */
   public long totalDelCount;
+
   private final int fieldUpdatesCount;
-  
+
   final int bytesUsed;
   final int numTermDeletes;
 
   private long delGen = -1; // assigned by BufferedUpdatesStream once pushed
 
-  final SegmentCommitInfo privateSegment;  // non-null iff this frozen packet represents 
-                                   // a segment private deletes. in that case is should
-                                   // only have Queries and doc values updates
+  final SegmentCommitInfo privateSegment; // non-null iff this frozen packet represents
+  // a segment private deletes. in that case is should
+  // only have Queries and doc values updates
   private final InfoStream infoStream;
 
-  public FrozenBufferedUpdates(InfoStream infoStream, BufferedUpdates updates, SegmentCommitInfo privateSegment) {
+  public FrozenBufferedUpdates(
+      InfoStream infoStream, BufferedUpdates updates, SegmentCommitInfo privateSegment) {
     this.infoStream = infoStream;
     this.privateSegment = privateSegment;
-    assert privateSegment == null || updates.deleteTerms.isEmpty() : "segment private packet should only have del queries";
+    assert privateSegment == null || updates.deleteTerms.isEmpty()
+        : "segment private packet should only have del queries";
     Term termsArray[] = updates.deleteTerms.keySet().toArray(new Term[updates.deleteTerms.size()]);
     ArrayUtil.timSort(termsArray);
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
@@ -89,11 +92,11 @@ final class FrozenBufferedUpdates {
       builder.add(term);
     }
     deleteTerms = builder.finish();
-    
+
     deleteQueries = new Query[updates.deleteQueries.size()];
     deleteQueryLimits = new int[updates.deleteQueries.size()];
     int upto = 0;
-    for(Map.Entry<Query,Integer> ent : updates.deleteQueries.entrySet()) {
+    for (Map.Entry<Query, Integer> ent : updates.deleteQueries.entrySet()) {
       deleteQueries[upto] = ent.getKey();
       deleteQueryLimits[upto] = ent.getValue();
       upto++;
@@ -106,55 +109,60 @@ final class FrozenBufferedUpdates {
     this.fieldUpdates = Map.copyOf(updates.fieldUpdates);
     this.fieldUpdatesCount = updates.numFieldUpdates.get();
 
-    bytesUsed = (int) ((deleteTerms.ramBytesUsed() + deleteQueries.length * BYTES_PER_DEL_QUERY)
-        + updates.fieldUpdatesBytesUsed.get());
-    
+    bytesUsed =
+        (int)
+            ((deleteTerms.ramBytesUsed() + deleteQueries.length * BYTES_PER_DEL_QUERY)
+                + updates.fieldUpdatesBytesUsed.get());
+
     numTermDeletes = updates.numTermDeletes.get();
     if (infoStream != null && infoStream.isEnabled("BD")) {
-      infoStream.message("BD", String.format(Locale.ROOT,
-                                             "compressed %d to %d bytes (%.2f%%) for deletes/updates; private segment %s",
-                                             updates.ramBytesUsed(), bytesUsed, 100.*bytesUsed/updates.ramBytesUsed(),
-                                             privateSegment));
+      infoStream.message(
+          "BD",
+          String.format(
+              Locale.ROOT,
+              "compressed %d to %d bytes (%.2f%%) for deletes/updates; private segment %s",
+              updates.ramBytesUsed(),
+              bytesUsed,
+              100. * bytesUsed / updates.ramBytesUsed(),
+              privateSegment));
     }
   }
 
   /**
    * Tries to lock this buffered update instance
+   *
    * @return true if the lock was successfully acquired. otherwise false.
    */
   boolean tryLock() {
     return applyLock.tryLock();
   }
 
-  /**
-   * locks this buffered update instance
-   */
+  /** locks this buffered update instance */
   void lock() {
     applyLock.lock();
   }
 
-  /**
-   * Releases the lock of this buffered update instance
-   */
+  /** Releases the lock of this buffered update instance */
   void unlock() {
     applyLock.unlock();
   }
 
-  /**
-   * Returns true iff this buffered updates instance was already applied
-   */
+  /** Returns true iff this buffered updates instance was already applied */
   boolean isApplied() {
     assert applyLock.isHeldByCurrentThread();
     return applied.getCount() == 0;
   }
 
-  /** Applies pending delete-by-term, delete-by-query and doc values updates to all segments in the index, returning
-   *  the number of new deleted or updated documents. */
+  /**
+   * Applies pending delete-by-term, delete-by-query and doc values updates to all segments in the
+   * index, returning the number of new deleted or updated documents.
+   */
   long apply(BufferedUpdatesStream.SegmentState[] segStates) throws IOException {
     assert applyLock.isHeldByCurrentThread();
     if (delGen == -1) {
       // we were not yet pushed
-      throw new IllegalArgumentException("gen is not yet set; call BufferedUpdatesStream.push first");
+      throw new IllegalArgumentException(
+          "gen is not yet set; call BufferedUpdatesStream.push first");
     }
 
     assert applied.getCount() != 0;
@@ -171,7 +179,8 @@ final class FrozenBufferedUpdates {
     return totalDelCount;
   }
 
-  private long applyDocValuesUpdates(BufferedUpdatesStream.SegmentState[] segStates) throws IOException {
+  private long applyDocValuesUpdates(BufferedUpdatesStream.SegmentState[] segStates)
+      throws IOException {
 
     if (fieldUpdates.isEmpty()) {
       return 0;
@@ -196,27 +205,32 @@ final class FrozenBufferedUpdates {
       }
       final boolean isSegmentPrivateDeletes = privateSegment != null;
       if (fieldUpdates.isEmpty() == false) {
-        updateCount += applyDocValuesUpdates(segState, fieldUpdates, delGen, isSegmentPrivateDeletes);
+        updateCount +=
+            applyDocValuesUpdates(segState, fieldUpdates, delGen, isSegmentPrivateDeletes);
       }
-
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD",
-                         String.format(Locale.ROOT, "applyDocValuesUpdates %.1f msec for %d segments, %d field updates; %d new updates",
-                                       (System.nanoTime()-startNS)/1000000.,
-                                       segStates.length,
-                                       fieldUpdatesCount,
-                                       updateCount));
+      infoStream.message(
+          "BD",
+          String.format(
+              Locale.ROOT,
+              "applyDocValuesUpdates %.1f msec for %d segments, %d field updates; %d new updates",
+              (System.nanoTime() - startNS) / 1000000.,
+              segStates.length,
+              fieldUpdatesCount,
+              updateCount));
     }
 
     return updateCount;
   }
 
-  private static long applyDocValuesUpdates(BufferedUpdatesStream.SegmentState segState,
-                                            Map<String, FieldUpdatesBuffer> updates,
-                                            long delGen,
-                                            boolean segmentPrivateDeletes) throws IOException {
+  private static long applyDocValuesUpdates(
+      BufferedUpdatesStream.SegmentState segState,
+      Map<String, FieldUpdatesBuffer> updates,
+      long delGen,
+      boolean segmentPrivateDeletes)
+      throws IOException {
 
     // TODO: we can process the updates per DV field, from last to first so that
     // if multiple terms affect same document for the same field, we add an update
@@ -230,7 +244,8 @@ final class FrozenBufferedUpdates {
 
     long updateCount = 0;
 
-    // We first write all our updates private, and only in the end publish to the ReadersAndUpdates */
+    // We first write all our updates private, and only in the end publish to the ReadersAndUpdates
+    // */
     final List<DocValuesFieldUpdates> resolvedUpdates = new ArrayList<>();
     for (Map.Entry<String, FieldUpdatesBuffer> fieldUpdate : updates.entrySet()) {
       String updateField = fieldUpdate.getKey();
@@ -239,7 +254,8 @@ final class FrozenBufferedUpdates {
       boolean isNumeric = value.isNumeric();
       FieldUpdatesBuffer.BufferedUpdateIterator iterator = value.iterator();
       FieldUpdatesBuffer.BufferedUpdate bufferedUpdate;
-      TermDocsIterator termDocsIterator = new TermDocsIterator(segState.reader, iterator.isSortedTerms());
+      TermDocsIterator termDocsIterator =
+          new TermDocsIterator(segState.reader, iterator.isSortedTerms());
       while ((bufferedUpdate = iterator.next()) != null) {
         // TODO: we traverse the terms in update order (not term order) so that we
         // apply the updates in the correct order, i.e. if two terms update the
@@ -251,7 +267,8 @@ final class FrozenBufferedUpdates {
         // which will get same docIDUpto, yet will still need to respect the order
         // those updates arrived.
         // TODO: we could at least *collate* by field?
-        final DocIdSetIterator docIdSetIterator = termDocsIterator.nextTerm(bufferedUpdate.termField, bufferedUpdate.termValue);
+        final DocIdSetIterator docIdSetIterator =
+            termDocsIterator.nextTerm(bufferedUpdate.termField, bufferedUpdate.termValue);
         if (docIdSetIterator != null) {
           final int limit;
           if (delGen == segState.delGen) {
@@ -272,15 +289,21 @@ final class FrozenBufferedUpdates {
           if (dvUpdates == null) {
             if (isNumeric) {
               if (value.hasSingleValue()) {
-                dvUpdates = new NumericDocValuesFieldUpdates
-                    .SingleValueNumericDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc(),
-                    value.getNumericValue(0));
+                dvUpdates =
+                    new NumericDocValuesFieldUpdates.SingleValueNumericDocValuesFieldUpdates(
+                        delGen, updateField, segState.reader.maxDoc(), value.getNumericValue(0));
               } else {
-                dvUpdates = new NumericDocValuesFieldUpdates(delGen, updateField, value.getMinNumeric(),
-                    value.getMaxNumeric(), segState.reader.maxDoc());
+                dvUpdates =
+                    new NumericDocValuesFieldUpdates(
+                        delGen,
+                        updateField,
+                        value.getMinNumeric(),
+                        value.getMaxNumeric(),
+                        segState.reader.maxDoc());
               }
             } else {
-              dvUpdates = new BinaryDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
+              dvUpdates =
+                  new BinaryDocValuesFieldUpdates(delGen, updateField, segState.reader.maxDoc());
             }
             resolvedUpdates.add(dvUpdates);
           }
@@ -295,7 +318,8 @@ final class FrozenBufferedUpdates {
           }
           final Bits acceptDocs = segState.rld.getLiveDocs();
           if (segState.rld.sortMap != null && segmentPrivateDeletes) {
-            // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
+            // This segment was sorted on flush; we must apply seg-private deletes carefully in this
+            // case:
             int doc;
             while ((doc = docIdSetIterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
               if (acceptDocs == null || acceptDocs.get(doc)) {
@@ -334,7 +358,8 @@ final class FrozenBufferedUpdates {
   }
 
   // Delete by query
-  private long applyQueryDeletes(BufferedUpdatesStream.SegmentState[] segStates) throws IOException {
+  private long applyQueryDeletes(BufferedUpdatesStream.SegmentState[] segStates)
+      throws IOException {
 
     if (deleteQueries.length == 0) {
       return 0;
@@ -349,7 +374,7 @@ final class FrozenBufferedUpdates {
         // segment is newer than this deletes packet
         continue;
       }
-      
+
       if (segState.rld.refCount() == 1) {
         // This means we are the only remaining reference to this segment, meaning
         // it was merged away while we were running, so we can safely skip running
@@ -376,7 +401,8 @@ final class FrozenBufferedUpdates {
           final DocIdSetIterator it = scorer.iterator();
           if (segState.rld.sortMap != null && limit != Integer.MAX_VALUE) {
             assert privateSegment != null;
-            // This segment was sorted on flush; we must apply seg-private deletes carefully in this case:
+            // This segment was sorted on flush; we must apply seg-private deletes carefully in this
+            // case:
             int docID;
             while ((docID = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
               // The limit is in the pre-sorted doc space:
@@ -399,17 +425,20 @@ final class FrozenBufferedUpdates {
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD",
-                         String.format(Locale.ROOT, "applyQueryDeletes took %.2f msec for %d segments and %d queries; %d new deletions",
-                                       (System.nanoTime()-startNS)/1000000.,
-                                       segStates.length,
-                                       deleteQueries.length,
-                                       delCount));
+      infoStream.message(
+          "BD",
+          String.format(
+              Locale.ROOT,
+              "applyQueryDeletes took %.2f msec for %d segments and %d queries; %d new deletions",
+              (System.nanoTime() - startNS) / 1000000.,
+              segStates.length,
+              deleteQueries.length,
+              delCount));
     }
-    
+
     return delCount;
   }
-  
+
   private long applyTermDeletes(BufferedUpdatesStream.SegmentState[] segStates) throws IOException {
 
     if (deleteTerms.size() == 0) {
@@ -424,7 +453,8 @@ final class FrozenBufferedUpdates {
     long delCount = 0;
 
     for (BufferedUpdatesStream.SegmentState segState : segStates) {
-      assert segState.delGen != delGen: "segState.delGen=" + segState.delGen + " vs this.gen=" + delGen;
+      assert segState.delGen != delGen
+          : "segState.delGen=" + segState.delGen + " vs this.gen=" + delGen;
       if (segState.delGen > delGen) {
         // our deletes don't apply to this segment
         continue;
@@ -458,23 +488,26 @@ final class FrozenBufferedUpdates {
     }
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD",
-                         String.format(Locale.ROOT, "applyTermDeletes took %.2f msec for %d segments and %d del terms; %d new deletions",
-                                       (System.nanoTime()-startNS)/1000000.,
-                                       segStates.length,
-                                       deleteTerms.size(),
-                                       delCount));
+      infoStream.message(
+          "BD",
+          String.format(
+              Locale.ROOT,
+              "applyTermDeletes took %.2f msec for %d segments and %d del terms; %d new deletions",
+              (System.nanoTime() - startNS) / 1000000.,
+              segStates.length,
+              deleteTerms.size(),
+              delCount));
     }
 
     return delCount;
   }
-  
+
   public void setDelGen(long delGen) {
-    assert this.delGen == -1: "delGen was already previously set to " + this.delGen;
+    assert this.delGen == -1 : "delGen was already previously set to " + this.delGen;
     this.delGen = delGen;
     deleteTerms.setDelGen(delGen);
   }
-  
+
   public long delGen() {
     assert delGen != -1;
     return delGen;
@@ -504,14 +537,14 @@ final class FrozenBufferedUpdates {
 
     return s;
   }
-  
+
   boolean any() {
-    return deleteTerms.size() > 0 || deleteQueries.length > 0 || fieldUpdatesCount > 0 ;
+    return deleteTerms.size() > 0 || deleteQueries.length > 0 || fieldUpdatesCount > 0;
   }
 
   /**
-   * This class helps iterating a term dictionary and consuming all the docs for each terms.
-   * It accepts a field, value tuple and returns a {@link DocIdSetIterator} if the field has an entry
+   * This class helps iterating a term dictionary and consuming all the docs for each terms. It
+   * accepts a field, value tuple and returns a {@link DocIdSetIterator} if the field has an entry
    * for the given value. It has an optimized way of iterating the term dictionary if the terms are
    * passed in sorted order and makes sure terms and postings are reused as much as possible.
    */
@@ -550,7 +583,8 @@ final class FrozenBufferedUpdates {
         if (terms != null) {
           termsEnum = terms.iterator();
           if (sortedTerms) {
-            assert (lastTerm = null) == null; // need to reset otherwise we fail the assertSorted below since we sort per field
+            // need to reset otherwise we fail the assertSorted below since we sort per field
+            assert (lastTerm = null) == null;
             readerTerm = termsEnum.next();
           }
         } else {
@@ -597,7 +631,8 @@ final class FrozenBufferedUpdates {
 
     private boolean assertSorted(BytesRef term) {
       assert sortedTerms;
-      assert lastTerm == null || term.compareTo(lastTerm) >= 0 : "boom: " + term.utf8ToString() + " last: " + lastTerm.utf8ToString();
+      assert lastTerm == null || term.compareTo(lastTerm) >= 0
+          : "boom: " + term.utf8ToString() + " last: " + lastTerm.utf8ToString();
       lastTerm = BytesRef.deepCopyOf(term);
       return true;
     }
