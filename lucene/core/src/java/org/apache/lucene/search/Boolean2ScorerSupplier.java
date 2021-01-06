@@ -74,9 +74,11 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       return minRequiredCost.getAsLong();
     } else {
       final Collection<ScorerSupplier> optionalScorers = subs.get(Occur.SHOULD);
-      final long shouldCost = ScorerUtil.costWithMinShouldMatch(
+      final long shouldCost =
+          ScorerUtil.costWithMinShouldMatch(
               optionalScorers.stream().mapToLong(ScorerSupplier::cost),
-              optionalScorers.size(), minShouldMatch);
+              optionalScorers.size(),
+              minShouldMatch);
       return Math.min(minRequiredCost.orElse(Long.MAX_VALUE), shouldCost);
     }
   }

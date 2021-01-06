@@ -172,10 +172,10 @@ final class WANDScorer extends Scorer {
     }
 
     this.cost =
-            costWithMinShouldMatch(
-                scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
-                scorers.size(),
-                minShouldMatch);
+        costWithMinShouldMatch(
+            scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
+            scorers.size(),
+            minShouldMatch);
     this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
@@ -280,7 +280,8 @@ final class WANDScorer extends Scorer {
       @Override
       public boolean matches() throws IOException {
         while (leadMaxScore < minCompetitiveScore || freq < minShouldMatch) {
-          if (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
+          if (leadMaxScore + tailMaxScore < minCompetitiveScore
+              || freq + tailSize < minShouldMatch) {
             return false;
           } else {
             // a match on doc is still possible, try to
