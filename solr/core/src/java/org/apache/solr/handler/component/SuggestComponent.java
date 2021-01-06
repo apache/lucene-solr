@@ -258,8 +258,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       }
 
       SuggesterOptions options = new SuggesterOptions(new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
-      Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults =
-          new HashMap<>();
+      NamedList<SimpleOrderedMap<NamedList<Object>>> namedListResults = new NamedList<>();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
@@ -299,8 +298,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     
     // Merge Shard responses
     SuggesterResult suggesterResult = merge(suggesterResults, count);
-    Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults = 
-        new HashMap<>();
+    NamedList<SimpleOrderedMap<NamedList<Object>>> namedListResults = new NamedList<>();
     toNamedList(suggesterResult, namedListResults);
     
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
@@ -412,7 +410,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   /** Convert {@link SuggesterResult} to NamedList for constructing responses */
-  private void toNamedList(SuggesterResult suggesterResult, Map<String, SimpleOrderedMap<NamedList<Object>>> resultObj) {
+  private void toNamedList(SuggesterResult suggesterResult, NamedList<SimpleOrderedMap<NamedList<Object>>> resultObj) {
     for(String suggesterName : suggesterResult.getSuggesterNames()) {
       SimpleOrderedMap<NamedList<Object>> results = new SimpleOrderedMap<>();
       for (String token : suggesterResult.getTokens(suggesterName)) {
@@ -437,7 +435,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         suggestionBody.add(SuggesterResultLabels.SUGGESTIONS, suggestEntriesNamedList);
         results.add(token, suggestionBody);
       }
-      resultObj.put(suggesterName, results);
+      resultObj.add(suggesterName, results);
     }
   }
   
