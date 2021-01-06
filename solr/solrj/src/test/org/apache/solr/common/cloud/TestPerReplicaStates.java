@@ -18,7 +18,6 @@
 package org.apache.solr.common.cloud;
 
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -88,7 +87,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     }
 
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    PerReplicaStates rs = zkStateReader.getReplicaStates(new PerReplicaStates(root, 0, Collections.emptyList()));
+    PerReplicaStates rs = PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     assertEquals(3, rs.states.size());
     assertTrue(rs.cversion >= 5);
 
@@ -97,7 +96,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(1, ops.size());
     assertEquals(PerReplicaStates.Operation.Type.ADD ,ops.get(0).typ );
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
-    rs = zkStateReader.getReplicaStates(root);
+    rs = PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     assertEquals(4, rs.states.size());
     assertTrue(rs.cversion >= 6);
     assertEquals(6,  cluster.getZkClient().getChildren(root, null,true).size());
@@ -109,7 +108,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(PerReplicaStates.Operation.Type.DELETE,  ops.get(2).typ);
     assertEquals(PerReplicaStates.Operation.Type.DELETE,  ops.get(3).typ);
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
-    rs = zkStateReader.getReplicaStates(root);
+    rs = PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     assertEquals(4, rs.states.size());
     assertEquals(3, rs.states.get("R1").version);
 
@@ -117,7 +116,7 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(1, ops.size());
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
 
-    rs = zkStateReader.getReplicaStates(root);
+    rs = PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     assertEquals(3, rs.states.size());
 
     ops = PerReplicaStates.WriteOps.flipLeader(ImmutableSet.of("R4","R3","R1"), "R4",rs).get();
@@ -126,11 +125,11 @@ public class TestPerReplicaStates extends SolrCloudTestCase {
     assertEquals(PerReplicaStates.Operation.Type.ADD, ops.get(0).typ);
     assertEquals(PerReplicaStates.Operation.Type.DELETE, ops.get(1).typ);
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
-    rs = zkStateReader.getReplicaStates(root);
+    rs = PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     ops =  PerReplicaStates.WriteOps.flipLeader(ImmutableSet.of("R4","R3","R1"),"R3",rs).get();
     assertEquals(4, ops.size());
     PerReplicaStates.persist(ops, root,cluster.getZkClient());
-    rs = zkStateReader.getReplicaStates(root);
+    rs =PerReplicaStates.fetch (root, zkStateReader.getZkClient(),null);
     assertTrue(rs.get("R3").isLeader);
   }
 
