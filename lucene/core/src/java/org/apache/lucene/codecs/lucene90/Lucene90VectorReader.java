@@ -316,8 +316,8 @@ public final class Lucene90VectorReader extends VectorReader {
   }
 
   /** Read the vector values from the index input. This supports both iterated and random access. */
-  private final class OffHeapVectorValues extends VectorValues
-      implements RandomAccessVectorValuesProducer {
+  private class OffHeapVectorValues extends VectorValues
+      implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
@@ -358,16 +358,15 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      binaryValue();
-      floatBuffer.position(0);
-      floatBuffer.get(value, 0, fieldEntry.dimension);
+      dataIn.seek(ord * byteSize);
+      dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 
     @Override
     public BytesRef binaryValue() throws IOException {
       dataIn.seek(ord * byteSize);
-      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize, false);
       return binaryValue;
     }
 
@@ -399,7 +398,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public RandomAccessVectorValues randomAccess() {
-      return new OffHeapRandomAccess(dataIn.clone());
+      return new OffHeapVectorValues(fieldEntry, dataIn.clone());
     }
 
     @Override
@@ -428,57 +427,23 @@ public final class Lucene90VectorReader extends VectorReader {
           scoreDocs);
     }
 
-    class OffHeapRandomAccess implements RandomAccessVectorValues {
+    @Override
+    public float[] vectorValue(int targetOrd) throws IOException {
+      dataIn.seek(targetOrd * byteSize);
+      dataIn.readLEFloats(value, 0, value.length);
+      return value;
+    }
 
-      final IndexInput dataIn;
+    @Override
+    public BytesRef binaryValue(int targetOrd) throws IOException {
+      readValue(targetOrd);
+      return binaryValue;
+    }
 
-      final BytesRef binaryValue;
-      final ByteBuffer byteBuffer;
-      final FloatBuffer floatBuffer;
-      final float[] value;
-
-      OffHeapRandomAccess(IndexInput dataIn) {
-        this.dataIn = dataIn;
-        byteBuffer = ByteBuffer.allocate(byteSize);
-        floatBuffer = byteBuffer.asFloatBuffer();
-        value = new float[dimension()];
-        binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      }
-
-      @Override
-      public int size() {
-        return fieldEntry.size();
-      }
-
-      @Override
-      public int dimension() {
-        return fieldEntry.dimension;
-      }
-
-      @Override
-      public SearchStrategy searchStrategy() {
-        return fieldEntry.searchStrategy;
-      }
-
-      @Override
-      public float[] vectorValue(int targetOrd) throws IOException {
-        readValue(targetOrd);
-        floatBuffer.position(0);
-        floatBuffer.get(value);
-        return value;
-      }
-
-      @Override
-      public BytesRef binaryValue(int targetOrd) throws IOException {
-        readValue(targetOrd);
-        return binaryValue;
-      }
-
-      private void readValue(int targetOrd) throws IOException {
-        long offset = targetOrd * byteSize;
-        dataIn.seek(offset);
-        dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      }
+    private void readValue(int targetOrd) throws IOException {
+      long offset = targetOrd * byteSize;
+      dataIn.seek(offset);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
   }
 
