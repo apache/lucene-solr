@@ -291,6 +291,8 @@ Bug Fixes
 * SOLR-15058: Enforce node_name contains colon and port and find first underscore after colon to parse context
   when converting a node_name to a base URL. (Timothy Potter, Su Sasa)
 
+* SOLR-15047: Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group (hossman)
+
 Other Changes
 ---------------------
 
