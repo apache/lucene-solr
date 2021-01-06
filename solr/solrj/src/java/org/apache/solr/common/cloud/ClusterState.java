@@ -249,7 +249,9 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Slice> slices;
 
     if (Boolean.parseBoolean(String.valueOf(objs.get(DocCollection.PER_REPLICA_STATE)))) {
-      log.info("a collection {} has per-replica state", name); // nocommit should be a debug
+      if(log.isDebugEnabled()) {
+        log.debug("a collection {} has per-replica state", name);
+      }
       //this collection has replica states stored outside
       ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
       if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
