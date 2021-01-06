@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import static org.apache.lucene.search.DisiPriorityQueue.leftNode;
 import static org.apache.lucene.search.DisiPriorityQueue.parentNode;
 import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
+import static org.apache.lucene.search.ScorerUtil.costWithMinShouldMatch;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -166,13 +167,15 @@ final class WANDScorer extends Scorer {
     // Use a scaling factor of 0 if all max scores are either 0 or +Infty
     this.scalingFactor = scalingFactor.orElse(0);
 
-    long cost = 0;
     for (Scorer scorer : scorers) {
-      DisiWrapper w = new DisiWrapper(scorer);
-      cost += w.cost;
-      addLead(w);
+      addLead(new DisiWrapper(scorer));
     }
-    this.cost = cost;
+
+    this.cost =
+            costWithMinShouldMatch(
+                scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
+                scorers.size(),
+                minShouldMatch);
     this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
@@ -451,7 +454,7 @@ final class WANDScorer extends Scorer {
 
   /** Move iterators to the tail until there is a potential match. */
   private int doNextCompetitiveCandidate() throws IOException {
-    while (leadMaxScore + tailMaxScore < minCompetitiveScore) {
+    while (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
       moveToNextCandidate(doc + 1);
@@ -460,23 +463,6 @@ final class WANDScorer extends Scorer {
         break;
       }
     }
-
-      // nocommit Do we still need the following given TwoPhaseIterator.matches already performs the check
-//     minCompetitiveScore satisfied, now checks if the doc has enough required number of matches
-//    while (freq < minShouldMatch) {
-//      if (freq + tailSize >= minShouldMatch) {
-//        // a match on doc is still possible, try to
-//        // advance scorers from the tail
-//        advanceTail();
-//      } else {
-//        pushBackLeads(doc + 1);
-//        moveToNextCandidate(doc + 1);
-//        assert ensureConsistent();
-//        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-//          break;
-//        }
-//      }
-//    }
 
     return doc;
   }
