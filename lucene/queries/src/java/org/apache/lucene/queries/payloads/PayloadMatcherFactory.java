@@ -54,7 +54,7 @@ public class PayloadMatcherFactory {
     payloadCheckerOpTypeMap.put(PayloadType.FLOAT, floatCheckers);
     payloadCheckerOpTypeMap.put(PayloadType.STRING, stringCheckers);
   }
-  
+
   /**
    * Return a payload matcher for use in the SpanPayloadCheckQuery that will decode the ByteRef from 
    * a payload based on the payload type, and apply a matching inequality operations (eq,lt,lte,gt,and gte)
@@ -78,7 +78,7 @@ public class PayloadMatcherFactory {
       return new EQPayloadMatcher();
     }
   }
-  
+
   // Equality is the same for all payload types
   private static class EQPayloadMatcher implements PayloadMatcher {
     @Override
@@ -86,23 +86,23 @@ public class PayloadMatcherFactory {
       return source.bytesEquals(payload);
     }
   }
-  
+
   private static abstract class StringPayloadMatcher implements PayloadMatcher {
-    
+
     @Override
     public boolean comparePayload(BytesRef source, BytesRef payload) {
       return stringCompare(decodeString(payload.bytes, payload.offset, payload.length), decodeString(source.bytes, source.offset, source.length));
     }
-    
+
     private String decodeString(byte[] bytes, int offset, int length) {
       // TODO: consider just the raw byte array instead of a decoded String
       return new String(ArrayUtil.copyOfSubArray(bytes, offset, offset+length), StandardCharsets.UTF_8);    
     }
-    
+
     protected abstract boolean stringCompare(String val, String threshold);
-    
+
   }
-  
+
   private static class LTStringPayloadMatcher extends StringPayloadMatcher {
 
     @Override
@@ -110,7 +110,7 @@ public class PayloadMatcherFactory {
       int res = val.compareTo(thresh);
       return (res < 0) ? true : false; 
     }
-    
+
   }
 
   private static class LTEStringPayloadMatcher extends StringPayloadMatcher {
@@ -120,7 +120,7 @@ public class PayloadMatcherFactory {
       int res = val.compareTo(thresh);
       return (res < 1) ? true : false;
     }
-    
+
   }
 
   private static class GTStringPayloadMatcher extends StringPayloadMatcher {
@@ -130,7 +130,7 @@ public class PayloadMatcherFactory {
       int res = val.compareTo(thresh);
       return (res > 0) ? true : false;
     }
-    
+
   }
 
   private static class GTEStringPayloadMatcher extends StringPayloadMatcher {
@@ -140,7 +140,7 @@ public class PayloadMatcherFactory {
       int res = val.compareTo(thresh);
       return (res > -1) ? true : false;
     }
-    
+
   }
 
   private static abstract class IntPayloadMatcher implements PayloadMatcher {
@@ -149,14 +149,14 @@ public class PayloadMatcherFactory {
     public boolean comparePayload(BytesRef source, BytesRef payload) {
       return intCompare(decodeInt(payload.bytes, payload.offset), decodeInt(source.bytes, source.offset));
     }
-    
+
     private int decodeInt(byte[] bytes, int offset) {
       return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16) |
-             ((bytes[offset + 2] & 0xFF) <<  8) | (bytes[offset + 3] & 0xFF);
+          ((bytes[offset + 2] & 0xFF) <<  8) | (bytes[offset + 3] & 0xFF);
     }
-    
+
     protected abstract boolean intCompare(int val, int threshold);
-    
+
   }
 
   private static class LTIntPayloadMatcher extends IntPayloadMatcher {
@@ -165,7 +165,7 @@ public class PayloadMatcherFactory {
     public boolean intCompare(int val, int thresh) {
       return (val < thresh);
     }
-    
+
   }
 
   private static class LTEIntPayloadMatcher extends IntPayloadMatcher {
@@ -174,7 +174,7 @@ public class PayloadMatcherFactory {
     public boolean intCompare(int val, int thresh) {
       return (val <= thresh);
     }
-    
+
   }
 
   private static class GTIntPayloadMatcher extends IntPayloadMatcher {
@@ -183,7 +183,7 @@ public class PayloadMatcherFactory {
     public boolean intCompare(int val, int thresh) {
       return (val > thresh);
     }
-    
+
   }
 
   private static class GTEIntPayloadMatcher extends IntPayloadMatcher {
@@ -192,23 +192,23 @@ public class PayloadMatcherFactory {
     protected boolean intCompare(int val, int thresh) {
       return (val >= thresh);
     }
-    
+
   }
-  
+
   private static abstract class FloatPayloadMatcher implements PayloadMatcher {
 
     @Override
     public boolean comparePayload(BytesRef source, BytesRef payload) {
       return floatCompare(decodeFloat(payload.bytes, payload.offset), decodeFloat(source.bytes, source.offset));
     }
-    
+
     private float decodeFloat(byte[] bytes, int offset) {
       return Float.intBitsToFloat(((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16) | 
-                                  ((bytes[offset + 2] & 0xFF) <<  8) | (bytes[offset + 3] & 0xFF));
+          ((bytes[offset + 2] & 0xFF) <<  8) | (bytes[offset + 3] & 0xFF));
     }
-    
+
     protected abstract boolean floatCompare(float val, float threshold);
-    
+
   }
 
   private static class LTFloatPayloadMatcher extends FloatPayloadMatcher {
@@ -217,7 +217,7 @@ public class PayloadMatcherFactory {
     protected boolean floatCompare(float val, float thresh) {
       return (val < thresh);
     }
-    
+
   }
 
   private static class LTEFloatPayloadMatcher extends FloatPayloadMatcher {
@@ -226,7 +226,7 @@ public class PayloadMatcherFactory {
     protected boolean floatCompare(float val, float thresh) {
       return (val <= thresh);
     }
-    
+
   }
 
   private static class GTFloatPayloadMatcher extends FloatPayloadMatcher {
@@ -235,7 +235,7 @@ public class PayloadMatcherFactory {
     protected boolean floatCompare(float val, float thresh) {
       return (val > thresh);
     }
-    
+
   }
 
   private static class GTEFloatPayloadMatcher extends FloatPayloadMatcher {
@@ -244,7 +244,7 @@ public class PayloadMatcherFactory {
     protected boolean floatCompare(float val, float thresh) {
       return (val >= thresh);
     }
-    
+
   }
 
 }
