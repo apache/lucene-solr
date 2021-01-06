@@ -70,7 +70,12 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
               });
       t1.start();
       shotgun.countDown();
-      in.close();
+      try {
+        in.close();
+      } catch (IllegalStateException ise) {
+        // this may also happen and is a valid exception, informing our user that, e.g., a query is running!
+        // "java.lang.IllegalStateException: Cannot close while another thread is accessing the segment"
+      }
       t1.join();
       dir.close();
     }
