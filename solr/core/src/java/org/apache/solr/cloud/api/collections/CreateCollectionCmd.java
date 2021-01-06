@@ -122,21 +122,17 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     String withCollection = message.getStr(WITH_COLLECTION);
-    String withCollectionShard = null;
     if (withCollection != null) {
-      String realWithCollection = aliases.resolveSimpleAlias(withCollection);
-      if (!clusterState.hasCollection(realWithCollection)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The 'withCollection' does not exist: " + realWithCollection);
+      // nocommit: should this honor the followAliases flag?
+      // we should probably disallow using aliases in this context
+      //String realWithCollection = aliases.resolveSimpleAlias(withCollection);
+      if (!clusterState.hasCollection(withCollection)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "The 'withCollection' does not exist: " + withCollection);
       } else  {
-        DocCollection collection = clusterState.getCollection(realWithCollection);
-        if (collection.getActiveSlices().size() > 1)  {
+        DocCollection collection = clusterState.getCollection(withCollection);
+        if (collection.getActiveSlices().size() != 1)  {
           throw new SolrException(ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + collection.getActiveSlices().size());
         }
-        withCollectionShard = collection.getActiveSlices().iterator().next().getName();
-      }
-      if (!realWithCollection.equals(withCollection)) {
-        message = message.plus(WITH_COLLECTION, realWithCollection);
-        withCollection = realWithCollection;
       }
     }
 
@@ -294,7 +290,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               "node", replicaPosition.node,
               CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
           new AddReplicaCmd(ocmh).call(clusterState, props, results);
-          clusterState = zkStateReader.getClusterState(); // refresh
         }
       }
 

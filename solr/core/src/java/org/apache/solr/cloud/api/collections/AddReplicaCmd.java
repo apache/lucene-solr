@@ -23,6 +23,8 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
@@ -56,6 +58,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -197,6 +200,29 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
+    if (coll.getStr(WITH_COLLECTION) != null) {
+      String withCollectionName = coll.getStr(WITH_COLLECTION);
+      DocCollection withCollection = clusterState.getCollection(withCollectionName);
+      if (withCollection.getActiveSlices().size() > 1)  {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The `withCollection` must have only one shard, found: " + withCollection.getActiveSlices().size());
+      }
+      String withCollectionShard = withCollection.getActiveSlices().iterator().next().getName();
+
+      List<Replica> replicas = withCollection.getReplicas(createReplica.node);
+      if (replicas == null || replicas.isEmpty()) {
+        // create a replica of withCollection on the identified node before proceeding further
+        ZkNodeProps props = new ZkNodeProps(
+            Overseer.QUEUE_OPERATION, ADDREPLICA.toString(),
+            ZkStateReader.COLLECTION_PROP, withCollectionName,
+            ZkStateReader.SHARD_ID_PROP, withCollectionShard,
+            "node", createReplica.node,
+            // since we already computed node assignments (which include assigning a node for this withCollection replica) we want to skip the assignment step
+            SKIP_NODE_ASSIGNMENT, "true",
+            CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.TRUE.toString()); // set to true because we want `withCollection` to be ready after this collection is created
+        addReplica(clusterState, props, results, null);
+      }
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
 
     ZkStateReader zkStateReader = ocmh.zkStateReader;
@@ -265,7 +291,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
                                                  ZkNodeProps message, ReplicaPosition replicaPosition) {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
-    String collection = message.getStr(COLLECTION_PROP);
+    String collection = replicaPosition.collection;
     String node = replicaPosition.node;
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
@@ -342,7 +368,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       int i = 0;
       for (Map.Entry<Replica.Type, Integer> entry : replicaTypeVsCount.entrySet()) {
         for (int j = 0; j < entry.getValue(); j++) {
-          positions.add(new ReplicaPosition(sliceName, i++, entry.getKey(), node));
+          positions.add(new ReplicaPosition(collectionName, sliceName, i++, entry.getKey(), node));
         }
       }
     }

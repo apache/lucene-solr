@@ -17,7 +17,10 @@
 
 package org.apache.solr.common.cloud;
 
-
+/**
+ * Representation of a new replica position (placement) on a node in the cluster.
+ * <p>Note: this class has a natural ordering that is inconsistent with equals.</p>
+ */
 public class ReplicaPosition implements Comparable<ReplicaPosition> {
   public final String collection;
   public final String shard;
