@@ -132,13 +132,10 @@ Note that this transformer can be used even when the query used to match the res
 
 [source,plain]
 ----
-q=book_title:Solr&fl=id,[child parentFilter=doc_type:book childFilter=doc_type:chapter limit=100]
+q=book_title:Solr&fl=id,[child childFilter=doc_type:chapter limit=100]
 ----
 
 If the documents involved include a `\_nest_path_` field, then it is used to re-create the hierarchical structure of the descendent documents using the original psuedo-field names the documents were indexed with, otherwise the descendent documents are returned as a flat list of <<indexing-nested-documents#indexing-anonymous-children,anonymous children>>.
-
-`parentFilter`::
-When using a schema that does _not_ include the `\_nest_path_` field, this parameter is mandatory, and serves the same purpose as the `of`/`which` parms in `{!child}`/`{!parent}` query parsers: to identify the set of "all parents" for the purpose of identifying the begining & end of each nested document block.  *When a schema _does_ include a  `\_nest_path_` field, this parameter is prohibited.*
 
 `childFilter`::
 A query to filter which child documents should be included. This can be particularly useful when you have multiple levels of hierarchical documents. The default is all children.
@@ -151,6 +148,12 @@ The field list which the transformer is to return. The default is the top level 
 +
 There is a further limitation in which the fields here should be a subset of those specified by the top level `fl` parameter.
 
+`parentFilter`::
+Serves the same purpose as the `of`/`which` params in `{!child}`/`{!parent}` query parsers: to
+identify the set of "all parents" for the purpose of identifying the beginning & end of each
+nested document block.  This recently became fully optional and appears to be obsolete.
+It is likely to be removed in a future Solr release, so _if you find it has some use, let the
+project know!_
 
 [TIP]
 ====
