@@ -16,7 +16,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Interpolation, derivatives and integrals are three interrelated topics which are part of the field of mathematics called numerical analysis. This section explores the math expressions available for numerical anlysis.
+This section explores the interrelated Math Expressions for Interpolation and Numerical Calculus.
+
+<<Interpolation, Interpolation>> -
+<<Smoothing Interpolation, Smoothing>> -
+<<Derivatives, Derivatives>> -
+<<Integrals, Integrals>> -
+<<Cumulative Integral Plot, Integral Plot>> -
+<<Bicubic Spline, Bicubic Spline>>
+
 
 == Interpolation
 
@@ -24,10 +32,10 @@ Interpolation is used to construct new data points between a set of known contro
 The ability to predict new data points allows for sampling along the curve defined by the
 control points.
 
-The interpolation functions described below all return an _interpolation model_
+The interpolation functions described below all return an _interpolation function_
 that can be passed to other functions which make use of the sampling capability.
 
-If returned directly the interpolation model returns an array containing predictions for each of the
+If returned directly the interpolation function returns an array containing predictions for each of the
 control points. This is useful in the case of `loess` interpolation which first smooths the control points
 and then interpolates the smoothed points. All other interpolation functions simply return the original
 control points because interpolation predicts a curve that passes through the original control points.
@@ -44,73 +52,29 @@ and form a smooth curve between control points.
 * `loess`: Loess interpolation first performs a non-linear local regression to smooth the original
 control points. Then a spline is used to interpolate the smoothed control points.
 
-=== Upsampling
+=== Sampling Along the Curve
 
-Interpolation can be used to increase the sampling rate along a curve. One example
-of this would be to take a time series with samples every minute and create a data set with
-samples every second. In order to do this the data points between the minutes must be created.
+One way to better understand interpolation is to visualize what it means to sample along a curve. The example
+below zooms in on a specific region of a curve by sampling the curve between a specific *x* axis range.
 
-The `predict` function can be used to predict values anywhere within the bounds of the interpolation
-range.  The example below shows a very simple example of upsampling.
+image::images/math-expressions/interpolate1.png[]
 
-[source,text]
-----
-let(x=array(0, 2,  4,  6,  8,   10, 12,  14, 16, 18, 20),  <1>
-    y=array(5, 10, 60, 190, 100, 130, 100, 20, 30, 10, 5),  <2>
-    l=lerp(x, y),  <3>
-    u=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20),  <4>
-    p=predict(l, u))  <5>
-----
+The visualization above first creates two arrays with *x* and *y* axis points. Notice that the *x* axis ranges from
+ 0 to 9. Then the `akima`, `spline` and `lerp`
+functions are applied to the vectors to create three interpolation functions.
 
-<1> In the example linear interpolation is performed on the arrays in variables *`x`* and *`y`*. The *`x`* variable,
-which is the x-axis, is a sequence from 0 to 20 with a stride of 2.
-<2> The *`y`* variable defines the curve along the x-axis.
-<3> The `lerp` function performs the interpolation and returns the interpolation model.
-<4> The `u` value is an array from 0 to 20 with a stride of 1. This fills in the gaps of the original x axis.
-The `predict` function then uses the interpolation function in variable *`l`* to predict values for
-every point in the array assigned to variable *`u`*.
-<5> The variable *`p`* is the array of predictions, which is the upsampled set of *`y`* values.
+Then 500 hundred random samples are drawn from a uniform distribution between 0 and 3. These are
+the new zoomed in *x* axis points, between 0 and 3. Notice that we are sampling a specific
+area of the curve.
 
-When this expression is sent to the `/stream` handler it responds with:
+Then the `predict` function is used to predict *y* axis points for
+the sampled *x* axis, for all three interpolation functions. Finally all three prediction vectors
+are plotted with the sampled *x* axis points.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "g": [
-          5,
-          7.5,
-          10,
-          35,
-          60,
-          125,
-          190,
-          145,
-          100,
-          115,
-          130,
-          115,
-          100,
-          60,
-          20,
-          25,
-          30,
-          20,
-          10,
-          7.5,
-          5
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
+The red line is the `lerp` interpolation, the blue line is the `akima` and the purple line is
+the `spline` interpolation. You can see they each produce different curves in between the control
+points.
+
 
 === Smoothing Interpolation
 
@@ -118,7 +82,7 @@ The `loess` function is a smoothing interpolator which means it doesn't derive
 a function that passes through the original control points. Instead the `loess` function
 returns a function that smooths the original control points.
 
-A technique known as local regression is used to compute the smoothed curve.  The size of the
+A technique known as local regression is used to compute the smoothed curve. The size of the
 neighborhood of the local regression can be adjusted
 to control how close the new curve conforms to the original control points.
 
@@ -126,225 +90,115 @@ The `loess` function is passed *`x`*- and *`y`*-axes and fits a smooth curve to 
 If only a single array is provided it is treated as the *`y`*-axis and a sequence is generated
 for the *`x`*-axis.
 
-The example below uses the `loess` function to fit a curve to a set of *`y`* values in an array.
-The `bandwidth` parameter defines the percent of data to use for the local
-regression. The lower the percent the smaller the neighborhood used for the local
-regression and the closer the curve will be to the original data.
+The example below shows the `loess` function being used to model a monthly
+time series. In the example the `timeseries` function is used to generate
+a monthly time series of average closing prices for the stock ticker
+*amzn*. The *date_dt* and *avg(close_d)* fields from the time series
+are then vectorized and stored in variables *x* and *y*. The `loess`
+function is then applied to the *y* vector containing the average closing
+prices. The *bandwidth* named parameter specifies the percentage
+of the data set used to compute the local regression. The `loess` function
+returns the fitted model of smoothed data points.
 
-[source,text]
-----
-let(echo="residuals, sumSqError",
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(y, bandwidth=.3),
-    residuals=ebeSubtract(y, curve),
-    sumSqError=sumSq(residuals))
-----
+The `zplot` function is then used to plot the *x*, *y* and *y1*
+variables.
 
-In the example the fitted curve is subtracted from the original curve using the
-`ebeSubtract` function. The output shows the error between the
-fitted curve and the original curve, known as the residuals. The output also includes
-the sum-of-squares of the residuals which provides a measure
-of how large the error is:
+image::images/math-expressions/loess.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "residuals": [
-          0,
-          0,
-          0,
-          -0.040524802275866634,
-          -0.10531988096456502,
-          0.5906115002526198,
-          0.004215074334896762,
-          0.4201374330912433,
-          0.09618315578013803,
-          0.012107948556718817,
-          -0.9892939034492398,
-          0.012014364143757561,
-          0.1093830927709325,
-          0.523166271893805,
-          0.09658362075164639,
-          -0.011433819306139625,
-          0.9899403519886416,
-          -0.011707983372932773,
-          -0.004223284004140737,
-          -0.00021462867928434548,
-          0.0018723112875456138
-        ],
-        "sumSqError": 2.8016013870800616
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-In the next example the curve is fit using a `bandwidth` of `.25`:
-
-[source,text]
-----
-let(echo="residuals, sumSqError",
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(y, .25),
-    residuals=ebeSubtract(y, curve),
-    sumSqError=sumSq(residuals))
-----
-
-Notice that the curve is a closer fit, shown by the smaller `residuals` and lower value for the sum-of-squares of the
-residuals:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "residuals": [
-          0,
-          0,
-          0,
-          0,
-          -0.19117650587715396,
-          0.442863451538809,
-          -0.18553845993358564,
-          0.29990769020356645,
-          0,
-          0.23761890236245709,
-          -0.7344358765888117,
-          0.2376189023624491,
-          0,
-          0.30373119215254984,
-          -3.552713678800501e-15,
-          -0.23761890236245264,
-          0.7344358765888046,
-          -0.2376189023625095,
-          0,
-          2.842170943040401e-14,
-          -2.4868995751603507e-14
-        ],
-        "sumSqError": 1.7539413576337557
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
 
 == Derivatives
 
-The derivative of a function measures the rate of change of the *`y`* value in respects to the
-rate of change of the *`x`* value.
+The derivative of a function measures the rate of change of the *y* value in respects to the
+rate of change of the *x* value.
 
-The `derivative` function can compute the derivative of any interpolation function.
-It can also compute the derivative of a derivative.
+The `derivative` function can compute the derivative for any of the
+interpolation functions described above. Each interpolation function
+will produce different derivatives that match the characteristics
+of the function.
 
-The example below computes the derivative for a `loess` interpolation function.
+=== The First Derivative (Velocity)
 
-[source,text]
-----
-let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(x, y, bandwidth=.3),
-    derivative=derivative(curve))
-----
+A simple example shows how the `derivative` function is used to calculate
+the rate of change or *velocity*.
 
-When this expression is sent to the `/stream` handler it
-responds with:
+In the example two vectors are created, one representing hours and
+one representing miles traveled. The `lerp` function is then used to
+create a linear interpolation of the *hours* and *miles* vectors.
+The `derivative` function is then applied to the
+linear interpolation. `zplot` is then used to plot the *hours*
+on the *x* axis and *miles* on the *y* axis, and the *derivative* as *mph*,
+at each *x* axis point.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "derivative": [
-          1.0022002675659012,
-          0.9955994648681976,
-          1.0154018729613081,
-          1.0643674501141696,
-          1.0430879694757085,
-          0.9698717643975381,
-          0.7488201070357539,
-          0.44627000894357516,
-          0.19019561285422165,
-          0.01703599324311178,
-          -0.001908408138535126,
-          -0.009121607450087499,
-          -0.2576361507216319,
-          -0.49378951291352746,
-          -0.7288073815664,
-          -0.9871806872210384,
-          -1.0025400632604322,
-          -1.001836567536853,
-          -1.0076227586138085,
-          -1.0021524620888589,
-          -1.0020541789058157
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
+
+image::images/math-expressions/derivative.png[]
+
+Notice that the *miles_traveled* line has a slope of 10 until the
+5th hour where
+it changes to a slope of 50. The *mph* line, which is
+ the derivative, visualizes the *velocity* of the
+ *miles_traveled* line.
+
+Also notice that the derivative is calculated along
+straight lines showing immediate change from one point to the next. This
+is because linear interpolation (`lerp`) is used as the interpolation
+function. If the `spline` or `akima` functions had been used it would have produced
+a derivative with rounded curves.
+
+
+=== The Second Derivative (Acceleration)
+
+While the first derivative represents velocity, the second derivative
+represents *acceleration*. The second the derivative is the derivative
+of the first derivative.
+
+The example below builds on the first example and adds the second derivative.
+Notice that the second derivative *d2*, is taken by applying the
+derivative function to a linear interpolation of the first derivative.
+
+The second derivative is plotted as *acceleration* on the chart.
+
+image::images/math-expressions/derivatives.png[]
+
+Notice that the acceleration line is 0 until the *mph* line increases from 10 to 50. At this
+point the *acceleration* line moves to 40. As the *mph* line stays at 50, the acceleration
+line drops to 0.
+
+=== Price Velocity
+
+The example below shows how to plot the `derivative` for a time series generated
+by the `timeseries` function. In the example a monthly time series is
+generated for the average closing price for the stock ticker `amzn`.
+The *avg(close)* column is vectorized and interpolated using linear
+interpolation (`lerp`).  The `zplot` function is then used to plot the derivative
+of the time series.
+
+image::images/math-expressions/derivative2.png[]
+
+Notice that the derivative plot clearly shows the rates of change in the stock price over time.
+
 
 == Integrals
 
 An integral is a measure of the volume underneath a curve.
-The `integrate` function computes an integral for a specific
-range of an interpolated curve.
+The `integral` function computes the cumulative integrals for a curve or the integral for a specific
+range of an interpolated curve. Like the `derivative` function the `integral` function operates
+over interpolation functions.
 
-In the example below the `integrate` function computes an
-integral for the entire range of the curve, 0 through 20.
+=== Single Integral
 
-[source,text]
-----
-let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
-    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
-    curve=loess(x, y, bandwidth=.3),
-    integral=integrate(curve,  0, 20))
-----
+If the `integral` function is passed a *start* and *end* range it will compute the volume under the
+curve within that specific range.
 
-When this expression is sent to the `/stream` handler it
-responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "integral": 90.17446104846645
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-In the next example an integral is computed for the range of 0 through 10.
+In the example below the `integral` function computes an
+integral for the entire range of the curve, 0 through 10. Notice  that the `integral` function is passed
+the interpolated curve and the start and end range, and returns the integral for the range.
 
 [source,text]
 ----
 let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
     y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
     curve=loess(x, y, bandwidth=.3),
-    integral=integrate(curve,  0, 10))
+    integral=integral(curve,  0, 10))
 ----
 
 When this expression is sent to the `/stream` handler it
@@ -366,6 +220,44 @@ responds with:
   }
 }
 ----
+
+=== Cumulative Integral Plot
+
+If the `integral` function is passed a single interpolated curve it returns a vector of the cumulative
+integrals for the curve. The cumulative integrals vector contains a cumulative integral calculation
+for each *x* axis point. The cumulative integral is calculated by taking the
+integral of the range between each *x* axis point and the *first* *x* axis point. In the example above this would
+mean calculating a vector of integrals as such:
+
+[source,text]
+----
+let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 7, 7,6, 7, 7, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=loess(x, y, bandwidth=.3),
+    integrals=array(0, integral(curve, 0, 1), integral(curve, 0, 2), integral(curve, 0, 3), ...)
+----
+
+The plot of cumulative integrals visualizes how much cumulative volume of the curve is under each point
+*x* axis point.
+
+The example below shows the cumulative integral plot for a time series generated by
+the `timeseries` function. In the example a monthly time series is
+generated for the average closing price for the stock ticker `amzn`.
+The *avg(close)* column is vectorized and interpolated using a `spline`.
+
+The `zplot` function is then used to plot the cumulative integral
+of the time series.
+
+image::images/math-expressions/integral.png[]
+
+The plot above *visualizes* the volume under the curve as the *amzn* stock
+price changes over time.  Because this plot is cumulative, the volume under
+a stock price time series which stays the same over time, will
+have a positive *linear* slope. A stock that has rising prices will have a *concave* shape and
+a stock with falling prices will have a *convex* shape.
+
+In this particular example the integral plot becomes more *concave* over time
+showing accelerating increases in stock price.
 
 == Bicubic Spline
 

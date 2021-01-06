@@ -74,6 +74,19 @@ This expression returns the following response:
 }
 ----
 
+=== Visualization
+
+In the Zeppelin-Solr interpreter you can simply type in scalar math functions and the
+result will be shown in a table format.
+
+image::images/math-expressions/scalar.png[]
+
+The *Number* visualization can be used to visualize the number with text and icons.
+
+image::images/math-expressions/num.png[]
+
+
+
 == Streaming Scalar Math
 
 Scalar math expressions can also be applied to each tuple in a stream
@@ -83,19 +96,19 @@ The `select` function can also use math expressions to compute
 new values and add them to the outgoing tuples.
 
 In the example below the `select` expression is wrapping a search
-expression. The `select` function is selecting the *price_f* field
-and computing a new field called *newPrice* using the `mult` math
+expression. The `select` function is selecting the *response_d* field
+and computing a new field called *new_response* using the `mult` math
 expression.
 
-The first parameter of the `mult` expression is the *price_f* field.
+The first parameter of the `mult` expression is the *response_d* field.
 The second parameter is the scalar value 10. This multiplies the value
-of the *price_f* field in each tuple by 10.
+of the *response_d* field in each tuple by 10.
 
 [source,text]
 ----
-select(search(collection2, q="*:*", fl="price_f", sort="price_f desc", rows="3"),
-       price_f,
-       mult(price_f, 10) as newPrice)
+select(search(testapp, q="*:*", fl="response_d", sort="response_d desc", rows="3"),
+       response_d,
+       mult(response_d, 10) as new_response)
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -106,25 +119,36 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "price_f": 0.99999994,
-        "newPrice": 9.9999994
+        "response_d": 1080.3692514541938,
+        "new_response": 10803.692514541937
       },
       {
-        "price_f": 0.99999994,
-        "newPrice": 9.9999994
+        "response_d": 1067.441598608506,
+        "new_response": 10674.41598608506
       },
       {
-        "price_f": 0.9999992,
-        "newPrice": 9.999992
+        "response_d": 1059.8400090891566,
+        "new_response": 10598.400090891566
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 3
+        "RESPONSE_TIME": 12
       }
     ]
   }
 }
 ----
+
+=== Visualization
+
+The expression above can be visualized as a table using Zeppelin-Solr.
+
+image::images/math-expressions/stream.png[]
+
+By switching to one of the line chart visualizations the two variables can be plotted on the x and y axis.
+
+image::images/math-expressions/line.png[]
+
 
 == More Scalar Math Functions
 

@@ -18,6 +18,11 @@
 
 The math expressions library supports simple and multivariate linear regression.
 
+<<Simple Linear Regression, Simple Linear Regression>> -
+<<Regression Plot, Regression Plot>> -
+<<Residual Plot, Residual Plot>> -
+<<Multivariate Linear Regression, Multivariate Linear Regression>>
+
 == Simple Linear Regression
 
 The `regress` function is used to build a linear regression model
@@ -25,9 +30,9 @@ between two random variables. Sample observations are provided with two
 numeric arrays. The first numeric array is the independent variable and
 the second array is the dependent variable.
 
-In the example below the `random` function selects 5000 random samples each containing
+In the example below the `random` function selects 50000 random samples each containing
 the fields `filesize_d` and `response_d`. The two fields are vectorized
-and stored in variables *`b`* and *`c`*. Then the `regress` function performs a regression
+and stored in variables *`x`* and *`y`*. Then the `regress` function performs a regression
 analysis on the two numeric arrays.
 
 The `regress` function returns a single tuple with the results of the regression
@@ -35,10 +40,10 @@ analysis.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c))
+let(a=random(logs, q="*:*", rows="50000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y))
 ----
 
 Note that in this regression analysis the value of `RSquared` is `.75`. This means that changes in
@@ -50,28 +55,31 @@ Note that in this regression analysis the value of `RSquared` is `.75`. This mea
   "result-set": {
     "docs": [
       {
-        "d": {
-          "significance": 0,
-          "totalSumSquares": 10564812.895147054,
-          "R": 0.8674822407146515,
-          "RSquared": 0.7525254379553127,
-          "meanSquareError": 523.1137343558588,
-          "intercept": -49.528134913099095,
-          "slopeConfidenceInterval": 0.0003171801710329995,
-          "regressionSumSquares": 7950290.450836472,
-          "slope": 0.019945557923159506,
-          "interceptStdErr": 6.489732340389941,
-          "N": 5000
-        }
+        "significance": 0,
+        "totalSumSquares": 96595678.64838874,
+        "R": 0.9052835767815126,
+        "RSquared": 0.8195383543903288,
+        "meanSquareError": 348.6502485633668,
+        "intercept": 55.64040842391729,
+        "slopeConfidenceInterval": 0.0000822026526346821,
+        "regressionSumSquares": 79163863.52071753,
+        "slope": 0.019984612363694493,
+        "interceptStdErr": 1.6792610845256566,
+        "N": 50000
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 98
+        "RESPONSE_TIME": 344
       }
     ]
   }
 }
 ----
+
+The diagnostics can be visualized in a table using Zeppelin-Solr.
+
+image::images/math-expressions/diagnostics.png[]
+
 
 === Prediction
 
@@ -84,11 +92,11 @@ the value of `response_d` for the `filesize_d` value of `40000`.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, 40000))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, 40000))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -99,7 +107,7 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "e": 748.079241022975
+        "p": 748.079241022975
       },
       {
         "EOF": true,
@@ -119,22 +127,22 @@ In this case 5000 predictions are returned.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, b))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, x))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
     "docs": [
       {
-        "e": [
+        "p": [
           742.2525322514165,
           709.6972488729955,
           687.8382568904871,
@@ -158,30 +166,38 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+=== Regression Plot
+
+Using *zplot* and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
+the same scatter plot. In the example below zplot is plotting the filesize_d observations on the
+*x* axis, the response_d observations on the *y* access and the predictions on the *y1* access.
+
+image::images/math-expressions/linear.png[]
+
 === Residuals
 
 The difference between the observed value and the predicted value is known as the
 residual. There isn't a specific function to calculate the residuals but vector
 math can used to perform the calculation.
 
-In the example below the predictions are stored in variable *`e`*. The `ebeSubtract`
+In the example below the predictions are stored in variable *`p`*. The `ebeSubtract`
 function is then used to subtract the predictions
-from the actual `response_d` values stored in variable *`c`*. Variable *`f`* contains
+from the actual `response_d` values stored in variable *`y`*. Variable *`e`* contains
 the array of residuals.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, response_d),
-    d=regress(b, c),
-    e=predict(d, b),
-    f=ebeSubtract(c, e))
+let(a=random(logs, q="*:*", rows="500", fl="filesize_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, response_d),
+    r=regress(x, y),
+    p=predict(r, x),
+    e=ebeSubtract(y, p))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -213,16 +229,41 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+=== Residual Plot
+
+Using *zplot* and Zeppelin-Solr we can visualize the residuals with
+a residuals plot. The example residual plot below plots the predicted value on the
+*x* axis and the error of the prediction on the *y* access.
+
+image::images/math-expressions/residual-plot.png[]
+
+The residual plot can be used to interpret reliability of the model. Three things
+to look for are:
+
+1) Do the residuals appear to be normally distributed with a mean of 0. This makes
+it easier to interpret the results of the model to determine if the distribution
+of the errors is acceptable for predictions. It also makes it easier to use a model
+of the residuals for anomaly detection on new predictions.
+
+2) Do the residuals appear to be *heteroscedastic*. Which means is the variance
+of the residuals the same across the range of predictions. By plotting the prediction
+on the *x* axis and error on *y* access we can see if the variability stays the same
+as the predictions get higher. If the residuals are heteroscedastic it means
+that we can trust the models error to be consistent across the range of predictions.
+
+3) Is there any pattern to the residuals? If so there is likely still a signal within the
+data that needs to be modeled.
+
+
 == Multivariate Linear Regression
 
 The `olsRegress` function performs a multivariate linear regression analysis. Multivariate linear
 regression models the linear relationship between two or more independent variables and a dependent variable.
 
 The example below extends the simple linear regression example by introducing a new independent variable
-called `service_d`. The `service_d` variable is the service level of the request and it can range from 1 to 4
-in the data-set. The higher the service level, the higher the bandwidth available for the request.
+called `load_d`. The `load_d` variable is the load on the network while the file is being downloaded.
 
-Notice that the two independent variables `filesize_d` and `service_d` are vectorized and stored
+Notice that the two independent variables `filesize_d` and `load_d` are vectorized and stored
 in the variables *`b`* and *`c`*. The variables *`b`* and *`c`* are then added as rows to a `matrix`. The matrix is
 then transposed so that each row in the matrix represents one observation with `filesize_d` and `service_d`.
 The `olsRegress` function then performs the multivariate regression analysis using the observation matrix as the
@@ -230,12 +271,12 @@ independent variables and the `response_d` values, stored in variable *`d`*, as 
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="30000", fl="filesize_d, service_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, service_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d))
+let(a=random(testapp, q="*:*", rows="30000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z))
 ----
 
 Notice in the response that the RSquared of the regression analysis is 1. This means that linear relationship between
@@ -247,43 +288,41 @@ Notice in the response that the RSquared of the regression analysis is 1. This m
   "result-set": {
     "docs": [
       {
-        "f": {
-          "regressionParametersStandardErrors": [
-            2.0660690430026933e-13,
-            5.1212982077663434e-18,
-            9.10920932555875e-15
+        "regressionParametersStandardErrors": [
+          1.7792032752524236,
+          0.0000429945089590394,
+          0.0008592489428291642
+        ],
+        "RSquared": 0.8850359458670845,
+        "regressionParameters": [
+          0.7318766882597804,
+          0.01998298784650873,
+          0.10982104952105468
+        ],
+        "regressandVariance": 1938.8190758686717,
+        "regressionParametersVariance": [
+          [
+            0.014201127587649602,
+            -3.326633951803927e-7,
+            -0.000001732754417954437
           ],
-          "RSquared": 1,
-          "regressionParameters": [
-            6.553210695971329e-12,
-            0.019999999999999858,
-            -20.49999999999968
+          [
+            -3.326633951803927e-7,
+            8.292732891338694e-12,
+            2.0407522508189773e-12
           ],
-          "regressandVariance": 2124.130825172683,
-          "regressionParametersVariance": [
-            [
-              0.013660174897582315,
-              -3.361258014840509e-7,
-              -0.00006893737578369605
-            ],
-            [
-              -3.361258014840509e-7,
-              8.393183709503206e-12,
-              6.430253229589981e-11
-            ],
-            [
-              -0.00006893737578369605,
-              6.430253229589981e-11,
-              0.000026553878455570856
-            ]
-          ],
-          "adjustedRSquared": 1,
-          "residualSumSquares": 9.373703759269822e-20
-        }
+          [
+            -0.000001732754417954437,
+            2.0407522508189773e-12,
+            3.3121477630934995e-9
+          ]
+        ],
+        "adjustedRSquared": 0.8850282808303053,
+        "residualSumSquares": 6686612.141261716
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 690
+        "RESPONSE_TIME": 374
       }
     ]
   }
@@ -296,17 +335,17 @@ The `predict` function can also be used to make predictions for multivariate lin
 
 Below is an example of a single prediction using the multivariate linear regression model and a single observation.
 The observation is an array that matches the structure of the observation matrix used to build the model. In this case
-the first value represents a `filesize_d` of `40000` and the second value represents a `service_d` of `4`.
+the first value represents a `filesize_d` of `40000` and the second value represents a `load_d` of `4`.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, service_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, array(40000, 4)))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, array(40000, 4)))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -317,11 +356,11 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "g": 718.0000000000005
+        "p": 801.7725344814675
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 117
+        "RESPONSE_TIME": 70
       }
     ]
   }
@@ -336,35 +375,36 @@ is passed to the `predict` function and it returns an array of predictions.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, service_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, e))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, m))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
     "docs": [
       {
-        "e": [
-          685.498283591961,
-          801.2175699959365,
-          776.7638245911025,
-          610.3559852681935,
-          751.0925865965207,
-          787.2914663381897,
-          744.3632053810668,
-          688.3729301599697,
-          765.367783417171,
-          724.9309687628346,
-          834.4350712384264,
+        "p": [
+          917.7122088913725,
+          900.5418518783401,
+          871.7805676516689,
+          822.1887964840801,
+          828.0842807117554,
+          785.1262470470162,
+          833.2583851225845,
+          802.016811579941,
+          841.5253327135974,
+          896.9648275225625,
+          858.6511235977382,
+          869.8381475112501,
           ...
           ]
       },
@@ -387,36 +427,36 @@ the predictions stored variable *`g`* are subtracted from observed values stored
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, service_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, service_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d),
-    g=predict(f, e),
-    h=ebeSubtract(d, g))
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z),
+    p=predict(r, m),
+    e=ebeSubtract(z, p))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
     "docs": [
       {
         "e": [
-         1.1368683772161603e-13,
-         1.1368683772161603e-13,
-         0,
-         1.1368683772161603e-13,
-         0,
-         1.1368683772161603e-13,
-         0,
-         2.2737367544323206e-13,
-         1.1368683772161603e-13,
-         2.2737367544323206e-13,
-         1.1368683772161603e-13,
+          21.452271655340496,
+          9.647947283595727,
+          -23.02328008866334,
+          -13.533046479596806,
+          -16.1531952414299,
+          4.966514036315402,
+          23.70151322413119,
+          -4.276176642246014,
+          10.781062392156628,
+          0.00039750380267378205,
+          -1.8307638852961645,
           ...
           ]
       },
@@ -428,3 +468,12 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+=== Residual Plot
+
+The residual plot for multi-variate linear regression is the same as for simple linear regression.
+The predictions are plotted on the *x* axis and the error is plotted on the *y* axis.
+
+image::images/math-expressions/residual-plot2.png[]
+
+The residual plot for multi-variate linear regression can be interpreted in the exact same way as simple linear regression.

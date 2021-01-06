@@ -17,6 +17,14 @@
 // under the License.
 
 
+This section of the user guide describes how to assign and visualize
+variables with math expressions.
+
+<<The Let Expression, Let>> -
+<<Echoing Variables, Echo>> -
+<<Visualizing Variables, Visualizing>> -
+<<Caching Variables, Caching>>
+
 == The Let Expression
 
 The `let` expression sets variables and returns
@@ -141,6 +149,60 @@ When this expression is sent to the `/stream` handler it responds with:
   }
 }
 ----
+
+== Visualizing Variables
+
+The *let* expression can also include a *zplot* expression that can be used to visualize the
+variables.
+
+In the example below the variables *a* and *b* are set to arrays. The zplot function
+outputs the variables as *x* and *y* fields in the output.
+
+[source,text]
+----
+let(a=array(1, 2, 3),
+    b=array(10, 20, 30),
+    zplot(x=a, y=b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "x": 1,
+        "y": 10
+      },
+      {
+        "x": 2,
+        "y": 20
+      },
+      {
+        "x": 3,
+        "y": 30
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Using this approach variables can by visualized using Zeppelin-Solr. In the example below
+the arrays are shown in table format.
+
+image::images/math-expressions/variables.png[]
+
+Once in table format we can plot the variables using one of the plotting or charting
+visualizations. The example below shows variables plotted on a line chart:
+
+image::images/math-expressions/variables1.png[]
+
 
 == Caching Variables
 
