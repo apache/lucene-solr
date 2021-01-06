@@ -258,7 +258,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       }
 
       SuggesterOptions options = new SuggesterOptions(new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
-      NamedList<SimpleOrderedMap<NamedList<Object>>> namedListResults = new NamedList<>();
+      SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults = new SimpleOrderedMap<>();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
@@ -298,7 +298,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     
     // Merge Shard responses
     SuggesterResult suggesterResult = merge(suggesterResults, count);
-    NamedList<SimpleOrderedMap<NamedList<Object>>> namedListResults = new NamedList<>();
+    SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults = new SimpleOrderedMap<>();
     toNamedList(suggesterResult, namedListResults);
     
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
@@ -410,7 +410,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   /** Convert {@link SuggesterResult} to NamedList for constructing responses */
-  private void toNamedList(SuggesterResult suggesterResult, NamedList<SimpleOrderedMap<NamedList<Object>>> resultObj) {
+  private void toNamedList(SuggesterResult suggesterResult, SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> resultObj) {
     for(String suggesterName : suggesterResult.getSuggesterNames()) {
       SimpleOrderedMap<NamedList<Object>> results = new SimpleOrderedMap<>();
       for (String token : suggesterResult.getTokens(suggesterName)) {
