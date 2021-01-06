@@ -48,23 +48,15 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   protected final SpanQuery match;
   protected String operation = null;
   protected PayloadType payloadType = PayloadType.STRING;
-  /**
-   * The payload type.  This specifies the decoding of the ByteRef for the payload.
-   */
+  /** The payload type. This specifies the decoding of the ByteRef for the payload. */
   public static enum PayloadType {
-    /**
-     * INT is for a 4 byte payload that is a packed integer
-     */
-    INT, 
-    /**
-     * FLOAT is a 4 byte payload decoded to a float(32bit).
-     */
-    FLOAT, 
-    /**
-     * STRING is a UTF8 encoded string, decoded from the byte array
-     */
-    STRING 
-  };  
+    /** INT is for a 4 byte payload that is a packed integer */
+    INT,
+    /** FLOAT is a 4 byte payload decoded to a float(32bit). */
+    FLOAT,
+    /** STRING is a UTF8 encoded string, decoded from the byte array */
+    STRING
+  };
 
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
@@ -73,20 +65,22 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   public SpanPayloadCheckQuery(SpanQuery match, List<BytesRef> payloadToMatch) {
     this(match, payloadToMatch, null, null);
   }
-  
+
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
-   * @param operation The equality check, lt, lte, gt, gte, or eq.  Defaults to eq for equals)
-   * @param payloadType specify if the format of the bytes in the payload (String, Integer, or Float)
+   * @param operation The equality check, lt, lte, gt, gte, or eq. Defaults to eq for equals)
+   * @param payloadType specify if the format of the bytes in the payload (String, Integer, or
+   *     Float)
    */
-  public SpanPayloadCheckQuery(SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, String operation) {
+  public SpanPayloadCheckQuery(
+      SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, String operation) {
     this.match = match;
     this.payloadToMatch = payloadToMatch;
     this.payloadType = payloadType;
     this.operation = operation;
   }
-  
+
   @Override
   public String getField() {
     return match.getField();
@@ -97,14 +91,19 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       throws IOException {
     SpanWeight matchWeight = match.createWeight(searcher, scoreMode, boost);
     return new SpanPayloadCheckWeight(
-        searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, matchWeight, boost, payloadType);
+        searcher,
+        scoreMode.needsScores() ? getTermStates(matchWeight) : null,
+        matchWeight,
+        boost,
+        payloadType);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query matchRewritten = match.rewrite(reader);
     if (match != matchRewritten && matchRewritten instanceof SpanQuery) {
-      return new SpanPayloadCheckQuery((SpanQuery)matchRewritten, payloadToMatch, payloadType, operation);
+      return new SpanPayloadCheckQuery(
+          (SpanQuery) matchRewritten, payloadToMatch, payloadType, operation);
     }
     return super.rewrite(reader);
   }
@@ -125,7 +124,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
         IndexSearcher searcher,
         Map<Term, TermStates> termStates,
         SpanWeight matchWeight,
-        float boost, 
+        float boost,
         PayloadType payloadType)
         throws IOException {
       super(SpanPayloadCheckQuery.this, searcher, termStates, boost);
@@ -136,12 +135,13 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public void extractTermStates(Map<Term, TermStates> contexts) {
       matchWeight.extractTermStates(contexts);
     }
-    
+
     @Override
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
         throws IOException {
       final PayloadChecker collector = new PayloadChecker();
-      collector.payloadMatcher = PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
+      collector.payloadMatcher =
+          PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null)
           ? null
@@ -184,7 +184,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       return matchWeight.isCacheable(ctx);
     }
   }
-
 
   private class PayloadChecker implements SpanCollector {
 
@@ -248,16 +247,19 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     return buffer.toString();
   }
 
-  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // because actually it does even if ides are easily confused
+  @SuppressWarnings(
+      "EqualsWhichDoesntCheckParameterClass") // because actually it does even if ides are easily
+  // confused
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-        payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch) &&
-        match.equals(((SpanPayloadCheckQuery) other).match) &&
-        (operation == null && (((SpanPayloadCheckQuery) other).operation == null) ||
-            (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation))) &&
-        (payloadType == null && (((SpanPayloadCheckQuery) other).payloadType == null) ||
-            (payloadType != null && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType)));
+    return sameClassAs(other)
+        && payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch)
+        && match.equals(((SpanPayloadCheckQuery) other).match)
+        && (operation == null && (((SpanPayloadCheckQuery) other).operation == null)
+            || (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation)))
+        && (payloadType == null && (((SpanPayloadCheckQuery) other).payloadType == null)
+            || (payloadType != null
+                && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType)));
   }
 
   @Override

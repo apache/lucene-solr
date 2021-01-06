@@ -23,11 +23,10 @@ public interface PayloadMatcher {
 
   /**
    * This method tests if two BytesRef match.
-   * 
+   *
    * @param source left side of the compare
    * @param payload right side of the compare
    * @return true if the BytesRefs are matching, otherwise false.
    */
   public boolean comparePayload(BytesRef source, BytesRef payload);
-
 }
