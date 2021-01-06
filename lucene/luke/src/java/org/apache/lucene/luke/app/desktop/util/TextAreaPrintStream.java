@@ -17,10 +17,10 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.JTextArea;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import javax.swing.JTextArea;
 
 /** PrintStream for text areas */
 public final class TextAreaPrintStream extends PrintStream {

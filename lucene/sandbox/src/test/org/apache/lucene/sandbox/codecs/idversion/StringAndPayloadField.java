@@ -65,7 +65,7 @@ class StringAndPayloadField extends Field {
     private boolean used = false;
     private String value = null;
     private BytesRef payload;
-    
+
     /** Sets the string value. */
     void setValue(String value, BytesRef payload) {
       this.value = value;
@@ -96,5 +96,3 @@ class StringAndPayloadField extends Field {
     }
   }
 }
-
-

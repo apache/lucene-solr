@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYGeometry;
@@ -40,12 +39,13 @@ import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
 
-/** Finds all previously indexed points that fall within the specified XY geometries.
+/**
+ * Finds all previously indexed points that fall within the specified XY geometries.
  *
- *  <p>The field must be indexed with using {@link XYPointField} added per document.
+ * <p>The field must be indexed with using {@link XYPointField} added per document.
  *
- *  @lucene.experimental */
-
+ * @lucene.experimental
+ */
 final class XYPointInGeometryQuery extends Query {
   final String field;
   final XYGeometry[] xyGeometries;
@@ -73,52 +73,53 @@ final class XYPointInGeometryQuery extends Query {
 
   private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result, Component2D tree) {
     return new IntersectVisitor() {
-          DocIdSetBuilder.BulkAdder adder;
+      DocIdSetBuilder.BulkAdder adder;
 
-          @Override
-          public void grow(int count) {
-            adder = result.grow(count);
-          }
+      @Override
+      public void grow(int count) {
+        adder = result.grow(count);
+      }
 
-          @Override
-          public void visit(int docID) {
-            adder.add(docID);
-          }
+      @Override
+      public void visit(int docID) {
+        adder.add(docID);
+      }
 
-          @Override
-          public void visit(int docID, byte[] packedValue) {
-            double x = XYEncodingUtils.decode(packedValue, 0);
-            double y = XYEncodingUtils.decode(packedValue, Integer.BYTES);
-            if (tree.contains(x, y)) {
-              visit(docID);
-            }
-          }
+      @Override
+      public void visit(int docID, byte[] packedValue) {
+        double x = XYEncodingUtils.decode(packedValue, 0);
+        double y = XYEncodingUtils.decode(packedValue, Integer.BYTES);
+        if (tree.contains(x, y)) {
+          visit(docID);
+        }
+      }
 
-          @Override
-          public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
-            double x = XYEncodingUtils.decode(packedValue, 0);
-            double y = XYEncodingUtils.decode(packedValue, Integer.BYTES);
-            if (tree.contains(x, y)) {
-              int docID;
-              while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-                visit(docID);
-              }
-            }
+      @Override
+      public void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+        double x = XYEncodingUtils.decode(packedValue, 0);
+        double y = XYEncodingUtils.decode(packedValue, Integer.BYTES);
+        if (tree.contains(x, y)) {
+          int docID;
+          while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            visit(docID);
           }
+        }
+      }
 
-          @Override
-          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-            double cellMinX = XYEncodingUtils.decode(minPackedValue, 0);
-            double cellMinY = XYEncodingUtils.decode(minPackedValue, Integer.BYTES);
-            double cellMaxX = XYEncodingUtils.decode(maxPackedValue, 0);
-            double cellMaxY = XYEncodingUtils.decode(maxPackedValue, Integer.BYTES);
-            return tree.relate(cellMinX, cellMaxX, cellMinY, cellMaxY);
-          }
-        };
+      @Override
+      public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+        double cellMinX = XYEncodingUtils.decode(minPackedValue, 0);
+        double cellMinY = XYEncodingUtils.decode(minPackedValue, Integer.BYTES);
+        double cellMaxX = XYEncodingUtils.decode(maxPackedValue, 0);
+        double cellMaxY = XYEncodingUtils.decode(maxPackedValue, Integer.BYTES);
+        return tree.relate(cellMinX, cellMaxX, cellMinY, cellMaxY);
+      }
+    };
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     final Component2D tree = XYGeometry.create(xyGeometries);
 
@@ -155,7 +156,7 @@ final class XYPointInGeometryQuery extends Query {
           @Override
           public long cost() {
             if (cost == -1) {
-               // Computing the cost may be expensive, so only do it if necessary
+              // Computing the cost may be expensive, so only do it if necessary
               cost = values.estimateDocCount(visitor);
               assert cost >= 0;
             }
@@ -178,7 +179,6 @@ final class XYPointInGeometryQuery extends Query {
         return true;
       }
     };
-
   }
 
   /** Returns the query field */
@@ -202,13 +202,11 @@ final class XYPointInGeometryQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(XYPointInGeometryQuery other) {
-    return field.equals(other.field) &&
-           Arrays.equals(xyGeometries, other.xyGeometries);
+    return field.equals(other.field) && Arrays.equals(xyGeometries, other.xyGeometries);
   }
 
   @Override

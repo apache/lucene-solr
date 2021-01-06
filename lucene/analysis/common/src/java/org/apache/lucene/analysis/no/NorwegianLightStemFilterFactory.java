@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.no;
 
-
-import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
 import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
 
-/** 
+import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
+
+/**
  * Factory for {@link NorwegianLightStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_svlgtstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -35,6 +34,7 @@ import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
  *     &lt;filter class="solr.NorwegianLightStemFilterFactory" variant="nb"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -42,11 +42,11 @@ public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "norwegianLightStem";
-  
+
   private final int flags;
-  
+
   /** Creates a new NorwegianLightStemFilterFactory */
-  public NorwegianLightStemFilterFactory(Map<String,String> args) {
+  public NorwegianLightStemFilterFactory(Map<String, String> args) {
     super(args);
     String variant = get(args, "variant");
     if (variant == null || "nb".equals(variant)) {
@@ -62,7 +62,7 @@ public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public NorwegianLightStemFilterFactory() {
     throw defaultCtorException();

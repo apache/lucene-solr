@@ -15,33 +15,28 @@
  * limitations under the License.
  */
 package org.apache.lucene.analysis;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-
 /**
- * Wraps a whitespace tokenizer with a filter that sets
- * the first token, and odd tokens to posinc=1, and all others
- * to 0, encoding the position as pos: XXX in the payload.
- **/
+ * Wraps a whitespace tokenizer with a filter that sets the first token, and odd tokens to posinc=1,
+ * and all others to 0, encoding the position as pos: XXX in the payload.
+ */
 public final class MockPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStreamComponents createComponents(String fieldName) {
-    Tokenizer result = new MockTokenizer( MockTokenizer.WHITESPACE, true);
+    Tokenizer result = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     return new TokenStreamComponents(result, new MockPayloadFilter(result, fieldName));
   }
 }
 
-/**
- *
- *
- **/
+/** */
 final class MockPayloadFilter extends TokenFilter {
   String fieldName;
 
@@ -89,4 +84,3 @@ final class MockPayloadFilter extends TokenFilter {
     pos = 0;
   }
 }
-

@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.FilteringTokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Removes words that are too long or too short from the stream.
- * <p>
- * Note: Length is calculated as the number of UTF-16 code units.
- * </p>
+ *
+ * <p>Note: Length is calculated as the number of UTF-16 code units.
  */
 public final class LengthFilter extends FilteringTokenFilter {
 
@@ -35,12 +33,13 @@ public final class LengthFilter extends FilteringTokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
-   * Create a new {@link LengthFilter}. This will filter out tokens whose
-   * {@link CharTermAttribute} is either too short ({@link CharTermAttribute#length()}
-   * &lt; min) or too long ({@link CharTermAttribute#length()} &gt; max).
-   * @param in      the {@link TokenStream} to consume
-   * @param min     the minimum length
-   * @param max     the maximum length
+   * Create a new {@link LengthFilter}. This will filter out tokens whose {@link CharTermAttribute}
+   * is either too short ({@link CharTermAttribute#length()} &lt; min) or too long ({@link
+   * CharTermAttribute#length()} &gt; max).
+   *
+   * @param in the {@link TokenStream} to consume
+   * @param min the minimum length
+   * @param max the maximum length
    */
   public LengthFilter(TokenStream in, int min, int max) {
     super(in);

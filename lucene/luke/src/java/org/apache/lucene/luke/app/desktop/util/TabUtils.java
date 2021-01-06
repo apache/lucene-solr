@@ -17,9 +17,9 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
+import java.awt.Graphics;
 import javax.swing.JTabbedPane;
 import javax.swing.UIManager;
-import java.awt.Graphics;
 
 /** Tab utilities */
 public class TabUtils {
@@ -31,11 +31,11 @@ public class TabUtils {
       return;
     }
     // https://coderanch.com/t/600541/java/JtabbedPane-transparency
-    tabbedPane.setUI(new javax.swing.plaf.metal.MetalTabbedPaneUI() {
-      protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-      }
-    });
+    tabbedPane.setUI(
+        new javax.swing.plaf.metal.MetalTabbedPaneUI() {
+          protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {}
+        });
   }
 
-  private TabUtils(){}
+  private TabUtils() {}
 }

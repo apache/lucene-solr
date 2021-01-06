@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Latvian.
- */
+/** Analyzer for Latvian. */
 package org.apache.lucene.analysis.lv;

@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * An {@link IndexInput} implementing {@link RandomAccessInput} and backed
- * by a {@link ByteBuffersDataInput}.
+ * An {@link IndexInput} implementing {@link RandomAccessInput} and backed by a {@link
+ * ByteBuffersDataInput}.
  */
 public final class ByteBuffersIndexInput extends IndexInput implements RandomAccessInput {
   private ByteBuffersDataInput in;
@@ -57,10 +57,20 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
-  public ByteBuffersIndexInput slice(String sliceDescription, long offset, long length) throws IOException {
+  public ByteBuffersIndexInput slice(String sliceDescription, long offset, long length)
+      throws IOException {
     ensureOpen();
-    return new ByteBuffersIndexInput(in.slice(offset, length), 
-        "(sliced) offset=" + offset + ", length=" + length + " " + toString() + " [slice=" + sliceDescription + "]");
+    return new ByteBuffersIndexInput(
+        in.slice(offset, length),
+        "(sliced) offset="
+            + offset
+            + ", length="
+            + length
+            + " "
+            + toString()
+            + " [slice="
+            + sliceDescription
+            + "]");
   }
 
   @Override
@@ -176,11 +186,12 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
     ensureOpen();
     return in.readLong(pos);
   }
-  
+
   @Override
   public IndexInput clone() {
     ensureOpen();
-    ByteBuffersIndexInput cloned = new ByteBuffersIndexInput(in.slice(0, in.size()), "(clone of) " + toString());
+    ByteBuffersIndexInput cloned =
+        new ByteBuffersIndexInput(in.slice(0, in.size()), "(clone of) " + toString());
     try {
       cloned.seek(getFilePointer());
     } catch (IOException e) {
@@ -193,5 +204,5 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
     if (in == null) {
       throw new AlreadyClosedException("Already closed.");
     }
-  }  
+  }
 }

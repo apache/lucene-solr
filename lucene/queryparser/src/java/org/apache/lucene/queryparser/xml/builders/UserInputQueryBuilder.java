@@ -19,18 +19,17 @@ package org.apache.lucene.queryparser.xml.builders;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 
 /**
- * UserInputQueryBuilder uses 1 of 2 strategies for thread-safe parsing:
- * 1) Synchronizing access to "parse" calls on a previously supplied QueryParser
- * or..
- * 2) creating a new QueryParser object for each parse request
+ * UserInputQueryBuilder uses 1 of 2 strategies for thread-safe parsing: 1) Synchronizing access to
+ * "parse" calls on a previously supplied QueryParser or.. 2) creating a new QueryParser object for
+ * each parse request
  */
 public class UserInputQueryBuilder implements QueryBuilder {
 
@@ -53,8 +52,8 @@ public class UserInputQueryBuilder implements QueryBuilder {
   }
 
   /* (non-Javadoc)
-    * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
-    */
+   * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
+   */
 
   @Override
   public Query getQuery(Element e) throws ParserException {
@@ -62,13 +61,13 @@ public class UserInputQueryBuilder implements QueryBuilder {
     try {
       Query q = null;
       if (unSafeParser != null) {
-        //synchronize on unsafe parser
+        // synchronize on unsafe parser
         synchronized (unSafeParser) {
           q = unSafeParser.parse(text);
         }
       } else {
         String fieldName = DOMUtils.getAttribute(e, "fieldName", defaultField);
-        //Create new parser
+        // Create new parser
         QueryParser parser = createQueryParser(fieldName, analyzer);
         q = parser.parse(text);
       }
@@ -87,5 +86,4 @@ public class UserInputQueryBuilder implements QueryBuilder {
   protected QueryParser createQueryParser(String fieldName, Analyzer analyzer) {
     return new QueryParser(fieldName, analyzer);
   }
-
 }

@@ -16,48 +16,44 @@
  */
 package org.apache.lucene.analysis.standard;
 
-
+import java.io.Reader;
+import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * Simple tests to ensure the standard lucene factories are working.
- */
+/** Simple tests to ensure the standard lucene factories are working. */
 public class TestStandardFactories extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Test StandardTokenizerFactory
-   */
+  /** Test StandardTokenizerFactory */
   public void testStandardTokenizer() throws Exception {
     Reader reader = new StringReader("Wha\u0301t's this thing do?");
     Tokenizer stream = tokenizerFactory("Standard").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream,
-        new String[]{"Wha\u0301t's", "this", "thing", "do"});
+    assertTokenStreamContents(stream, new String[] {"Wha\u0301t's", "this", "thing", "do"});
   }
-  
+
   public void testStandardTokenizerMaxTokenLength() throws Exception {
     StringBuilder builder = new StringBuilder();
-    for (int i = 0 ; i < 100 ; ++i) {
+    for (int i = 0; i < 100; ++i) {
       builder.append("abcdefg"); // 7 * 100 = 700 char "word"
     }
     String longWord = builder.toString();
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
-    Tokenizer stream = tokenizerFactory("Standard",
-        "maxTokenLength", "1000").create(newAttributeFactory());
+    Tokenizer stream =
+        tokenizerFactory("Standard", "maxTokenLength", "1000").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream,
-        new String[]{"one", "two", "three", longWord, "four", "five", "six"});
+    assertTokenStreamContents(
+        stream, new String[] {"one", "two", "three", longWord, "four", "five", "six"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Standard", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Standard", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

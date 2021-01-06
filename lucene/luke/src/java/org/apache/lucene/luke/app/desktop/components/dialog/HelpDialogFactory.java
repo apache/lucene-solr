@@ -17,12 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -30,7 +24,12 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Window;
 import java.io.IOException;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -49,7 +48,7 @@ public final class HelpDialogFactory implements DialogOpener.DialogFactory {
 
   private JComponent helpContent;
 
-  public synchronized static HelpDialogFactory getInstance() throws IOException {
+  public static synchronized HelpDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new HelpDialogFactory();
     }

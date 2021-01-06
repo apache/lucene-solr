@@ -17,41 +17,43 @@
 
 package org.apache.lucene.codecs.uniformsplit;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
-
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 import static org.apache.lucene.util.RamUsageEstimator.alignObjectSize;
 import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOfInstance;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.lucene.index.TermState;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
- * Utility methods to estimate the RAM usage of objects.
- * It relies on {@link RamUsageEstimator}.
+ * Utility methods to estimate the RAM usage of objects. It relies on {@link RamUsageEstimator}.
  *
  * @lucene.experimental
  */
 public class RamUsageUtil {
 
   private static final long BYTES_REF_BASE_RAM_USAGE = shallowSizeOfInstance(BytesRef.class);
-  private static final long BYTES_REF_BUILDER_BASE_RAM_USAGE = shallowSizeOfInstance(BytesRefBuilder.class);
-  private static final long HASH_MAP_BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(HashMap.class);
+  private static final long BYTES_REF_BUILDER_BASE_RAM_USAGE =
+      shallowSizeOfInstance(BytesRefBuilder.class);
+  private static final long HASH_MAP_BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(HashMap.class);
   private static final long HASH_MAP_ENTRY_BASE_RAM_USAGE;
   private static final long UNMODIFIABLE_ARRAY_LIST_BASE_RAM_USAGE;
 
   static {
     Map<Object, Object> map = new HashMap<>();
     map.put(map, map);
-    HASH_MAP_ENTRY_BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOf(map.entrySet().iterator().next());
-    UNMODIFIABLE_ARRAY_LIST_BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOf(Collections.unmodifiableList(new ArrayList<>()))
-        + RamUsageEstimator.shallowSizeOfInstance(ArrayList.class);
+    HASH_MAP_ENTRY_BASE_RAM_USAGE =
+        RamUsageEstimator.shallowSizeOf(map.entrySet().iterator().next());
+    UNMODIFIABLE_ARRAY_LIST_BASE_RAM_USAGE =
+        RamUsageEstimator.shallowSizeOf(Collections.unmodifiableList(new ArrayList<>()))
+            + RamUsageEstimator.shallowSizeOfInstance(ArrayList.class);
   }
 
   public static long ramBytesUsed(BytesRef bytesRef) {
@@ -77,8 +79,7 @@ public class RamUsageUtil {
   }
 
   public static long ramBytesUsedByUnmodifiableArrayListOfSize(int size) {
-    return UNMODIFIABLE_ARRAY_LIST_BASE_RAM_USAGE
-        + ramBytesUsedByObjectArrayOfLength(size);
+    return UNMODIFIABLE_ARRAY_LIST_BASE_RAM_USAGE + ramBytesUsedByObjectArrayOfLength(size);
   }
 
   public static long ramBytesUsedByObjectArrayOfLength(int length) {

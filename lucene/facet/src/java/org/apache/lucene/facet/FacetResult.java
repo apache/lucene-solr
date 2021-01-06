@@ -27,9 +27,10 @@ public final class FacetResult {
   /** Path whose children were requested. */
   public final String[] path;
 
-  /** Total value for this path (sum of all child counts, or
-   *  sum of all child values), even those not included in
-   *  the topN. */
+  /**
+   * Total value for this path (sum of all child counts, or sum of all child values), even those not
+   * included in the topN.
+   */
   public final Number value;
 
   /** How many child labels were encountered. */
@@ -39,7 +40,8 @@ public final class FacetResult {
   public final LabelAndValue[] labelValues;
 
   /** Sole constructor. */
-  public FacetResult(String dim, String[] path, Number value, LabelAndValue[] labelValues, int childCount) {
+  public FacetResult(
+      String dim, String[] path, Number value, LabelAndValue[] labelValues, int childCount) {
     this.dim = dim;
     this.path = path;
     this.value = value;
@@ -59,7 +61,7 @@ public final class FacetResult {
     sb.append(" childCount=");
     sb.append(childCount);
     sb.append('\n');
-    for(LabelAndValue labelValue : labelValues) {
+    for (LabelAndValue labelValue : labelValues) {
       sb.append("  ").append(labelValue).append("\n");
     }
     return sb.toString();
@@ -71,15 +73,15 @@ public final class FacetResult {
       return false;
     }
     FacetResult other = (FacetResult) _other;
-    return value.equals(other.value) &&
-      childCount == other.childCount &&
-      Arrays.equals(labelValues, other.labelValues);
+    return value.equals(other.value)
+        && childCount == other.childCount
+        && Arrays.equals(labelValues, other.labelValues);
   }
 
   @Override
   public int hashCode() {
     int hashCode = value.hashCode() + 31 * childCount;
-    for(LabelAndValue labelValue : labelValues) {
+    for (LabelAndValue labelValue : labelValues) {
       hashCode = labelValue.hashCode() + 31 * hashCode;
     }
     return hashCode;

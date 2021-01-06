@@ -18,7 +18,6 @@ package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
 import java.util.Collections;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.util.BytesRef;
@@ -33,8 +32,16 @@ public class NoOpOffsetStrategy extends FieldOffsetStrategy {
   public static final NoOpOffsetStrategy INSTANCE = new NoOpOffsetStrategy();
 
   private NoOpOffsetStrategy() {
-    super(new UHComponents("_ignored_", (s) -> false, new MatchNoDocsQuery(),
-        new BytesRef[0], PhraseHelper.NONE, new LabelledCharArrayMatcher[0], false, Collections.emptySet()));
+    super(
+        new UHComponents(
+            "_ignored_",
+            (s) -> false,
+            new MatchNoDocsQuery(),
+            new BytesRef[0],
+            PhraseHelper.NONE,
+            new LabelledCharArrayMatcher[0],
+            false,
+            Collections.emptySet()));
   }
 
   @Override
@@ -43,8 +50,8 @@ public class NoOpOffsetStrategy extends FieldOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content)
+      throws IOException {
     return OffsetsEnum.EMPTY;
   }
-
 }

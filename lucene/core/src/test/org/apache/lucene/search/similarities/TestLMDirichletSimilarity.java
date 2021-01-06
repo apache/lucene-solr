@@ -45,5 +45,4 @@ public class TestLMDirichletSimilarity extends BaseSimilarityTestCase {
     }
     return new LMDirichletSimilarity(mu);
   }
-
 }

@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -58,13 +56,14 @@ public class TestQueryRescorer extends LuceneTestCase {
     return LuceneTestCase.newIndexWriterConfig().setSimilarity(new ClassicSimilarity());
   }
 
-  static List<String> dictionary = Arrays.asList("river","quick","brown","fox","jumped","lazy","fence");
+  static List<String> dictionary =
+      Arrays.asList("river", "quick", "brown", "fox", "jumped", "lazy", "fence");
 
   String randomSentence() {
     final int length = random().nextInt(10);
-    StringBuilder sentence = new StringBuilder(dictionary.get(0)+" ");
+    StringBuilder sentence = new StringBuilder(dictionary.get(0) + " ");
     for (int i = 0; i < length; i++) {
-      sentence.append(dictionary.get(random().nextInt(dictionary.size()-1))+" ");
+      sentence.append(dictionary.get(random().nextInt(dictionary.size() - 1)) + " ");
     }
     return sentence.toString();
   }
@@ -102,12 +101,12 @@ public class TestQueryRescorer extends LuceneTestCase {
     PhraseQuery phraseQuery = new PhraseQuery(1, fieldName, wordOne, wordTwo);
 
     // rescore, requesting a smaller topN
-    int topN = random().nextInt(numDocs-1);
+    int topN = random().nextInt(numDocs - 1);
     TopDocs phraseQueryHits = QueryRescorer.rescore(searcher, hits, phraseQuery, 2.0, topN);
     assertEquals(topN, phraseQueryHits.scoreDocs.length);
 
     for (int i = 1; i < phraseQueryHits.scoreDocs.length; i++) {
-      assertTrue(phraseQueryHits.scoreDocs[i].score <= phraseQueryHits.scoreDocs[i-1].score);
+      assertTrue(phraseQueryHits.scoreDocs[i].score <= phraseQueryHits.scoreDocs[i - 1].score);
     }
     reader.close();
     dir.close();
@@ -137,9 +136,11 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs firstRescoreHits = QueryRescorer.rescore(searcher, hits1, phraseQuery, 2.0, topN);
 
     // now rescore again, where topN is less than numDocs
-    topN = random().nextInt(numDocs-1);
-    ScoreDoc[] secondRescoreHits = QueryRescorer.rescore(searcher, hits2, phraseQuery, 2.0, topN).scoreDocs;
-    ScoreDoc[] expectedTopNScoreDocs = ArrayUtil.copyOfSubArray(firstRescoreHits.scoreDocs, 0, topN);
+    topN = random().nextInt(numDocs - 1);
+    ScoreDoc[] secondRescoreHits =
+        QueryRescorer.rescore(searcher, hits2, phraseQuery, 2.0, topN).scoreDocs;
+    ScoreDoc[] expectedTopNScoreDocs =
+        ArrayUtil.copyOfSubArray(firstRescoreHits.scoreDocs, 0, topN);
     CheckHits.checkEqual(phraseQuery, expectedTopNScoreDocs, secondRescoreHits);
 
     reader.close();
@@ -270,17 +271,19 @@ public class TestQueryRescorer extends LuceneTestCase {
     // Now, resort using PhraseQuery, but with an
     // opposite-world combine:
     PhraseQuery pq = new PhraseQuery(5, "field", "wizard", "oz");
-    
-    TopDocs hits2 = new QueryRescorer(pq) {
-        @Override
-        protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-          float score = firstPassScore;
-          if (secondPassMatches) {
-            score -= 2.0 * secondPassScore;
+
+    TopDocs hits2 =
+        new QueryRescorer(pq) {
+          @Override
+          protected float combine(
+              float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+            float score = firstPassScore;
+            if (secondPassMatches) {
+              score -= 2.0 * secondPassScore;
+            }
+            return score;
           }
-          return score;
-        }
-      }.rescore(searcher, hits, 10);
+        }.rescore(searcher, hits, 10);
 
     // Resorting didn't change the order:
     assertEquals(2, hits2.totalHits.value);
@@ -321,16 +324,18 @@ public class TestQueryRescorer extends LuceneTestCase {
     // Now, resort using PhraseQuery:
     PhraseQuery pq = new PhraseQuery("field", "wizard", "oz");
 
-    Rescorer rescorer = new QueryRescorer(pq) {
-        @Override
-        protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-          float score = firstPassScore;
-          if (secondPassMatches) {
-            score += 2.0 * secondPassScore;
+    Rescorer rescorer =
+        new QueryRescorer(pq) {
+          @Override
+          protected float combine(
+              float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+            float score = firstPassScore;
+            if (secondPassMatches) {
+              score += 2.0 * secondPassScore;
+            }
+            return score;
           }
-          return score;
-        }
-      };
+        };
 
     TopDocs hits2 = rescorer.rescore(searcher, hits, 10);
 
@@ -340,9 +345,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertEquals("0", searcher.doc(hits2.scoreDocs[1].doc).get("id"));
 
     int docID = hits2.scoreDocs[0].doc;
-    Explanation explain = rescorer.explain(searcher,
-                                           searcher.explain(bq.build(), docID),
-                                           docID);
+    Explanation explain = rescorer.explain(searcher, searcher.explain(bq.build(), docID), docID);
     String s = explain.toString();
     assertTrue(s.contains("TestQueryRescorer$"));
     assertTrue(s.contains("combined first and second pass score"));
@@ -351,9 +354,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     assertEquals(hits2.scoreDocs[0].score, explain.getValue().doubleValue(), 0.0f);
 
     docID = hits2.scoreDocs[1].doc;
-    explain = rescorer.explain(searcher,
-                               searcher.explain(bq.build(), docID),
-                               docID);
+    explain = rescorer.explain(searcher, searcher.explain(bq.build(), docID), docID);
     s = explain.toString();
     assertTrue(s.contains("TestQueryRescorer$"));
     assertTrue(s.contains("combined first and second pass score"));
@@ -426,12 +427,12 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     final int[] idToNum = new int[numDocs];
     int maxValue = TestUtil.nextInt(random(), 10, 1000000);
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(newStringField("id", ""+i, Field.Store.YES));
+      doc.add(newStringField("id", "" + i, Field.Store.YES));
       int numTokens = TestUtil.nextInt(random(), 1, 10);
       StringBuilder b = new StringBuilder();
-      for(int j=0;j<numTokens;j++) {
+      for (int j = 0; j < numTokens; j++) {
         b.append("a ");
       }
       doc.add(newTextField("field", b.toString(), Field.Store.NO));
@@ -446,49 +447,53 @@ public class TestQueryRescorer extends LuceneTestCase {
     int numHits = TestUtil.nextInt(random(), 1, numDocs);
     boolean reverse = random().nextBoolean();
 
-    //System.out.println("numHits=" + numHits + " reverse=" + reverse);
+    // System.out.println("numHits=" + numHits + " reverse=" + reverse);
     TopDocs hits = s.search(new TermQuery(new Term("field", "a")), numHits);
 
-    TopDocs hits2 = new QueryRescorer(new FixedScoreQuery(idToNum, reverse)) {
-        @Override
-        protected float combine(float firstPassScore, boolean secondPassMatches, float secondPassScore) {
-          return secondPassScore;
-        }
-      }.rescore(s, hits, numHits);
+    TopDocs hits2 =
+        new QueryRescorer(new FixedScoreQuery(idToNum, reverse)) {
+          @Override
+          protected float combine(
+              float firstPassScore, boolean secondPassMatches, float secondPassScore) {
+            return secondPassScore;
+          }
+        }.rescore(s, hits, numHits);
 
     Integer[] expected = new Integer[numHits];
-    for(int i=0;i<numHits;i++) {
+    for (int i = 0; i < numHits; i++) {
       expected[i] = hits.scoreDocs[i].doc;
     }
 
     final int reverseInt = reverse ? -1 : 1;
 
-    Arrays.sort(expected,
-                new Comparator<Integer>() {
-                  @Override
-                  public int compare(Integer a, Integer b) {
-                    try {
-                      int av = idToNum[Integer.parseInt(r.document(a).get("id"))];
-                      int bv = idToNum[Integer.parseInt(r.document(b).get("id"))];
-                      if (av < bv) {
-                        return -reverseInt;
-                      } else if (bv < av) {
-                        return reverseInt;
-                      } else {
-                        // Tie break by docID, ascending
-                        return a - b;
-                      }
-                    } catch (IOException ioe) {
-                      throw new RuntimeException(ioe);
-                    }
-                  }
-                });
+    Arrays.sort(
+        expected,
+        new Comparator<Integer>() {
+          @Override
+          public int compare(Integer a, Integer b) {
+            try {
+              int av = idToNum[Integer.parseInt(r.document(a).get("id"))];
+              int bv = idToNum[Integer.parseInt(r.document(b).get("id"))];
+              if (av < bv) {
+                return -reverseInt;
+              } else if (bv < av) {
+                return reverseInt;
+              } else {
+                // Tie break by docID, ascending
+                return a - b;
+              }
+            } catch (IOException ioe) {
+              throw new RuntimeException(ioe);
+            }
+          }
+        });
 
     boolean fail = false;
-    for(int i=0;i<numHits;i++) {
-      //System.out.println("expected=" + expected[i] + " vs " + hits2.scoreDocs[i].doc + " v=" + idToNum[Integer.parseInt(r.document(expected[i]).get("id"))]);
+    for (int i = 0; i < numHits; i++) {
+      // System.out.println("expected=" + expected[i] + " vs " + hits2.scoreDocs[i].doc + " v=" +
+      // idToNum[Integer.parseInt(r.document(expected[i]).get("id"))]);
       if (expected[i].intValue() != hits2.scoreDocs[i].doc) {
-        //System.out.println("  diff!");
+        // System.out.println("  diff!");
         fail = true;
       }
     }
@@ -509,7 +514,8 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
 
       return new Weight(FixedScoreQuery.this) {
 
@@ -559,10 +565,10 @@ public class TestQueryRescorer extends LuceneTestCase {
             public float score() throws IOException {
               int num = idToNum[Integer.parseInt(context.reader().document(docID).get("id"))];
               if (reverse) {
-                //System.out.println("score doc=" + docID + " num=" + num);
+                // System.out.println("score doc=" + docID + " num=" + num);
                 return num;
               } else {
-                //System.out.println("score doc=" + docID + " num=" + -num);
+                // System.out.println("score doc=" + docID + " num=" + -num);
                 return 1f / (1 + num);
               }
             }
@@ -587,9 +593,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public String toString(String field) {
@@ -598,13 +602,11 @@ public class TestQueryRescorer extends LuceneTestCase {
 
     @Override
     public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
+      return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(FixedScoreQuery other) {
-      return reverse == other.reverse && 
-             Arrays.equals(idToNum, other.idToNum);
+      return reverse == other.reverse && Arrays.equals(idToNum, other.idToNum);
     }
 
     @Override

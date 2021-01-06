@@ -18,22 +18,20 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-
-
 /**
  * A utility for executing 2-phase commit on several objects.
- * 
+ *
  * @see TwoPhaseCommit
  * @lucene.experimental
  */
 public final class TwoPhaseCommitTool {
-  
+
   /** No instance */
   private TwoPhaseCommitTool() {}
 
   /**
-   * Thrown by {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} when an
-   * object fails to prepareCommit().
+   * Thrown by {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} when an object fails to
+   * prepareCommit().
    */
   public static class PrepareCommitFailException extends IOException {
 
@@ -44,8 +42,8 @@ public final class TwoPhaseCommitTool {
   }
 
   /**
-   * Thrown by {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} when an
-   * object fails to commit().
+   * Thrown by {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} when an object fails to
+   * commit().
    */
   public static class CommitFailException extends IOException {
 
@@ -53,7 +51,6 @@ public final class TwoPhaseCommitTool {
     public CommitFailException(Throwable cause, TwoPhaseCommit obj) {
       super("commit() failed on " + obj, cause);
     }
-    
   }
 
   /** rollback all objects, discarding any exceptions that occur. */
@@ -64,31 +61,27 @@ public final class TwoPhaseCommitTool {
       if (tpc != null) {
         try {
           tpc.rollback();
-        } catch (Throwable t) {}
+        } catch (Throwable t) {
+        }
       }
     }
   }
 
   /**
-   * Executes a 2-phase commit algorithm by first
-   * {@link TwoPhaseCommit#prepareCommit()} all objects and only if all succeed,
-   * it proceeds with {@link TwoPhaseCommit#commit()}. If any of the objects
-   * fail on either the preparation or actual commit, it terminates and
-   * {@link TwoPhaseCommit#rollback()} all of them.
-   * <p>
-   * <b>NOTE:</b> it may happen that an object fails to commit, after few have
-   * already successfully committed. This tool will still issue a rollback
-   * instruction on them as well, but depending on the implementation, it may
-   * not have any effect.
-   * <p>
-   * <b>NOTE:</b> if any of the objects are {@code null}, this method simply
-   * skips over them.
-   * 
-   * @throws PrepareCommitFailException
-   *           if any of the objects fail to
-   *           {@link TwoPhaseCommit#prepareCommit()}
-   * @throws CommitFailException
-   *           if any of the objects fail to {@link TwoPhaseCommit#commit()}
+   * Executes a 2-phase commit algorithm by first {@link TwoPhaseCommit#prepareCommit()} all objects
+   * and only if all succeed, it proceeds with {@link TwoPhaseCommit#commit()}. If any of the
+   * objects fail on either the preparation or actual commit, it terminates and {@link
+   * TwoPhaseCommit#rollback()} all of them.
+   *
+   * <p><b>NOTE:</b> it may happen that an object fails to commit, after few have already
+   * successfully committed. This tool will still issue a rollback instruction on them as well, but
+   * depending on the implementation, it may not have any effect.
+   *
+   * <p><b>NOTE:</b> if any of the objects are {@code null}, this method simply skips over them.
+   *
+   * @throws PrepareCommitFailException if any of the objects fail to {@link
+   *     TwoPhaseCommit#prepareCommit()}
+   * @throws CommitFailException if any of the objects fail to {@link TwoPhaseCommit#commit()}
    */
   public static void execute(TwoPhaseCommit... objects)
       throws PrepareCommitFailException, CommitFailException {
@@ -107,7 +100,7 @@ public final class TwoPhaseCommitTool {
       rollback(objects);
       throw new PrepareCommitFailException(t, tpc);
     }
-    
+
     // If all successfully prepareCommit(), attempt the actual commit()
     try {
       for (int i = 0; i < objects.length; i++) {
@@ -123,5 +116,4 @@ public final class TwoPhaseCommitTool {
       throw new CommitFailException(t, tpc);
     }
   }
-
 }

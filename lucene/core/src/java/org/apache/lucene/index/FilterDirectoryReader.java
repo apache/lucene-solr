@@ -16,25 +16,24 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.List;
 
 /**
- * A FilterDirectoryReader wraps another DirectoryReader, allowing implementations
- * to transform or extend it.
+ * A FilterDirectoryReader wraps another DirectoryReader, allowing implementations to transform or
+ * extend it.
  *
- * Subclasses should implement doWrapDirectoryReader to return an instance of the
- * subclass.
+ * <p>Subclasses should implement doWrapDirectoryReader to return an instance of the subclass.
  *
- * If the subclass wants to wrap the DirectoryReader's subreaders, it should also
- * implement a SubReaderWrapper subclass, and pass an instance to its super
- * constructor.
+ * <p>If the subclass wants to wrap the DirectoryReader's subreaders, it should also implement a
+ * SubReaderWrapper subclass, and pass an instance to its super constructor.
  */
 public abstract class FilterDirectoryReader extends DirectoryReader {
 
-  /** Get the wrapped instance by <code>reader</code> as long as this reader is
-   *  an instance of {@link FilterDirectoryReader}.  */
+  /**
+   * Get the wrapped instance by <code>reader</code> as long as this reader is an instance of {@link
+   * FilterDirectoryReader}.
+   */
   public static DirectoryReader unwrap(DirectoryReader reader) {
     while (reader instanceof FilterDirectoryReader) {
       reader = ((FilterDirectoryReader) reader).getDelegate();
@@ -43,17 +42,17 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
   }
 
   /**
-   * Factory class passed to FilterDirectoryReader constructor that allows
-   * subclasses to wrap the filtered DirectoryReader's subreaders.  You
-   * can use this to, e.g., wrap the subreaders with specialised
-   * FilterLeafReader implementations.
+   * Factory class passed to FilterDirectoryReader constructor that allows subclasses to wrap the
+   * filtered DirectoryReader's subreaders. You can use this to, e.g., wrap the subreaders with
+   * specialised FilterLeafReader implementations.
    */
-  public static abstract class SubReaderWrapper {
+  public abstract static class SubReaderWrapper {
 
     /**
      * Wraps a list of LeafReaders
-     * @return an array of wrapped LeafReaders. The returned array might contain less elements compared to the given
-     * reader list if an entire reader is filtered out.
+     *
+     * @return an array of wrapped LeafReaders. The returned array might contain less elements
+     *     compared to the given reader list if an entire reader is filtered out.
      */
     protected LeafReader[] wrap(List<? extends LeafReader> readers) {
       LeafReader[] wrapped = new LeafReader[readers.size()];
@@ -71,19 +70,20 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
 
     /**
      * Wrap one of the parent DirectoryReader's subreaders
+     *
      * @param reader the subreader to wrap
      * @return a wrapped/filtered LeafReader
      */
     public abstract LeafReader wrap(LeafReader reader);
-
   }
 
   /** The filtered DirectoryReader */
   protected final DirectoryReader in;
 
   /**
-   * Create a new FilterDirectoryReader that filters a passed in DirectoryReader,
-   * using the supplied SubReaderWrapper to wrap its subreader.
+   * Create a new FilterDirectoryReader that filters a passed in DirectoryReader, using the supplied
+   * SubReaderWrapper to wrap its subreader.
+   *
    * @param in the DirectoryReader to filter
    * @param wrapper the SubReaderWrapper to use to wrap subreaders
    */
@@ -95,8 +95,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
   /**
    * Called by the doOpenIfChanged() methods to return a new wrapped DirectoryReader.
    *
-   * Implementations should just return an instantiation of themselves, wrapping the
-   * passed in DirectoryReader.
+   * <p>Implementations should just return an instantiation of themselves, wrapping the passed in
+   * DirectoryReader.
    *
    * @param in the DirectoryReader to wrap
    * @return the wrapped DirectoryReader
@@ -118,7 +118,8 @@ public abstract class FilterDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected final DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes) throws IOException {
+  protected final DirectoryReader doOpenIfChanged(IndexWriter writer, boolean applyAllDeletes)
+      throws IOException {
     return wrapDirectoryReader(in.doOpenIfChanged(writer, applyAllDeletes));
   }
 

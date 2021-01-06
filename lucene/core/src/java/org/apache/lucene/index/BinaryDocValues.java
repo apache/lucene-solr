@@ -18,22 +18,18 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 
-/**
- * A per-document numeric value.
- */
+/** A per-document numeric value. */
 public abstract class BinaryDocValues extends DocValuesIterator {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected BinaryDocValues() {}
 
   /**
-   * Returns the binary value for the current document ID.
-   * It is illegal to call this method after {@link #advanceExact(int)}
-   * returned {@code false}.
+   * Returns the binary value for the current document ID. It is illegal to call this method after
+   * {@link #advanceExact(int)} returned {@code false}.
+   *
    * @return binary value
    */
   public abstract BytesRef binaryValue() throws IOException;

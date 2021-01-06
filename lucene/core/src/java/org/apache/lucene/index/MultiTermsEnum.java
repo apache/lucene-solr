@@ -16,34 +16,35 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments.
- * This does a merge sort, by term text, of the sub-readers.
+ * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments. This does a
+ * merge sort, by term text, of the sub-readers.
  *
  * @lucene.experimental
  */
 public final class MultiTermsEnum extends BaseTermsEnum {
 
-  private static final Comparator<TermsEnumWithSlice> INDEX_COMPARATOR = new Comparator<TermsEnumWithSlice>() {
-    @Override
-    public int compare(TermsEnumWithSlice o1, TermsEnumWithSlice o2) {
-      return o1.index - o2.index;
-    }
-  };
+  private static final Comparator<TermsEnumWithSlice> INDEX_COMPARATOR =
+      new Comparator<TermsEnumWithSlice>() {
+        @Override
+        public int compare(TermsEnumWithSlice o1, TermsEnumWithSlice o2) {
+          return o1.index - o2.index;
+        }
+      };
 
   private final TermMergeQueue queue;
-  private final TermsEnumWithSlice[] subs;        // all of our subs (one per sub-reader)
-  private final TermsEnumWithSlice[] currentSubs; // current subs that have at least one term for this field
+  // all of our subs (one per sub-reader)
+  private final TermsEnumWithSlice[] subs;
+  // current subs that have at least one term for this field
+  private final TermsEnumWithSlice[] currentSubs;
   private final TermsEnumWithSlice[] top;
   private final MultiPostingsEnum.EnumWithSlice[] subDocs;
 
@@ -56,7 +57,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
   private BytesRef current;
 
   static class TermsEnumIndex {
-    public final static TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
+    public static final TermsEnumIndex[] EMPTY_ARRAY = new TermsEnumIndex[0];
     final int subIndex;
     final TermsEnum termsEnum;
 
@@ -66,8 +67,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     }
   }
 
-  /** Returns how many sub-reader slices contain the current
-   *  term.  @see #getMatchArray */
+  /** Returns how many sub-reader slices contain the current term. @see #getMatchArray */
   public int getMatchCount() {
     return numTop;
   }
@@ -77,15 +77,17 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     return top;
   }
 
-  /** Sole constructor.
-   *  @param slices Which sub-reader slices we should
-   *  merge. */
+  /**
+   * Sole constructor.
+   *
+   * @param slices Which sub-reader slices we should merge.
+   */
   public MultiTermsEnum(ReaderSlice[] slices) {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
     subs = new TermsEnumWithSlice[slices.length];
     subDocs = new MultiPostingsEnum.EnumWithSlice[slices.length];
-    for(int i=0;i<slices.length;i++) {
+    for (int i = 0; i < slices.length; i++) {
       subs[i] = new TermsEnumWithSlice(i, slices[i]);
       subDocs[i] = new MultiPostingsEnum.EnumWithSlice();
       subDocs[i].slice = slices[i];
@@ -98,14 +100,16 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     return current;
   }
 
-  /** The terms array must be newly created TermsEnum, ie
-   *  {@link TermsEnum#next} has not yet been called. */
+  /**
+   * The terms array must be newly created TermsEnum, ie {@link TermsEnum#next} has not yet been
+   * called.
+   */
   public TermsEnum reset(TermsEnumIndex[] termsEnumsIndex) throws IOException {
     assert termsEnumsIndex.length <= top.length;
     numSubs = 0;
     numTop = 0;
     queue.clear();
-    for(int i=0;i<termsEnumsIndex.length;i++) {
+    for (int i = 0; i < termsEnumsIndex.length; i++) {
 
       final TermsEnumIndex termsEnumIndex = termsEnumsIndex[i];
       assert termsEnumIndex != null;
@@ -141,7 +145,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     lastSeek = null;
     lastSeekExact = true;
 
-    for(int i=0;i<numSubs;i++) {
+    for (int i = 0; i < numSubs; i++) {
       final boolean status;
       // LUCENE-2130: if we had just seek'd already, prior
       // to this seek, and the new seek term is after the
@@ -193,7 +197,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     lastSeekScratch.copyBytes(term);
     lastSeek = lastSeekScratch.get();
 
-    for(int i=0;i<numSubs;i++) {
+    for (int i = 0; i < numSubs; i++) {
       final SeekStatus status;
       // LUCENE-2130: if we had just seek'd already, prior
       // to this seek, and the new seek term is after the
@@ -315,7 +319,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
   @Override
   public int docFreq() throws IOException {
     int sum = 0;
-    for(int i=0;i<numTop;i++) {
+    for (int i = 0; i < numTop; i++) {
       sum += top[i].terms.docFreq();
     }
     return sum;
@@ -324,7 +328,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
   @Override
   public long totalTermFreq() throws IOException {
     long sum = 0;
-    for(int i=0;i<numTop;i++) {
+    for (int i = 0; i < numTop; i++) {
       final long v = top[i].terms.totalTermFreq();
       assert v != -1;
       sum += v;
@@ -351,19 +355,21 @@ public final class MultiTermsEnum extends BaseTermsEnum {
 
     ArrayUtil.timSort(top, 0, numTop, INDEX_COMPARATOR);
 
-    for(int i=0;i<numTop;i++) {
+    for (int i = 0; i < numTop; i++) {
 
       final TermsEnumWithSlice entry = top[i];
 
-      assert entry.index < docsEnum.subPostingsEnums.length: entry.index + " vs " + docsEnum.subPostingsEnums.length + "; " + subs.length;
-      final PostingsEnum subPostingsEnum = entry.terms.postings(docsEnum.subPostingsEnums[entry.index], flags);
+      assert entry.index < docsEnum.subPostingsEnums.length
+          : entry.index + " vs " + docsEnum.subPostingsEnums.length + "; " + subs.length;
+      final PostingsEnum subPostingsEnum =
+          entry.terms.postings(docsEnum.subPostingsEnums[entry.index], flags);
       assert subPostingsEnum != null;
       docsEnum.subPostingsEnums[entry.index] = subPostingsEnum;
       subDocs[upto].postingsEnum = subPostingsEnum;
       subDocs[upto].slice = entry.subSlice;
       upto++;
     }
-    
+
     return docsEnum.reset(subDocs, upto);
   }
 
@@ -373,7 +379,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     return new SlowImpactsEnum(postings(null, flags));
   }
 
-  final static class TermsEnumWithSlice {
+  static final class TermsEnumWithSlice {
     private final ReaderSlice subSlice;
     TermsEnum terms;
     public BytesRef current;
@@ -382,7 +388,7 @@ public final class MultiTermsEnum extends BaseTermsEnum {
     public TermsEnumWithSlice(int index, ReaderSlice subSlice) {
       this.subSlice = subSlice;
       this.index = index;
-      assert subSlice.length >= 0: "length=" + subSlice.length;
+      assert subSlice.length >= 0 : "length=" + subSlice.length;
     }
 
     public void reset(TermsEnum terms, BytesRef term) {
@@ -392,11 +398,11 @@ public final class MultiTermsEnum extends BaseTermsEnum {
 
     @Override
     public String toString() {
-      return subSlice.toString()+":"+terms;
+      return subSlice.toString() + ":" + terms;
     }
   }
 
-  private final static class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
+  private static final class TermMergeQueue extends PriorityQueue<TermsEnumWithSlice> {
 
     final int[] stack;
 
@@ -410,8 +416,10 @@ public final class MultiTermsEnum extends BaseTermsEnum {
       return termsA.current.compareTo(termsB.current) < 0;
     }
 
-    /** Add the {@link #top()} slice as well as all slices that are positionned
-     *  on the same term to {@code tops} and return how many of them there are. */
+    /**
+     * Add the {@link #top()} slice as well as all slices that are positionned on the same term to
+     * {@code tops} and return how many of them there are.
+     */
     int fillTop(TermsEnumWithSlice[] tops) {
       final int size = size();
       if (size == 0) {

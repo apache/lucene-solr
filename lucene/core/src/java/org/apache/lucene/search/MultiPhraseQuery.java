@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -44,14 +42,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * A generalized version of {@link PhraseQuery}, with the possibility of
- * adding more than one term at the same position that are treated as a disjunction (OR).
- * To use this class to search for the phrase "Microsoft app*" first create a Builder and use
- * {@link Builder#add(Term)} on the term "microsoft" (assuming lowercase analysis), then
- * find all terms that have "app" as prefix using {@link LeafReader#terms(String)},
- * seeking to "app" then iterating and collecting terms until there is no longer
- * that prefix, and finally use {@link Builder#add(Term[])} to add them.
- * {@link Builder#build()} returns the fully constructed (and immutable) MultiPhraseQuery.
+ * A generalized version of {@link PhraseQuery}, with the possibility of adding more than one term
+ * at the same position that are treated as a disjunction (OR). To use this class to search for the
+ * phrase "Microsoft app*" first create a Builder and use {@link Builder#add(Term)} on the term
+ * "microsoft" (assuming lowercase analysis), then find all terms that have "app" as prefix using
+ * {@link LeafReader#terms(String)}, seeking to "app" then iterating and collecting terms until
+ * there is no longer that prefix, and finally use {@link Builder#add(Term[])} to add them. {@link
+ * Builder#build()} returns the fully constructed (and immutable) MultiPhraseQuery.
  */
 public class MultiPhraseQuery extends Query {
   /** A builder for multi-phrase queries */
@@ -69,8 +66,10 @@ public class MultiPhraseQuery extends Query {
       this.slop = 0;
     }
 
-    /** Copy constructor: this will create a builder that has the same
-     *  configuration as the provided builder. */
+    /**
+     * Copy constructor: this will create a builder that has the same configuration as the provided
+     * builder.
+     */
     public Builder(MultiPhraseQuery multiPhraseQuery) {
       this.field = multiPhraseQuery.field;
 
@@ -79,7 +78,7 @@ public class MultiPhraseQuery extends Query {
       this.termArrays = new ArrayList<>(length);
       this.positions = new ArrayList<>(length);
 
-      for (int i = 0 ; i < length ; ++i) {
+      for (int i = 0; i < length; ++i) {
         this.termArrays.add(multiPhraseQuery.termArrays[i]);
         this.positions.add(multiPhraseQuery.positions[i]);
       }
@@ -87,7 +86,9 @@ public class MultiPhraseQuery extends Query {
       this.slop = multiPhraseQuery.slop;
     }
 
-    /** Sets the phrase slop for this query.
+    /**
+     * Sets the phrase slop for this query.
+     *
      * @see PhraseQuery#getSlop()
      */
     public Builder setSlop(int s) {
@@ -99,32 +100,30 @@ public class MultiPhraseQuery extends Query {
       return this;
     }
 
-    /** Add a single term at the next position in the phrase.
-     */
-    public Builder add(Term term) { return add(new Term[]{term}); }
+    /** Add a single term at the next position in the phrase. */
+    public Builder add(Term term) {
+      return add(new Term[] {term});
+    }
 
-    /** Add multiple terms at the next position in the phrase.  Any of the terms
-     * may match (a disjunction).
-     * The array is not copied or mutated, the caller should consider it
-     * immutable subsequent to calling this method.
+    /**
+     * Add multiple terms at the next position in the phrase. Any of the terms may match (a
+     * disjunction). The array is not copied or mutated, the caller should consider it immutable
+     * subsequent to calling this method.
      */
     public Builder add(Term[] terms) {
       int position = 0;
-      if (positions.size() > 0)
-        position = positions.get(positions.size() - 1) + 1;
+      if (positions.size() > 0) position = positions.get(positions.size() - 1) + 1;
 
       return add(terms, position);
     }
 
     /**
-     * Allows to specify the relative position of terms within the phrase.
-     * The array is not copied or mutated, the caller should consider it
-     * immutable subsequent to calling this method.
+     * Allows to specify the relative position of terms within the phrase. The array is not copied
+     * or mutated, the caller should consider it immutable subsequent to calling this method.
      */
     public Builder add(Term[] terms, int position) {
       Objects.requireNonNull(terms, "Term array must not be null");
-      if (termArrays.size() == 0)
-        field = terms[0].field();
+      if (termArrays.size() == 0) field = terms[0].field();
 
       for (Term term : terms) {
         if (!term.field().equals(field)) {
@@ -166,23 +165,21 @@ public class MultiPhraseQuery extends Query {
     this.slop = slop;
   }
 
-  /** Sets the phrase slop for this query.
+  /**
+   * Sets the phrase slop for this query.
+   *
    * @see PhraseQuery#getSlop()
    */
-  public int getSlop() { return slop; }
+  public int getSlop() {
+    return slop;
+  }
 
-  /**
-   * Returns the arrays of arrays of terms in the multi-phrase.
-   * Do not modify!
-   */
+  /** Returns the arrays of arrays of terms in the multi-phrase. Do not modify! */
   public Term[][] getTermArrays() {
     return termArrays;
   }
 
-  /**
-   * Returns the relative positions of terms in this phrase.
-   * Do not modify!
-   */
+  /** Returns the relative positions of terms in this phrase. Do not modify! */
   public int[] getPositions() {
     return positions;
   }
@@ -191,7 +188,7 @@ public class MultiPhraseQuery extends Query {
   public Query rewrite(IndexReader reader) throws IOException {
     if (termArrays.length == 0) {
       return new MatchNoDocsQuery("empty MultiPhraseQuery");
-    } else if (termArrays.length == 1) {                 // optimize one-term case
+    } else if (termArrays.length == 1) { // optimize one-term case
       Term[] terms = termArrays[0];
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (Term term : terms) {
@@ -216,8 +213,9 @@ public class MultiPhraseQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Map<Term,TermStates> termStates = new HashMap<>();
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    final Map<Term, TermStates> termStates = new HashMap<>();
     return new PhraseWeight(this, field, searcher, scoreMode) {
 
       @Override
@@ -226,8 +224,8 @@ public class MultiPhraseQuery extends Query {
 
         // compute idf
         ArrayList<TermStatistics> allTermStats = new ArrayList<>();
-        for(final Term[] terms: termArrays) {
-          for (Term term: terms) {
+        for (final Term[] terms : termArrays) {
+          for (Term term : terms) {
             TermStates ts = termStates.get(term);
             if (ts == null) {
               ts = TermStates.build(context, term, scoreMode.needsScores());
@@ -249,11 +247,13 @@ public class MultiPhraseQuery extends Query {
       }
 
       @Override
-      protected PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException {
+      protected PhraseMatcher getPhraseMatcher(
+          LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException {
         assert termArrays.length != 0;
         final LeafReader reader = context.reader();
 
-        PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.length];
+        PhraseQuery.PostingsAndFreq[] postingsFreqs =
+            new PhraseQuery.PostingsAndFreq[termArrays.length];
 
         final Terms fieldTerms = reader.terms(field);
         if (fieldTerms == null) {
@@ -262,15 +262,20 @@ public class MultiPhraseQuery extends Query {
 
         // TODO: move this check to createWeight to happen earlier to the user?
         if (fieldTerms.hasPositions() == false) {
-          throw new IllegalStateException("field \"" + field + "\" was indexed without position data;" +
-              " cannot run MultiPhraseQuery (phrase=" + getQuery() + ")");
+          throw new IllegalStateException(
+              "field \""
+                  + field
+                  + "\" was indexed without position data;"
+                  + " cannot run MultiPhraseQuery (phrase="
+                  + getQuery()
+                  + ")");
         }
 
         // Reuse single TermsEnum below:
         final TermsEnum termsEnum = fieldTerms.iterator();
         float totalMatchCost = 0;
 
-        for (int pos=0; pos<postingsFreqs.length; pos++) {
+        for (int pos = 0; pos < postingsFreqs.length; pos++) {
           Term[] terms = termArrays[pos];
           List<PostingsEnum> postings = new ArrayList<>();
 
@@ -278,7 +283,9 @@ public class MultiPhraseQuery extends Query {
             TermState termState = termStates.get(term).get(context);
             if (termState != null) {
               termsEnum.seekExact(term.bytes(), termState);
-              postings.add(termsEnum.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
+              postings.add(
+                  termsEnum.postings(
+                      null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
               totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
             }
           }
@@ -291,21 +298,25 @@ public class MultiPhraseQuery extends Query {
           if (postings.size() == 1) {
             postingsEnum = postings.get(0);
           } else {
-            postingsEnum = exposeOffsets ? new UnionFullPostingsEnum(postings) : new UnionPostingsEnum(postings);
+            postingsEnum =
+                exposeOffsets
+                    ? new UnionFullPostingsEnum(postings)
+                    : new UnionPostingsEnum(postings);
           }
 
-          postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, new SlowImpactsEnum(postingsEnum), positions[pos], terms);
+          postingsFreqs[pos] =
+              new PhraseQuery.PostingsAndFreq(
+                  postingsEnum, new SlowImpactsEnum(postingsEnum), positions[pos], terms);
         }
 
         // sort by increasing docFreq order
         if (slop == 0) {
           ArrayUtil.timSort(postingsFreqs);
           return new ExactPhraseMatcher(postingsFreqs, scoreMode, scorer, totalMatchCost);
+        } else {
+          return new SloppyPhraseMatcher(
+              postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
-        else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
-        }
-
       }
     };
   }
@@ -322,12 +333,12 @@ public class MultiPhraseQuery extends Query {
     buffer.append("\"");
     int lastPos = -1;
 
-    for (int i = 0 ; i < termArrays.length ; ++i) {
+    for (int i = 0; i < termArrays.length; ++i) {
       Term[] terms = termArrays[i];
       int position = positions[i];
       if (i != 0) {
         buffer.append(" ");
-        for (int j=1; j<(position-lastPos); j++) {
+        for (int j = 1; j < (position - lastPos); j++) {
           buffer.append("? ");
         }
       }
@@ -335,8 +346,7 @@ public class MultiPhraseQuery extends Query {
         buffer.append("(");
         for (int j = 0; j < terms.length; j++) {
           buffer.append(terms[j].text());
-          if (j < terms.length-1)
-            buffer.append(" ");
+          if (j < terms.length - 1) buffer.append(" ");
         }
         buffer.append(")");
       } else {
@@ -354,36 +364,32 @@ public class MultiPhraseQuery extends Query {
     return buffer.toString();
   }
 
-
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(MultiPhraseQuery other) {
-    return this.slop == other.slop && 
-           termArraysEquals(this.termArrays, other.termArrays) && /* terms equal implies field equal */ 
-           Arrays.equals(this.positions, other.positions);
-
+    return this.slop == other.slop
+        && termArraysEquals(this.termArrays, other.termArrays)
+        && /* terms equal implies field equal */ Arrays.equals(this.positions, other.positions);
   }
 
-  /** Returns a hash code value for this object.*/
+  /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
     return classHash()
-      ^ slop
-      ^ termArraysHashCode() // terms equal implies field equal
-      ^ Arrays.hashCode(positions);
+        ^ slop
+        ^ termArraysHashCode() // terms equal implies field equal
+        ^ Arrays.hashCode(positions);
   }
 
   // Breakout calculation of the termArrays hashcode
   private int termArraysHashCode() {
     int hashCode = 1;
-    for (final Term[] termArray: termArrays) {
-      hashCode = 31 * hashCode
-          + (termArray == null ? 0 : Arrays.hashCode(termArray));
+    for (final Term[] termArray : termArrays) {
+      hashCode = 31 * hashCode + (termArray == null ? 0 : Arrays.hashCode(termArray));
     }
     return hashCode;
   }
@@ -394,11 +400,10 @@ public class MultiPhraseQuery extends Query {
       return false;
     }
 
-    for (int i = 0 ; i < termArrays1.length ; ++i) {
+    for (int i = 0; i < termArrays1.length; ++i) {
       Term[] termArray1 = termArrays1[i];
       Term[] termArray2 = termArrays2[i];
-      if (!(termArray1 == null ? termArray2 == null : Arrays.equals(termArray1,
-          termArray2))) {
+      if (!(termArray1 == null ? termArray2 == null : Arrays.equals(termArray1, termArray2))) {
         return false;
       }
     }
@@ -407,8 +412,9 @@ public class MultiPhraseQuery extends Query {
 
   /**
    * Takes the logical union of multiple PostingsEnum iterators.
-   * <p>
-   * Note: positions are merged during freq()
+   *
+   * <p>Note: positions are merged during freq()
+   *
    * @lucene.internal
    */
   public static class UnionPostingsEnum extends PostingsEnum {
@@ -509,9 +515,7 @@ public class MultiPhraseQuery extends Query {
       return null; // payloads are unsupported
     }
 
-    /**
-     * disjunction of postings ordered by docid.
-     */
+    /** disjunction of postings ordered by docid. */
     static class DocsQueue extends PriorityQueue<PostingsEnum> {
       DocsQueue(int size) {
         super(size);
@@ -524,8 +528,8 @@ public class MultiPhraseQuery extends Query {
     }
 
     /**
-     * queue of terms for a single document. its a sorted array of
-     * all the positions from all the postings
+     * queue of terms for a single document. its a sorted array of all the positions from all the
+     * postings
      */
     static class PositionsQueue {
       private int arraySize = 16;
@@ -534,8 +538,7 @@ public class MultiPhraseQuery extends Query {
       private int[] array = new int[arraySize];
 
       void add(int i) {
-        if (size == arraySize)
-          growArray();
+        if (size == arraySize) growArray();
 
         array[size++] = i;
       }
@@ -576,8 +579,10 @@ public class MultiPhraseQuery extends Query {
     }
   }
 
-  /** Slower version of UnionPostingsEnum that delegates offsets and positions, for
-   use by MatchesIterator
+  /**
+   * Slower version of UnionPostingsEnum that delegates offsets and positions, for use by
+   * MatchesIterator
+   *
    * @lucene.internal
    */
   public static class UnionFullPostingsEnum extends UnionPostingsEnum {
@@ -590,12 +595,13 @@ public class MultiPhraseQuery extends Query {
 
     public UnionFullPostingsEnum(List<PostingsEnum> subs) {
       super(subs);
-      this.posQueue = new PriorityQueue<PostingsAndPosition>(subs.size()) {
-        @Override
-        protected boolean lessThan(PostingsAndPosition a, PostingsAndPosition b) {
-          return a.pos < b.pos;
-        }
-      };
+      this.posQueue =
+          new PriorityQueue<PostingsAndPosition>(subs.size()) {
+            @Override
+            protected boolean lessThan(PostingsAndPosition a, PostingsAndPosition b) {
+              return a.pos < b.pos;
+            }
+          };
       this.subs = new ArrayList<>();
       for (PostingsEnum pe : subs) {
         this.subs.add(new PostingsAndPosition(pe));
@@ -652,6 +658,5 @@ public class MultiPhraseQuery extends Query {
     public BytesRef getPayload() throws IOException {
       return posQueue.top().pe.getPayload();
     }
-
   }
 }

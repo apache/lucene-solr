@@ -22,7 +22,6 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
 import java.util.Iterator;
-
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.index.BinaryDocValues;
@@ -34,16 +33,17 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.util.BytesRef;
 
 /** Bridge helper methods for legacy codecs to map sorted doc values to iterables. */
-
 class LegacyDocValuesIterables {
 
   private LegacyDocValuesIterables() {
     // no
   }
 
-  /** Converts {@link SortedDocValues} into an {@code Iterable&lt;BytesRef&gt;} for all the values.
+  /**
+   * Converts {@link SortedDocValues} into an {@code Iterable&lt;BytesRef&gt;} for all the values.
    *
-   * @deprecated Consume {@link SortedDocValues} instead. */
+   * @deprecated Consume {@link SortedDocValues} instead.
+   */
   @Deprecated
   public static Iterable<BytesRef> valuesIterable(final SortedDocValues values) {
     return new Iterable<BytesRef>() {
@@ -51,7 +51,7 @@ class LegacyDocValuesIterables {
       public Iterator<BytesRef> iterator() {
         return new Iterator<BytesRef>() {
           private int nextOrd;
-    
+
           @Override
           public boolean hasNext() {
             return nextOrd < values.getValueCount();
@@ -70,9 +70,12 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts {@link SortedSetDocValues} into an {@code Iterable&lt;BytesRef&gt;} for all the values.
+  /**
+   * Converts {@link SortedSetDocValues} into an {@code Iterable&lt;BytesRef&gt;} for all the
+   * values.
    *
-   * @deprecated Consume {@link SortedSetDocValues} instead. */
+   * @deprecated Consume {@link SortedSetDocValues} instead.
+   */
   @Deprecated
   public static Iterable<BytesRef> valuesIterable(final SortedSetDocValues values) {
     return new Iterable<BytesRef>() {
@@ -80,7 +83,7 @@ class LegacyDocValuesIterables {
       public Iterator<BytesRef> iterator() {
         return new Iterator<BytesRef>() {
           private long nextOrd;
-    
+
           @Override
           public boolean hasNext() {
             return nextOrd < values.getValueCount();
@@ -99,11 +102,15 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts {@link SortedDocValues} into the ord for each document as an {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts {@link SortedDocValues} into the ord for each document as an {@code
+   * Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link SortedDocValues} instead. */
+   * @deprecated Consume {@link SortedDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> sortedOrdIterable(final DocValuesProducer valuesProducer, FieldInfo fieldInfo, int maxDoc) {
+  public static Iterable<Number> sortedOrdIterable(
+      final DocValuesProducer valuesProducer, FieldInfo fieldInfo, int maxDoc) {
     return new Iterable<Number>() {
       @Override
       public Iterator<Number> iterator() {
@@ -114,10 +121,10 @@ class LegacyDocValuesIterables {
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-        
+
         return new Iterator<Number>() {
           private int nextDocID;
-    
+
           @Override
           public boolean hasNext() {
             return nextDocID < maxDoc;
@@ -146,11 +153,15 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts number-of-ords per document from {@link SortedSetDocValues} into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts number-of-ords per document from {@link SortedSetDocValues} into {@code
+   * Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link SortedSetDocValues} instead. */
+   * @deprecated Consume {@link SortedSetDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> sortedSetOrdCountIterable(final DocValuesProducer valuesProducer, final FieldInfo fieldInfo, final int maxDoc) {
+  public static Iterable<Number> sortedSetOrdCountIterable(
+      final DocValuesProducer valuesProducer, final FieldInfo fieldInfo, final int maxDoc) {
 
     return new Iterable<Number>() {
 
@@ -167,7 +178,7 @@ class LegacyDocValuesIterables {
         return new Iterator<Number>() {
           private int nextDocID;
           private int ordCount;
-          
+
           @Override
           public boolean hasNext() {
             return nextDocID < maxDoc;
@@ -201,11 +212,15 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts all concatenated ords (in docID order) from {@link SortedSetDocValues} into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts all concatenated ords (in docID order) from {@link SortedSetDocValues} into {@code
+   * Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link SortedSetDocValues} instead. */
+   * @deprecated Consume {@link SortedSetDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> sortedSetOrdsIterable(final DocValuesProducer valuesProducer, final FieldInfo fieldInfo) {
+  public static Iterable<Number> sortedSetOrdsIterable(
+      final DocValuesProducer valuesProducer, final FieldInfo fieldInfo) {
 
     return new Iterable<Number>() {
 
@@ -246,7 +261,7 @@ class LegacyDocValuesIterables {
               throw new RuntimeException(ioe);
             }
           }
-          
+
           @Override
           public boolean hasNext() {
             setNext();
@@ -265,11 +280,15 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts number-of-values per document from {@link SortedNumericDocValues} into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts number-of-values per document from {@link SortedNumericDocValues} into {@code
+   * Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link SortedDocValues} instead. */
+   * @deprecated Consume {@link SortedDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> sortedNumericToDocCount(final DocValuesProducer valuesProducer, final FieldInfo fieldInfo, int maxDoc) {
+  public static Iterable<Number> sortedNumericToDocCount(
+      final DocValuesProducer valuesProducer, final FieldInfo fieldInfo, int maxDoc) {
     return new Iterable<Number>() {
 
       @Override
@@ -313,11 +332,15 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts all concatenated values (in docID order) from {@link SortedNumericDocValues} into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts all concatenated values (in docID order) from {@link SortedNumericDocValues} into
+   * {@code Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link SortedDocValues} instead. */
+   * @deprecated Consume {@link SortedDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> sortedNumericToValues(final DocValuesProducer valuesProducer, final FieldInfo fieldInfo) {
+  public static Iterable<Number> sortedNumericToValues(
+      final DocValuesProducer valuesProducer, final FieldInfo fieldInfo) {
     return new Iterable<Number>() {
 
       @Override
@@ -358,7 +381,7 @@ class LegacyDocValuesIterables {
               throw new RuntimeException(ioe);
             }
           }
-          
+
           @Override
           public boolean hasNext() {
             setNext();
@@ -377,12 +400,14 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts norms into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts norms into {@code Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link NumericDocValues} instead. */
+   * @deprecated Consume {@link NumericDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> normsIterable(final FieldInfo field,
-      final NormsProducer normsProducer, final int maxDoc) {
+  public static Iterable<Number> normsIterable(
+      final FieldInfo field, final NormsProducer normsProducer, final int maxDoc) {
 
     return new Iterable<Number>() {
 
@@ -395,13 +420,13 @@ class LegacyDocValuesIterables {
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-    
+
         return new Iterator<Number>() {
           private int docIDUpto = -1;
 
           @Override
           public boolean hasNext() {
-            return docIDUpto+1 < maxDoc;
+            return docIDUpto + 1 < maxDoc;
           }
 
           @Override
@@ -432,11 +457,14 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts values from {@link BinaryDocValues} into {@code Iterable&lt;BytesRef&gt;}.
+  /**
+   * Converts values from {@link BinaryDocValues} into {@code Iterable&lt;BytesRef&gt;}.
    *
-   * @deprecated Consume {@link BinaryDocValues} instead. */
+   * @deprecated Consume {@link BinaryDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<BytesRef> binaryIterable(final FieldInfo field, final DocValuesProducer valuesProducer, final int maxDoc) {
+  public static Iterable<BytesRef> binaryIterable(
+      final FieldInfo field, final DocValuesProducer valuesProducer, final int maxDoc) {
     return new Iterable<BytesRef>() {
       @Override
       public Iterator<BytesRef> iterator() {
@@ -453,7 +481,7 @@ class LegacyDocValuesIterables {
 
           @Override
           public boolean hasNext() {
-            return docIDUpto+1 < maxDoc;
+            return docIDUpto + 1 < maxDoc;
           }
 
           @Override
@@ -483,11 +511,14 @@ class LegacyDocValuesIterables {
     };
   }
 
-  /** Converts values from {@link NumericDocValues} into {@code Iterable&lt;Number&gt;}.
+  /**
+   * Converts values from {@link NumericDocValues} into {@code Iterable&lt;Number&gt;}.
    *
-   * @deprecated Consume {@link NumericDocValues} instead. */
+   * @deprecated Consume {@link NumericDocValues} instead.
+   */
   @Deprecated
-  public static Iterable<Number> numericIterable(final FieldInfo field, final DocValuesProducer valuesProducer, final int maxDoc) {
+  public static Iterable<Number> numericIterable(
+      final FieldInfo field, final DocValuesProducer valuesProducer, final int maxDoc) {
     return new Iterable<Number>() {
       @Override
       public Iterator<Number> iterator() {
@@ -498,13 +529,13 @@ class LegacyDocValuesIterables {
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-    
+
         return new Iterator<Number>() {
           private int docIDUpto = -1;
 
           @Override
           public boolean hasNext() {
-            return docIDUpto+1 < maxDoc;
+            return docIDUpto + 1 < maxDoc;
           }
 
           @Override

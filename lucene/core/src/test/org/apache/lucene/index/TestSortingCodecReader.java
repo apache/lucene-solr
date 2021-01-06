@@ -17,15 +17,14 @@
 
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -64,7 +63,6 @@ public class TestSortingCodecReader extends LuceneTestCase {
     doc.add(new NumericDocValuesField("foo", 18));
     w.addDocument(doc);
 
-
     doc = new Document();
     doc.add(new NumericDocValuesField("foo", -1));
     w.addDocument(doc);
@@ -82,10 +80,10 @@ public class TestSortingCodecReader extends LuceneTestCase {
     try (DirectoryReader reader = DirectoryReader.open(tmpDir)) {
       List<CodecReader> readers = new ArrayList<>();
       for (LeafReaderContext ctx : reader.leaves()) {
-        CodecReader wrap = SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
+        CodecReader wrap =
+            SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
         assertTrue(wrap.toString(), wrap.toString().startsWith("SortingCodecReader("));
         readers.add(wrap);
-
       }
       w.addIndexes(readers.toArray(new CodecReader[0]));
     }
@@ -124,10 +122,12 @@ public class TestSortingCodecReader extends LuceneTestCase {
           doc.add(new TextField("another_text_field", s, Field.Store.YES));
           doc.add(new BinaryDocValuesField("another_text_field", new BytesRef(s)));
           doc.add(new SortedNumericDocValuesField("sorted_numeric_dv", docId));
-          doc.add(new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
+          doc.add(
+              new SortedDocValuesField("binary_sorted_dv", new BytesRef(Integer.toString(docId))));
           doc.add(new BinaryDocValuesField("binary_dv", new BytesRef(Integer.toString(docId))));
-          doc.add(new SortedSetDocValuesField("sorted_set_dv", new BytesRef(Integer.toString(docId))));
-          doc.add(new VectorField("vector", new float[] { (float) docId }));
+          doc.add(
+              new SortedSetDocValuesField("sorted_set_dv", new BytesRef(Integer.toString(docId))));
+          doc.add(new VectorField("vector", new float[] {(float) docId}));
           doc.add(new NumericDocValuesField("foo", random().nextInt(20)));
 
           FieldType ft = new FieldType(StringField.TYPE_NOT_STORED);
@@ -135,8 +135,14 @@ public class TestSortingCodecReader extends LuceneTestCase {
           doc.add(new Field("term_vectors", "test" + docId, ft));
           if (rarely() == false) {
             doc.add(new NumericDocValuesField("id", docId));
-            doc.add(new SortedSetDocValuesField("sorted_set_sort_field", new BytesRef(String.format(Locale.ROOT, "%06d", docId))));
-            doc.add(new SortedDocValuesField("sorted_binary_sort_field", new BytesRef(String.format(Locale.ROOT, "%06d", docId))));
+            doc.add(
+                new SortedSetDocValuesField(
+                    "sorted_set_sort_field",
+                    new BytesRef(String.format(Locale.ROOT, "%06d", docId))));
+            doc.add(
+                new SortedDocValuesField(
+                    "sorted_binary_sort_field",
+                    new BytesRef(String.format(Locale.ROOT, "%06d", docId))));
             doc.add(new SortedNumericDocValuesField("sorted_numeric_sort_field", docId));
           } else {
             doc.add(new NumericDocValuesField("alt_id", docId));
@@ -150,22 +156,30 @@ public class TestSortingCodecReader extends LuceneTestCase {
         iw.commit();
         actualNumDocs = iw.getDocStats().numDocs;
       }
-      Sort indexSort = RandomPicks.randomFrom(random(), Arrays.asList(
-          new Sort(new SortField("id", SortField.Type.INT),
-              new SortField("alt_id", SortField.Type.INT)),
-          new Sort(new SortedSetSortField("sorted_set_sort_field", false),
-              new SortField("alt_id", SortField.Type.INT)),
-          new Sort(new SortedNumericSortField("sorted_numeric_sort_field", SortField.Type.INT),
-              new SortField("alt_id", SortField.Type.INT)),
-          new Sort(new SortField("sorted_binary_sort_field", SortField.Type.STRING, false),
-              new SortField("alt_id", SortField.Type.INT))
-          ));
+      Sort indexSort =
+          RandomPicks.randomFrom(
+              random(),
+              Arrays.asList(
+                  new Sort(
+                      new SortField("id", SortField.Type.INT),
+                      new SortField("alt_id", SortField.Type.INT)),
+                  new Sort(
+                      new SortedSetSortField("sorted_set_sort_field", false),
+                      new SortField("alt_id", SortField.Type.INT)),
+                  new Sort(
+                      new SortedNumericSortField("sorted_numeric_sort_field", SortField.Type.INT),
+                      new SortField("alt_id", SortField.Type.INT)),
+                  new Sort(
+                      new SortField("sorted_binary_sort_field", SortField.Type.STRING, false),
+                      new SortField("alt_id", SortField.Type.INT))));
       try (Directory sortDir = newDirectory()) {
-        try (IndexWriter writer = new IndexWriter(sortDir, newIndexWriterConfig().setIndexSort(indexSort))) {
+        try (IndexWriter writer =
+            new IndexWriter(sortDir, newIndexWriterConfig().setIndexSort(indexSort))) {
           try (DirectoryReader reader = DirectoryReader.open(dir)) {
             List<CodecReader> readers = new ArrayList<>();
             for (LeafReaderContext ctx : reader.leaves()) {
-              CodecReader wrap = SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
+              CodecReader wrap =
+                  SortingCodecReader.wrap(SlowCodecReaderWrapper.wrap(ctx.reader()), indexSort);
               readers.add(wrap);
               TermVectorsReader termVectorsReader = wrap.getTermVectorsReader();
               TermVectorsReader clone = termVectorsReader.clone();
@@ -179,7 +193,8 @@ public class TestSortingCodecReader extends LuceneTestCase {
             LeafReader leaf = getOnlyLeafReader(r);
             assertEquals(actualNumDocs, leaf.maxDoc());
             BinaryDocValues binary_dv = leaf.getBinaryDocValues("binary_dv");
-            SortedNumericDocValues sorted_numeric_dv = leaf.getSortedNumericDocValues("sorted_numeric_dv");
+            SortedNumericDocValues sorted_numeric_dv =
+                leaf.getSortedNumericDocValues("sorted_numeric_dv");
             SortedSetDocValues sorted_set_dv = leaf.getSortedSetDocValues("sorted_set_dv");
             SortedDocValues binary_sorted_dv = leaf.getSortedDocValues("binary_sorted_dv");
             VectorValues vectorValues = leaf.getVectorValues("vector");
@@ -209,7 +224,9 @@ public class TestSortingCodecReader extends LuceneTestCase {
               assertEquals(idNext, vectorValues.advance(idNext));
               assertEquals(new BytesRef(ids.longValue() + ""), binary_dv.binaryValue());
               assertEquals(new BytesRef(ids.longValue() + ""), binary_sorted_dv.binaryValue());
-              assertEquals(new BytesRef(ids.longValue() + ""), sorted_set_dv.lookupOrd(sorted_set_dv.nextOrd()));
+              assertEquals(
+                  new BytesRef(ids.longValue() + ""),
+                  sorted_set_dv.lookupOrd(sorted_set_dv.nextOrd()));
               assertEquals(1, sorted_numeric_dv.docValueCount());
               assertEquals(ids.longValue(), sorted_numeric_dv.nextValue());
 
@@ -218,7 +235,11 @@ public class TestSortingCodecReader extends LuceneTestCase {
               assertEquals((float) ids.longValue(), vectorValue[0], 0.001f);
 
               Fields termVectors = leaf.getTermVectors(idNext);
-              assertTrue(termVectors.terms("term_vectors").iterator().seekExact(new BytesRef("test" + ids.longValue())));
+              assertTrue(
+                  termVectors
+                      .terms("term_vectors")
+                      .iterator()
+                      .seekExact(new BytesRef("test" + ids.longValue())));
               assertEquals(Long.toString(ids.longValue()), leaf.document(idNext).get("id"));
               IndexSearcher searcher = new IndexSearcher(r);
               TopDocs result = searcher.search(LongPoint.newExactQuery("id", ids.longValue()), 1);

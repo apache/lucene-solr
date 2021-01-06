@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.ClasspathResourceLoader;
 import org.apache.lucene.util.ResourceLoader;
 
@@ -27,26 +26,29 @@ public class TestKeepFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testInform() throws Exception {
     ResourceLoader loader = new ClasspathResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
-    KeepWordFilterFactory factory = (KeepWordFilterFactory) tokenFilterFactory("KeepWord",
-        "words", "keep-1.txt",
-        "ignoreCase", "true");
+    KeepWordFilterFactory factory =
+        (KeepWordFilterFactory)
+            tokenFilterFactory("KeepWord", "words", "keep-1.txt", "ignoreCase", "true");
     CharArraySet words = factory.getWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
 
-    factory = (KeepWordFilterFactory) tokenFilterFactory("KeepWord",
-        "words", "keep-1.txt, keep-2.txt",
-        "ignoreCase", "true");
+    factory =
+        (KeepWordFilterFactory)
+            tokenFilterFactory("KeepWord", "words", "keep-1.txt, keep-2.txt", "ignoreCase", "true");
     words = factory.getWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 4, words.size() == 4);
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("KeepWord", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("KeepWord", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -16,15 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-/** Implements a {@link TermsEnum} wrapping a provided
- * {@link SortedDocValues}. */
-
+/** Implements a {@link TermsEnum} wrapping a provided {@link SortedDocValues}. */
 class SortedDocValuesTermsEnum extends BaseTermsEnum {
   private final SortedDocValues values;
   private int currentOrd = -1;
@@ -44,7 +40,7 @@ class SortedDocValuesTermsEnum extends BaseTermsEnum {
       scratch.copyBytes(text);
       return SeekStatus.FOUND;
     } else {
-      currentOrd = -ord-1;
+      currentOrd = -ord - 1;
       if (currentOrd == values.getValueCount()) {
         return SeekStatus.END;
       } else {
@@ -117,7 +113,7 @@ class SortedDocValuesTermsEnum extends BaseTermsEnum {
   @Override
   public void seekExact(BytesRef term, TermState state) throws IOException {
     assert state != null && state instanceof OrdTermState;
-    this.seekExact(((OrdTermState)state).ord);
+    this.seekExact(((OrdTermState) state).ord);
   }
 
   @Override
@@ -127,4 +123,3 @@ class SortedDocValuesTermsEnum extends BaseTermsEnum {
     return state;
   }
 }
-

@@ -16,16 +16,13 @@
  */
 package org.apache.lucene.analysis.ja.util;
 
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
@@ -33,58 +30,54 @@ import org.apache.lucene.store.OutputStreamDataOutput;
 final class CharacterDefinitionWriter {
 
   private final byte[] characterCategoryMap = new byte[0x10000];
-  
+
   private final boolean[] invokeMap = new boolean[CharacterDefinition.CLASS_COUNT];
   private final boolean[] groupMap = new boolean[CharacterDefinition.CLASS_COUNT];
-    
-  /**
-   * Constructor for building. TODO: remove write access
-   */
+
+  /** Constructor for building. TODO: remove write access */
   CharacterDefinitionWriter() {
     Arrays.fill(characterCategoryMap, CharacterDefinition.DEFAULT);
   }
-  
+
   /**
    * Put mapping from unicode code point to character class.
-   * 
-   * @param codePoint
-   *            code point
+   *
+   * @param codePoint code point
    * @param characterClassName character class name
    */
   void putCharacterCategory(int codePoint, String characterClassName) {
     characterClassName = characterClassName.split(" ")[0]; // use first
     // category
     // class
-    
+
     // Override Nakaguro
     if (codePoint == 0x30FB) {
       characterClassName = "SYMBOL";
     }
     characterCategoryMap[codePoint] = CharacterDefinition.lookupCharacterClass(characterClassName);
   }
-  
+
   void putInvokeDefinition(String characterClassName, int invoke, int group, int length) {
     final byte characterClass = CharacterDefinition.lookupCharacterClass(characterClassName);
     invokeMap[characterClass] = invoke == 1;
     groupMap[characterClass] = group == 1;
     // TODO: length def ignored
   }
-  
+
   public void write(Path baseDir) throws IOException {
-    Path path = baseDir.resolve(CharacterDefinition.class.getName().replace('.', '/') + CharacterDefinition.FILENAME_SUFFIX);
+    Path path =
+        baseDir.resolve(
+            CharacterDefinition.class.getName().replace('.', '/')
+                + CharacterDefinition.FILENAME_SUFFIX);
     Files.createDirectories(path.getParent());
-    try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))){
+    try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(path))) {
       final DataOutput out = new OutputStreamDataOutput(os);
       CodecUtil.writeHeader(out, CharacterDefinition.HEADER, CharacterDefinition.VERSION);
       out.writeBytes(characterCategoryMap, 0, characterCategoryMap.length);
       for (int i = 0; i < CharacterDefinition.CLASS_COUNT; i++) {
-        final byte b = (byte) (
-          (invokeMap[i] ? 0x01 : 0x00) | 
-          (groupMap[i] ? 0x02 : 0x00)
-        );
+        final byte b = (byte) ((invokeMap[i] ? 0x01 : 0x00) | (groupMap[i] ? 0x02 : 0x00));
         out.writeByte(b);
       }
     }
   }
-  
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analysis components for path-like strings such as filenames.
- */
+/** Analysis components for path-like strings such as filenames. */
 package org.apache.lucene.analysis.path;

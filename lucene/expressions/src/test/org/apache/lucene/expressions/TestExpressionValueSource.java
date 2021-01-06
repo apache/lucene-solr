@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.expressions;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,12 +32,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
-
 public class TestExpressionValueSource extends LuceneTestCase {
   DirectoryReader reader;
   Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -51,25 +49,25 @@ public class TestExpressionValueSource extends LuceneTestCase {
     doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 5));
     iw.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(newStringField("id", "2", Field.Store.YES));
     doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 20));
     doc.add(new NumericDocValuesField("count", 1));
     iw.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(newStringField("id", "3", Field.Store.YES));
     doc.add(newTextField("body", "crappy contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 2));
     iw.addDocument(doc);
     iw.forceMerge(1);
-    
+
     reader = iw.getReader();
     iw.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
@@ -134,14 +132,21 @@ public class TestExpressionValueSource extends LuceneTestCase {
     bindings.add("f0", DoubleValuesSource.constant(0));
     bindings.add("f1", DoubleValuesSource.constant(1));
     for (int i = 2; i < n + 1; i++) {
-      // Without using CachingExpressionValueSource this test will fail after 1 min around because of out of heap space when n=40
-      bindings.add("f" + Integer.toString(i), new CachingExpressionValueSource(
-          (ExpressionValueSource) JavascriptCompiler.compile("f" + Integer.toString(i - 1)+" + f" + Integer.toString(i - 2)).getDoubleValuesSource(bindings)));
+      // Without using CachingExpressionValueSource this test will fail after 1 min around because
+      // of out of heap space when n=40
+      bindings.add(
+          "f" + Integer.toString(i),
+          new CachingExpressionValueSource(
+              (ExpressionValueSource)
+                  JavascriptCompiler.compile(
+                          "f" + Integer.toString(i - 1) + " + f" + Integer.toString(i - 2))
+                      .getDoubleValuesSource(bindings)));
     }
-    DoubleValues values = bindings.getDoubleValuesSource("f" + Integer.toString(n)).getValues(null, null);
+    DoubleValues values =
+        bindings.getDoubleValuesSource("f" + Integer.toString(n)).getValues(null, null);
 
     assertTrue(values.advanceExact(0));
-    assertEquals(fib(n), (int)values.doubleValue());
+    assertEquals(fib(n), (int) values.doubleValue());
   }
 
   private int fib(int n) {
@@ -160,14 +165,12 @@ public class TestExpressionValueSource extends LuceneTestCase {
   public void testRewrite() throws Exception {
     Expression expr = JavascriptCompiler.compile("a");
 
-    ExpressionValueSource rewritingExpressionSource = new ExpressionValueSource(
-            new DoubleValuesSource[]{createDoubleValuesSourceMock(true)},
-            expr,
-            false);
-    ExpressionValueSource notRewritingExpressionSource = new ExpressionValueSource(
-            new DoubleValuesSource[]{createDoubleValuesSourceMock(false)},
-            expr,
-            false);
+    ExpressionValueSource rewritingExpressionSource =
+        new ExpressionValueSource(
+            new DoubleValuesSource[] {createDoubleValuesSourceMock(true)}, expr, false);
+    ExpressionValueSource notRewritingExpressionSource =
+        new ExpressionValueSource(
+            new DoubleValuesSource[] {createDoubleValuesSourceMock(false)}, expr, false);
 
     assertNotSame(rewritingExpressionSource, rewritingExpressionSource.rewrite(null));
     assertSame(notRewritingExpressionSource, notRewritingExpressionSource.rewrite(null));
@@ -211,5 +214,4 @@ public class TestExpressionValueSource extends LuceneTestCase {
       }
     };
   }
-
 }

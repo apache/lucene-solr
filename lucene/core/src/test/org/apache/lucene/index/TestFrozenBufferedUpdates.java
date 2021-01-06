@@ -17,17 +17,17 @@
 
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.FrozenBufferedUpdates.TermDocsIterator;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -36,14 +36,14 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.index.FrozenBufferedUpdates.TermDocsIterator;
 import org.apache.lucene.util.TestUtil;
 
 public class TestFrozenBufferedUpdates extends LuceneTestCase {
 
   public void testTermDocsIterator() throws IOException {
     for (int j = 0; j < 5; j++) {
-      try (Directory dir = newDirectory(); IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (Directory dir = newDirectory();
+          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
         boolean duplicates = random().nextBoolean();
         boolean nonMatches = random().nextBoolean();
         BytesRefArray array = new BytesRefArray(Counter.newCounter());
@@ -52,7 +52,7 @@ public class TestFrozenBufferedUpdates extends LuceneTestCase {
         for (int i = 0; i < numDocs; i++) {
           BytesRef id;
           do {
-             id = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
+            id = new BytesRef(TestUtil.randomRealisticUnicodeString(random()));
           } while (randomIds.add(id) == false);
         }
         List<BytesRef> asList = new ArrayList<>(randomIds);
@@ -76,7 +76,8 @@ public class TestFrozenBufferedUpdates extends LuceneTestCase {
         writer.commit();
         try (DirectoryReader reader = DirectoryReader.open(dir)) {
           boolean sorted = random().nextBoolean();
-          BytesRefIterator values = sorted ? array.iterator(Comparator.naturalOrder()) : array.iterator();
+          BytesRefIterator values =
+              sorted ? array.iterator(Comparator.naturalOrder()) : array.iterator();
           assertEquals(1, reader.leaves().size());
           TermDocsIterator iterator = new TermDocsIterator(reader.leaves().get(0).reader(), sorted);
           FixedBitSet bitSet = new FixedBitSet(reader.maxDoc());

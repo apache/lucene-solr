@@ -16,24 +16,22 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 
-/** Represents a logical byte[] as a series of pages.  You
- *  can write-once into the logical byte[] (append only),
- *  using copy, and then retrieve slices (BytesRef) into it
- *  using fill.
+/**
+ * Represents a logical byte[] as a series of pages. You can write-once into the logical byte[]
+ * (append only), using copy, and then retrieve slices (BytesRef) into it using fill.
  *
  * @lucene.internal
- **/
+ */
 // TODO: refactor this, byteblockpool, fst.bytestore, and any
 // other "shift/mask big arrays". there are too many of these classes!
 public final class PagedBytes implements Accountable {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(PagedBytes.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(PagedBytes.class);
   private byte[][] blocks = new byte[16][];
   private int numBlocks;
   // TODO: these are unused?
@@ -48,12 +46,14 @@ public final class PagedBytes implements Accountable {
 
   private static final byte[] EMPTY_BYTES = new byte[0];
 
-  /** Provides methods to read BytesRefs from a frozen
-   *  PagedBytes.
+  /**
+   * Provides methods to read BytesRefs from a frozen PagedBytes.
    *
-   * @see #freeze */
-  public final static class Reader implements Accountable {
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Reader.class);
+   * @see #freeze
+   */
+  public static final class Reader implements Accountable {
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(Reader.class);
     private final byte[][] blocks;
     private final int blockBits;
     private final int blockMask;
@@ -69,17 +69,17 @@ public final class PagedBytes implements Accountable {
     }
 
     /**
-     * Gets a slice out of {@link PagedBytes} starting at <i>start</i> with a
-     * given length. Iff the slice spans across a block border this method will
-     * allocate sufficient resources and copy the paged data.
-     * <p>
-     * Slices spanning more than two blocks are not supported.
-     * </p>
-     * @lucene.internal 
-     **/
+     * Gets a slice out of {@link PagedBytes} starting at <i>start</i> with a given length. Iff the
+     * slice spans across a block border this method will allocate sufficient resources and copy the
+     * paged data.
+     *
+     * <p>Slices spanning more than two blocks are not supported.
+     *
+     * @lucene.internal
+     */
     public void fillSlice(BytesRef b, long start, int length) {
-      assert length >= 0: "length=" + length;
-      assert length <= blockSize+1: "length=" + length;
+      assert length >= 0 : "length=" + length;
+      assert length <= blockSize + 1 : "length=" + length;
       b.length = length;
       if (length == 0) {
         return;
@@ -94,20 +94,19 @@ public final class PagedBytes implements Accountable {
         // Split
         b.bytes = new byte[length];
         b.offset = 0;
-        System.arraycopy(blocks[index], offset, b.bytes, 0, blockSize-offset);
-        System.arraycopy(blocks[1+index], 0, b.bytes, blockSize-offset, length-(blockSize-offset));
+        System.arraycopy(blocks[index], offset, b.bytes, 0, blockSize - offset);
+        System.arraycopy(
+            blocks[1 + index], 0, b.bytes, blockSize - offset, length - (blockSize - offset));
       }
     }
-    
+
     /**
      * Reads length as 1 or 2 byte vInt prefix, starting at <i>start</i>.
-     * <p>
-     * <b>Note:</b> this method does not support slices spanning across block
-     * borders.
-     * </p>
-     * 
+     *
+     * <p><b>Note:</b> this method does not support slices spanning across block borders.
+     *
      * @lucene.internal
-     **/
+     */
     // TODO: this really needs to be refactored into fieldcacheimpl
     public void fill(BytesRef b, long start) {
       final int index = (int) (start >> blockBits);
@@ -116,10 +115,10 @@ public final class PagedBytes implements Accountable {
 
       if ((block[offset] & 128) == 0) {
         b.length = block[offset];
-        b.offset = offset+1;
+        b.offset = offset + 1;
       } else {
-        b.length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
-        b.offset = offset+2;
+        b.length = ((block[offset] & 0x7f) << 8) | (block[1 + offset] & 0xff);
+        b.offset = offset + 2;
         assert b.length > 0;
       }
     }
@@ -140,15 +139,15 @@ public final class PagedBytes implements Accountable {
     }
   }
 
-  /** 1&lt;&lt;blockBits must be bigger than biggest single
-   *  BytesRef slice that will be pulled */
+  /** 1&lt;&lt;blockBits must be bigger than biggest single BytesRef slice that will be pulled */
   public PagedBytes(int blockBits) {
     assert blockBits > 0 && blockBits <= 31 : blockBits;
     this.blockSize = 1 << blockBits;
     this.blockBits = blockBits;
-    blockMask = blockSize-1;
+    blockMask = blockSize - 1;
     upto = blockSize;
-    bytesUsedPerBlock = RamUsageEstimator.alignObjectSize(blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+    bytesUsedPerBlock =
+        RamUsageEstimator.alignObjectSize(blockSize + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
     numBlocks = 0;
   }
 
@@ -181,12 +180,13 @@ public final class PagedBytes implements Accountable {
     }
   }
 
-  /** Copy BytesRef in, setting BytesRef out to the result.
-   * Do not use this if you will use freeze(true).
-   * This only supports bytes.length &lt;= blockSize */
+  /**
+   * Copy BytesRef in, setting BytesRef out to the result. Do not use this if you will use
+   * freeze(true). This only supports bytes.length &lt;= blockSize
+   */
   public void copy(BytesRef bytes, BytesRef out) {
     int left = blockSize - upto;
-    if (bytes.length > left || currentBlock==null) {
+    if (bytes.length > left || currentBlock == null) {
       if (currentBlock != null) {
         addBlock(currentBlock);
         didSkipBytes = true;
@@ -238,7 +238,8 @@ public final class PagedBytes implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks);;
+    long size = BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(blocks);
+    ;
     if (numBlocks > 0) {
       size += (numBlocks - 1) * bytesUsedPerBlock;
       size += RamUsageEstimator.sizeOf(blocks[numBlocks - 1]);
@@ -249,8 +250,7 @@ public final class PagedBytes implements Accountable {
     return size;
   }
 
-  /** Copy bytes in, writing the length as a 1 or 2 byte
-   *  vInt prefix. */
+  /** Copy bytes in, writing the length as a 1 or 2 byte vInt prefix. */
   // TODO: this really needs to be refactored into fieldcacheimpl!
   public long copyUsingLengthPrefix(BytesRef bytes) {
     if (bytes.length >= 32768) {
@@ -259,10 +259,11 @@ public final class PagedBytes implements Accountable {
 
     if (upto + bytes.length + 2 > blockSize) {
       if (bytes.length + 2 > blockSize) {
-        throw new IllegalArgumentException("block size " + blockSize + " is too small to store length " + bytes.length + " bytes");
+        throw new IllegalArgumentException(
+            "block size " + blockSize + " is too small to store length " + bytes.length + " bytes");
       }
       if (currentBlock != null) {
-        addBlock(currentBlock);     
+        addBlock(currentBlock);
       }
       currentBlock = new byte[blockSize];
       upto = 0;
@@ -284,6 +285,7 @@ public final class PagedBytes implements Accountable {
 
   /**
    * Input that transparently iterates over pages
+   *
    * @lucene.internal
    */
   public final class PagedBytesDataInput extends DataInput {
@@ -306,9 +308,8 @@ public final class PagedBytes implements Accountable {
     public long getPosition() {
       return (long) currentBlockIndex * blockSize + currentBlockUpto;
     }
-  
-    /** Seek to a position previously obtained from
-     *  {@link #getPosition}. */
+
+    /** Seek to a position previously obtained from {@link #getPosition}. */
     public void setPosition(long pos) {
       currentBlockIndex = (int) (pos >> blockBits);
       currentBlock = blocks[currentBlockIndex];
@@ -331,16 +332,12 @@ public final class PagedBytes implements Accountable {
         final int blockLeft = blockSize - currentBlockUpto;
         final int left = offsetEnd - offset;
         if (blockLeft < left) {
-          System.arraycopy(currentBlock, currentBlockUpto,
-                           b, offset,
-                           blockLeft);
+          System.arraycopy(currentBlock, currentBlockUpto, b, offset, blockLeft);
           nextBlock();
           offset += blockLeft;
         } else {
           // Last block
-          System.arraycopy(currentBlock, currentBlockUpto,
-                           b, offset,
-                           left);
+          System.arraycopy(currentBlock, currentBlockUpto, b, offset, left);
           currentBlockUpto += left;
           break;
         }
@@ -356,6 +353,7 @@ public final class PagedBytes implements Accountable {
 
   /**
    * Output that transparently spills to new pages as necessary
+   *
    * @lucene.internal
    */
   public final class PagedBytesDataOutput extends DataOutput {
@@ -385,9 +383,9 @@ public final class PagedBytes implements Accountable {
         currentBlock = new byte[blockSize];
         upto = 0;
       }
-          
+
       final int offsetEnd = offset + length;
-      while(true) {
+      while (true) {
         final int left = offsetEnd - offset;
         final int blockLeft = blockSize - upto;
         if (blockLeft < left) {
@@ -411,8 +409,7 @@ public final class PagedBytes implements Accountable {
     }
   }
 
-  /** Returns a DataInput to read values from this
-   *  PagedBytes instance. */
+  /** Returns a DataInput to read values from this PagedBytes instance. */
   public PagedBytesDataInput getDataInput() {
     if (!frozen) {
       throw new IllegalStateException("must call freeze() before getDataInput");
@@ -420,10 +417,10 @@ public final class PagedBytes implements Accountable {
     return new PagedBytesDataInput();
   }
 
-  /** Returns a DataOutput that you may use to write into
-   *  this PagedBytes instance.  If you do this, you should
-   *  not call the other writing methods (eg, copy);
-   *  results are undefined. */
+  /**
+   * Returns a DataOutput that you may use to write into this PagedBytes instance. If you do this,
+   * you should not call the other writing methods (eg, copy); results are undefined.
+   */
   public PagedBytesDataOutput getDataOutput() {
     if (frozen) {
       throw new IllegalStateException("cannot get DataOutput after freeze()");

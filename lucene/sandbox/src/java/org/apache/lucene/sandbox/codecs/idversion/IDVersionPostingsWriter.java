@@ -17,7 +17,6 @@
 package org.apache.lucene.sandbox.codecs.idversion;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
@@ -32,13 +31,13 @@ import org.apache.lucene.util.BytesRef;
 
 final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
-  final static String TERMS_CODEC = "IDVersionPostingsWriterTerms";
+  static final String TERMS_CODEC = "IDVersionPostingsWriterTerms";
 
   // Increment version to change it
-  final static int VERSION_START = 1;
-  final static int VERSION_CURRENT = VERSION_START;
+  static final int VERSION_START = 1;
+  static final int VERSION_CURRENT = VERSION_START;
 
-  final static IDVersionTermState emptyState = new IDVersionTermState();
+  static final IDVersionTermState emptyState = new IDVersionTermState();
   IDVersionTermState lastState;
 
   int lastDocID;
@@ -58,19 +57,23 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
-    CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.writeIndexHeader(
+        termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
   }
 
   @Override
   public void setField(FieldInfo fieldInfo) {
     super.setField(fieldInfo);
     if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
-      throw new IllegalArgumentException("field must be index using IndexOptions.DOCS_AND_FREQS_AND_POSITIONS");
+      throw new IllegalArgumentException(
+          "field must be index using IndexOptions.DOCS_AND_FREQS_AND_POSITIONS");
     }
-    // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted docs, and because our PF only indexes the
+    // LUCENE-5693: because CheckIndex cross-checks term vectors with postings even for deleted
+    // docs, and because our PF only indexes the
     // non-deleted documents on flush, CheckIndex will see this as corruption:
     if (fieldInfo.hasVectors()) {
-      throw new IllegalArgumentException("field cannot index term vectors: CheckIndex will report this as index corruption");
+      throw new IllegalArgumentException(
+          "field cannot index term vectors: CheckIndex will report this as index corruption");
     }
     lastState = emptyState;
   }
@@ -82,12 +85,14 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on flush:
+    // TODO: LUCENE-5693: we don't need this check if we fix IW to not send deleted docs to us on
+    // flush:
     if (liveDocs != null && liveDocs.get(docID) == false) {
       return;
     }
     if (lastDocID != -1) {
-      throw new IllegalArgumentException("term appears in more than one document: " + lastDocID + " and " + docID);
+      throw new IllegalArgumentException(
+          "term appears in more than one document: " + lastDocID + " and " + docID);
     }
     if (termDocFreq != 1) {
       throw new IllegalArgumentException("term appears more than once in the document");
@@ -99,7 +104,8 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
+  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset)
+      throws IOException {
     if (lastDocID == -1) {
       // Doc is deleted; skip it
       return;
@@ -117,10 +123,24 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
 
     lastVersion = IDVersionPostingsFormat.bytesToLong(payload);
     if (lastVersion < IDVersionPostingsFormat.MIN_VERSION) {
-      throw new IllegalArgumentException("version must be >= MIN_VERSION=" + IDVersionPostingsFormat.MIN_VERSION + " (got: " + lastVersion + "; payload=" + payload + ")");
+      throw new IllegalArgumentException(
+          "version must be >= MIN_VERSION="
+              + IDVersionPostingsFormat.MIN_VERSION
+              + " (got: "
+              + lastVersion
+              + "; payload="
+              + payload
+              + ")");
     }
     if (lastVersion > IDVersionPostingsFormat.MAX_VERSION) {
-      throw new IllegalArgumentException("version must be <= MAX_VERSION=" + IDVersionPostingsFormat.MAX_VERSION + " (got: " + lastVersion + "; payload=" + payload + ")");
+      throw new IllegalArgumentException(
+          "version must be <= MAX_VERSION="
+              + IDVersionPostingsFormat.MAX_VERSION
+              + " (got: "
+              + lastVersion
+              + "; payload="
+              + payload
+              + ")");
     }
   }
 
@@ -151,7 +171,9 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   private long lastEncodedVersion;
 
   @Override
-  public void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+  public void encodeTerm(
+      DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute)
+      throws IOException {
     IDVersionTermState state = (IDVersionTermState) _state;
     out.writeVInt(state.docID);
     if (absolute) {
@@ -164,6 +186,5 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void close() throws IOException {
-  }
+  public void close() throws IOException {}
 }

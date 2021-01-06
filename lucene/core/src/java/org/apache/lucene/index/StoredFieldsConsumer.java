@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.store.Directory;
@@ -44,7 +43,9 @@ class StoredFieldsConsumer {
   }
 
   protected void initStoredFieldsWriter() throws IOException {
-    if (writer == null) { // TODO can we allocate this in the ctor? we call start document for every doc anyway
+    if (writer
+        == null) { // TODO can we allocate this in the ctor? we call start document for every doc
+      // anyway
       this.writer = codec.storedFieldsFormat().fieldsWriter(directory, info, IOContext.DEFAULT);
       accountable = writer;
     }
@@ -69,7 +70,7 @@ class StoredFieldsConsumer {
   }
 
   void finish(int maxDoc) throws IOException {
-    while (lastDoc < maxDoc-1) {
+    while (lastDoc < maxDoc - 1) {
       startDocument(lastDoc);
       finishDocument();
       ++lastDoc;

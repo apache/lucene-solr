@@ -26,14 +26,6 @@ configure(rootProject) {
   dependencies {
     jflex "de.jflex:jflex:${scriptDepVersions['jflex']}"
   }
-
-  task jflex() {
-    description "Regenerate sources for corresponding jflex grammar files."
-    group "generation"
-
-    dependsOn ":lucene:core:jflexStandardTokenizerImpl"
-    dependsOn ":lucene:analysis:common:jflexUAX29URLEmailTokenizerImpl"
-  }
 }
 
 // We always regenerate, no need to declare outputs.
@@ -115,6 +107,22 @@ configure(project(":lucene:core")) {
 
 configure(project(":lucene:analysis:common")) {
 
+  task jflexWikipediaTokenizerImpl(type: JFlexTask) {
+    description "Regenerate WikipediaTokenizerImpl.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/wikipedia/WikipediaTokenizerImpl.jflex')
+    skeleton = project(":lucene:core").file("src/data/jflex/skeleton.default")
+  }
+
+  task jflexClassicTokenizerImpl(type: JFlexTask) {
+    description "Regenerate ClassicTokenizerImpl.java"
+    group "generation"
+
+    jflexFile = file('src/java/org/apache/lucene/analysis/classic/ClassicTokenizerImpl.jflex')
+    skeleton = project(":lucene:core").file("src/data/jflex/skeleton.default")
+  }
+
   task jflexUAX29URLEmailTokenizerImpl(type: JFlexTask) {
     description "Regenerate UAX29URLEmailTokenizerImpl.java"
     group "generation"
@@ -165,5 +173,27 @@ configure(project(":lucene:analysis:common")) {
           eol: "lf"
       )
     }
+  }
+
+  task regenerate() {
+    description "Regenerate any generated sources"
+    group "generation"
+
+    // Run regeneration tasks.
+    dependsOn jflexUAX29URLEmailTokenizerImpl
+    dependsOn jflexHTMLStripCharFilter
+    dependsOn jflexClassicTokenizerImpl
+    dependsOn jflexWikipediaTokenizerImpl
+
+    // Clean up and reformat the generated sources after generation.
+    dependsOn "tidy"
+  }
+
+  // Make sure tidy runs after generation, if they're defined.
+  tasks.matching { it.name == "tidy" }.configureEach {
+    mustRunAfter jflexUAX29URLEmailTokenizerImpl,
+        jflexHTMLStripCharFilter,
+        jflexClassicTokenizerImpl,
+        jflexWikipediaTokenizerImpl
   }
 }

@@ -16,6 +16,20 @@
  */
 package org.apache.lucene.codecs.compressing;
 
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.META_VERSION_START;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.OFFSETS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PAYLOADS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_META_EXTENSION;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_META;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_OFFHEAP_INDEX;
+import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -23,19 +37,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.SlowImpactsEnum;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -53,23 +66,9 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_OFFHEAP_INDEX;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.FLAGS_BITS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.META_VERSION_START;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.OFFSETS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.PAYLOADS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.POSITIONS;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_CODEC_NAME;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VECTORS_META_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_META;
-import static org.apache.lucene.codecs.compressing.CompressingTermVectorsWriter.VERSION_START;
-
 /**
  * {@link TermVectorsReader} for {@link CompressingTermVectorsFormat}.
+ *
  * @lucene.experimental
  */
 public final class CompressingTermVectorsReader extends TermVectorsReader implements Closeable {
@@ -99,7 +98,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.decompressor = reader.decompressor.clone();
     this.chunkSize = reader.chunkSize;
     this.numDocs = reader.numDocs;
-    this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
+    this.reader =
+        new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
     this.version = reader.version;
     this.numDirtyChunks = reader.numDirtyChunks;
     this.numDirtyDocs = reader.numDirtyDocs;
@@ -108,8 +108,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   }
 
   /** Sole constructor. */
-  public CompressingTermVectorsReader(Directory d, SegmentInfo si, String segmentSuffix, FieldInfos fn,
-      IOContext context, String formatName, CompressionMode compressionMode) throws IOException {
+  public CompressingTermVectorsReader(
+      Directory d,
+      SegmentInfo si,
+      String segmentSuffix,
+      FieldInfos fn,
+      IOContext context,
+      String formatName,
+      CompressionMode compressionMode)
+      throws IOException {
     this.compressionMode = compressionMode;
     final String segment = si.name;
     boolean success = false;
@@ -119,15 +126,26 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     ChecksumIndexInput metaIn = null;
     try {
       // Open the data file
-      final String vectorsStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
+      final String vectorsStreamFN =
+          IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_EXTENSION);
       vectorsStream = d.openInput(vectorsStreamFN, context);
-      version = CodecUtil.checkIndexHeader(vectorsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
-      assert CodecUtil.indexHeaderLength(formatName, segmentSuffix) == vectorsStream.getFilePointer();
+      version =
+          CodecUtil.checkIndexHeader(
+              vectorsStream, formatName, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+      assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
+          == vectorsStream.getFilePointer();
 
       if (version >= VERSION_OFFHEAP_INDEX) {
-        final String metaStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
+        final String metaStreamFN =
+            IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
         metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
-        CodecUtil.checkIndexHeader(metaIn, VECTORS_INDEX_CODEC_NAME + "Meta", META_VERSION_START, version, si.getId(), segmentSuffix);
+        CodecUtil.checkIndexHeader(
+            metaIn,
+            VECTORS_INDEX_CODEC_NAME + "Meta",
+            META_VERSION_START,
+            version,
+            si.getId(),
+            segmentSuffix);
       }
 
       if (version >= VERSION_META) {
@@ -154,12 +172,26 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
           Throwable priorE = null;
           try {
             assert formatName.endsWith("Data");
-            final String codecNameIdx = formatName.substring(0, formatName.length() - "Data".length()) + "Index";
-            final int version2 = CodecUtil.checkIndexHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT, si.getId(), segmentSuffix);
+            final String codecNameIdx =
+                formatName.substring(0, formatName.length() - "Data".length()) + "Index";
+            final int version2 =
+                CodecUtil.checkIndexHeader(
+                    indexStream,
+                    codecNameIdx,
+                    VERSION_START,
+                    VERSION_CURRENT,
+                    si.getId(),
+                    segmentSuffix);
             if (version != version2) {
-              throw new CorruptIndexException("Version mismatch between stored fields index and data: " + version + " != " + version2, indexStream);
+              throw new CorruptIndexException(
+                  "Version mismatch between stored fields index and data: "
+                      + version
+                      + " != "
+                      + version2,
+                  indexStream);
             }
-            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix) == indexStream.getFilePointer();
+            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix)
+                == indexStream.getFilePointer();
             indexReader = new LegacyFieldsIndexReader(indexStream, si);
             maxPointer = indexStream.readVLong(); // the end of the data section
           } catch (Throwable exception) {
@@ -169,7 +201,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
           }
         }
       } else {
-        FieldsIndexReader fieldsIndexReader = new FieldsIndexReader(d, si.name, segmentSuffix, VECTORS_INDEX_EXTENSION, VECTORS_INDEX_CODEC_NAME, si.getId(), metaIn);
+        FieldsIndexReader fieldsIndexReader =
+            new FieldsIndexReader(
+                d,
+                si.name,
+                segmentSuffix,
+                VECTORS_INDEX_EXTENSION,
+                VECTORS_INDEX_CODEC_NAME,
+                si.getId(),
+                metaIn);
         indexReader = fieldsIndexReader;
         maxPointer = fieldsIndexReader.getMaxPointer();
       }
@@ -188,7 +228,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       }
 
       decompressor = compressionMode.newDecompressor();
-      this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
+      this.reader =
+          new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, PACKED_BLOCK_SIZE, 0);
 
       if (metaIn != null) {
         CodecUtil.checkFooter(metaIn, null);
@@ -221,7 +262,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   int getPackedIntsVersion() {
     return packedIntsVersion;
   }
-  
+
   int getVersion() {
     return version;
   }
@@ -233,22 +274,24 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   IndexInput getVectorsStream() {
     return vectorsStream;
   }
-  
+
   long getMaxPointer() {
     return maxPointer;
   }
-  
+
   long getNumDirtyDocs() {
     if (version != VERSION_CURRENT) {
-      throw new IllegalStateException("getNumDirtyDocs should only ever get called when the reader is on the current version");
+      throw new IllegalStateException(
+          "getNumDirtyDocs should only ever get called when the reader is on the current version");
     }
     assert numDirtyDocs >= 0;
     return numDirtyDocs;
   }
-  
+
   long getNumDirtyChunks() {
     if (version != VERSION_CURRENT) {
-      throw new IllegalStateException("getNumDirtyChunks should only ever get called when the reader is on the current version");
+      throw new IllegalStateException(
+          "getNumDirtyChunks should only ever get called when the reader is on the current version");
     }
     assert numDirtyChunks >= 0;
     return numDirtyChunks;
@@ -258,9 +301,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     return numDocs;
   }
 
-  /**
-   * @throws AlreadyClosedException if this TermVectorsReader is closed
-   */
+  /** @throws AlreadyClosedException if this TermVectorsReader is closed */
   private void ensureOpen() throws AlreadyClosedException {
     if (closed) {
       throw new AlreadyClosedException("this FieldsReader is closed");
@@ -296,7 +337,8 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final int docBase = vectorsStream.readVInt();
     final int chunkDocs = vectorsStream.readVInt();
     if (doc < docBase || doc >= docBase + chunkDocs || docBase + chunkDocs > numDocs) {
-      throw new CorruptIndexException("docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc, vectorsStream);
+      throw new CorruptIndexException(
+          "docBase=" + docBase + ",chunkDocs=" + chunkDocs + ",doc=" + doc, vectorsStream);
     }
 
     final int skip; // number of fields to skip
@@ -336,7 +378,14 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         totalDistinctFields += vectorsStream.readVInt();
       }
       ++totalDistinctFields;
-      final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalDistinctFields, bitsPerFieldNum, 1);
+      final PackedInts.ReaderIterator it =
+          PackedInts.getReaderIteratorNoHeader(
+              vectorsStream,
+              PackedInts.Format.PACKED,
+              packedIntsVersion,
+              totalDistinctFields,
+              bitsPerFieldNum,
+              1);
       fieldNums = new int[totalDistinctFields];
       for (int i = 0; i < totalDistinctFields; ++i) {
         fieldNums[i] = (int) it.next();
@@ -348,10 +397,18 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final PackedInts.Reader flags;
     {
       final int bitsPerOff = PackedInts.bitsRequired(fieldNums.length - 1);
-      final PackedInts.Reader allFieldNumOffs = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsPerOff);
+      final PackedInts.Reader allFieldNumOffs =
+          PackedInts.getReaderNoHeader(
+              vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsPerOff);
       switch (vectorsStream.readVInt()) {
         case 0:
-          final PackedInts.Reader fieldFlags = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, fieldNums.length, FLAGS_BITS);
+          final PackedInts.Reader fieldFlags =
+              PackedInts.getReaderNoHeader(
+                  vectorsStream,
+                  PackedInts.Format.PACKED,
+                  packedIntsVersion,
+                  fieldNums.length,
+                  FLAGS_BITS);
           PackedInts.Mutable f = PackedInts.getMutable(totalFields, FLAGS_BITS, PackedInts.COMPACT);
           for (int i = 0; i < totalFields; ++i) {
             final int fieldNumOff = (int) allFieldNumOffs.get(i);
@@ -362,7 +419,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
           flags = f;
           break;
         case 1:
-          flags = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, FLAGS_BITS);
+          flags =
+              PackedInts.getReaderNoHeader(
+                  vectorsStream,
+                  PackedInts.Format.PACKED,
+                  packedIntsVersion,
+                  totalFields,
+                  FLAGS_BITS);
           break;
         default:
           throw new AssertionError();
@@ -377,7 +440,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final int totalTerms;
     {
       final int bitsRequired = vectorsStream.readVInt();
-      numTerms = PackedInts.getReaderNoHeader(vectorsStream, PackedInts.Format.PACKED, packedIntsVersion, totalFields, bitsRequired);
+      numTerms =
+          PackedInts.getReaderNoHeader(
+              vectorsStream,
+              PackedInts.Format.PACKED,
+              packedIntsVersion,
+              totalFields,
+              bitsRequired);
       int sum = 0;
       for (int i = 0; i < totalFields; ++i) {
         sum += numTerms.get(i);
@@ -476,7 +545,16 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     final int[][] positionIndex = positionIndex(skip, numFields, numTerms, termFreqs);
     final int[][] positions, startOffsets, lengths;
     if (totalPositions > 0) {
-      positions = readPositions(skip, numFields, flags, numTerms, termFreqs, POSITIONS, totalPositions, positionIndex);
+      positions =
+          readPositions(
+              skip,
+              numFields,
+              flags,
+              numTerms,
+              termFreqs,
+              POSITIONS,
+              totalPositions,
+              positionIndex);
     } else {
       positions = new int[numFields][];
     }
@@ -487,8 +565,12 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       for (int i = 0; i < charsPerTerm.length; ++i) {
         charsPerTerm[i] = Float.intBitsToFloat(vectorsStream.readInt());
       }
-      startOffsets = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
-      lengths = readPositions(skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
+      startOffsets =
+          readPositions(
+              skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
+      lengths =
+          readPositions(
+              skip, numFields, flags, numTerms, termFreqs, OFFSETS, totalOffsets, positionIndex);
 
       for (int i = 0; i < numFields; ++i) {
         final int[] fStartOffsets = startOffsets[i];
@@ -572,7 +654,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
             for (int k = 0; k < freq; ++k) {
               final int payloadLength = (int) reader.next();
               payloadLen += payloadLength;
-              payloadIndex[i][posIdx+1] = payloadLen;
+              payloadIndex[i][posIdx + 1] = payloadLen;
               ++posIdx;
             }
           }
@@ -599,9 +681,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     // decompress data
     final BytesRef suffixBytes = new BytesRef();
-    decompressor.decompress(vectorsStream, totalLen + totalPayloadLength, docOff + payloadOff, docLen + payloadLen, suffixBytes);
+    decompressor.decompress(
+        vectorsStream,
+        totalLen + totalPayloadLength,
+        docOff + payloadOff,
+        docLen + payloadLen,
+        suffixBytes);
     suffixBytes.length = docLen;
-    final BytesRef payloadBytes = new BytesRef(suffixBytes.bytes, suffixBytes.offset + docLen, payloadLen);
+    final BytesRef payloadBytes =
+        new BytesRef(suffixBytes.bytes, suffixBytes.offset + docLen, payloadLen);
 
     final int[] fieldFlags = new int[numFields];
     for (int i = 0; i < numFields; ++i) {
@@ -630,15 +718,27 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
     assert sum(fieldLengths) == docLen : sum(fieldLengths) + " != " + docLen;
 
-    return new TVFields(fieldNums, fieldFlags, fieldNumOffs, fieldNumTerms, fieldLengths,
-        prefixLengths, suffixLengths, fieldTermFreqs,
-        positionIndex, positions, startOffsets, lengths,
-        payloadBytes, payloadIndex,
+    return new TVFields(
+        fieldNums,
+        fieldFlags,
+        fieldNumOffs,
+        fieldNumTerms,
+        fieldLengths,
+        prefixLengths,
+        suffixLengths,
+        fieldTermFreqs,
+        positionIndex,
+        positions,
+        startOffsets,
+        lengths,
+        payloadBytes,
+        payloadIndex,
         suffixBytes);
   }
 
   // field -> term index -> position index
-  private int[][] positionIndex(int skip, int numFields, PackedInts.Reader numTerms, int[] termFreqs) {
+  private int[][] positionIndex(
+      int skip, int numFields, PackedInts.Reader numTerms, int[] termFreqs) {
     final int[][] positionIndex = new int[numFields][];
     int termIndex = 0;
     for (int i = 0; i < skip; ++i) {
@@ -649,7 +749,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final int termCount = (int) numTerms.get(skip + i);
       positionIndex[i] = new int[termCount + 1];
       for (int j = 0; j < termCount; ++j) {
-        final int freq = termFreqs[termIndex+j];
+        final int freq = termFreqs[termIndex + j];
         positionIndex[i][j + 1] = positionIndex[i][j] + freq;
       }
       termIndex += termCount;
@@ -657,7 +757,16 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     return positionIndex;
   }
 
-  private int[][] readPositions(int skip, int numFields, PackedInts.Reader flags, PackedInts.Reader numTerms, int[] termFreqs, int flag, final int totalPositions, int[][] positionIndex) throws IOException {
+  private int[][] readPositions(
+      int skip,
+      int numFields,
+      PackedInts.Reader flags,
+      PackedInts.Reader numTerms,
+      int[] termFreqs,
+      int flag,
+      final int totalPositions,
+      int[][] positionIndex)
+      throws IOException {
     final int[][] positions = new int[numFields][];
     reader.reset(vectorsStream, totalPositions);
     // skip
@@ -668,7 +777,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final int termCount = (int) numTerms.get(i);
       if ((f & flag) != 0) {
         for (int j = 0; j < termCount; ++j) {
-          final int freq = termFreqs[termIndex+j];
+          final int freq = termFreqs[termIndex + j];
           toSkip += freq;
         }
       }
@@ -699,13 +808,31 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private class TVFields extends Fields {
 
     private final int[] fieldNums, fieldFlags, fieldNumOffs, numTerms, fieldLengths;
-    private final int[][] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;
+    private final int[][] prefixLengths,
+        suffixLengths,
+        termFreqs,
+        positionIndex,
+        positions,
+        startOffsets,
+        lengths,
+        payloadIndex;
     private final BytesRef suffixBytes, payloadBytes;
 
-    public TVFields(int[] fieldNums, int[] fieldFlags, int[] fieldNumOffs, int[] numTerms, int[] fieldLengths,
-        int[][] prefixLengths, int[][] suffixLengths, int[][] termFreqs,
-        int[][] positionIndex, int[][] positions, int[][] startOffsets, int[][] lengths,
-        BytesRef payloadBytes, int[][] payloadIndex,
+    public TVFields(
+        int[] fieldNums,
+        int[] fieldFlags,
+        int[] fieldNumOffs,
+        int[] numTerms,
+        int[] fieldLengths,
+        int[][] prefixLengths,
+        int[][] suffixLengths,
+        int[][] termFreqs,
+        int[][] positionIndex,
+        int[][] positions,
+        int[][] startOffsets,
+        int[][] lengths,
+        BytesRef payloadBytes,
+        int[][] payloadIndex,
         BytesRef suffixBytes) {
       this.fieldNums = fieldNums;
       this.fieldFlags = fieldFlags;
@@ -728,10 +855,12 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     public Iterator<String> iterator() {
       return new Iterator<String>() {
         int i = 0;
+
         @Override
         public boolean hasNext() {
           return i < fieldNumOffs.length;
         }
+
         @Override
         public String next() {
           if (!hasNext()) {
@@ -740,6 +869,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
           final int fieldNum = fieldNums[fieldNumOffs[i++]];
           return fieldInfos.fieldInfo(fieldNum).name;
         }
+
         @Override
         public void remove() {
           throw new UnsupportedOperationException();
@@ -775,10 +905,18 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         }
       }
       assert fieldLen >= 0;
-      return new TVTerms(numTerms[idx], fieldFlags[idx],
-          prefixLengths[idx], suffixLengths[idx], termFreqs[idx],
-          positionIndex[idx], positions[idx], startOffsets[idx], lengths[idx],
-          payloadIndex[idx], payloadBytes,
+      return new TVTerms(
+          numTerms[idx],
+          fieldFlags[idx],
+          prefixLengths[idx],
+          suffixLengths[idx],
+          termFreqs[idx],
+          positionIndex[idx],
+          positions[idx],
+          startOffsets[idx],
+          lengths[idx],
+          payloadIndex[idx],
+          payloadBytes,
           new BytesRef(suffixBytes.bytes, suffixBytes.offset + fieldOff, fieldLen));
     }
 
@@ -786,19 +924,34 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     public int size() {
       return fieldNumOffs.length;
     }
-
   }
 
   private static class TVTerms extends Terms {
 
     private final int numTerms, flags;
     private final long totalTermFreq;
-    private final int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;
+    private final int[] prefixLengths,
+        suffixLengths,
+        termFreqs,
+        positionIndex,
+        positions,
+        startOffsets,
+        lengths,
+        payloadIndex;
     private final BytesRef termBytes, payloadBytes;
 
-    TVTerms(int numTerms, int flags, int[] prefixLengths, int[] suffixLengths, int[] termFreqs,
-        int[] positionIndex, int[] positions, int[] startOffsets, int[] lengths,
-        int[] payloadIndex, BytesRef payloadBytes,
+    TVTerms(
+        int numTerms,
+        int flags,
+        int[] prefixLengths,
+        int[] suffixLengths,
+        int[] termFreqs,
+        int[] positionIndex,
+        int[] positions,
+        int[] startOffsets,
+        int[] lengths,
+        int[] payloadIndex,
+        BytesRef payloadBytes,
         BytesRef termBytes) {
       this.numTerms = numTerms;
       this.flags = flags;
@@ -822,8 +975,18 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     @Override
     public TermsEnum iterator() throws IOException {
       TVTermsEnum termsEnum = new TVTermsEnum();
-      termsEnum.reset(numTerms, flags, prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths,
-          payloadIndex, payloadBytes,
+      termsEnum.reset(
+          numTerms,
+          flags,
+          prefixLengths,
+          suffixLengths,
+          termFreqs,
+          positionIndex,
+          positions,
+          startOffsets,
+          lengths,
+          payloadIndex,
+          payloadBytes,
           new ByteArrayDataInput(termBytes.bytes, termBytes.offset, termBytes.length));
       return termsEnum;
     }
@@ -867,13 +1030,19 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     public boolean hasPayloads() {
       return (flags & PAYLOADS) != 0;
     }
-
   }
 
   private static class TVTermsEnum extends BaseTermsEnum {
 
     private int numTerms, startPos, ord;
-    private int[] prefixLengths, suffixLengths, termFreqs, positionIndex, positions, startOffsets, lengths, payloadIndex;
+    private int[] prefixLengths,
+        suffixLengths,
+        termFreqs,
+        positionIndex,
+        positions,
+        startOffsets,
+        lengths,
+        payloadIndex;
     private ByteArrayDataInput in;
     private BytesRef payloads;
     private final BytesRef term;
@@ -882,8 +1051,19 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       term = new BytesRef(16);
     }
 
-    void reset(int numTerms, int flags, int[] prefixLengths, int[] suffixLengths, int[] termFreqs, int[] positionIndex, int[] positions, int[] startOffsets, int[] lengths,
-        int[] payloadIndex, BytesRef payloads, ByteArrayDataInput in) {
+    void reset(
+        int numTerms,
+        int flags,
+        int[] prefixLengths,
+        int[] suffixLengths,
+        int[] termFreqs,
+        int[] positionIndex,
+        int[] positions,
+        int[] startOffsets,
+        int[] lengths,
+        int[] payloadIndex,
+        BytesRef payloads,
+        ByteArrayDataInput in) {
       this.numTerms = numTerms;
       this.prefixLengths = prefixLengths;
       this.suffixLengths = suffixLengths;
@@ -926,8 +1106,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public SeekStatus seekCeil(BytesRef text)
-        throws IOException {
+    public SeekStatus seekCeil(BytesRef text) throws IOException {
       if (ord < numTerms && ord >= 0) {
         final int cmp = term().compareTo(text);
         if (cmp == 0) {
@@ -985,7 +1164,14 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
         docsEnum = new TVPostingsEnum();
       }
 
-      docsEnum.reset(termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
+      docsEnum.reset(
+          termFreqs[ord],
+          positionIndex[ord],
+          positions,
+          startOffsets,
+          lengths,
+          payloads,
+          payloadIndex);
       return docsEnum;
     }
 
@@ -994,7 +1180,6 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       final PostingsEnum delegate = postings(null, PostingsEnum.FREQS);
       return new SlowImpactsEnum(delegate);
     }
-
   }
 
   private static class TVPostingsEnum extends PostingsEnum {
@@ -1014,8 +1199,13 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       payload = new BytesRef();
     }
 
-    public void reset(int freq, int positionIndex, int[] positions,
-        int[] startOffsets, int[] lengths, BytesRef payloads,
+    public void reset(
+        int freq,
+        int positionIndex,
+        int[] positions,
+        int[] startOffsets,
+        int[] lengths,
+        BytesRef payloads,
         int[] payloadIndex) {
       this.termFreq = freq;
       this.positionIndex = positionIndex;
@@ -1142,12 +1332,12 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   public long ramBytesUsed() {
     return indexReader.ramBytesUsed();
   }
-  
+
   @Override
   public Collection<Accountable> getChildResources() {
     return Collections.singleton(Accountables.namedAccountable("term vector index", indexReader));
   }
-  
+
   @Override
   public void checkIntegrity() throws IOException {
     indexReader.checkIntegrity();
@@ -1156,6 +1346,11 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(mode=" + compressionMode + ",chunksize=" + chunkSize + ")";
+    return getClass().getSimpleName()
+        + "(mode="
+        + compressionMode
+        + ",chunksize="
+        + chunkSize
+        + ")";
   }
 }

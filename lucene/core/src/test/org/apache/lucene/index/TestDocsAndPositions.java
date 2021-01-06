@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -40,20 +39,24 @@ public class TestDocsAndPositions extends LuceneTestCase {
     fieldName = "field" + random().nextInt();
   }
 
-  /**
-   * Simple testcase for {@link PostingsEnum}
-   */
+  /** Simple testcase for {@link PostingsEnum} */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random())));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(), directory, newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < 39; i++) {
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       customType.setOmitNorms(true);
-      doc.add(newField(fieldName, "1 2 3 4 5 6 7 8 9 10 "
-          + "1 2 3 4 5 6 7 8 9 10 " + "1 2 3 4 5 6 7 8 9 10 "
-          + "1 2 3 4 5 6 7 8 9 10", customType));
+      doc.add(
+          newField(
+              fieldName,
+              "1 2 3 4 5 6 7 8 9 10 "
+                  + "1 2 3 4 5 6 7 8 9 10 "
+                  + "1 2 3 4 5 6 7 8 9 10 "
+                  + "1 2 3 4 5 6 7 8 9 10",
+              customType));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -64,16 +67,19 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("1");
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes);
+        PostingsEnum docsAndPosEnum = getDocsAndPositions(leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
         if (leafReaderContext.reader().maxDoc() == 0) {
           continue;
         }
-        final int advance = docsAndPosEnum.advance(random().nextInt(leafReaderContext.reader().maxDoc()));
+        final int advance =
+            docsAndPosEnum.advance(random().nextInt(leafReaderContext.reader().maxDoc()));
         do {
-          String msg = "Advanced to: " + advance + " current doc: "
-              + docsAndPosEnum.docID(); // TODO: + " usePayloads: " + usePayload;
+          String msg =
+              "Advanced to: "
+                  + advance
+                  + " current doc: "
+                  + docsAndPosEnum.docID(); // TODO: + " usePayloads: " + usePayload;
           assertEquals(msg, 4, docsAndPosEnum.freq());
           assertEquals(msg, 0, docsAndPosEnum.nextPosition());
           assertEquals(msg, 4, docsAndPosEnum.freq());
@@ -89,8 +95,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     directory.close();
   }
 
-  public PostingsEnum getDocsAndPositions(LeafReader reader,
-      BytesRef bytes) throws IOException {
+  public PostingsEnum getDocsAndPositions(LeafReader reader, BytesRef bytes) throws IOException {
     Terms terms = reader.terms(fieldName);
     if (terms != null) {
       TermsEnum te = terms.iterator();
@@ -102,16 +107,17 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   /**
-   * this test indexes random numbers within a range into a field and checks
-   * their occurrences by searching for a number from that range selected at
-   * random. All positions for that number are saved up front and compared to
-   * the enums positions.
+   * this test indexes random numbers within a range into a field and checks their occurrences by
+   * searching for a number from that range selected at random. All positions for that number are
+   * saved up front and compared to the enums positions.
    */
   public void testRandomPositions() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-          .setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     int numDocs = atLeast(47);
     int max = 1051;
     int term = random().nextInt(max);
@@ -147,8 +153,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
       BytesRef bytes = new BytesRef("" + term);
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes);
+        PostingsEnum docsAndPosEnum = getDocsAndPositions(leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
         int initDoc = 0;
         int maxDoc = leafReaderContext.reader().maxDoc();
@@ -168,24 +173,34 @@ public class TestDocsAndPositions extends LuceneTestCase {
           assertEquals(pos.length, docsAndPosEnum.freq());
           // number of positions read should be random - don't read all of them
           // allways
-          final int howMany = random().nextInt(20) == 0 ? pos.length
-              - random().nextInt(pos.length) : pos.length;
+          final int howMany =
+              random().nextInt(20) == 0 ? pos.length - random().nextInt(pos.length) : pos.length;
           for (int j = 0; j < howMany; j++) {
-            assertEquals("iteration: " + i + " initDoc: " + initDoc + " doc: "
-                + docID + " base: " + leafReaderContext.docBase
-                + " positions: " + Arrays.toString(pos) /* TODO: + " usePayloads: "
-                + usePayload*/, pos[j].intValue(), docsAndPosEnum.nextPosition());
+            assertEquals(
+                "iteration: "
+                    + i
+                    + " initDoc: "
+                    + initDoc
+                    + " doc: "
+                    + docID
+                    + " base: "
+                    + leafReaderContext.docBase
+                    + " positions: "
+                    + Arrays.toString(pos) /* TODO: + " usePayloads: "
+                + usePayload*/,
+                pos[j].intValue(),
+                docsAndPosEnum.nextPosition());
           }
 
           if (random().nextInt(10) == 0) { // once is a while advance
-            if (docsAndPosEnum.advance(docID + 1 + random().nextInt((maxDoc - docID))) == DocIdSetIterator.NO_MORE_DOCS) {
+            if (docsAndPosEnum.advance(docID + 1 + random().nextInt((maxDoc - docID)))
+                == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
           }
 
         } while (docsAndPosEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       }
-
     }
     reader.close();
     dir.close();
@@ -193,9 +208,11 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public void testRandomDocs() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-                                                     newIndexWriterConfig(new MockAnalyzer(random()))
-                                                       .setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     int numDocs = atLeast(49);
     int max = 15678;
     int term = random().nextInt(max);
@@ -225,7 +242,8 @@ public class TestDocsAndPositions extends LuceneTestCase {
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext context : topReaderContext.leaves()) {
         int maxDoc = context.reader().maxDoc();
-        PostingsEnum postingsEnum = TestUtil.docs(random(), context.reader(), fieldName, bytes, null, PostingsEnum.FREQS);
+        PostingsEnum postingsEnum =
+            TestUtil.docs(random(), context.reader(), fieldName, bytes, null, PostingsEnum.FREQS);
         if (findNext(freqInDoc, context.docBase, context.docBase + maxDoc) == Integer.MAX_VALUE) {
           assertNull(postingsEnum);
           continue;
@@ -235,32 +253,37 @@ public class TestDocsAndPositions extends LuceneTestCase {
         for (int j = 0; j < maxDoc; j++) {
           if (freqInDoc[context.docBase + j] != 0) {
             assertEquals(j, postingsEnum.docID());
-            assertEquals(postingsEnum.freq(), freqInDoc[context.docBase +j]);
+            assertEquals(postingsEnum.freq(), freqInDoc[context.docBase + j]);
             if (i % 2 == 0 && random().nextInt(10) == 0) {
-              int next = findNext(freqInDoc, context.docBase+j+1, context.docBase + maxDoc) - context.docBase;
+              int next =
+                  findNext(freqInDoc, context.docBase + j + 1, context.docBase + maxDoc)
+                      - context.docBase;
               int advancedTo = postingsEnum.advance(next);
               if (next >= maxDoc) {
                 assertEquals(DocIdSetIterator.NO_MORE_DOCS, advancedTo);
               } else {
-                assertTrue("advanced to: " +advancedTo + " but should be <= " + next, next >= advancedTo);  
+                assertTrue(
+                    "advanced to: " + advancedTo + " but should be <= " + next, next >= advancedTo);
               }
             } else {
               postingsEnum.nextDoc();
             }
-          } 
+          }
         }
-        assertEquals("docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + postingsEnum.getClass(), DocIdSetIterator.NO_MORE_DOCS, postingsEnum.docID());
+        assertEquals(
+            "docBase: " + context.docBase + " maxDoc: " + maxDoc + " " + postingsEnum.getClass(),
+            DocIdSetIterator.NO_MORE_DOCS,
+            postingsEnum.docID());
       }
-      
     }
 
     reader.close();
     dir.close();
   }
-  
+
   private static int findNext(int[] docs, int pos, int max) {
     for (int i = pos; i < max; i++) {
-      if( docs[i] != 0) {
+      if (docs[i] != 0) {
         return i;
       }
     }
@@ -268,13 +291,13 @@ public class TestDocsAndPositions extends LuceneTestCase {
   }
 
   /**
-   * tests retrieval of positions for terms that have a large number of
-   * occurrences to force test of buffer refill during positions iteration.
+   * tests retrieval of positions for terms that have a large number of occurrences to force test of
+   * buffer refill during positions iteration.
    */
   public void testLargeNumberOfPositions() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
     int howMany = 1000;
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
@@ -302,8 +325,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
       IndexReaderContext topReaderContext = reader.getContext();
       for (LeafReaderContext leafReaderContext : topReaderContext.leaves()) {
-        PostingsEnum docsAndPosEnum = getDocsAndPositions(
-            leafReaderContext.reader(), bytes);
+        PostingsEnum docsAndPosEnum = getDocsAndPositions(leafReaderContext.reader(), bytes);
         assertNotNull(docsAndPosEnum);
 
         int initDoc = 0;
@@ -314,11 +336,18 @@ public class TestDocsAndPositions extends LuceneTestCase {
         } else {
           initDoc = docsAndPosEnum.advance(random().nextInt(maxDoc));
         }
-        String msg = "Iteration: " + i + " initDoc: " + initDoc; // TODO: + " payloads: " + usePayload;
+        String msg =
+            "Iteration: " + i + " initDoc: " + initDoc; // TODO: + " payloads: " + usePayload;
         assertEquals(howMany / 2, docsAndPosEnum.freq());
         for (int j = 0; j < howMany; j += 2) {
-          assertEquals("position missmatch index: " + j + " with freq: "
-              + docsAndPosEnum.freq() + " -- " + msg, j,
+          assertEquals(
+              "position missmatch index: "
+                  + j
+                  + " with freq: "
+                  + docsAndPosEnum.freq()
+                  + " -- "
+                  + msg,
+              j,
               docsAndPosEnum.nextPosition());
         }
       }
@@ -326,7 +355,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-  
+
   public void testDocsEnumStart() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -335,11 +364,12 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     LeafReader r = getOnlyLeafReader(reader);
-    PostingsEnum disi = TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, PostingsEnum.NONE);
+    PostingsEnum disi =
+        TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, PostingsEnum.NONE);
     int docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    
+
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator();
     assertTrue(te.seekExact(new BytesRef("bar")));
@@ -351,7 +381,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
   public void testDocsAndPositionsEnumStart() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -364,7 +394,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     int docid = disi.docID();
     assertEquals(-1, docid);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    
+
     // now reuse and check again
     TermsEnum te = r.terms("foo").iterator();
     assertTrue(te.seekExact(new BytesRef("bar")));

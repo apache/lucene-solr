@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -30,9 +28,9 @@ import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * Test the automaton query for several unicode corner cases,
- * specifically enumerating strings/indexes containing supplementary characters,
- * and the differences between UTF-8/UTF-32 and UTF-16 binary sort order.
+ * Test the automaton query for several unicode corner cases, specifically enumerating
+ * strings/indexes containing supplementary characters, and the differences between UTF-8/UTF-32 and
+ * UTF-16 binary sort order.
  */
 public class TestAutomatonQueryUnicode extends LuceneTestCase {
   private IndexReader reader;
@@ -58,7 +56,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     field.setStringValue("\uD866\uDF06ghijkl");
     writer.addDocument(doc);
     // this sorts before the previous two in UTF-8/UTF-32, but after in UTF-16!!!
-    field.setStringValue("\uFB94mnopqr"); 
+    field.setStringValue("\uFB94mnopqr");
     writer.addDocument(doc);
     field.setStringValue("\uFB95stuvwx"); // this one too.
     writer.addDocument(doc);
@@ -98,8 +96,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     return searcher.search(query, 5).totalHits.value;
   }
 
-  private void assertAutomatonHits(int expected, Automaton automaton)
-      throws IOException {
+  private void assertAutomatonHits(int expected, Automaton automaton) throws IOException {
     AutomatonQuery query = new AutomatonQuery(newTerm("bogus"), automaton);
 
     query.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
@@ -114,9 +111,9 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
 
   /**
    * Test that AutomatonQuery interacts with lucene's sort order correctly.
-   * 
-   * This expression matches something either starting with the arabic
-   * presentation forms block, or a supplementary character.
+   *
+   * <p>This expression matches something either starting with the arabic presentation forms block,
+   * or a supplementary character.
    */
   public void testSortOrder() throws IOException {
     Automaton a = new RegExp("((\uD866\uDF05)|\uFB94).*").toAutomaton();

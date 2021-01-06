@@ -16,8 +16,7 @@
  */
 
 /**
- * Same postings format as Lucene50, except the terms dictionary also
- * supports ords, i.e. returning which ord the enum is seeked to, and
- * seeking by ord.
+ * Same postings format as Lucene50, except the terms dictionary also supports ords, i.e. returning
+ * which ord the enum is seeked to, and seeking by ord.
  */
 package org.apache.lucene.codecs.blocktreeords;

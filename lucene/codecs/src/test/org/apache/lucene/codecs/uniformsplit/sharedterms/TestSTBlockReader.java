@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
@@ -77,22 +76,25 @@ public class TestSTBlockReader extends LuceneTestCase {
 
     blockLines = generateBlockLines(vocab);
     directory = new ByteBuffersDirectory();
-    try (IndexOutput blockOutput = directory.createOutput(MOCK_BLOCK_OUTPUT_NAME, IOContext.DEFAULT)) {
+    try (IndexOutput blockOutput =
+        directory.createOutput(MOCK_BLOCK_OUTPUT_NAME, IOContext.DEFAULT)) {
       blockOutput.writeVInt(5);
     }
     IndexDictionary.Builder builder = new FSTDictionary.Builder();
     builder.add(new BytesRef("a"), 0);
     IndexDictionary indexDictionary = builder.build();
-    supplier = new IndexDictionary.BrowserSupplier() {
-      @Override
-      public IndexDictionary.Browser get() throws IOException {
-        return indexDictionary.browser();
-      }
-      @Override
-      public long ramBytesUsed() {
-        return indexDictionary.ramBytesUsed();
-      }
-    };
+    supplier =
+        new IndexDictionary.BrowserSupplier() {
+          @Override
+          public IndexDictionary.Browser get() throws IOException {
+            return indexDictionary.browser();
+          }
+
+          @Override
+          public long ramBytesUsed() {
+            return indexDictionary.ramBytesUsed();
+          }
+        };
   }
 
   @Override
@@ -107,13 +109,13 @@ public class TestSTBlockReader extends LuceneTestCase {
 
   public void testSeekExactIgnoreFieldF1() throws IOException {
     // when block reader for field 1 -> f1
-    MockSTBlockReader blockReader = new MockSTBlockReader(
-        supplier,
-        blockLines,
-        directory,
-        fieldInfos.fieldInfo("f1"), //last term "arco"
-        fieldInfos
-    );
+    MockSTBlockReader blockReader =
+        new MockSTBlockReader(
+            supplier,
+            blockLines,
+            directory,
+            fieldInfos.fieldInfo("f1"), // last term "arco"
+            fieldInfos);
 
     // when seekCeil
     blockReader.seekCeil(new BytesRef("arco2"));
@@ -127,13 +129,13 @@ public class TestSTBlockReader extends LuceneTestCase {
   }
 
   public void testSeekExactIgnoreFieldF2() throws IOException {
-    MockSTBlockReader blockReader = new MockSTBlockReader(
-        supplier,
-        blockLines,
-        directory,
-        fieldInfos.fieldInfo("f2"),//last term "frien"
-        fieldInfos
-    );
+    MockSTBlockReader blockReader =
+        new MockSTBlockReader(
+            supplier,
+            blockLines,
+            directory,
+            fieldInfos.fieldInfo("f2"), // last term "frien"
+            fieldInfos);
 
     // when seekCeil
     blockReader.seekCeilIgnoreField(new BytesRef("arco2"));
@@ -142,13 +144,13 @@ public class TestSTBlockReader extends LuceneTestCase {
   }
 
   public void testSeekExactIgnoreFieldF3() throws IOException {
-    MockSTBlockReader blockReader = new MockSTBlockReader(
-        supplier,
-        blockLines,
-        directory,
-        fieldInfos.fieldInfo("f3"),//last term "frienchies"
-        fieldInfos
-    );
+    MockSTBlockReader blockReader =
+        new MockSTBlockReader(
+            supplier,
+            blockLines,
+            directory,
+            fieldInfos.fieldInfo("f3"), // last term "frienchies"
+            fieldInfos);
 
     // when seekCeilIgnoreField
     blockReader.seekCeilIgnoreField(new BytesRef("arco2"));
@@ -162,13 +164,13 @@ public class TestSTBlockReader extends LuceneTestCase {
   }
 
   public void testSeekExactIgnoreFieldF4() throws IOException {
-    MockSTBlockReader blockReader = new MockSTBlockReader(
-        supplier,
-        blockLines,
-        directory,
-        fieldInfos.fieldInfo("f4"),//last term "amigo"
-        fieldInfos
-    );
+    MockSTBlockReader blockReader =
+        new MockSTBlockReader(
+            supplier,
+            blockLines,
+            directory,
+            fieldInfos.fieldInfo("f4"), // last term "amigo"
+            fieldInfos);
 
     // when seekCeilIgnoreField
     blockReader.seekCeilIgnoreField(new BytesRef("abaco"));
@@ -183,16 +185,17 @@ public class TestSTBlockReader extends LuceneTestCase {
 
   private static FieldInfos mockFieldInfos() {
     return new FieldInfos(
-        new FieldInfo[]{
-            mockFieldInfo("f1", 0),
-            mockFieldInfo("f2", 1),
-            mockFieldInfo("f3", 2),
-            mockFieldInfo("f4", 3),
+        new FieldInfo[] {
+          mockFieldInfo("f1", 0),
+          mockFieldInfo("f2", 1),
+          mockFieldInfo("f3", 2),
+          mockFieldInfo("f4", 3),
         });
   }
 
   private static FieldInfo mockFieldInfo(String fieldName, int number) {
-    return new FieldInfo(fieldName,
+    return new FieldInfo(
+        fieldName,
         number,
         false,
         false,
@@ -206,15 +209,16 @@ public class TestSTBlockReader extends LuceneTestCase {
         0,
         0,
         VectorValues.SearchStrategy.NONE,
-        false
-    );
+        false);
   }
 
   private BlockLineDefinition blockLineDef(int mdpLength, String term, String... fields) {
-    return new BlockLineDefinition(new TermBytes(mdpLength, new BytesRef(term)), Arrays.asList(fields));
+    return new BlockLineDefinition(
+        new TermBytes(mdpLength, new BytesRef(term)), Arrays.asList(fields));
   }
 
-  private static List<MockSTBlockLine> generateBlockLines(Iterable<BlockLineDefinition> blockLineDefinitions) {
+  private static List<MockSTBlockLine> generateBlockLines(
+      Iterable<BlockLineDefinition> blockLineDefinitions) {
     List<MockSTBlockLine> lines = new ArrayList<>();
     for (BlockLineDefinition blockLineDefinition : blockLineDefinitions) {
       lines.add(new MockSTBlockLine(blockLineDefinition.termBytes, blockLineDefinition.fields));
@@ -253,17 +257,27 @@ public class TestSTBlockReader extends LuceneTestCase {
 
     List<MockSTBlockLine> lines;
 
-    MockSTBlockReader(IndexDictionary.BrowserSupplier supplier, List<MockSTBlockLine> lines, Directory directory, FieldInfo fieldInfo, FieldInfos fieldInfos) throws IOException {
-      super(supplier, directory.openInput(MOCK_BLOCK_OUTPUT_NAME, IOContext.DEFAULT),
-          getMockPostingReaderBase(), mockFieldMetadata(fieldInfo, getLastTermForField(lines, fieldInfo.name)), null, fieldInfos);
+    MockSTBlockReader(
+        IndexDictionary.BrowserSupplier supplier,
+        List<MockSTBlockLine> lines,
+        Directory directory,
+        FieldInfo fieldInfo,
+        FieldInfos fieldInfos)
+        throws IOException {
+      super(
+          supplier,
+          directory.openInput(MOCK_BLOCK_OUTPUT_NAME, IOContext.DEFAULT),
+          getMockPostingReaderBase(),
+          mockFieldMetadata(fieldInfo, getLastTermForField(lines, fieldInfo.name)),
+          null,
+          fieldInfos);
       this.lines = lines;
     }
 
     static PostingsReaderBase getMockPostingReaderBase() {
       return new PostingsReaderBase() {
         @Override
-        public void init(IndexInput termsIn, SegmentReadState state) {
-        }
+        public void init(IndexInput termsIn, SegmentReadState state) {}
 
         @Override
         public BlockTermState newTermState() {
@@ -271,11 +285,12 @@ public class TestSTBlockReader extends LuceneTestCase {
         }
 
         @Override
-        public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {
-        }
+        public void decodeTerm(
+            DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {}
 
         @Override
-        public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState state, PostingsEnum reuse, int flags) {
+        public PostingsEnum postings(
+            FieldInfo fieldInfo, BlockTermState state, PostingsEnum reuse, int flags) {
           return null;
         }
 
@@ -285,12 +300,10 @@ public class TestSTBlockReader extends LuceneTestCase {
         }
 
         @Override
-        public void checkIntegrity() {
-        }
+        public void checkIntegrity() {}
 
         @Override
-        public void close() {
-        }
+        public void close() {}
 
         @Override
         public long ramBytesUsed() {
@@ -318,7 +331,8 @@ public class TestSTBlockReader extends LuceneTestCase {
 
     @Override
     protected BlockTermState readTermState() {
-      return termState = lines.get(lineIndexInBlock - 1).termStates.get(fieldMetadata.getFieldInfo().name);
+      return termState =
+          lines.get(lineIndexInBlock - 1).termStates.get(fieldMetadata.getFieldInfo().name);
     }
 
     @Override
@@ -341,7 +355,8 @@ public class TestSTBlockReader extends LuceneTestCase {
     }
 
     @Override
-    protected void initializeHeader(BytesRef searchedTerm, long startBlockLinePos) throws IOException {
+    protected void initializeHeader(BytesRef searchedTerm, long startBlockLinePos)
+        throws IOException {
       // Force blockStartFP to an impossible value so we never trigger the optimization
       // that keeps the current block with our mock block reader.
       blockStartFP = -1;
@@ -350,7 +365,8 @@ public class TestSTBlockReader extends LuceneTestCase {
 
     @Override
     protected BlockHeader readHeader() {
-      return blockHeader = lineIndexInBlock >= lines.size() ? null : new MockBlockHeader(lines.size());
+      return blockHeader =
+          lineIndexInBlock >= lines.size() ? null : new MockBlockHeader(lines.size());
     }
   }
 

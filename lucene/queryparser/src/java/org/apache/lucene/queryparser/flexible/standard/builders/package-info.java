@@ -14,18 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Standard Lucene Query Node Builders.
- * 
+ *
  * <h2>Standard Lucene Query Node Builders</h2>
- * <p>
- * The package org.apache.lucene.queryparser.flexible.standard.builders contains all the builders needed
- * to build a Lucene Query object from a query node tree. These builders expect the query node tree was
- * already processed by the {@link org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline}.
- * <p>
- * {@link org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder} is a builder that already contains a defined map that maps each QueryNode object
- * with its respective builder.
+ *
+ * <p>The package org.apache.lucene.queryparser.flexible.standard.builders contains all the builders
+ * needed to build a Lucene Query object from a query node tree. These builders expect the query
+ * node tree was already processed by the {@link
+ * org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline}.
+ *
+ * <p>{@link org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder} is a
+ * builder that already contains a defined map that maps each QueryNode object with its respective
+ * builder.
  */
 package org.apache.lucene.queryparser.flexible.standard.builders;
-

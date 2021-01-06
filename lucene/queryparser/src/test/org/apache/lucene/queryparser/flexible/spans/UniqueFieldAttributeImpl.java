@@ -21,14 +21,12 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
 /**
- * This attribute is used by the {@link UniqueFieldQueryNodeProcessor}
- * processor. It holds a value that defines which is the unique field name that
- * should be set in every {@link FieldableNode}.
- * 
+ * This attribute is used by the {@link UniqueFieldQueryNodeProcessor} processor. It holds a value
+ * that defines which is the unique field name that should be set in every {@link FieldableNode}.
+ *
  * @see UniqueFieldQueryNodeProcessor
  */
-public class UniqueFieldAttributeImpl extends AttributeImpl implements
-    UniqueFieldAttribute {
+public class UniqueFieldAttributeImpl extends AttributeImpl implements UniqueFieldAttribute {
 
   private CharSequence uniqueField;
 
@@ -62,7 +60,6 @@ public class UniqueFieldAttributeImpl extends AttributeImpl implements
 
     UniqueFieldAttributeImpl uniqueFieldAttr = (UniqueFieldAttributeImpl) target;
     uniqueFieldAttr.uniqueField = uniqueField.toString();
-
   }
 
   @Override
@@ -70,13 +67,10 @@ public class UniqueFieldAttributeImpl extends AttributeImpl implements
 
     if (other instanceof UniqueFieldAttributeImpl) {
 
-      return ((UniqueFieldAttributeImpl) other).uniqueField
-          .equals(this.uniqueField);
-
+      return ((UniqueFieldAttributeImpl) other).uniqueField.equals(this.uniqueField);
     }
 
     return false;
-
   }
 
   @Override
@@ -88,5 +82,4 @@ public class UniqueFieldAttributeImpl extends AttributeImpl implements
   public void reflectWith(AttributeReflector reflector) {
     reflector.reflect(UniqueFieldAttribute.class, "uniqueField", uniqueField);
   }
-
 }

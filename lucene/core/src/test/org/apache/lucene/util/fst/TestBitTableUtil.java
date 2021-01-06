@@ -18,7 +18,6 @@
 package org.apache.lucene.util.fst;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBitTableUtil extends LuceneTestCase {
@@ -34,17 +33,34 @@ public class TestBitTableUtil extends LuceneTestCase {
       for (int bitIndex = -1; bitIndex < numBits; bitIndex++) {
         int nextIndex = BitTableUtil.nextBitSet(bitIndex, numBytes, reader(bits));
         if (nextIndex == -1) {
-          assertEquals("No next bit set, so expected no bit count diff"
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
+          assertEquals(
+              "No next bit set, so expected no bit count diff"
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
               BitTableUtil.countBitsUpTo(bitIndex + 1, reader(bits)),
               BitTableUtil.countBits(numBytes, reader(bits)));
         } else {
-          assertTrue("Expected next bit set at nextIndex=" + nextIndex
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
+          assertTrue(
+              "Expected next bit set at nextIndex="
+                  + nextIndex
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
               BitTableUtil.isBitSet(nextIndex, reader(bits)));
-          assertEquals("Next bit set at nextIndex=" + nextIndex
+          assertEquals(
+              "Next bit set at nextIndex="
+                  + nextIndex
                   + " so expected bit count diff of 1"
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
               BitTableUtil.countBitsUpTo(bitIndex + 1, reader(bits)) + 1,
               BitTableUtil.countBitsUpTo(nextIndex + 1, reader(bits)));
         }
@@ -63,21 +79,44 @@ public class TestBitTableUtil extends LuceneTestCase {
       for (int bitIndex = 0; bitIndex <= numBits; bitIndex++) {
         int previousIndex = BitTableUtil.previousBitSet(bitIndex, reader(bits));
         if (previousIndex == -1) {
-          assertEquals("No previous bit set, so expected bit count 0"
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
-              0, BitTableUtil.countBitsUpTo(bitIndex, reader(bits)));
+          assertEquals(
+              "No previous bit set, so expected bit count 0"
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
+              0,
+              BitTableUtil.countBitsUpTo(bitIndex, reader(bits)));
         } else {
-          assertTrue("Expected previous bit set at previousIndex=" + previousIndex
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
+          assertTrue(
+              "Expected previous bit set at previousIndex="
+                  + previousIndex
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
               BitTableUtil.isBitSet(previousIndex, reader(bits)));
           int bitCount = BitTableUtil.countBitsUpTo(Math.min(bitIndex + 1, numBits), reader(bits));
-          int expectedPreviousBitCount = bitIndex < numBits && BitTableUtil.isBitSet(bitIndex, reader(bits)) ?
-              bitCount - 1 : bitCount;
-          assertEquals("Previous bit set at previousIndex=" + previousIndex
-                  + " with current bitCount=" + bitCount
-                  + " so expected previousBitCount=" + expectedPreviousBitCount
-                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
-              expectedPreviousBitCount, BitTableUtil.countBitsUpTo(previousIndex + 1, reader(bits)));
+          int expectedPreviousBitCount =
+              bitIndex < numBits && BitTableUtil.isBitSet(bitIndex, reader(bits))
+                  ? bitCount - 1
+                  : bitCount;
+          assertEquals(
+              "Previous bit set at previousIndex="
+                  + previousIndex
+                  + " with current bitCount="
+                  + bitCount
+                  + " so expected previousBitCount="
+                  + expectedPreviousBitCount
+                  + " (i="
+                  + i
+                  + " bitIndex="
+                  + bitIndex
+                  + ")",
+              expectedPreviousBitCount,
+              BitTableUtil.countBitsUpTo(previousIndex + 1, reader(bits)));
         }
       }
     }

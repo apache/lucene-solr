@@ -17,14 +17,10 @@
 
 package org.apache.lucene.codecs.lucene84;
 
-/**
- * Test utility class to create mock {@link Lucene84PostingsFormat.IntBlockTermState}.
- */
+/** Test utility class to create mock {@link Lucene84PostingsFormat.IntBlockTermState}. */
 public class MockTermStateFactory {
 
-  /**
-   * Creates an empty {@link Lucene84PostingsFormat.IntBlockTermState}.
-   */
+  /** Creates an empty {@link Lucene84PostingsFormat.IntBlockTermState}. */
   public static Lucene84PostingsFormat.IntBlockTermState create() {
     return new Lucene84PostingsFormat.IntBlockTermState();
   }

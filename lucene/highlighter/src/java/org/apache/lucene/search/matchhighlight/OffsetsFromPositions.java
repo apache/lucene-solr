@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.MatchesIterator;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This strategy applies to fields with stored positions but no offsets. We re-analyze the field's
@@ -116,8 +115,8 @@ public final class OffsetsFromPositions implements OffsetsRetrievalStrategy {
 
         if (position >= minPosition) {
           // Correct left and right offsets for each span this position applies to.
-            int startOffset = valueOffset + offsetAttr.startOffset();
-            int endOffset = valueOffset + offsetAttr.endOffset();
+          int startOffset = valueOffset + offsetAttr.startOffset();
+          int endOffset = valueOffset + offsetAttr.endOffset();
 
           int j = 0;
           for (int i = 0; i < spanCount; i++) {
@@ -130,7 +129,7 @@ public final class OffsetsFromPositions implements OffsetsRetrievalStrategy {
                 // this span can't intersect with any following position
                 // so omit it by skipping j++.
                 continue;
-          }
+              }
             }
             j++;
           }

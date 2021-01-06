@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 /**
  * Log-logistic distribution.
- * <p>Unlike for DFR, the natural logarithm is used, as
- * it is faster to compute and the original paper does not express any
- * preference to a specific base.</p>
+ *
+ * <p>Unlike for DFR, the natural logarithm is used, as it is faster to compute and the original
+ * paper does not express any preference to a specific base.
+ *
  * @lucene.experimental
  */
 public class DistributionLL extends Distribution {
@@ -33,7 +33,7 @@ public class DistributionLL extends Distribution {
   public final double score(BasicStats stats, double tfn, double lambda) {
     return -Math.log(lambda / (tfn + lambda));
   }
-  
+
   @Override
   public String toString() {
     return "LL";

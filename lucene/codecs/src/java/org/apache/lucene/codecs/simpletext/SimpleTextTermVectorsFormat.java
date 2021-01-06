@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -29,19 +27,23 @@ import org.apache.lucene.store.IOContext;
 
 /**
  * plain text term vectors format.
- * <p>
- * <b>FOR RECREATIONAL USE ONLY</b>
+ *
+ * <p><b>FOR RECREATIONAL USE ONLY</b>
+ *
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsFormat extends TermVectorsFormat {
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
+  public TermVectorsReader vectorsReader(
+      Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
+      throws IOException {
     return new SimpleTextTermVectorsReader(directory, segmentInfo, context);
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+  public TermVectorsWriter vectorsWriter(
+      Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
     return new SimpleTextTermVectorsWriter(directory, segmentInfo.name, context);
   }
 }

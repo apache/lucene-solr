@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.function.valuesource;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
 /**
- * Abstract parent class for {@link ValueSource} implementations that wrap multiple
- * ValueSources and apply their own logic.
+ * Abstract parent class for {@link ValueSource} implementations that wrap multiple ValueSources and
+ * apply their own logic.
  */
 public abstract class MultiFunction extends ValueSource {
   protected final List<ValueSource> sources;
@@ -35,7 +35,7 @@ public abstract class MultiFunction extends ValueSource {
     this.sources = sources;
   }
 
-  abstract protected String name();
+  protected abstract String name();
 
   @Override
   public String description() {
@@ -45,64 +45,66 @@ public abstract class MultiFunction extends ValueSource {
   /**
    * Helper utility for {@link FunctionValues}
    *
-   * @return true if <em>all</em> of the specified <code>values</code>
-   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @return true if <em>all</em> of the specified <code>values</code> {@link FunctionValues#exists}
+   *     for the specified doc, else false.
    */
   public static boolean allExists(int doc, FunctionValues[] values) throws IOException {
     for (FunctionValues v : values) {
-      if ( ! v.exists(doc) ) {
+      if (!v.exists(doc)) {
         return false;
       }
     }
     return true;
   }
-  
+
   /**
    * Helper utility for {@link FunctionValues}
    *
-   * @return true if <em>any</em> of the specified <code>values</code>
-   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @return true if <em>any</em> of the specified <code>values</code> {@link FunctionValues#exists}
+   *     for the specified doc, else false.
    */
   public static boolean anyExists(int doc, FunctionValues[] values) throws IOException {
     for (FunctionValues v : values) {
-      if ( v.exists(doc) ) {
+      if (v.exists(doc)) {
         return true;
       }
     }
     return false;
   }
-  
+
   /**
-   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for
-   * dealing with exactly 2 arguments.
+   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for dealing
+   * with exactly 2 arguments.
    *
-   * @return true if <em>both</em> of the specified <code>values</code>
-   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @return true if <em>both</em> of the specified <code>values</code> {@link
+   *     FunctionValues#exists} for the specified doc, else false.
    * @see #anyExists(int,FunctionValues[])
    */
-  public static boolean allExists(int doc, FunctionValues values1, FunctionValues values2) throws IOException {
+  public static boolean allExists(int doc, FunctionValues values1, FunctionValues values2)
+      throws IOException {
     return values1.exists(doc) && values2.exists(doc);
   }
-  
+
   /**
-   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for
-   * dealing with exactly 2 arguments.
+   * Equivalent to the {@code FunctionValues[]} method with the same name, but optimized for dealing
+   * with exactly 2 arguments.
    *
-   * @return true if <em>either</em> of the specified <code>values</code>
-   *         {@link FunctionValues#exists} for the specified doc, else false.
+   * @return true if <em>either</em> of the specified <code>values</code> {@link
+   *     FunctionValues#exists} for the specified doc, else false.
    * @see #anyExists(int,FunctionValues[])
    */
-  public static boolean anyExists(int doc, FunctionValues values1, FunctionValues values2) throws IOException {
+  public static boolean anyExists(int doc, FunctionValues values1, FunctionValues values2)
+      throws IOException {
     return values1.exists(doc) || values2.exists(doc);
   }
-  
+
   public static String description(String name, List<ValueSource> sources) {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');
-    boolean firstTime=true;
+    boolean firstTime = true;
     for (ValueSource source : sources) {
       if (firstTime) {
-        firstTime=false;
+        firstTime = false;
       } else {
         sb.append(',');
       }
@@ -112,9 +114,11 @@ public abstract class MultiFunction extends ValueSource {
     return sb.toString();
   }
 
-  public static FunctionValues[] valsArr(List<ValueSource> sources, Map<Object, Object> fcontext, LeafReaderContext readerContext) throws IOException {
+  public static FunctionValues[] valsArr(
+      List<ValueSource> sources, Map<Object, Object> fcontext, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues[] valsArr = new FunctionValues[sources.size()];
-    int i=0;
+    int i = 0;
     for (ValueSource source : sources) {
       valsArr[i++] = source.getValues(fcontext, readerContext);
     }
@@ -144,10 +148,10 @@ public abstract class MultiFunction extends ValueSource {
   public static String toString(String name, FunctionValues[] valsArr, int doc) throws IOException {
     StringBuilder sb = new StringBuilder();
     sb.append(name).append('(');
-    boolean firstTime=true;
+    boolean firstTime = true;
     for (FunctionValues vals : valsArr) {
       if (firstTime) {
-        firstTime=false;
+        firstTime = false;
       } else {
         sb.append(',');
       }
@@ -159,8 +163,9 @@ public abstract class MultiFunction extends ValueSource {
 
   @Override
   public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-    for (ValueSource source : sources)
+    for (ValueSource source : sources) {
       source.createWeight(context, searcher);
+    }
   }
 
   @Override
@@ -171,8 +176,7 @@ public abstract class MultiFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    MultiFunction other = (MultiFunction)o;
+    MultiFunction other = (MultiFunction) o;
     return this.sources.equals(other.sources);
   }
 }
-

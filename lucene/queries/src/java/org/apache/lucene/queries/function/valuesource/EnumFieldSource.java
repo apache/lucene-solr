@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -30,9 +29,9 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
 /**
- * Obtains int field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and makes
- * those values available as other numeric types, casting as needed.
- * strVal of the value is not the int value, but its string (displayed) value
+ * Obtains int field values from {@link org.apache.lucene.index.LeafReader#getNumericDocValues} and
+ * makes those values available as other numeric types, casting as needed. strVal of the value is
+ * not the int value, but its string (displayed) value
  */
 public class EnumFieldSource extends FieldCacheSource {
   static final Integer DEFAULT_VALUE = -1;
@@ -40,7 +39,10 @@ public class EnumFieldSource extends FieldCacheSource {
   final Map<Integer, String> enumIntToStringMap;
   final Map<String, Integer> enumStringToIntMap;
 
-  public EnumFieldSource(String field, Map<Integer, String> enumIntToStringMap, Map<String, Integer> enumStringToIntMap) {
+  public EnumFieldSource(
+      String field,
+      Map<Integer, String> enumIntToStringMap,
+      Map<String, Integer> enumStringToIntMap) {
     super(field);
     this.enumIntToStringMap = enumIntToStringMap;
     this.enumStringToIntMap = enumStringToIntMap;
@@ -50,39 +52,41 @@ public class EnumFieldSource extends FieldCacheSource {
     Integer intValue = null;
     try {
       intValue = Integer.parseInt(valueStr);
-    }
-    catch (NumberFormatException e) {
+    } catch (NumberFormatException e) {
     }
     return intValue;
   }
 
   private String intValueToStringValue(Integer intVal) {
-    if (intVal == null)
+    if (intVal == null) {
       return null;
+    }
 
     final String enumString = enumIntToStringMap.get(intVal);
-    if (enumString != null)
+    if (enumString != null) {
       return enumString;
+    }
     // can't find matching enum name - return DEFAULT_VALUE.toString()
     return DEFAULT_VALUE.toString();
   }
 
   private Integer stringValueToIntValue(String stringVal) {
-    if (stringVal == null)
+    if (stringVal == null) {
       return null;
+    }
 
     Integer intValue;
     final Integer enumInt = enumStringToIntMap.get(stringVal);
-    if (enumInt != null) //enum int found for string
-      return enumInt;
+    if (enumInt != null) // enum int found for string
+    return enumInt;
 
-    //enum int not found for string
+    // enum int not found for string
     intValue = tryParseInt(stringVal);
-    if (intValue == null) //not Integer
-      intValue = DEFAULT_VALUE;
+    if (intValue == null) // not Integer
+    intValue = DEFAULT_VALUE;
     final String enumString = enumIntToStringMap.get(intValue);
-    if (enumString != null) //has matching string
-      return intValue;
+    if (enumString != null) // has matching string
+    return intValue;
 
     return DEFAULT_VALUE;
   }
@@ -92,9 +96,9 @@ public class EnumFieldSource extends FieldCacheSource {
     return "enum(" + field + ')';
   }
 
-
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final NumericDocValues arr = DocValues.getNumeric(readerContext.reader(), field);
 
     return new IntDocValues(this) {
@@ -104,7 +108,8 @@ public class EnumFieldSource extends FieldCacheSource {
 
       private int getValueForDoc(int doc) throws IOException {
         if (doc < lastDocID) {
-          throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + doc);
+          throw new AssertionError(
+              "docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + doc);
         }
         lastDocID = doc;
         int curDocID = arr.docID();
@@ -136,7 +141,13 @@ public class EnumFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(Weight weight, LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+      public ValueSourceScorer getRangeScorer(
+          Weight weight,
+          LeafReaderContext readerContext,
+          String lowerVal,
+          String upperVal,
+          boolean includeLower,
+          boolean includeUpper) {
         Integer lower = stringValueToIntValue(lowerVal);
         Integer upper = stringValueToIntValue(upperVal);
 
@@ -209,4 +220,3 @@ public class EnumFieldSource extends FieldCacheSource {
     return result;
   }
 }
-

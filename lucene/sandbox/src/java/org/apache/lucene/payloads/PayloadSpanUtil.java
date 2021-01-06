@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -38,25 +37,21 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
 
 /**
- * Experimental class to get set of payloads for most standard Lucene queries.
- * Operates like Highlighter - IndexReader should only contain doc of interest,
- * best to use MemoryIndex.
+ * Experimental class to get set of payloads for most standard Lucene queries. Operates like
+ * Highlighter - IndexReader should only contain doc of interest, best to use MemoryIndex.
  *
  * @lucene.experimental
- * 
  */
 public class PayloadSpanUtil {
   private IndexReaderContext context;
 
   /**
-   * @param context
-   *          that contains doc with payloads to extract
-   *          
+   * @param context that contains doc with payloads to extract
    * @see IndexReader#getContext()
    */
   public PayloadSpanUtil(IndexReaderContext context) {
@@ -65,7 +60,7 @@ public class PayloadSpanUtil {
 
   /**
    * Query should be rewritten for wild/fuzzy support.
-   * 
+   *
    * @param query rewritten query
    * @return payloads Collection
    * @throws IOException if there is a low-level I/O error
@@ -76,8 +71,7 @@ public class PayloadSpanUtil {
     return payloads;
   }
 
-  private void queryToSpanQuery(Query query, Collection<byte[]> payloads)
-      throws IOException {
+  private void queryToSpanQuery(Query query, Collection<byte[]> payloads) throws IOException {
     if (query instanceof BooleanQuery) {
       for (BooleanClause clause : (BooleanQuery) query) {
         if (!clause.isProhibited()) {
@@ -108,8 +102,8 @@ public class PayloadSpanUtil {
       getPayloads(payloads, (SpanQuery) query);
     } else if (query instanceof DisjunctionMaxQuery) {
 
-      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator
-          .hasNext();) {
+      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator();
+          iterator.hasNext(); ) {
         queryToSpanQuery(iterator.next(), payloads);
       }
 
@@ -126,16 +120,15 @@ public class PayloadSpanUtil {
           }
         }
 
-        @SuppressWarnings({"rawtypes","unchecked"}) final List<Query>[] disjunctLists =
-            new List[maxPosition + 1];
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        final List<Query>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
         for (int i = 0; i < termArrays.length; ++i) {
           final Term[] termArray = termArrays[i];
           List<Query> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
-            disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(
-                termArray.length));
+            disjuncts = (disjunctLists[positions[i]] = new ArrayList<>(termArray.length));
             ++distinctPositions;
           }
           for (final Term term : termArray) {
@@ -149,8 +142,8 @@ public class PayloadSpanUtil {
         for (int i = 0; i < disjunctLists.length; ++i) {
           List<Query> disjuncts = disjunctLists[i];
           if (disjuncts != null) {
-            clauses[position++] = new SpanOrQuery(disjuncts
-                .toArray(new SpanQuery[disjuncts.size()]));
+            clauses[position++] =
+                new SpanOrQuery(disjuncts.toArray(new SpanQuery[disjuncts.size()]));
           } else {
             ++positionGaps;
           }
@@ -159,15 +152,13 @@ public class PayloadSpanUtil {
         final int slop = mpq.getSlop();
         final boolean inorder = (slop == 0);
 
-        SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps,
-                                                      inorder);
+        SpanNearQuery sp = new SpanNearQuery(clauses, slop + positionGaps, inorder);
         getPayloads(payloads, sp);
       }
     }
   }
 
-  private void getPayloads(Collection<byte []> payloads, SpanQuery query)
-      throws IOException {
+  private void getPayloads(Collection<byte[]> payloads, SpanQuery query) throws IOException {
 
     final IndexSearcher searcher = new IndexSearcher(context);
     searcher.setQueryCache(null);

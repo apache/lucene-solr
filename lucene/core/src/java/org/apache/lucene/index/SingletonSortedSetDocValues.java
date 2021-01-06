@@ -16,21 +16,19 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.BytesRef;
 
-/** 
+/**
  * Exposes multi-valued iterator view over a single-valued iterator.
- * <p>
- * This can be used if you want to have one multi-valued implementation
- * that works for single or multi-valued types.
+ *
+ * <p>This can be used if you want to have one multi-valued implementation that works for single or
+ * multi-valued types.
  */
 final class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
   private long ord;
-  
+
   /** Creates a multi-valued view over the provided SortedDocValues */
   public SingletonSortedSetDocValues(SortedDocValues in) {
     if (in.docID() != -1) {

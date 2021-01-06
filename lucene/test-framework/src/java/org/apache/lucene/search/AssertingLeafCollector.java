@@ -18,8 +18,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-/** Wraps another Collector and checks that
- *  order is respected. */
+/** Wraps another Collector and checks that order is respected. */
 class AssertingLeafCollector extends FilterLeafCollector {
 
   private final int min;
@@ -54,5 +53,4 @@ class AssertingLeafCollector extends FilterLeafCollector {
   public DocIdSetIterator competitiveIterator() throws IOException {
     return in.competitiveIterator();
   }
-
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.cjk;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -29,10 +27,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
- * An {@link Analyzer} that tokenizes text with {@link StandardTokenizer},
- * normalizes content with {@link CJKWidthFilter}, folds case with
- * {@link LowerCaseFilter}, forms bigrams of CJK with {@link CJKBigramFilter},
- * and filters stopwords with {@link StopFilter}
+ * An {@link Analyzer} that tokenizes text with {@link StandardTokenizer}, normalizes content with
+ * {@link CJKWidthFilter}, folds case with {@link LowerCaseFilter}, forms bigrams of CJK with {@link
+ * CJKBigramFilter}, and filters stopwords with {@link StopFilter}
  *
  * @since 3.1
  */
@@ -40,20 +37,21 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * File containing default CJK stopwords.
-   * <p>
-   * Currently it contains some common English words that are not usually
-   * useful for searching and some double-byte interpunctions.
+   *
+   * <p>Currently it contains some common English words that are not usually useful for searching
+   * and some double-byte interpunctions.
    */
-  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  public static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
 
   /**
    * Returns an unmodifiable instance of the default stop-words set.
+   *
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static CharArraySet getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
+
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
 
@@ -68,20 +66,17 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Builds an analyzer which removes words in {@link #getDefaultStopSet()}.
-   */
+  /** Builds an analyzer which removes words in {@link #getDefaultStopSet()}. */
   public CJKAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words
-   * 
-   * @param stopwords
-   *          a stopword set
+   *
+   * @param stopwords a stopword set
    */
-  public CJKAnalyzer(CharArraySet stopwords){
+  public CJKAnalyzer(CharArraySet stopwords) {
     super(stopwords);
   }
 

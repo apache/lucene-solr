@@ -16,16 +16,11 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
-import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
-
-/**
- * A {@link QueryNode} is a interface implemented by all nodes on a QueryNode
- * tree.
- */
+/** A {@link QueryNode} is a interface implemented by all nodes on a QueryNode tree. */
 public interface QueryNode {
 
   /** convert to a query string understood by the query parser */
@@ -44,18 +39,16 @@ public interface QueryNode {
 
   /** verify if a node contains a tag */
   public boolean containsTag(String tagName);
-  
-  /**
-   * Returns object stored under that tag name
-   */
+
+  /** Returns object stored under that tag name */
   public Object getTag(String tagName);
-  
+
   public QueryNode getParent();
 
   /**
-   * Recursive clone the QueryNode tree The tags are not copied to the new tree
-   * when you call the cloneTree() method
-   * 
+   * Recursive clone the QueryNode tree The tags are not copied to the new tree when you call the
+   * cloneTree() method
+   *
    * @return the cloned tree
    */
   public QueryNode cloneTree() throws CloneNotSupportedException;
@@ -72,32 +65,28 @@ public interface QueryNode {
   public void set(List<QueryNode> children);
 
   /**
-   * Associate the specified value with the specified tagName. If the tagName
-   * already exists, the old value is replaced. The tagName and value cannot be
-   * null. tagName will be converted to lowercase.
+   * Associate the specified value with the specified tagName. If the tagName already exists, the
+   * old value is replaced. The tagName and value cannot be null. tagName will be converted to
+   * lowercase.
    */
   public void setTag(String tagName, Object value);
-  
-  /**
-   * Unset a tag. tagName will be converted to lowercase.
-   */
+
+  /** Unset a tag. tagName will be converted to lowercase. */
   public void unsetTag(String tagName);
-  
+
   /**
-   * Returns a map containing all tags attached to this query node. 
-   * 
+   * Returns a map containing all tags attached to this query node.
+   *
    * @return a map containing all tags attached to this query node
    */
   public Map<String, Object> getTagMap();
 
-  /**
-   * Removes this query node from its parent.
-   */
+  /** Removes this query node from its parent. */
   public void removeFromParent();
-
 
   /**
    * Remove a child node
+   *
    * @param childNode Which child to remove
    */
   public void removeChildren(QueryNode childNode);

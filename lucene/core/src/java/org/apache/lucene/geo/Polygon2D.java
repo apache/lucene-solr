@@ -20,26 +20,33 @@ import org.apache.lucene.index.PointValues.Relation;
 
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
- * <p>
- * Loosely based on the algorithm described in <a href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
+ *
+ * <p>Loosely based on the algorithm described in <a
+ * href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
  */
-
 final class Polygon2D implements Component2D {
   /** minimum Y of this geometry's bounding box area */
-  final private double minY;
+  private final double minY;
   /** maximum Y of this geometry's bounding box area */
-  final private double maxY;
+  private final double maxY;
   /** minimum X of this geometry's bounding box area */
-  final private double minX;
+  private final double minX;
   /** maximum X of this geometry's bounding box area */
-  final private double maxX;
+  private final double maxX;
   /** tree of holes, or null */
-  final protected Component2D holes;
-  /** Edges of the polygon represented as a 2-d interval tree.*/
+  protected final Component2D holes;
+  /** Edges of the polygon represented as a 2-d interval tree. */
   final EdgeTree tree;
 
-  private Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
+  private Polygon2D(
+      final double minX,
+      final double maxX,
+      final double minY,
+      final double maxY,
+      double[] x,
+      double[] y,
+      Component2D holes) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
@@ -49,11 +56,25 @@ final class Polygon2D implements Component2D {
   }
 
   private Polygon2D(XYPolygon polygon, Component2D holes) {
-    this(polygon.minX, polygon.maxX, polygon.minY, polygon.maxY, XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()), XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()), holes);
+    this(
+        polygon.minX,
+        polygon.maxX,
+        polygon.minY,
+        polygon.maxY,
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
+        holes);
   }
 
   private Polygon2D(Polygon polygon, Component2D holes) {
-    this(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, polygon.getPolyLons(), polygon.getPolyLats(), holes);
+    this(
+        polygon.minLon,
+        polygon.maxLon,
+        polygon.minLat,
+        polygon.maxLat,
+        polygon.getPolyLons(),
+        polygon.getPolyLats(),
+        holes);
   }
 
   @Override
@@ -78,8 +99,8 @@ final class Polygon2D implements Component2D {
 
   /**
    * Returns true if the point is contained within this polygon.
-   * <p>
-   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
+   *
+   * <p>See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
    */
   @Override
@@ -114,7 +135,7 @@ final class Polygon2D implements Component2D {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
-    }  else if (numCorners == 0) {
+    } else if (numCorners == 0) {
       if (Component2D.containsPoint(tree.x1, tree.y1, minX, maxX, minY, maxY)) {
         return Relation.CELL_CROSSES_QUERY;
       }
@@ -127,54 +148,95 @@ final class Polygon2D implements Component2D {
   }
 
   @Override
-  public boolean intersectsLine(double minX, double maxX, double minY, double maxY,
-                                double aX, double aY, double bX, double bY) {
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) || contains(bX, bY) ||
-        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
+    if (contains(aX, aY)
+        || contains(bX, bY)
+        || tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
       return holes == null || holes.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
     }
     return false;
   }
 
   @Override
-  public boolean intersectsTriangle(double minX, double maxX, double minY, double maxY,
-                                    double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY) ||
-        Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)||
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
-      return holes == null || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
+    if (contains(aX, aY)
+        || contains(bX, bY)
+        || contains(cX, cY)
+        || Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        || tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
+      return holes == null
+          || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
     }
     return false;
   }
 
   @Override
-  public boolean containsLine(double minX, double maxX, double minY, double maxY,
-                              double aX, double aY, double bX, double bY) {
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) && contains(bX, bY) &&
-        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false) {
+    if (contains(aX, aY)
+        && contains(bX, bY)
+        && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false) {
       return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
     }
     return false;
   }
 
   @Override
-  public boolean containsTriangle(double minX, double maxX, double minY, double maxY,
-                                  double aX, double aY, double bX, double bY, double cX, double cY) {
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return false;
     }
-    if (contains(aX, aY) && contains(bX, bY) && contains(cX, cY) &&
-        tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
-      return holes == null || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
+    if (contains(aX, aY)
+        && contains(bX, bY)
+        && contains(cX, cY)
+        && tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
+      return holes == null
+          || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
     }
     return false;
   }
@@ -185,18 +247,40 @@ final class Polygon2D implements Component2D {
   }
 
   @Override
-  public WithinRelation withinLine(double minX, double maxX, double minY, double maxY,
-                                   double aX, double aY, boolean ab, double bX, double bY) {
-    if (ab == true && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY) == false &&
-        tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    if (ab == true
+        && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)
+            == false
+        && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
       return WithinRelation.NOTWITHIN;
     }
     return WithinRelation.DISJOINT;
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
-                                          double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return WithinRelation.DISJOINT;
     }
@@ -241,7 +325,9 @@ final class Polygon2D implements Component2D {
     }
 
     // Check if shape is within the triangle
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY) == true) {
+    if (Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        == true) {
       return WithinRelation.CANDIDATE;
     }
     return relation;
@@ -290,5 +376,4 @@ final class Polygon2D implements Component2D {
     }
     return new Polygon2D(polygon, holes);
   }
-
 }

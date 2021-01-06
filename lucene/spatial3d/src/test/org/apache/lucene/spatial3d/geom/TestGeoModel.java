@@ -16,28 +16,27 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Test basic plane functionality.
- */
+import org.junit.Test;
+
+/** Test basic plane functionality. */
 public class TestGeoModel {
 
-  protected final static PlanetModel scaledModel = new PlanetModel(1.2,1.5);
-  
+  protected static final PlanetModel scaledModel = new PlanetModel(1.2, 1.5);
+
   @Test
   public void testBasicCircle() {
-    // The point of this test is just to make sure nothing blows up doing normal things with a quite non-spherical model
+    // The point of this test is just to make sure nothing blows up doing normal things with a quite
+    // non-spherical model
     // Make sure that the north pole is in the circle, and south pole isn't
     final GeoPoint northPole = new GeoPoint(scaledModel, Math.PI * 0.5, 0.0);
     final GeoPoint southPole = new GeoPoint(scaledModel, -Math.PI * 0.5, 0.0);
     final GeoPoint point1 = new GeoPoint(scaledModel, Math.PI * 0.25, 0.0);
     final GeoPoint point2 = new GeoPoint(scaledModel, Math.PI * 0.125, 0.0);
-    
+
     GeoCircle circle = new GeoStandardCircle(scaledModel, Math.PI * 0.5, 0.0, 0.01);
     assertTrue(circle.isWithin(northPole));
     assertFalse(circle.isWithin(southPole));
@@ -78,7 +77,6 @@ public class TestGeoModel {
     assertEquals(Math.PI * 0.125 + 0.01, bounds.getMaxLatitude(), 0.00001);
     assertEquals(-0.0089, bounds.getLeftLongitude(), 0.0001);
     assertEquals(0.0089, bounds.getRightLongitude(), 0.0001);
-
   }
 
   @Test
@@ -104,7 +102,4 @@ public class TestGeoModel {
     assertEquals(1.0, bounds.getRightLongitude(), 0.00001);
     assertEquals(0.0, bounds.getLeftLongitude(), 0.00001);
   }
-  
 }
-
-

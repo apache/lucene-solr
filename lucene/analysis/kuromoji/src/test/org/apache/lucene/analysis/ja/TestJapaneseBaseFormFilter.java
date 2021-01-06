@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -29,64 +27,68 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
 public class TestJapaneseBaseFormFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
-        return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new JapaneseTokenizer(
+                    newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
+            return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   public void testBasics() throws IOException {
-    assertAnalyzesTo(analyzer, "それはまだ実験段階にあります",
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"  }
-    );
+    assertAnalyzesTo(
+        analyzer, "それはまだ実験段階にあります", new String[] {"それ", "は", "まだ", "実験", "段階", "に", "ある", "ます"});
   }
-  
+
   public void testKeyword() throws IOException {
     final CharArraySet exclusionSet = new CharArraySet(asSet("あり"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new JapaneseTokenizer(newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new JapaneseBaseFormFilter(sink));
-      }
-    };
-    assertAnalyzesTo(a, "それはまだ実験段階にあります",
-        new String[] { "それ", "は", "まだ", "実験", "段階", "に", "あり", "ます"  }
-    );
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source =
+                new JapaneseTokenizer(
+                    newAttributeFactory(), null, true, JapaneseTokenizer.DEFAULT_MODE);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new JapaneseBaseFormFilter(sink));
+          }
+        };
+    assertAnalyzesTo(
+        a, "それはまだ実験段階にあります", new String[] {"それ", "は", "まだ", "実験", "段階", "に", "あり", "ます"});
     a.close();
   }
-  
+
   public void testEnglish() throws IOException {
-    assertAnalyzesTo(analyzer, "this atest",
-        new String[] { "this", "atest" });
+    assertAnalyzesTo(analyzer, "this atest", new String[] {"this", "atest"});
   }
-  
+
   public void testRandomStrings() throws IOException {
     checkRandomData(random(), analyzer, atLeast(200));
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new JapaneseBaseFormFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

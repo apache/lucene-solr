@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 /**
- * One, or several overlapping tokens, along with the score(s) and the scope of
- * the original text.
+ * One, or several overlapping tokens, along with the score(s) and the scope of the original text.
  */
 public class TokenGroup {
 
@@ -82,7 +81,6 @@ public class TokenGroup {
   }
 
   /**
-   * 
    * @param index a value between 0 and numTokens -1
    * @return the "n"th score
    */
@@ -91,33 +89,28 @@ public class TokenGroup {
   }
 
   /**
-   * @return the earliest start offset in the original text of a matching token in this group (score &gt; 0), or
-   * if there are none then the earliest offset of any token in the group.
+   * @return the earliest start offset in the original text of a matching token in this group (score
+   *     &gt; 0), or if there are none then the earliest offset of any token in the group.
    */
   public int getStartOffset() {
     return matchStartOffset;
   }
 
   /**
-   * @return the latest end offset in the original text of a matching token in this group (score &gt; 0), or
-   * if there are none then {@link #getEndOffset()}.
+   * @return the latest end offset in the original text of a matching token in this group (score
+   *     &gt; 0), or if there are none then {@link #getEndOffset()}.
    */
   public int getEndOffset() {
     return matchEndOffset;
   }
 
-  /**
-   * @return the number of tokens in this group
-   */
+  /** @return the number of tokens in this group */
   public int getNumTokens() {
     return numTokens;
   }
 
-  /**
-   * @return all tokens' scores summed up
-   */
+  /** @return all tokens' scores summed up */
   public float getTotalScore() {
     return tot;
   }
-
 }

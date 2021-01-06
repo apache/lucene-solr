@@ -19,23 +19,19 @@ package org.apache.lucene.analysis.icu.segmentation;
 import com.ibm.icu.text.RuleBasedBreakIterator;
 
 /**
- * Class that allows for tailored Unicode Text Segmentation on
- * a per-writing system basis.
+ * Class that allows for tailored Unicode Text Segmentation on a per-writing system basis.
+ *
  * @lucene.experimental
  */
 public abstract class ICUTokenizerConfig {
   /** Rule status for emoji sequences */
   public static final int EMOJI_SEQUENCE_STATUS = 299;
 
-  /**
-   * Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.)
-   */
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   public ICUTokenizerConfig() {}
   /** Return a breakiterator capable of processing a given script. */
   public abstract RuleBasedBreakIterator getBreakIterator(int script);
-  /** Return a token type value for a given script and BreakIterator
-   *  rule status. */
+  /** Return a token type value for a given script and BreakIterator rule status. */
   public abstract String getType(int script, int ruleStatus);
   /** true if Han, Hiragana, and Katakana scripts should all be returned as Japanese */
   public abstract boolean combineCJ();

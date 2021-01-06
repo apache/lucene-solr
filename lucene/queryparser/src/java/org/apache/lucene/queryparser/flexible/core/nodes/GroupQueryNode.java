@@ -18,28 +18,24 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 
 /**
- * A {@link GroupQueryNode} represents a location where the original user typed
- * real parenthesis on the query string. This class is useful for queries like:
- * a) a AND b OR c b) ( a AND b) OR c
- * 
- * Parenthesis might be used to define the boolean operation precedence.
+ * A {@link GroupQueryNode} represents a location where the original user typed real parenthesis on
+ * the query string. This class is useful for queries like: a) a AND b OR c b) ( a AND b) OR c
+ *
+ * <p>Parenthesis might be used to define the boolean operation precedence.
  */
 public class GroupQueryNode extends QueryNodeImpl {
 
-  /**
-   * This QueryNode is used to identify parenthesis on the original query string
-   */
+  /** This QueryNode is used to identify parenthesis on the original query string */
   public GroupQueryNode(QueryNode query) {
     if (query == null) {
-      throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "query", "null"));
+      throw new QueryNodeError(
+          new MessageImpl(QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "query", "null"));
     }
 
     allocate();
@@ -58,8 +54,7 @@ public class GroupQueryNode extends QueryNodeImpl {
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChild() == null)
-      return "";
+    if (getChild() == null) return "";
 
     return "( " + getChild().toQueryString(escapeSyntaxParser) + " )";
   }
@@ -76,5 +71,4 @@ public class GroupQueryNode extends QueryNodeImpl {
     list.add(child);
     this.set(list);
   }
-
 }

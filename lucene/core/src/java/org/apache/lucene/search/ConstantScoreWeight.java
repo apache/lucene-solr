@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * A Weight that has a constant score equal to the boost of the wrapped query.
- * This is typically useful when building queries which do not produce
- * meaningful scores and are mostly useful for filtering.
+ * A Weight that has a constant score equal to the boost of the wrapped query. This is typically
+ * useful when building queries which do not produce meaningful scores and are mostly useful for
+ * filtering.
  *
  * @lucene.internal
  */
@@ -58,11 +56,9 @@ public abstract class ConstantScoreWeight extends Weight {
     }
 
     if (exists) {
-      return Explanation.match(
-          score, getQuery().toString() + (score == 1f ? "" : "^" + score));
+      return Explanation.match(score, getQuery().toString() + (score == 1f ? "" : "^" + score));
     } else {
       return Explanation.noMatch(getQuery().toString() + " doesn't match id " + doc);
     }
   }
-
 }

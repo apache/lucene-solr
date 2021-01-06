@@ -22,14 +22,11 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * TokenStream from a canned list of binary (BytesRef-based)
- * tokens.
- */
+/** TokenStream from a canned list of binary (BytesRef-based) tokens. */
 public final class CannedBinaryTokenStream extends TokenStream {
 
   /** Represents a binary token. */
-  public final static class BinaryToken {
+  public static final class BinaryToken {
     BytesRef term;
     int posInc;
     int posLen;
@@ -52,7 +49,8 @@ public final class CannedBinaryTokenStream extends TokenStream {
   private final BinaryToken[] tokens;
   private int upto = 0;
   private final BytesTermAttribute termAtt = addAttribute(BytesTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
@@ -60,14 +58,14 @@ public final class CannedBinaryTokenStream extends TokenStream {
     super(Token.TOKEN_ATTRIBUTE_FACTORY);
     this.tokens = tokens;
   }
-  
+
   @Override
   public boolean incrementToken() {
     if (upto < tokens.length) {
-      final BinaryToken token = tokens[upto++];     
+      final BinaryToken token = tokens[upto++];
       // TODO: can we just capture/restoreState so
       // we get all attrs...?
-      clearAttributes();      
+      clearAttributes();
       termAtt.setBytesRef(token.term);
       posIncrAtt.setPositionIncrement(token.posInc);
       posLengthAtt.setPositionLength(token.posLen);

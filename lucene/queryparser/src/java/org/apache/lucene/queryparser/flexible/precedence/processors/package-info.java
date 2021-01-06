@@ -18,22 +18,24 @@
 /**
  * Lucene Precedence Query Parser Processors
  *
- * <p>
- * This package contains the 2 {@link org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor}s used by
- * {@link org.apache.lucene.queryparser.flexible.precedence.PrecedenceQueryParser}.
- * </p>
- * <p>
- * {@link org.apache.lucene.queryparser.flexible.precedence.processors.BooleanModifiersQueryNodeProcessor}: this processor
- * is used to apply {@link org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode}s on
- * {@link org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode} children according to the boolean type
- * or the default operator.
- * </p>
- * <p>
- * {@link org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline}: this
- * processor pipeline is used by {@link org.apache.lucene.queryparser.flexible.precedence.PrecedenceQueryParser}. It extends
- * {@link org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline} and rearrange
- * the pipeline so the boolean precedence is processed correctly. Check {@link org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline}
- * for more details. 
- * </p>
+ * <p>This package contains the 2 {@link
+ * org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor}s used by {@link
+ * org.apache.lucene.queryparser.flexible.precedence.PrecedenceQueryParser}.
+ *
+ * <p>{@link
+ * org.apache.lucene.queryparser.flexible.precedence.processors.BooleanModifiersQueryNodeProcessor}:
+ * this processor is used to apply {@link
+ * org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode}s on {@link
+ * org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode} children according to the
+ * boolean type or the default operator.
+ *
+ * <p>{@link
+ * org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline}:
+ * this processor pipeline is used by {@link
+ * org.apache.lucene.queryparser.flexible.precedence.PrecedenceQueryParser}. It extends {@link
+ * org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline}
+ * and rearrange the pipeline so the boolean precedence is processed correctly. Check {@link
+ * org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline}
+ * for more details.
  */
 package org.apache.lucene.queryparser.flexible.precedence.processors;

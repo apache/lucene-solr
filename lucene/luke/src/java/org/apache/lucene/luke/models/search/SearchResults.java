@@ -25,16 +25,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TotalHits;
 
-/**
- * Holder for a search result page.
- */
+/** Holder for a search result page. */
 public final class SearchResults {
 
   private TotalHits totalHits;
@@ -54,8 +51,12 @@ public final class SearchResults {
    * @return the search result page
    * @throws IOException - if there is a low level IO error.
    */
-  static SearchResults of(TotalHits totalHits, ScoreDoc[] docs, int offset,
-                          IndexSearcher searcher, Set<String> fieldsToLoad)
+  static SearchResults of(
+      TotalHits totalHits,
+      ScoreDoc[] docs,
+      int offset,
+      IndexSearcher searcher,
+      Set<String> fieldsToLoad)
       throws IOException {
     SearchResults res = new SearchResults();
 
@@ -64,8 +65,8 @@ public final class SearchResults {
     Objects.requireNonNull(searcher);
 
     for (ScoreDoc sd : docs) {
-      Document luceneDoc = (fieldsToLoad == null) ?
-          searcher.doc(sd.doc) : searcher.doc(sd.doc, fieldsToLoad);
+      Document luceneDoc =
+          (fieldsToLoad == null) ? searcher.doc(sd.doc) : searcher.doc(sd.doc, fieldsToLoad);
       res.hits.add(Doc.of(sd.doc, sd.score, luceneDoc));
       res.offset = offset;
     }
@@ -73,40 +74,29 @@ public final class SearchResults {
     return res;
   }
 
-  /**
-   * Returns the total number of hits for this query.
-   */
+  /** Returns the total number of hits for this query. */
   public TotalHits getTotalHits() {
     return totalHits;
   }
 
-  /**
-   * Returns the offset of the current page.
-   */
+  /** Returns the offset of the current page. */
   public int getOffset() {
     return offset;
   }
 
-  /**
-   * Returns the documents of the current page.
-   */
+  /** Returns the documents of the current page. */
   public List<Doc> getHits() {
     return List.copyOf(hits);
   }
 
-  /**
-   * Returns the size of the current page.
-   */
+  /** Returns the size of the current page. */
   public int size() {
     return hits.size();
   }
 
-  private SearchResults() {
-  }
+  private SearchResults() {}
 
-  /**
-   * Holder for a hit.
-   */
+  /** Holder for a hit. */
   public static class Doc {
     private int docId;
     private float score;
@@ -126,35 +116,29 @@ public final class SearchResults {
       Doc doc = new Doc();
       doc.docId = docId;
       doc.score = score;
-      Set<String> fields = luceneDoc.getFields().stream().map(IndexableField::name).collect(Collectors.toSet());
+      Set<String> fields =
+          luceneDoc.getFields().stream().map(IndexableField::name).collect(Collectors.toSet());
       for (String f : fields) {
         doc.fieldValues.put(f, luceneDoc.getValues(f));
       }
       return doc;
     }
 
-    /**
-     * Returns the document id.
-     */
+    /** Returns the document id. */
     public int getDocId() {
       return docId;
     }
 
-    /**
-     * Returns the score of this document for the current query.
-     */
+    /** Returns the score of this document for the current query. */
     public float getScore() {
       return score;
     }
 
-    /**
-     * Returns the field data of this document.
-     */
+    /** Returns the field data of this document. */
     public Map<String, String[]> getFieldValues() {
       return Map.copyOf(fieldValues);
     }
 
-    private Doc() {
-    }
+    private Doc() {}
   }
 }

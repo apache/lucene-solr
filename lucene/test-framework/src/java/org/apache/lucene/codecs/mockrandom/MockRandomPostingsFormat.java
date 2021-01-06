@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.mockrandom;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -52,28 +51,26 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Randomly combines terms index impl w/ postings impls.
- */
-
+/** Randomly combines terms index impl w/ postings impls. */
 public final class MockRandomPostingsFormat extends PostingsFormat {
   private final Random seedRandom;
   private static final String SEED_EXT = "sd";
-  
+
   public MockRandomPostingsFormat() {
     // This ctor should *only* be used at read-time: get NPE if you use it!
     this(null);
   }
-  
+
   public MockRandomPostingsFormat(Random random) {
     super("MockRandom");
     if (random == null) {
-      this.seedRandom = new Random(0L) {
-        @Override
-        protected int next(int arg0) {
-          throw new IllegalStateException("Please use MockRandomPostingsFormat(Random)");
-        }
-      };
+      this.seedRandom =
+          new Random(0L) {
+            @Override
+            protected int next(int arg0) {
+              throw new IllegalStateException("Please use MockRandomPostingsFormat(Random)");
+            }
+          };
     } else {
       this.seedRandom = new Random(random.nextLong());
     }
@@ -94,26 +91,34 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     // NOTE: Currently not passed to postings writer.
     //       before, it was being passed in wrongly as acceptableOverhead!
     int skipInterval = TestUtil.nextInt(seedRandom, minSkipInterval, 10);
-    
+
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: skipInterval=" + skipInterval);
     }
-    
+
     final long seed = seedRandom.nextLong();
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: writing to seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
+      System.out.println(
+          "MockRandomCodec: writing to seg="
+              + state.segmentInfo.name
+              + " formatID="
+              + state.segmentSuffix
+              + " seed="
+              + seed);
     }
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
-    try(IndexOutput out = state.directory.createOutput(seedFileName, state.context)) {
-      CodecUtil.writeIndexHeader(out, "MockRandomSeed", 0, state.segmentInfo.getId(), state.segmentSuffix);
+    final String seedFileName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
+    try (IndexOutput out = state.directory.createOutput(seedFileName, state.context)) {
+      CodecUtil.writeIndexHeader(
+          out, "MockRandomSeed", 0, state.segmentInfo.getId(), state.segmentSuffix);
       out.writeLong(seed);
       CodecUtil.writeFooter(out);
     }
 
     final Random random = new Random(seed);
-    
+
     random.nextInt(); // consume a random for buffersize
 
     PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
@@ -141,7 +146,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       // TODO: would be nice to allow 1 but this is very
       // slow to write
       final int minTermsInBlock = TestUtil.nextInt(random, 2, 100);
-      final int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random.nextInt(100));
+      final int maxTermsInBlock = Math.max(2, (minTermsInBlock - 1) * 2 + random.nextInt(100));
 
       boolean success = false;
       try {
@@ -165,7 +170,8 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
         if (random.nextBoolean()) {
           int termIndexInterval = TestUtil.nextInt(random, 1, 100);
           if (LuceneTestCase.VERBOSE) {
-            System.out.println("MockRandomCodec: fixed-gap terms index (tii=" + termIndexInterval + ")");
+            System.out.println(
+                "MockRandomCodec: fixed-gap terms index (tii=" + termIndexInterval + ")");
           }
           indexWriter = new FixedGapTermsIndexWriter(state, termIndexInterval);
         } else {
@@ -174,31 +180,32 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           if (n2 == 0) {
             final int tii = TestUtil.nextInt(random, 1, 100);
             selector = new VariableGapTermsIndexWriter.EveryNTermSelector(tii);
-           if (LuceneTestCase.VERBOSE) {
+            if (LuceneTestCase.VERBOSE) {
               System.out.println("MockRandomCodec: variable-gap terms index (tii=" + tii + ")");
             }
           } else if (n2 == 1) {
             final int docFreqThresh = TestUtil.nextInt(random, 2, 100);
             final int tii = TestUtil.nextInt(random, 1, 100);
-            selector = new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThresh, tii);
+            selector =
+                new VariableGapTermsIndexWriter.EveryNOrDocFreqTermSelector(docFreqThresh, tii);
           } else {
             final long seed2 = random.nextLong();
             final int gap = TestUtil.nextInt(random, 2, 40);
             if (LuceneTestCase.VERBOSE) {
-             System.out.println("MockRandomCodec: random-gap terms index (max gap=" + gap + ")");
+              System.out.println("MockRandomCodec: random-gap terms index (max gap=" + gap + ")");
             }
-           selector = new VariableGapTermsIndexWriter.IndexTermSelector() {
-                final Random rand = new Random(seed2);
+            selector =
+                new VariableGapTermsIndexWriter.IndexTermSelector() {
+                  final Random rand = new Random(seed2);
 
-                @Override
-                public boolean isIndexTerm(BytesRef term, TermStats stats) {
-                  return rand.nextInt(gap) == gap/2;
-                }
+                  @Override
+                  public boolean isIndexTerm(BytesRef term, TermStats stats) {
+                    return rand.nextInt(gap) == gap / 2;
+                  }
 
-                @Override
-                  public void newField(FieldInfo fieldInfo) {
-                }
-              };
+                  @Override
+                  public void newField(FieldInfo fieldInfo) {}
+                };
           }
           indexWriter = new VariableGapTermsIndexWriter(state, selector);
         }
@@ -231,18 +238,19 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       // TODO: would be nice to allow 1 but this is very
       // slow to write
       final int minTermsInBlock = TestUtil.nextInt(random, 2, 100);
-      final int maxTermsInBlock = Math.max(2, (minTermsInBlock-1)*2 + random.nextInt(100));
+      final int maxTermsInBlock = Math.max(2, (minTermsInBlock - 1) * 2 + random.nextInt(100));
 
       boolean success = false;
       try {
-        fields = new OrdsBlockTreeTermsWriter(state, postingsWriter, minTermsInBlock, maxTermsInBlock);
+        fields =
+            new OrdsBlockTreeTermsWriter(state, postingsWriter, minTermsInBlock, maxTermsInBlock);
         success = true;
       } finally {
         if (!success) {
           postingsWriter.close();
         }
       }
-      
+
     } else {
       // BUG!
       throw new AssertionError();
@@ -254,18 +262,26 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-    final String seedFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
+    final String seedFileName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, SEED_EXT);
     final ChecksumIndexInput in = state.directory.openChecksumInput(seedFileName, state.context);
-    CodecUtil.checkIndexHeader(in, "MockRandomSeed", 0, 0, state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.checkIndexHeader(
+        in, "MockRandomSeed", 0, 0, state.segmentInfo.getId(), state.segmentSuffix);
     final long seed = in.readLong();
     CodecUtil.checkFooter(in);
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("MockRandomCodec: reading from seg=" + state.segmentInfo.name + " formatID=" + state.segmentSuffix + " seed=" + seed);
+      System.out.println(
+          "MockRandomCodec: reading from seg="
+              + state.segmentInfo.name
+              + " formatID="
+              + state.segmentSuffix
+              + " seed="
+              + seed);
     }
     in.close();
 
     final Random random = new Random(seed);
-    
+
     int readBufferSize = TestUtil.nextInt(random, 1, 4096);
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
@@ -328,7 +344,6 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
             System.out.println("MockRandomCodec: variable-gap terms index");
           }
           indexReader = new VariableGapTermsIndexReader(state);
-
         }
 
         success = true;

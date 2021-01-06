@@ -16,36 +16,31 @@
  */
 
 /**
- * {@link org.apache.lucene.analysis.TokenFilter} and {@link
- * org.apache.lucene.analysis.Analyzer} implementations that use Snowball
- * stemmers.
- * <p>
- * This project provides pre-compiled version of the Snowball stemmers
- * based on revision 500 of the Tartarus Snowball repository,
- * together with classes integrating them with the Lucene search engine.
- * </p>
- * <p>
- * A few changes has been made to the static Snowball code and compiled stemmers:
- * </p>
+ * {@link org.apache.lucene.analysis.TokenFilter} and {@link org.apache.lucene.analysis.Analyzer}
+ * implementations that use Snowball stemmers.
+ *
+ * <p>This project provides pre-compiled version of the Snowball stemmers based on revision 500 of
+ * the Tartarus Snowball repository, together with classes integrating them with the Lucene search
+ * engine.
+ *
+ * <p>A few changes has been made to the static Snowball code and compiled stemmers:
+ *
  * <ul>
- *   <li>Class SnowballProgram is made abstract and contains new abstract method stem() to avoid reflection in Lucene filter class SnowballFilter.</li>
- *   <li>All use of StringBuffers has been refactored to StringBuilder for speed.</li>
- *   <li>Snowball BSD license header has been added to the Java classes to avoid having RAT adding ASL headers.</li>
+ *   <li>Class SnowballProgram is made abstract and contains new abstract method stem() to avoid
+ *       reflection in Lucene filter class SnowballFilter.
+ *   <li>All use of StringBuffers has been refactored to StringBuilder for speed.
+ *   <li>Snowball BSD license header has been added to the Java classes to avoid having RAT adding
+ *       ASL headers.
  * </ul>
- * <p>
- * See the Snowball <a href ="http://snowball.tartarus.org/">home page</a> for more information about the algorithms.
- * </p>
- * 
- * <p>
- * <b>IMPORTANT NOTICE ON BACKWARDS COMPATIBILITY!</b>
- * </p>
- * <p>
- * An index created using the Snowball module in Lucene 2.3.2 and below
- * might not be compatible with the Snowball module in Lucene 2.4 or greater.
- * </p>
- * <p>
- * For more information about this issue see:
- * https://issues.apache.org/jira/browse/LUCENE-1142
- * </p>
+ *
+ * <p>See the Snowball <a href ="http://snowball.tartarus.org/">home page</a> for more information
+ * about the algorithms.
+ *
+ * <p><b>IMPORTANT NOTICE ON BACKWARDS COMPATIBILITY!</b>
+ *
+ * <p>An index created using the Snowball module in Lucene 2.3.2 and below might not be compatible
+ * with the Snowball module in Lucene 2.4 or greater.
+ *
+ * <p>For more information about this issue see: https://issues.apache.org/jira/browse/LUCENE-1142
  */
 package org.apache.lucene.analysis.snowball;

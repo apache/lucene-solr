@@ -18,12 +18,14 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon}
+ * types
+ */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
@@ -35,12 +37,42 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
   protected Polygon[] nextShape() {
     int n = random().nextInt(4) + 1;
     Polygon[] polygons = new Polygon[n];
-    for (int i =0; i < n; i++) {
-      polygons[i] = (Polygon) getShapeType().nextShape();
+    for (int i = 0; i < n; i++) {
+      int repetitions = 0;
+      while (true) {
+        Polygon p = (Polygon) getShapeType().nextShape();
+        // polygons are disjoint so CONTAINS works. Note that if we intersect
+        // any shape then contains return false.
+        if (isDisjoint(polygons, p)) {
+          polygons[i] = p;
+          break;
+        }
+        repetitions++;
+        if (repetitions > 50) {
+          // try again
+          return nextShape();
+        }
+      }
     }
     return polygons;
   }
-  
+
+  private boolean isDisjoint(Polygon[] polygons, Polygon check) {
+    // we use bounding boxes so we do not get intersecting polygons.
+    for (Polygon polygon : polygons) {
+      if (polygon != null) {
+        if (getEncoder().quantizeY(polygon.minLat) > getEncoder().quantizeY(check.maxLat)
+            || getEncoder().quantizeY(polygon.maxLat) < getEncoder().quantizeY(check.minLat)
+            || getEncoder().quantizeX(polygon.minLon) > getEncoder().quantizeX(check.maxLon)
+            || getEncoder().quantizeX(polygon.maxLon) < getEncoder().quantizeX(check.minLon)) {
+          continue;
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
     Polygon[] polygons = (Polygon[]) o;

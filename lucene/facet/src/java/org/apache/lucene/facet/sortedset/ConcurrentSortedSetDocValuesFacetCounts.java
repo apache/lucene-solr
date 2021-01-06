@@ -28,11 +28,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.TopOrdAndIntQueue;
@@ -40,8 +39,8 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -52,9 +51,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 
-/** Like {@link SortedSetDocValuesFacetCounts}, but aggregates counts concurrently across segments.
+/**
+ * Like {@link SortedSetDocValuesFacetCounts}, but aggregates counts concurrently across segments.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
 
   final ExecutorService exec;
@@ -64,18 +65,20 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
   final AtomicIntegerArray counts;
 
   /** Returns all facet counts, same result as searching on {@link MatchAllDocsQuery} but faster. */
-  public ConcurrentSortedSetDocValuesFacetCounts(SortedSetDocValuesReaderState state, ExecutorService exec)
-    throws IOException, InterruptedException {
+  public ConcurrentSortedSetDocValuesFacetCounts(
+      SortedSetDocValuesReaderState state, ExecutorService exec)
+      throws IOException, InterruptedException {
     this(state, null, exec);
   }
 
   /** Counts all facet dimensions across the provided hits. */
-  public ConcurrentSortedSetDocValuesFacetCounts(SortedSetDocValuesReaderState state, FacetsCollector hits, ExecutorService exec)
-    throws IOException, InterruptedException {
+  public ConcurrentSortedSetDocValuesFacetCounts(
+      SortedSetDocValuesReaderState state, FacetsCollector hits, ExecutorService exec)
+      throws IOException, InterruptedException {
     this.state = state;
     this.field = state.getField();
     this.exec = exec;
-    dv = state.getDocValues();    
+    dv = state.getDocValues();
     counts = new AtomicIntegerArray(state.getSize());
     if (hits == null) {
       // browse only
@@ -110,9 +113,9 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     int childCount = 0;
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
-    //System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
-    for(int ord=ordRange.start; ord<=ordRange.end; ord++) {
-      //System.out.println("  ord=" + ord + " count=" + counts[ord]);
+    // System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
+    for (int ord = ordRange.start; ord <= ordRange.end; ord++) {
+      // System.out.println("  ord=" + ord + " count=" + counts[ord]);
       if (counts.get(ord) > 0) {
         dimCount += counts.get(ord);
         childCount++;
@@ -140,7 +143,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
+    for (int i = labelValues.length - 1; i >= 0; i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       final BytesRef term = dv.lookupOrd(ordAndValue.ord);
       String[] parts = FacetsConfig.stringToPath(term.utf8ToString());
@@ -155,14 +158,15 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     final MatchingDocs hits;
     final OrdinalMap ordinalMap;
     final int segOrd;
-    
-    public CountOneSegment(LeafReader leafReader, MatchingDocs hits, OrdinalMap ordinalMap, int segOrd) {
+
+    public CountOneSegment(
+        LeafReader leafReader, MatchingDocs hits, OrdinalMap ordinalMap, int segOrd) {
       this.leafReader = leafReader;
       this.hits = hits;
       this.ordinalMap = ordinalMap;
       this.segOrd = segOrd;
     }
-                           
+
     @Override
     public Void call() throws IOException {
       SortedSetDocValues segValues = leafReader.getSortedSetDocValues(field);
@@ -193,7 +197,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
 
         int numSegOrds = (int) segValues.getValueCount();
 
-        if (hits != null && hits.totalHits < numSegOrds/10) {
+        if (hits != null && hits.totalHits < numSegOrds / 10) {
           // Remap every ord to global ord as we iterate:
           for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
             int term = (int) segValues.nextOrd();
@@ -215,7 +219,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
           }
 
           // Then, migrate to global ords:
-          for(int ord=0;ord<numSegOrds;ord++) {
+          for (int ord = 0; ord < numSegOrds; ord++) {
             int count = segCounts[ord];
             if (count != 0) {
               counts.addAndGet((int) ordMap.get(ord), count);
@@ -233,13 +237,14 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
           }
         }
       }
-      
+
       return null;
     }
   }
 
   /** Does all the "real work" of tallying up the counts. */
-  private final void count(List<MatchingDocs> matchingDocs) throws IOException, InterruptedException {
+  private final void count(List<MatchingDocs> matchingDocs)
+      throws IOException, InterruptedException {
 
     OrdinalMap ordinalMap;
 
@@ -251,7 +256,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     } else {
       ordinalMap = null;
     }
-    
+
     IndexReader reader = state.getReader();
     List<Future<Void>> results = new ArrayList<>();
 
@@ -261,10 +266,13 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
       // SortedSetDocValuesReaderState, else cryptic
       // AIOOBE can happen:
       if (ReaderUtil.getTopLevelContext(hits.context).reader() != reader) {
-        throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
+        throw new IllegalStateException(
+            "the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
       }
-      
-      results.add(exec.submit(new CountOneSegment(hits.context.reader(), hits, ordinalMap, hits.context.ord)));
+
+      results.add(
+          exec.submit(
+              new CountOneSegment(hits.context.reader(), hits, ordinalMap, hits.context.ord)));
     }
 
     for (Future<Void> result : results) {
@@ -280,7 +288,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
 
   /** Does all the "real work" of tallying up the counts. */
   private final void countAll() throws IOException, InterruptedException {
-    //System.out.println("ssdv count");
+    // System.out.println("ssdv count");
 
     OrdinalMap ordinalMap;
 
@@ -292,11 +300,12 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     } else {
       ordinalMap = null;
     }
-    
+
     List<Future<Void>> results = new ArrayList<>();
 
     for (LeafReaderContext context : state.getReader().leaves()) {
-      results.add(exec.submit(new CountOneSegment(context.reader(), null, ordinalMap, context.ord)));
+      results.add(
+          exec.submit(new CountOneSegment(context.reader(), null, ordinalMap, context.ord)));
     }
 
     for (Future<Void> result : results) {
@@ -327,7 +336,7 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
   public List<FacetResult> getAllDims(int topN) throws IOException {
 
     List<FacetResult> results = new ArrayList<>();
-    for(Map.Entry<String,OrdRange> ent : state.getPrefixToOrdRange().entrySet()) {
+    for (Map.Entry<String, OrdRange> ent : state.getPrefixToOrdRange().entrySet()) {
       FacetResult fr = getDim(ent.getKey(), ent.getValue(), topN);
       if (fr != null) {
         results.add(fr);
@@ -335,19 +344,20 @@ public class ConcurrentSortedSetDocValuesFacetCounts extends Facets {
     }
 
     // Sort by highest count:
-    Collections.sort(results,
-                     new Comparator<FacetResult>() {
-                       @Override
-                       public int compare(FacetResult a, FacetResult b) {
-                         if (a.value.intValue() > b.value.intValue()) {
-                           return -1;
-                         } else if (b.value.intValue() > a.value.intValue()) {
-                           return 1;
-                         } else {
-                           return a.dim.compareTo(b.dim);
-                         }
-                       }
-                     });
+    Collections.sort(
+        results,
+        new Comparator<FacetResult>() {
+          @Override
+          public int compare(FacetResult a, FacetResult b) {
+            if (a.value.intValue() > b.value.intValue()) {
+              return -1;
+            } else if (b.value.intValue() > a.value.intValue()) {
+              return 1;
+            } else {
+              return a.dim.compareTo(b.dim);
+            }
+          }
+        });
 
     return results;
   }

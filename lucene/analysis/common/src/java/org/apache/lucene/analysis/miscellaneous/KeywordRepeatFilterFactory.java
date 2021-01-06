@@ -16,18 +16,17 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link KeywordRepeatFilter}.
  *
- * Since {@link KeywordRepeatFilter} emits two tokens for every input token, and any tokens that aren't transformed
- * later in the analysis chain will be in the document twice. Therefore, consider adding
- * {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
+ * <p>Since {@link KeywordRepeatFilter} emits two tokens for every input token, and any tokens that
+ * aren't transformed later in the analysis chain will be in the document twice. Therefore, consider
+ * adding {@link RemoveDuplicatesTokenFilterFactory} later in the analysis chain.
+ *
  * @since 4.3.0
  * @lucene.spi {@value #NAME}
  */
@@ -35,15 +34,15 @@ public final class KeywordRepeatFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "keywordRepeat";
-  
+
   /** Creates a new KeywordRepeatFilterFactory */
-  public KeywordRepeatFilterFactory(Map<String,String> args) {
+  public KeywordRepeatFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public KeywordRepeatFilterFactory() {
     throw defaultCtorException();

@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -28,9 +27,10 @@ import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Analyzes the text, producing a single {@link OffsetsEnum} wrapping the {@link TokenStream} filtered to terms
- * in the query, including wildcards.  It can't handle position-sensitive queries (phrases). Passage accuracy suffers
- * because the freq() is unknown -- it's always {@link Integer#MAX_VALUE} instead.
+ * Analyzes the text, producing a single {@link OffsetsEnum} wrapping the {@link TokenStream}
+ * filtered to terms in the query, including wildcards. It can't handle position-sensitive queries
+ * (phrases). Passage accuracy suffers because the freq() is unknown -- it's always {@link
+ * Integer#MAX_VALUE} instead.
  */
 public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
@@ -42,8 +42,9 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     combinedAutomata = convertTermsToMatchers(components.getTerms(), components.getAutomata());
   }
 
-  //TODO this is inefficient; instead build a union automata just for terms part.
-  private static CharArrayMatcher[] convertTermsToMatchers(BytesRef[] terms, CharArrayMatcher[] matchers) {
+  // TODO this is inefficient; instead build a union automata just for terms part.
+  private static CharArrayMatcher[] convertTermsToMatchers(
+      BytesRef[] terms, CharArrayMatcher[] matchers) {
     CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + matchers.length];
     for (int i = 0; i < terms.length; i++) {
       String termString = terms[i].utf8ToString();
@@ -56,7 +57,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   @Override
-  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
+  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content)
+      throws IOException {
     return new TokenStreamOffsetsEnum(tokenStream(content), combinedAutomata);
   }
 
@@ -101,7 +103,6 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     public int freq() throws IOException {
       return Integer.MAX_VALUE; // lie
     }
-
 
     @Override
     public int startOffset() throws IOException {

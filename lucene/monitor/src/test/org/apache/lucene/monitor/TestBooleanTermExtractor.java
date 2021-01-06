@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -45,11 +44,9 @@ public class TestBooleanTermExtractor extends LuceneTestCase {
 
     Query bq = MonitorTestBase.parse("field1:term1 field1:term2");
     Set<Term> terms = collectTerms(bq);
-    Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("field1", "term1"),
-        new Term("field1", "term2")));
+    Set<Term> expected =
+        new HashSet<>(Arrays.asList(new Term("field1", "term1"), new Term("field1", "term2")));
     assertEquals(expected, terms);
-
   }
 
   public void testAllNestedDisjunctionClausesAreIncluded() {
@@ -84,7 +81,7 @@ public class TestBooleanTermExtractor extends LuceneTestCase {
     // Set up - single MatchAllDocsQuery clause in a BooleanQuery
     Query q = MonitorTestBase.parse("+*:*");
     assertTrue(q instanceof BooleanQuery);
-    BooleanClause clause = ((BooleanQuery)q).iterator().next();
+    BooleanClause clause = ((BooleanQuery) q).iterator().next();
     assertTrue(clause.getQuery() instanceof MatchAllDocsQuery);
     assertEquals(BooleanClause.Occur.MUST, clause.getOccur());
 
@@ -116,7 +113,8 @@ public class TestBooleanTermExtractor extends LuceneTestCase {
   public void testMatchAllDocsMustWithKeywordShouldAndKeywordNot() throws Exception {
     Query q = MonitorTestBase.parse("+*:* field1:term1 -field2:notterm");
 
-    // Because field1:notterm is negated and field1:term1 is optional, only the mandatory MatchAllDocsQuery is collected.
+    // Because field1:notterm is negated and field1:term1 is optional, only the mandatory
+    // MatchAllDocsQuery is collected.
     Set<Term> terms = collectTerms(q);
     assertEquals(1, terms.size());
     Term t = terms.iterator().next();
@@ -126,10 +124,10 @@ public class TestBooleanTermExtractor extends LuceneTestCase {
   public void testMatchAllDocsMustAndOtherMustWithKeywordShouldAndKeywordNot() throws Exception {
     Query q = MonitorTestBase.parse("+*:* +field9:term9 field1:term1 -field2:notterm");
 
-    // The queryterm collected by weight is the non-anynode, so field9:term9 shows up before MatchAllDocsQuery.
+    // The queryterm collected by weight is the non-anynode, so field9:term9 shows up before
+    // MatchAllDocsQuery.
     Set<Term> terms = collectTerms(q);
     Set<Term> expected = Collections.singleton(new Term("field9", "term9"));
     assertEquals(expected, terms);
   }
-
 }

@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -46,8 +44,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * Create an index with random unicode terms
- * Generates random regexps, and validates against a simple impl.
+ * Create an index with random unicode terms Generates random regexps, and validates against a
+ * simple impl.
  */
 public class TestRegexpRandom2 extends LuceneTestCase {
   protected IndexSearcher searcher1;
@@ -60,10 +58,14 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    fieldName = random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+    fieldName =
+        random().nextBoolean() ? "field" : ""; // sometimes use an empty string as field name
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     Document doc = new Document();
     Field field = newStringField(fieldName, "", Field.Store.NO);
     doc.add(field);
@@ -83,11 +85,11 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       // utf16 order
       Collections.sort(terms);
       System.out.println("UTF16 order:");
-      for(String s : terms) {
+      for (String s : terms) {
         System.out.println("  " + UnicodeUtil.toHexString(s));
       }
     }
-    
+
     reader = writer.getReader();
     searcher1 = newSearcher(reader);
     searcher2 = newSearcher(reader);
@@ -100,17 +102,17 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     dir.close();
     super.tearDown();
   }
-  
+
   /** a stupid regexp query that just blasts thru the terms */
   private static class DumbRegexpQuery extends MultiTermQuery {
     private final Automaton automaton;
-    
+
     DumbRegexpQuery(Term term, int flags) {
       super(term.field());
       RegExp re = new RegExp(term.text(), flags);
       automaton = re.toAutomaton();
     }
-    
+
     @Override
     protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
       return new SimpleAutomatonTermsEnum(terms.iterator());
@@ -124,12 +126,13 @@ public class TestRegexpRandom2 extends LuceneTestCase {
         super(tenum);
         setInitialSeekTerm(new BytesRef(""));
       }
-      
+
       @Override
       protected AcceptStatus accept(BytesRef term) throws IOException {
         utf16.copyUTF8Bytes(term.bytes, term.offset, term.length);
-        return runAutomaton.run(utf16.chars(), 0, utf16.length()) ? 
-            AcceptStatus.YES : AcceptStatus.NO;
+        return runAutomaton.run(utf16.chars(), 0, utf16.length())
+            ? AcceptStatus.YES
+            : AcceptStatus.NO;
       }
     }
 
@@ -139,9 +142,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-
-    }
+    public void visit(QueryVisitor visitor) {}
 
     @Override
     public boolean equals(Object obj) {
@@ -152,7 +153,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       return automaton.equals(that.automaton);
     }
   }
-  
+
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
     int num = atLeast(200);
@@ -164,14 +165,12 @@ public class TestRegexpRandom2 extends LuceneTestCase {
       assertSame(reg);
     }
   }
-  
-  /** check that the # of hits is the same as from a very
-   * simple regexpquery implementation.
-   */
-  protected void assertSame(String regexp) throws IOException {   
+
+  /** check that the # of hits is the same as from a very simple regexpquery implementation. */
+  protected void assertSame(String regexp) throws IOException {
     RegexpQuery smart = new RegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
     DumbRegexpQuery dumb = new DumbRegexpQuery(new Term(fieldName, regexp), RegExp.NONE);
-   
+
     TopDocs smartDocs = searcher1.search(smart, 25);
     TopDocs dumbDocs = searcher2.search(dumb, 25);
 

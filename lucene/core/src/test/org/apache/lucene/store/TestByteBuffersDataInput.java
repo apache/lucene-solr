@@ -18,20 +18,18 @@ package org.apache.lucene.store;
 
 import static org.junit.Assert.*;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
+import com.carrotsearch.randomizedtesting.annotations.Timeout;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils.IOConsumer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
-
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.Xoroshiro128PlusRandom;
-import com.carrotsearch.randomizedtesting.annotations.Timeout;
 
 public final class TestByteBuffersDataInput extends RandomizedTest {
   @Test
@@ -39,9 +37,11 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
     ByteBuffersDataInput o1 = out.toDataInput();
     assertEquals(0, o1.size());
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-        o1.readByte();
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          o1.readByte();
+        });
 
     out.writeByte((byte) 1);
 
@@ -55,9 +55,11 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     assertEquals(1, o2.position());
     assertEquals(1, o2.readByte(0));
 
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-        o2.readByte();
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          o2.readByte();
+        });
 
     assertEquals(1, o2.position());
   }
@@ -68,7 +70,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
 
     long seed = randomLong();
     int max = LuceneTestCase.TEST_NIGHTLY ? 1_000_000 : 100_000;
-    List<IOConsumer<DataInput>> reply = 
+    List<IOConsumer<DataInput>> reply =
         TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
 
     ByteBuffersDataInput src = dst.toDataInput();
@@ -76,38 +78,43 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       c.accept(src);
     }
 
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-      src.readByte();
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          src.readByte();
+        });
   }
 
   @Test
   public void testRandomReadsOnSlices() throws Exception {
-    for (int reps = randomIntBetween(1, 20); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 20); --reps > 0; ) {
       ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
-  
-      byte [] prefix = new byte [randomIntBetween(0, 1024 * 8)];
+
+      byte[] prefix = new byte[randomIntBetween(0, 1024 * 8)];
       dst.writeBytes(prefix);
-  
+
       long seed = randomLong();
       int max = 10_000;
-      List<IOConsumer<DataInput>> reply = 
+      List<IOConsumer<DataInput>> reply =
           TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
-  
-      byte [] suffix = new byte [randomIntBetween(0, 1024 * 8)];
+
+      byte[] suffix = new byte[randomIntBetween(0, 1024 * 8)];
       dst.writeBytes(suffix);
-      
-      ByteBuffersDataInput src = dst.toDataInput().slice(prefix.length, dst.size() - prefix.length - suffix.length);
-  
+
+      ByteBuffersDataInput src =
+          dst.toDataInput().slice(prefix.length, dst.size() - prefix.length - suffix.length);
+
       assertEquals(0, src.position());
       assertEquals(dst.size() - prefix.length - suffix.length, src.size());
       for (IOConsumer<DataInput> c : reply) {
         c.accept(src);
       }
-  
-      LuceneTestCase.expectThrows(EOFException.class, () -> {
-        src.readByte();
-      });
+
+      LuceneTestCase.expectThrows(
+          EOFException.class,
+          () -> {
+            src.readByte();
+          });
     }
   }
 
@@ -117,45 +124,49 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     ByteBuffersDataInput in = dst.toDataInput();
     in.seek(0);
 
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-      in.seek(1);
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          in.seek(1);
+        });
 
     in.seek(0);
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-      in.readByte();
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          in.readByte();
+        });
   }
 
   @Test
   public void testSeek() throws Exception {
-    for (int reps = randomIntBetween(1, 200); --reps > 0;) {
+    for (int reps = randomIntBetween(1, 200); --reps > 0; ) {
       ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
-  
-      byte [] prefix = {};
+
+      byte[] prefix = {};
       if (randomBoolean()) {
-        prefix = new byte [randomIntBetween(1, 1024 * 8)];
+        prefix = new byte[randomIntBetween(1, 1024 * 8)];
         dst.writeBytes(prefix);
       }
-  
+
       long seed = randomLong();
       int max = 1000;
-      List<IOConsumer<DataInput>> reply = 
+      List<IOConsumer<DataInput>> reply =
           TestByteBuffersDataOutput.addRandomData(dst, new Xoroshiro128PlusRandom(seed), max);
-  
+
       ByteBuffersDataInput in = dst.toDataInput().slice(prefix.length, dst.size() - prefix.length);
-  
+
       in.seek(0);
       for (IOConsumer<DataInput> c : reply) {
         c.accept(in);
       }
-  
+
       in.seek(0);
       for (IOConsumer<DataInput> c : reply) {
         c.accept(in);
       }
-  
-      byte [] array = dst.toArrayCopy();
+
+      byte[] array = dst.toArrayCopy();
       array = ArrayUtil.copyOfSubArray(array, prefix.length, array.length);
 
       for (int i = 0; i < 1000; i++) {
@@ -166,23 +177,26 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       }
       in.seek(in.size());
       assertEquals(in.size(), in.position());
-      LuceneTestCase.expectThrows(EOFException.class, () -> {
-        in.readByte();
-      });
+      LuceneTestCase.expectThrows(
+          EOFException.class,
+          () -> {
+            in.readByte();
+          });
     }
   }
 
   @Test
   public void testSlicingWindow() throws Exception {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
-    assertEquals(0, dst.toDataInput().slice(0, 0).size());;
+    assertEquals(0, dst.toDataInput().slice(0, 0).size());
+    ;
 
     dst.writeBytes(randomBytesOfLength(1024 * 8));
     ByteBuffersDataInput in = dst.toDataInput();
     for (int offset = 0, max = (int) dst.size(); offset < max; offset++) {
       assertEquals(0, in.slice(offset, 0).size());
       assertEquals(1, in.slice(offset, 1).size());
-      
+
       int window = Math.min(max - offset, 1024);
       assertEquals(window, in.slice(offset, window).size());
     }
@@ -193,17 +207,21 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
   @Timeout(millis = 5000)
   public void testEofOnArrayReadPastBufferSize() throws Exception {
     ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
-    dst.writeBytes(new byte [10]);
+    dst.writeBytes(new byte[10]);
 
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-      ByteBuffersDataInput in = dst.toDataInput();
-      in.readBytes(new byte [100], 0, 100);
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          ByteBuffersDataInput in = dst.toDataInput();
+          in.readBytes(new byte[100], 0, 100);
+        });
 
-    LuceneTestCase.expectThrows(EOFException.class, () -> {
-      ByteBuffersDataInput in = dst.toDataInput();
-      in.readBytes(ByteBuffer.allocate(100), 100);
-    });
+    LuceneTestCase.expectThrows(
+        EOFException.class,
+        () -> {
+          ByteBuffersDataInput in = dst.toDataInput();
+          in.readBytes(ByteBuffer.allocate(100), 100);
+        });
   }
 
   // https://issues.apache.org/jira/browse/LUCENE-8625
@@ -212,14 +230,13 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
     // Simulate a "large" (> 4GB) input by duplicating
     // buffers with the same content.
     int MB = 1024 * 1024;
-    byte [] pageBytes = randomBytesOfLength(4 * MB);
+    byte[] pageBytes = randomBytesOfLength(4 * MB);
     ByteBuffer page = ByteBuffer.wrap(pageBytes);
 
     // Add some head shift on the first buffer.
     final int shift = randomIntBetween(0, pageBytes.length / 2);
 
-    final long simulatedLength =
-        randomLongBetween(0, 2018) + 4L * Integer.MAX_VALUE;
+    final long simulatedLength = randomLongBetween(0, 2018) + 4L * Integer.MAX_VALUE;
 
     List<ByteBuffer> buffers = new ArrayList<>();
     long remaining = simulatedLength + shift;

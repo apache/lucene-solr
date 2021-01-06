@@ -21,7 +21,6 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.RandomAccess;
-
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -37,8 +36,12 @@ final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
   private int numLevels = 1;
   private final MutableImpactList[] perLevelImpacts;
 
-  public Lucene84ScoreSkipReader(IndexInput skipStream, int maxSkipLevels,
-      boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
+  public Lucene84ScoreSkipReader(
+      IndexInput skipStream,
+      int maxSkipLevels,
+      boolean hasPos,
+      boolean hasOffsets,
+      boolean hasPayloads) {
     super(skipStream, maxSkipLevels, hasPos, hasOffsets, hasPayloads);
     this.impactData = new byte[maxSkipLevels][];
     Arrays.fill(impactData, new byte[0]);
@@ -47,29 +50,30 @@ final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
     for (int i = 0; i < perLevelImpacts.length; ++i) {
       perLevelImpacts[i] = new MutableImpactList();
     }
-    impacts = new Impacts() {
+    impacts =
+        new Impacts() {
 
-      @Override
-      public int numLevels() {
-        return numLevels;
-      }
+          @Override
+          public int numLevels() {
+            return numLevels;
+          }
 
-      @Override
-      public int getDocIdUpTo(int level) {
-        return skipDoc[level];
-      }
+          @Override
+          public int getDocIdUpTo(int level) {
+            return skipDoc[level];
+          }
 
-      @Override
-      public List<Impact> getImpacts(int level) {
-        assert level < numLevels;
-        if (impactDataLength[level] > 0) {
-          badi.reset(impactData[level], 0, impactDataLength[level]);
-          perLevelImpacts[level] = readImpacts(badi, perLevelImpacts[level]);
-          impactDataLength[level] = 0;
-        }
-        return perLevelImpacts[level];
-      }
-    };
+          @Override
+          public List<Impact> getImpacts(int level) {
+            assert level < numLevels;
+            if (impactDataLength[level] > 0) {
+              badi.reset(impactData[level], 0, impactDataLength[level]);
+              perLevelImpacts[level] = readImpacts(badi, perLevelImpacts[level]);
+              impactDataLength[level] = 0;
+            }
+            return perLevelImpacts[level];
+          }
+        };
   }
 
   @Override
@@ -140,7 +144,7 @@ final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
 
   static class MutableImpactList extends AbstractList<Impact> implements RandomAccess {
     int length = 1;
-    Impact[] impacts = new Impact[] { new Impact(Integer.MAX_VALUE, 1L) };
+    Impact[] impacts = new Impact[] {new Impact(Integer.MAX_VALUE, 1L)};
 
     @Override
     public Impact get(int index) {
@@ -152,5 +156,4 @@ final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
       return length;
     }
   }
-
 }

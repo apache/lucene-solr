@@ -19,14 +19,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * Query wrapper that reduces the size of max-score blocks to more easily detect
- * problems with the max-score logic.
+ * Query wrapper that reduces the size of max-score blocks to more easily detect problems with the
+ * max-score logic.
  */
 public final class BlockScoreQueryWrapper extends Query {
 
@@ -76,7 +75,8 @@ public final class BlockScoreQueryWrapper extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Weight inWeight = query.createWeight(searcher, scoreMode, boost);
     if (scoreMode.needsScores() == false) {
       return inWeight;
@@ -196,7 +196,6 @@ public final class BlockScoreQueryWrapper extends Query {
             }
             return max;
           }
-
         };
       }
 

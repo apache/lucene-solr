@@ -21,10 +21,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.document.Document;
 
-/** Parent JVM hold this "wrapper" to refer to each child JVM.  This is roughly equivalent e.g. to a client-side "sugar" API. */
+/**
+ * Parent JVM hold this "wrapper" to refer to each child JVM. This is roughly equivalent e.g. to a
+ * client-side "sugar" API.
+ */
 class NodeProcess implements Closeable {
   final Process p;
 
@@ -50,7 +52,15 @@ class NodeProcess implements Closeable {
 
   final AtomicBoolean nodeIsClosing;
 
-  public NodeProcess(Process p, int id, int tcpPort, Thread pumper, boolean isPrimary, long initCommitVersion, long initInfosVersion, AtomicBoolean nodeIsClosing) {
+  public NodeProcess(
+      Process p,
+      int id,
+      int tcpPort,
+      Thread pumper,
+      boolean isPrimary,
+      long initCommitVersion,
+      long initInfosVersion,
+      AtomicBoolean nodeIsClosing) {
     this.p = p;
     this.id = id;
     this.tcpPort = tcpPort;
@@ -59,7 +69,8 @@ class NodeProcess implements Closeable {
     this.initCommitVersion = initCommitVersion;
     this.initInfosVersion = initInfosVersion;
     this.nodeIsClosing = nodeIsClosing;
-    assert initInfosVersion >= initCommitVersion: "initInfosVersion=" + initInfosVersion + " initCommitVersion=" + initCommitVersion;
+    assert initInfosVersion >= initCommitVersion
+        : "initInfosVersion=" + initInfosVersion + " initCommitVersion=" + initCommitVersion;
     lock = new ReentrantLock();
   }
 
@@ -114,8 +125,11 @@ class NodeProcess implements Closeable {
     }
   }
 
-  /** Ask the primary node process to flush.  We send it all currently up replicas so it can notify them about the new NRT point.  Returns the newly
-   *  flushed version, or a negative (current) version if there were no changes. */
+  /**
+   * Ask the primary node process to flush. We send it all currently up replicas so it can notify
+   * them about the new NRT point. Returns the newly flushed version, or a negative (current)
+   * version if there were no changes.
+   */
   public synchronized long flush(int atLeastMarkerCount) throws IOException {
     assert isPrimary;
     try (Connection c = new Connection(tcpPort)) {
@@ -135,11 +149,11 @@ class NodeProcess implements Closeable {
   public synchronized boolean shutdown() {
     lock.lock();
     try {
-      //System.out.println("PARENT: now shutdown node=" + id + " isOpen=" + isOpen);
+      // System.out.println("PARENT: now shutdown node=" + id + " isOpen=" + isOpen);
       if (isOpen) {
         // Ask the child process to shutdown gracefully:
         isOpen = false;
-        //System.out.println("PARENT: send CMD_CLOSE to node=" + id);
+        // System.out.println("PARENT: send CMD_CLOSE to node=" + id);
         try (Connection c = new Connection(tcpPort)) {
           c.out.writeByte(SimplePrimaryNode.CMD_CLOSE);
           c.flush();
@@ -248,4 +262,3 @@ class NodeProcess implements Closeable {
     c.in.readByte();
   }
 }
-

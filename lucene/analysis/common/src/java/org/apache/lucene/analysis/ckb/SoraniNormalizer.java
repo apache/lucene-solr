@@ -18,38 +18,40 @@ package org.apache.lucene.analysis.ckb;
 
 import static org.apache.lucene.analysis.util.StemmerUtil.delete;
 
-/** 
+/**
  * Normalizes the Unicode representation of Sorani text.
- * <p>
- * Normalization consists of:
+ *
+ * <p>Normalization consists of:
+ *
  * <ul>
  *   <li>Alternate forms of 'y' (0064, 0649) are converted to 06CC (FARSI YEH)
  *   <li>Alternate form of 'k' (0643) is converted to 06A9 (KEHEH)
  *   <li>Alternate forms of vowel 'e' (0647+200C, word-final 0647, 0629) are converted to 06D5 (AE)
  *   <li>Alternate (joining) form of 'h' (06BE) is converted to 0647
- *   <li>Alternate forms of 'rr' (0692, word-initial 0631) are converted to 0695 (REH WITH SMALL V BELOW)
+ *   <li>Alternate forms of 'rr' (0692, word-initial 0631) are converted to 0695 (REH WITH SMALL V
+ *       BELOW)
  *   <li>Harakat, tatweel, and formatting characters such as directional controls are removed.
  * </ul>
  */
 public class SoraniNormalizer {
-  
+
   static final char YEH = '\u064A';
   static final char DOTLESS_YEH = '\u0649';
   static final char FARSI_YEH = '\u06CC';
-  
+
   static final char KAF = '\u0643';
   static final char KEHEH = '\u06A9';
-  
+
   static final char HEH = '\u0647';
   static final char AE = '\u06D5';
   static final char ZWNJ = '\u200C';
   static final char HEH_DOACHASHMEE = '\u06BE';
   static final char TEH_MARBUTA = '\u0629';
-      
+
   static final char REH = '\u0631';
   static final char RREH = '\u0695';
   static final char RREH_ABOVE = '\u0692';
-  
+
   static final char TATWEEL = '\u0640';
   static final char FATHATAN = '\u064B';
   static final char DAMMATAN = '\u064C';
@@ -62,7 +64,7 @@ public class SoraniNormalizer {
 
   /**
    * Normalize an input buffer of Sorani text
-   * 
+   *
    * @param s input buffer
    * @param len length of input buffer
    * @return length of input buffer after normalization
@@ -78,14 +80,14 @@ public class SoraniNormalizer {
           s[i] = KEHEH;
           break;
         case ZWNJ:
-          if (i > 0 && s[i-1] == HEH) {
-            s[i-1] = AE;
+          if (i > 0 && s[i - 1] == HEH) {
+            s[i - 1] = AE;
           }
           len = delete(s, i, len);
           i--;
           break;
         case HEH:
-          if (i == len-1) {
+          if (i == len - 1) {
             s[i] = AE;
           }
           break;

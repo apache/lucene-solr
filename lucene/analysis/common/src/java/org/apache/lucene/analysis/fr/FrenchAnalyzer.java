@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.fr;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -38,49 +36,52 @@ import org.apache.lucene.analysis.util.ElisionFilter;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * {@link Analyzer} for French language. 
- * <p>
- * Supports an external list of stopwords (words that
- * will not be indexed at all) and an external list of exclusions (word that will
- * not be stemmed, but indexed).
- * A default set of stopwords is used unless an alternative list is specified, but the
- * exclusion list is empty by default.
- * </p>
+ * {@link Analyzer} for French language.
  *
- * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
- * dependent settings as {@link StandardAnalyzer}.</p>
+ * <p>Supports an external list of stopwords (words that will not be indexed at all) and an external
+ * list of exclusions (word that will not be stemmed, but indexed). A default set of stopwords is
+ * used unless an alternative list is specified, but the exclusion list is empty by default.
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version} dependent
+ * settings as {@link StandardAnalyzer}.
  *
  * @since 3.1
  */
 public final class FrenchAnalyzer extends StopwordAnalyzerBase {
 
   /** File containing default French stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "french_stop.txt";
-  
-  /** Default set of articles for ElisionFilter */
-  public static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
-      new CharArraySet(Arrays.asList(
-          "l", "m", "t", "qu", "n", "s", "j", "d", "c", "jusqu", "quoiqu", "lorsqu", "puisqu"), true));
+  public static final String DEFAULT_STOPWORD_FILE = "french_stop.txt";
 
-  /**
-   * Contains words that should be indexed but not stemmed.
-   */
+  /** Default set of articles for ElisionFilter */
+  public static final CharArraySet DEFAULT_ARTICLES =
+      CharArraySet.unmodifiableSet(
+          new CharArraySet(
+              Arrays.asList(
+                  "l", "m", "t", "qu", "n", "s", "j", "d", "c", "jusqu", "quoiqu", "lorsqu",
+                  "puisqu"),
+              true));
+
+  /** Contains words that should be indexed but not stemmed. */
   private final CharArraySet excltable;
 
   /**
    * Returns an unmodifiable instance of the default stop-words set.
+   *
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static CharArraySet getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
+
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
+
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-                DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+        DEFAULT_STOP_SET =
+            WordlistLoader.getSnowballWordSet(
+                IOUtils.getDecodingReader(
+                    SnowballFilter.class, DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -89,49 +90,39 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Builds an analyzer with the default stop words ({@link #getDefaultStopSet}).
-   */
+  /** Builds an analyzer with the default stop words ({@link #getDefaultStopSet}). */
   public FrenchAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words
-   * 
-   * @param stopwords
-   *          a stopword set
+   *
+   * @param stopwords a stopword set
    */
-  public FrenchAnalyzer(CharArraySet stopwords){
+  public FrenchAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
-  }
-  
-  /**
-   * Builds an analyzer with the given stop words
-   * 
-   * @param stopwords
-   *          a stopword set
-   * @param stemExclutionSet
-   *          a stemming exclusion set
-   */
-  public FrenchAnalyzer(CharArraySet stopwords,
-      CharArraySet stemExclutionSet) {
-    super(stopwords);
-    this.excltable = CharArraySet.unmodifiableSet(CharArraySet
-        .copy(stemExclutionSet));
   }
 
   /**
-   * Creates
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * used to tokenize all the text in the provided {@link Reader}.
-   * 
-   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link StandardTokenizer} filtered with
-   *         {@link ElisionFilter},
-   *         {@link LowerCaseFilter}, {@link StopFilter},
-   *         {@link SetKeywordMarkerFilter} if a stem exclusion set is
-   *         provided, and {@link FrenchLightStemFilter}
+   * Builds an analyzer with the given stop words
+   *
+   * @param stopwords a stopword set
+   * @param stemExclutionSet a stemming exclusion set
+   */
+  public FrenchAnalyzer(CharArraySet stopwords, CharArraySet stemExclutionSet) {
+    super(stopwords);
+    this.excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclutionSet));
+  }
+
+  /**
+   * Creates {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} used to tokenize all
+   * the text in the provided {@link Reader}.
+   *
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from a {@link
+   *     StandardTokenizer} filtered with {@link ElisionFilter}, {@link LowerCaseFilter}, {@link
+   *     StopFilter}, {@link SetKeywordMarkerFilter} if a stem exclusion set is provided, and {@link
+   *     FrenchLightStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
@@ -139,8 +130,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new ElisionFilter(source, DEFAULT_ARTICLES);
     result = new LowerCaseFilter(result);
     result = new StopFilter(result, stopwords);
-    if(!excltable.isEmpty())
-      result = new SetKeywordMarkerFilter(result, excltable);
+    if (!excltable.isEmpty()) result = new SetKeywordMarkerFilter(result, excltable);
     result = new FrenchLightStemFilter(result);
     return new TokenStreamComponents(source, result);
   }
@@ -152,4 +142,3 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     return result;
   }
 }
-

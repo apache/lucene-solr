@@ -17,11 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dialog;
@@ -31,7 +26,11 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Window;
 import java.io.IOException;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -52,7 +51,7 @@ public final class ConfirmDialogFactory implements DialogOpener.DialogFactory {
 
   private Callable callback;
 
-  public synchronized static ConfirmDialogFactory getInstance() throws IOException {
+  public static synchronized ConfirmDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new ConfirmDialogFactory();
     }
@@ -103,10 +102,11 @@ public final class ConfirmDialogFactory implements DialogOpener.DialogFactory {
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING));
     footer.setOpaque(false);
     JButton okBtn = new JButton(MessageUtils.getLocalizedMessage("button.ok"));
-    okBtn.addActionListener(e -> {
-      callback.call();
-      dialog.dispose();
-    });
+    okBtn.addActionListener(
+        e -> {
+          callback.call();
+          dialog.dispose();
+        });
     footer.add(okBtn);
     JButton closeBtn = new JButton(MessageUtils.getLocalizedMessage("button.close"));
     closeBtn.addActionListener(e -> dialog.dispose());
@@ -115,5 +115,4 @@ public final class ConfirmDialogFactory implements DialogOpener.DialogFactory {
 
     return panel;
   }
-
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
-
 import org.apache.lucene.util.packed.PackedInts;
 
 public class TestLSBRadixSorter extends LuceneTestCase {

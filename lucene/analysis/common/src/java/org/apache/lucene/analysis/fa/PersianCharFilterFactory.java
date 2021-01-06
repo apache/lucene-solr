@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.fa;
 
-
 import java.io.Reader;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
  * Factory for {@link PersianCharFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_fa" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -41,13 +40,13 @@ public class PersianCharFilterFactory extends CharFilterFactory {
   public static final String NAME = "persian";
 
   /** Creates a new PersianCharFilterFactory */
-  public PersianCharFilterFactory(Map<String,String> args) {
+  public PersianCharFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public PersianCharFilterFactory() {
     throw defaultCtorException();

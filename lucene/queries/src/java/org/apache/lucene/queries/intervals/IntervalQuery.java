@@ -19,7 +19,6 @@ package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterMatchesIterator;
@@ -34,29 +33,28 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
 /**
- * A query that retrieves documents containing intervals returned from an
- * {@link IntervalsSource}
+ * A query that retrieves documents containing intervals returned from an {@link IntervalsSource}
  *
- * Static constructor functions for various different sources can be found in the
- * {@link Intervals} class
+ * <p>Static constructor functions for various different sources can be found in the {@link
+ * Intervals} class
  *
- * Scores for this query are computed as a function of the sloppy frequency of
- * intervals appearing in a particular document.  Sloppy frequency is calculated
- * from the number of matching intervals, and their width, with wider intervals
- * contributing lower values.  The scores can be adjusted with two optional
- * parameters:
+ * <p>Scores for this query are computed as a function of the sloppy frequency of intervals
+ * appearing in a particular document. Sloppy frequency is calculated from the number of matching
+ * intervals, and their width, with wider intervals contributing lower values. The scores can be
+ * adjusted with two optional parameters:
+ *
  * <ul>
- *   <li>pivot - the sloppy frequency value at which the overall score of the
- *               document will equal 0.5.  The default value is 1</li>
- *   <li>exp   - higher values of this parameter make the function grow more slowly
- *               below the pivot and faster higher than the pivot.  The default value is 1</li>
+ *   <li>pivot - the sloppy frequency value at which the overall score of the document will equal
+ *       0.5. The default value is 1
+ *   <li>exp - higher values of this parameter make the function grow more slowly below the pivot
+ *       and faster higher than the pivot. The default value is 1
  * </ul>
  *
- * Optimal values for both pivot and exp depend on the type of queries and corpus of
- * documents being queried.
+ * Optimal values for both pivot and exp depend on the type of queries and corpus of documents being
+ * queried.
  *
- * Scores are bounded to between 0 and 1.  For higher contributions, wrap the query
- * in a {@link org.apache.lucene.search.BoostQuery}
+ * <p>Scores are bounded to between 0 and 1. For higher contributions, wrap the query in a {@link
+ * org.apache.lucene.search.BoostQuery}
  */
 public final class IntervalQuery extends Query {
 
@@ -66,8 +64,9 @@ public final class IntervalQuery extends Query {
 
   /**
    * Create a new IntervalQuery
-   * @param field             the field to query
-   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
+   *
+   * @param field the field to query
+   * @param intervalsSource an {@link IntervalsSource} to retrieve intervals from
    */
   public IntervalQuery(String field, IntervalsSource intervalsSource) {
     this(field, intervalsSource, IntervalScoreFunction.saturationFunction(1));
@@ -76,9 +75,10 @@ public final class IntervalQuery extends Query {
   /**
    * Create a new IntervalQuery with a scoring pivot
    *
-   * @param field             the field to query
-   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
-   * @param pivot             the sloppy frequency value at which the score will be 0.5, must be within (0, +Infinity)
+   * @param field the field to query
+   * @param intervalsSource an {@link IntervalsSource} to retrieve intervals from
+   * @param pivot the sloppy frequency value at which the score will be 0.5, must be within (0,
+   *     +Infinity)
    */
   public IntervalQuery(String field, IntervalsSource intervalsSource, float pivot) {
     this(field, intervalsSource, IntervalScoreFunction.saturationFunction(pivot));
@@ -86,17 +86,20 @@ public final class IntervalQuery extends Query {
 
   /**
    * Create a new IntervalQuery with a scoring pivot and exponent
-   * @param field             the field to query
-   * @param intervalsSource   an {@link IntervalsSource} to retrieve intervals from
-   * @param pivot             the sloppy frequency value at which the score will be 0.5, must be within (0, +Infinity)
-   * @param exp               exponent, higher values make the function grow slower before 'pivot' and faster
-   *                          after 'pivot', must be in (0, +Infinity)
+   *
+   * @param field the field to query
+   * @param intervalsSource an {@link IntervalsSource} to retrieve intervals from
+   * @param pivot the sloppy frequency value at which the score will be 0.5, must be within (0,
+   *     +Infinity)
+   * @param exp exponent, higher values make the function grow slower before 'pivot' and faster
+   *     after 'pivot', must be in (0, +Infinity)
    */
   public IntervalQuery(String field, IntervalsSource intervalsSource, float pivot, float exp) {
     this(field, intervalsSource, IntervalScoreFunction.sigmoidFunction(pivot, exp));
   }
 
-  private IntervalQuery(String field, IntervalsSource intervalsSource, IntervalScoreFunction scoreFunction) {
+  private IntervalQuery(
+      String field, IntervalsSource intervalsSource, IntervalScoreFunction scoreFunction) {
     Objects.requireNonNull(field, "null field aren't accepted");
     Objects.requireNonNull(intervalsSource, "null intervalsSource aren't accepted");
     Objects.requireNonNull(scoreFunction, "null searchStrategy aren't accepted");
@@ -105,9 +108,7 @@ public final class IntervalQuery extends Query {
     this.scoreFunction = scoreFunction;
   }
 
-  /**
-   * The field to query
-   */
+  /** The field to query */
   public String getField() {
     return field;
   }
@@ -118,7 +119,8 @@ public final class IntervalQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new IntervalWeight(this, boost, scoreMode);
   }
 
@@ -134,8 +136,8 @@ public final class IntervalQuery extends Query {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     IntervalQuery that = (IntervalQuery) o;
-    return Objects.equals(field, that.field) &&
-        Objects.equals(intervalsSource, that.intervalsSource);
+    return Objects.equals(field, that.field)
+        && Objects.equals(intervalsSource, that.intervalsSource);
   }
 
   @Override
@@ -169,25 +171,28 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return MatchesUtils.forField(field, () -> {
-        MatchesIterator mi = intervalsSource.matches(field, context, doc);
-        if (mi == null) {
-          return null;
-        }
-        return new FilterMatchesIterator(mi) {
-          @Override
-          public Query getQuery() {
-            return new IntervalQuery(field, intervalsSource);
-          }
-        };
-      });
+      return MatchesUtils.forField(
+          field,
+          () -> {
+            MatchesIterator mi = intervalsSource.matches(field, context, doc);
+            if (mi == null) {
+              return null;
+            }
+            return new FilterMatchesIterator(mi) {
+              @Override
+              public Query getQuery() {
+                return new IntervalQuery(field, intervalsSource);
+              }
+            };
+          });
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       IntervalIterator intervals = intervalsSource.intervals(field, context);
-      if (intervals == null)
+      if (intervals == null) {
         return null;
+      }
       return new IntervalScorer(this, intervals, intervalsSource.minExtent(), boost, scoreFunction);
     }
 
@@ -196,5 +201,4 @@ public final class IntervalQuery extends Query {
       return true;
     }
   }
-
 }

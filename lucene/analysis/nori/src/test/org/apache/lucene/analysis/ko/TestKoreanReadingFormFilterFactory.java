@@ -19,32 +19,33 @@ package org.apache.lucene.analysis.ko;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 
-/**
- * Simple tests for {@link KoreanReadingFormFilterFactory}
- */
+/** Simple tests for {@link KoreanReadingFormFilterFactory} */
 public class TestKoreanReadingFormFilterFactory extends BaseTokenStreamTestCase {
   public void testReadings() throws IOException {
     KoreanTokenizerFactory tokenizerFactory = new KoreanTokenizerFactory(new HashMap<>());
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     Tokenizer tokenStream = tokenizerFactory.create();
     tokenStream.setReader(new StringReader("丞相"));
-    KoreanReadingFormFilterFactory filterFactory = new KoreanReadingFormFilterFactory(new HashMap<>());
-    assertTokenStreamContents(filterFactory.create(tokenStream),
-        new String[] { "승상" }
-    );
+    KoreanReadingFormFilterFactory filterFactory =
+        new KoreanReadingFormFilterFactory(new HashMap<>());
+    assertTokenStreamContents(filterFactory.create(tokenStream), new String[] {"승상"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
-        new KoreanReadingFormFilterFactory(new HashMap<>() {{
-          put("bogusArg", "bogusValue");
-        }})
-    );
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                new KoreanReadingFormFilterFactory(
+                    new HashMap<>() {
+                      {
+                        put("bogusArg", "bogusValue");
+                      }
+                    }));
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

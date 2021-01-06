@@ -21,7 +21,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
@@ -31,43 +30,43 @@ import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-public class TestPatternTokenizer extends BaseTokenStreamTestCase 
-{
-  public void testSplitting() throws Exception 
-  {
+public class TestPatternTokenizer extends BaseTokenStreamTestCase {
+  public void testSplitting() throws Exception {
     String qpattern = "\\'([^\\']+)\\'"; // get stuff between "'"
     String[][] tests = {
       // group  pattern        input                    output
-      { "-1",   "--",          "aaa--bbb--ccc",         "aaa bbb ccc" },
-      { "-1",   ":",           "aaa:bbb:ccc",           "aaa bbb ccc" },
-      { "-1",   "\\p{Space}",  "aaa   bbb \t\tccc  ",   "aaa bbb ccc" },
-      { "-1",   ":",           "boo:and:foo",           "boo and foo" },
-      { "-1",   "o",           "boo:and:foo",           "b :and:f" },
-      { "0",    ":",           "boo:and:foo",           ": :" },
-      { "0",    qpattern,      "aaa 'bbb' 'ccc'",       "'bbb' 'ccc'" },
-      { "1",    qpattern,      "aaa 'bbb' 'ccc'",       "bbb ccc" }
+      {"-1", "--", "aaa--bbb--ccc", "aaa bbb ccc"},
+      {"-1", ":", "aaa:bbb:ccc", "aaa bbb ccc"},
+      {"-1", "\\p{Space}", "aaa   bbb \t\tccc  ", "aaa bbb ccc"},
+      {"-1", ":", "boo:and:foo", "boo and foo"},
+      {"-1", "o", "boo:and:foo", "b :and:f"},
+      {"0", ":", "boo:and:foo", ": :"},
+      {"0", qpattern, "aaa 'bbb' 'ccc'", "'bbb' 'ccc'"},
+      {"1", qpattern, "aaa 'bbb' 'ccc'", "bbb ccc"}
     };
-    
-    for( String[] test : tests ) {     
-      TokenStream stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile(test[1]), Integer.parseInt(test[0]));
-      ((Tokenizer)stream).setReader(new StringReader(test[2]));
-      String out = tsToString( stream );
+
+    for (String[] test : tests) {
+      TokenStream stream =
+          new PatternTokenizer(
+              newAttributeFactory(), Pattern.compile(test[1]), Integer.parseInt(test[0]));
+      ((Tokenizer) stream).setReader(new StringReader(test[2]));
+      String out = tsToString(stream);
       // System.out.println( test[2] + " ==> " + out );
 
-      assertEquals("pattern: "+test[1]+" with input: "+test[2], test[3], out );
-      
+      assertEquals("pattern: " + test[1] + " with input: " + test[2], test[3], out);
+
       // Make sure it is the same as if we called 'split'
       // test disabled, as we remove empty tokens
       /*if( "-1".equals( test[0] ) ) {
         String[] split = test[2].split( test[1] );
         stream = tokenizer.create( new StringReader( test[2] ) );
         int i=0;
-        for( Token t = stream.next(); null != t; t = stream.next() ) 
+        for( Token t = stream.next(); null != t; t = stream.next() )
         {
           assertEquals( "split: "+test[1] + " "+i, split[i++], new String(t.termBuffer(), 0, t.termLength()) );
         }
       }*/
-    } 
+    }
   }
 
   public void testOffsetCorrection() throws Exception {
@@ -75,34 +74,35 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
 
     // create MappingCharFilter
     List<String> mappingRules = new ArrayList<>();
-    mappingRules.add( "\"&uuml;\" => \"ü\"" );
+    mappingRules.add("\"&uuml;\" => \"ü\"");
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");
     NormalizeCharMap normMap = builder.build();
-    CharFilter charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
+    CharFilter charStream = new MappingCharFilter(normMap, new StringReader(INPUT));
 
     // create PatternTokenizer
-    Tokenizer stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("[,;/\\s]+"), -1);
+    Tokenizer stream =
+        new PatternTokenizer(newAttributeFactory(), Pattern.compile("[,;/\\s]+"), -1);
     stream.setReader(charStream);
-    assertTokenStreamContents(stream,
-        new String[] { "Günther", "Günther", "is", "here" },
-        new int[] { 0, 13, 26, 29 },
-        new int[] { 12, 25, 28, 33 },
+    assertTokenStreamContents(
+        stream,
+        new String[] {"Günther", "Günther", "is", "here"},
+        new int[] {0, 13, 26, 29},
+        new int[] {12, 25, 28, 33},
         INPUT.length());
-    
-    charStream = new MappingCharFilter( normMap, new StringReader( INPUT ) );
+
+    charStream = new MappingCharFilter(normMap, new StringReader(INPUT));
     stream = new PatternTokenizer(newAttributeFactory(), Pattern.compile("Günther"), 0);
     stream.setReader(charStream);
-    assertTokenStreamContents(stream,
-        new String[] { "Günther", "Günther" },
-        new int[] { 0, 13 },
-        new int[] { 12, 25 },
+    assertTokenStreamContents(
+        stream,
+        new String[] {"Günther", "Günther"},
+        new int[] {0, 13},
+        new int[] {12, 25},
         INPUT.length());
   }
-  
-  /** 
-   * TODO: rewrite tests not to use string comparison.
-   */
+
+  /** TODO: rewrite tests not to use string comparison. */
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
     CharTermAttribute termAtt = in.addAttribute(CharTermAttribute.class);
@@ -112,8 +112,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     termAtt.setEmpty().append("bogusTerm");
     in.reset();
     while (in.incrementToken()) {
-      if (out.length() > 0)
-        out.append(' ');
+      if (out.length() > 0) out.append(' ');
       out.append(termAtt.toString());
       in.clearAttributes();
       termAtt.setEmpty().append("bogusTerm");
@@ -122,26 +121,30 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     in.close();
     return out.toString();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), -1);
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), -1);
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
-    
-    Analyzer b = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), 0);
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+
+    Analyzer b =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new PatternTokenizer(newAttributeFactory(), Pattern.compile("a"), 0);
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
@@ -153,9 +156,9 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
 
     // Build a 1MB string:
     StringBuilder b = new StringBuilder();
-    for(int i=0;i<1024;i++) {
+    for (int i = 0; i < 1024; i++) {
       // 1023 spaces, then an x
-      for(int j=0;j<1023;j++) {
+      for (int j = 0; j < 1023; j++) {
         b.append(' ');
       }
       b.append('x');
@@ -166,12 +169,12 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     Pattern x = Pattern.compile("x");
 
     List<Tokenizer> tokenizers = new ArrayList<>();
-    for(int i=0;i<512;i++) {
+    for (int i = 0; i < 512; i++) {
       Tokenizer stream = new PatternTokenizer(x, -1);
       tokenizers.add(stream);
       stream.setReader(new StringReader(big));
       stream.reset();
-      for(int j=0;j<1024;j++) {
+      for (int j = 0; j < 1024; j++) {
         assertTrue(stream.incrementToken());
       }
       assertFalse(stream.incrementToken());

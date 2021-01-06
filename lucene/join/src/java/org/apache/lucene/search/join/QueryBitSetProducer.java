@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReader;
@@ -34,15 +33,15 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSet;
 
-/**
- * A {@link BitSetProducer} that wraps a query and caches matching
- * {@link BitSet}s per segment.
- */
+/** A {@link BitSetProducer} that wraps a query and caches matching {@link BitSet}s per segment. */
 public class QueryBitSetProducer implements BitSetProducer {
   private final Query query;
-  final Map<IndexReader.CacheKey,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<>());
+  final Map<IndexReader.CacheKey, DocIdSet> cache =
+      Collections.synchronizedMap(new WeakHashMap<>());
 
-  /** Wraps another query's result and caches it into bitsets.
+  /**
+   * Wraps another query's result and caches it into bitsets.
+   *
    * @param query Query to cache results of
    */
   public QueryBitSetProducer(Query query) {
@@ -51,12 +50,13 @@ public class QueryBitSetProducer implements BitSetProducer {
 
   /**
    * Gets the contained query.
+   *
    * @return the contained query.
    */
   public Query getQuery() {
     return query;
   }
-  
+
   @Override
   public BitSet getBitSet(LeafReaderContext context) throws IOException {
     final LeafReader reader = context.reader();
@@ -71,7 +71,9 @@ public class QueryBitSetProducer implements BitSetProducer {
       final IndexSearcher searcher = new IndexSearcher(topLevelContext);
       searcher.setQueryCache(null);
       final Query rewritten = searcher.rewrite(query);
-      final Weight weight = searcher.createWeight(rewritten, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1);
+      final Weight weight =
+          searcher.createWeight(
+              rewritten, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1);
       final Scorer s = weight.scorer(context);
 
       if (s == null) {
@@ -85,10 +87,10 @@ public class QueryBitSetProducer implements BitSetProducer {
     }
     return docIdSet == DocIdSet.EMPTY ? null : ((BitDocIdSet) docIdSet).bits();
   }
-  
+
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "("+query.toString()+")";
+    return getClass().getSimpleName() + "(" + query.toString() + ")";
   }
 
   @Override

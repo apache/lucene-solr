@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.sandbox.search;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.Directory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * A basic unit test for FieldCacheTermsFilter
@@ -43,7 +41,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), rd);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
-      int term = i * 10; //terms are units of 10;
+      int term = i * 10; // terms are units of 10;
       doc.add(newStringField(fieldName, "" + term, Field.Store.YES));
       doc.add(new SortedDocValuesField(fieldName, new BytesRef("" + term)));
       w.addDocument(doc);
@@ -57,18 +55,24 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
 
     List<String> terms = new ArrayList<>();
     terms.add("5");
-    results = searcher.search(new DocValuesTermsQuery(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results =
+        searcher.search(new DocValuesTermsQuery(fieldName, terms.toArray(new String[0])), numDocs)
+            .scoreDocs;
     assertEquals("Must match nothing", 0, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
-    results = searcher.search(new DocValuesTermsQuery(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results =
+        searcher.search(new DocValuesTermsQuery(fieldName, terms.toArray(new String[0])), numDocs)
+            .scoreDocs;
     assertEquals("Must match 1", 1, results.length);
 
     terms = new ArrayList<>();
     terms.add("10");
     terms.add("20");
-    results = searcher.search(new DocValuesTermsQuery(fieldName,  terms.toArray(new String[0])), numDocs).scoreDocs;
+    results =
+        searcher.search(new DocValuesTermsQuery(fieldName, terms.toArray(new String[0])), numDocs)
+            .scoreDocs;
     assertEquals("Must match 2", 2, results.length);
 
     reader.close();

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -39,21 +38,22 @@ public class TestIndexManyDocuments extends LuceneTestCase {
     final IndexWriter w = new IndexWriter(dir, iwc);
     final AtomicInteger count = new AtomicInteger();
     Thread[] threads = new Thread[2];
-    for(int i=0;i<threads.length;i++) {
-      threads[i] = new Thread() {
-          @Override
-          public void run() {
-           while (count.getAndIncrement() < numDocs) {
-              Document doc = new Document();
-              doc.add(newTextField("field", "text", Field.Store.NO));
-              try {
-                w.addDocument(doc);
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              while (count.getAndIncrement() < numDocs) {
+                Document doc = new Document();
+                doc.add(newTextField("field", "text", Field.Store.NO));
+                try {
+                  w.addDocument(doc);
+                } catch (IOException ioe) {
+                  throw new RuntimeException(ioe);
+                }
               }
             }
-          }
-        };
+          };
       threads[i].start();
     }
 
@@ -61,9 +61,15 @@ public class TestIndexManyDocuments extends LuceneTestCase {
       thread.join();
     }
 
-    assertEquals("lost " + (numDocs - w.getDocStats().maxDoc) + " documents; maxBufferedDocs=" + iwc.getMaxBufferedDocs(), numDocs, w.getDocStats().maxDoc);
+    assertEquals(
+        "lost "
+            + (numDocs - w.getDocStats().maxDoc)
+            + " documents; maxBufferedDocs="
+            + iwc.getMaxBufferedDocs(),
+        numDocs,
+        w.getDocStats().maxDoc);
     w.close();
-             
+
     IndexReader r = DirectoryReader.open(dir);
     assertEquals(numDocs, r.maxDoc());
     IOUtils.close(r, dir);

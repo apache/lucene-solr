@@ -16,13 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-/**
- * Just like TestDuelingCodecs, only with a lot more documents.
- */
+/** Just like TestDuelingCodecs, only with a lot more documents. */
 @Nightly
 @SuppressCodecs({"Direct"}) // it can be too much for these codecs
 public class TestDuelingCodecsAtNight extends TestDuelingCodecs {
@@ -35,7 +32,7 @@ public class TestDuelingCodecsAtNight extends TestDuelingCodecs {
 
     leftReader = leftWriter.getReader();
     rightReader = rightWriter.getReader();
-    
+
     assertReaderEquals(info, leftReader, rightReader);
   }
 }

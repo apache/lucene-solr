@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for English.
- */
+/** Analyzer for English. */
 package org.apache.lucene.analysis.en;

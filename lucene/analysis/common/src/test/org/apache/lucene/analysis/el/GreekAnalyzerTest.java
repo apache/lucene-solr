@@ -19,10 +19,7 @@ package org.apache.lucene.analysis.el;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
-/**
- * A unit test class for verifying the correct operation of the GreekAnalyzer.
- *
- */
+/** A unit test class for verifying the correct operation of the GreekAnalyzer. */
 public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 
   /**
@@ -34,17 +31,22 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     Analyzer a = new GreekAnalyzer();
     // Verify the correct analysis of capitals and small accented letters, and
     // stemming
-    assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
-        new String[] { "μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ",
-        "ελληνικ", "γλωσσ" });
+    assertAnalyzesTo(
+        a,
+        "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+        new String[] {"μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ", "ελληνικ", "γλωσσ"});
     // Verify the correct analysis of small letters with diaeresis and the elimination
     // of punctuation marks
-    assertAnalyzesTo(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
-        new String[] { "προιοντ", "πολλαπλ", "αναγκ" });
+    assertAnalyzesTo(
+        a,
+        "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+        new String[] {"προιοντ", "πολλαπλ", "αναγκ"});
     // Verify the correct analysis of capital accented letters and capital letters with diaeresis,
     // as well as the elimination of stop words
-    assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
-        new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+    assertAnalyzesTo(
+        a,
+        "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+        new String[] {"προυποθεσ", "αψογ", "μεστ", "αλλ"});
     a.close();
   }
 
@@ -52,20 +54,25 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     Analyzer a = new GreekAnalyzer();
     // Verify the correct analysis of capitals and small accented letters, and
     // stemming
-    assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
-        new String[] { "μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ",
-        "ελληνικ", "γλωσσ" });
+    assertAnalyzesTo(
+        a,
+        "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+        new String[] {"μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ", "ελληνικ", "γλωσσ"});
     // Verify the correct analysis of small letters with diaeresis and the elimination
     // of punctuation marks
-    assertAnalyzesTo(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
-        new String[] { "προιοντ", "πολλαπλ", "αναγκ" });
+    assertAnalyzesTo(
+        a,
+        "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+        new String[] {"προιοντ", "πολλαπλ", "αναγκ"});
     // Verify the correct analysis of capital accented letters and capital letters with diaeresis,
     // as well as the elimination of stop words
-    assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
-        new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+    assertAnalyzesTo(
+        a,
+        "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+        new String[] {"προυποθεσ", "αψογ", "μεστ", "αλλ"});
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new GreekAnalyzer();

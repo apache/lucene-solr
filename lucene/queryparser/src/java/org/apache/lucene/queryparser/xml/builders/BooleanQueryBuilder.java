@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/**
- * Builder for {@link BooleanQuery}
- */
+/** Builder for {@link BooleanQuery} */
 public class BooleanQueryBuilder implements QueryBuilder {
 
   private final QueryBuilder factory;
@@ -39,8 +37,8 @@ public class BooleanQueryBuilder implements QueryBuilder {
   }
 
   /* (non-Javadoc)
-    * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
-    */
+   * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
+   */
 
   @Override
   public Query getQuery(Element e) throws ParserException {
@@ -82,5 +80,4 @@ public class BooleanQueryBuilder implements QueryBuilder {
     }
     throw new ParserException("Invalid value for \"occurs\" attribute of clause:" + occs);
   }
-
 }

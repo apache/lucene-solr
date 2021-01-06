@@ -21,13 +21,10 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * @lucene.internal 
- */
+/** @lucene.internal */
 final class DocumentsWriterFlushQueue {
   private final Queue<FlushTicket> queue = new ArrayDeque<>();
   // we track tickets separately since count must be present even before the ticket is
@@ -36,12 +33,13 @@ final class DocumentsWriterFlushQueue {
   private final ReentrantLock purgeLock = new ReentrantLock();
 
   synchronized boolean addDeletes(DocumentsWriterDeleteQueue deleteQueue) throws IOException {
-    incTickets();// first inc the ticket count - freeze opens
-                 // a window for #anyChanges to fail
+    // first inc the ticket count - freeze opens a window for #anyChanges to fail
+    incTickets();
     boolean success = false;
     try {
       FrozenBufferedUpdates frozenBufferedUpdates = deleteQueue.maybeFreezeGlobalBuffer();
-      if (frozenBufferedUpdates != null) { // no need to publish anything if we don't have any frozen updates
+      if (frozenBufferedUpdates != null) {
+        // no need to publish anything if we don't have any frozen updates
         queue.add(new FlushTicket(frozenBufferedUpdates, false));
         success = true;
       }
@@ -52,12 +50,12 @@ final class DocumentsWriterFlushQueue {
     }
     return success;
   }
-  
+
   private void incTickets() {
     int numTickets = ticketCount.incrementAndGet();
     assert numTickets > 0;
   }
-  
+
   private void decTickets() {
     int numTickets = ticketCount.decrementAndGet();
     assert numTickets >= 0;
@@ -80,7 +78,7 @@ final class DocumentsWriterFlushQueue {
       }
     }
   }
-  
+
   synchronized void addSegment(FlushTicket ticket, FlushedSegment segment) {
     assert ticket.hasSegment;
     // the actual flush is done asynchronously and once done the FlushedSegment
@@ -106,7 +104,7 @@ final class DocumentsWriterFlushQueue {
       final boolean canPublish;
       synchronized (this) {
         head = queue.peek();
-        canPublish = head != null && head.canPublish(); // do this synced 
+        canPublish = head != null && head.canPublish(); // do this synced
       }
       if (canPublish) {
         try {
@@ -114,7 +112,7 @@ final class DocumentsWriterFlushQueue {
            * if we block on publish -> lock IW -> lock BufferedDeletes we don't block
            * concurrent segment flushes just because they want to append to the queue.
            * the downside is that we need to force a purge on fullFlush since there could
-           * be a ticket still in the queue. 
+           * be a ticket still in the queue.
            */
           consumer.accept(head);
 
@@ -175,7 +173,7 @@ final class DocumentsWriterFlushQueue {
     }
 
     synchronized void markPublished() {
-      assert published == false: "ticket was already published - can not publish twice";
+      assert published == false : "ticket was already published - can not publish twice";
       published = true;
     }
 
@@ -190,16 +188,14 @@ final class DocumentsWriterFlushQueue {
     }
 
     /**
-     * Returns the flushed segment or <code>null</code> if this flush ticket doesn't have a segment. This can be the
-     * case if this ticket represents a flushed global frozen updates package.
+     * Returns the flushed segment or <code>null</code> if this flush ticket doesn't have a segment.
+     * This can be the case if this ticket represents a flushed global frozen updates package.
      */
     FlushedSegment getFlushedSegment() {
       return segment;
     }
 
-    /**
-     * Returns a frozen global deletes package.
-     */
+    /** Returns a frozen global deletes package. */
     FrozenBufferedUpdates getFrozenUpdates() {
       return frozenUpdates;
     }

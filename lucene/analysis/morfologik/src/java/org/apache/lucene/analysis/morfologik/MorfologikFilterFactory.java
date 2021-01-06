@@ -16,26 +16,24 @@
  */
 package org.apache.lucene.analysis.morfologik;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Objects;
-
 import morfologik.stemming.Dictionary;
 import morfologik.stemming.DictionaryMetadata;
 import morfologik.stemming.polish.PolishStemmer;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
- * Filter factory for {@link MorfologikFilter}. 
- * 
- * <p>An explicit resource name of the dictionary ({@code ".dict"}) can be 
- * provided via the <code>dictionary</code> attribute, as the example below demonstrates:
+ * Filter factory for {@link MorfologikFilter}.
+ *
+ * <p>An explicit resource name of the dictionary ({@code ".dict"}) can be provided via the <code>
+ * dictionary</code> attribute, as the example below demonstrates:
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_mylang" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -43,10 +41,10 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.MorfologikFilterFactory" dictionary="mylang.dict" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * 
- * <p>If the dictionary attribute is not provided, the Polish dictionary is loaded
- * and used by default. 
- * 
+ *
+ * <p>If the dictionary attribute is not provided, the Polish dictionary is loaded and used by
+ * default.
+ *
  * @see <a href="http://morfologik.blogspot.com/">Morfologik web site</a>
  * @since 4.0.0
  * @lucene.spi {@value #NAME}
@@ -56,7 +54,10 @@ public class MorfologikFilterFactory extends TokenFilterFactory implements Resou
   /** SPI name */
   public static final String NAME = "morfologik";
 
-  /** Dictionary resource attribute (should have {@code ".dict"} suffix), loaded from {@link ResourceLoader}. */
+  /**
+   * Dictionary resource attribute (should have {@code ".dict"} suffix), loaded from {@link
+   * ResourceLoader}.
+   */
   public static final String DICTIONARY_ATTRIBUTE = "dictionary";
 
   /** {@link #DICTIONARY_ATTRIBUTE} value passed to {@link #inform}. */
@@ -66,15 +67,20 @@ public class MorfologikFilterFactory extends TokenFilterFactory implements Resou
   private Dictionary dictionary;
 
   /** Creates a new MorfologikFilterFactory */
-  public MorfologikFilterFactory(Map<String,String> args) {
+  public MorfologikFilterFactory(Map<String, String> args) {
     super(args);
 
     // Be specific about no-longer-supported dictionary attribute.
     final String DICTIONARY_RESOURCE_ATTRIBUTE = "dictionary-resource";
     String dictionaryResource = get(args, DICTIONARY_RESOURCE_ATTRIBUTE);
     if (dictionaryResource != null && !dictionaryResource.isEmpty()) {
-      throw new IllegalArgumentException("The " + DICTIONARY_RESOURCE_ATTRIBUTE + " attribute is no "
-          + "longer supported. Use the '" + DICTIONARY_ATTRIBUTE + "' attribute instead (see LUCENE-6833).");
+      throw new IllegalArgumentException(
+          "The "
+              + DICTIONARY_RESOURCE_ATTRIBUTE
+              + " attribute is no "
+              + "longer supported. Use the '"
+              + DICTIONARY_ATTRIBUTE
+              + "' attribute instead (see LUCENE-6833).");
     }
 
     resourceName = get(args, DICTIONARY_ATTRIBUTE);
@@ -96,7 +102,8 @@ public class MorfologikFilterFactory extends TokenFilterFactory implements Resou
       this.dictionary = new PolishStemmer().getDictionary();
     } else {
       try (InputStream dict = loader.openResource(resourceName);
-           InputStream meta = loader.openResource(DictionaryMetadata.getExpectedMetadataFileName(resourceName))) {
+          InputStream meta =
+              loader.openResource(DictionaryMetadata.getExpectedMetadataFileName(resourceName))) {
         this.dictionary = Dictionary.read(dict, meta);
       }
     }
@@ -104,6 +111,8 @@ public class MorfologikFilterFactory extends TokenFilterFactory implements Resou
 
   @Override
   public TokenStream create(TokenStream ts) {
-    return new MorfologikFilter(ts, Objects.requireNonNull(dictionary, "MorfologikFilterFactory was not fully initialized."));
+    return new MorfologikFilter(
+        ts,
+        Objects.requireNonNull(dictionary, "MorfologikFilterFactory was not fully initialized."));
   }
 }

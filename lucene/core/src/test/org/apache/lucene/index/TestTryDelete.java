@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -34,12 +32,8 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-
-public class TestTryDelete extends LuceneTestCase
-{
-  private static IndexWriter getWriter (Directory directory)
-    throws IOException
-  {
+public class TestTryDelete extends LuceneTestCase {
+  private static IndexWriter getWriter(Directory directory) throws IOException {
     MergePolicy policy = new LogByteSizeMergePolicy();
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergePolicy(policy);
@@ -50,9 +44,7 @@ public class TestTryDelete extends LuceneTestCase
     return writer;
   }
 
-  private static Directory createIndex ()
-    throws IOException
-  {
+  private static Directory createIndex() throws IOException {
     Directory directory = new ByteBuffersDirectory();
 
     IndexWriter writer = getWriter(directory);
@@ -69,20 +61,16 @@ public class TestTryDelete extends LuceneTestCase
     return directory;
   }
 
-  public void testTryDeleteDocument ()
-    throws IOException
-  {
+  public void testTryDeleteDocument() throws IOException {
     Directory directory = createIndex();
 
     IndexWriter writer = getWriter(directory);
 
-    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              new SearcherFactory());
+    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, new SearcherFactory());
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
     assertEquals(1, topDocs.totalHits.value);
 
     long result;
@@ -114,20 +102,16 @@ public class TestTryDelete extends LuceneTestCase
     assertEquals(0, topDocs.totalHits.value);
   }
 
-  public void testTryDeleteDocumentCloseAndReopen ()
-    throws IOException
-  {
+  public void testTryDeleteDocumentCloseAndReopen() throws IOException {
     Directory directory = createIndex();
 
     IndexWriter writer = getWriter(directory);
 
-    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              new SearcherFactory());
+    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, new SearcherFactory());
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
     assertEquals(1, topDocs.totalHits.value);
 
     long result = writer.tryDeleteDocument(DirectoryReader.open(writer), 0);
@@ -153,23 +137,18 @@ public class TestTryDelete extends LuceneTestCase
     topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
 
     assertEquals(0, topDocs.totalHits.value);
-
   }
 
-  public void testDeleteDocuments ()
-    throws IOException
-  {
+  public void testDeleteDocuments() throws IOException {
     Directory directory = createIndex();
 
     IndexWriter writer = getWriter(directory);
 
-    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              new SearcherFactory());
+    ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer, new SearcherFactory());
 
     IndexSearcher searcher = mgr.acquire();
 
-    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")),
-                                      100);
+    TopDocs topDocs = searcher.search(new TermQuery(new Term("foo", "0")), 100);
     assertEquals(1, topDocs.totalHits.value);
 
     long result = writer.deleteDocuments(new TermQuery(new Term("foo", "0")));

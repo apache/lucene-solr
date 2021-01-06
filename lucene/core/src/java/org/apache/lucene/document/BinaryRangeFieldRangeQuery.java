@@ -20,7 +20,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -43,15 +42,20 @@ abstract class BinaryRangeFieldRangeQuery extends Query {
   private final int numDims;
   private final RangeFieldQuery.QueryType queryType;
 
-  BinaryRangeFieldRangeQuery(String field, byte[] queryPackedValue, int numBytesPerDimension, int numDims,
-                             RangeFieldQuery.QueryType queryType) {
+  BinaryRangeFieldRangeQuery(
+      String field,
+      byte[] queryPackedValue,
+      int numBytesPerDimension,
+      int numDims,
+      RangeFieldQuery.QueryType queryType) {
     this.field = field;
     this.queryPackedValue = queryPackedValue;
     this.numBytesPerDimension = numBytesPerDimension;
     this.numDims = numDims;
 
     if (!(queryType == RangeFieldQuery.QueryType.INTERSECTS)) {
-      throw new UnsupportedOperationException("INTERSECTS is the only query type supported for this field type right now");
+      throw new UnsupportedOperationException(
+          "INTERSECTS is the only query type supported for this field type right now");
     }
 
     this.queryType = queryType;
@@ -93,9 +97,9 @@ abstract class BinaryRangeFieldRangeQuery extends Query {
     return new BinaryRangeDocValues(binaryDocValues, numDims, numBytesPerDimension);
   }
 
-
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -106,17 +110,19 @@ abstract class BinaryRangeFieldRangeQuery extends Query {
         }
 
         final TwoPhaseIterator iterator;
-        iterator = new TwoPhaseIterator(values) {
-          @Override
-          public boolean matches() {
-            return queryType.matches(queryPackedValue, values.getPackedValue(), numDims, numBytesPerDimension);
-          }
+        iterator =
+            new TwoPhaseIterator(values) {
+              @Override
+              public boolean matches() {
+                return queryType.matches(
+                    queryPackedValue, values.getPackedValue(), numDims, numBytesPerDimension);
+              }
 
-          @Override
-          public float matchCost() {
-            return queryPackedValue.length;
-          }
-        };
+              @Override
+              public float matchCost() {
+                return queryPackedValue.length;
+              }
+            };
 
         return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
@@ -125,7 +131,6 @@ abstract class BinaryRangeFieldRangeQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
 }

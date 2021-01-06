@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 /**
- * When the plain text is extracted from documents, we will often have many words hyphenated and broken into
- * two lines. This is often the case with documents where narrow text columns are used, such as newsletters.
- * In order to increase search efficiency, this filter puts hyphenated words broken into two lines back together.
- * This filter should be used on indexing time only.
- * Example field definition in schema.xml:
+ * When the plain text is extracted from documents, we will often have many words hyphenated and
+ * broken into two lines. This is often the case with documents where narrow text columns are used,
+ * such as newsletters. In order to increase search efficiency, this filter puts hyphenated words
+ * broken into two lines back together. This filter should be used on indexing time only. Example
+ * field definition in schema.xml:
+ *
  * <pre class="prettyprint">
  * &lt;fieldtype name="text" class="solr.TextField" positionIncrementGap="100"&gt;
  *  &lt;analyzer type="index"&gt;
@@ -50,13 +49,12 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  *  &lt;/analyzer&gt;
  * &lt;/fieldtype&gt;
  * </pre>
- * 
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
 
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
-  
+
   private final StringBuilder hyphenated = new StringBuilder();
   private State savedState;
   private boolean exhausted = false;
@@ -77,7 +75,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
       char[] term = termAttribute.buffer();
       int termLength = termAttribute.length();
       lastEndOffset = offsetAttribute.endOffset();
-      
+
       if (termLength > 0 && term[termLength - 1] == '-') {
         // a hyphenated word
         // capture the state of the first token only
@@ -95,7 +93,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
         return true;
       }
     }
-    
+
     exhausted = true;
 
     if (savedState != null) {
@@ -105,7 +103,7 @@ public final class HyphenatedWordsFilter extends TokenFilter {
       unhyphenate();
       return true;
     }
-    
+
     return false;
   }
 
@@ -118,21 +116,17 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     lastEndOffset = 0;
   }
 
-  // ================================================= Helper Methods ================================================
-
-  /**
-   * Writes the joined unhyphenated term
-   */
+  /** Writes the joined unhyphenated term */
   private void unhyphenate() {
     restoreState(savedState);
     savedState = null;
-    
+
     char term[] = termAttribute.buffer();
     int length = hyphenated.length();
     if (length > termAttribute.length()) {
       term = termAttribute.resizeBuffer(length);
     }
-    
+
     hyphenated.getChars(0, length, term, 0);
     termAttribute.setLength(length);
     offsetAttribute.setOffset(offsetAttribute.startOffset(), lastEndOffset);

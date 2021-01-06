@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.surround.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -29,28 +28,29 @@ import org.apache.lucene.search.QueryVisitor;
 
 class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
 
-  SimpleTermRewriteQuery(
-      SimpleTerm srndQuery,
-      String fieldName,
-      BasicQueryFactory qf) {
+  SimpleTermRewriteQuery(SimpleTerm srndQuery, String fieldName, BasicQueryFactory qf) {
     super(srndQuery, fieldName, qf);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final List<Query> luceneSubQueries = new ArrayList<>();
-    srndQuery.visitMatchingTerms(reader, fieldName,
-    new SimpleTerm.MatchingTermVisitor() {
-      @Override
-      public void visitMatchingTerm(Term term) throws IOException {
-        luceneSubQueries.add(qf.newTermQuery(term));
-      }
-    });
-    return  (luceneSubQueries.size() == 0) ? new MatchNoDocsQuery()
-    : (luceneSubQueries.size() == 1) ? luceneSubQueries.get(0)
-    : SrndBooleanQuery.makeBooleanQuery(
-      /* luceneSubQueries all have default weight */
-      luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */
+    srndQuery.visitMatchingTerms(
+        reader,
+        fieldName,
+        new SimpleTerm.MatchingTermVisitor() {
+          @Override
+          public void visitMatchingTerm(Term term) throws IOException {
+            luceneSubQueries.add(qf.newTermQuery(term));
+          }
+        });
+    return (luceneSubQueries.size() == 0)
+        ? new MatchNoDocsQuery()
+        : (luceneSubQueries.size() == 1)
+            ? luceneSubQueries.get(0)
+            : SrndBooleanQuery.makeBooleanQuery(
+                /* luceneSubQueries all have default weight */
+                luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */
   }
 
   @Override
@@ -59,4 +59,3 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
     visitor.visitLeaf(this);
   }
 }
-

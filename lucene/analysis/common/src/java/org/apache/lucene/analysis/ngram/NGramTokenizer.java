@@ -16,23 +16,23 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
 import java.io.IOException;
-
+import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.CharacterUtils;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
- * <p>On the contrary to {@link NGramTokenFilter}, this class sets offsets so
- * that characters between startOffset and endOffset in the original stream are
- * the same as the term chars.
+ *
+ * <p>On the contrary to {@link NGramTokenFilter}, this class sets offsets so that characters
+ * between startOffset and endOffset in the original stream are the same as the term chars.
+ *
  * <p>For example, "abcde" would be tokenized as (minGram=2, maxGram=3):
+ *
  * <table>
  * <caption>ngram tokens example</caption>
  * <tr><th>Term</th><td>ab</td><td>abc</td><td>bc</td><td>bcd</td><td>cd</td><td>cde</td><td>de</td></tr>
@@ -40,18 +40,23 @@ import org.apache.lucene.util.AttributeFactory;
  * <tr><th>Position length</th><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
  * <tr><th>Offsets</th><td>[0,2[</td><td>[0,3[</td><td>[1,3[</td><td>[1,4[</td><td>[2,4[</td><td>[2,5[</td><td>[3,5[</td></tr>
  * </table>
+ *
  * <a id="version"></a>
- * <p>This tokenizer changed a lot in Lucene 4.4 in order to:<ul>
- * <li>tokenize in a streaming fashion to support streams which are larger
- * than 1024 chars (limit of the previous version),
- * <li>count grams based on unicode code points instead of java chars (and
- * never split in the middle of surrogate pairs),
- * <li>give the ability to {@link #isTokenChar(int) pre-tokenize} the stream
- * before computing n-grams.</ul>
- * <p>Additionally, this class doesn't trim trailing whitespaces and emits
- * tokens in a different order, tokens are now emitted by increasing start
- * offsets while they used to be emitted by increasing lengths (which prevented
- * from supporting large input streams).
+ *
+ * <p>This tokenizer changed a lot in Lucene 4.4 in order to:
+ *
+ * <ul>
+ *   <li>tokenize in a streaming fashion to support streams which are larger than 1024 chars (limit
+ *       of the previous version),
+ *   <li>count grams based on unicode code points instead of java chars (and never split in the
+ *       middle of surrogate pairs),
+ *   <li>give the ability to {@link #isTokenChar(int) pre-tokenize} the stream before computing
+ *       n-grams.
+ * </ul>
+ *
+ * <p>Additionally, this class doesn't trim trailing whitespaces and emits tokens in a different
+ * order, tokens are now emitted by increasing start offsets while they used to be emitted by
+ * increasing lengths (which prevented from supporting large input streams).
  */
 // non-final to allow for overriding isTokenChar, but all other methods should be final
 public class NGramTokenizer extends Tokenizer {
@@ -70,7 +75,8 @@ public class NGramTokenizer extends Tokenizer {
   private boolean edgesOnly; // leading edges n-grams only
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
@@ -80,6 +86,7 @@ public class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
+   *
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
@@ -94,6 +101,7 @@ public class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
+   *
    * @param factory {@link org.apache.lucene.util.AttributeFactory} to use
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
@@ -102,9 +110,7 @@ public class NGramTokenizer extends Tokenizer {
     this(factory, minGram, maxGram, false);
   }
 
-  /**
-   * Creates NGramTokenizer with default min and max n-grams.
-   */
+  /** Creates NGramTokenizer with default min and max n-grams. */
   public NGramTokenizer() {
     this(DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
   }
@@ -119,7 +125,11 @@ public class NGramTokenizer extends Tokenizer {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.edgesOnly = edgesOnly;
-    charBuffer = CharacterUtils.newCharacterBuffer(2 * maxGram + 1024); // 2 * maxGram in case all code points require 2 chars and + 1024 for buffering to not keep polling the Reader
+    charBuffer =
+        CharacterUtils.newCharacterBuffer(
+            2 * maxGram
+                + 1024); // 2 * maxGram in case all code points require 2 chars and + 1024 for
+    // buffering to not keep polling the Reader
     buffer = new int[charBuffer.getBuffer().length];
     // Make the term att large enough
     termAtt.resizeBuffer(2 * maxGram);
@@ -143,7 +153,9 @@ public class NGramTokenizer extends Tokenizer {
         // fill in remaining space
         exhausted = !CharacterUtils.fill(charBuffer, input, buffer.length - bufferEnd);
         // convert to code points
-        bufferEnd += CharacterUtils.toCodePoints(charBuffer.getBuffer(), 0, charBuffer.getLength(), buffer, bufferEnd);
+        bufferEnd +=
+            CharacterUtils.toCodePoints(
+                charBuffer.getBuffer(), 0, charBuffer.getLength(), buffer, bufferEnd);
       }
 
       // should we go to the next offset?
@@ -159,8 +171,10 @@ public class NGramTokenizer extends Tokenizer {
       updateLastNonTokenChar();
 
       // retry if the token to be emitted was going to not only contain token chars
-      final boolean termContainsNonTokenChar = lastNonTokenChar >= bufferStart && lastNonTokenChar < (bufferStart + gramSize);
-      final boolean isEdgeAndPreviousCharIsTokenChar = edgesOnly && lastNonTokenChar != bufferStart - 1;
+      final boolean termContainsNonTokenChar =
+          lastNonTokenChar >= bufferStart && lastNonTokenChar < (bufferStart + gramSize);
+      final boolean isEdgeAndPreviousCharIsTokenChar =
+          edgesOnly && lastNonTokenChar != bufferStart - 1;
       if (termContainsNonTokenChar || isEdgeAndPreviousCharIsTokenChar) {
         consume();
         gramSize = minGram;

@@ -106,5 +106,4 @@ class PhraseScorer extends Scorer {
   public String toString() {
     return "PhraseScorer(" + weight + ")";
   }
-
 }

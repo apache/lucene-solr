@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.document.Document;
@@ -36,18 +35,20 @@ public class TestMaxPosition extends LuceneTestCase {
     Token t1 = new Token("foo", 0, 3);
     t1.setPositionIncrement(2);
     if (random().nextBoolean()) {
-      t1.setPayload(new BytesRef(new byte[] { 0x1 } ));
+      t1.setPayload(new BytesRef(new byte[] {0x1}));
     }
     Token t2 = new Token("foo", 4, 7);
     // This should overflow max:
     t2.setPositionIncrement(IndexWriter.MAX_POSITION);
     if (random().nextBoolean()) {
-      t2.setPayload(new BytesRef(new byte[] { 0x1 } ));
+      t2.setPayload(new BytesRef(new byte[] {0x1}));
     }
     doc.add(new TextField("foo", new CannedTokenStream(new Token[] {t1, t2})));
-    expectThrows(IllegalArgumentException.class, () -> {
-      iw.addDocument(doc);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          iw.addDocument(doc);
+        });
 
     // Document should not be visible:
     IndexReader r = DirectoryReader.open(iw);
@@ -57,7 +58,7 @@ public class TestMaxPosition extends LuceneTestCase {
     iw.close();
     dir.close();
   }
-  
+
   public void testMaxPosition() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
@@ -65,12 +66,12 @@ public class TestMaxPosition extends LuceneTestCase {
     // This is at position 0:
     Token t1 = new Token("foo", 0, 3);
     if (random().nextBoolean()) {
-      t1.setPayload(new BytesRef(new byte[] { 0x1 } ));
+      t1.setPayload(new BytesRef(new byte[] {0x1}));
     }
     Token t2 = new Token("foo", 4, 7);
     t2.setPositionIncrement(IndexWriter.MAX_POSITION);
     if (random().nextBoolean()) {
-      t2.setPayload(new BytesRef(new byte[] { 0x1 } ));
+      t2.setPayload(new BytesRef(new byte[] {0x1}));
     }
     doc.add(new TextField("foo", new CannedTokenStream(new Token[] {t1, t2})));
     iw.addDocument(doc);

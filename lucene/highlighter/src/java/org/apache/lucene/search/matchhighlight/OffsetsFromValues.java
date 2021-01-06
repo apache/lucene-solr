@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.search.MatchesIterator;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * This strategy works for fields where we know the match occurred but there are
- * no known positions or offsets.
- * <p>
- * We re-analyze field values and return offset ranges for entire values
- * (not individual tokens). Re-analysis is required because analyzer may return
- * an unknown offset gap.
+ * This strategy works for fields where we know the match occurred but there are no known positions
+ * or offsets.
+ *
+ * <p>We re-analyze field values and return offset ranges for entire values (not individual tokens).
+ * Re-analysis is required because analyzer may return an unknown offset gap.
  */
 public final class OffsetsFromValues implements OffsetsRetrievalStrategy {
   private final String field;
@@ -43,7 +41,9 @@ public final class OffsetsFromValues implements OffsetsRetrievalStrategy {
   }
 
   @Override
-  public List<OffsetRange> get(MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc) throws IOException {
+  public List<OffsetRange> get(
+      MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
+      throws IOException {
     List<CharSequence> values = doc.getValues(field);
 
     ArrayList<OffsetRange> ranges = new ArrayList<>();

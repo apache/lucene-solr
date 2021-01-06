@@ -16,15 +16,17 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 
-/** Implementation class for {@link MaxNonCompetitiveBoostAttribute}.
+/**
+ * Implementation class for {@link MaxNonCompetitiveBoostAttribute}.
+ *
  * @lucene.internal
  */
-public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl implements MaxNonCompetitiveBoostAttribute {
+public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl
+    implements MaxNonCompetitiveBoostAttribute {
   private float maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
   private BytesRef competitiveTerm = null;
 
@@ -32,7 +34,7 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
   public void setMaxNonCompetitiveBoost(final float maxNonCompetitiveBoost) {
     this.maxNonCompetitiveBoost = maxNonCompetitiveBoost;
   }
-  
+
   @Override
   public float getMaxNonCompetitiveBoost() {
     return maxNonCompetitiveBoost;
@@ -42,7 +44,7 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
   public void setCompetitiveTerm(final BytesRef competitiveTerm) {
     this.competitiveTerm = competitiveTerm;
   }
-  
+
   @Override
   public BytesRef getCompetitiveTerm() {
     return competitiveTerm;
@@ -53,7 +55,7 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
     maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
     competitiveTerm = null;
   }
-  
+
   @Override
   public void copyTo(AttributeImpl target) {
     final MaxNonCompetitiveBoostAttributeImpl t = (MaxNonCompetitiveBoostAttributeImpl) target;
@@ -63,7 +65,8 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
 
   @Override
   public void reflectWith(AttributeReflector reflector) {
-    reflector.reflect(MaxNonCompetitiveBoostAttribute.class, "maxNonCompetitiveBoost", maxNonCompetitiveBoost);
+    reflector.reflect(
+        MaxNonCompetitiveBoostAttribute.class, "maxNonCompetitiveBoost", maxNonCompetitiveBoost);
     reflector.reflect(MaxNonCompetitiveBoostAttribute.class, "competitiveTerm", competitiveTerm);
   }
 }

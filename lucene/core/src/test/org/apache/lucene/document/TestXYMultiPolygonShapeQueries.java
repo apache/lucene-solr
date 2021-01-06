@@ -18,13 +18,15 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.util.LuceneTestCase;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYPolygon} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of
+ * cartesian {@link XYPolygon} types
+ */
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
@@ -36,12 +38,12 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   protected XYPolygon[] nextShape() {
     int n = random().nextInt(4) + 1;
     XYPolygon[] polygons = new XYPolygon[n];
-    for (int i =0; i < n; i++) {
-      polygons[i] =  (XYPolygon) getShapeType().nextShape();
+    for (int i = 0; i < n; i++) {
+      polygons[i] = (XYPolygon) getShapeType().nextShape();
     }
     return polygons;
   }
-  
+
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
     XYPolygon[] polygons = (XYPolygon[]) o;
@@ -97,7 +99,8 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     private boolean testWithinPolygon(Component2D query, XYPolygon[] polygons) {
       Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       for (XYPolygon p : polygons) {
-        Component2D.WithinRelation relation = POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p));
+        Component2D.WithinRelation relation =
+            POLYGONVALIDATOR.testWithinQuery(query, XYShape.createIndexableFields("dummy", p));
         if (relation == Component2D.WithinRelation.NOTWITHIN) {
           return false;
         } else if (relation == Component2D.WithinRelation.CANDIDATE) {

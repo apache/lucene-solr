@@ -27,9 +27,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.w3c.dom.Element;
 
-/**
- * Builder for {@link PayloadScoreQuery}
- */
+/** Builder for {@link PayloadScoreQuery} */
 public class BoostingTermBuilder extends SpanBuilderBase {
 
   @Override
@@ -38,10 +36,12 @@ public class BoostingTermBuilder extends SpanBuilderBase {
     String value = DOMUtils.getNonBlankTextOrFail(e);
 
     // TODO make function and decoder pluggable somehow?
-    SpanQuery btq = new PayloadScoreQuery(new SpanTermQuery(new Term(fieldName, value)),
-        new AveragePayloadFunction(), PayloadDecoder.FLOAT_DECODER);
+    SpanQuery btq =
+        new PayloadScoreQuery(
+            new SpanTermQuery(new Term(fieldName, value)),
+            new AveragePayloadFunction(),
+            PayloadDecoder.FLOAT_DECODER);
     btq = new SpanBoostQuery(btq, DOMUtils.getAttribute(e, "boost", 1.0f));
     return btq;
   }
-
 }

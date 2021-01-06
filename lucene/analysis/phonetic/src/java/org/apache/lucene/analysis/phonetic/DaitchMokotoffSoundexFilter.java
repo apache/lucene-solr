@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.phonetic;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.commons.codec.language.DaitchMokotoffSoundex;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -52,8 +51,8 @@ public final class DaitchMokotoffSoundexFilter extends TokenFilter {
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Creates a DaitchMokotoffSoundexFilter by either adding encoded forms as synonyms (
-   * <code>inject=true</code>) or replacing them.
+   * Creates a DaitchMokotoffSoundexFilter by either adding encoded forms as synonyms ( <code>
+   * inject=true</code>) or replacing them.
    */
   public DaitchMokotoffSoundexFilter(TokenStream in, boolean inject) {
     super(in);

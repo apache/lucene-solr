@@ -17,7 +17,6 @@
 package org.apache.lucene.misc.index;
 
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -40,29 +39,29 @@ public class TestIndexSplitter extends LuceneTestCase {
     // IndexSplitter.split makes its own commit directly with SIPC/SegmentInfos,
     // so the unreferenced files are expected.
     if (fsDir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)fsDir).setAssertNoUnrefencedFilesOnClose(false);
+      ((MockDirectoryWrapper) fsDir).setAssertNoUnrefencedFilesOnClose(false);
     }
 
     MergePolicy mergePolicy = new LogByteSizeMergePolicy();
     mergePolicy.setNoCFSRatio(1.0);
     mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
-    IndexWriter iw = new IndexWriter(
-        fsDir,
-        new IndexWriterConfig(new MockAnalyzer(random())).
-            setOpenMode(OpenMode.CREATE).
-            setMergePolicy(mergePolicy)
-    );
-    for (int x=0; x < 100; x++) {
+    IndexWriter iw =
+        new IndexWriter(
+            fsDir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setOpenMode(OpenMode.CREATE)
+                .setMergePolicy(mergePolicy));
+    for (int x = 0; x < 100; x++) {
       Document doc = DocHelper.createDocument(x, "index", 5);
       iw.addDocument(doc);
     }
     iw.commit();
-    for (int x=100; x < 150; x++) {
+    for (int x = 100; x < 150; x++) {
       Document doc = DocHelper.createDocument(x, "index2", 5);
       iw.addDocument(doc);
     }
     iw.commit();
-    for (int x=150; x < 200; x++) {
+    for (int x = 150; x < 200; x++) {
       Document doc = DocHelper.createDocument(x, "index3", 5);
       iw.addDocument(doc);
     }
@@ -80,10 +79,13 @@ public class TestIndexSplitter extends LuceneTestCase {
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest.close();
-    
+
     // now test cmdline
     Path destDir2 = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    IndexSplitter.main(new String[] {dir.toAbsolutePath().toString(), destDir2.toAbsolutePath().toString(), splitSegName});
+    IndexSplitter.main(
+        new String[] {
+          dir.toAbsolutePath().toString(), destDir2.toAbsolutePath().toString(), splitSegName
+        });
     Directory fsDirDest2 = newFSDirectory(destDir2);
     SegmentInfos sis = SegmentInfos.readLatestCommit(fsDirDest2);
     assertEquals(1, sis.size());
@@ -91,7 +93,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     assertEquals(50, r.maxDoc());
     r.close();
     fsDirDest2.close();
-    
+
     // now remove the copied segment from src
     IndexSplitter.main(new String[] {dir.toAbsolutePath().toString(), "-d", splitSegName});
     r = DirectoryReader.open(fsDir);
@@ -99,5 +101,4 @@ public class TestIndexSplitter extends LuceneTestCase {
     r.close();
     fsDir.close();
   }
-
 }

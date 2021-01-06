@@ -21,7 +21,7 @@ public class TestVectorUtil extends LuceneTestCase {
   public static final double DELTA = 1e-4;
 
   public void testBasicDotProduct() {
-    assertEquals(5, VectorUtil.dotProduct(new float[]{1, 2, 3}, new float[]{-10, 0, 5}), 0);
+    assertEquals(5, VectorUtil.dotProduct(new float[] {1, 2, 3}, new float[] {-10, 0, 5}), 0);
   }
 
   public void testSelfDotProduct() {
@@ -53,7 +53,7 @@ public class TestVectorUtil extends LuceneTestCase {
   }
 
   public void testBasicSquareDistance() {
-    assertEquals(12, VectorUtil.squareDistance(new float[]{1, 2, 3}, new float[]{-1, 0, 5}), 0);
+    assertEquals(12, VectorUtil.squareDistance(new float[] {1, 2, 3}, new float[] {-1, 0, 5}), 0);
   }
 
   public void testSquareDistanceThrowsForDimensionMismatch() {
@@ -62,7 +62,8 @@ public class TestVectorUtil extends LuceneTestCase {
   }
 
   public void testRandomSquareDistance() {
-    // the square distance of a vector with its inverse is equal to four times the sum of squares of its components
+    // the square distance of a vector with its inverse is equal to four times the sum of squares of
+    // its components
     float[] v = randomVector();
     float[] u = negative(v);
     assertEquals(4 * l2(v), VectorUtil.squareDistance(u, v), DELTA);
@@ -91,7 +92,7 @@ public class TestVectorUtil extends LuceneTestCase {
   private float[] negative(float[] v) {
     float[] u = new float[v.length];
     for (int i = 0; i < v.length; i++) {
-      u[i] = - v[i];
+      u[i] = -v[i];
     }
     return u;
   }
@@ -103,5 +104,4 @@ public class TestVectorUtil extends LuceneTestCase {
     }
     return v;
   }
-
 }

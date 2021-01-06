@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -52,129 +51,125 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
- * <p>
- * A {@link PostingsFormat} useful for low doc-frequency fields such as primary
- * keys. Bloom filters are maintained in a ".blm" file which offers "fast-fail"
- * for reads in segments known to have no record of the key. A choice of
- * delegate PostingsFormat is used to record all other Postings data.
- * </p>
- * <p>
- * A choice of {@link BloomFilterFactory} can be passed to tailor Bloom Filter
- * settings on a per-field basis. The default configuration is
- * {@link DefaultBloomFilterFactory} which allocates a ~8mb bitset and hashes
- * values using {@link MurmurHash2}. This should be suitable for most purposes.
- * </p>
- * <p>
- * The format of the blm file is as follows:
- * </p>
+ * A {@link PostingsFormat} useful for low doc-frequency fields such as primary keys. Bloom filters
+ * are maintained in a ".blm" file which offers "fast-fail" for reads in segments known to have no
+ * record of the key. A choice of delegate PostingsFormat is used to record all other Postings data.
+ *
+ * <p>A choice of {@link BloomFilterFactory} can be passed to tailor Bloom Filter settings on a
+ * per-field basis. The default configuration is {@link DefaultBloomFilterFactory} which allocates a
+ * ~8mb bitset and hashes values using {@link MurmurHash2}. This should be suitable for most
+ * purposes.
+ *
+ * <p>The format of the blm file is as follows:
+ *
  * <ul>
- * <li>BloomFilter (.blm) --&gt; Header, DelegatePostingsFormatName,
- * NumFilteredFields, Filter<sup>NumFilteredFields</sup>, Footer</li>
- * <li>Filter --&gt; FieldNumber, FuzzySet</li>
- * <li>FuzzySet --&gt;See {@link FuzzySet#serialize(DataOutput)}</li>
- * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- * <li>DelegatePostingsFormatName --&gt; {@link DataOutput#writeString(String)
- * String} The name of a ServiceProvider registered {@link PostingsFormat}</li>
- * <li>NumFilteredFields --&gt; {@link DataOutput#writeInt Uint32}</li>
- * <li>FieldNumber --&gt; {@link DataOutput#writeInt Uint32} The number of the
- * field in this segment</li>
- * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
+ *   <li>BloomFilter (.blm) --&gt; Header, DelegatePostingsFormatName, NumFilteredFields,
+ *       Filter<sup>NumFilteredFields</sup>, Footer
+ *   <li>Filter --&gt; FieldNumber, FuzzySet
+ *   <li>FuzzySet --&gt;See {@link FuzzySet#serialize(DataOutput)}
+ *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}
+ *   <li>DelegatePostingsFormatName --&gt; {@link DataOutput#writeString(String) String} The name of
+ *       a ServiceProvider registered {@link PostingsFormat}
+ *   <li>NumFilteredFields --&gt; {@link DataOutput#writeInt Uint32}
+ *   <li>FieldNumber --&gt; {@link DataOutput#writeInt Uint32} The number of the field in this
+ *       segment
+ *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}
  * </ul>
+ *
  * @lucene.experimental
  */
 public final class BloomFilteringPostingsFormat extends PostingsFormat {
-  
+
   public static final String BLOOM_CODEC_NAME = "BloomFilter";
   public static final int VERSION_START = 3;
   public static final int VERSION_CURRENT = VERSION_START;
-  
+
   /** Extension of Bloom Filters file */
   static final String BLOOM_EXTENSION = "blm";
-  
+
   BloomFilterFactory bloomFilterFactory = new DefaultBloomFilterFactory();
   private PostingsFormat delegatePostingsFormat;
-  
+
   /**
-   * Creates Bloom filters for a selection of fields created in the index. This
-   * is recorded as a set of Bitsets held as a segment summary in an additional
-   * "blm" file. This PostingsFormat delegates to a choice of delegate
-   * PostingsFormat for encoding all other postings data.
-   * 
-   * @param delegatePostingsFormat
-   *          The PostingsFormat that records all the non-bloom filter data i.e.
-   *          postings info.
-   * @param bloomFilterFactory
-   *          The {@link BloomFilterFactory} responsible for sizing BloomFilters
-   *          appropriately
+   * Creates Bloom filters for a selection of fields created in the index. This is recorded as a set
+   * of Bitsets held as a segment summary in an additional "blm" file. This PostingsFormat delegates
+   * to a choice of delegate PostingsFormat for encoding all other postings data.
+   *
+   * @param delegatePostingsFormat The PostingsFormat that records all the non-bloom filter data
+   *     i.e. postings info.
+   * @param bloomFilterFactory The {@link BloomFilterFactory} responsible for sizing BloomFilters
+   *     appropriately
    */
-  public BloomFilteringPostingsFormat(PostingsFormat delegatePostingsFormat,
-      BloomFilterFactory bloomFilterFactory) {
+  public BloomFilteringPostingsFormat(
+      PostingsFormat delegatePostingsFormat, BloomFilterFactory bloomFilterFactory) {
     super(BLOOM_CODEC_NAME);
     this.delegatePostingsFormat = delegatePostingsFormat;
     this.bloomFilterFactory = bloomFilterFactory;
   }
 
   /**
-   * Creates Bloom filters for a selection of fields created in the index. This
-   * is recorded as a set of Bitsets held as a segment summary in an additional
-   * "blm" file. This PostingsFormat delegates to a choice of delegate
-   * PostingsFormat for encoding all other postings data. This choice of
-   * constructor defaults to the {@link DefaultBloomFilterFactory} for
-   * configuring per-field BloomFilters.
-   * 
-   * @param delegatePostingsFormat
-   *          The PostingsFormat that records all the non-bloom filter data i.e.
-   *          postings info.
+   * Creates Bloom filters for a selection of fields created in the index. This is recorded as a set
+   * of Bitsets held as a segment summary in an additional "blm" file. This PostingsFormat delegates
+   * to a choice of delegate PostingsFormat for encoding all other postings data. This choice of
+   * constructor defaults to the {@link DefaultBloomFilterFactory} for configuring per-field
+   * BloomFilters.
+   *
+   * @param delegatePostingsFormat The PostingsFormat that records all the non-bloom filter data
+   *     i.e. postings info.
    */
   public BloomFilteringPostingsFormat(PostingsFormat delegatePostingsFormat) {
     this(delegatePostingsFormat, new DefaultBloomFilterFactory());
   }
-  
+
   // Used only by core Lucene at read-time via Service Provider instantiation -
   // do not use at Write-time in application code.
   public BloomFilteringPostingsFormat() {
     super(BLOOM_CODEC_NAME);
   }
-  
+
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
-      throws IOException {
+  public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     if (delegatePostingsFormat == null) {
-      throw new UnsupportedOperationException("Error - " + getClass().getName()
-          + " has been constructed without a choice of PostingsFormat");
+      throw new UnsupportedOperationException(
+          "Error - "
+              + getClass().getName()
+              + " has been constructed without a choice of PostingsFormat");
     }
     FieldsConsumer fieldsConsumer = delegatePostingsFormat.fieldsConsumer(state);
     return new BloomFilteredFieldsConsumer(fieldsConsumer, state);
   }
-  
+
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state)
-      throws IOException {
+  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new BloomFilteredFieldsProducer(state);
   }
-  
+
   static class BloomFilteredFieldsProducer extends FieldsProducer {
     private FieldsProducer delegateFieldsProducer;
-    HashMap<String,FuzzySet> bloomsByFieldName = new HashMap<>();
-    
-    public BloomFilteredFieldsProducer(SegmentReadState state)
-        throws IOException {
-      
-      String bloomFileName = IndexFileNames.segmentFileName(
-          state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
+    HashMap<String, FuzzySet> bloomsByFieldName = new HashMap<>();
+
+    public BloomFilteredFieldsProducer(SegmentReadState state) throws IOException {
+
+      String bloomFileName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
       ChecksumIndexInput bloomIn = null;
       boolean success = false;
       try {
         bloomIn = state.directory.openChecksumInput(bloomFileName, state.context);
-        CodecUtil.checkIndexHeader(bloomIn, BLOOM_CODEC_NAME, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.checkIndexHeader(
+            bloomIn,
+            BLOOM_CODEC_NAME,
+            VERSION_START,
+            VERSION_CURRENT,
+            state.segmentInfo.getId(),
+            state.segmentSuffix);
         // // Load the hash function used in the BloomFilter
         // hashFunction = HashFunction.forName(bloomIn.readString());
         // Load the delegate postings format
-        PostingsFormat delegatePostingsFormat = PostingsFormat.forName(bloomIn
-            .readString());
-        
-        this.delegateFieldsProducer = delegatePostingsFormat
-            .fieldsProducer(state);
+        PostingsFormat delegatePostingsFormat = PostingsFormat.forName(bloomIn.readString());
+
+        this.delegateFieldsProducer = delegatePostingsFormat.fieldsProducer(state);
         int numBlooms = bloomIn.readInt();
         for (int i = 0; i < numBlooms; i++) {
           int fieldNum = bloomIn.readInt();
@@ -191,17 +186,17 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         }
       }
     }
-    
+
     @Override
     public Iterator<String> iterator() {
       return delegateFieldsProducer.iterator();
     }
-    
+
     @Override
     public void close() throws IOException {
       delegateFieldsProducer.close();
     }
-    
+
     @Override
     public Terms terms(String field) throws IOException {
       FuzzySet filter = bloomsByFieldName.get(field);
@@ -215,7 +210,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         return new BloomFilteredTerms(result, filter);
       }
     }
-    
+
     @Override
     public int size() {
       return delegateFieldsProducer.size();
@@ -224,38 +219,38 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     static class BloomFilteredTerms extends Terms {
       private Terms delegateTerms;
       private FuzzySet filter;
-      
+
       public BloomFilteredTerms(Terms terms, FuzzySet filter) {
         this.delegateTerms = terms;
         this.filter = filter;
       }
-      
+
       @Override
-      public TermsEnum intersect(CompiledAutomaton compiled,
-          final BytesRef startTerm) throws IOException {
+      public TermsEnum intersect(CompiledAutomaton compiled, final BytesRef startTerm)
+          throws IOException {
         return delegateTerms.intersect(compiled, startTerm);
       }
-      
+
       @Override
       public TermsEnum iterator() throws IOException {
         return new BloomFilteredTermsEnum(delegateTerms, filter);
       }
-      
+
       @Override
       public long size() throws IOException {
         return delegateTerms.size();
       }
-      
+
       @Override
       public long getSumTotalTermFreq() throws IOException {
         return delegateTerms.getSumTotalTermFreq();
       }
-      
+
       @Override
       public long getSumDocFreq() throws IOException {
         return delegateTerms.getSumDocFreq();
       }
-      
+
       @Override
       public int getDocCount() throws IOException {
         return delegateTerms.getDocCount();
@@ -275,7 +270,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       public boolean hasPositions() {
         return delegateTerms.hasPositions();
       }
-      
+
       @Override
       public boolean hasPayloads() {
         return delegateTerms.hasPayloads();
@@ -296,36 +291,35 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       private Terms delegateTerms;
       private TermsEnum delegateTermsEnum;
       private final FuzzySet filter;
-      
+
       public BloomFilteredTermsEnum(Terms delegateTerms, FuzzySet filter) throws IOException {
         this.delegateTerms = delegateTerms;
         this.filter = filter;
       }
-      
+
       void reset(Terms delegateTerms) throws IOException {
         this.delegateTerms = delegateTerms;
         this.delegateTermsEnum = null;
       }
-      
+
       private TermsEnum delegate() throws IOException {
         if (delegateTermsEnum == null) {
           /* pull the iterator only if we really need it -
-           * this can be a relativly heavy operation depending on the 
+           * this can be a relativly heavy operation depending on the
            * delegate postings format and they underlying directory
            * (clone IndexInput) */
           delegateTermsEnum = delegateTerms.iterator();
         }
         return delegateTermsEnum;
       }
-      
+
       @Override
       public BytesRef next() throws IOException {
         return delegate().next();
       }
-      
+
       @Override
-      public boolean seekExact(BytesRef text)
-          throws IOException {
+      public boolean seekExact(BytesRef text) throws IOException {
         // The magical fail-fast speed up that is the entire point of all of
         // this code - save a disk seek if there is a match on an in-memory
         // structure
@@ -336,41 +330,39 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         }
         return delegate().seekExact(text);
       }
-      
+
       @Override
-      public SeekStatus seekCeil(BytesRef text)
-          throws IOException {
+      public SeekStatus seekCeil(BytesRef text) throws IOException {
         return delegate().seekCeil(text);
       }
-      
+
       @Override
       public void seekExact(long ord) throws IOException {
         delegate().seekExact(ord);
       }
-      
+
       @Override
       public BytesRef term() throws IOException {
         return delegate().term();
       }
-      
+
       @Override
       public long ord() throws IOException {
         return delegate().ord();
       }
-      
+
       @Override
       public int docFreq() throws IOException {
         return delegate().docFreq();
       }
-      
+
       @Override
       public long totalTermFreq() throws IOException {
         return delegate().totalTermFreq();
       }
 
       @Override
-      public PostingsEnum postings(PostingsEnum reuse, int flags)
-          throws IOException {
+      public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
         return delegate().postings(reuse, flags);
       }
 
@@ -382,8 +374,9 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     @Override
     public long ramBytesUsed() {
-      long sizeInBytes =  ((delegateFieldsProducer!=null) ? delegateFieldsProducer.ramBytesUsed() : 0);
-      for(Map.Entry<String,FuzzySet> entry: bloomsByFieldName.entrySet()) {
+      long sizeInBytes =
+          ((delegateFieldsProducer != null) ? delegateFieldsProducer.ramBytesUsed() : 0);
+      for (Map.Entry<String, FuzzySet> entry : bloomsByFieldName.entrySet()) {
         sizeInBytes += entry.getKey().length() * Character.BYTES;
         sizeInBytes += entry.getValue().ramBytesUsed();
       }
@@ -392,7 +385,8 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     @Override
     public Collection<Accountable> getChildResources() {
-      List<Accountable> resources = new ArrayList<>(Accountables.namedAccountables("field", bloomsByFieldName));
+      List<Accountable> resources =
+          new ArrayList<>(Accountables.namedAccountables("field", bloomsByFieldName));
       if (delegateFieldsProducer != null) {
         resources.add(Accountables.namedAccountable("delegate", delegateFieldsProducer));
       }
@@ -406,17 +400,21 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
 
     @Override
     public String toString() {
-      return getClass().getSimpleName() + "(fields=" + bloomsByFieldName.size() + ",delegate=" + delegateFieldsProducer + ")";
+      return getClass().getSimpleName()
+          + "(fields="
+          + bloomsByFieldName.size()
+          + ",delegate="
+          + delegateFieldsProducer
+          + ")";
     }
   }
-  
+
   class BloomFilteredFieldsConsumer extends FieldsConsumer {
     private FieldsConsumer delegateFieldsConsumer;
-    private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<>();
+    private Map<FieldInfo, FuzzySet> bloomFilters = new HashMap<>();
     private SegmentWriteState state;
-    
-    public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer,
-        SegmentWriteState state) {
+
+    public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer, SegmentWriteState state) {
       this.delegateFieldsConsumer = fieldsConsumer;
       this.state = state;
     }
@@ -432,7 +430,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       // afterwards:
       delegateFieldsConsumer.write(fields, norms);
 
-      for(String field : fields) {
+      for (String field : fields) {
         Terms terms = fields.terms(field);
         if (terms == null) {
           continue;
@@ -467,7 +465,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     }
 
     private boolean closed;
-    
+
     @Override
     public void close() throws IOException {
       if (closed) {
@@ -477,24 +475,30 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       delegateFieldsConsumer.close();
 
       // Now we are done accumulating values for these fields
-      List<Entry<FieldInfo,FuzzySet>> nonSaturatedBlooms = new ArrayList<>();
-      
-      for (Entry<FieldInfo,FuzzySet> entry : bloomFilters.entrySet()) {
+      List<Entry<FieldInfo, FuzzySet>> nonSaturatedBlooms = new ArrayList<>();
+
+      for (Entry<FieldInfo, FuzzySet> entry : bloomFilters.entrySet()) {
         FuzzySet bloomFilter = entry.getValue();
-        if(!bloomFilterFactory.isSaturated(bloomFilter,entry.getKey())){          
+        if (!bloomFilterFactory.isSaturated(bloomFilter, entry.getKey())) {
           nonSaturatedBlooms.add(entry);
         }
       }
-      String bloomFileName = IndexFileNames.segmentFileName(
-          state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
+      String bloomFileName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
       try (IndexOutput bloomOutput = state.directory.createOutput(bloomFileName, state.context)) {
-        CodecUtil.writeIndexHeader(bloomOutput, BLOOM_CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.writeIndexHeader(
+            bloomOutput,
+            BLOOM_CODEC_NAME,
+            VERSION_CURRENT,
+            state.segmentInfo.getId(),
+            state.segmentSuffix);
         // remember the name of the postings format we will delegate to
         bloomOutput.writeString(delegatePostingsFormat.getName());
-        
+
         // First field in the output file is the number of fields+blooms saved
         bloomOutput.writeInt(nonSaturatedBlooms.size());
-        for (Entry<FieldInfo,FuzzySet> entry : nonSaturatedBlooms) {
+        for (Entry<FieldInfo, FuzzySet> entry : nonSaturatedBlooms) {
           FieldInfo fieldInfo = entry.getKey();
           FuzzySet bloomFilter = entry.getValue();
           bloomOutput.writeInt(fieldInfo.number);
@@ -502,15 +506,14 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         }
         CodecUtil.writeFooter(bloomOutput);
       }
-      //We are done with large bitsets so no need to keep them hanging around
-      bloomFilters.clear(); 
+      // We are done with large bitsets so no need to keep them hanging around
+      bloomFilters.clear();
     }
-    
-    private void saveAppropriatelySizedBloomFilter(IndexOutput bloomOutput,
-        FuzzySet bloomFilter, FieldInfo fieldInfo) throws IOException {
-      
-      FuzzySet rightSizedSet = bloomFilterFactory.downsize(fieldInfo,
-          bloomFilter);
+
+    private void saveAppropriatelySizedBloomFilter(
+        IndexOutput bloomOutput, FuzzySet bloomFilter, FieldInfo fieldInfo) throws IOException {
+
+      FuzzySet rightSizedSet = bloomFilterFactory.downsize(fieldInfo, bloomFilter);
       if (rightSizedSet == null) {
         rightSizedSet = bloomFilter;
       }

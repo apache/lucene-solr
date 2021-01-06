@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.store.Directory;
@@ -30,14 +28,15 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RefCount;
 
 /**
- * Manages the {@link DocValuesProducer} held by {@link SegmentReader} and
- * keeps track of their reference counting.
+ * Manages the {@link DocValuesProducer} held by {@link SegmentReader} and keeps track of their
+ * reference counting.
  */
 final class SegmentDocValues {
 
-  private final Map<Long,RefCount<DocValuesProducer>> genDVProducers = new HashMap<>();
+  private final Map<Long, RefCount<DocValuesProducer>> genDVProducers = new HashMap<>();
 
-  private RefCount<DocValuesProducer> newDocValuesProducer(SegmentCommitInfo si, Directory dir, final Long gen, FieldInfos infos) throws IOException {
+  private RefCount<DocValuesProducer> newDocValuesProducer(
+      SegmentCommitInfo si, Directory dir, final Long gen, FieldInfos infos) throws IOException {
     Directory dvDir = dir;
     String segmentSuffix = "";
     if (gen.longValue() != -1) {
@@ -46,7 +45,8 @@ final class SegmentDocValues {
     }
 
     // set SegmentReadState to list only the fields that are relevant to that gen
-    SegmentReadState srs = new SegmentReadState(dvDir, si.info, infos, IOContext.READ, segmentSuffix);
+    SegmentReadState srs =
+        new SegmentReadState(dvDir, si.info, infos, IOContext.READ, segmentSuffix);
     DocValuesFormat dvFormat = si.info.getCodec().docValuesFormat();
     return new RefCount<DocValuesProducer>(dvFormat.fieldsProducer(srs)) {
       @SuppressWarnings("synthetic-access")
@@ -61,7 +61,8 @@ final class SegmentDocValues {
   }
 
   /** Returns the {@link DocValuesProducer} for the given generation. */
-  synchronized DocValuesProducer getDocValuesProducer(long gen, SegmentCommitInfo si, Directory dir, FieldInfos infos) throws IOException {
+  synchronized DocValuesProducer getDocValuesProducer(
+      long gen, SegmentCommitInfo si, Directory dir, FieldInfos infos) throws IOException {
     RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
     if (dvp == null) {
       dvp = newDocValuesProducer(si, dir, gen, infos);
@@ -72,16 +73,15 @@ final class SegmentDocValues {
     }
     return dvp.get();
   }
-  
-  /**
-   * Decrement the reference count of the given {@link DocValuesProducer}
-   * generations. 
-   */
+
+  /** Decrement the reference count of the given {@link DocValuesProducer} generations. */
   synchronized void decRef(List<Long> dvProducersGens) throws IOException {
-    IOUtils.applyToAll(dvProducersGens, gen -> {
-      RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
-      assert dvp != null : "gen=" + gen;
-      dvp.decRef();
-    });
+    IOUtils.applyToAll(
+        dvProducersGens,
+        gen -> {
+          RefCount<DocValuesProducer> dvp = genDVProducers.get(gen);
+          assert dvp != null : "gen=" + gen;
+          dvp.decRef();
+        });
   }
 }

@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -30,10 +29,9 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
-
 /**
- * Returns a score for each document based on a ValueSource,
- * often some function of the value of a field.
+ * Returns a score for each document based on a ValueSource, often some function of the value of a
+ * field.
  *
  * @see ValueSourceScorer
  * @lucene.experimental
@@ -41,11 +39,9 @@ import org.apache.lucene.search.Weight;
 public class FunctionQuery extends Query {
   final ValueSource func;
 
-  /**
-   * @param func defines the function to be used for scoring
-   */
+  /** @param func defines the function to be used for scoring */
   public FunctionQuery(ValueSource func) {
-    this.func=func;
+    this.func = func;
   }
 
   /** @return The associated ValueSource */
@@ -55,6 +51,7 @@ public class FunctionQuery extends Query {
 
   /**
    * Creates FunctionQuery scorer instances
+   *
    * @lucene.internal
    */
   protected class FunctionWeight extends Weight {
@@ -82,7 +79,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context)).explain(doc);
+      return ((AllScorer) scorer(context)).explain(doc);
     }
   }
 
@@ -93,6 +90,7 @@ public class FunctionQuery extends Query {
 
   /**
    * Scores all documents, applying the function to each document
+   *
    * @lucene.internal
    */
   protected class AllScorer extends Scorer {
@@ -141,37 +139,41 @@ public class FunctionQuery extends Query {
     public Explanation explain(int doc) throws IOException {
       Explanation expl = vals.explain(doc);
       if (expl.getValue().floatValue() < 0) {
-        expl = Explanation.match(0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
+        expl =
+            Explanation.match(
+                0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
       } else if (Float.isNaN(expl.getValue().floatValue())) {
-        expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+        expl =
+            Explanation.match(
+                0,
+                "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:",
+                expl);
       }
 
-      return Explanation.match(boost * expl.getValue().floatValue(), "FunctionQuery(" + func + "), product of:",
+      return Explanation.match(
+          boost * expl.getValue().floatValue(),
+          "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
           Explanation.match(weight.boost, "boost"));
     }
-
   }
 
-
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new FunctionQuery.FunctionWeight(searcher, boost);
   }
 
   /** Prints a user-readable version of this query. */
   @Override
-  public String toString(String field)
-  {
+  public String toString(String field) {
     return func.toString();
   }
-
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           func.equals(((FunctionQuery) other).func);
+    return sameClassAs(other) && func.equals(((FunctionQuery) other).func);
   }
 
   @Override

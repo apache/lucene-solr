@@ -21,9 +21,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
-/**
- * Holder for current index/directory.
- */
+/** Holder for current index/directory. */
 public interface LukeState {
 
   String getIndexPath();
@@ -53,5 +51,4 @@ public interface LukeState {
   default boolean hasDirectoryReader() {
     return getIndexReader() instanceof DirectoryReader;
   }
-
 }

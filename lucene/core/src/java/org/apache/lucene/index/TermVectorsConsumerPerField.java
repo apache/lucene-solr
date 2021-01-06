@@ -17,7 +17,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermFrequencyAttribute;
@@ -45,18 +44,28 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
   private boolean hasPayloads; // if enabled, and we actually saw any for this field
 
-  TermVectorsConsumerPerField(FieldInvertState invertState, TermVectorsConsumer termsHash, FieldInfo fieldInfo) {
-    super(2, termsHash.intPool, termsHash.bytePool, termsHash.termBytePool, termsHash.bytesUsed, null, fieldInfo.name, fieldInfo.getIndexOptions());
+  TermVectorsConsumerPerField(
+      FieldInvertState invertState, TermVectorsConsumer termsHash, FieldInfo fieldInfo) {
+    super(
+        2,
+        termsHash.intPool,
+        termsHash.bytePool,
+        termsHash.termBytePool,
+        termsHash.bytesUsed,
+        null,
+        fieldInfo.name,
+        fieldInfo.getIndexOptions());
     this.termsWriter = termsHash;
     this.fieldInfo = fieldInfo;
     this.fieldState = invertState;
     termBytePool = termsHash.termBytePool;
   }
 
-  /** Called once per field per document if term vectors
-   *  are enabled, to write the vectors to
-   *  RAMOutputStream, which is then quickly flushed to
-   *  the real term vectors files in the Directory. */  @Override
+  /**
+   * Called once per field per document if term vectors are enabled, to write the vectors to
+   * RAMOutputStream, which is then quickly flushed to the real term vectors files in the Directory.
+   */
+  @Override
   void finish() {
     if (!doVectors || getNumTerms() == 0) {
       return;
@@ -88,18 +97,18 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     final int[] termIDs = getSortedTermIDs();
 
     tv.startField(fieldInfo, numPostings, doVectorPositions, doVectorOffsets, hasPayloads);
-    
+
     final ByteSliceReader posReader = doVectorPositions ? termsWriter.vectorSliceReaderPos : null;
     final ByteSliceReader offReader = doVectorOffsets ? termsWriter.vectorSliceReaderOff : null;
-    
-    for(int j=0;j<numPostings;j++) {
+
+    for (int j = 0; j < numPostings; j++) {
       final int termID = termIDs[j];
       final int freq = postings.freqs[termID];
 
       // Get BytesRef
       termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
       tv.startTerm(flushTerm, freq);
-      
+
       if (doVectorPositions || doVectorOffsets) {
         if (posReader != null) {
           initReader(posReader, termID, 0);
@@ -155,33 +164,57 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
           doVectorPayloads = false;
           if (field.fieldType().storeTermVectorPayloads()) {
             // TODO: move this check somewhere else, and impl the other missing ones
-            throw new IllegalArgumentException("cannot index term vector payloads without term vector positions (field=\"" + field.name() + "\")");
+            throw new IllegalArgumentException(
+                "cannot index term vector payloads without term vector positions (field=\""
+                    + field.name()
+                    + "\")");
           }
         }
-        
+
       } else {
         if (field.fieldType().storeTermVectorOffsets()) {
-          throw new IllegalArgumentException("cannot index term vector offsets when term vectors are not indexed (field=\"" + field.name() + "\")");
+          throw new IllegalArgumentException(
+              "cannot index term vector offsets when term vectors are not indexed (field=\""
+                  + field.name()
+                  + "\")");
         }
         if (field.fieldType().storeTermVectorPositions()) {
-          throw new IllegalArgumentException("cannot index term vector positions when term vectors are not indexed (field=\"" + field.name() + "\")");
+          throw new IllegalArgumentException(
+              "cannot index term vector positions when term vectors are not indexed (field=\""
+                  + field.name()
+                  + "\")");
         }
         if (field.fieldType().storeTermVectorPayloads()) {
-          throw new IllegalArgumentException("cannot index term vector payloads when term vectors are not indexed (field=\"" + field.name() + "\")");
+          throw new IllegalArgumentException(
+              "cannot index term vector payloads when term vectors are not indexed (field=\""
+                  + field.name()
+                  + "\")");
         }
       }
     } else {
       if (doVectors != field.fieldType().storeTermVectors()) {
-        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\"" + field.name() + "\")");
+        throw new IllegalArgumentException(
+            "all instances of a given field name must have the same term vectors settings (storeTermVectors changed for field=\""
+                + field.name()
+                + "\")");
       }
       if (doVectorPositions != field.fieldType().storeTermVectorPositions()) {
-        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorPositions changed for field=\"" + field.name() + "\")");
+        throw new IllegalArgumentException(
+            "all instances of a given field name must have the same term vectors settings (storeTermVectorPositions changed for field=\""
+                + field.name()
+                + "\")");
       }
       if (doVectorOffsets != field.fieldType().storeTermVectorOffsets()) {
-        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorOffsets changed for field=\"" + field.name() + "\")");
+        throw new IllegalArgumentException(
+            "all instances of a given field name must have the same term vectors settings (storeTermVectorOffsets changed for field=\""
+                + field.name()
+                + "\")");
       }
       if (doVectorPayloads != field.fieldType().storeTermVectorPayloads()) {
-        throw new IllegalArgumentException("all instances of a given field name must have the same term vectors settings (storeTermVectorPayloads changed for field=\"" + field.name() + "\")");
+        throw new IllegalArgumentException(
+            "all instances of a given field name must have the same term vectors settings (storeTermVectorPayloads changed for field=\""
+                + field.name()
+                + "\")");
       }
     }
 
@@ -219,15 +252,15 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
       } else {
         payload = payloadAttribute.getPayload();
       }
-      
+
       final int pos = fieldState.position - postings.lastPositions[termID];
       if (payload != null && payload.length > 0) {
-        writeVInt(0, (pos<<1)|1);
+        writeVInt(0, (pos << 1) | 1);
         writeVInt(0, payload.length);
         writeBytes(0, payload.bytes, payload.offset, payload.length);
         hasPayloads = true;
       } else {
-        writeVInt(0, pos<<1);
+        writeVInt(0, pos << 1);
       }
       postings.lastPositions[termID] = fieldState.position;
     }
@@ -240,7 +273,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     postings.freqs[termID] = getTermFreq();
     postings.lastOffsets[termID] = 0;
     postings.lastPositions[termID] = 0;
-    
+
     writeProx(postings, termID);
   }
 
@@ -257,10 +290,16 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
     int freq = termFreqAtt.getTermFrequency();
     if (freq != 1) {
       if (doVectorPositions) {
-        throw new IllegalArgumentException("field \"" + getFieldName() + "\": cannot index term vector positions while using custom TermFrequencyAttribute");
+        throw new IllegalArgumentException(
+            "field \""
+                + getFieldName()
+                + "\": cannot index term vector positions while using custom TermFrequencyAttribute");
       }
       if (doVectorOffsets) {
-        throw new IllegalArgumentException("field \"" + getFieldName() + "\": cannot index term vector offsets while using custom TermFrequencyAttribute");
+        throw new IllegalArgumentException(
+            "field \""
+                + getFieldName()
+                + "\": cannot index term vector offsets while using custom TermFrequencyAttribute");
       }
     }
 
@@ -278,16 +317,16 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
   }
 
   static final class TermVectorsPostingsArray extends ParallelPostingsArray {
-     TermVectorsPostingsArray(int size) {
+    TermVectorsPostingsArray(int size) {
       super(size);
       freqs = new int[size];
       lastOffsets = new int[size];
       lastPositions = new int[size];
     }
 
-    int[] freqs;                                       // How many times this term occurred in the current doc
-    int[] lastOffsets;                                 // Last offset we saw
-    int[] lastPositions;                               // Last position where this term occurred
+    int[] freqs; // How many times this term occurred in the current doc
+    int[] lastOffsets; // Last offset we saw
+    int[] lastPositions; // Last position where this term occurred
 
     @Override
     ParallelPostingsArray newInstance(int size) {

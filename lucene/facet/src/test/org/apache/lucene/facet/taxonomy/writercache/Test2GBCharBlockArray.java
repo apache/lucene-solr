@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.facet.taxonomy.writercache;
 
-import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.TestUtil;
 
 @Monster("uses lots of space and takes a few minutes")
@@ -39,8 +39,11 @@ public class Test2GBCharBlockArray extends LuceneTestCase {
         assertTrue(count * (long) size + blockSize > Integer.MAX_VALUE);
         break;
       }
-      assertFalse("appended " + (count * (long) size - Integer.MAX_VALUE) + " characters beyond Integer.MAX_VALUE!",
-                  count * (long) size > Integer.MAX_VALUE);
+      assertFalse(
+          "appended "
+              + (count * (long) size - Integer.MAX_VALUE)
+              + " characters beyond Integer.MAX_VALUE!",
+          count * (long) size > Integer.MAX_VALUE);
     }
   }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.monitor;
 
 import java.io.IOException;
 import java.util.*;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.MatchesIterator;
@@ -29,52 +28,66 @@ import org.apache.lucene.search.Weight;
 
 /**
  * QueryMatch object that contains the hit positions of a matching Query
- * <p>
- * If the Query does not support interval iteration (eg, if it gets re-written to
- * a Filter), then no hits will be reported, but an IntervalsQueryMatch will still
- * be returned from an IntervalsMatcher to indicate a match.
+ *
+ * <p>If the Query does not support interval iteration (eg, if it gets re-written to a Filter), then
+ * no hits will be reported, but an IntervalsQueryMatch will still be returned from an
+ * IntervalsMatcher to indicate a match.
  */
 public class HighlightsMatch extends QueryMatch {
 
-  public static final MatcherFactory<HighlightsMatch> MATCHER = searcher -> new CandidateMatcher<HighlightsMatch>(searcher) {
+  public static final MatcherFactory<HighlightsMatch> MATCHER =
+      searcher ->
+          new CandidateMatcher<HighlightsMatch>(searcher) {
 
-    @Override
-    protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-      Weight w = searcher.createWeight(searcher.rewrite(matchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
-      for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
-        for (int i = 0; i < ctx.reader().maxDoc(); i++) {
-          Matches matches = w.matches(ctx, i);
-          if (matches != null) {
-            addMatch(buildMatch(matches, queryId), i);
-          }
-        }
-      }
-    }
-
-    @Override
-    public HighlightsMatch resolve(HighlightsMatch match1, HighlightsMatch match2) {
-      return HighlightsMatch.merge(match1.getQueryId(), match1, match2);
-    }
-
-    private HighlightsMatch buildMatch(Matches matches, String queryId) throws IOException {
-      HighlightsMatch m = new HighlightsMatch(queryId);
-      for (String field : matches) {
-        MatchesIterator mi = matches.getMatches(field);
-        while (mi.next()) {
-          MatchesIterator sub = mi.getSubMatches();
-          if (sub != null) {
-            while (sub.next()) {
-              m.addHit(field, sub.startPosition(), sub.endPosition(), sub.startOffset(), sub.endOffset());
+            @Override
+            protected void matchQuery(
+                String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+              Weight w =
+                  searcher.createWeight(
+                      searcher.rewrite(matchQuery), ScoreMode.COMPLETE_NO_SCORES, 1);
+              for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
+                for (int i = 0; i < ctx.reader().maxDoc(); i++) {
+                  Matches matches = w.matches(ctx, i);
+                  if (matches != null) {
+                    addMatch(buildMatch(matches, queryId), i);
+                  }
+                }
+              }
             }
-          }
-          else {
-            m.addHit(field, mi.startPosition(), mi.endPosition(), mi.startOffset(), mi.endOffset());
-          }
-        }
-      }
-      return m;
-    }
-  };
+
+            @Override
+            public HighlightsMatch resolve(HighlightsMatch match1, HighlightsMatch match2) {
+              return HighlightsMatch.merge(match1.getQueryId(), match1, match2);
+            }
+
+            private HighlightsMatch buildMatch(Matches matches, String queryId) throws IOException {
+              HighlightsMatch m = new HighlightsMatch(queryId);
+              for (String field : matches) {
+                MatchesIterator mi = matches.getMatches(field);
+                while (mi.next()) {
+                  MatchesIterator sub = mi.getSubMatches();
+                  if (sub != null) {
+                    while (sub.next()) {
+                      m.addHit(
+                          field,
+                          sub.startPosition(),
+                          sub.endPosition(),
+                          sub.startOffset(),
+                          sub.endOffset());
+                    }
+                  } else {
+                    m.addHit(
+                        field,
+                        mi.startPosition(),
+                        mi.endPosition(),
+                        mi.startOffset(),
+                        mi.endOffset());
+                  }
+                }
+              }
+              return m;
+            }
+          };
 
   private final Map<String, Set<Hit>> hits;
 
@@ -83,16 +96,12 @@ public class HighlightsMatch extends QueryMatch {
     this.hits = new TreeMap<>();
   }
 
-  /**
-   * @return a map of hits per field
-   */
+  /** @return a map of hits per field */
   public Map<String, Set<Hit>> getHits() {
     return Collections.unmodifiableMap(this.hits);
   }
 
-  /**
-   * @return the fields in which matches have been found
-   */
+  /** @return the fields in which matches have been found */
   public Set<String> getFields() {
     return Collections.unmodifiableSet(hits.keySet());
   }
@@ -105,14 +114,11 @@ public class HighlightsMatch extends QueryMatch {
    */
   public Collection<Hit> getHits(String field) {
     Collection<Hit> found = hits.get(field);
-    if (found != null)
-      return Collections.unmodifiableCollection(found);
+    if (found != null) return Collections.unmodifiableCollection(found);
     return Collections.emptyList();
   }
 
-  /**
-   * @return the total number of hits for the query
-   */
+  /** @return the total number of hits for the query */
   public int getHitCount() {
     int c = 0;
     for (Set<Hit> fieldhits : hits.values()) {
@@ -162,29 +168,19 @@ public class HighlightsMatch extends QueryMatch {
     hitSet.add(new Hit(startPos, startOffset, endPos, endOffset));
   }
 
-  /**
-   * Represents an individual hit
-   */
+  /** Represents an individual hit */
   public static class Hit implements Comparable<Hit> {
 
-    /**
-     * The start position
-     */
+    /** The start position */
     public final int startPosition;
 
-    /**
-     * The start offset
-     */
+    /** The start offset */
     public final int startOffset;
 
-    /**
-     * The end positions
-     */
+    /** The end positions */
     public final int endPosition;
 
-    /**
-     * The end offset
-     */
+    /** The end offset */
     public final int endOffset;
 
     public Hit(int startPosition, int startOffset, int endPosition, int endOffset) {
@@ -197,13 +193,12 @@ public class HighlightsMatch extends QueryMatch {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof Hit))
-        return false;
+      if (!(obj instanceof Hit)) return false;
       Hit other = (Hit) obj;
-      return this.startOffset == other.startOffset &&
-          this.endOffset == other.endOffset &&
-          this.startPosition == other.startPosition &&
-          this.endPosition == other.endPosition;
+      return this.startOffset == other.startOffset
+          && this.endOffset == other.endOffset
+          && this.startPosition == other.startPosition
+          && this.endPosition == other.endPosition;
     }
 
     @Override
@@ -217,7 +212,8 @@ public class HighlightsMatch extends QueryMatch {
 
     @Override
     public String toString() {
-      return String.format(Locale.ROOT, "%d(%d)->%d(%d)", startPosition, startOffset, endPosition, endOffset);
+      return String.format(
+          Locale.ROOT, "%d(%d)->%d(%d)", startPosition, startOffset, endPosition, endOffset);
     }
 
     @Override
