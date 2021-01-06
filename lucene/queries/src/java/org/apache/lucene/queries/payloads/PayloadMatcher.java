@@ -18,11 +18,9 @@ package org.apache.lucene.queries.payloads;
 
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Defines an interface for testing if two payloads should be consider to match
- */
+/** Defines an interface for testing if two payloads should be consider to match */
 public interface PayloadMatcher {
-  
+
   /**
    * This method tests if two BytesRef match.
    * 
@@ -31,5 +29,5 @@ public interface PayloadMatcher {
    * @return true if the BytesRefs are matching, otherwise false.
    */
   public boolean comparePayload(BytesRef source, BytesRef payload);
-  
+
 }
