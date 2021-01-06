@@ -16,19 +16,19 @@
  */
 package org.apache.lucene.analysis.payloads;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 
 public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(whitespaceMockTokenizer(test));
+    TokenOffsetPayloadTokenFilter nptf =
+        new TokenOffsetPayloadTokenFilter(whitespaceMockTokenizer(test));
     int count = 0;
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);
@@ -36,16 +36,14 @@ public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     while (nptf.incrementToken()) {
       BytesRef pay = payloadAtt.getPayload();
       assertTrue("pay is null and it shouldn't be", pay != null);
-      byte [] data = pay.bytes;
+      byte[] data = pay.bytes;
       int start = PayloadHelper.decodeInt(data, 0);
-      assertTrue(start + " does not equal: " + offsetAtt.startOffset(), start == offsetAtt.startOffset());
+      assertTrue(
+          start + " does not equal: " + offsetAtt.startOffset(), start == offsetAtt.startOffset());
       int end = PayloadHelper.decodeInt(data, 4);
       assertTrue(end + " does not equal: " + offsetAtt.endOffset(), end == offsetAtt.endOffset());
       count++;
     }
     assertTrue(count + " does not equal: " + 10, count == 10);
-
   }
-
-
 }

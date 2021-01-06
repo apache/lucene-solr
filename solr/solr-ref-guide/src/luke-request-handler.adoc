@@ -74,4 +74,4 @@ Alternatively, to work through the Lucene native id:
 [source,text]
 http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
 
-From SolrJ, you can access /luke using the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.
+From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.

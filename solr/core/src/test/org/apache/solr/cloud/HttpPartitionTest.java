@@ -162,7 +162,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       createCollection(testCollectionName, "conf1", 1, 2);
       cloudClient.setDefaultCollection(testCollectionName);
 
-      sendDoc(1, 2);
+      sendDoc(1);
 
       JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(testCollectionName, "shard1", 1000)));
       List<Replica> notLeaders =
@@ -176,7 +176,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       leaderProxy.close();
 
       // indexing during a partition
-      int achievedRf = sendDoc(2, 1, leaderJetty);
+      int achievedRf = sendDoc(2, leaderJetty);
       assertEquals("Unexpected achieved replication factor", 1, achievedRf);
       try (ZkShardTerms zkShardTerms = new ZkShardTerms(testCollectionName, "shard1", cloudClient.getZkStateReader().getZkClient())) {
         assertFalse(zkShardTerms.canBecomeLeader(notLeaders.get(0).getName()));
@@ -228,7 +228,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
 
     // indexing during a partition
-    sendDoc(2, null, leaderJetty);
+    sendDoc(2, leaderJetty);
     // replica should publish itself as DOWN if the network is not healed after some amount time
     waitForState(testCollectionName, notLeader.getName(), DOWN, 10000);
     
@@ -282,7 +282,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         }
       }
       // always send doc directly to leader without going through proxy
-      sendDoc(d + 4, null, leaderJetty); // 4 is offset as we've already indexed 1-3
+      sendDoc(d + 4, leaderJetty); // 4 is offset as we've already indexed 1-3
     }
     
     // restore connectivity if lost
@@ -352,7 +352,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     leaderProxy.close();
     
     // indexing during a partition
-    sendDoc(2, null, leaderJetty);
+    sendDoc(2, leaderJetty);
     
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy0.reopen();
@@ -360,7 +360,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     SocketProxy proxy1 = getProxyForReplica(notLeaders.get(1));
     proxy1.close();
     
-    sendDoc(3, null, leaderJetty);
+    sendDoc(3, leaderJetty);
     
     Thread.sleep(sleepMsBeforeHealPartition);
     proxy1.reopen();
@@ -527,30 +527,23 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     return getHttpSolrClient(url);
   }
 
-  protected int sendDoc(int docId) throws Exception {
-    return sendDoc(docId, null);
-  }
-
   // Send doc directly to a server (without going through proxy)
-  protected int sendDoc(int docId, Integer minRf, JettySolrRunner leaderJetty) throws IOException, SolrServerException {
+  protected int sendDoc(int docId, JettySolrRunner leaderJetty) throws IOException, SolrServerException {
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
-      return sendDoc(docId, minRf, solrClient, cloudClient.getDefaultCollection());
+      return sendDoc(docId, solrClient, cloudClient.getDefaultCollection());
     }
   }
 
-  protected int sendDoc(int docId, Integer minRf) throws Exception {
-    return sendDoc(docId, minRf, cloudClient, cloudClient.getDefaultCollection());
+  protected int sendDoc(int docId) throws Exception {
+    return sendDoc(docId, cloudClient, cloudClient.getDefaultCollection());
   }
 
-  protected int sendDoc(int docId, Integer minRf, SolrClient solrClient, String collection) throws IOException, SolrServerException {
+  protected int sendDoc(int docId, SolrClient solrClient, String collection) throws IOException, SolrServerException {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
 
     UpdateRequest up = new UpdateRequest();
-    if (minRf != null) {
-      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-    }
     up.add(doc);
     return cloudClient.getMinAchievedReplicationFactor(collection, solrClient.request(up, collection));
   }

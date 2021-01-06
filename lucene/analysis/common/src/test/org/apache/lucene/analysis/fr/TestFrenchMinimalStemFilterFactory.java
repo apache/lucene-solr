@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.analysis.fr;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the French minimal stem factory is working.
- */
+/** Simple tests to ensure the French minimal stem factory is working. */
 public class TestFrenchMinimalStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("chevaux");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("FrenchMinimalStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "cheval" });
+    assertTokenStreamContents(stream, new String[] {"cheval"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("FrenchMinimalStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("FrenchMinimalStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

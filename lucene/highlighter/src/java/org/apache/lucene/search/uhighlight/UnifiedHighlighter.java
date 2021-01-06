@@ -33,7 +33,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.BaseCompositeReader;
@@ -65,28 +64,29 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**
- * A Highlighter that can get offsets from either
- * postings ({@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}),
- * term vectors ({@link FieldType#setStoreTermVectorOffsets(boolean)}),
- * or via re-analyzing text.
- * <p>
- * This highlighter treats the single original document as the whole corpus, and then scores individual
- * passages as if they were documents in this corpus. It uses a {@link BreakIterator} to find
- * passages in the text; by default it breaks using {@link BreakIterator#getSentenceInstance(Locale)
- * getSentenceInstance(Locale.ROOT)}. It then iterates in parallel (merge sorting by offset) through
- * the positions of all terms from the query, coalescing those hits that occur in a single passage
- * into a {@link Passage}, and then scores each Passage using a separate {@link PassageScorer}.
- * Passages are finally formatted into highlighted snippets with a {@link PassageFormatter}.
- * <p>
- * You can customize the behavior by calling some of the setters, or by subclassing and overriding some methods.
- * Some important hooks:
+ * A Highlighter that can get offsets from either postings ({@link
+ * IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}), term vectors ({@link
+ * FieldType#setStoreTermVectorOffsets(boolean)}), or via re-analyzing text.
+ *
+ * <p>This highlighter treats the single original document as the whole corpus, and then scores
+ * individual passages as if they were documents in this corpus. It uses a {@link BreakIterator} to
+ * find passages in the text; by default it breaks using {@link
+ * BreakIterator#getSentenceInstance(Locale) getSentenceInstance(Locale.ROOT)}. It then iterates in
+ * parallel (merge sorting by offset) through the positions of all terms from the query, coalescing
+ * those hits that occur in a single passage into a {@link Passage}, and then scores each Passage
+ * using a separate {@link PassageScorer}. Passages are finally formatted into highlighted snippets
+ * with a {@link PassageFormatter}.
+ *
+ * <p>You can customize the behavior by calling some of the setters, or by subclassing and
+ * overriding some methods. Some important hooks:
+ *
  * <ul>
- * <li>{@link #getBreakIterator(String)}: Customize how the text is divided into passages.
- * <li>{@link #getScorer(String)}: Customize how passages are ranked.
- * <li>{@link #getFormatter(String)}: Customize how snippets are formatted.
+ *   <li>{@link #getBreakIterator(String)}: Customize how the text is divided into passages.
+ *   <li>{@link #getScorer(String)}: Customize how passages are ranked.
+ *   <li>{@link #getFormatter(String)}: Customize how snippets are formatted.
  * </ul>
- * <p>
- * This is thread-safe.
+ *
+ * <p>This is thread-safe.
  *
  * @lucene.experimental
  */
@@ -110,7 +110,8 @@ public class UnifiedHighlighter {
     }
   }
 
-  protected static final LabelledCharArrayMatcher[] ZERO_LEN_AUTOMATA_ARRAY = new LabelledCharArrayMatcher[0];
+  protected static final LabelledCharArrayMatcher[] ZERO_LEN_AUTOMATA_ARRAY =
+      new LabelledCharArrayMatcher[0];
 
   protected final IndexSearcher searcher; // if null, can only use highlightWithoutSearcher
 
@@ -120,12 +121,14 @@ public class UnifiedHighlighter {
 
   private boolean defaultHighlightPhrasesStrictly = true; // AKA "accuracy" or "query debugging"
 
-  private boolean defaultPassageRelevancyOverSpeed = true; //For analysis, prefer MemoryIndexOffsetStrategy
+  // For analysis, prefer MemoryIndexOffsetStrategy
+  private boolean defaultPassageRelevancyOverSpeed = true;
 
   private int maxLength = DEFAULT_MAX_LENGTH;
 
   // BreakIterator is stateful so we use a Supplier factory method
-  private Supplier<BreakIterator> defaultBreakIterator = () -> BreakIterator.getSentenceInstance(Locale.ROOT);
+  private Supplier<BreakIterator> defaultBreakIterator =
+      () -> BreakIterator.getSentenceInstance(Locale.ROOT);
 
   private Predicate<String> defaultFieldMatcher;
 
@@ -140,9 +143,7 @@ public class UnifiedHighlighter {
 
   private int cacheFieldValCharsThreshold = DEFAULT_CACHE_CHARS_THRESHOLD;
 
-  /**
-   * Extracts matching terms after rewriting against an empty index
-   */
+  /** Extracts matching terms after rewriting against an empty index */
   protected static Set<Term> extractTerms(Query query) throws IOException {
     Set<Term> queryTerms = new HashSet<>();
     EMPTY_INDEXSEARCHER.rewrite(query).visit(QueryVisitor.termCollector(queryTerms));
@@ -152,15 +153,16 @@ public class UnifiedHighlighter {
   /**
    * Constructs the highlighter with the given index searcher and analyzer.
    *
-   * @param indexSearcher Usually required, unless {@link #highlightWithoutSearcher(String, Query, String, int)} is
-   *                      used, in which case this needs to be null.
+   * @param indexSearcher Usually required, unless {@link #highlightWithoutSearcher(String, Query,
+   *     String, int)} is used, in which case this needs to be null.
    * @param indexAnalyzer Required, even if in some circumstances it isn't used.
    */
   public UnifiedHighlighter(IndexSearcher indexSearcher, Analyzer indexAnalyzer) {
-    this.searcher = indexSearcher; //TODO: make non nullable
-    this.indexAnalyzer = Objects.requireNonNull(indexAnalyzer,
-        "indexAnalyzer is required"
-            + " (even if in some circumstances it isn't used)");
+    this.searcher = indexSearcher; // TODO: make non nullable
+    this.indexAnalyzer =
+        Objects.requireNonNull(
+            indexAnalyzer,
+            "indexAnalyzer is required" + " (even if in some circumstances it isn't used)");
   }
 
   public void setHandleMultiTermQuery(boolean handleMtq) {
@@ -205,31 +207,29 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Returns whether {@link MultiTermQuery} derivatives will be highlighted.  By default it's enabled.  MTQ
-   * highlighting can be expensive, particularly when using offsets in postings.
+   * Returns whether {@link MultiTermQuery} derivatives will be highlighted. By default it's
+   * enabled. MTQ highlighting can be expensive, particularly when using offsets in postings.
    */
   protected boolean shouldHandleMultiTermQuery(String field) {
     return defaultHandleMtq;
   }
 
   /**
-   * Returns whether position sensitive queries (e.g. phrases and {@link SpanQuery}ies)
-   * should be highlighted strictly based on query matches (slower)
-   * versus any/all occurrences of the underlying terms.  By default it's enabled, but there's no overhead if such
-   * queries aren't used.
+   * Returns whether position sensitive queries (e.g. phrases and {@link SpanQuery}ies) should be
+   * highlighted strictly based on query matches (slower) versus any/all occurrences of the
+   * underlying terms. By default it's enabled, but there's no overhead if such queries aren't used.
    */
   protected boolean shouldHighlightPhrasesStrictly(String field) {
     return defaultHighlightPhrasesStrictly;
   }
-
 
   protected boolean shouldPreferPassageRelevancyOverSpeed(String field) {
     return defaultPassageRelevancyOverSpeed;
   }
 
   /**
-   * Returns the predicate to use for extracting the query part that must be highlighted.
-   * By default only queries that target the current field are kept. (AKA requireFieldMatch)
+   * Returns the predicate to use for extracting the query part that must be highlighted. By default
+   * only queries that target the current field are kept. (AKA requireFieldMatch)
    */
   protected Predicate<String> getFieldMatcher(String field) {
     if (defaultFieldMatcher != null) {
@@ -241,42 +241,37 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * The maximum content size to process.  Content will be truncated to this size before highlighting. Typically
-   * snippets closer to the beginning of the document better summarize its content.
+   * The maximum content size to process. Content will be truncated to this size before
+   * highlighting. Typically snippets closer to the beginning of the document better summarize its
+   * content.
    */
   public int getMaxLength() {
     return maxLength;
   }
 
   /**
-   * Returns the {@link BreakIterator} to use for
-   * dividing text into passages.  This returns
-   * {@link BreakIterator#getSentenceInstance(Locale)} by default;
-   * subclasses can override to customize.
-   * <p>
-   * Note: this highlighter will call
-   * {@link BreakIterator#preceding(int)} and {@link BreakIterator#next()} many times on it.
-   * The default generic JDK implementation of {@code preceding} performs poorly.
+   * Returns the {@link BreakIterator} to use for dividing text into passages. This returns {@link
+   * BreakIterator#getSentenceInstance(Locale)} by default; subclasses can override to customize.
+   *
+   * <p>Note: this highlighter will call {@link BreakIterator#preceding(int)} and {@link
+   * BreakIterator#next()} many times on it. The default generic JDK implementation of {@code
+   * preceding} performs poorly.
    */
   protected BreakIterator getBreakIterator(String field) {
     return defaultBreakIterator.get();
   }
 
   /**
-   * Returns the {@link PassageScorer} to use for
-   * ranking passages.  This
-   * returns a new {@code PassageScorer} by default;
-   * subclasses can override to customize.
+   * Returns the {@link PassageScorer} to use for ranking passages. This returns a new {@code
+   * PassageScorer} by default; subclasses can override to customize.
    */
   protected PassageScorer getScorer(String field) {
     return defaultScorer;
   }
 
   /**
-   * Returns the {@link PassageFormatter} to use for
-   * formatting passages into highlighted snippets.  This
-   * returns a new {@code PassageFormatter} by default;
-   * subclasses can override to customize.
+   * Returns the {@link PassageFormatter} to use for formatting passages into highlighted snippets.
+   * This returns a new {@code PassageFormatter} by default; subclasses can override to customize.
    */
   protected PassageFormatter getFormatter(String field) {
     return defaultFormatter;
@@ -284,70 +279,73 @@ public class UnifiedHighlighter {
 
   /**
    * Returns the number of leading passages (as delineated by the {@link BreakIterator}) when no
-   * highlights could be found.  If it's less than 0 (the default) then this defaults to the {@code maxPassages}
-   * parameter given for each request.  If this is 0 then the resulting highlight is null (not formatted).
+   * highlights could be found. If it's less than 0 (the default) then this defaults to the {@code
+   * maxPassages} parameter given for each request. If this is 0 then the resulting highlight is
+   * null (not formatted).
    */
   protected int getMaxNoHighlightPassages(String field) {
     return defaultMaxNoHighlightPassages;
   }
 
   /**
-   * Limits the amount of field value pre-fetching until this threshold is passed.  The highlighter
-   * internally highlights in batches of documents sized on the sum field value length (in chars) of the fields
-   * to be highlighted (bounded by {@link #getMaxLength()} for each field).  By setting this to 0, you can force
-   * documents to be fetched and highlighted one at a time, which you usually shouldn't do.
-   * The default is 524288 chars which translates to about a megabyte.  However, note
-   * that the highlighter sometimes ignores this and highlights one document at a time (without caching a
-   * bunch of documents in advance) when it can detect there's no point in it -- such as when all fields will be
-   * highlighted via re-analysis as one example.
+   * Limits the amount of field value pre-fetching until this threshold is passed. The highlighter
+   * internally highlights in batches of documents sized on the sum field value length (in chars) of
+   * the fields to be highlighted (bounded by {@link #getMaxLength()} for each field). By setting
+   * this to 0, you can force documents to be fetched and highlighted one at a time, which you
+   * usually shouldn't do. The default is 524288 chars which translates to about a megabyte.
+   * However, note that the highlighter sometimes ignores this and highlights one document at a time
+   * (without caching a bunch of documents in advance) when it can detect there's no point in it --
+   * such as when all fields will be highlighted via re-analysis as one example.
    */
   public int getCacheFieldValCharsThreshold() { // question: should we size by bytes instead?
     return cacheFieldValCharsThreshold;
   }
 
-  /**
-   * ... as passed in from constructor.
-   */
+  /** ... as passed in from constructor. */
   public IndexSearcher getIndexSearcher() {
     return searcher;
   }
 
-  /**
-   * ... as passed in from constructor.
-   */
+  /** ... as passed in from constructor. */
   public Analyzer getIndexAnalyzer() {
     return indexAnalyzer;
   }
 
-  /**
-   * Source of term offsets; essential for highlighting.
-   */
+  /** Source of term offsets; essential for highlighting. */
   public enum OffsetSource {
-    POSTINGS, TERM_VECTORS, ANALYSIS, POSTINGS_WITH_TERM_VECTORS, NONE_NEEDED
+    POSTINGS,
+    TERM_VECTORS,
+    ANALYSIS,
+    POSTINGS_WITH_TERM_VECTORS,
+    NONE_NEEDED
   }
 
   /**
-   * Determine the offset source for the specified field.  The default algorithm is as follows:
+   * Determine the offset source for the specified field. The default algorithm is as follows:
+   *
    * <ol>
-   * <li>This calls {@link #getFieldInfo(String)}. Note this returns null if there is no searcher or if the
-   * field isn't found there.</li>
-   * <li> If there's a field info it has
-   * {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS} then {@link OffsetSource#POSTINGS} is
-   * returned.</li>
-   * <li>If there's a field info and {@link FieldInfo#hasVectors()} then {@link OffsetSource#TERM_VECTORS} is
-   * returned (note we can't check here if the TV has offsets; if there isn't then an exception will get thrown
-   * down the line).</li>
-   * <li>Fall-back: {@link OffsetSource#ANALYSIS} is returned.</li>
+   *   <li>This calls {@link #getFieldInfo(String)}. Note this returns null if there is no searcher
+   *       or if the field isn't found there.
+   *   <li>If there's a field info it has {@link
+   *       IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS} then {@link OffsetSource#POSTINGS}
+   *       is returned.
+   *   <li>If there's a field info and {@link FieldInfo#hasVectors()} then {@link
+   *       OffsetSource#TERM_VECTORS} is returned (note we can't check here if the TV has offsets;
+   *       if there isn't then an exception will get thrown down the line).
+   *   <li>Fall-back: {@link OffsetSource#ANALYSIS} is returned.
    * </ol>
-   * <p>
-   * Note that the highlighter sometimes switches to something else based on the query, such as if you have
-   * {@link OffsetSource#POSTINGS_WITH_TERM_VECTORS} but in fact don't need term vectors.
+   *
+   * <p>Note that the highlighter sometimes switches to something else based on the query, such as
+   * if you have {@link OffsetSource#POSTINGS_WITH_TERM_VECTORS} but in fact don't need term
+   * vectors.
    */
   protected OffsetSource getOffsetSource(String field) {
     FieldInfo fieldInfo = getFieldInfo(field);
     if (fieldInfo != null) {
       if (fieldInfo.getIndexOptions() == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
-        return fieldInfo.hasVectors() ? OffsetSource.POSTINGS_WITH_TERM_VECTORS : OffsetSource.POSTINGS;
+        return fieldInfo.hasVectors()
+            ? OffsetSource.POSTINGS_WITH_TERM_VECTORS
+            : OffsetSource.POSTINGS;
       }
       if (fieldInfo.hasVectors()) { // unfortunately we can't also check if the TV has offsets
         return OffsetSource.TERM_VECTORS;
@@ -357,14 +355,15 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Called by the default implementation of {@link #getOffsetSource(String)}.
-   * If there is no searcher then we simply always return null.
+   * Called by the default implementation of {@link #getOffsetSource(String)}. If there is no
+   * searcher then we simply always return null.
    */
   protected FieldInfo getFieldInfo(String field) {
     if (searcher == null) {
       return null;
     }
-    // Need thread-safety for lazy-init but lets avoid 'synchronized' by using double-check locking idiom
+    // Need thread-safety for lazy-init but lets avoid 'synchronized' by using double-check locking
+    // idiom
     FieldInfos fieldInfos = this.fieldInfos; // note: it's volatile; read once
     if (fieldInfos == null) {
       synchronized (this) {
@@ -373,9 +372,7 @@ public class UnifiedHighlighter {
           fieldInfos = FieldInfos.getMergedFieldInfos(searcher.getIndexReader());
           this.fieldInfos = fieldInfos;
         }
-
       }
-
     }
     return fieldInfos.fieldInfo(field);
   }
@@ -383,16 +380,15 @@ public class UnifiedHighlighter {
   /**
    * Highlights the top passages from a single field.
    *
-   * @param field   field name to highlight.
-   *                Must have a stored string value and also be indexed with offsets.
-   * @param query   query to highlight.
+   * @param field field name to highlight. Must have a stored string value and also be indexed with
+   *     offsets.
+   * @param query query to highlight.
    * @param topDocs TopDocs containing the summary result documents to highlight.
-   * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>.
-   * If no highlights were found for a document, the
-   * first sentence for the field will be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>. If
+   *     no highlights were found for a document, the first sentence for the field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
   public String[] highlight(String field, Query query, TopDocs topDocs) throws IOException {
     return highlight(field, query, topDocs, 1);
@@ -401,28 +397,30 @@ public class UnifiedHighlighter {
   /**
    * Highlights the top-N passages from a single field.
    *
-   * @param field       field name to highlight. Must have a stored string value.
-   * @param query       query to highlight.
-   * @param topDocs     TopDocs containing the summary result documents to highlight.
-   * @param maxPassages The maximum number of top-N ranked passages used to
-   *                    form the highlighted snippets.
-   * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>.
-   * If no highlights were found for a document, the
-   * first {@code maxPassages} sentences from the
-   * field will be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @param field field name to highlight. Must have a stored string value.
+   * @param query query to highlight.
+   * @param topDocs TopDocs containing the summary result documents to highlight.
+   * @param maxPassages The maximum number of top-N ranked passages used to form the highlighted
+   *     snippets.
+   * @return Array of formatted snippets corresponding to the documents in <code>topDocs</code>. If
+   *     no highlights were found for a document, the first {@code maxPassages} sentences from the
+   *     field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public String[] highlight(String field, Query query, TopDocs topDocs, int maxPassages) throws IOException {
-    Map<String, String[]> res = highlightFields(new String[]{field}, query, topDocs, new int[]{maxPassages});
+  public String[] highlight(String field, Query query, TopDocs topDocs, int maxPassages)
+      throws IOException {
+    Map<String, String[]> res =
+        highlightFields(new String[] {field}, query, topDocs, new int[] {maxPassages});
     return res.get(field);
   }
 
   /**
    * Highlights the top passages from multiple fields.
-   * <p>
-   * Conceptually, this behaves as a more efficient form of:
+   *
+   * <p>Conceptually, this behaves as a more efficient form of:
+   *
    * <pre class="prettyprint">
    * Map m = new HashMap();
    * for (String field : fields) {
@@ -431,18 +429,18 @@ public class UnifiedHighlighter {
    * return m;
    * </pre>
    *
-   * @param fields  field names to highlight. Must have a stored string value.
-   * @param query   query to highlight.
+   * @param fields field names to highlight. Must have a stored string value.
+   * @param query query to highlight.
    * @param topDocs TopDocs containing the summary result documents to highlight.
-   * @return Map keyed on field name, containing the array of formatted snippets
-   * corresponding to the documents in <code>topDocs</code>.
-   * If no highlights were found for a document, the
-   * first sentence from the field will be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @return Map keyed on field name, containing the array of formatted snippets corresponding to
+   *     the documents in <code>topDocs</code>. If no highlights were found for a document, the
+   *     first sentence from the field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String, String[]> highlightFields(String[] fields, Query query, TopDocs topDocs) throws IOException {
+  public Map<String, String[]> highlightFields(String[] fields, Query query, TopDocs topDocs)
+      throws IOException {
     int maxPassages[] = new int[fields.length];
     Arrays.fill(maxPassages, 1);
     return highlightFields(fields, query, topDocs, maxPassages);
@@ -450,8 +448,9 @@ public class UnifiedHighlighter {
 
   /**
    * Highlights the top-N passages from multiple fields.
-   * <p>
-   * Conceptually, this behaves as a more efficient form of:
+   *
+   * <p>Conceptually, this behaves as a more efficient form of:
+   *
    * <pre class="prettyprint">
    * Map m = new HashMap();
    * for (String field : fields) {
@@ -460,22 +459,20 @@ public class UnifiedHighlighter {
    * return m;
    * </pre>
    *
-   * @param fields      field names to highlight. Must have a stored string value.
-   * @param query       query to highlight.
-   * @param topDocs     TopDocs containing the summary result documents to highlight.
-   * @param maxPassages The maximum number of top-N ranked passages per-field used to
-   *                    form the highlighted snippets.
-   * @return Map keyed on field name, containing the array of formatted snippets
-   * corresponding to the documents in <code>topDocs</code>.
-   * If no highlights were found for a document, the
-   * first {@code maxPassages} sentences from the
-   * field will be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @param fields field names to highlight. Must have a stored string value.
+   * @param query query to highlight.
+   * @param topDocs TopDocs containing the summary result documents to highlight.
+   * @param maxPassages The maximum number of top-N ranked passages per-field used to form the
+   *     highlighted snippets.
+   * @return Map keyed on field name, containing the array of formatted snippets corresponding to
+   *     the documents in <code>topDocs</code>. If no highlights were found for a document, the
+   *     first {@code maxPassages} sentences from the field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String, String[]> highlightFields(String[] fields, Query query, TopDocs topDocs, int[] maxPassages)
-      throws IOException {
+  public Map<String, String[]> highlightFields(
+      String[] fields, Query query, TopDocs topDocs, int[] maxPassages) throws IOException {
     final ScoreDoc scoreDocs[] = topDocs.scoreDocs;
     int docids[] = new int[scoreDocs.length];
     for (int i = 0; i < docids.length; i++) {
@@ -486,27 +483,25 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Highlights the top-N passages from multiple fields,
-   * for the provided int[] docids.
+   * Highlights the top-N passages from multiple fields, for the provided int[] docids.
    *
-   * @param fieldsIn      field names to highlight. Must have a stored string value.
-   * @param query         query to highlight.
-   * @param docidsIn      containing the document IDs to highlight.
-   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to
-   *                      form the highlighted snippets.
-   * @return Map keyed on field name, containing the array of formatted snippets
-   * corresponding to the documents in <code>docidsIn</code>.
-   * If no highlights were found for a document, the
-   * first {@code maxPassages} from the field will
-   * be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @param fieldsIn field names to highlight. Must have a stored string value.
+   * @param query query to highlight.
+   * @param docidsIn containing the document IDs to highlight.
+   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to form the
+   *     highlighted snippets.
+   * @return Map keyed on field name, containing the array of formatted snippets corresponding to
+   *     the documents in <code>docidsIn</code>. If no highlights were found for a document, the
+   *     first {@code maxPassages} from the field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  public Map<String, String[]> highlightFields(String[] fieldsIn, Query query, int[] docidsIn, int[] maxPassagesIn)
-      throws IOException {
+  public Map<String, String[]> highlightFields(
+      String[] fieldsIn, Query query, int[] docidsIn, int[] maxPassagesIn) throws IOException {
     Map<String, String[]> snippets = new HashMap<>();
-    for (Map.Entry<String, Object[]> ent : highlightFieldsAsObjects(fieldsIn, query, docidsIn, maxPassagesIn).entrySet()) {
+    for (Map.Entry<String, Object[]> ent :
+        highlightFieldsAsObjects(fieldsIn, query, docidsIn, maxPassagesIn).entrySet()) {
       Object[] snippetObjects = ent.getValue();
       String[] snippetStrings = new String[snippetObjects.length];
       snippets.put(ent.getKey(), snippetStrings);
@@ -522,27 +517,24 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Expert: highlights the top-N passages from multiple fields,
-   * for the provided int[] docids, to custom Object as
-   * returned by the {@link PassageFormatter}.  Use
-   * this API to render to something other than String.
+   * Expert: highlights the top-N passages from multiple fields, for the provided int[] docids, to
+   * custom Object as returned by the {@link PassageFormatter}. Use this API to render to something
+   * other than String.
    *
-   * @param fieldsIn      field names to highlight. Must have a stored string value.
-   * @param query         query to highlight.
-   * @param docIdsIn      containing the document IDs to highlight.
-   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to
-   *                      form the highlighted snippets.
-   * @return Map keyed on field name, containing the array of formatted snippets
-   * corresponding to the documents in <code>docIdsIn</code>.
-   * If no highlights were found for a document, the
-   * first {@code maxPassages} from the field will
-   * be returned.
-   * @throws IOException              if an I/O error occurred during processing
-   * @throws IllegalArgumentException if <code>field</code> was indexed without
-   *                                  {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
+   * @param fieldsIn field names to highlight. Must have a stored string value.
+   * @param query query to highlight.
+   * @param docIdsIn containing the document IDs to highlight.
+   * @param maxPassagesIn The maximum number of top-N ranked passages per-field used to form the
+   *     highlighted snippets.
+   * @return Map keyed on field name, containing the array of formatted snippets corresponding to
+   *     the documents in <code>docIdsIn</code>. If no highlights were found for a document, the
+   *     first {@code maxPassages} from the field will be returned.
+   * @throws IOException if an I/O error occurred during processing
+   * @throws IllegalArgumentException if <code>field</code> was indexed without {@link
+   *     IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}
    */
-  protected Map<String, Object[]> highlightFieldsAsObjects(String[] fieldsIn, Query query, int[] docIdsIn,
-                                                           int[] maxPassagesIn) throws IOException {
+  protected Map<String, Object[]> highlightFieldsAsObjects(
+      String[] fieldsIn, Query query, int[] docIdsIn, int[] maxPassagesIn) throws IOException {
     if (fieldsIn.length < 1) {
       throw new IllegalArgumentException("fieldsIn must not be empty");
     }
@@ -550,8 +542,9 @@ public class UnifiedHighlighter {
       throw new IllegalArgumentException("invalid number of maxPassagesIn");
     }
     if (searcher == null) {
-      throw new IllegalStateException("This method requires that an indexSearcher was passed in the "
-          + "constructor.  Perhaps you mean to call highlightWithoutSearcher?");
+      throw new IllegalStateException(
+          "This method requires that an indexSearcher was passed in the "
+              + "constructor.  Perhaps you mean to call highlightWithoutSearcher?");
     }
 
     // Sort docs & fields for sequential i/o
@@ -564,7 +557,8 @@ public class UnifiedHighlighter {
     // Sort fields w/ maxPassages pair: (copy input arrays since we sort in-place)
     final String fields[] = new String[fieldsIn.length];
     final int maxPassages[] = new int[maxPassagesIn.length];
-    copyAndSortFieldsWithMaxPassages(fieldsIn, maxPassagesIn, fields, maxPassages); // latter 2 are "out" params
+    copyAndSortFieldsWithMaxPassages(
+        fieldsIn, maxPassagesIn, fields, maxPassages); // latter 2 are "out" params
 
     // Init field highlighters (where most of the highlight logic lives, and on a per field basis)
     Set<Term> queryTerms = extractTerms(query);
@@ -572,7 +566,8 @@ public class UnifiedHighlighter {
     int numTermVectors = 0;
     int numPostings = 0;
     for (int f = 0; f < fields.length; f++) {
-      FieldHighlighter fieldHighlighter = getFieldHighlighter(fields[f], query, queryTerms, maxPassages[f]);
+      FieldHighlighter fieldHighlighter =
+          getFieldHighlighter(fields[f], query, queryTerms, maxPassages[f]);
       fieldHighlighters[f] = fieldHighlighter;
 
       switch (fieldHighlighter.getOffsetSource()) {
@@ -589,7 +584,7 @@ public class UnifiedHighlighter {
         case ANALYSIS:
         case NONE_NEEDED:
         default:
-          //do nothing
+          // do nothing
           break;
       }
     }
@@ -604,24 +599,24 @@ public class UnifiedHighlighter {
     // Highlight in doc batches determined by loadFieldValues (consumes from docIdIter)
     DocIdSetIterator docIdIter = asDocIdSetIterator(docIds);
     for (int batchDocIdx = 0; batchDocIdx < docIds.length; ) {
-      // Load the field values of the first batch of document(s) (note: commonly all docs are in this batch)
-      List<CharSequence[]> fieldValsByDoc =
-          loadFieldValues(fields, docIdIter, cacheCharsThreshold);
+      // Load the field values of the first batch of document(s) (note: commonly all docs are in
+      // this batch)
+      List<CharSequence[]> fieldValsByDoc = loadFieldValues(fields, docIdIter, cacheCharsThreshold);
       //    the size of the above list is the size of the batch (num of docs in the batch)
 
       // Highlight in per-field order first, then by doc (better I/O pattern)
       for (int fieldIdx = 0; fieldIdx < fields.length; fieldIdx++) {
-        Object[] resultByDocIn = highlightDocsInByField[fieldIdx];//parallel to docIdsIn
+        Object[] resultByDocIn = highlightDocsInByField[fieldIdx]; // parallel to docIdsIn
         FieldHighlighter fieldHighlighter = fieldHighlighters[fieldIdx];
         for (int docIdx = batchDocIdx; docIdx - batchDocIdx < fieldValsByDoc.size(); docIdx++) {
-          int docId = docIds[docIdx];//sorted order
+          int docId = docIds[docIdx]; // sorted order
           CharSequence content = fieldValsByDoc.get(docIdx - batchDocIdx)[fieldIdx];
           if (content == null) {
             continue;
           }
           IndexReader indexReader =
               (fieldHighlighter.getOffsetSource() == OffsetSource.TERM_VECTORS
-                  && indexReaderWithTermVecCache != null)
+                      && indexReaderWithTermVecCache != null)
                   ? indexReaderWithTermVecCache
                   : searcher.getIndexReader();
           final LeafReader leafReader;
@@ -633,13 +628,11 @@ public class UnifiedHighlighter {
             leafReader = leafReaderContext.reader();
             docId -= leafReaderContext.docBase; // adjust 'doc' to be within this leaf reader
           }
-          int docInIndex = docInIndexes[docIdx];//original input order
+          int docInIndex = docInIndexes[docIdx]; // original input order
           assert resultByDocIn[docInIndex] == null;
           resultByDocIn[docInIndex] =
-              fieldHighlighter
-                  .highlightFieldForDoc(leafReader, docId, content.toString());
+              fieldHighlighter.highlightFieldForDoc(leafReader, docId, content.toString());
         }
-
       }
 
       batchDocIdx += fieldValsByDoc.size();
@@ -648,7 +641,8 @@ public class UnifiedHighlighter {
     assert docIdIter.docID() == DocIdSetIterator.NO_MORE_DOCS
         || docIdIter.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
 
-    // TODO reconsider the return type; since this is an "advanced" method, lets not return a Map?  Notice the only
+    // TODO reconsider the return type; since this is an "advanced" method, lets not return a Map?
+    // Notice the only
     //    caller simply iterates it to build another structure.
 
     // field -> object highlights parallel to docIdsIn
@@ -660,8 +654,8 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * When cacheCharsThreshold is 0, loadFieldValues() only fetches one document at a time.  We override it to be 0
-   * in two circumstances:
+   * When cacheCharsThreshold is 0, loadFieldValues() only fetches one document at a time. We
+   * override it to be 0 in two circumstances:
    */
   private int calculateOptimalCacheCharsThreshold(int numTermVectors, int numPostings) {
     if (numPostings == 0 && numTermVectors == 0) {
@@ -669,17 +663,20 @@ public class UnifiedHighlighter {
       // because no other info on disk is needed to highlight it.
       return 0;
     } else if (numTermVectors >= 2) {
-      // (2) When two or more fields have term vectors, given the field-then-doc algorithm, the underlying term
-      // vectors will be fetched in a terrible access pattern unless we highlight a doc at a time and use a special
-      // current-doc TV cache.  So we do that.  Hopefully one day TVs will be improved to make this pointless.
+      // (2) When two or more fields have term vectors, given the field-then-doc algorithm, the
+      // underlying term
+      // vectors will be fetched in a terrible access pattern unless we highlight a doc at a time
+      // and use a special
+      // current-doc TV cache.  So we do that.  Hopefully one day TVs will be improved to make this
+      // pointless.
       return 0;
     } else {
       return getCacheFieldValCharsThreshold();
     }
   }
 
-  private void copyAndSortFieldsWithMaxPassages(String[] fieldsIn, int[] maxPassagesIn, final String[] fields,
-                                                final int[] maxPassages) {
+  private void copyAndSortFieldsWithMaxPassages(
+      String[] fieldsIn, int[] maxPassagesIn, final String[] fields, final int[] maxPassages) {
     System.arraycopy(fieldsIn, 0, fields, 0, fieldsIn.length);
     System.arraycopy(maxPassagesIn, 0, maxPassages, 0, maxPassagesIn.length);
     new InPlaceMergeSorter() {
@@ -697,11 +694,11 @@ public class UnifiedHighlighter {
       protected int compare(int i, int j) {
         return fields[i].compareTo(fields[j]);
       }
-
     }.sort(0, fields.length);
   }
 
-  private void copyAndSortDocIdsWithIndex(int[] docIdsIn, final int[] docIds, final int[] docInIndexes) {
+  private void copyAndSortDocIdsWithIndex(
+      int[] docIdsIn, final int[] docIds, final int[] docInIndexes) {
     System.arraycopy(docIdsIn, 0, docIds, 0, docIdsIn.length);
     for (int i = 0; i < docInIndexes.length; i++) {
       docInIndexes[i] = i;
@@ -725,26 +722,30 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Highlights text passed as a parameter.  This requires the {@link IndexSearcher} provided to this highlighter is
-   * null.  This use-case is more rare.  Naturally, the mode of operation will be {@link OffsetSource#ANALYSIS}.
-   * The result of this method is whatever the {@link PassageFormatter} returns.  For the {@link
-   * DefaultPassageFormatter} and assuming {@code content} has non-zero length, the result will be a non-null
-   * string -- so it's safe to call {@link Object#toString()} on it in that case.
+   * Highlights text passed as a parameter. This requires the {@link IndexSearcher} provided to this
+   * highlighter is null. This use-case is more rare. Naturally, the mode of operation will be
+   * {@link OffsetSource#ANALYSIS}. The result of this method is whatever the {@link
+   * PassageFormatter} returns. For the {@link DefaultPassageFormatter} and assuming {@code content}
+   * has non-zero length, the result will be a non-null string -- so it's safe to call {@link
+   * Object#toString()} on it in that case.
    *
-   * @param field       field name to highlight (as found in the query).
-   * @param query       query to highlight.
-   * @param content     text to highlight.
-   * @param maxPassages The maximum number of top-N ranked passages used to
-   *                    form the highlighted snippets.
-   * @return result of the {@link PassageFormatter} -- probably a String.  Might be null.
+   * @param field field name to highlight (as found in the query).
+   * @param query query to highlight.
+   * @param content text to highlight.
+   * @param maxPassages The maximum number of top-N ranked passages used to form the highlighted
+   *     snippets.
+   * @return result of the {@link PassageFormatter} -- probably a String. Might be null.
    * @throws IOException if an I/O error occurred during processing
    */
-  //TODO make content a List? and return a List? and ensure getEmptyHighlight is never invoked multiple times?
+  // TODO make content a List? and return a List? and ensure getEmptyHighlight is never invoked
+  // multiple times?
   public Object highlightWithoutSearcher(String field, Query query, String content, int maxPassages)
       throws IOException {
     if (this.searcher != null) {
-      throw new IllegalStateException("highlightWithoutSearcher should only be called on a " +
-          getClass().getSimpleName() + " without an IndexSearcher.");
+      throw new IllegalStateException(
+          "highlightWithoutSearcher should only be called on a "
+              + getClass().getSimpleName()
+              + " without an IndexSearcher.");
     }
     Objects.requireNonNull(content, "content is required");
     Set<Term> queryTerms = extractTerms(query);
@@ -752,10 +753,12 @@ public class UnifiedHighlighter {
         .highlightFieldForDoc(null, -1, content);
   }
 
-  protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
+  protected FieldHighlighter getFieldHighlighter(
+      String field, Query query, Set<Term> allTerms, int maxPassages) {
     UHComponents components = getHighlightComponents(field, query, allTerms);
     OffsetSource offsetSource = getOptimizedOffsetSource(components);
-    return new FieldHighlighter(field,
+    return new FieldHighlighter(
+        field,
         getOffsetStrategy(offsetSource, components),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
         getScorer(field),
@@ -775,31 +778,41 @@ public class UnifiedHighlighter {
       terms = filterExtractedTerms(fieldMatcher, allTerms);
       automata = getAutomata(field, query, highlightFlags);
     } // otherwise don't need to extract
-    return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
+    return new UHComponents(
+        field,
+        fieldMatcher,
+        query,
+        terms,
+        phraseHelper,
+        automata,
+        queryHasUnrecognizedPart,
+        highlightFlags);
   }
 
   protected boolean hasUnrecognizedQuery(Predicate<String> fieldMatcher, Query query) {
     boolean[] hasUnknownLeaf = new boolean[1];
-    query.visit(new QueryVisitor() {
-      @Override
-      public boolean acceptField(String field) {
-        // checking hasUnknownLeaf is a trick to exit early
-        return hasUnknownLeaf[0] == false && fieldMatcher.test(field);
-      }
-
-      @Override
-      public void visitLeaf(Query query) {
-        if (MultiTermHighlighting.canExtractAutomataFromLeafQuery(query) == false) {
-          if (!(query instanceof MatchAllDocsQuery || query instanceof MatchNoDocsQuery)) {
-            hasUnknownLeaf[0] = true;
+    query.visit(
+        new QueryVisitor() {
+          @Override
+          public boolean acceptField(String field) {
+            // checking hasUnknownLeaf is a trick to exit early
+            return hasUnknownLeaf[0] == false && fieldMatcher.test(field);
           }
-        }
-      }
-    });
+
+          @Override
+          public void visitLeaf(Query query) {
+            if (MultiTermHighlighting.canExtractAutomataFromLeafQuery(query) == false) {
+              if (!(query instanceof MatchAllDocsQuery || query instanceof MatchNoDocsQuery)) {
+                hasUnknownLeaf[0] = true;
+              }
+            }
+          }
+        });
     return hasUnknownLeaf[0];
   }
 
-  protected static BytesRef[] filterExtractedTerms(Predicate<String> fieldMatcher, Set<Term> queryTerms) {
+  protected static BytesRef[] filterExtractedTerms(
+      Predicate<String> fieldMatcher, Set<Term> queryTerms) {
     // Strip off the redundant field and sort the remaining terms
     SortedSet<BytesRef> filteredTerms = new TreeSet<>();
     for (Term term : queryTerms) {
@@ -824,28 +837,34 @@ public class UnifiedHighlighter {
     return highlightFlags;
   }
 
-  protected PhraseHelper getPhraseHelper(String field, Query query, Set<HighlightFlag> highlightFlags) {
+  protected PhraseHelper getPhraseHelper(
+      String field, Query query, Set<HighlightFlag> highlightFlags) {
     boolean useWeightMatchesIter = highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES);
     if (useWeightMatchesIter) {
       return PhraseHelper.NONE; // will be handled by Weight.matches which always considers phrases
     }
     boolean highlightPhrasesStrictly = highlightFlags.contains(HighlightFlag.PHRASES);
     boolean handleMultiTermQuery = highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY);
-    return highlightPhrasesStrictly ?
-        new PhraseHelper(query, field, getFieldMatcher(field),
+    return highlightPhrasesStrictly
+        ? new PhraseHelper(
+            query,
+            field,
+            getFieldMatcher(field),
             this::requiresRewrite,
             this::preSpanQueryRewrite,
-            !handleMultiTermQuery
-        )
+            !handleMultiTermQuery)
         : PhraseHelper.NONE;
   }
 
-  protected LabelledCharArrayMatcher[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
-    // do we "eagerly" look in span queries for automata here, or do we not and let PhraseHelper handle those?
+  protected LabelledCharArrayMatcher[] getAutomata(
+      String field, Query query, Set<HighlightFlag> highlightFlags) {
+    // do we "eagerly" look in span queries for automata here, or do we not and let PhraseHelper
+    // handle those?
     // if don't highlight phrases strictly,
     final boolean lookInSpan =
         !highlightFlags.contains(HighlightFlag.PHRASES) // no PhraseHelper
-        || highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
+            || highlightFlags.contains(
+                HighlightFlag.WEIGHT_MATCHES); // Weight.Matches will find all
 
     return highlightFlags.contains(HighlightFlag.MULTI_TERM_QUERY)
         ? MultiTermHighlighting.extractAutomata(query, getFieldMatcher(field), lookInSpan)
@@ -856,43 +875,50 @@ public class UnifiedHighlighter {
     OffsetSource offsetSource = getOffsetSource(components.getField());
 
     // null automata means unknown, so assume a possibility
-    boolean mtqOrRewrite = components.getAutomata() == null || components.getAutomata().length > 0
-        || components.getPhraseHelper().willRewrite() || components.hasUnrecognizedQueryPart();
+    boolean mtqOrRewrite =
+        components.getAutomata() == null
+            || components.getAutomata().length > 0
+            || components.getPhraseHelper().willRewrite()
+            || components.hasUnrecognizedQueryPart();
 
     // null terms means unknown, so assume something to highlight
-    if (mtqOrRewrite == false && components.getTerms() != null && components.getTerms().length == 0) {
-      return OffsetSource.NONE_NEEDED; //nothing to highlight
+    if (mtqOrRewrite == false
+        && components.getTerms() != null
+        && components.getTerms().length == 0) {
+      return OffsetSource.NONE_NEEDED; // nothing to highlight
     }
 
     switch (offsetSource) {
       case POSTINGS:
-        if (mtqOrRewrite) { // may need to see scan through all terms for the highlighted document efficiently
+        if (mtqOrRewrite) { // may need to see scan through all terms for the highlighted document
+          // efficiently
           return OffsetSource.ANALYSIS;
         }
         break;
       case POSTINGS_WITH_TERM_VECTORS:
         if (mtqOrRewrite == false) {
-          return OffsetSource.POSTINGS; //We don't need term vectors
+          return OffsetSource.POSTINGS; // We don't need term vectors
         }
         break;
       case ANALYSIS:
       case TERM_VECTORS:
       case NONE_NEEDED:
       default:
-        //stick with the original offset source
+        // stick with the original offset source
         break;
     }
 
     return offsetSource;
   }
 
-  protected FieldOffsetStrategy getOffsetStrategy(OffsetSource offsetSource, UHComponents components) {
+  protected FieldOffsetStrategy getOffsetStrategy(
+      OffsetSource offsetSource, UHComponents components) {
     switch (offsetSource) {
       case ANALYSIS:
-        if (!components.getPhraseHelper().hasPositionSensitivity() &&
-            !components.getHighlightFlags().contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED) &&
-            !components.getHighlightFlags().contains(HighlightFlag.WEIGHT_MATCHES)) {
-          //skip using a memory index since it's pure term filtering
+        if (!components.getPhraseHelper().hasPositionSensitivity()
+            && !components.getHighlightFlags().contains(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED)
+            && !components.getHighlightFlags().contains(HighlightFlag.WEIGHT_MATCHES)) {
+          // skip using a memory index since it's pure term filtering
           return new TokenStreamOffsetStrategy(components, getIndexAnalyzer());
         } else {
           return new MemoryIndexOffsetStrategy(components, getIndexAnalyzer());
@@ -912,20 +938,22 @@ public class UnifiedHighlighter {
 
   /**
    * When highlighting phrases accurately, we need to know which {@link SpanQuery}'s need to have
-   * {@link Query#rewrite(IndexReader)} called on them.  It helps performance to avoid it if it's not needed.
-   * This method will be invoked on all SpanQuery instances recursively. If you have custom SpanQuery queries then
-   * override this to check instanceof and provide a definitive answer. If the query isn't your custom one, simply
-   * return null to have the default rules apply, which govern the ones included in Lucene.
+   * {@link Query#rewrite(IndexReader)} called on them. It helps performance to avoid it if it's not
+   * needed. This method will be invoked on all SpanQuery instances recursively. If you have custom
+   * SpanQuery queries then override this to check instanceof and provide a definitive answer. If
+   * the query isn't your custom one, simply return null to have the default rules apply, which
+   * govern the ones included in Lucene.
    */
   protected Boolean requiresRewrite(SpanQuery spanQuery) {
     return null;
   }
 
   /**
-   * When highlighting phrases accurately, we may need to handle custom queries that aren't supported in the
-   * {@link org.apache.lucene.search.highlight.WeightedSpanTermExtractor} as called by the {@code PhraseHelper}.
-   * Should custom query types be needed, this method should be overriden to return a collection of queries if appropriate,
-   * or null if nothing to do. If the query is not custom, simply returning null will allow the default rules to apply.
+   * When highlighting phrases accurately, we may need to handle custom queries that aren't
+   * supported in the {@link org.apache.lucene.search.highlight.WeightedSpanTermExtractor} as called
+   * by the {@code PhraseHelper}. Should custom query types be needed, this method should be
+   * overriden to return a collection of queries if appropriate, or null if nothing to do. If the
+   * query is not custom, simply returning null will allow the default rules to apply.
    *
    * @param query Query to be highlighted
    * @return A Collection of Query object(s) if needs to be rewritten, otherwise null.
@@ -965,17 +993,17 @@ public class UnifiedHighlighter {
   }
 
   /**
-   * Loads the String values for each docId by field to be highlighted.  By default this loads from stored fields
-   * by the same name as given, but a subclass can change the source.  The returned Strings must be identical to
-   * what was indexed (at least for postings or term-vectors offset sources).
-   * This method must load fields for at least one document from the given {@link DocIdSetIterator}
-   * but need not return all of them; by default the character lengths are summed and this method will return early
-   * when {@code cacheCharsThreshold} is exceeded.  Specifically if that number is 0, then only one document is
-   * fetched no matter what.  Values in the array of {@link CharSequence} will be null if no value was found.
+   * Loads the String values for each docId by field to be highlighted. By default this loads from
+   * stored fields by the same name as given, but a subclass can change the source. The returned
+   * Strings must be identical to what was indexed (at least for postings or term-vectors offset
+   * sources). This method must load fields for at least one document from the given {@link
+   * DocIdSetIterator} but need not return all of them; by default the character lengths are summed
+   * and this method will return early when {@code cacheCharsThreshold} is exceeded. Specifically if
+   * that number is 0, then only one document is fetched no matter what. Values in the array of
+   * {@link CharSequence} will be null if no value was found.
    */
-  protected List<CharSequence[]> loadFieldValues(String[] fields,
-                                                 DocIdSetIterator docIter, int cacheCharsThreshold)
-      throws IOException {
+  protected List<CharSequence[]> loadFieldValues(
+      String[] fields, DocIdSetIterator docIter, int cacheCharsThreshold) throws IOException {
     List<CharSequence[]> docListOfFields =
         new ArrayList<>(cacheCharsThreshold == 0 ? 1 : (int) Math.min(64, docIter.cost()));
 
@@ -997,22 +1025,22 @@ public class UnifiedHighlighter {
     return docListOfFields;
   }
 
-  /**
-   * @lucene.internal
-   */
+  /** @lucene.internal */
   protected LimitedStoredFieldVisitor newLimitedStoredFieldsVisitor(String[] fields) {
     return new LimitedStoredFieldVisitor(fields, MULTIVAL_SEP_CHAR, getMaxLength());
   }
 
   /**
-   * Fetches stored fields for highlighting. Uses a multi-val separator char and honors a max length to retrieve.
+   * Fetches stored fields for highlighting. Uses a multi-val separator char and honors a max length
+   * to retrieve.
+   *
    * @lucene.internal
    */
   protected static class LimitedStoredFieldVisitor extends StoredFieldVisitor {
     protected final String[] fields;
     protected final char valueSeparator;
     protected final int maxLength;
-    protected CharSequence[] values;// starts off as String; may become StringBuilder.
+    protected CharSequence[] values; // starts off as String; may become StringBuilder.
     protected int currentField;
 
     public LimitedStoredFieldVisitor(String[] fields, char valueSeparator, int maxLength) {
@@ -1032,9 +1060,11 @@ public class UnifiedHighlighter {
       Objects.requireNonNull(value, "String value should not be null");
       CharSequence curValue = values[currentField];
       if (curValue == null) {
-        //question: if truncate due to maxLength, should we try and avoid keeping the other chars in-memory on
+        // question: if truncate due to maxLength, should we try and avoid keeping the other chars
+        // in-memory on
         //  the backing char[]?
-        values[currentField] = value.substring(0, Math.min(maxLength, value.length()));//note: may return 'this'
+        values[currentField] =
+            value.substring(0, Math.min(maxLength, value.length())); // note: may return 'this'
         return;
       }
       final int lengthBudget = maxLength - curValue.length();
@@ -1046,7 +1076,8 @@ public class UnifiedHighlighter {
         curValueBuilder = (StringBuilder) curValue;
       } else {
         // upgrade String to StringBuilder. Choose a good initial size.
-        curValueBuilder = new StringBuilder(curValue.length() + Math.min(lengthBudget, value.length() + 256));
+        curValueBuilder =
+            new StringBuilder(curValue.length() + Math.min(lengthBudget, value.length() + 256));
         curValueBuilder.append(curValue);
       }
       curValueBuilder.append(valueSeparator);
@@ -1070,21 +1101,21 @@ public class UnifiedHighlighter {
     CharSequence[] getValuesByField() {
       return this.values;
     }
-
   }
 
   /**
-   * Wraps an IndexReader that remembers/caches the last call to {@link LeafReader#getTermVectors(int)} so that
-   * if the next call has the same ID, then it is reused.  If TV's were column-stride (like doc-values), there would
-   * be no need for this.
+   * Wraps an IndexReader that remembers/caches the last call to {@link
+   * LeafReader#getTermVectors(int)} so that if the next call has the same ID, then it is reused. If
+   * TV's were column-stride (like doc-values), there would be no need for this.
    */
   private static class TermVectorReusingLeafReader extends FilterLeafReader {
 
     static IndexReader wrap(IndexReader reader) throws IOException {
-      LeafReader[] leafReaders = reader.leaves().stream()
-          .map(LeafReaderContext::reader)
-          .map(TermVectorReusingLeafReader::new)
-          .toArray(LeafReader[]::new);
+      LeafReader[] leafReaders =
+          reader.leaves().stream()
+              .map(LeafReaderContext::reader)
+              .map(TermVectorReusingLeafReader::new)
+              .toArray(LeafReader[]::new);
       return new BaseCompositeReader<IndexReader>(leafReaders) {
         @Override
         protected void doClose() { // don't close the underlying reader
@@ -1122,12 +1153,9 @@ public class UnifiedHighlighter {
     public CacheHelper getReaderCacheHelper() {
       return null;
     }
-
   }
 
-  /**
-   * Flags for controlling highlighting behavior.
-   */
+  /** Flags for controlling highlighting behavior. */
   public enum HighlightFlag {
     /** @see UnifiedHighlighter#setHighlightPhrasesStrictly(boolean) */
     PHRASES,
@@ -1135,14 +1163,14 @@ public class UnifiedHighlighter {
     /** @see UnifiedHighlighter#setHandleMultiTermQuery(boolean) */
     MULTI_TERM_QUERY,
 
-    /** Passage relevancy is more important than speed.  True by default. */
+    /** Passage relevancy is more important than speed. True by default. */
     PASSAGE_RELEVANCY_OVER_SPEED,
 
     /**
-     * Internally use the {@link Weight#matches(LeafReaderContext, int)} API for highlighting.
-     * It's more accurate to the query, though might not calculate passage relevancy as well.
-     * Use of this flag requires {@link #MULTI_TERM_QUERY} and {@link #PHRASES}.
-     * {@link #PASSAGE_RELEVANCY_OVER_SPEED} will be ignored.  False by default.
+     * Internally use the {@link Weight#matches(LeafReaderContext, int)} API for highlighting. It's
+     * more accurate to the query, though might not calculate passage relevancy as well. Use of this
+     * flag requires {@link #MULTI_TERM_QUERY} and {@link #PHRASES}. {@link
+     * #PASSAGE_RELEVANCY_OVER_SPEED} will be ignored. False by default.
      */
     WEIGHT_MATCHES
 

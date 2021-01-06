@@ -17,6 +17,11 @@
 
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
+import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.NAME;
+import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_BLOCKS_EXTENSION;
+import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_DICTIONARY_EXTENSION;
+import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.VERSION_CURRENT;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +30,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -48,77 +52,119 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.NAME;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_BLOCKS_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.TERMS_DICTIONARY_EXTENSION;
-import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPostingsFormat.VERSION_CURRENT;
-
 /**
- * Extends {@link UniformSplitTermsWriter} by sharing all the fields terms
- * in the same dictionary and by writing all the fields of a term in the same
- * block line.
- * <p>
- * The {@link STUniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}
- * contains all the term blocks for all fields. Each block line, for a single term,
- * may have multiple fields {@link org.apache.lucene.index.TermState}. The
- * block file also contains the fields metadata at the end of the file.
- * <p>
- * The {@link STUniformSplitPostingsFormat#TERMS_DICTIONARY_EXTENSION dictionary file}
- * contains a single trie ({@link org.apache.lucene.util.fst.FST} bytes) for all
- * fields.
- * <p>
- * This structure is adapted when there are lots of fields. In this case the shared-terms
+ * Extends {@link UniformSplitTermsWriter} by sharing all the fields terms in the same dictionary
+ * and by writing all the fields of a term in the same block line.
+ *
+ * <p>The {@link STUniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file} contains all the
+ * term blocks for all fields. Each block line, for a single term, may have multiple fields {@link
+ * org.apache.lucene.index.TermState}. The block file also contains the fields metadata at the end
+ * of the file.
+ *
+ * <p>The {@link STUniformSplitPostingsFormat#TERMS_DICTIONARY_EXTENSION dictionary file} contains a
+ * single trie ({@link org.apache.lucene.util.fst.FST} bytes) for all fields.
+ *
+ * <p>This structure is adapted when there are lots of fields. In this case the shared-terms
  * dictionary trie is much smaller.
- * <p>
- * This {@link org.apache.lucene.codecs.FieldsConsumer} requires a custom
- * {@link #merge(MergeState, NormsProducer)} method for efficiency. The
- * regular merge would scan all the fields sequentially, which internally would
- * scan the whole shared-terms dictionary as many times as there are fields.
- * Whereas the custom merge directly scans the internal shared-terms dictionary
+ *
+ * <p>This {@link org.apache.lucene.codecs.FieldsConsumer} requires a custom {@link
+ * #merge(MergeState, NormsProducer)} method for efficiency. The regular merge would scan all the
+ * fields sequentially, which internally would scan the whole shared-terms dictionary as many times
+ * as there are fields. Whereas the custom merge directly scans the internal shared-terms dictionary
  * of all segments to merge, thus scanning once whatever the number of fields is.
  *
  * @lucene.experimental
  */
 public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
 
-  public STUniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
-                                   BlockEncoder blockEncoder) throws IOException {
-    this(postingsWriter, state, DEFAULT_TARGET_NUM_BLOCK_LINES, DEFAULT_DELTA_NUM_LINES, blockEncoder);
+  public STUniformSplitTermsWriter(
+      PostingsWriterBase postingsWriter, SegmentWriteState state, BlockEncoder blockEncoder)
+      throws IOException {
+    this(
+        postingsWriter,
+        state,
+        DEFAULT_TARGET_NUM_BLOCK_LINES,
+        DEFAULT_DELTA_NUM_LINES,
+        blockEncoder);
   }
 
-  public STUniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
-                                   int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) throws IOException {
-    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, FieldMetadata.Serializer.INSTANCE,
-        NAME, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
+  public STUniformSplitTermsWriter(
+      PostingsWriterBase postingsWriter,
+      SegmentWriteState state,
+      int targetNumBlockLines,
+      int deltaNumLines,
+      BlockEncoder blockEncoder)
+      throws IOException {
+    this(
+        postingsWriter,
+        state,
+        targetNumBlockLines,
+        deltaNumLines,
+        blockEncoder,
+        FieldMetadata.Serializer.INSTANCE,
+        NAME,
+        VERSION_CURRENT,
+        TERMS_BLOCKS_EXTENSION,
+        TERMS_DICTIONARY_EXTENSION);
   }
 
-  protected STUniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
-                                      int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, FieldMetadata.Serializer fieldMetadataWriter,
-                                      String codecName, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
-    super(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, fieldMetadataWriter, codecName, versionCurrent, termsBlocksExtension, dictionaryExtension);
+  protected STUniformSplitTermsWriter(
+      PostingsWriterBase postingsWriter,
+      SegmentWriteState state,
+      int targetNumBlockLines,
+      int deltaNumLines,
+      BlockEncoder blockEncoder,
+      FieldMetadata.Serializer fieldMetadataWriter,
+      String codecName,
+      int versionCurrent,
+      String termsBlocksExtension,
+      String dictionaryExtension)
+      throws IOException {
+    super(
+        postingsWriter,
+        state,
+        targetNumBlockLines,
+        deltaNumLines,
+        blockEncoder,
+        fieldMetadataWriter,
+        codecName,
+        versionCurrent,
+        termsBlocksExtension,
+        dictionaryExtension);
   }
 
   @Override
   public void write(Fields fields, NormsProducer normsProducer) throws IOException {
-    writeSegment((blockWriter, dictionaryBuilder) -> writeSingleSegment(fields, normsProducer, blockWriter, dictionaryBuilder));
+    writeSegment(
+        (blockWriter, dictionaryBuilder) ->
+            writeSingleSegment(fields, normsProducer, blockWriter, dictionaryBuilder));
   }
 
   /**
-   * Writes the new segment with the provided {@link SharedTermsWriter},
-   * which can be either a single segment writer, or a multiple segment merging writer.
+   * Writes the new segment with the provided {@link SharedTermsWriter}, which can be either a
+   * single segment writer, or a multiple segment merging writer.
    */
   private void writeSegment(SharedTermsWriter termsWriter) throws IOException {
-    STBlockWriter blockWriter = new STBlockWriter(blockOutput, targetNumBlockLines, deltaNumLines, blockEncoder);
+    STBlockWriter blockWriter =
+        new STBlockWriter(blockOutput, targetNumBlockLines, deltaNumLines, blockEncoder);
     IndexDictionary.Builder dictionaryBuilder = new FSTDictionary.Builder();
-    Collection<FieldMetadata> fieldMetadataList = termsWriter.writeSharedTerms(blockWriter, dictionaryBuilder);
+    Collection<FieldMetadata> fieldMetadataList =
+        termsWriter.writeSharedTerms(blockWriter, dictionaryBuilder);
     blockWriter.finishLastBlock(dictionaryBuilder);
     int fieldsNumber = writeFieldMetadataList(fieldMetadataList);
     writeDictionary(fieldsNumber, dictionaryBuilder);
   }
 
-  private Collection<FieldMetadata> writeSingleSegment(Fields fields, NormsProducer normsProducer, STBlockWriter blockWriter, IndexDictionary.Builder dictionaryBuilder) throws IOException {
-    List<FieldMetadata> fieldMetadataList = createFieldMetadataList(new FieldsIterator(fields, fieldInfos), maxDoc);
-    TermIteratorQueue<FieldTerms> fieldTermsQueue = createFieldTermsQueue(fields, fieldMetadataList);
+  private Collection<FieldMetadata> writeSingleSegment(
+      Fields fields,
+      NormsProducer normsProducer,
+      STBlockWriter blockWriter,
+      IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
+    List<FieldMetadata> fieldMetadataList =
+        createFieldMetadataList(new FieldsIterator(fields, fieldInfos), maxDoc);
+    TermIteratorQueue<FieldTerms> fieldTermsQueue =
+        createFieldTermsQueue(fields, fieldMetadataList);
     List<TermIterator<FieldTerms>> groupedFieldTerms = new ArrayList<>(fieldTermsQueue.size());
     List<FieldMetadataTermState> termStates = new ArrayList<>(fieldTermsQueue.size());
 
@@ -143,7 +189,8 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     return fieldMetadataList;
   }
 
-  private TermIteratorQueue<FieldTerms> createFieldTermsQueue(Fields fields, List<FieldMetadata> fieldMetadataList) throws IOException {
+  private TermIteratorQueue<FieldTerms> createFieldTermsQueue(
+      Fields fields, List<FieldMetadata> fieldMetadataList) throws IOException {
     TermIteratorQueue<FieldTerms> fieldQueue = new TermIteratorQueue<>(fieldMetadataList.size());
     for (FieldMetadata fieldMetadata : fieldMetadataList) {
       Terms terms = fields.terms(fieldMetadata.getFieldInfo().name);
@@ -158,7 +205,10 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     return fieldQueue;
   }
 
-  private <T> void groupByTerm(TermIteratorQueue<T> termIteratorQueue, TermIterator<T> topTermIterator, List<TermIterator<T>> groupedTermIterators) {
+  private <T> void groupByTerm(
+      TermIteratorQueue<T> termIteratorQueue,
+      TermIterator<T> topTermIterator,
+      List<TermIterator<T>> groupedTermIterators) {
     groupedTermIterators.clear();
     groupedTermIterators.add(topTermIterator);
     while (termIteratorQueue.size() != 0) {
@@ -172,13 +222,18 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     }
   }
 
-  private void writePostingLines(BytesRef term, List<? extends TermIterator<FieldTerms>> groupedFieldTerms,
-                                 NormsProducer normsProducer, List<FieldMetadataTermState> termStates) throws IOException {
+  private void writePostingLines(
+      BytesRef term,
+      List<? extends TermIterator<FieldTerms>> groupedFieldTerms,
+      NormsProducer normsProducer,
+      List<FieldMetadataTermState> termStates)
+      throws IOException {
     termStates.clear();
     for (TermIterator<FieldTerms> fieldTermIterator : groupedFieldTerms) {
       FieldTerms fieldTerms = (FieldTerms) fieldTermIterator;
       postingsWriter.setField(fieldTerms.fieldMetadata.getFieldInfo());
-      BlockTermState blockTermState = writePostingLine(fieldTerms.termsEnum, fieldTerms.fieldMetadata, normsProducer);
+      BlockTermState blockTermState =
+          writePostingLine(fieldTerms.termsEnum, fieldTerms.fieldMetadata, normsProducer);
       if (blockTermState != null) {
         fieldTerms.fieldMetadata.setLastTerm(term);
         termStates.add(new FieldMetadataTermState(fieldTerms.fieldMetadata, blockTermState));
@@ -186,8 +241,9 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     }
   }
 
-  private <T> void nextTermForIterators(List<? extends TermIterator<T>> termIterators,
-                                        TermIteratorQueue<T> termIteratorQueue) throws IOException {
+  private <T> void nextTermForIterators(
+      List<? extends TermIterator<T>> termIterators, TermIteratorQueue<T> termIteratorQueue)
+      throws IOException {
     for (TermIterator<T> termIterator : termIterators) {
       if (termIterator.nextTerm()) {
         // There is a next term for the iterator. Add it to the priority queue.
@@ -196,7 +252,8 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     }
   }
 
-  private int writeFieldMetadataList(Collection<FieldMetadata> fieldMetadataList) throws IOException {
+  private int writeFieldMetadataList(Collection<FieldMetadata> fieldMetadataList)
+      throws IOException {
     ByteBuffersDataOutput fieldsOutput = new ByteBuffersDataOutput();
     int fieldsNumber = 0;
     for (FieldMetadata fieldMetadata : fieldMetadataList) {
@@ -209,7 +266,8 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     return fieldsNumber;
   }
 
-  protected void writeDictionary(int fieldsNumber, IndexDictionary.Builder dictionaryBuilder) throws IOException {
+  protected void writeDictionary(int fieldsNumber, IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
     if (fieldsNumber > 0) {
       writeDictionary(dictionaryBuilder);
     }
@@ -242,25 +300,39 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
             return;
           }
           STUniformSplitTerms sharedTerms = (STUniformSplitTerms) terms;
-          segmentTermsList.add(new SegmentTerms(
-              segmentIndex, sharedTerms.createMergingBlockReader(), mergeState.docMaps[segmentIndex]));
+          segmentTermsList.add(
+              new SegmentTerms(
+                  segmentIndex,
+                  sharedTerms.createMergingBlockReader(),
+                  mergeState.docMaps[segmentIndex]));
           // We have the STUniformSplitTerms for the segment. Break the field
           // loop to iterate the next segment.
           break;
         }
       }
     }
-    writeSegment((blockWriter, dictionaryBuilder) -> mergeSegments(mergeState, normsProducer, segmentTermsList, blockWriter, dictionaryBuilder));
+    writeSegment(
+        (blockWriter, dictionaryBuilder) ->
+            mergeSegments(
+                mergeState, normsProducer, segmentTermsList, blockWriter, dictionaryBuilder));
   }
 
-  private Collection<FieldMetadata> mergeSegments(MergeState mergeState, NormsProducer normsProducer,
-                                                  List<TermIterator<SegmentTerms>> segmentTermsList,
-                                                  STBlockWriter blockWriter, IndexDictionary.Builder dictionaryBuilder) throws IOException {
-    List<FieldMetadata> fieldMetadataList = createFieldMetadataList(mergeState.mergeFieldInfos.iterator(), mergeState.segmentInfo.maxDoc());
-    Map<String, MergingFieldTerms> fieldTermsMap = createMergingFieldTermsMap(fieldMetadataList, mergeState.fieldsProducers.length);
+  private Collection<FieldMetadata> mergeSegments(
+      MergeState mergeState,
+      NormsProducer normsProducer,
+      List<TermIterator<SegmentTerms>> segmentTermsList,
+      STBlockWriter blockWriter,
+      IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
+    List<FieldMetadata> fieldMetadataList =
+        createFieldMetadataList(
+            mergeState.mergeFieldInfos.iterator(), mergeState.segmentInfo.maxDoc());
+    Map<String, MergingFieldTerms> fieldTermsMap =
+        createMergingFieldTermsMap(fieldMetadataList, mergeState.fieldsProducers.length);
     TermIteratorQueue<SegmentTerms> segmentTermsQueue = createSegmentTermsQueue(segmentTermsList);
     List<TermIterator<SegmentTerms>> groupedSegmentTerms = new ArrayList<>(segmentTermsList.size());
-    Map<String, List<SegmentPostings>> fieldPostingsMap = new HashMap<>(mergeState.fieldInfos.length);
+    Map<String, List<SegmentPostings>> fieldPostingsMap =
+        new HashMap<>(mergeState.fieldInfos.length);
     List<MergingFieldTerms> groupedFieldTerms = new ArrayList<>(mergeState.fieldInfos.length);
     List<FieldMetadataTermState> termStates = new ArrayList<>(mergeState.fieldInfos.length);
 
@@ -277,16 +349,21 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     return fieldMetadataList;
   }
 
-  private Map<String, MergingFieldTerms> createMergingFieldTermsMap(List<FieldMetadata> fieldMetadataList, int numSegments) {
+  private Map<String, MergingFieldTerms> createMergingFieldTermsMap(
+      List<FieldMetadata> fieldMetadataList, int numSegments) {
     Map<String, MergingFieldTerms> fieldTermsMap = new HashMap<>(fieldMetadataList.size() * 2);
     for (FieldMetadata fieldMetadata : fieldMetadataList) {
       FieldInfo fieldInfo = fieldMetadata.getFieldInfo();
-      fieldTermsMap.put(fieldInfo.name, new MergingFieldTerms(fieldMetadata, new STMergingTermsEnum(fieldInfo.name, numSegments)));
+      fieldTermsMap.put(
+          fieldInfo.name,
+          new MergingFieldTerms(
+              fieldMetadata, new STMergingTermsEnum(fieldInfo.name, numSegments)));
     }
     return fieldTermsMap;
   }
 
-  private TermIteratorQueue<SegmentTerms> createSegmentTermsQueue(List<TermIterator<SegmentTerms>> segmentTermsList) throws IOException {
+  private TermIteratorQueue<SegmentTerms> createSegmentTermsQueue(
+      List<TermIterator<SegmentTerms>> segmentTermsList) throws IOException {
     TermIteratorQueue<SegmentTerms> segmentQueue = new TermIteratorQueue<>(segmentTermsList.size());
     for (TermIterator<SegmentTerms> segmentTerms : segmentTermsList) {
       if (segmentTerms.nextTerm()) {
@@ -297,27 +374,37 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     return segmentQueue;
   }
 
-  private void combineSegmentsFields(List<TermIterator<SegmentTerms>> groupedSegmentTerms, Map<String, List<SegmentPostings>> fieldPostingsMap) {
+  private void combineSegmentsFields(
+      List<TermIterator<SegmentTerms>> groupedSegmentTerms,
+      Map<String, List<SegmentPostings>> fieldPostingsMap) {
     fieldPostingsMap.clear();
     for (TermIterator<SegmentTerms> segmentTermIterator : groupedSegmentTerms) {
       SegmentTerms segmentTerms = (SegmentTerms) segmentTermIterator;
-      for (Map.Entry<String, BlockTermState> fieldTermState : segmentTerms.fieldTermStatesMap.entrySet()) {
+      for (Map.Entry<String, BlockTermState> fieldTermState :
+          segmentTerms.fieldTermStatesMap.entrySet()) {
         List<SegmentPostings> segmentPostingsList = fieldPostingsMap.get(fieldTermState.getKey());
         if (segmentPostingsList == null) {
           segmentPostingsList = new ArrayList<>(groupedSegmentTerms.size());
           fieldPostingsMap.put(fieldTermState.getKey(), segmentPostingsList);
         }
-        segmentPostingsList.add(new SegmentPostings(segmentTerms.segmentIndex, fieldTermState.getValue(), segmentTerms.mergingBlockReader, segmentTerms.docMap));
+        segmentPostingsList.add(
+            new SegmentPostings(
+                segmentTerms.segmentIndex,
+                fieldTermState.getValue(),
+                segmentTerms.mergingBlockReader,
+                segmentTerms.docMap));
       }
     }
   }
 
-  private void combinePostingsPerField(BytesRef term,
-                                       Map<String, MergingFieldTerms> fieldTermsMap,
-                                       Map<String, List<SegmentPostings>> fieldPostingsMap,
-                                       List<MergingFieldTerms> groupedFieldTerms) {
+  private void combinePostingsPerField(
+      BytesRef term,
+      Map<String, MergingFieldTerms> fieldTermsMap,
+      Map<String, List<SegmentPostings>> fieldPostingsMap,
+      List<MergingFieldTerms> groupedFieldTerms) {
     groupedFieldTerms.clear();
-    for (Map.Entry<String, List<SegmentPostings>> fieldPostingsEntry : fieldPostingsMap.entrySet()) {
+    for (Map.Entry<String, List<SegmentPostings>> fieldPostingsEntry :
+        fieldPostingsMap.entrySet()) {
       // The field defined in fieldPostingsMap comes from the FieldInfos of the SegmentReadState.
       // The fieldTermsMap contains entries for fields coming from the SegmentMergeSate.
       // So it is possible that the field is not present in fieldTermsMap because it is removed.
@@ -328,11 +415,13 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
       }
     }
     // Keep the fields ordered by their number in the target merge segment.
-    groupedFieldTerms.sort(Comparator.comparingInt(fieldTerms -> fieldTerms.fieldMetadata.getFieldInfo().number));
+    groupedFieldTerms.sort(
+        Comparator.comparingInt(fieldTerms -> fieldTerms.fieldMetadata.getFieldInfo().number));
   }
 
   private interface SharedTermsWriter {
-    Collection<FieldMetadata> writeSharedTerms(STBlockWriter blockWriter, IndexDictionary.Builder dictionaryBuilder) throws IOException;
+    Collection<FieldMetadata> writeSharedTerms(
+        STBlockWriter blockWriter, IndexDictionary.Builder dictionaryBuilder) throws IOException;
   }
 
   final class SegmentPostings {
@@ -342,7 +431,11 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     final STMergingBlockReader mergingBlockReader;
     final MergeState.DocMap docMap;
 
-    SegmentPostings(int segmentIndex, BlockTermState termState, STMergingBlockReader mergingBlockReader, MergeState.DocMap docMap) {
+    SegmentPostings(
+        int segmentIndex,
+        BlockTermState termState,
+        STMergingBlockReader mergingBlockReader,
+        MergeState.DocMap docMap) {
       this.segmentIndex = segmentIndex;
       this.termState = termState;
       this.mergingBlockReader = mergingBlockReader;
@@ -410,7 +503,9 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
 
     @Override
     int compareSecondary(TermIterator<FieldTerms> other) {
-      return Integer.compare(fieldMetadata.getFieldInfo().number, ((FieldTerms) other).fieldMetadata.getFieldInfo().number);
+      return Integer.compare(
+          fieldMetadata.getFieldInfo().number,
+          ((FieldTerms) other).fieldMetadata.getFieldInfo().number);
     }
   }
 
@@ -432,7 +527,8 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     private final Map<String, BlockTermState> fieldTermStatesMap;
     private final MergeState.DocMap docMap;
 
-    SegmentTerms(int segmentIndex, STMergingBlockReader mergingBlockReader, MergeState.DocMap docMap) {
+    SegmentTerms(
+        int segmentIndex, STMergingBlockReader mergingBlockReader, MergeState.DocMap docMap) {
       this.segmentIndex = segmentIndex;
       this.mergingBlockReader = mergingBlockReader;
       this.docMap = docMap;

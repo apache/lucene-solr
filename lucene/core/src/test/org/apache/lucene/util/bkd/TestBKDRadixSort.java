@@ -19,7 +19,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -36,7 +35,7 @@ public class TestBKDRadixSort extends LuceneTestCase {
       random().nextBytes(value);
       points.append(value, i);
     }
-    verifySort(config, points,  0, numPoints);
+    verifySort(config, points, 0, numPoints);
   }
 
   public void testRandomAllEquals() throws IOException {
@@ -92,18 +91,29 @@ public class TestBKDRadixSort extends LuceneTestCase {
     random().nextBytes(value);
     for (int i = 0; i < numPoints; i++) {
       random().nextBytes(dataDimensionValues);
-      System.arraycopy(dataDimensionValues, 0, value, config.packedIndexBytesLength, totalDataDimension * config.bytesPerDim);
+      System.arraycopy(
+          dataDimensionValues,
+          0,
+          value,
+          config.packedIndexBytesLength,
+          totalDataDimension * config.bytesPerDim);
       points.append(value, random().nextInt(numPoints));
     }
     verifySort(config, points, 0, numPoints);
   }
 
-  private void verifySort(BKDConfig config, HeapPointWriter points,int start, int end) throws IOException{
+  private void verifySort(BKDConfig config, HeapPointWriter points, int start, int end)
+      throws IOException {
     Directory dir = newDirectory();
     BKDRadixSelector radixSelector = new BKDRadixSelector(config, 1000, dir, "test");
     // we check for each dimension
     for (int splitDim = 0; splitDim < config.numDims; splitDim++) {
-      radixSelector.heapRadixSort(points, start, end, splitDim, getRandomCommonPrefix(config, points, start, end, splitDim));
+      radixSelector.heapRadixSort(
+          points,
+          start,
+          end,
+          splitDim,
+          getRandomCommonPrefix(config, points, start, end, splitDim));
       byte[] previous = new byte[config.packedBytesLength];
       int previousDocId = -1;
       Arrays.fill(previous, (byte) 0);
@@ -111,11 +121,25 @@ public class TestBKDRadixSort extends LuceneTestCase {
       for (int j = start; j < end; j++) {
         PointValue pointValue = points.getPackedValueSlice(j);
         BytesRef value = pointValue.packedValue();
-        int cmp = Arrays.compareUnsigned(value.bytes, value.offset + dimOffset, value.offset + dimOffset + config.bytesPerDim, previous, dimOffset, dimOffset + config.bytesPerDim);
+        int cmp =
+            Arrays.compareUnsigned(
+                value.bytes,
+                value.offset + dimOffset,
+                value.offset + dimOffset + config.bytesPerDim,
+                previous,
+                dimOffset,
+                dimOffset + config.bytesPerDim);
         assertTrue(cmp >= 0);
         if (cmp == 0) {
           int dataOffset = config.numIndexDims * config.bytesPerDim;
-          cmp = Arrays.compareUnsigned(value.bytes, value.offset + dataOffset, value.offset + config.packedBytesLength, previous, dataOffset, config.packedBytesLength);
+          cmp =
+              Arrays.compareUnsigned(
+                  value.bytes,
+                  value.offset + dataOffset,
+                  value.offset + config.packedBytesLength,
+                  previous,
+                  dataOffset,
+                  config.packedBytesLength);
           assertTrue(cmp >= 0);
         }
         if (cmp == 0) {
@@ -129,7 +153,8 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   /** returns a common prefix length equal or lower than the current one */
-  private int getRandomCommonPrefix(BKDConfig config, HeapPointWriter points, int start, int end, int sortDim)  {
+  private int getRandomCommonPrefix(
+      BKDConfig config, HeapPointWriter points, int start, int end, int sortDim) {
     int commonPrefixLength = config.bytesPerDim;
     PointValue value = points.getPackedValueSlice(start);
     BytesRef bytesRef = value.packedValue();
@@ -139,7 +164,14 @@ public class TestBKDRadixSort extends LuceneTestCase {
     for (int i = start + 1; i < end; i++) {
       value = points.getPackedValueSlice(i);
       bytesRef = value.packedValue();
-      int diff = Arrays.mismatch(bytesRef.bytes, bytesRef.offset + offset, bytesRef.offset + offset + config.bytesPerDim, firstValue, 0, config.bytesPerDim);
+      int diff =
+          Arrays.mismatch(
+              bytesRef.bytes,
+              bytesRef.offset + offset,
+              bytesRef.offset + offset + config.bytesPerDim,
+              firstValue,
+              0,
+              config.bytesPerDim);
       if (diff != -1 && commonPrefixLength > diff) {
         if (diff == 0) {
           return diff;

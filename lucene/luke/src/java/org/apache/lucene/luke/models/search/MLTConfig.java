@@ -20,12 +20,9 @@ package org.apache.lucene.luke.models.search;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 
-/**
- * Configurations for MoreLikeThis query.
- */
+/** Configurations for MoreLikeThis query. */
 public final class MLTConfig {
 
   private final List<String> fields;
@@ -91,5 +88,4 @@ public final class MLTConfig {
   public int getMinTermFreq() {
     return minTermFreq;
   }
-
 }

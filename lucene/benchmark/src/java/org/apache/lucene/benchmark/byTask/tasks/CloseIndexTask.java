@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.InfoStream;
 
 /**
- * Close index writer.
- * <br>Other side effects: index writer object in perfRunData is nullified.
- * <br>Takes optional param "doWait": if false, then close(false) is called.
+ * Close index writer. <br>
+ * Other side effects: index writer object in perfRunData is nullified. <br>
+ * Takes optional param "doWait": if false, then close(false) is called.
  */
 public class CloseIndexTask extends PerfTask {
 

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.LinkedList;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -31,14 +29,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * This class tests PhrasePrefixQuery class.
- */
+/** This class tests PhrasePrefixQuery class. */
 public class TestPhrasePrefixQuery extends LuceneTestCase {
-  
-  /**
-     *
-     */
+
+  /** */
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore);
@@ -59,18 +53,18 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
     writer.addDocument(doc5);
     IndexReader reader = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(reader);
-    
+
     // PhrasePrefixQuery query1 = new PhrasePrefixQuery();
     MultiPhraseQuery.Builder query1builder = new MultiPhraseQuery.Builder();
     // PhrasePrefixQuery query2 = new PhrasePrefixQuery();
     MultiPhraseQuery.Builder query2builder = new MultiPhraseQuery.Builder();
     query1builder.add(new Term("body", "blueberry"));
     query2builder.add(new Term("body", "strawberry"));
-    
+
     LinkedList<Term> termsWithPrefix = new LinkedList<>();
-    
+
     // this TermEnum gives "piccadilly", "pie" and "pizza".
     String prefix = "pi";
     TermsEnum te = MultiTerms.getTerms(reader, "body").iterator();
@@ -83,14 +77,14 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
         break;
       }
     } while (te.next() != null);
-    
+
     query1builder.add(termsWithPrefix.toArray(new Term[0]));
     query2builder.add(termsWithPrefix.toArray(new Term[0]));
-    
+
     ScoreDoc[] result;
     result = searcher.search(query1builder.build(), 1000).scoreDocs;
     assertEquals(2, result.length);
-    
+
     result = searcher.search(query2builder.build(), 1000).scoreDocs;
     assertEquals(0, result.length);
     reader.close();

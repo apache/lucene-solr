@@ -17,15 +17,13 @@
 package org.apache.lucene.search.spell;
 
 import java.util.Comparator;
-/**
- *  Frequency first, then score.
- *
- **/
+
+/** Frequency first, then score. */
 public class SuggestWordFrequencyComparator implements Comparator<SuggestWord> {
-  
+
   /**
-   * Creates a new comparator that will compare by {@link SuggestWord#freq},
-   * then by {@link SuggestWord#score}, then by {@link SuggestWord#string}.
+   * Creates a new comparator that will compare by {@link SuggestWord#freq}, then by {@link
+   * SuggestWord#score}, then by {@link SuggestWord#string}.
    */
   public SuggestWordFrequencyComparator() {}
 

@@ -36,7 +36,7 @@ element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA
 
 == Specifying the DirectoryFactory For Your Index
 
-The default {solr-javadocs}/solr-core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or configuration options by specifying {solr-javadocs}/solr-core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`] or {solr-javadocs}/solr-core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`].
+The default {solr-javadocs}/core/org/apache/solr/core/NRTCachingDirectoryFactory.html[`solr.NRTCachingDirectoryFactory`] is filesystem based, and tries to pick the best implementation for the current JVM and platform. You can force a particular implementation and/or configuration options by specifying {solr-javadocs}/core/org/apache/solr/core/MMapDirectoryFactory.html[`solr.MMapDirectoryFactory`] or {solr-javadocs}/core/org/apache/solr/core/NIOFSDirectoryFactory.html[`solr.NIOFSDirectoryFactory`].
 
 [source,xml]
 ----
@@ -46,7 +46,7 @@ The default {solr-javadocs}/solr-core/org/apache/solr/core/NRTCachingDirectoryFa
 </directoryFactory>
 ----
 
-The {solr-javadocs}/solr-core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication. Use this DirectoryFactory to store your index in RAM.
+The {solr-javadocs}/core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAMDirectoryFactory`] is memory based, not persistent, and does not work with replication. Use this DirectoryFactory to store your index in RAM.
 
 [source,xml]
 ----
@@ -55,5 +55,5 @@ The {solr-javadocs}/solr-core/org/apache/solr/core/RAMDirectoryFactory.html[`sol
 
 [NOTE]
 ====
-If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/solr-core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations. For more details, see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>.
+If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations. For more details, see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>.
 ====

@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-configure(subprojects.findAll { it.path == ':lucene' || it.path == ':solr' }) {
-  task changesToHtml(type: ChangesToHtmlTask)
+def resources = scriptResources(buildscript)
+
+configure(subprojects.findAll { it.path == ':lucene:documentation' || it.path == ':solr:documentation' }) {
+  task changesToHtml(type: ChangesToHtmlTask) {
+    siteDir = resources
+    script = file("${resources}/changes2html.pl")
+  }
 }
 
 // compile changes.txt into an html file
 class ChangesToHtmlTask extends DefaultTask {
 
-  @Input
-  File changesFile = project.file("CHANGES.txt")
+  @Internal
+  Project productProject = project.parent
 
-  @Input
-  File changesDoapFile = project.rootProject.file("dev-tools/doap/${project.name}.rdf")
+  @Internal
+  String productName = productProject.name
+
+  @InputFile
+  File changesFile = productProject.file('CHANGES.txt')
+
+  @InputFile
+  File changesDoapFile = project.rootProject.file("dev-tools/doap/${productName}.rdf")
 
   @InputDirectory
-  File siteDir = project.rootProject.file("lucene/site/changes")
+  File siteDir
 
   @OutputDirectory
   final DirectoryProperty targetDir = project.objects.directoryProperty()
@@ -39,11 +50,11 @@ class ChangesToHtmlTask extends DefaultTask {
   def luceneDocUrl = "${->project.luceneDocUrl}"
 
   @InputFile
-  def script = project.rootProject.file("${siteDir}/changes2html.pl")
+  def script
 
   def loadVersions(File outfile) {
     // load version properties from DOAP RDF
-    def prefix = "doap.${project.name}".toString()
+    def prefix = "doap.${productName}".toString()
     ant.xmlproperty(keeproot: false, file: changesDoapFile, collapseAttributes: false, prefix: "${prefix}")
     outfile.withWriter("UTF-8") { writer ->
       writer.println(ant.properties["${prefix}.Project.release.Version.revision"])
@@ -63,7 +74,7 @@ class ChangesToHtmlTask extends DefaultTask {
       args += [
         "-CSD",
         script,
-        "${project.name}",
+        "${productName}",
         versionsFile.toString(),
         luceneDocUrl.concat('/')   // slash required at end by perl script
       ]

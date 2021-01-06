@@ -16,13 +16,8 @@
  */
 package org.apache.lucene.search.highlight;
 
-/**
- * Encodes original text. The Encoder works with the {@link Formatter} to generate output.
- *
- */
+/** Encodes original text. The Encoder works with the {@link Formatter} to generate output. */
 public interface Encoder {
-  /**
-   * @param originalText The section of text being output
-   */
+  /** @param originalText The section of text being output */
   String encodeText(String originalText);
 }

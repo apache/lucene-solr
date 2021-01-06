@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -27,14 +26,16 @@ import org.apache.lucene.store.IOContext;
 class CrankySegmentInfoFormat extends SegmentInfoFormat {
   final SegmentInfoFormat delegate;
   final Random random;
-  
+
   CrankySegmentInfoFormat(SegmentInfoFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
   }
-  
+
   @Override
-  public SegmentInfo read(Directory directory, String segmentName, byte[] segmentID, IOContext context) throws IOException {
+  public SegmentInfo read(
+      Directory directory, String segmentName, byte[] segmentID, IOContext context)
+      throws IOException {
     return delegate.read(directory, segmentName, segmentID, context);
   }
 

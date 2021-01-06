@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -41,18 +40,17 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * A perceptron (see <code>http://en.wikipedia.org/wiki/Perceptron</code>) based
- * <code>Boolean</code> {@link org.apache.lucene.classification.Classifier}. The
- * weights are calculated using
- * {@link org.apache.lucene.index.TermsEnum#totalTermFreq} both on a per field
- * and a per document basis and then a corresponding
- * {@link org.apache.lucene.util.fst.FST} is used for class assignment.
+ * A perceptron (see <code>http://en.wikipedia.org/wiki/Perceptron</code>) based <code>Boolean
+ * </code> {@link org.apache.lucene.classification.Classifier}. The weights are calculated using
+ * {@link org.apache.lucene.index.TermsEnum#totalTermFreq} both on a per field and a per document
+ * basis and then a corresponding {@link org.apache.lucene.util.fst.FST} is used for class
+ * assignment.
  *
  * @lucene.experimental
  */
@@ -67,19 +65,26 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   /**
    * Creates a {@link BooleanPerceptronClassifier}
    *
-   * @param indexReader     the reader on the index to be used for classification
-   * @param analyzer       an {@link Analyzer} used to analyze unseen text
-   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
-   * @param batchSize      the size of the batch of docs to use for updating the perceptron weights
-   * @param bias      the bias used for class separation
+   * @param indexReader the reader on the index to be used for classification
+   * @param analyzer an {@link Analyzer} used to analyze unseen text
+   * @param query a {@link Query} to eventually filter the docs used for training the classifier, or
+   *     {@code null} if all the indexed docs should be used
+   * @param batchSize the size of the batch of docs to use for updating the perceptron weights
+   * @param bias the bias used for class separation
    * @param classFieldName the name of the field used as the output for the classifier
-   * @param textFieldName  the name of the field used as input for the classifier
-   * @throws IOException if the building of the underlying {@link FST} fails and / or {@link TermsEnum} for the text field
-   *                     cannot be found
+   * @param textFieldName the name of the field used as input for the classifier
+   * @throws IOException if the building of the underlying {@link FST} fails and / or {@link
+   *     TermsEnum} for the text field cannot be found
    */
-  public BooleanPerceptronClassifier(IndexReader indexReader, Analyzer analyzer, Query query, Integer batchSize,
-                                     Double bias, String classFieldName, String textFieldName) throws IOException {
+  public BooleanPerceptronClassifier(
+      IndexReader indexReader,
+      Analyzer analyzer,
+      Query query,
+      Integer batchSize,
+      Double bias,
+      String classFieldName,
+      String textFieldName)
+      throws IOException {
     this.textTerms = MultiTerms.getTerms(indexReader, textFieldName);
 
     if (textTerms == null) {
@@ -91,13 +96,16 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
     if (bias == null || bias == 0d) {
       // automatic assign the bias to be the average total term freq
-      double t = (double) indexReader.getSumTotalTermFreq(textFieldName) / (double) indexReader.getDocCount(textFieldName);
+      double t =
+          (double) indexReader.getSumTotalTermFreq(textFieldName)
+              / (double) indexReader.getDocCount(textFieldName);
       if (t != -1) {
         this.bias = t;
       } else {
         throw new IOException(
-                "bias cannot be assigned since term vectors for field "
-                        + textFieldName + " do not exist");
+            "bias cannot be assigned since term vectors for field "
+                + textFieldName
+                + " do not exist");
       }
     } else {
       this.bias = bias;
@@ -118,13 +126,14 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     int batchCount = 0;
 
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, "*")), BooleanClause.Occur.MUST));
+    q.add(
+        new BooleanClause(
+            new WildcardQuery(new Term(classFieldName, "*")), BooleanClause.Occur.MUST));
     if (query != null) {
       q.add(new BooleanClause(query, BooleanClause.Occur.MUST));
     }
     // run the search and use stored field values
-    for (ScoreDoc scoreDoc : indexSearcher.search(q.build(),
-            Integer.MAX_VALUE).scoreDocs) {
+    for (ScoreDoc scoreDoc : indexSearcher.search(q.build(), Integer.MAX_VALUE).scoreDocs) {
       Document doc = indexSearcher.doc(scoreDoc.doc);
 
       IndexableField textField = doc.getField(textFieldName);
@@ -140,8 +149,13 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         Boolean correctClass = Boolean.valueOf(classField.stringValue());
         long modifier = correctClass.compareTo(assignedClass);
         if (modifier != 0) {
-          updateWeights(indexReader, scoreDoc.doc, assignedClass,
-                  weights, modifier, batchCount % batchSize == 0);
+          updateWeights(
+              indexReader,
+              scoreDoc.doc,
+              assignedClass,
+              weights,
+              modifier,
+              batchCount % batchSize == 0);
         }
         batchCount++;
       }
@@ -149,17 +163,21 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     weights.clear(); // free memory while waiting for GC
   }
 
-  private void updateWeights(IndexReader indexReader,
-                             int docId, Boolean assignedClass, SortedMap<String, Double> weights,
-                             double modifier, boolean updateFST) throws IOException {
+  private void updateWeights(
+      IndexReader indexReader,
+      int docId,
+      Boolean assignedClass,
+      SortedMap<String, Double> weights,
+      double modifier,
+      boolean updateFST)
+      throws IOException {
     TermsEnum cte = textTerms.iterator();
 
     // get the doc term vectors
     Terms terms = indexReader.getTermVector(docId, textFieldName);
 
     if (terms == null) {
-      throw new IOException("term vectors must be stored for field "
-              + textFieldName);
+      throw new IOException("term vectors must be stored for field " + textFieldName);
     }
 
     TermsEnum termsEnum = terms.iterator();
@@ -173,7 +191,9 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
         // update weights
         Long previousValue = Util.get(fst, term);
         String termString = term.utf8ToString();
-        weights.put(termString, previousValue == null ? 0 : Math.max(0, previousValue + modifier * termFreqLocal));
+        weights.put(
+            termString,
+            previousValue == null ? 0 : Math.max(0, previousValue + modifier * termFreqLocal));
       }
     }
     if (updateFST) {
@@ -188,20 +208,17 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (Map.Entry<String, Double> entry : weights.entrySet()) {
       scratchBytes.copyChars(entry.getKey());
-      fstCompiler.add(Util.toIntsRef(scratchBytes.get(), scratchInts), entry
-              .getValue().longValue());
+      fstCompiler.add(
+          Util.toIntsRef(scratchBytes.get(), scratchInts), entry.getValue().longValue());
     }
     fst = fstCompiler.compile();
   }
 
-
   @Override
-  public ClassificationResult<Boolean> assignClass(String text)
-          throws IOException {
+  public ClassificationResult<Boolean> assignClass(String text) throws IOException {
     Long output = 0L;
     try (TokenStream tokenStream = analyzer.tokenStream(textFieldName, text)) {
-      CharTermAttribute charTermAttribute = tokenStream
-              .addAttribute(CharTermAttribute.class);
+      CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
       tokenStream.reset();
       while (tokenStream.incrementToken()) {
         String s = charTermAttribute.toString();
@@ -218,15 +235,12 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
   }
 
   @Override
-  public List<ClassificationResult<Boolean>> getClasses(String text)
-          throws IOException {
+  public List<ClassificationResult<Boolean>> getClasses(String text) throws IOException {
     return null;
   }
 
   @Override
-  public List<ClassificationResult<Boolean>> getClasses(String text, int max)
-          throws IOException {
+  public List<ClassificationResult<Boolean>> getClasses(String text, int max) throws IOException {
     return null;
   }
-
 }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Irish.
- */
+/** Analyzer for Irish. */
 package org.apache.lucene.analysis.ga;

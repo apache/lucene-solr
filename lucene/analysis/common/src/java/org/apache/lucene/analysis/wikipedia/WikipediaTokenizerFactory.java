@@ -19,12 +19,12 @@ package org.apache.lucene.analysis.wikipedia;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-/** 
+/**
  * Factory for {@link WikipediaTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_wiki" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -47,7 +47,7 @@ public class WikipediaTokenizerFactory extends TokenizerFactory {
   protected Set<String> untokenizedTypes;
 
   /** Creates a new WikipediaTokenizerFactory */
-  public WikipediaTokenizerFactory(Map<String,String> args) {
+  public WikipediaTokenizerFactory(Map<String, String> args) {
     super(args);
     tokenOutput = getInt(args, TOKEN_OUTPUT, WikipediaTokenizer.TOKENS_ONLY);
     untokenizedTypes = getSet(args, UNTOKENIZED_TYPES);

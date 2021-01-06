@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.bn;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
- * Factory for {@link BengaliStemFilter}. 
+/**
+ * Factory for {@link BengaliStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_histem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,6 +30,7 @@ import java.util.Map;
  *     &lt;filter class="solr.BengaliStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 7.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -39,13 +39,13 @@ public class BengaliStemFilterFactory extends TokenFilterFactory {
   /** SPI name */
   public static final String NAME = "bengaliStem";
 
-  public BengaliStemFilterFactory(Map<String,String> args) {
+  public BengaliStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public BengaliStemFilterFactory() {
     throw defaultCtorException();

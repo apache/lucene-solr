@@ -54,6 +54,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();

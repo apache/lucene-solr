@@ -2133,6 +2133,19 @@ if [ -z "$SOLR_TIMEZONE" ]; then
   SOLR_TIMEZONE='UTC'
 fi
 
+function mk_writable_dir() {
+  local DIRNAME="$1"
+  local DESCRIPTION="$2"
+  if ! mkdir -p "$DIRNAME" 2> /dev/null ; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME could not be created. Exiting"
+    exit 1
+  fi
+  if [ ! -w "$DIRNAME" ]; then
+    echo -e "\nERROR: $DESCRIPTION directory $DIRNAME is not writable. Exiting"
+    exit 1
+  fi
+}
+
 # Launches Solr in foreground/background depending on parameters
 function start_solr() {
 
@@ -2170,6 +2183,15 @@ function start_solr() {
   # If authentication system props are set, add them to SOLR_OPTS
   if [ -n "$AUTHC_OPTS" ]; then
     SOLR_OPTS+=($AUTHC_OPTS)
+  fi
+
+  # If a heap dump directory is specified, enable it in SOLR_OPTS
+  if [[ -z "$SOLR_HEAP_DUMP_DIR" ]] && [[ "$SOLR_HEAP_DUMP" == "true" ]]; then
+    SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
+  fi
+  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+    SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+    SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
   fi
 
   if $verbose ; then
@@ -2226,21 +2248,13 @@ function start_solr() {
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
+    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
-  if [ "$SOLR_MODE" == "solrcloud" ]; then
-    IN_CLOUD_MODE=" in SolrCloud mode"
-  fi
-
-  mkdir -p "$SOLR_LOGS_DIR" 2>/dev/null
-  if [ $? -ne 0 ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR could not be created. Exiting"
-    exit 1
-  fi
-  if [ ! -w "$SOLR_LOGS_DIR" ]; then
-    echo -e "\nERROR: Logs directory $SOLR_LOGS_DIR is not writable. Exiting"
-    exit 1
+  mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
+  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+    mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
   fi
   case "$SOLR_LOGS_DIR" in
     contexts|etc|lib|modules|resources|scripts|solr|solr-webapp)
@@ -2254,7 +2268,6 @@ function start_solr() {
   else
     # run Solr in the background
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
-	"-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
 	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 

@@ -16,31 +16,30 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 
 /**
- * BitSet of fixed length (numBits), backed by accessible ({@link #getBits})
- * long[], accessed with a long index. Use it only if you intend to store more
- * than 2.1B bits, otherwise you should use {@link FixedBitSet}.
- * 
+ * BitSet of fixed length (numBits), backed by accessible ({@link #getBits}) long[], accessed with a
+ * long index. Use it only if you intend to store more than 2.1B bits, otherwise you should use
+ * {@link FixedBitSet}.
+ *
  * @lucene.internal
  */
 public final class LongBitSet implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(LongBitSet.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(LongBitSet.class);
 
-  private final long[] bits; // Array of longs holding the bits 
+  private final long[] bits; // Array of longs holding the bits
   private final long numBits; // The number of bits in use
   private final int numWords; // The exact number of longs needed to hold numBits (<= bits.length)
 
   /**
-   * If the given {@link LongBitSet} is large enough to hold
-   * {@code numBits+1}, returns the given bits, otherwise returns a new
-   * {@link LongBitSet} which can hold the requested number of bits.
-   * <p>
-   * <b>NOTE:</b> the returned bitset reuses the underlying {@code long[]} of
-   * the given {@code bits} if possible. Also, calling {@link #length()} on the
-   * returned bits may return a value greater than {@code numBits}.
+   * If the given {@link LongBitSet} is large enough to hold {@code numBits+1}, returns the given
+   * bits, otherwise returns a new {@link LongBitSet} which can hold the requested number of bits.
+   *
+   * <p><b>NOTE:</b> the returned bitset reuses the underlying {@code long[]} of the given {@code
+   * bits} if possible. Also, calling {@link #length()} on the returned bits may return a value
+   * greater than {@code numBits}.
    */
   public static LongBitSet ensureCapacity(LongBitSet bits, long numBits) {
     if (numBits < bits.numBits) {
@@ -53,24 +52,28 @@ public final class LongBitSet implements Accountable {
       if (numWords >= arr.length) {
         arr = ArrayUtil.grow(arr, numWords + 1);
       }
-      return new LongBitSet(arr, (long)arr.length << 6);
+      return new LongBitSet(arr, (long) arr.length << 6);
     }
   }
 
   /** The maximum {@code numBits} supported. */
   public static final long MAX_NUM_BITS = 64 * (long) ArrayUtil.MAX_ARRAY_LENGTH;
-  
+
   /** Returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(long numBits) {
     if (numBits < 0 || numBits > MAX_NUM_BITS) {
-      throw new IllegalArgumentException("numBits must be 0 .. " + MAX_NUM_BITS + "; got: " + numBits);
+      throw new IllegalArgumentException(
+          "numBits must be 0 .. " + MAX_NUM_BITS + "; got: " + numBits);
     }
-    return (int)((numBits - 1) >> 6) + 1; // I.e.: get the word-offset of the last bit and add one (make sure to use >> so 0 returns 0!)
+    // I.e.: get the word-offset of the last bit and add one (make sure to use >> so 0
+    // returns 0!)
+    return (int) ((numBits - 1) >> 6) + 1;
   }
-  
+
   /**
-   * Creates a new LongBitSet.
-   * The internally allocated long array will be exactly the size needed to accommodate the numBits specified.
+   * Creates a new LongBitSet. The internally allocated long array will be exactly the size needed
+   * to accommodate the numBits specified.
+   *
    * @param numBits the number of bits needed
    */
   public LongBitSet(long numBits) {
@@ -80,40 +83,43 @@ public final class LongBitSet implements Accountable {
   }
 
   /**
-   * Creates a new LongBitSet using the provided long[] array as backing store.
-   * The storedBits array must be large enough to accommodate the numBits specified, but may be larger.
-   * In that case the 'extra' or 'ghost' bits must be clear (or they may provoke spurious side-effects)
+   * Creates a new LongBitSet using the provided long[] array as backing store. The storedBits array
+   * must be large enough to accommodate the numBits specified, but may be larger. In that case the
+   * 'extra' or 'ghost' bits must be clear (or they may provoke spurious side-effects)
+   *
    * @param storedBits the array to use as backing store
    * @param numBits the number of bits actually needed
    */
   public LongBitSet(long[] storedBits, long numBits) {
     this.numWords = bits2words(numBits);
     if (numWords > storedBits.length) {
-      throw new IllegalArgumentException("The given long array is too small  to hold " + numBits + " bits");
+      throw new IllegalArgumentException(
+          "The given long array is too small  to hold " + numBits + " bits");
     }
     this.numBits = numBits;
     this.bits = storedBits;
 
     assert verifyGhostBitsClear();
   }
-  
+
   /**
-   * Checks if the bits past numBits are clear.
-   * Some methods rely on this implicit assumption: search for "Depends on the ghost bits being clear!" 
+   * Checks if the bits past numBits are clear. Some methods rely on this implicit assumption:
+   * search for "Depends on the ghost bits being clear!"
+   *
    * @return true if the bits past numBits are clear.
    */
   private boolean verifyGhostBitsClear() {
     for (int i = numWords; i < bits.length; i++) {
       if (bits[i] != 0) return false;
     }
-    
+
     if ((numBits & 0x3f) == 0) return true;
-    
+
     long mask = -1L << numBits;
 
     return (bits[numWords - 1] & mask) == 0;
   }
-  
+
   /** Returns the number of bits stored in this bitset. */
   public long length() {
     return numBits;
@@ -124,9 +130,9 @@ public final class LongBitSet implements Accountable {
     return bits;
   }
 
-  /** Returns number of set bits.  NOTE: this visits every
-   *  long in the backing bits array, and the result is not
-   *  internally cached!
+  /**
+   * Returns number of set bits. NOTE: this visits every long in the backing bits array, and the
+   * result is not internally cached!
    */
   public long cardinality() {
     // Depends on the ghost bits being clear!
@@ -134,8 +140,8 @@ public final class LongBitSet implements Accountable {
   }
 
   public boolean get(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
-    int i = (int) (index >> 6);               // div 64
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
+    int i = (int) (index >> 6); // div 64
     // signed shift will keep a negative index and force an
     // array-index-out-of-bounds-exception, removing the need for an explicit check.
     long bitmask = 1L << index;
@@ -143,15 +149,15 @@ public final class LongBitSet implements Accountable {
   }
 
   public void set(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
-    int wordNum = (int) (index >> 6);      // div 64
+    assert index >= 0 && index < numBits : "index=" + index + " numBits=" + numBits;
+    int wordNum = (int) (index >> 6); // div 64
     long bitmask = 1L << index;
     bits[wordNum] |= bitmask;
   }
 
   public boolean getAndSet(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
-    int wordNum = (int) (index >> 6);      // div 64
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
+    int wordNum = (int) (index >> 6); // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] |= bitmask;
@@ -159,52 +165,54 @@ public final class LongBitSet implements Accountable {
   }
 
   public void clear(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int wordNum = (int) (index >> 6);
     long bitmask = 1L << index;
     bits[wordNum] &= ~bitmask;
   }
 
   public boolean getAndClear(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
-    int wordNum = (int) (index >> 6);      // div 64
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
+    int wordNum = (int) (index >> 6); // div 64
     long bitmask = 1L << index;
     boolean val = (bits[wordNum] & bitmask) != 0;
     bits[wordNum] &= ~bitmask;
     return val;
   }
 
-  /** Returns the index of the first set bit starting at the index specified.
-   *  -1 is returned if there are no more set bits.
+  /**
+   * Returns the index of the first set bit starting at the index specified. -1 is returned if there
+   * are no more set bits.
    */
   public long nextSetBit(long index) {
     // Depends on the ghost bits being clear!
-    assert index >= 0 && index < numBits: "index=" + index + ", numBits=" + numBits;
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
     int i = (int) (index >> 6);
-    long word = bits[i] >> index;  // skip all the bits to the right of index
+    long word = bits[i] >> index; // skip all the bits to the right of index
 
-    if (word!=0) {
+    if (word != 0) {
       return index + Long.numberOfTrailingZeros(word);
     }
 
-    while(++i < numWords) {
+    while (++i < numWords) {
       word = bits[i];
       if (word != 0) {
-        return (i<<6) + Long.numberOfTrailingZeros(word);
+        return (i << 6) + Long.numberOfTrailingZeros(word);
       }
     }
 
     return -1;
   }
 
-  /** Returns the index of the last set bit before or on the index specified.
-   *  -1 is returned if there are no more set bits.
+  /**
+   * Returns the index of the last set bit before or on the index specified. -1 is returned if there
+   * are no more set bits.
    */
   public long prevSetBit(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
+    assert index >= 0 && index < numBits : "index=" + index + " numBits=" + numBits;
     int i = (int) (index >> 6);
-    final int subIndex = (int) (index & 0x3f);  // index within the word
-    long word = (bits[i] << (63-subIndex));  // skip all the bits to the left of index
+    final int subIndex = (int) (index & 0x3f); // index within the word
+    long word = (bits[i] << (63 - subIndex)); // skip all the bits to the left of index
 
     if (word != 0) {
       return (i << 6) + subIndex - Long.numberOfLeadingZeros(word); // See LUCENE-3197
@@ -212,7 +220,7 @@ public final class LongBitSet implements Accountable {
 
     while (--i >= 0) {
       word = bits[i];
-      if (word !=0 ) {
+      if (word != 0) {
         return (i << 6) + 63 - Long.numberOfLeadingZeros(word);
       }
     }
@@ -222,7 +230,8 @@ public final class LongBitSet implements Accountable {
 
   /** this = this OR other */
   public void or(LongBitSet other) {
-    assert other.numWords <= numWords : "numWords=" + numWords + ", other.numWords=" + other.numWords;
+    assert other.numWords <= numWords
+        : "numWords=" + numWords + ", other.numWords=" + other.numWords;
     int pos = Math.min(numWords, other.numWords);
     while (--pos >= 0) {
       bits[pos] |= other.bits[pos];
@@ -231,7 +240,8 @@ public final class LongBitSet implements Accountable {
 
   /** this = this XOR other */
   public void xor(LongBitSet other) {
-    assert other.numWords <= numWords : "numWords=" + numWords + ", other.numWords=" + other.numWords;
+    assert other.numWords <= numWords
+        : "numWords=" + numWords + ", other.numWords=" + other.numWords;
     int pos = Math.min(numWords, other.numWords);
     while (--pos >= 0) {
       bits[pos] ^= other.bits[pos];
@@ -242,7 +252,7 @@ public final class LongBitSet implements Accountable {
   public boolean intersects(LongBitSet other) {
     // Depends on the ghost bits being clear!
     int pos = Math.min(numWords, other.numWords);
-    while (--pos>=0) {
+    while (--pos >= 0) {
       if ((bits[pos] & other.bits[pos]) != 0) return true;
     }
     return false;
@@ -258,7 +268,7 @@ public final class LongBitSet implements Accountable {
       Arrays.fill(bits, other.numWords, numWords, 0L);
     }
   }
-  
+
   /** this = this AND NOT other */
   public void andNot(LongBitSet other) {
     int pos = Math.min(numWords, other.numWords);
@@ -266,10 +276,11 @@ public final class LongBitSet implements Accountable {
       bits[pos] &= ~other.bits[pos];
     }
   }
-  
+
   /**
-   * Scans the backing store to check if all bits are clear.
-   * The method is deliberately not called "isEmpty" to emphasize it is not low cost (as isEmpty usually is).
+   * Scans the backing store to check if all bits are clear. The method is deliberately not called
+   * "isEmpty" to emphasize it is not low cost (as isEmpty usually is).
+   *
    * @return true if all bits are clear.
    */
   public boolean scanIsEmpty() {
@@ -278,15 +289,16 @@ public final class LongBitSet implements Accountable {
     // especially for small BitSets
     // Depends on the ghost bits being clear!
     final int count = numWords;
-    
+
     for (int i = 0; i < count; i++) {
       if (bits[i] != 0) return false;
     }
-    
+
     return true;
   }
 
-  /** Flips a range of bits
+  /**
+   * Flips a range of bits
    *
    * @param startIndex lower index
    * @param endIndex one-past the last bit to flip
@@ -299,17 +311,19 @@ public final class LongBitSet implements Accountable {
     }
 
     int startWord = (int) (startIndex >> 6);
-    int endWord = (int) ((endIndex-1) >> 6);
+    int endWord = (int) ((endIndex - 1) >> 6);
 
-    /*** Grrr, java shifting uses only the lower 6 bits of the count so -1L>>>64 == -1
+    /* Grrr, java shifting uses only the lower 6 bits of the count so -1L>>>64 == -1
      * for that reason, make sure not to use endmask if the bits to flip will
      * be zero in the last word (redefine endWord to be the last changed...)
-    long startmask = -1L << (startIndex & 0x3f);     // example: 11111...111000
-    long endmask = -1L >>> (64-(endIndex & 0x3f));   // example: 00111...111111
-    ***/
+     * long startmask = -1L << (startIndex & 0x3f);     // example: 11111...111000
+     * long endmask = -1L >>> (64-(endIndex & 0x3f));   // example: 00111...111111
+     */
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
+
+    // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
+    long endmask = -1L >>> -endIndex;
 
     if (startWord == endWord) {
       bits[startWord] ^= (startmask & endmask);
@@ -318,7 +332,7 @@ public final class LongBitSet implements Accountable {
 
     bits[startWord] ^= startmask;
 
-    for (int i=startWord+1; i<endWord; i++) {
+    for (int i = startWord + 1; i < endWord; i++) {
       bits[i] = ~bits[i];
     }
 
@@ -327,29 +341,33 @@ public final class LongBitSet implements Accountable {
 
   /** Flip the bit at the provided index. */
   public void flip(long index) {
-    assert index >= 0 && index < numBits: "index=" + index + " numBits=" + numBits;
-    int wordNum = (int) (index >> 6);      // div 64
+    assert index >= 0 && index < numBits : "index=" + index + " numBits=" + numBits;
+    int wordNum = (int) (index >> 6); // div 64
     long bitmask = 1L << index; // mod 64 is implicit
     bits[wordNum] ^= bitmask;
   }
 
-  /** Sets a range of bits
+  /**
+   * Sets a range of bits
    *
    * @param startIndex lower index
    * @param endIndex one-past the last bit to set
    */
   public void set(long startIndex, long endIndex) {
-    assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
+    assert startIndex >= 0 && startIndex < numBits
+        : "startIndex=" + startIndex + ", numBits=" + numBits;
     assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;
     if (endIndex <= startIndex) {
       return;
     }
 
     int startWord = (int) (startIndex >> 6);
-    int endWord = (int) ((endIndex-1) >> 6);
+    int endWord = (int) ((endIndex - 1) >> 6);
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
+
+    // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
+    long endmask = -1L >>> -endIndex;
 
     if (startWord == endWord) {
       bits[startWord] |= (startmask & endmask);
@@ -357,27 +375,29 @@ public final class LongBitSet implements Accountable {
     }
 
     bits[startWord] |= startmask;
-    Arrays.fill(bits, startWord+1, endWord, -1L);
+    Arrays.fill(bits, startWord + 1, endWord, -1L);
     bits[endWord] |= endmask;
   }
 
-  /** Clears a range of bits.
+  /**
+   * Clears a range of bits.
    *
    * @param startIndex lower index
    * @param endIndex one-past the last bit to clear
    */
   public void clear(long startIndex, long endIndex) {
-    assert startIndex >= 0 && startIndex < numBits : "startIndex=" + startIndex + ", numBits=" + numBits;
+    assert startIndex >= 0 && startIndex < numBits
+        : "startIndex=" + startIndex + ", numBits=" + numBits;
     assert endIndex >= 0 && endIndex <= numBits : "endIndex=" + endIndex + ", numBits=" + numBits;
     if (endIndex <= startIndex) {
       return;
     }
 
     int startWord = (int) (startIndex >> 6);
-    int endWord = (int) ((endIndex-1) >> 6);
+    int endWord = (int) ((endIndex - 1) >> 6);
 
     long startmask = -1L << startIndex;
-    long endmask = -1L >>> -endIndex;  // 64-(endIndex&0x3f) is the same as -endIndex since only the lowest 6 bits are used
+    long endmask = -1L >>> -endIndex;
 
     // invert masks since we are clearing
     startmask = ~startmask;
@@ -389,7 +409,7 @@ public final class LongBitSet implements Accountable {
     }
 
     bits[startWord] &= startmask;
-    Arrays.fill(bits, startWord+1, endWord, 0L);
+    Arrays.fill(bits, startWord + 1, endWord, 0L);
     bits[endWord] &= endmask;
   }
 
@@ -421,18 +441,17 @@ public final class LongBitSet implements Accountable {
   public int hashCode() {
     // Depends on the ghost bits being clear!
     long h = 0;
-    for (int i = numWords; --i>=0;) {
+    for (int i = numWords; --i >= 0; ) {
       h ^= bits[i];
       h = (h << 1) | (h >>> 63); // rotate left
     }
     // fold leftmost bits into right and add a constant to prevent
     // empty sets from returning 0, which is too common.
-    return (int) ((h>>32) ^ h) + 0x98761234;
+    return (int) ((h >> 32) ^ h) + 0x98761234;
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(bits);
+    return BASE_RAM_BYTES + RamUsageEstimator.sizeOfObject(bits);
   }
 }

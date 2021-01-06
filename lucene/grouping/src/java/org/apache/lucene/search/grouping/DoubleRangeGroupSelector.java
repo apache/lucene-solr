@@ -21,15 +21,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Scorable;
 
-/**
- * A GroupSelector implementation that groups documents by double values
- */
+/** A GroupSelector implementation that groups documents by double values */
 public class DoubleRangeGroupSelector extends GroupSelector<DoubleRange> {
 
   private final DoubleValuesSource source;
@@ -45,8 +42,10 @@ public class DoubleRangeGroupSelector extends GroupSelector<DoubleRange> {
 
   /**
    * Creates a new DoubleRangeGroupSelector
-   * @param source        a DoubleValuesSource to retrieve double values per document
-   * @param rangeFactory  a DoubleRangeFactory that defines how to group the double values into range buckets
+   *
+   * @param source a DoubleValuesSource to retrieve double values per document
+   * @param rangeFactory a DoubleRangeFactory that defines how to group the double values into range
+   *     buckets
    */
   public DoubleRangeGroupSelector(DoubleValuesSource source, DoubleRangeFactory rangeFactory) {
     this.source = source;
@@ -91,10 +90,11 @@ public class DoubleRangeGroupSelector extends GroupSelector<DoubleRange> {
     inSecondPass = new HashSet<>();
     includeEmpty = false;
     for (SearchGroup<DoubleRange> group : searchGroups) {
-      if (group.groupValue == null)
+      if (group.groupValue == null) {
         includeEmpty = true;
-      else
+      } else {
         inSecondPass.add(group.groupValue);
+      }
     }
   }
 }

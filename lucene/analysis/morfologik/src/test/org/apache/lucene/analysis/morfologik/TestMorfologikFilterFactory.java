@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.analysis.morfologik;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ClasspathResourceLoader;
 import org.apache.lucene.util.ResourceLoader;
 
-/**
- * Test for {@link MorfologikFilterFactory}.
- */
+/** Test for {@link MorfologikFilterFactory}. */
 public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   private static class ForbidResourcesLoader implements ResourceLoader {
     @Override
@@ -52,7 +48,8 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
 
   public void testDefaultDictionary() throws Exception {
     StringReader reader = new StringReader("rowery bilety");
-    MorfologikFilterFactory factory = new MorfologikFilterFactory(Collections.<String,String>emptyMap());
+    MorfologikFilterFactory factory =
+        new MorfologikFilterFactory(Collections.<String, String>emptyMap());
     factory.inform(new ForbidResourcesLoader());
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
@@ -63,7 +60,7 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
     final ResourceLoader loader = new ClasspathResourceLoader(TestMorfologikFilterFactory.class);
 
     StringReader reader = new StringReader("inflected1 inflected2");
-    Map<String,String> params = new HashMap<>();
+    Map<String, String> params = new HashMap<>();
     params.put(MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "custom-dictionary.dict");
     MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
     factory.inform(loader);
@@ -75,22 +72,29 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testMissingDictionary() throws Exception {
     final ResourceLoader loader = new ClasspathResourceLoader(TestMorfologikFilterFactory.class);
 
-    IOException expected = expectThrows(IOException.class, () -> {
-      Map<String,String> params = new HashMap<>();
-      params.put(MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "missing-dictionary-resource.dict");
-      MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
-      factory.inform(loader);
-    });
+    IOException expected =
+        expectThrows(
+            IOException.class,
+            () -> {
+              Map<String, String> params = new HashMap<>();
+              params.put(
+                  MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "missing-dictionary-resource.dict");
+              MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
+              factory.inform(loader);
+            });
     assertTrue(expected.getMessage().contains("Resource not found"));
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      HashMap<String,String> params = new HashMap<String,String>();
-      params.put("bogusArg", "bogusValue");
-      new MorfologikFilterFactory(params);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              HashMap<String, String> params = new HashMap<String, String>();
+              params.put("bogusArg", "bogusValue");
+              new MorfologikFilterFactory(params);
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

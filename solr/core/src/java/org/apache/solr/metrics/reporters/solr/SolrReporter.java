@@ -453,7 +453,7 @@ public class SolrReporter extends ScheduledReporter {
         }
         final String effectiveGroup = group;
         MetricUtils.toSolrInputDocuments(metricManager.registry(registryName), Collections.singletonList(report.filter), MetricFilter.ALL,
-            MetricUtils.PropertyFilter.ALL, skipHistograms, skipAggregateValues, compact, metadata, doc -> {
+            MetricUtils.ALL_PROPERTIES, skipHistograms, skipAggregateValues, compact, metadata, doc -> {
               doc.setField(REGISTRY_ID, registryName);
               doc.setField(GROUP_ID, effectiveGroup);
               if (effectiveLabel != null) {

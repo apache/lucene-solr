@@ -16,7 +16,7 @@
 #
 
 # =====================================================================
-# This file contains the definition TODO steps and commands to run for the
+# This file contains the definition TO-DO steps and commands to run for the
 # releaseWizard.py script. It also contains Jinja2 templates for use in those
 # definitions. See documentation for "groups" below the templates.
 # Edit this file with an editor with YAML support, such as Sublime Text
@@ -54,11 +54,6 @@ templates:
           still many manual steps and it is also important that the RM validates
           and QAs the process, validating that the right commands are run, and that
           the output from scripts are correct before proceeding.
-
-    DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
-                faulty commands, commands that won't work on your OS or with all
-                versions of tooling etc. So please keep the old ReleaseTODO handy
-                for cross-checking for now :)
   vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
@@ -674,7 +669,7 @@ groups:
         stdout: true
       - !Command
         cmd: "{{ gradle_cmd }} documentation"
-    post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
+    post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
     id: clear_gradle_cache
     title: Clear the gradle cache
@@ -1056,7 +1051,7 @@ groups:
         logfile: checkout-release-tag.log
         tee: true
       - !Command
-        cmd: "{{ gradle_cmd }} documentation -Dversion={{ release_version }}"
+        cmd: "{{ gradle_cmd }} documentation -Dversion.release={{ release_version }}"
         comment: Build documentation
       - !Command
         cmd: svn -m "Add docs, changes and javadocs for Lucene {{ release_version }}"  import {{ git_checkout_folder }}/lucene/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/core/{{ version }}
@@ -1385,6 +1380,16 @@ groups:
     links:
     - https://en.wikipedia.org/wiki/Apache_Lucene
     - https://en.wikipedia.org/wiki/Apache_Solr
+  - !Todo
+    id: add_to_apache_reporter
+    title: Add the new version to the Apache Release Reporter
+    description: |
+      Go to the Apache Release Reporter and add a release for lucene.
+      Fill in the same date that you used for the release in previous steps.
+      Do not use a product name prefix for the version, as this is the main release of the lucene PMC.
+      Just use the version of this release: {{ release_version }}
+    links:
+      - https://reporter.apache.org/addrelease.html?lucene
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.
@@ -1739,14 +1744,3 @@ groups:
         cmd: |
           svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
-  - !Todo
-    id: update_wiki
-    title: Update old WIKI
-    description: |
-      The Solr WIKI has a page for every version which is often linked to from WIKI pages to 
-      indicate differences between versions, example: http://wiki.apache.org/solr/Solr4.3. 
-
-      Do the following:
-
-      . Update the page for the released version with release date and link to release statement
-      . Create a new placeholder page for the "next" version, if it does not exist

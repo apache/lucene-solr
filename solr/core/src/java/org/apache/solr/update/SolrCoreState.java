@@ -16,10 +16,6 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.locks.Lock;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
@@ -33,6 +29,14 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+
 /**
  * The state in this class can be easily shared between SolrCores across
  * SolrCore reloads.
@@ -40,11 +44,37 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final int PAUSE_UPDATES_TIMEOUT_MILLIS = Integer.getInteger("solr.cloud.wait-for-updates-on-shutdown-millis", 2500);
   
   protected boolean closed = false;
   private final Object updateLock = new Object();
   private final Object reloadLock = new Object();
-  
+
+  /**
+   * If true then all update requests will be refused
+   */
+  private final AtomicBoolean pauseUpdateRequests = new AtomicBoolean();
+
+  /**
+   * Phaser is used to track in flight update requests and can be used
+   * to wait for all in-flight requests to finish. A Phaser terminates
+   * automatically when the number of registered parties reach zero.
+   * Since we track requests with this phaser, we disable the automatic
+   * termination by overriding the onAdvance method to return false.
+   *
+   * @see #registerInFlightUpdate()
+   * @see #deregisterInFlightUpdate()
+   * @see #pauseUpdatesAndAwaitInflightRequests()
+   */
+  private final Phaser inflightUpdatesCounter = new Phaser()  {
+    @Override
+    protected boolean onAdvance(int phase, int registeredParties) {
+      // disable termination of phaser
+      return false;
+    }
+  };
+
   public Object getUpdateLock() {
     return updateLock;
   }
@@ -86,7 +116,40 @@ public abstract class SolrCoreState {
     }
     return close;
   }
-  
+
+  /**
+   * Pauses all update requests to this core and waits (indefinitely) for all in-flight
+   * update requests to finish
+   */
+  public void pauseUpdatesAndAwaitInflightRequests() throws TimeoutException, InterruptedException {
+    if (pauseUpdateRequests.compareAndSet(false, true)) {
+      int arrivalNumber = inflightUpdatesCounter.register();
+      assert arrivalNumber >= 0 : "Registration of in-flight request should have succeeded but got arrival phase number < 0";
+      inflightUpdatesCounter.awaitAdvanceInterruptibly(inflightUpdatesCounter.arrive(), PAUSE_UPDATES_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+    }
+  }
+
+  /**
+   * Registers in-flight update requests to this core.
+   *
+   * @return true if request was registered, false if update requests are paused
+   */
+  public boolean registerInFlightUpdate() {
+    if (pauseUpdateRequests.get()) {
+      return false;
+    }
+    inflightUpdatesCounter.register();
+    return true;
+  }
+
+  /**
+   * De-registers in-flight update requests to this core (marks them as completed)
+   */
+  public void deregisterInFlightUpdate() {
+    int arrivalPhaseNumber = inflightUpdatesCounter.arriveAndDeregister();
+    assert arrivalPhaseNumber >= 0 : "inflightUpdatesCounter should not have been terminated";
+  }
+
   public abstract Lock getCommitLock();
   
   /**

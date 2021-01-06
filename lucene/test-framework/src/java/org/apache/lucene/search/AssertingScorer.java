@@ -24,7 +24,12 @@ import java.util.Random;
 /** Wraps a Scorer with additional checks */
 public class AssertingScorer extends Scorer {
 
-  static enum IteratorState { APPROXIMATING, ITERATING, SHALLOW_ADVANCING, FINISHED };
+  static enum IteratorState {
+    APPROXIMATING,
+    ITERATING,
+    SHALLOW_ADVANCING,
+    FINISHED
+  };
 
   public static Scorer wrap(Random random, Scorer other, ScoreMode scoreMode) {
     if (other == null) {
@@ -57,11 +62,11 @@ public class AssertingScorer extends Scorer {
   boolean iterating() {
     // we cannot assert that state == ITERATING because of CachingScorerWrapper
     switch (docID()) {
-    case -1:
-    case DocIdSetIterator.NO_MORE_DOCS:
-      return false;
-    default:
-      return state == IteratorState.ITERATING;
+      case -1:
+      case DocIdSetIterator.NO_MORE_DOCS:
+        return false;
+      default:
+        return state == IteratorState.ITERATING;
     }
   }
 
@@ -77,7 +82,11 @@ public class AssertingScorer extends Scorer {
   @Override
   public int advanceShallow(int target) throws IOException {
     assert scoreMode.needsScores();
-    assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
+    assert target >= lastShallowTarget
+        : "called on decreasing targets: target = "
+            + target
+            + " < last target = "
+            + lastShallowTarget;
     assert target >= docID() : "target = " + target + " < docID = " + docID();
     int upTo = in.advanceShallow(target);
     assert upTo >= target : "upTo = " + upTo + " < target = " + target;
@@ -90,7 +99,8 @@ public class AssertingScorer extends Scorer {
   public float getMaxScore(int upTo) throws IOException {
     assert scoreMode.needsScores();
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
-    assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
+    assert docID() >= 0 || lastShallowTarget >= 0
+        : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
     return maxScore;
   }
@@ -100,7 +110,7 @@ public class AssertingScorer extends Scorer {
     assert scoreMode.needsScores();
     assert iterating() : state;
     final float score = in.score();
-    assert !Float.isNaN(score) : "NaN score for in="+in;
+    assert !Float.isNaN(score) : "NaN score for in=" + in;
     assert lastShallowTarget == -1 || score <= getMaxScore(docID());
     assert Float.compare(score, 0f) >= 0 : score;
     return score;
@@ -130,7 +140,7 @@ public class AssertingScorer extends Scorer {
     final DocIdSetIterator in = this.in.iterator();
     assert in != null;
     return new DocIdSetIterator() {
-      
+
       @Override
       public int docID() {
         assert AssertingScorer.this.in.docID() == in.docID();
@@ -185,57 +195,58 @@ public class AssertingScorer extends Scorer {
     }
     final DocIdSetIterator inApproximation = in.approximation();
     assert inApproximation.docID() == doc;
-    final DocIdSetIterator assertingApproximation = new DocIdSetIterator() {
+    final DocIdSetIterator assertingApproximation =
+        new DocIdSetIterator() {
 
-      @Override
-      public int docID() {
-        return inApproximation.docID();
-      }
+          @Override
+          public int docID() {
+            return inApproximation.docID();
+          }
 
-      @Override
-      public int nextDoc() throws IOException {
-        assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
-        assert docID() + 1 >= lastShallowTarget;
-        final int nextDoc = inApproximation.nextDoc();
-        assert nextDoc > doc : "backwards advance from: " + doc + " to: " + nextDoc;
-        if (nextDoc == NO_MORE_DOCS) {
-          state = IteratorState.FINISHED;
-        } else {
-          state = IteratorState.APPROXIMATING;
-        }
-        assert inApproximation.docID() == nextDoc;
-        return doc = nextDoc;
-      }
+          @Override
+          public int nextDoc() throws IOException {
+            assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
+            assert docID() + 1 >= lastShallowTarget;
+            final int nextDoc = inApproximation.nextDoc();
+            assert nextDoc > doc : "backwards advance from: " + doc + " to: " + nextDoc;
+            if (nextDoc == NO_MORE_DOCS) {
+              state = IteratorState.FINISHED;
+            } else {
+              state = IteratorState.APPROXIMATING;
+            }
+            assert inApproximation.docID() == nextDoc;
+            return doc = nextDoc;
+          }
 
-      @Override
-      public int advance(int target) throws IOException {
-        assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
-        assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
-        assert target >= lastShallowTarget;
-        final int advanced = inApproximation.advance(target);
-        assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
-        if (advanced == NO_MORE_DOCS) {
-          state = IteratorState.FINISHED;
-        } else {
-          state = IteratorState.APPROXIMATING;
-        }
-        assert inApproximation.docID() == advanced;
-        return doc = advanced;
-      }
+          @Override
+          public int advance(int target) throws IOException {
+            assert state != IteratorState.FINISHED : "advance() called after NO_MORE_DOCS";
+            assert target > doc : "target must be > docID(), got " + target + " <= " + doc;
+            assert target >= lastShallowTarget;
+            final int advanced = inApproximation.advance(target);
+            assert advanced >= target : "backwards advance from: " + target + " to: " + advanced;
+            if (advanced == NO_MORE_DOCS) {
+              state = IteratorState.FINISHED;
+            } else {
+              state = IteratorState.APPROXIMATING;
+            }
+            assert inApproximation.docID() == advanced;
+            return doc = advanced;
+          }
 
-      @Override
-      public long cost() {
-        return inApproximation.cost();
-      }
-
-    };
+          @Override
+          public long cost() {
+            return inApproximation.cost();
+          }
+        };
     return new TwoPhaseIterator(assertingApproximation) {
       @Override
       public boolean matches() throws IOException {
         assert state == IteratorState.APPROXIMATING : state;
         final boolean matches = in.matches();
         if (matches) {
-          assert AssertingScorer.this.in.iterator().docID() == inApproximation.docID() : "Approximation and scorer don't advance synchronously";
+          assert AssertingScorer.this.in.iterator().docID() == inApproximation.docID()
+              : "Approximation and scorer don't advance synchronously";
           doc = inApproximation.docID();
           state = IteratorState.ITERATING;
         }
@@ -245,7 +256,7 @@ public class AssertingScorer extends Scorer {
       @Override
       public float matchCost() {
         float matchCost = in.matchCost();
-        assert ! Float.isNaN(matchCost);
+        assert !Float.isNaN(matchCost);
         assert matchCost >= 0;
         return matchCost;
       }
@@ -257,4 +268,3 @@ public class AssertingScorer extends Scorer {
     };
   }
 }
-

@@ -16,18 +16,15 @@
  */
 package org.apache.lucene.util.fst;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
-/** Enumerates all input (BytesRef) + output pairs in an
- *  FST.
+/**
+ * Enumerates all input (BytesRef) + output pairs in an FST.
  *
-  * @lucene.experimental
-*/
-
+ * @lucene.experimental
+ */
 public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   private final BytesRef current = new BytesRef(10);
   private final InputOutput<T> result = new InputOutput<>();
@@ -39,9 +36,10 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
     public T output;
   }
 
-  /** doFloor controls the behavior of advance: if it's true
-   *  doFloor is true, advance positions to the biggest
-   *  term before target.  */
+  /**
+   * doFloor controls the behavior of advance: if it's true doFloor is true, advance positions to
+   * the biggest term before target.
+   */
   public BytesRefFSTEnum(FST<T> fst) {
     super(fst);
     result.input = current;
@@ -53,7 +51,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
   }
 
   public InputOutput<T> next() throws IOException {
-    //System.out.println("  enum.next");
+    // System.out.println("  enum.next");
     doNext();
     return setResult();
   }
@@ -74,15 +72,16 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
     return setResult();
   }
 
-  /** Seeks to exactly this term, returning null if the term
-   *  doesn't exist.  This is faster than using {@link
-   *  #seekFloor} or {@link #seekCeil} because it
-   *  short-circuits as soon the match is not found. */
+  /**
+   * Seeks to exactly this term, returning null if the term doesn't exist. This is faster than using
+   * {@link #seekFloor} or {@link #seekCeil} because it short-circuits as soon the match is not
+   * found.
+   */
   public InputOutput<T> seekExact(BytesRef target) throws IOException {
     this.target = target;
     targetLength = target.length;
     if (doSeekExact()) {
-      assert upto == 1+target.length;
+      assert upto == 1 + target.length;
       return setResult();
     } else {
       return null;
@@ -91,7 +90,7 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
 
   @Override
   protected int getTargetLabel() {
-    if (upto-1 == target.length) {
+    if (upto - 1 == target.length) {
       return FST.END_LABEL;
     } else {
       return target.bytes[target.offset + upto - 1] & 0xFF;
@@ -111,14 +110,14 @@ public final class BytesRefFSTEnum<T> extends FSTEnum<T> {
 
   @Override
   protected void grow() {
-    current.bytes = ArrayUtil.grow(current.bytes, upto+1);
+    current.bytes = ArrayUtil.grow(current.bytes, upto + 1);
   }
 
   private InputOutput<T> setResult() {
     if (upto == 0) {
       return null;
     } else {
-      current.length = upto-1;
+      current.length = upto - 1;
       result.output = output[upto];
       return result;
     }

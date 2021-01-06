@@ -136,6 +136,53 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testWithDeletedChildren() throws Exception {
+    // add a doc to create another segment
+    final String addNonTestedDoc =
+        "{\n" +
+          "\"add\": {\n" +
+            "\"doc\": {\n" +
+                "\"id\": " + -1000 + ", \n" +
+                "\"type_s\": \"cake\", \n" +
+            "}\n" +
+          "}\n" +
+        "}";
+
+    if (random().nextBoolean()) {
+      updateJ(addNonTestedDoc, null);
+      assertU(commit());
+    }
+
+    indexSampleData(numberOfDocsPerNestedTest);
+    // delete toppings path
+    assertU(delQ("_nest_path_:\\/toppings"));
+    assertU(commit());
+
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
+        "fq", fqToExcludeNonTestedDocs)) {
+      BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+      Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
+      while (docsStreamer.hasNext()) {
+        SolrDocument doc = docsStreamer.next();
+        cleanSolrDocumentFields(doc);
+        assertFalse("root doc should not have anonymous child docs", doc.hasChildDocuments());
+        assertNull("should not include deleted docs", doc.getFieldValues("toppings"));
+      }
+    }
+
+    assertJQ(req("q", "type_s:donut",
+        "sort", "id asc",
+        "fl", "*, [child limit=1]",
+        "fq", fqToExcludeNonTestedDocs),
+        "/response/docs/[0]/type_s==donut",
+        "/response/docs/[0]/lonely/test_s==testing",
+        "/response/docs/[0]/lonely/lonelyGrandChild/test2_s==secondTest",
+        // "!" (negate): don't find toppings.  The "limit" kept us from reaching these, which follow lonely.
+        "!/response/docs/[0]/toppings/[0]/type_s==Regular"
+    );
+  }
+
+  @Test
   public void testChildFilterLimitJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 

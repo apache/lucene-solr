@@ -26,11 +26,14 @@ Before starting an upgrade to Solr 9, please take the time to review all informa
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 8.1, you should review changes made in all subsequent 8.x releases in addition to changes for 9.0.
 
-A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
+A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
 
 == Solr 9.0
 
 _(raw; not yet edited)_
+
+* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar
+  (instead of solr-cell-*). (Dawid Weiss)
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
@@ -111,7 +114,7 @@ _(raw; not yet edited)_
 * SOLR-14656: Autoscaling framework removed
   This includes:
     Autoscaling, policy, triggers etc.
-    withCollection handling
+    withCollection handling (SOLR-14964)
     UTILIZENODE command
     Sim framework
     Suggestions tab in UI
@@ -138,6 +141,8 @@ _(raw; not yet edited)_
   should be used instead, such as autoscaling policy or rules-based placement.
 
 * SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
+
+* SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 
 === Upgrade Prerequisites in Solr 9
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.expressions.js;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,44 +25,31 @@ import java.util.List;
  */
 public class VariableContext {
 
-  /**
-   * Represents what a piece of a variable does.
-   */
+  /** Represents what a piece of a variable does. */
   public static enum Type {
-    /**
-     * A member of the previous context (ie "dot" access).
-     */ 
+    /** A member of the previous context (ie "dot" access). */
     MEMBER,
 
-    /**
-     * Brackets containing a string as the "index".
-     */ 
+    /** Brackets containing a string as the "index". */
     STR_INDEX,
 
-    /**
-     * Brackets containing an integer index (ie an array).
-     */
+    /** Brackets containing an integer index (ie an array). */
     INT_INDEX,
 
-    /**
-     * Parenthesis represent a member method to be called.
-     */
+    /** Parenthesis represent a member method to be called. */
     METHOD
   }
 
-  /**
-   * The type of this piece of a variable.
-   */ 
+  /** The type of this piece of a variable. */
   public final Type type;
 
   /**
-   * The text of this piece of the variable. Used for {@link Type#MEMBER} and {@link Type#STR_INDEX} types.
-   */ 
+   * The text of this piece of the variable. Used for {@link Type#MEMBER} and {@link Type#STR_INDEX}
+   * types.
+   */
   public final String text;
 
-  /**
-   * The integer value for this piece of the variable. Used for {@link Type#INT_INDEX}.
-   */ 
+  /** The integer value for this piece of the variable. Used for {@link Type#INT_INDEX}. */
   public final int integer;
 
   private VariableContext(Type c, String s, int i) {
@@ -98,10 +84,12 @@ public class VariableContext {
   // i points to start of member name
   private static int addMember(final char[] text, int i, List<VariableContext> contexts) {
     int j = i + 1;
-    while (j < text.length && text[j] != '[' && text[j] != '.' && text[j] != '(') ++j; // find first array, member access, or method call
+    while (j < text.length && text[j] != '[' && text[j] != '.' && text[j] != '(') {
+      ++j; // find first array, member access, or method call
+    }
     if (j + 1 < text.length && text[j] == '(' && text[j + 1] == ')') {
       contexts.add(new VariableContext(Type.METHOD, new String(text, i, j - i), -1));
-      j += 2; //move past the parenthesis
+      j += 2; // move past the parenthesis
     } else {
       contexts.add(new VariableContext(Type.MEMBER, new String(text, i, j - i), -1));
     }
@@ -132,6 +120,6 @@ public class VariableContext {
     while (text[j] != ']') ++j; // find end of array access
     int index = Integer.parseInt(new String(text, i, j - i));
     contexts.add(new VariableContext(Type.INT_INDEX, null, index));
-    return j ;
+    return j;
   }
 }

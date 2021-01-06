@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,17 +38,17 @@ public abstract class IntDocValues extends FunctionValues {
 
   @Override
   public byte byteVal(int doc) throws IOException {
-    return (byte)intVal(doc);
+    return (byte) intVal(doc);
   }
 
   @Override
   public short shortVal(int doc) throws IOException {
-    return (short)intVal(doc);
+    return (short) intVal(doc);
   }
 
   @Override
   public float floatVal(int doc) throws IOException {
-    return (float)intVal(doc);
+    return (float) intVal(doc);
   }
 
   @Override
@@ -57,12 +56,12 @@ public abstract class IntDocValues extends FunctionValues {
 
   @Override
   public long longVal(int doc) throws IOException {
-    return (long)intVal(doc);
+    return (long) intVal(doc);
   }
 
   @Override
   public double doubleVal(int doc) throws IOException {
-    return (double)intVal(doc);
+    return (double) intVal(doc);
   }
 
   @Override
@@ -79,21 +78,27 @@ public abstract class IntDocValues extends FunctionValues {
   public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
-  
+
   @Override
-  public ValueSourceScorer getRangeScorer(Weight weight,  LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-    int lower,upper;
+  public ValueSourceScorer getRangeScorer(
+      Weight weight,
+      LeafReaderContext readerContext,
+      String lowerVal,
+      String upperVal,
+      boolean includeLower,
+      boolean includeUpper) {
+    int lower, upper;
 
     // instead of using separate comparison functions, adjust the endpoints.
 
-    if (lowerVal==null) {
+    if (lowerVal == null) {
       lower = Integer.MIN_VALUE;
     } else {
       lower = Integer.parseInt(lowerVal);
       if (!includeLower && lower < Integer.MAX_VALUE) lower++;
     }
 
-     if (upperVal==null) {
+    if (upperVal == null) {
       upper = Integer.MAX_VALUE;
     } else {
       upper = Integer.parseInt(upperVal);

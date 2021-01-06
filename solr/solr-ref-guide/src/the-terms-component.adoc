@@ -22,7 +22,7 @@ In a sense, this search component provides fast field-faceting over the whole in
 
 == Configuring the Terms Component
 
-Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-components,the default search components>>
+Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#defining-search-components,the default search components>>
 and does not need to be defined in `solrconfig.xml`.
 
 The definition is equivalent to:
@@ -167,7 +167,7 @@ Example: `terms.upper.incl=true`
 
 The response to a terms request is a list of the terms and their document frequency values.
 
-You may also be interested in the {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
+You may also be interested in the {solr-javadocs}/core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
 
 == Terms Component Examples
 

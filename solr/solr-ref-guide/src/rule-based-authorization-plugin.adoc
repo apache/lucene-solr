@@ -240,8 +240,8 @@ The predefined permission names (and their effects) are:
 ** OVERSEERSTATUS
 ** CLUSTERSTATUS
 ** REQUESTSTATUS
-* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#updaterequesthandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
-* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#update-request-handlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,request handlers>>) such as `/select`, `/get`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
 === Permission Ordering and Resolution

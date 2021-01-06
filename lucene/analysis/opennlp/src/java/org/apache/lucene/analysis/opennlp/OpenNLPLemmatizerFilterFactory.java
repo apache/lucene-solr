@@ -19,13 +19,12 @@ package org.apache.lucene.analysis.opennlp;
 
 import java.io.IOException;
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.NLPLemmatizerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link OpenNLPLemmatizerFilter}.
@@ -42,10 +41,12 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *             lemmatizerModel="filename"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 7.3.0
  * @lucene.spi {@value #NAME}
  */
-public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory
+    implements ResourceLoaderAware {
 
   /** SPI name */
   public static final String NAME = "openNlpLemmatizer";
@@ -56,14 +57,18 @@ public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implement
   private final String dictionaryFile;
   private final String lemmatizerModelFile;
 
-  public OpenNLPLemmatizerFilterFactory(Map<String,String> args) {
+  public OpenNLPLemmatizerFilterFactory(Map<String, String> args) {
     super(args);
     dictionaryFile = get(args, DICTIONARY);
     lemmatizerModelFile = get(args, LEMMATIZER_MODEL);
 
     if (dictionaryFile == null && lemmatizerModelFile == null) {
-      throw new IllegalArgumentException("Configuration Error: missing parameter: at least one of '"
-          + DICTIONARY + "' and '" + LEMMATIZER_MODEL + "' must be provided.");
+      throw new IllegalArgumentException(
+          "Configuration Error: missing parameter: at least one of '"
+              + DICTIONARY
+              + "' and '"
+              + LEMMATIZER_MODEL
+              + "' must be provided.");
     }
 
     if (!args.isEmpty()) {
@@ -79,7 +84,8 @@ public class OpenNLPLemmatizerFilterFactory extends TokenFilterFactory implement
   @Override
   public OpenNLPLemmatizerFilter create(TokenStream in) {
     try {
-      NLPLemmatizerOp lemmatizerOp = OpenNLPOpsFactory.getLemmatizer(dictionaryFile, lemmatizerModelFile);
+      NLPLemmatizerOp lemmatizerOp =
+          OpenNLPOpsFactory.getLemmatizer(dictionaryFile, lemmatizerModelFile);
       return new OpenNLPLemmatizerFilter(in, lemmatizerOp);
     } catch (IOException e) {
       throw new RuntimeException(e);

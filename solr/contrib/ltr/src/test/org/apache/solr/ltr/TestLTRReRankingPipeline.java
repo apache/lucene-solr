@@ -17,6 +17,7 @@
 package org.apache.solr.ltr;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,7 +58,7 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  private static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
 
   private IndexSearcher getSearcher(IndexReader r) {
     // 'yes' to maybe wrapping in general

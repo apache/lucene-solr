@@ -62,19 +62,4 @@
     <packageUrl regex="true">^pkg:maven/com\.google\.guava/guava@.*$</packageUrl>
     <cve>CVE-2018-10237</cve>
   </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: solr-webapp-9.0.0-SNAPSHOT.war: jquery-2.1.3.min.js
-   This is already being fixed in SOLR-14209 so muting the warning
-   ]]></notes>
-    <packageUrl regex="true">^pkg:javascript/jquery@.*$</packageUrl>
-    <cve>CVE-2015-9251</cve>
-  </suppress>
-  <suppress>
-    <notes><![CDATA[
-   file name: solr-webapp-9.0.0-SNAPSHOT.war: jquery-2.1.3.min.js
-   ]]></notes>
-    <packageUrl regex="true">^pkg:javascript/jquery@.*$</packageUrl>
-    <cve>CVE-2019-11358</cve>
-  </suppress>
 </suppressions>

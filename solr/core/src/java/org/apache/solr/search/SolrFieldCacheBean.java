@@ -49,8 +49,8 @@ public class SolrFieldCacheBean implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext;
-    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
-      if (detailed && !disableEntryList && !disableJmxEntryList) {
+    MetricsMap metricsMap = new MetricsMap(map -> {
+      if (!disableEntryList && !disableJmxEntryList) {
         UninvertingReader.FieldCacheStats fieldCacheStats = UninvertingReader.getUninvertedStats();
         String[] entries = fieldCacheStats.info;
         map.put("entries_count", entries.length);

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Danish.
- */
+/** Analyzer for Danish. */
 package org.apache.lucene.analysis.da;

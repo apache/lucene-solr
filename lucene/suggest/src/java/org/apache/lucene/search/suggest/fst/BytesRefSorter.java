@@ -18,36 +18,34 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.IOException;
 import java.util.Comparator;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Collects {@link BytesRef} and then allows one to iterate over their sorted order. Implementations
  * of this interface will be called in a single-threaded scenario.
+ *
  * @lucene.experimental
- * @lucene.internal  
+ * @lucene.internal
  */
 public interface BytesRefSorter {
   /**
    * Adds a single suggestion entry (possibly compound with its bucket).
-   * 
+   *
    * @throws IOException If an I/O exception occurs.
-   * @throws IllegalStateException If an addition attempt is performed after
-   * a call to {@link #iterator()} has been made.
+   * @throws IllegalStateException If an addition attempt is performed after a call to {@link
+   *     #iterator()} has been made.
    */
   void add(BytesRef utf8) throws IOException, IllegalStateException;
 
   /**
-   * Sorts the entries added in {@link #add(BytesRef)} and returns 
-   * an iterator over all sorted entries.
-   * 
+   * Sorts the entries added in {@link #add(BytesRef)} and returns an iterator over all sorted
+   * entries.
+   *
    * @throws IOException If an I/O exception occurs.
    */
-   BytesRefIterator iterator() throws IOException;
-   
-  /**
-   * Comparator used to determine the sort order of entries.
-   */
-   Comparator<BytesRef> getComparator();
+  BytesRefIterator iterator() throws IOException;
+
+  /** Comparator used to determine the sort order of entries. */
+  Comparator<BytesRef> getComparator();
 }

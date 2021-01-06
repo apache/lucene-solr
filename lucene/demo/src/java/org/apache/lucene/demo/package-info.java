@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Demo applications for indexing and searching.
- */
+/** Demo applications for indexing and searching. */
 package org.apache.lucene.demo;

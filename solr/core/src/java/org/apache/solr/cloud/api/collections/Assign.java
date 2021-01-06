@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
@@ -27,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -42,11 +40,8 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
-import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -274,7 +269,8 @@ public class Assign {
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
-                                                          Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
+                                                          Object createNodeSet, SolrCloudManager cloudManager,
+                                                          PlacementPlugin placementPlugin) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -300,7 +296,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(cloudManager, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(placementPlugin, clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -493,82 +489,18 @@ public class Assign {
     }
   }
 
-  public static class RulesBasedAssignStrategy implements AssignStrategy {
-    public List<Rule> rules;
-    @SuppressWarnings({"rawtypes"})
-    public List snitches;
-    public ClusterState clusterState;
-
-    public RulesBasedAssignStrategy(List<Rule> rules, @SuppressWarnings({"rawtypes"})List snitches, ClusterState clusterState) {
-      this.rules = rules;
-      this.snitches = snitches;
-      this.clusterState = clusterState;
-    }
-
-    @Override
-    public List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest) throws Assign.AssignmentException, IOException, InterruptedException {
-      if (assignRequest.numTlogReplicas + assignRequest.numPullReplicas != 0) {
-        throw new Assign.AssignmentException(
-            Replica.Type.TLOG + " or " + Replica.Type.PULL + " replica types not supported with placement rules or cluster policies");
-      }
-
-      Map<String, Integer> shardVsReplicaCount = new HashMap<>();
-      for (String shard : assignRequest.shardNames) shardVsReplicaCount.put(shard, assignRequest.numNrtReplicas);
-
-      Map<String, Map<String, Integer>> shardVsNodes = new LinkedHashMap<>();
-      DocCollection docCollection = solrCloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(assignRequest.collectionName);
-      if (docCollection != null) {
-        for (Slice slice : docCollection.getSlices()) {
-          LinkedHashMap<String, Integer> n = new LinkedHashMap<>();
-          shardVsNodes.put(slice.getName(), n);
-          for (Replica replica : slice.getReplicas()) {
-            Integer count = n.get(replica.getNodeName());
-            if (count == null) count = 0;
-            n.put(replica.getNodeName(), ++count);
-          }
-        }
-      }
-
-      List<String> nodesList = assignRequest.nodes == null ? new ArrayList<>(clusterState.getLiveNodes()) : assignRequest.nodes;
-
-      ReplicaAssigner replicaAssigner = new ReplicaAssigner(rules,
-          shardVsReplicaCount,
-          snitches,
-          shardVsNodes,
-          nodesList,
-          solrCloudManager, clusterState);
-
-      Map<ReplicaPosition, String> nodeMappings = replicaAssigner.getNodeMappings();
-      return nodeMappings.entrySet().stream()
-          .map(e -> new ReplicaPosition(e.getKey().shard, e.getKey().index, e.getKey().type, e.getValue()))
-          .collect(Collectors.toList());
-    }
-  }
-
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
+   * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
+   * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(SolrCloudManager solrCloudManager, ClusterState clusterState, DocCollection collection) {
-    PlacementPlugin plugin = PlacementPluginConfigImpl.getPlacementPlugin(solrCloudManager);
-
-    if (plugin != null) {
-      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin), it overrides
-      // per collection configuration (i.e. rules are ignored)
-      return new PlacementPluginAssignStrategy(collection, plugin);
-    } else {
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      List<Map> ruleMaps = (List<Map>) collection.get(DocCollection.RULE);
-
-      if (ruleMaps != null && !ruleMaps.isEmpty()) {
-        List<Rule> rules = new ArrayList<>();
-        for (Object map : ruleMaps) rules.add(new Rule((Map) map));
-        @SuppressWarnings({"rawtypes"})
-        List snitches = (List) collection.get(SNITCH);
-        return new RulesBasedAssignStrategy(rules, snitches, clusterState);
-      } else {
+  public static AssignStrategy createAssignStrategy(PlacementPlugin placementPlugin, ClusterState clusterState, DocCollection collection) {
+    if (placementPlugin != null) {
+      // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
+      return new PlacementPluginAssignStrategy(collection, placementPlugin);
+    }  else {
         return new LegacyAssignStrategy();
       }
     }
-  }
 }

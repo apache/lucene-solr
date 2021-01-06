@@ -22,5 +22,4 @@ public class TestDistributionLL extends DistributionTestCase {
   protected Distribution getDistribution() {
     return new DistributionLL();
   }
-
 }

@@ -18,7 +18,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.util.List;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.automaton.Automata;
@@ -31,14 +30,10 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public interface CharArrayMatcher {
 
-  /**
-   * Return {@code true} if the passed-in character array matches
-   */
+  /** Return {@code true} if the passed-in character array matches */
   boolean match(char[] s, int offset, int length);
 
-  /**
-   * Return {@code true} if the passed-in CharsRef matches
-   */
+  /** Return {@code true} if the passed-in CharsRef matches */
   default boolean match(CharsRef chars) {
     return match(chars.chars, chars.offset, chars.length);
   }
@@ -47,5 +42,4 @@ public interface CharArrayMatcher {
     CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeStringUnion(terms));
     return a::run;
   }
-
 }

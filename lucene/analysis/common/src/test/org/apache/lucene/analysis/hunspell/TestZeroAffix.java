@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestZeroAffix extends StemmerTestBase {
@@ -24,7 +23,7 @@ public class TestZeroAffix extends StemmerTestBase {
   public static void beforeClass() throws Exception {
     init("zeroaffix.aff", "zeroaffix.dic");
   }
-  
+
   public void testStemming() {
     assertStemsTo("drink", "drinksierranevada");
   }

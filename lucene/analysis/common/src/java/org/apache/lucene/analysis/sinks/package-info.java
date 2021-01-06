@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * {@link org.apache.lucene.analysis.sinks.TeeSinkTokenFilter}.
- */
+/** {@link org.apache.lucene.analysis.sinks.TeeSinkTokenFilter}. */
 package org.apache.lucene.analysis.sinks;

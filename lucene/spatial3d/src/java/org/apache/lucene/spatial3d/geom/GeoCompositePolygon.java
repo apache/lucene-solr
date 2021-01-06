@@ -16,35 +16,38 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * GeoCompositePolygon is a specific implementation of GeoCompositeAreaShape, which implements GeoPolygon explicitly.
+ * GeoCompositePolygon is a specific implementation of GeoCompositeAreaShape, which implements
+ * GeoPolygon explicitly.
  *
  * @lucene.experimental
  */
-public class GeoCompositePolygon extends GeoBaseCompositeAreaShape<GeoPolygon> implements GeoPolygon {
-  /**
-   * Constructor.
-   */
+public class GeoCompositePolygon extends GeoBaseCompositeAreaShape<GeoPolygon>
+    implements GeoPolygon {
+  /** Constructor. */
   public GeoCompositePolygon(PlanetModel planetModel) {
     super(planetModel);
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoCompositePolygon(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  public GeoCompositePolygon(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
     super(planetModel, inputStream, GeoPolygon.class);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoCompositePolygon))
+    if (!(o instanceof GeoCompositePolygon)) {
       return false;
+    }
     return super.equals(o);
   }
 
@@ -53,4 +56,3 @@ public class GeoCompositePolygon extends GeoBaseCompositeAreaShape<GeoPolygon> i
     return "GeoCompositePolygon: {" + shapes + '}';
   }
 }
-  

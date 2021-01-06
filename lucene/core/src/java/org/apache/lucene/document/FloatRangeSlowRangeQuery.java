@@ -20,7 +20,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -30,7 +29,8 @@ class FloatRangeSlowRangeQuery extends BinaryRangeFieldRangeQuery {
   private final float[] min;
   private final float[] max;
 
-  FloatRangeSlowRangeQuery(String field, float[] min, float[] max, RangeFieldQuery.QueryType queryType) {
+  FloatRangeSlowRangeQuery(
+      String field, float[] min, float[] max, RangeFieldQuery.QueryType queryType) {
     super(field, encodeRanges(min, max), FloatRange.BYTES, min.length, queryType);
     this.field = field;
     this.min = min;
@@ -70,8 +70,7 @@ class FloatRangeSlowRangeQuery extends BinaryRangeFieldRangeQuery {
     if (this.field.equals(field) == false) {
       b.append(this.field).append(":");
     }
-    return b
-        .append("[")
+    return b.append("[")
         .append(Arrays.toString(min))
         .append(" TO ")
         .append(Arrays.toString(max))

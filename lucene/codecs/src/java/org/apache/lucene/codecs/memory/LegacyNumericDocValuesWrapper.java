@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.Bits;
 
@@ -34,7 +33,7 @@ final class LegacyNumericDocValuesWrapper extends NumericDocValues {
   private final int maxDoc;
   private int docID = -1;
   private long value;
-  
+
   public LegacyNumericDocValuesWrapper(Bits docsWithField, LegacyNumericDocValues values) {
     this.docsWithField = docsWithField;
     this.values = values;
@@ -62,11 +61,11 @@ final class LegacyNumericDocValuesWrapper extends NumericDocValues {
 
   @Override
   public int advance(int target) {
-    assert target >= docID: "target=" + target + " docID=" + docID;
+    assert target >= docID : "target=" + target + " docID=" + docID;
     if (target == NO_MORE_DOCS) {
       this.docID = NO_MORE_DOCS;
     } else {
-      this.docID = target-1;
+      this.docID = target - 1;
       nextDoc();
     }
     return docID;

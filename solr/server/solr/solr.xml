@@ -55,4 +55,6 @@
     <str name="shardsWhitelist">${solr.shardsWhitelist:}</str>
   </shardHandlerFactory>
 
+  <metrics enabled="${metricsEnabled:true}"/>
+
 </solr>

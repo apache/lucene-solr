@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharFilter;
@@ -38,22 +37,19 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
   public void testGreedy() throws Exception {
     Tokenizer t = new SimplePatternTokenizer("(foo)+");
     t.setReader(new StringReader("bar foofoo baz"));
-    assertTokenStreamContents(t,
-                              new String[] {"foofoo"},
-                              new int[] {4},
-                              new int[] {10});
+    assertTokenStreamContents(t, new String[] {"foofoo"}, new int[] {4}, new int[] {10});
   }
 
   public void testBigLookahead() throws Exception {
     StringBuilder b = new StringBuilder();
-    for(int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       b.append('a');
     }
     b.append('b');
     Tokenizer t = new SimplePatternTokenizer(b.toString());
 
     b = new StringBuilder();
-    for(int i=0;i<200;i++) {
+    for (int i = 0; i < 200; i++) {
       b.append('a');
     }
     t.setReader(new StringReader(b.toString()));
@@ -111,27 +107,25 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
     Tokenizer t = new SimplePatternTokenizer("aaaa");
 
     t.setReader(new StringReader("aaaaaaaaaaaaaaa"));
-    assertTokenStreamContents(t,
-                              new String[] {"aaaa", "aaaa", "aaaa"},
-                              new int[] {0, 4, 8},
-                              new int[] {4, 8, 12});
+    assertTokenStreamContents(
+        t, new String[] {"aaaa", "aaaa", "aaaa"}, new int[] {0, 4, 8}, new int[] {4, 8, 12});
   }
 
-  public void testBasic() throws Exception  {
+  public void testBasic() throws Exception {
     String qpattern = "\\'([^\\']+)\\'"; // get stuff between "'"
     String[][] tests = {
       // pattern        input                    output
-      { ":",           "boo:and:foo",           ": :" },
-      { qpattern,      "aaa 'bbb' 'ccc'",       "'bbb' 'ccc'" },
+      {":", "boo:and:foo", ": :"},
+      {qpattern, "aaa 'bbb' 'ccc'", "'bbb' 'ccc'"},
     };
-    
-    for(String[] test : tests) {     
+
+    for (String[] test : tests) {
       TokenStream stream = new SimplePatternTokenizer(test[0]);
-      ((Tokenizer)stream).setReader(new StringReader(test[1]));
+      ((Tokenizer) stream).setReader(new StringReader(test[1]));
       String out = tsToString(stream);
 
-      assertEquals("pattern: "+test[0]+" with input: "+test[1], test[2], out);
-    } 
+      assertEquals("pattern: " + test[0] + " with input: " + test[1], test[2], out);
+    }
   }
 
   public void testNotDeterminized() throws Exception {
@@ -145,7 +139,11 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
     a.addTransition(start, mid2, 'a', 'z');
     a.addTransition(mid1, end, 'b');
     a.addTransition(mid2, end, 'b');
-    expectThrows(IllegalArgumentException.class, () -> {new SimplePatternTokenizer(a);});
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SimplePatternTokenizer(a);
+        });
   }
 
   public void testOffsetCorrection() throws Exception {
@@ -153,25 +151,24 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
 
     // create MappingCharFilter
     List<String> mappingRules = new ArrayList<>();
-    mappingRules.add( "\"&uuml;\" => \"ü\"" );
+    mappingRules.add("\"&uuml;\" => \"ü\"");
     NormalizeCharMap.Builder builder = new NormalizeCharMap.Builder();
     builder.add("&uuml;", "ü");
     NormalizeCharMap normMap = builder.build();
-    CharFilter charStream = new MappingCharFilter( normMap, new StringReader(INPUT));
+    CharFilter charStream = new MappingCharFilter(normMap, new StringReader(INPUT));
 
     // create SimplePatternTokenizer
     Tokenizer stream = new SimplePatternTokenizer("Günther");
     stream.setReader(charStream);
-    assertTokenStreamContents(stream,
-        new String[] { "Günther", "Günther" },
-        new int[] { 0, 13 },
-        new int[] { 12, 25 },
+    assertTokenStreamContents(
+        stream,
+        new String[] {"Günther", "Günther"},
+        new int[] {0, 13},
+        new int[] {12, 25},
         INPUT.length());
   }
-  
-  /** 
-   * TODO: rewrite tests not to use string comparison.
-   */
+
+  /** TODO: rewrite tests not to use string comparison. */
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
     CharTermAttribute termAtt = in.addAttribute(CharTermAttribute.class);
@@ -192,26 +189,28 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
     in.close();
     return out.toString();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new SimplePatternTokenizer("a");
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new SimplePatternTokenizer("a");
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
-    
-    Analyzer b = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new SimplePatternTokenizer("a");
-        return new TokenStreamComponents(tokenizer);
-      }    
-    };
+
+    Analyzer b =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new SimplePatternTokenizer("a");
+            return new TokenStreamComponents(tokenizer);
+          }
+        };
     checkRandomData(random(), b, 200 * RANDOM_MULTIPLIER);
     b.close();
   }
@@ -219,10 +218,6 @@ public class TestSimplePatternTokenizer extends BaseTokenStreamTestCase {
   public void testEndLookahead() throws Exception {
     Tokenizer t = new SimplePatternTokenizer("(ab)+");
     t.setReader(new StringReader("aba"));
-    assertTokenStreamContents(t,
-        new String[] { "ab" },
-        new int[] { 0 },
-        new int[] { 2 },
-        3);
+    assertTokenStreamContents(t, new String[] {"ab"}, new int[] {0}, new int[] {2}, 3);
   }
 }

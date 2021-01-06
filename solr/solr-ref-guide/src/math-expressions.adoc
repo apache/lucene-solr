@@ -28,7 +28,7 @@ mathematical coverage starting with basic scalar math and
 ending with machine learning. Along the way the guide covers variables
 and data structures and techniques for combining Solr's
 powerful streams with mathematical functions to make every
-record in your Solr Cloud cluster computable.
+record in your SolrCloud cluster computable.
 
 *<<scalar-math.adoc#scalar-math,Scalar Math>>*: The functions that apply to scalar numbers.
 
@@ -61,4 +61,3 @@ record in your Solr Cloud cluster computable.
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Functions used in machine learning.
 
 *<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
-

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.classification;
 
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -33,9 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Testcase for {@link org.apache.lucene.classification.CachingNaiveBayesClassifier}
- */
+/** Testcase for {@link org.apache.lucene.classification.CachingNaiveBayesClassifier} */
 public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
@@ -44,8 +41,16 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
-      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), POLITICS_INPUT, POLITICS_RESULT);
+      checkCorrectClassification(
+          new CachingNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName),
+          TECHNOLOGY_INPUT,
+          TECHNOLOGY_RESULT);
+      checkCorrectClassification(
+          new CachingNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName),
+          POLITICS_INPUT,
+          POLITICS_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -60,7 +65,11 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "it"));
-      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(
+          new CachingNaiveBayesClassifier(
+              leafReader, analyzer, query, categoryFieldName, textFieldName),
+          TECHNOLOGY_INPUT,
+          TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -74,7 +83,11 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     try {
       NGramAnalyzer analyzer = new NGramAnalyzer();
       leafReader = getSampleIndex(analyzer);
-      checkCorrectClassification(new CachingNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName), TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
+      checkCorrectClassification(
+          new CachingNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName),
+          TECHNOLOGY_INPUT,
+          TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
         leafReader.close();
@@ -86,7 +99,10 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
+      return new TokenStreamComponents(
+          tokenizer,
+          new ReverseStringFilter(
+              new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 
@@ -94,13 +110,15 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
     int numDocs = atLeast(10);
-    LeafReader leafReader = getRandomIndex(analyzer,  numDocs);
+    LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
-      CachingNaiveBayesClassifier simpleNaiveBayesClassifier = new CachingNaiveBayesClassifier(leafReader,
-          analyzer, null, categoryFieldName, textFieldName);
+      CachingNaiveBayesClassifier simpleNaiveBayesClassifier =
+          new CachingNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName);
 
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              leafReader, simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
 
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
@@ -135,7 +153,5 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
     } finally {
       leafReader.close();
     }
-
   }
-
 }

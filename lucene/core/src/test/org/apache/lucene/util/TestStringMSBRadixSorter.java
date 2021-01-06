@@ -48,13 +48,13 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
 
   public void testOneValue() {
     BytesRef bytes = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes }, 1);
+    test(new BytesRef[] {bytes}, 1);
   }
 
   public void testTwoValues() {
     BytesRef bytes1 = new BytesRef(TestUtil.randomSimpleString(random()));
     BytesRef bytes2 = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes1, bytes2 }, 2);
+    test(new BytesRef[] {bytes1, bytes2}, 2);
   }
 
   private void testRandom(int commonPrefixLen, int maxLen) {

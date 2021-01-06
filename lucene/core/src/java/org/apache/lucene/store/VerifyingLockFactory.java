@@ -16,25 +16,20 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * A {@link LockFactory} that wraps another {@link
- * LockFactory} and verifies that each lock obtain/release
- * is "correct" (never results in two processes holding the
- * lock at the same time).  It does this by contacting an
- * external server ({@link LockVerifyServer}) to assert that
- * at most one process holds the lock at a time.  To use
- * this, you should also run {@link LockVerifyServer} on the
- * host and port matching what you pass to the constructor.
+ * A {@link LockFactory} that wraps another {@link LockFactory} and verifies that each lock
+ * obtain/release is "correct" (never results in two processes holding the lock at the same time).
+ * It does this by contacting an external server ({@link LockVerifyServer}) to assert that at most
+ * one process holds the lock at a time. To use this, you should also run {@link LockVerifyServer}
+ * on the host and port matching what you pass to the constructor.
  *
  * @see LockVerifyServer
  * @see LockStressTest
  */
-
 public final class VerifyingLockFactory extends LockFactory {
   public static final int MSG_LOCK_RELEASED = 0;
   public static final int MSG_LOCK_ACQUIRED = 1;
@@ -81,7 +76,7 @@ public final class VerifyingLockFactory extends LockFactory {
    * @param lf the LockFactory that we are testing
    * @param in the socket's input to {@link LockVerifyServer}
    * @param out the socket's output to {@link LockVerifyServer}
-  */
+   */
   public VerifyingLockFactory(LockFactory lf, InputStream in, OutputStream out) throws IOException {
     this.lf = lf;
     this.in = in;

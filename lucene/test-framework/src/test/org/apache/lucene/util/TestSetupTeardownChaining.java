@@ -23,8 +23,7 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
 /**
- * Ensures proper functions of {@link LuceneTestCase#setUp()}
- * and {@link LuceneTestCase#tearDown()}.
+ * Ensures proper functions of {@link LuceneTestCase#setUp()} and {@link LuceneTestCase#tearDown()}.
  */
 public class TestSetupTeardownChaining extends WithNestedTests {
   public static class NestedSetupChain extends AbstractNestedTest {
@@ -35,8 +34,7 @@ public class TestSetupTeardownChaining extends WithNestedTests {
     }
 
     @Test
-    public void testMe() {
-    }
+    public void testMe() {}
   }
 
   public static class NestedTeardownChain extends AbstractNestedTest {
@@ -46,35 +44,34 @@ public class TestSetupTeardownChaining extends WithNestedTests {
     }
 
     @Test
-    public void testMe() {
-    }
+    public void testMe() {}
   }
 
   public TestSetupTeardownChaining() {
     super(true);
   }
-  
-  /**
-   * Verify super method calls on {@link LuceneTestCase#setUp()}.
-   */
+
+  /** Verify super method calls on {@link LuceneTestCase#setUp()}. */
   @Test
   public void testSetupChaining() {
     Result result = JUnitCore.runClasses(NestedSetupChain.class);
     Assert.assertEquals(1, result.getFailureCount());
     Failure failure = result.getFailures().get(0);
-    Assert.assertTrue(failure.getMessage()
-        .contains("One of the overrides of setUp does not propagate the call."));
+    Assert.assertTrue(
+        failure
+            .getMessage()
+            .contains("One of the overrides of setUp does not propagate the call."));
   }
-  
-  /**
-   * Verify super method calls on {@link LuceneTestCase#tearDown()}.
-   */
+
+  /** Verify super method calls on {@link LuceneTestCase#tearDown()}. */
   @Test
   public void testTeardownChaining() {
     Result result = JUnitCore.runClasses(NestedTeardownChain.class);
     Assert.assertEquals(1, result.getFailureCount());
     Failure failure = result.getFailures().get(0);
-    Assert.assertTrue(failure.getMessage()
-        .contains("One of the overrides of tearDown does not propagate the call."));
+    Assert.assertTrue(
+        failure
+            .getMessage()
+            .contains("One of the overrides of tearDown does not propagate the call."));
   }
 }

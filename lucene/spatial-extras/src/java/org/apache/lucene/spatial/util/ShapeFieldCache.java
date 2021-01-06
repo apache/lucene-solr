@@ -16,17 +16,17 @@
  */
 package org.apache.lucene.spatial.util;
 
-import org.locationtech.spatial4j.shape.Shape;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Bounded Cache of Shapes associated with docIds.  Note, multiple Shapes can be
- * associated with a given docId.
- * <p>
- * WARNING: This class holds the data in an extremely inefficient manner as all Points are in memory as objects and they
- * are stored in many ArrayLists (one per document).  So it works but doesn't scale.  It will be replaced in the future.
+ * Bounded Cache of Shapes associated with docIds. Note, multiple Shapes can be associated with a
+ * given docId.
+ *
+ * <p>WARNING: This class holds the data in an extremely inefficient manner as all Points are in
+ * memory as objects and they are stored in many ArrayLists (one per document). So it works but
+ * doesn't scale. It will be replaced in the future.
  *
  * @lucene.internal
  */
@@ -35,20 +35,20 @@ public class ShapeFieldCache<T extends Shape> {
   public final int defaultLength;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public ShapeFieldCache( int length, int defaultLength ) {
+  public ShapeFieldCache(int length, int defaultLength) {
     cache = new List[length];
-    this.defaultLength= defaultLength;
+    this.defaultLength = defaultLength;
   }
 
-  public void add( int docid, T s ) {
+  public void add(int docid, T s) {
     List<T> list = cache[docid];
-    if( list == null ) {
+    if (list == null) {
       list = cache[docid] = new ArrayList<>(defaultLength);
     }
-    list.add( s );
+    list.add(s);
   }
 
-  public List<T> getShapes( int docid ) {
+  public List<T> getShapes(int docid) {
     return cache[docid];
   }
 }

@@ -16,21 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
@@ -53,9 +38,19 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumericValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -189,7 +184,7 @@ public class AtomicUpdateDocumentMerger {
       if (fieldName.equals(uniqueKeyFieldName)
           || fieldName.equals(CommonParams.VERSION_FIELD)
           || fieldName.equals(routeFieldOrNull)) {
-        if (fieldValue instanceof Map ) {
+        if (fieldValue instanceof Map) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Updating unique key, version or route field is not allowed: " + sdoc.getField(fieldName));
         } else {
@@ -450,9 +445,6 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
 
-    // throws exception if field doesn't exist
-    SchemaField sf = schema.getField(name);
-
     Collection<Object> original = existingField != null ?
         existingField.getValues() :
         new ArrayList<>();
@@ -460,16 +452,10 @@ public class AtomicUpdateDocumentMerger {
     int initialSize = original.size();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
-        Object obj = sf.getType().toNativeType(object);
-        if (!original.contains(obj)) {
-          original.add(obj);
-        }
+        addValueIfDistinct(name, original, object);
       }
     } else {
-      Object object = sf.getType().toNativeType(fieldVal);
-      if (!original.contains(object)) {
-        original.add(object);
-      }
+      addValueIfDistinct(name, original, fieldVal);
     }
 
     if (original.size() > initialSize) { // update only if more are added
@@ -516,7 +502,7 @@ public class AtomicUpdateDocumentMerger {
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
     @SuppressWarnings({"rawtypes"})
-    final Collection original = existingField.getValues();
+    final Collection<Object> original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
         removeObj(original, object, name);
@@ -582,11 +568,11 @@ public class AtomicUpdateDocumentMerger {
     return objValues.iterator().next() instanceof SolrDocumentBase;
   }
 
-  private void removeObj(@SuppressWarnings({"rawtypes"})Collection original, Object toRemove, String fieldName) {
+  private void removeObj(Collection<Object> original, Object toRemove, String fieldName) {
     if(isChildDoc(toRemove)) {
       removeChildDoc(original, (SolrInputDocument) toRemove);
     } else {
-      original.remove(getNativeFieldValue(fieldName, toRemove));
+      removeFieldValueWithNumericFudging(fieldName, original, toRemove);
     }
   }
 
@@ -597,6 +583,81 @@ public class AtomicUpdateDocumentMerger {
         original.remove(doc);
         return;
       }
+    }
+  }
+
+  private void removeFieldValueWithNumericFudging(String fieldName, @SuppressWarnings({"rawtypes"}) Collection<Object> original, Object toRemove) {
+    if (original.size() == 0) {
+      return;
+    }
+
+    final BiConsumer<Collection<Object>, Object> removePredicate = (coll, existingElement) -> coll.remove(existingElement);
+    modifyCollectionBasedOnFuzzyPresence(fieldName, original, toRemove, removePredicate, null);
+  }
+
+  private void addValueIfDistinct(String fieldName, Collection<Object> original, Object toAdd) {
+    final BiConsumer<Collection<Object>, Object> addPredicate = (coll, newElement) -> coll.add(newElement);
+    modifyCollectionBasedOnFuzzyPresence(fieldName, original, toAdd, null, addPredicate);
+  }
+
+  /**
+   * Modifies a collection based on the (loosely-judged) presence or absence of a specific value
+   *
+   * Several classes of atomic update (notably 'remove' and 'add-distinct') rely on being able to identify whether an
+   * item is already present in a given list of values.  Unfortunately the 'item' being checked for may be of different
+   * types based on the format of the user request and on where the existing document was pulled from (tlog vs index).
+   * As a result atomic updates needs a "fuzzy" way of checking presence and equality that is more flexible than
+   * traditional equality checks allow.  This method does light type-checking to catch some of these more common cases
+   * (Long compared against Integers, String compared against Date, etc.), and calls the provided lambda to modify the
+   * field values as necessary.
+   *
+   * @param fieldName the field name involved in this atomic update operation
+   * @param original the list of values currently present in the existing document
+   * @param rawValue a value to be checked for in 'original'
+   * @param ifPresent a function to execute if rawValue was found in 'original'
+   * @param ifAbsent a function to execute if rawValue was not found in 'original'
+   */
+  private void modifyCollectionBasedOnFuzzyPresence(String fieldName, Collection<Object> original, Object rawValue,
+                                                    BiConsumer<Collection<Object>, Object> ifPresent,
+                                                    BiConsumer<Collection<Object>, Object> ifAbsent) {
+    Object nativeValue = getNativeFieldValue(fieldName, rawValue);
+    Optional<Object> matchingValue = findObjectWithTypeFuzziness(original, rawValue, nativeValue);
+    if (matchingValue.isPresent() && ifPresent != null) {
+      ifPresent.accept(original, matchingValue.get());
+    } else if(matchingValue.isEmpty() && ifAbsent != null) {
+      ifAbsent.accept(original, rawValue);
+    }
+  }
+
+  private Optional<Object> findObjectWithTypeFuzziness(Collection<Object> original, Object rawValue, Object nativeValue) {
+    if (nativeValue instanceof Double || nativeValue instanceof Float) {
+      final Number nativeAsNumber = (Number) nativeValue;
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof Number && ((Number) val).doubleValue() == nativeAsNumber.doubleValue()) ||
+                      (val instanceof String && val.equals(nativeAsNumber.toString())))
+              .findFirst();
+    } else if (nativeValue instanceof Long || nativeValue instanceof Integer) {
+      final Number nativeAsNumber = (Number) nativeValue;
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof Number && ((Number) val).longValue() == nativeAsNumber.longValue()) ||
+                      (val instanceof String && val.equals(nativeAsNumber.toString())))
+              .findFirst();
+    } else if (nativeValue instanceof Date) {
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof String && DateMathParser.parseMath(null, (String)val).equals(nativeValue)))
+              .findFirst();
+    } else if (original.contains(nativeValue)) {
+      return Optional.of(nativeValue);
+    } else if (original.contains(rawValue)) {
+      return Optional.of(rawValue);
+    } else {
+      return Optional.empty();
     }
   }
 

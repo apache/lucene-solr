@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 
 /**
  * A LSB Radix sorter for unsigned int values.
+ *
  * @lucene.internal
  */
 public final class LSBRadixSorter {
@@ -80,9 +80,12 @@ public final class LSBRadixSorter {
     }
   }
 
-  /** Sort {@code array[0:len]} in place.
-   * @param numBits how many bits are required to store any of the values in
-   *                {@code array[0:len]}. Pass {@code 32} if unknown. */
+  /**
+   * Sort {@code array[0:len]} in place.
+   *
+   * @param numBits how many bits are required to store any of the values in {@code array[0:len]}.
+   *     Pass {@code 32} if unknown.
+   */
   public void sort(int numBits, final int[] array, int len) {
     if (len < INSERTION_SORT_THRESHOLD) {
       insertionSort(array, 0, len);
@@ -108,5 +111,4 @@ public final class LSBRadixSorter {
       System.arraycopy(arr, 0, array, 0, len);
     }
   }
-
 }

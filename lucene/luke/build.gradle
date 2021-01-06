@@ -24,11 +24,6 @@ ext {
   standaloneDistDir = file("$buildDir/${archivesBaseName}-${project.version}")
 }
 
-configurations {
-  standalone
-  implementation.extendsFrom standalone
-}
-
 dependencies {
   api project(':lucene:core')
 
@@ -41,16 +36,16 @@ dependencies {
   implementation project(':lucene:queryparser')
   implementation project(':lucene:misc')
 
-  standalone project(":lucene:highlighter")
-  standalone project(':lucene:analysis:icu')
-  standalone project(':lucene:analysis:kuromoji')
-  standalone project(':lucene:analysis:morfologik')
-  standalone project(':lucene:analysis:nori')
-  standalone project(':lucene:analysis:opennlp')
-  standalone project(':lucene:analysis:phonetic')
-  standalone project(':lucene:analysis:smartcn')
-  standalone project(':lucene:analysis:stempel')
-  standalone project(':lucene:suggest')
+  implementation project(":lucene:highlighter")
+  implementation project(':lucene:analysis:icu')
+  implementation project(':lucene:analysis:kuromoji')
+  implementation project(':lucene:analysis:morfologik')
+  implementation project(':lucene:analysis:nori')
+  implementation project(':lucene:analysis:opennlp')
+  implementation project(':lucene:analysis:phonetic')
+  implementation project(':lucene:analysis:smartcn')
+  implementation project(':lucene:analysis:stempel')
+  implementation project(':lucene:suggest')
 
   testImplementation project(':lucene:test-framework')
 }
@@ -128,14 +123,6 @@ task standalonePackage(type: Tar) {
 
   compression = Compression.GZIP
   archiveFileName = "${archivesBaseName}-${project.version}-standalone.tgz"
-}
-
-// Create a set of artifacts for standalone distribution in a specific
-// exported configuration so that it can be pulled in by other projects.
-artifacts {
-  standalone standaloneDistDir, {
-    builtBy standaloneAssemble
-  }
 }
 
 // Utility to launch Luke (and fork it from the build).

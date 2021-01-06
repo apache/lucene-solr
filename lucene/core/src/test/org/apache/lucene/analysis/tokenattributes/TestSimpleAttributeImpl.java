@@ -16,33 +16,42 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.LuceneTestCase;
-
 import java.util.Collections;
 import java.util.HashMap;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestSimpleAttributeImpl extends LuceneTestCase {
 
   // this checks using reflection API if the defaults are correct
   public void testAttributes() {
-    TestUtil.assertAttributeReflection(new PositionIncrementAttributeImpl(),
-        Collections.singletonMap(PositionIncrementAttribute.class.getName() + "#positionIncrement", 1));
-    TestUtil.assertAttributeReflection(new PositionLengthAttributeImpl(),
+    TestUtil.assertAttributeReflection(
+        new PositionIncrementAttributeImpl(),
+        Collections.singletonMap(
+            PositionIncrementAttribute.class.getName() + "#positionIncrement", 1));
+    TestUtil.assertAttributeReflection(
+        new PositionLengthAttributeImpl(),
         Collections.singletonMap(PositionLengthAttribute.class.getName() + "#positionLength", 1));
-    TestUtil.assertAttributeReflection(new FlagsAttributeImpl(),
+    TestUtil.assertAttributeReflection(
+        new FlagsAttributeImpl(),
         Collections.singletonMap(FlagsAttribute.class.getName() + "#flags", 0));
-    TestUtil.assertAttributeReflection(new TypeAttributeImpl(),
-        Collections.singletonMap(TypeAttribute.class.getName() + "#type", TypeAttribute.DEFAULT_TYPE));
-    TestUtil.assertAttributeReflection(new PayloadAttributeImpl(),
+    TestUtil.assertAttributeReflection(
+        new TypeAttributeImpl(),
+        Collections.singletonMap(
+            TypeAttribute.class.getName() + "#type", TypeAttribute.DEFAULT_TYPE));
+    TestUtil.assertAttributeReflection(
+        new PayloadAttributeImpl(),
         Collections.singletonMap(PayloadAttribute.class.getName() + "#payload", null));
-    TestUtil.assertAttributeReflection(new KeywordAttributeImpl(),
+    TestUtil.assertAttributeReflection(
+        new KeywordAttributeImpl(),
         Collections.singletonMap(KeywordAttribute.class.getName() + "#keyword", false));
-    TestUtil.assertAttributeReflection(new OffsetAttributeImpl(), new HashMap<String, Object>() {{
-      put(OffsetAttribute.class.getName() + "#startOffset", 0);
-      put(OffsetAttribute.class.getName() + "#endOffset", 0);
-    }});
+    TestUtil.assertAttributeReflection(
+        new OffsetAttributeImpl(),
+        new HashMap<String, Object>() {
+          {
+            put(OffsetAttribute.class.getName() + "#startOffset", 0);
+            put(OffsetAttribute.class.getName() + "#endOffset", 0);
+          }
+        });
   }
-
 }

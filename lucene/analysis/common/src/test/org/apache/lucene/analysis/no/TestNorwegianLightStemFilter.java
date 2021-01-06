@@ -16,11 +16,13 @@
  */
 package org.apache.lucene.analysis.no;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
+import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -30,62 +32,59 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-import static org.apache.lucene.analysis.no.NorwegianLightStemmer.BOKMAAL;
-import static org.apache.lucene.analysis.no.NorwegianLightStemmer.NYNORSK;
-
-/**
- * Simple tests for {@link NorwegianLightStemFilter}
- */
+/** Simple tests for {@link NorwegianLightStemFilter} */
 public class TestNorwegianLightStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new NorwegianLightStemFilter(source, BOKMAAL));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new NorwegianLightStemFilter(source, BOKMAAL));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /** Test against a vocabulary file */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, Files.newInputStream(getDataPath("nb_light.txt")));
   }
-  
+
   /** Test against a Nynorsk vocabulary file */
-  public void testNynorskVocabulary() throws IOException {  
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new NorwegianLightStemFilter(source, NYNORSK));
-      }
-    };
+  public void testNynorskVocabulary() throws IOException {
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new NorwegianLightStemFilter(source, NYNORSK));
+          }
+        };
     assertVocabulary(analyzer, Files.newInputStream(getDataPath("nn_light.txt")));
     analyzer.close();
   }
-  
+
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("sekretæren"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new NorwegianLightStemFilter(sink));
-      }
-    };
+    final CharArraySet exclusionSet = new CharArraySet(asSet("sekretæren"), false);
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new NorwegianLightStemFilter(sink));
+          }
+        };
     checkOneTerm(a, "sekretæren", "sekretæren");
     a.close();
   }
@@ -95,15 +94,16 @@ public class TestNorwegianLightStemFilter extends BaseTokenStreamTestCase {
     Random random = random();
     checkRandomData(random, analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new NorwegianLightStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new NorwegianLightStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

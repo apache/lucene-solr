@@ -18,7 +18,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.Bits;
 
 abstract class DocValuesLeafReader extends LeafReader {
@@ -44,6 +43,11 @@ abstract class DocValuesLeafReader extends LeafReader {
 
   @Override
   public final PointValues getPointValues(String field) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public final VectorValues getVectorValues(String field) throws IOException {
     throw new UnsupportedOperationException();
   }
 

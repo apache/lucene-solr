@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link StopFilter}.
@@ -40,34 +38,28 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * <p>
- * All attributes are optional:
- * </p>
+ * <p>All attributes are optional:
+ *
  * <ul>
- *  <li><code>ignoreCase</code> defaults to <code>false</code></li>
- *  <li><code>words</code> should be the name of a stopwords file to parse, if not 
- *      specified the factory will use {@link EnglishAnalyzer#ENGLISH_STOP_WORDS_SET}
- *  </li>
- *  <li><code>format</code> defines how the <code>words</code> file will be parsed, 
- *      and defaults to <code>wordset</code>.  If <code>words</code> is not specified, 
- *      then <code>format</code> must not be specified.
- *  </li>
+ *   <li><code>ignoreCase</code> defaults to <code>false</code>
+ *   <li><code>words</code> should be the name of a stopwords file to parse, if not specified the
+ *       factory will use {@link EnglishAnalyzer#ENGLISH_STOP_WORDS_SET}
+ *   <li><code>format</code> defines how the <code>words</code> file will be parsed, and defaults to
+ *       <code>wordset</code>. If <code>words</code> is not specified, then <code>format</code> must
+ *       not be specified.
  * </ul>
- * <p>
- * The valid values for the <code>format</code> option are:
- * </p>
+ *
+ * <p>The valid values for the <code>format</code> option are:
+ *
  * <ul>
- *  <li><code>wordset</code> - This is the default format, which supports one word per 
- *      line (including any intra-word whitespace) and allows whole line comments 
- *      beginning with the "#" character.  Blank lines are ignored.  See 
- *      {@link WordlistLoader#getLines WordlistLoader.getLines} for details.
- *  </li>
- *  <li><code>snowball</code> - This format allows for multiple words specified on each 
- *      line, and trailing comments may be specified using the vertical line ("&#124;"). 
- *      Blank lines are ignored.  See 
- *      {@link WordlistLoader#getSnowballWordSet WordlistLoader.getSnowballWordSet} 
- *      for details.
- *  </li>
+ *   <li><code>wordset</code> - This is the default format, which supports one word per line
+ *       (including any intra-word whitespace) and allows whole line comments beginning with the "#"
+ *       character. Blank lines are ignored. See {@link WordlistLoader#getLines
+ *       WordlistLoader.getLines} for details.
+ *   <li><code>snowball</code> - This format allows for multiple words specified on each line, and
+ *       trailing comments may be specified using the vertical line ("&#124;"). Blank lines are
+ *       ignored. See {@link WordlistLoader#getSnowballWordSet WordlistLoader.getSnowballWordSet}
+ *       for details.
  * </ul>
  *
  * @since 3.1
@@ -80,14 +72,14 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
 
   public static final String FORMAT_WORDSET = "wordset";
   public static final String FORMAT_SNOWBALL = "snowball";
-  
+
   private CharArraySet stopWords;
   private final String stopWordFiles;
   private final String format;
   private final boolean ignoreCase;
-  
+
   /** Creates a new StopFilterFactory */
-  public StopFilterFactory(Map<String,String> args) {
+  public StopFilterFactory(Map<String, String> args) {
     super(args);
     stopWordFiles = get(args, "words");
     format = get(args, "format", (null == stopWordFiles ? null : FORMAT_WORDSET));
@@ -110,11 +102,13 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
       } else if (FORMAT_SNOWBALL.equalsIgnoreCase(format)) {
         stopWords = getSnowballWordSet(loader, stopWordFiles, ignoreCase);
       } else {
-        throw new IllegalArgumentException("Unknown 'format' specified for 'words' file: " + format);
+        throw new IllegalArgumentException(
+            "Unknown 'format' specified for 'words' file: " + format);
       }
     } else {
       if (null != format) {
-        throw new IllegalArgumentException("'format' can not be specified w/o an explicit 'words' file: " + format);
+        throw new IllegalArgumentException(
+            "'format' can not be specified w/o an explicit 'words' file: " + format);
       }
       stopWords = new CharArraySet(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
@@ -130,7 +124,7 @@ public class StopFilterFactory extends TokenFilterFactory implements ResourceLoa
 
   @Override
   public TokenStream create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(input,stopWords);
+    StopFilter stopFilter = new StopFilter(input, stopWords);
     return stopFilter;
   }
 }

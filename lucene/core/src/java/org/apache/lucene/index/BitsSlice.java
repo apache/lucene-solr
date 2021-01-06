@@ -17,9 +17,7 @@
 package org.apache.lucene.index;
 
 import java.util.Objects;
-
 import org.apache.lucene.util.Bits;
-
 
 /**
  * Exposes a slice of an existing Bits as a new Bits.
@@ -36,13 +34,13 @@ final class BitsSlice implements Bits {
     this.parent = parent;
     this.start = slice.start;
     this.length = slice.length;
-    assert length >= 0: "length=" + length;
+    assert length >= 0 : "length=" + length;
   }
-    
+
   @Override
   public boolean get(int doc) {
     Objects.checkIndex(doc, length);
-    return parent.get(doc+start);
+    return parent.get(doc + start);
   }
 
   @Override

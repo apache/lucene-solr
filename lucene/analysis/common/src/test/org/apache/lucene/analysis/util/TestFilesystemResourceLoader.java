@@ -16,44 +16,53 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.ResourceLoader;
 
 public class TestFilesystemResourceLoader extends LuceneTestCase {
-  
+
   private void assertNotFound(ResourceLoader rl) throws Exception {
     // the resource does not exist, should fail!
-    expectThrows(IOException.class, () -> {
-      IOUtils.closeWhileHandlingException(rl.openResource("this-directory-really-really-really-should-not-exist/foo/bar.txt"));
-    });
+    expectThrows(
+        IOException.class,
+        () -> {
+          IOUtils.closeWhileHandlingException(
+              rl.openResource("this-directory-really-really-really-should-not-exist/foo/bar.txt"));
+        });
 
     // the class does not exist, should fail!
-    expectThrows(RuntimeException.class, () -> {
-      rl.newInstance("org.apache.lucene.analysis.FooBarFilterFactory", TokenFilterFactory.class);
-    });
+    expectThrows(
+        RuntimeException.class,
+        () -> {
+          rl.newInstance(
+              "org.apache.lucene.analysis.FooBarFilterFactory", TokenFilterFactory.class);
+        });
   }
-  
+
   private void assertClasspathDelegation(ResourceLoader rl) throws Exception {
     // try a stopwords file from classpath
-    CharArraySet set = WordlistLoader.getSnowballWordSet(
-      new InputStreamReader(rl.openResource("org/apache/lucene/analysis/snowball/english_stop.txt"), StandardCharsets.UTF_8)
-    );
+    CharArraySet set =
+        WordlistLoader.getSnowballWordSet(
+            new InputStreamReader(
+                rl.openResource("org/apache/lucene/analysis/snowball/english_stop.txt"),
+                StandardCharsets.UTF_8));
     assertTrue(set.contains("you"));
     // try to load a class; we use string comparison because classloader may be different...
-    assertEquals("org.apache.lucene.analysis.util.RollingCharBuffer",
-        rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class).getClass().getName());
+    assertEquals(
+        "org.apache.lucene.analysis.util.RollingCharBuffer",
+        rl.newInstance("org.apache.lucene.analysis.util.RollingCharBuffer", Object.class)
+            .getClass()
+            .getName());
   }
 
   public void testBaseDir() throws Exception {
@@ -67,18 +76,24 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
 
     @SuppressWarnings("deprecation")
     ResourceLoader rl = new FilesystemResourceLoader(base);
-    assertEquals("foobar", WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
+    assertEquals(
+        "foobar",
+        WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
     // Same with full path name:
     String fullPath = base.resolve("template.txt").toAbsolutePath().toString();
-    assertEquals("foobar",
-                 WordlistLoader.getLines(rl.openResource(fullPath), StandardCharsets.UTF_8).get(0));
+    assertEquals(
+        "foobar",
+        WordlistLoader.getLines(rl.openResource(fullPath), StandardCharsets.UTF_8).get(0));
     assertClasspathDelegation(rl);
     assertNotFound(rl);
   }
-  
+
   public void testDelegation() throws Exception {
-    ResourceLoader rl = new FilesystemResourceLoader(createTempDir("empty"), new StringMockResourceLoader("foobar\n"));
-    assertEquals("foobar", WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
+    ResourceLoader rl =
+        new FilesystemResourceLoader(
+            createTempDir("empty"), new StringMockResourceLoader("foobar\n"));
+    assertEquals(
+        "foobar",
+        WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
   }
-  
 }

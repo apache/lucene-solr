@@ -16,49 +16,59 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 public class TestLimitTokenOffsetFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void test() throws Exception {
-    for (final boolean consumeAll : new boolean[]{true, false}) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
       MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       tokenizer.setReader(reader);
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
-      stream = tokenFilterFactory("LimitTokenOffset",
-          LimitTokenOffsetFilterFactory.MAX_START_OFFSET, "3",
-          LimitTokenOffsetFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
-      ).create(stream);
-      assertTokenStreamContents(stream, new String[]{"A1", "B2"});
+      stream =
+          tokenFilterFactory(
+                  "LimitTokenOffset",
+                  LimitTokenOffsetFilterFactory.MAX_START_OFFSET,
+                  "3",
+                  LimitTokenOffsetFilterFactory.CONSUME_ALL_TOKENS_KEY,
+                  Boolean.toString(consumeAll))
+              .create(stream);
+      assertTokenStreamContents(stream, new String[] {"A1", "B2"});
     }
   }
 
   public void testRequired() throws Exception {
     // param is required
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("LimitTokenOffset");
-    });
-    assertTrue("exception doesn't mention param: " + expected.getMessage(),
-          0 < expected.getMessage().indexOf(LimitTokenOffsetFilterFactory.MAX_START_OFFSET));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("LimitTokenOffset");
+            });
+    assertTrue(
+        "exception doesn't mention param: " + expected.getMessage(),
+        0 < expected.getMessage().indexOf(LimitTokenOffsetFilterFactory.MAX_START_OFFSET));
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("LimitTokenOffset",
-          LimitTokenOffsetFilterFactory.MAX_START_OFFSET, "3",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "LimitTokenOffset",
+                  LimitTokenOffsetFilterFactory.MAX_START_OFFSET,
+                  "3",
+                  "bogusArg",
+                  "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

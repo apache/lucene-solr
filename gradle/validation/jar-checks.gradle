@@ -21,7 +21,6 @@
 // 3) checksum validation/ generation.
 
 import org.apache.commons.codec.digest.DigestUtils
-import org.apache.commons.codec.digest.MessageDigestAlgorithms
 
 // This should be false only for debugging.
 def failOnError = true
@@ -33,7 +32,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'commons-codec:commons-codec:1.13'
+    classpath "commons-codec:commons-codec:${scriptDepVersions['commons-codec']}"
   }
 }
 
@@ -152,7 +151,7 @@ subprojects {
                   jarName        : file.toPath().getFileName().toString(),
                   path           : file,
                   module         : resolvedArtifact.moduleVersion,
-                  checksum       : provider { new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file).trim() },
+                  checksum       : provider { new DigestUtils(DigestUtils.sha1Digest).digestAsHex(file).trim() },
                   // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
                   // so that we can determine unused dangling files later on.
                   referencedFiles: []

@@ -1,5 +1,5 @@
 = SolrCloud
-:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-resilience, solrcloud-configuration-and-parameters, rule-based-replica-placement
+:page-children: getting-started-with-solrcloud, how-solrcloud-works, solrcloud-resilience, solrcloud-configuration-and-parameters
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -43,4 +43,3 @@ In this section, we'll cover everything you need to know about using Solr in Sol
 ** <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>>
 ** <<solrcloud-with-legacy-configuration-files.adoc#solrcloud-with-legacy-configuration-files,SolrCloud with Legacy Configuration Files>>
 ** <<configsets-api.adoc#configsets-api,Configsets API>>
-* <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>>

@@ -18,10 +18,11 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Leader Election process. This class contains the logic by which a
- * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
+ * leader is chosen. First call {@link #setup(ElectionContext)} to ensure
  * the election process is init'd. Next call
  * {@link #joinElection(ElectionContext, boolean)} to start the leader election.
  * 
@@ -166,7 +167,6 @@ public  class LeaderElector {
     }
   }
 
-  // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
     context.runLeaderProcess(weAreReplacement,0);
@@ -378,10 +378,7 @@ public  class LeaderElector {
    * Sort n string sequence list.
    */
   public static void sortSeqs(List<String> seqs) {
-    Collections.sort(seqs, (o1, o2) -> {
-      int i = getSeq(o1) - getSeq(o2);
-      return i == 0 ? o1.compareTo(o2) : i;
-    });
+    seqs.sort(Comparator.comparingInt(LeaderElector::getSeq).thenComparing(Function.identity()));
   }
 
   void retryElection(ElectionContext context, boolean joinAtHead) throws KeeperException, InterruptedException, IOException {

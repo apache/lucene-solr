@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.util.automaton;
 
-
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -31,7 +29,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.Util;
 
 public class TestUTF32ToUTF8 extends LuceneTestCase {
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -51,8 +49,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     // Verify correct ints are accepted
     final int nonSurrogateCount;
     final boolean ovSurStart;
-    if (endCode < UnicodeUtil.UNI_SUR_HIGH_START ||
-        startCode > UnicodeUtil.UNI_SUR_LOW_END) {
+    if (endCode < UnicodeUtil.UNI_SUR_HIGH_START || startCode > UnicodeUtil.UNI_SUR_LOW_END) {
       // no overlap w/ surrogates
       nonSurrogateCount = endCode - startCode + 1;
       ovSurStart = false;
@@ -67,12 +64,16 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     } else {
       // range completely subsumes surrogates
       ovSurStart = true;
-      nonSurrogateCount = endCode - startCode + 1 - (UnicodeUtil.UNI_SUR_LOW_END - UnicodeUtil.UNI_SUR_HIGH_START + 1);
+      nonSurrogateCount =
+          endCode
+              - startCode
+              + 1
+              - (UnicodeUtil.UNI_SUR_LOW_END - UnicodeUtil.UNI_SUR_HIGH_START + 1);
     }
 
     assert nonSurrogateCount > 0;
-        
-    for(int iter=0;iter<iters;iter++) {
+
+    for (int iter = 0; iter < iters; iter++) {
       // pick random code point in-range
 
       int code = startCode + r.nextInt(nonSurrogateCount);
@@ -84,17 +85,19 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
         }
       }
 
-      assert code >= startCode && code <= endCode: "code=" + code + " start=" + startCode + " end=" + endCode;
+      assert code >= startCode && code <= endCode
+          : "code=" + code + " start=" + startCode + " end=" + endCode;
       assert !isSurrogate(code);
 
-      assertTrue("DFA for range " + startCode + "-" + endCode + " failed to match code=" + code, 
-                 matches(a, code));
+      assertTrue(
+          "DFA for range " + startCode + "-" + endCode + " failed to match code=" + code,
+          matches(a, code));
     }
 
     // Verify invalid ints are not accepted
     final int invalidRange = MAX_UNICODE - (endCode - startCode + 1);
     if (invalidRange > 0) {
-      for(int iter=0;iter<iters;iter++) {
+      for (int iter = 0; iter < iters; iter++) {
         int x = TestUtil.nextInt(r, 0, invalidRange - 1);
         final int code;
         if (x >= startCode) {
@@ -102,14 +105,14 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
         } else {
           code = x;
         }
-        if ((code >= UnicodeUtil.UNI_SUR_HIGH_START && code <= UnicodeUtil.UNI_SUR_HIGH_END) |
-            (code >= UnicodeUtil.UNI_SUR_LOW_START && code <= UnicodeUtil.UNI_SUR_LOW_END)) {
+        if ((code >= UnicodeUtil.UNI_SUR_HIGH_START && code <= UnicodeUtil.UNI_SUR_HIGH_END)
+            | (code >= UnicodeUtil.UNI_SUR_LOW_START && code <= UnicodeUtil.UNI_SUR_LOW_END)) {
           iter--;
           continue;
         }
-        assertFalse("DFA for range " + startCode + "-" + endCode + " matched invalid code=" + code,
-                    matches(a, code));
-                    
+        assertFalse(
+            "DFA for range " + startCode + "-" + endCode + " matched invalid code=" + code,
+            matches(a, code));
       }
     }
   }
@@ -117,15 +120,15 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   // Evenly picks random code point from the 4 "buckets"
   // (bucket = same #bytes when encoded to utf8)
   private int getCodeStart(Random r) {
-    switch(r.nextInt(4)) {
-    case 0:
-      return TestUtil.nextInt(r, 0, 128);
-    case 1:
-      return TestUtil.nextInt(r, 128, 2048);
-    case 2:
-      return TestUtil.nextInt(r, 2048, 65536);
-    default:
-      return TestUtil.nextInt(r, 65536, 1 + MAX_UNICODE);
+    switch (r.nextInt(4)) {
+      case 0:
+        return TestUtil.nextInt(r, 0, 128);
+      case 1:
+        return TestUtil.nextInt(r, 128, 2048);
+      case 2:
+        return TestUtil.nextInt(r, 2048, 65536);
+      default:
+        return TestUtil.nextInt(r, 65536, 1 + MAX_UNICODE);
     }
   }
 
@@ -137,7 +140,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     final Random r = random();
     int ITERS = atLeast(10);
     int ITERS_PER_DFA = atLeast(100);
-    for(int iter=0;iter<ITERS;iter++) {
+    for (int iter = 0; iter < ITERS; iter++) {
       int x1 = getCodeStart(r);
       int x2 = getCodeStart(r);
       final int startCode, endCode;
@@ -154,7 +157,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
         iter--;
         continue;
       }
-      
+
       Automaton a = Automata.makeCharRange(startCode, endCode);
       testOne(r, new ByteRunAutomaton(a), startCode, endCode, ITERS_PER_DFA);
     }
@@ -174,7 +177,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     assertTrue(bra.isAccept(0));
     assertTrue(bra.run(new byte[0], 0, 0));
   }
-  
+
   public void testSpecialCase2() throws Exception {
     RegExp re = new RegExp(".+\u0775");
     String input = "\ufadc\ufffd\ub80b\uda5a\udc68\uf234\u0056\uda5b\udcc1\ufffd\ufffd\u0775";
@@ -183,34 +186,36 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
 
     assertTrue(cra.run(input));
-    
+
     byte[] bytes = input.getBytes(StandardCharsets.UTF_8);
     assertTrue(bra.run(bytes, 0, bytes.length)); // this one fails!
   }
-  
+
   public void testSpecialCase3() throws Exception {
     RegExp re = new RegExp("(\\鯺)*(.)*\\Ӕ");
-    String input = "\u5cfd\ufffd\ub2f7\u0033\ue304\u51d7\u3692\udb50\udfb3\u0576\udae2\udc62\u0053\u0449\u04d4";
+    String input =
+        "\u5cfd\ufffd\ub2f7\u0033\ue304\u51d7\u3692\udb50\udfb3\u0576\udae2\udc62\u0053\u0449\u04d4";
     Automaton automaton = re.toAutomaton();
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
 
     assertTrue(cra.run(input));
-    
+
     byte[] bytes = input.getBytes(StandardCharsets.UTF_8);
     assertTrue(bra.run(bytes, 0, bytes.length));
   }
-  
+
   public void testRandomRegexes() throws Exception {
     int num = atLeast(50);
     for (int i = 0; i < num; i++) {
-      assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
+      assertAutomaton(
+          new RegExp(AutomatonTestUtil.randomRegexp(random()), RegExp.NONE).toAutomaton());
     }
   }
 
   public void testSingleton() throws Exception {
     int iters = atLeast(100);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       String s = TestUtil.randomRealisticUnicodeString(random());
       Automaton a = Automata.makeString(s);
       Automaton utf8 = new UTF32ToUTF8().convert(a);
@@ -221,12 +226,13 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       assertEquals(set, TestOperations.getFiniteStrings(utf8));
     }
   }
-  
+
   private void assertAutomaton(Automaton automaton) throws Exception {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
-    final AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(automaton);
-    
+    final AutomatonTestUtil.RandomAcceptedStrings ras =
+        new AutomatonTestUtil.RandomAcceptedStrings(automaton);
+
     int num = atLeast(1000);
     for (int i = 0; i < num; i++) {
       final String string;
@@ -240,7 +246,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
           string = UnicodeUtil.newString(codepoints, 0, codepoints.length);
         } catch (Exception e) {
           System.out.println(codepoints.length + " codepoints:");
-          for(int j=0;j<codepoints.length;j++) {
+          for (int j = 0; j < codepoints.length; j++) {
             System.out.println("  " + Integer.toHexString(codepoints[j]));
           }
           throw e;

@@ -16,23 +16,22 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
 /**
- *  Normalizer for Arabic.
- *  <p>
- *  Normalization is done in-place for efficiency, operating on a termbuffer.
- *  <p>
- *  Normalization is defined as:
- *  <ul>
- *  <li> Normalization of hamza with alef seat to a bare alef.
- *  <li> Normalization of teh marbuta to heh
- *  <li> Normalization of dotless yeh (alef maksura) to yeh.
- *  <li> Removal of Arabic diacritics (the harakat)
- *  <li> Removal of tatweel (stretching character).
- * </ul>
+ * Normalizer for Arabic.
  *
+ * <p>Normalization is done in-place for efficiency, operating on a termbuffer.
+ *
+ * <p>Normalization is defined as:
+ *
+ * <ul>
+ *   <li>Normalization of hamza with alef seat to a bare alef.
+ *   <li>Normalization of teh marbuta to heh
+ *   <li>Normalization of dotless yeh (alef maksura) to yeh.
+ *   <li>Removal of Arabic diacritics (the harakat)
+ *   <li>Removal of tatweel (stretching character).
+ * </ul>
  */
 public class ArabicNormalizer {
   public static final char ALEF = '\u0627';
@@ -59,7 +58,7 @@ public class ArabicNormalizer {
 
   /**
    * Normalize an input buffer of Arabic text
-   * 
+   *
    * @param s input buffer
    * @param len length of input buffer
    * @return length of input buffer after normalization
@@ -68,31 +67,31 @@ public class ArabicNormalizer {
 
     for (int i = 0; i < len; i++) {
       switch (s[i]) {
-      case ALEF_MADDA:
-      case ALEF_HAMZA_ABOVE:
-      case ALEF_HAMZA_BELOW:
-        s[i] = ALEF;
-        break;
-      case DOTLESS_YEH:
-        s[i] = YEH;
-        break;
-      case TEH_MARBUTA:
-        s[i] = HEH;
-        break;
-      case TATWEEL:
-      case KASRATAN:
-      case DAMMATAN:
-      case FATHATAN:
-      case FATHA:
-      case DAMMA:
-      case KASRA:
-      case SHADDA:
-      case SUKUN:
-        len = delete(s, i, len);
-        i--;
-        break;
-      default:
-        break;
+        case ALEF_MADDA:
+        case ALEF_HAMZA_ABOVE:
+        case ALEF_HAMZA_BELOW:
+          s[i] = ALEF;
+          break;
+        case DOTLESS_YEH:
+          s[i] = YEH;
+          break;
+        case TEH_MARBUTA:
+          s[i] = HEH;
+          break;
+        case TATWEEL:
+        case KASRATAN:
+        case DAMMATAN:
+        case FATHATAN:
+        case FATHA:
+        case DAMMA:
+        case KASRA:
+        case SHADDA:
+        case SUKUN:
+          len = delete(s, i, len);
+          i--;
+          break;
+        default:
+          break;
       }
     }
 

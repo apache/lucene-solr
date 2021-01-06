@@ -19,16 +19,13 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
-/**
- * Base class for comparison operators useful within an "if"/conditional.
- */
+/** Base class for comparison operators useful within an "if"/conditional. */
 public abstract class ComparisonBoolFunction extends BoolFunction {
 
   private final ValueSource lhs;
@@ -42,7 +39,8 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   }
 
   /** Perform the comparison, returning true or false */
-  public abstract boolean compare(int doc, FunctionValues lhs, FunctionValues rhs) throws IOException;
+  public abstract boolean compare(int doc, FunctionValues lhs, FunctionValues rhs)
+      throws IOException;
 
   /** Uniquely identify the operation (ie "gt", "lt" "gte", etc) */
   public String name() {
@@ -50,7 +48,8 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues lhsVal = this.lhs.getValues(context, readerContext);
     final FunctionValues rhsVal = this.rhs.getValues(context, readerContext);
     final String compLabel = this.name();
@@ -70,17 +69,15 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
       public boolean exists(int doc) throws IOException {
         return lhsVal.exists(doc) && rhsVal.exists(doc);
       }
-
     };
   }
 
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    ComparisonBoolFunction other = (ComparisonBoolFunction)o;
-    return name().equals(other.name())
-        && lhs.equals(other.lhs)
-        && rhs.equals(other.rhs);  }
+    ComparisonBoolFunction other = (ComparisonBoolFunction) o;
+    return name().equals(other.name()) && lhs.equals(other.lhs) && rhs.equals(other.rhs);
+  }
 
   @Override
   public int hashCode() {
@@ -93,7 +90,7 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
 
   @Override
   public String description() {
-      return name() + "(" + lhs.description() + "," + rhs.description() + ")";
+    return name() + "(" + lhs.description() + "," + rhs.description() + ")";
   }
 
   @Override
@@ -101,5 +98,4 @@ public abstract class ComparisonBoolFunction extends BoolFunction {
     lhs.createWeight(context, searcher);
     rhs.createWeight(context, searcher);
   }
-
 }

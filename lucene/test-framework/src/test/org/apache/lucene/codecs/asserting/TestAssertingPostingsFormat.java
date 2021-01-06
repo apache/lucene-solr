@@ -22,7 +22,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
 /** Test AssertingPostingsFormat directly */
 public class TestAssertingPostingsFormat extends BasePostingsFormatTestCase {
   private final Codec codec = new AssertingCodec();
-  
+
   @Override
   protected Codec getCodec() {
     return codec;

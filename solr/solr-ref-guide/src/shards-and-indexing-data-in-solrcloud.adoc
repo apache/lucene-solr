@@ -120,9 +120,9 @@ More details on how to use shard splitting is in the section on the Collection A
 
 == Ignoring Commits from Client Applications in SolrCloud
 
-In most cases, when running in SolrCloud mode, indexing client applications should not send explicit commit requests. Rather, you should configure auto commits with `openSearcher=false` and auto soft-commits to make recent updates visible in search requests. This ensures that auto commits occur on a regular schedule in the cluster.
+In most cases, when running in SolrCloud mode, indexing client applications should not send explicit commit requests. Rather, you should configure auto commits with `openSearcher=false` and `autoSoftCommit` to make recent updates visible in search requests. This ensures that auto commits occur on a regular schedule in the cluster.
 
-NOTE: Using auto soft commit or commitWithin requires the client app to embrace the realities of "eventual consistency". Solr will make documents searchable at _roughly_ the same time across replicas of a collection but there are no hard guarantees. Consequently, in rare cases, it's possible for a document to show up in one search only for it not to appear in a subsequent search occurring immediately after the first search when the second search is routed to a different replica. Also, documents added in a particular order (even in the same batch) might become searchable out of the order of submission when there is sharding. The document will become visible on all replicas of a shard after the next auto commit or commitWithin interval expires
+NOTE: Using `autoSoftCommit` or `commitWithin` requires the client app to embrace the realities of "eventual consistency". Solr will make documents searchable at _roughly_ the same time across replicas of a collection but there are no hard guarantees. Consequently, in rare cases, it's possible for a document to show up in one search only for it not to appear in a subsequent search occurring immediately after the first search when the second search is routed to a different replica. Also, documents added in a particular order (even in the same batch) might become searchable out of the order of submission when there is sharding. The document will become visible on all replicas of a shard after the next `autoCommit` or `commitWithin` interval expires.
 
 To enforce a policy where client applications should not send explicit commits, you should update all client applications that index data into SolrCloud. However, that is not always feasible, so Solr provides the `IgnoreCommitOptimizeUpdateProcessorFactory`, which allows you to ignore explicit commits and/or optimize requests from client applications without having refactor your client application code.
 
@@ -140,7 +140,7 @@ To activate this request processor you'll need to add the following to your `sol
 </updateRequestProcessorChain>
 ----
 
-As shown in the example above, the processor will return 200 to the client but will ignore the commit / optimize request. Notice that you need to wire-in the implicit processors needed by SolrCloud as well, since this custom chain is taking the place of the default chain.
+As shown in the example above, the processor will return 200 to the client but will ignore the commit or optimize request. Notice that you need to wire-in the implicit processors needed by SolrCloud as well, since this custom chain is taking the place of the default chain.
 
 In the following example, the processor will raise an exception with a 403 code with a customized error message:
 

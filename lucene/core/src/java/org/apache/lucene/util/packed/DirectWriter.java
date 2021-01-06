@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataOutput;
 
-/** 
- * Class for writing packed integers to be directly read from Directory.
- * Integers can be read on-the-fly via {@link DirectReader}.
- * <p>
- * Unlike PackedInts, it optimizes for read i/o operations and supports &gt; 2B values.
- * Example usage:
+/**
+ * Class for writing packed integers to be directly read from Directory. Integers can be read
+ * on-the-fly via {@link DirectReader}.
+ *
+ * <p>Unlike PackedInts, it optimizes for read i/o operations and supports &gt; 2B values. Example
+ * usage:
+ *
  * <pre class="prettyprint">
  *   int bitsPerValue = DirectWriter.bitsRequired(100); // values up to and including 100
  *   IndexOutput output = dir.createOutput("packed", IOContext.DEFAULT);
@@ -39,33 +38,36 @@ import org.apache.lucene.store.DataOutput;
  *   writer.finish();
  *   output.close();
  * </pre>
+ *
  * @see DirectReader
  */
 public final class DirectWriter {
   final int bitsPerValue;
   final long numValues;
   final DataOutput output;
-  
+
   long count;
   boolean finished;
-  
+
   // for now, just use the existing writer under the hood
   int off;
   final byte[] nextBlocks;
   final long[] nextValues;
   final BulkOperation encoder;
   final int iterations;
-  
+
   DirectWriter(DataOutput output, long numValues, int bitsPerValue) {
     this.output = output;
     this.numValues = numValues;
     this.bitsPerValue = bitsPerValue;
     encoder = BulkOperation.of(PackedInts.Format.PACKED, bitsPerValue);
-    iterations = encoder.computeIterations((int) Math.min(numValues, Integer.MAX_VALUE), PackedInts.DEFAULT_BUFFER_SIZE);
+    iterations =
+        encoder.computeIterations(
+            (int) Math.min(numValues, Integer.MAX_VALUE), PackedInts.DEFAULT_BUFFER_SIZE);
     nextBlocks = new byte[iterations * encoder.byteBlockCount()];
     nextValues = new long[iterations * encoder.byteValueCount()];
   }
-  
+
   /** Adds a value to this writer */
   public void add(long l) throws IOException {
     assert bitsPerValue == 64 || (l >= 0 && l <= PackedInts.maxValue(bitsPerValue)) : bitsPerValue;
@@ -79,10 +81,11 @@ public final class DirectWriter {
     }
     count++;
   }
-  
+
   private void flush() throws IOException {
     encoder.encode(nextValues, 0, nextBlocks, 0, iterations);
-    final int blockCount = (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsPerValue);
+    final int blockCount =
+        (int) PackedInts.Format.PACKED.byteCount(PackedInts.VERSION_CURRENT, off, bitsPerValue);
     output.writeBytes(nextBlocks, blockCount);
     Arrays.fill(nextValues, 0L);
     off = 0;
@@ -91,7 +94,8 @@ public final class DirectWriter {
   /** finishes writing */
   public void finish() throws IOException {
     if (count != numValues) {
-      throw new IllegalStateException("Wrong number of values added, expected: " + numValues + ", got: " + count);
+      throw new IllegalStateException(
+          "Wrong number of values added, expected: " + numValues + ", got: " + count);
     }
     assert !finished;
     flush();
@@ -101,35 +105,35 @@ public final class DirectWriter {
     }
     finished = true;
   }
-  
+
   /** Returns an instance suitable for encoding {@code numValues} using {@code bitsPerValue} */
   public static DirectWriter getInstance(DataOutput output, long numValues, int bitsPerValue) {
     if (Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsPerValue) < 0) {
-      throw new IllegalArgumentException("Unsupported bitsPerValue " + bitsPerValue + ". Did you use bitsRequired?");
+      throw new IllegalArgumentException(
+          "Unsupported bitsPerValue " + bitsPerValue + ". Did you use bitsRequired?");
     }
     return new DirectWriter(output, numValues, bitsPerValue);
   }
-  
-  /** 
-   * Round a number of bits per value to the next amount of bits per value that
-   * is supported by this writer.
-   * 
+
+  /**
+   * Round a number of bits per value to the next amount of bits per value that is supported by this
+   * writer.
+   *
    * @param bitsRequired the amount of bits required
-   * @return the next number of bits per value that is gte the provided value
-   *         and supported by this writer
+   * @return the next number of bits per value that is gte the provided value and supported by this
+   *     writer
    */
   private static int roundBits(int bitsRequired) {
     int index = Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsRequired);
     if (index < 0) {
-      return SUPPORTED_BITS_PER_VALUE[-index-1];
+      return SUPPORTED_BITS_PER_VALUE[-index - 1];
     } else {
       return bitsRequired;
     }
   }
 
   /**
-   * Returns how many bits are required to hold values up
-   * to and including maxValue
+   * Returns how many bits are required to hold values up to and including maxValue
    *
    * @param maxValue the maximum value that should be representable.
    * @return the amount of bits needed to represent values from 0 to maxValue.
@@ -140,8 +144,8 @@ public final class DirectWriter {
   }
 
   /**
-   * Returns how many bits are required to hold values up
-   * to and including maxValue, interpreted as an unsigned value.
+   * Returns how many bits are required to hold values up to and including maxValue, interpreted as
+   * an unsigned value.
    *
    * @param maxValue the maximum value that should be representable.
    * @return the amount of bits needed to represent values from 0 to maxValue.
@@ -151,7 +155,6 @@ public final class DirectWriter {
     return roundBits(PackedInts.unsignedBitsRequired(maxValue));
   }
 
-  final static int SUPPORTED_BITS_PER_VALUE[] = new int[] {
-    1, 2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64
-  };
+  static final int SUPPORTED_BITS_PER_VALUE[] =
+      new int[] {1, 2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64};
 }

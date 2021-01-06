@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Analyzer based autosuggest.
- */
+
+/** Analyzer based autosuggest. */
 package org.apache.lucene.search.suggest.analyzing;

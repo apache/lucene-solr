@@ -20,14 +20,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 
 public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
-
-  @Override
-  protected boolean supportsPolygons() {
-    return true;
-  }
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -35,18 +31,25 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+  protected Query newRectQuery(
+      String field, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonDocValuesField.newSlowBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
+  protected Query newDistanceQuery(
+      String field, double centerLat, double centerLon, double radiusMeters) {
     return LatLonDocValuesField.newSlowDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
     return LatLonDocValuesField.newSlowPolygonQuery(field, polygons);
+  }
+
+  @Override
+  protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
+    return LatLonDocValuesField.newSlowGeometryQuery(field, geometry);
   }
 
   @Override

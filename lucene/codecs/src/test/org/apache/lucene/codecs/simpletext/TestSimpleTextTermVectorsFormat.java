@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 
@@ -30,5 +29,4 @@ public class TestSimpleTextTermVectorsFormat extends BaseTermVectorsFormatTestCa
   protected Codec getCodec() {
     return new SimpleTextCodec();
   }
-  
 }

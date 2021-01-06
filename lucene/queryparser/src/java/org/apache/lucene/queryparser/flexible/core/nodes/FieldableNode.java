@@ -17,28 +17,25 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 /**
- * A query node implements {@link FieldableNode} interface to indicate that its
- * children and itself are associated to a specific field.
- * 
- * If it has any children which also implements this interface, it must ensure
- * the children are associated to the same field.
- * 
+ * A query node implements {@link FieldableNode} interface to indicate that its children and itself
+ * are associated to a specific field.
+ *
+ * <p>If it has any children which also implements this interface, it must ensure the children are
+ * associated to the same field.
  */
 public interface FieldableNode extends QueryNode {
 
   /**
    * Returns the field associated to the node and every node under it.
-   * 
+   *
    * @return the field name
    */
   CharSequence getField();
 
   /**
    * Associates the node to a field.
-   * 
-   * @param fieldName
-   *          the field name
+   *
+   * @param fieldName the field name
    */
   void setField(CharSequence fieldName);
-
 }

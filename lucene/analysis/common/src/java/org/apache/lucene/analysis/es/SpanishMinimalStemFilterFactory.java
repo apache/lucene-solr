@@ -18,12 +18,12 @@
 package org.apache.lucene.analysis.es;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link SpanishMinimalStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_eslgtstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.SpanishMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @lucene.spi {@value #NAME}
  */
 public class SpanishMinimalStemFilterFactory extends TokenFilterFactory {
@@ -40,7 +41,7 @@ public class SpanishMinimalStemFilterFactory extends TokenFilterFactory {
   public static final String NAME = "spanishMinimalStem";
 
   /** Creates a new SpanishMinimalStemFilterFactory */
-  public SpanishMinimalStemFilterFactory(Map<String,String> args) {
+  public SpanishMinimalStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -53,5 +54,7 @@ public class SpanishMinimalStemFilterFactory extends TokenFilterFactory {
   }
 
   @Override
-  public TokenStream create(TokenStream input) { return new SpanishMinimalStemFilter(input); }
+  public TokenStream create(TokenStream input) {
+    return new SpanishMinimalStemFilter(input);
+  }
 }

@@ -16,16 +16,13 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 
-import java.io.IOException;
-import java.util.Map;
-
-/**
- * <code>ConstValueSource</code> returns a constant for all documents
- */
+/** <code>ConstValueSource</code> returns a constant for all documents */
 public class ConstValueSource extends ConstNumberSource {
   final float constant;
   private final double dv;
@@ -41,32 +38,39 @@ public class ConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
         return constant;
       }
+
       @Override
       public int intVal(int doc) {
-        return (int)constant;
+        return (int) constant;
       }
+
       @Override
       public long longVal(int doc) {
-        return (long)constant;
+        return (long) constant;
       }
+
       @Override
       public double doubleVal(int doc) {
         return dv;
       }
+
       @Override
       public String toString(int doc) {
         return description();
       }
+
       @Override
       public Object objectVal(int doc) {
         return constant;
       }
+
       @Override
       public boolean boolVal(int doc) {
         return constant != 0.0f;
@@ -82,18 +86,18 @@ public class ConstValueSource extends ConstNumberSource {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof ConstValueSource)) return false;
-    ConstValueSource other = (ConstValueSource)o;
-    return  this.constant == other.constant;
+    ConstValueSource other = (ConstValueSource) o;
+    return this.constant == other.constant;
   }
 
   @Override
   public int getInt() {
-    return (int)constant;
+    return (int) constant;
   }
 
   @Override
   public long getLong() {
-    return (long)constant;
+    return (long) constant;
   }
 
   @Override

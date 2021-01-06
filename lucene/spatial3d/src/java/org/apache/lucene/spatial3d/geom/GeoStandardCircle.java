@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * Circular area with a center and cutoff angle that represents the latitude and longitude distance
@@ -39,13 +39,16 @@ class GeoStandardCircle extends GeoBaseCircle {
   /** Notable points for a circle -- there aren't any */
   protected static final GeoPoint[] circlePoints = new GeoPoint[0];
 
-  /** Constructor.
-   *@param planetModel is the planet model.
-   *@param lat is the center latitude.
-   *@param lon is the center longitude.
-   *@param cutoffAngle is the cutoff angle for the circle.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model.
+   * @param lat is the center latitude.
+   * @param lon is the center longitude.
+   * @param cutoffAngle is the cutoff angle for the circle.
    */
-  public GeoStandardCircle(final PlanetModel planetModel, final double lat, final double lon, final double cutoffAngle) {
+  public GeoStandardCircle(
+      final PlanetModel planetModel, final double lat, final double lon, final double cutoffAngle) {
     super(planetModel);
     if (lat < -Math.PI * 0.5 || lat > Math.PI * 0.5)
       throw new IllegalArgumentException("Latitude out of bounds");
@@ -65,16 +68,18 @@ class GeoStandardCircle extends GeoBaseCircle {
     double upperLon = lon;
     if (upperLat > Math.PI * 0.5) {
       upperLon += Math.PI;
-      if (upperLon > Math.PI)
+      if (upperLon > Math.PI) {
         upperLon -= 2.0 * Math.PI;
+      }
       upperLat = Math.PI - upperLat;
     }
     double lowerLat = lat - cutoffAngle;
     double lowerLon = lon;
     if (lowerLat < -Math.PI * 0.5) {
       lowerLon += Math.PI;
-      if (lowerLon > Math.PI)
+      if (lowerLon > Math.PI) {
         lowerLon -= 2.0 * Math.PI;
+      }
       lowerLat = -Math.PI - lowerLat;
     }
     final GeoPoint upperPoint = new GeoPoint(planetModel, upperLat, upperLon);
@@ -86,27 +91,44 @@ class GeoStandardCircle extends GeoBaseCircle {
     } else {
       // Construct normal plane
       final Plane normalPlane = Plane.constructNormalizedZPlane(upperPoint, lowerPoint, center);
-      // Construct a sided plane that goes through the two points and whose normal is in the normalPlane.
-      this.circlePlane = SidedPlane.constructNormalizedPerpendicularSidedPlane(center, normalPlane, upperPoint, lowerPoint);
-      if (circlePlane == null)
-        throw new IllegalArgumentException("Couldn't construct circle plane, probably too small?  Cutoff angle = "+cutoffAngle+"; upperPoint = "+upperPoint+"; lowerPoint = "+lowerPoint);
-      final GeoPoint recomputedIntersectionPoint = circlePlane.getSampleIntersectionPoint(planetModel, normalPlane);
-      if (recomputedIntersectionPoint == null)
-        throw new IllegalArgumentException("Couldn't construct intersection point, probably circle too small?  Plane = "+circlePlane);
-      this.edgePoints = new GeoPoint[]{recomputedIntersectionPoint};
+      // Construct a sided plane that goes through the two points and whose normal is in the
+      // normalPlane.
+      this.circlePlane =
+          SidedPlane.constructNormalizedPerpendicularSidedPlane(
+              center, normalPlane, upperPoint, lowerPoint);
+      if (circlePlane == null) {
+        throw new IllegalArgumentException(
+            "Couldn't construct circle plane, probably too small?  Cutoff angle = "
+                + cutoffAngle
+                + "; upperPoint = "
+                + upperPoint
+                + "; lowerPoint = "
+                + lowerPoint);
+      }
+      final GeoPoint recomputedIntersectionPoint =
+          circlePlane.getSampleIntersectionPoint(planetModel, normalPlane);
+      if (recomputedIntersectionPoint == null) {
+        throw new IllegalArgumentException(
+            "Couldn't construct intersection point, probably circle too small?  Plane = "
+                + circlePlane);
+      }
+      this.edgePoints = new GeoPoint[] {recomputedIntersectionPoint};
     }
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoStandardCircle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, 
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream));
+  public GeoStandardCircle(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -127,18 +149,21 @@ class GeoStandardCircle extends GeoBaseCircle {
   }
 
   @Override
-  protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  protected double distance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     return distanceStyle.computeDistance(this.center, x, y, z);
   }
 
   @Override
-  protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+  protected void distanceBounds(
+      final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
     // TBD: Compute actual bounds based on distance
     getBounds(bounds);
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     return distanceStyle.computeDistance(planetModel, circlePlane, x, y, z);
   }
 
@@ -157,7 +182,8 @@ class GeoStandardCircle extends GeoBaseCircle {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     if (circlePlane == null) {
       return false;
     }
@@ -175,7 +201,7 @@ class GeoStandardCircle extends GeoBaseCircle {
   @Override
   public int getRelationship(GeoShape geoShape) {
     if (circlePlane == null) {
-      //same as GeoWorld
+      // same as GeoWorld
       if (geoShape.getEdgePoints().length > 0) {
         return WITHIN;
       }
@@ -197,8 +223,9 @@ class GeoStandardCircle extends GeoBaseCircle {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoStandardCircle))
+    if (!(o instanceof GeoStandardCircle)) {
       return false;
+    }
     GeoStandardCircle other = (GeoStandardCircle) o;
     return super.equals(other) && other.center.equals(center) && other.cutoffAngle == cutoffAngle;
   }
@@ -214,6 +241,14 @@ class GeoStandardCircle extends GeoBaseCircle {
 
   @Override
   public String toString() {
-    return "GeoStandardCircle: {planetmodel=" + planetModel+", center=" + center + ", radius=" + cutoffAngle + "(" + cutoffAngle * 180.0 / Math.PI + ")}";
+    return "GeoStandardCircle: {planetmodel="
+        + planetModel
+        + ", center="
+        + center
+        + ", radius="
+        + cutoffAngle
+        + "("
+        + cutoffAngle * 180.0 / Math.PI
+        + ")}";
   }
 }

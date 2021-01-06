@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -45,10 +43,9 @@ class TermVectorsConsumer extends TermsHash {
   /** Scratch term used by TermVectorsConsumerPerField.finishDocument. */
   final BytesRef flushTerm = new BytesRef();
 
-
-  /** Used by TermVectorsConsumerPerField when serializing
-   *  the term vectors. */
+  /** Used by TermVectorsConsumerPerField when serializing the term vectors. */
   final ByteSliceReader vectorSliceReaderPos = new ByteSliceReader();
+
   final ByteSliceReader vectorSliceReaderOff = new ByteSliceReader();
 
   boolean hasVectors;
@@ -59,7 +56,12 @@ class TermVectorsConsumer extends TermsHash {
   // it's cleaner than checking if the writer is null all over the place
   Accountable accountable = Accountable.NULL_ACCOUNTABLE;
 
-  TermVectorsConsumer(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Directory directory, SegmentInfo info, Codec codec) {
+  TermVectorsConsumer(
+      final IntBlockPool.Allocator intBlockAllocator,
+      final ByteBlockPool.Allocator byteBlockAllocator,
+      Directory directory,
+      SegmentInfo info,
+      Codec codec) {
     super(intBlockAllocator, byteBlockAllocator, Counter.newCounter(), null);
     this.directory = directory;
     this.info = info;
@@ -67,7 +69,12 @@ class TermVectorsConsumer extends TermsHash {
   }
 
   @Override
-  void flush(Map<String, TermsHashPerField> fieldsToFlush, final SegmentWriteState state, Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+  void flush(
+      Map<String, TermsHashPerField> fieldsToFlush,
+      final SegmentWriteState state,
+      Sorter.DocMap sortMap,
+      NormsProducer norms)
+      throws IOException {
     if (writer != null) {
       int numDocs = state.segmentInfo.maxDoc();
       assert numDocs > 0;
@@ -82,10 +89,11 @@ class TermVectorsConsumer extends TermsHash {
     }
   }
 
-  /** Fills in no-term-vectors for all docs we haven't seen
-   *  since the last doc that had term vectors. */
+  /**
+   * Fills in no-term-vectors for all docs we haven't seen since the last doc that had term vectors.
+   */
   void fill(int docID) throws IOException {
-    while(lastDocID < docID) {
+    while (lastDocID < docID) {
       writer.startDocument(0);
       writer.finishDocument();
       lastDocID++;
@@ -122,7 +130,7 @@ class TermVectorsConsumer extends TermsHash {
     }
     writer.finishDocument();
 
-    assert lastDocID == docID: "lastDocID=" + lastDocID + " docID=" + docID;
+    assert lastDocID == docID : "lastDocID=" + lastDocID + " docID=" + docID;
 
     lastDocID++;
 
@@ -166,5 +174,4 @@ class TermVectorsConsumer extends TermsHash {
     resetFields();
     numVectorFields = 0;
   }
-
 }

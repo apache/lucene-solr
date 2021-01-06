@@ -18,14 +18,13 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.junit.BeforeClass;
 
-
 public class TestConv extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("conv.aff", "conv.dic");
   }
-  
+
   public void testConversion() {
     assertStemsTo("drink", "drInk");
     assertStemsTo("drInk", "drInk");

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Compressor;
 import org.apache.lucene.codecs.compressing.Decompressor;
@@ -31,10 +30,10 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A compression mode that trades speed for compression ratio. Although
- * compression and decompression might be slow, this compression mode should
- * provide a good compression ratio. This mode might be interesting if/when
- * your index size is much bigger than your OS cache.
+ * A compression mode that trades speed for compression ratio. Although compression and
+ * decompression might be slow, this compression mode should provide a good compression ratio. This
+ * mode might be interesting if/when your index size is much bigger than your OS cache.
+ *
  * @lucene.internal
  */
 public final class DeflateWithPresetDictCompressionMode extends CompressionMode {
@@ -73,7 +72,8 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       compressed = new byte[0];
     }
 
-    private void doDecompress(DataInput in, Inflater decompressor, BytesRef bytes) throws IOException {
+    private void doDecompress(DataInput in, Inflater decompressor, BytesRef bytes)
+        throws IOException {
       final int compressedLength = in.readVInt();
       if (compressedLength == 0) {
         return;
@@ -88,18 +88,24 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       // extra "dummy byte"
       decompressor.setInput(compressed, 0, paddedLength);
       try {
-        bytes.length += decompressor.inflate(bytes.bytes, bytes.length, bytes.bytes.length - bytes.length);
+        bytes.length +=
+            decompressor.inflate(bytes.bytes, bytes.length, bytes.bytes.length - bytes.length);
       } catch (DataFormatException e) {
         throw new IOException(e);
       }
       if (decompressor.finished() == false) {
-        throw new CorruptIndexException("Invalid decoder state: needsInput=" + decompressor.needsInput()
-        + ", needsDict=" + decompressor.needsDictionary(), in);
+        throw new CorruptIndexException(
+            "Invalid decoder state: needsInput="
+                + decompressor.needsInput()
+                + ", needsDict="
+                + decompressor.needsDictionary(),
+            in);
       }
     }
 
     @Override
-    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
+    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+        throws IOException {
       assert offset + length <= originalLength;
       if (length == 0) {
         bytes.length = 0;
@@ -150,7 +156,6 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
     public Decompressor clone() {
       return new DeflateWithPresetDictDecompressor();
     }
-
   }
 
   private static class DeflateWithPresetDictCompressor extends Compressor {
@@ -178,8 +183,9 @@ public final class DeflateWithPresetDictCompressionMode extends CompressionMode 
       }
 
       int totalCount = 0;
-      for (;;) {
-        final int count = compressor.deflate(compressed, totalCount, compressed.length - totalCount);
+      for (; ; ) {
+        final int count =
+            compressor.deflate(compressed, totalCount, compressed.length - totalCount);
         totalCount += count;
         assert totalCount <= compressed.length;
         if (compressor.finished()) {

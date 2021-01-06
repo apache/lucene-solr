@@ -31,5 +31,4 @@ public class TestConcurrentQueryLoader extends MonitorTestBase {
       assertEquals(numQueries, monitor.getQueryCount());
     }
   }
-
 }

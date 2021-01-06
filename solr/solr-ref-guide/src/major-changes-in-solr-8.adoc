@@ -26,7 +26,7 @@ Before starting an upgrade to Solr 8, please take the time to review all informa
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 7.4, you should review changes made in all subsequent 7.x releases in addition to changes for 8.0.
 
-A thorough review of the list in <<Major Changes in Earlier 7.x Versions>>, below, as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 8.
+A thorough review of the list in <<Major Changes in Earlier 7.x Versions>>, below, as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 8.
 
 === Upgrade Prerequisites
 
@@ -79,7 +79,7 @@ In order to support SSL over HTTP/2 connections, Solr uses ALPN.
 Java 8 does not include an implementation of ALPN, therefore Solr will start with HTTP/1 only when SSL is enabled and Java 8 is in use.
 
 ==== Client Changes for HTTP/2
-{solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
+{solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
 with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
 `HttpSolrClient` and `ConcurrentUpdateSolrClient` for sending most internal requests (sent by
 `UpdateShardHandler` and `HttpShardHandler`).
@@ -88,9 +88,9 @@ However this causes the following changes in configuration and authentication se
 
 * The `updateShardHandler` parameter `maxConnections` is no longer used and has been removed.
 * The `HttpShardHandler` parameter `maxConnections` parameter is no longer being used and has been removed.
-*  Custom {solr-javadocs}/solr-core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
+*  Custom {solr-javadocs}/core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
 implementations must provide their own setup for `Http2SolrClient` through implementing
-{solr-javadocs}/solr-core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
+{solr-javadocs}/core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
 internal requests will not be able to be authenticated.
 
 ==== Metrics Changes for HTTP/2

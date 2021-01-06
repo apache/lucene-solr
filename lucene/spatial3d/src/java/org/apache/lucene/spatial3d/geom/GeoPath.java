@@ -28,49 +28,50 @@ public interface GeoPath extends GeoDistanceShape {
   // itself to the point is not included in the calculation.
 
   /**
-   * Compute the nearest path distance to the GeoPoint.
-   * The path distance will not include the distance from the path itself to the
-   * point, but just the distance along the path to the nearest point on the path.
+   * Compute the nearest path distance to the GeoPoint. The path distance will not include the
+   * distance from the path itself to the point, but just the distance along the path to the nearest
+   * point on the path.
    *
    * @param distanceStyle is the distance style.
    * @param point is the point to compute the distance to.
    * @return the distance to the nearest path point.
    */
-  public default double computeNearestDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
+  public default double computeNearestDistance(
+      final DistanceStyle distanceStyle, final GeoPoint point) {
     return computeNearestDistance(distanceStyle, point.x, point.y, point.z);
   }
 
   /**
-   * Compute the nearest path distance to the GeoPoint.
-   * The path distance will not include the distance from the path itself to the
-   * point, but just the distance along the path to the nearest point on the path.
+   * Compute the nearest path distance to the GeoPoint. The path distance will not include the
+   * distance from the path itself to the point, but just the distance along the path to the nearest
+   * point on the path.
    *
    * @param x is the point's unit x coordinate (using U.S. convention).
    * @param y is the point's unit y coordinate (using U.S. convention).
    * @param z is the point's unit z coordinate (using U.S. convention).
    * @return the distance to the nearest path point.
    */
-  public double computeNearestDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
+  public double computeNearestDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z);
 
   // The following methods compute the best distance from the path center to the point.
-  
+
   /**
-   * Compute the shortest distance from the path center to the GeoPoint.
-   * The distance is meant to allow comparisons between different
-   * paths to find the one that goes closest to a point.
+   * Compute the shortest distance from the path center to the GeoPoint. The distance is meant to
+   * allow comparisons between different paths to find the one that goes closest to a point.
    *
    * @param distanceStyle is the distance style.
    * @param point is the point to compute the distance to.
    * @return the shortest distance from the path center to the point.
    */
-  public default double computePathCenterDistance(final DistanceStyle distanceStyle, final GeoPoint point) {
+  public default double computePathCenterDistance(
+      final DistanceStyle distanceStyle, final GeoPoint point) {
     return computePathCenterDistance(distanceStyle, point.x, point.y, point.z);
   }
 
   /**
-   * Compute the shortest distance from the path center to the GeoPoint.
-   * The distance is meant to allow comparisons between different
-   * paths to find the one that goes closest to a point.
+   * Compute the shortest distance from the path center to the GeoPoint. The distance is meant to
+   * allow comparisons between different paths to find the one that goes closest to a point.
    *
    * @param distanceStyle is the distance style.
    * @param x is the point's unit x coordinate (using U.S. convention).
@@ -78,6 +79,6 @@ public interface GeoPath extends GeoDistanceShape {
    * @param z is the point's unit z coordinate (using U.S. convention).
    * @return the shortest distance from the path center to the point.
    */
-  public double computePathCenterDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
-
+  public double computePathCenterDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z);
 }

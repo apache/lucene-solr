@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
@@ -31,7 +30,7 @@ import org.apache.lucene.index.SegmentWriteState;
 class CrankyPointsFormat extends PointsFormat {
   PointsFormat delegate;
   Random random;
-  
+
   CrankyPointsFormat(PointsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
@@ -60,7 +59,7 @@ class CrankyPointsFormat extends PointsFormat {
     public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
       delegate.writeField(fieldInfo, values);
     }
 
@@ -68,22 +67,22 @@ class CrankyPointsFormat extends PointsFormat {
     public void finish() throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
       delegate.finish();
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
     }
 
     @Override
     public void merge(MergeState mergeState) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
       delegate.merge(mergeState);
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
     }
 
     @Override
@@ -91,13 +90,14 @@ class CrankyPointsFormat extends PointsFormat {
       delegate.close();
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
     }
   }
 
   static class CrankyPointsReader extends PointsReader {
     final PointsReader delegate;
     final Random random;
+
     public CrankyPointsReader(PointsReader delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
@@ -111,7 +111,7 @@ class CrankyPointsFormat extends PointsFormat {
       delegate.checkIntegrity();
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
     }
 
     @Override
@@ -130,7 +130,7 @@ class CrankyPointsFormat extends PointsFormat {
           delegate.intersect(visitor);
           if (random.nextInt(100) == 0) {
             throw new IOException("Fake IOException");
-          }  
+          }
         }
 
         @Override
@@ -187,7 +187,6 @@ class CrankyPointsFormat extends PointsFormat {
         public int getDocCount() {
           return delegate.getDocCount();
         }
-
       };
     }
 
@@ -196,7 +195,7 @@ class CrankyPointsFormat extends PointsFormat {
       delegate.close();
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
-      }  
+      }
     }
 
     @Override

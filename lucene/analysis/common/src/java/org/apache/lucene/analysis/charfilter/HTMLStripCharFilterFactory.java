@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.analysis.charfilter;
 
-
-import org.apache.lucene.analysis.CharFilterFactory;
-
 import java.io.Reader;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
- * Factory for {@link HTMLStripCharFilter}. 
+ * Factory for {@link HTMLStripCharFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_html" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -44,9 +43,9 @@ public class HTMLStripCharFilterFactory extends CharFilterFactory {
 
   final Set<String> escapedTags;
   static final Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
-  
+
   /** Creates a new HTMLStripCharFilterFactory */
-  public HTMLStripCharFilterFactory(Map<String,String> args) {
+  public HTMLStripCharFilterFactory(Map<String, String> args) {
     super(args);
     escapedTags = getSet(args, "escapedTags");
     if (!args.isEmpty()) {

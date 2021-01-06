@@ -16,44 +16,45 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
-/** A {@link CompositeReader} which reads multiple indexes, appending
- *  their content. It can be used to create a view on several
- *  sub-readers (like {@link DirectoryReader}) and execute searches on it.
- * 
- * <p> For efficiency, in this API documents are often referred to via
- * <i>document numbers</i>, non-negative integers which each name a unique
- * document in the index.  These document numbers are ephemeral -- they may change
- * as documents are added to and deleted from an index.  Clients should thus not
- * rely on a given document having the same number between sessions.
- * 
- * <p><a id="thread-safety"></a><p><b>NOTE</b>: {@link
- * IndexReader} instances are completely thread
- * safe, meaning multiple threads can call any of its methods,
- * concurrently.  If your application requires external
- * synchronization, you should <b>not</b> synchronize on the
- * <code>IndexReader</code> instance; use your own
- * (non-Lucene) objects instead.
+/**
+ * A {@link CompositeReader} which reads multiple indexes, appending their content. It can be used
+ * to create a view on several sub-readers (like {@link DirectoryReader}) and execute searches on
+ * it.
+ *
+ * <p>For efficiency, in this API documents are often referred to via <i>document numbers</i>,
+ * non-negative integers which each name a unique document in the index. These document numbers are
+ * ephemeral -- they may change as documents are added to and deleted from an index. Clients should
+ * thus not rely on a given document having the same number between sessions.
+ *
+ * <p><a id="thread-safety"></a>
+ *
+ * <p><b>NOTE</b>: {@link IndexReader} instances are completely thread safe, meaning multiple
+ * threads can call any of its methods, concurrently. If your application requires external
+ * synchronization, you should <b>not</b> synchronize on the <code>IndexReader</code> instance; use
+ * your own (non-Lucene) objects instead.
  */
 public class MultiReader extends BaseCompositeReader<IndexReader> {
   private final boolean closeSubReaders;
-  
- /**
-  * <p>Construct a MultiReader aggregating the named set of (sub)readers.
-  * <p>Note that all subreaders are closed if this Multireader is closed.</p>
-  * @param subReaders set of (sub)readers
-  */
+
+  /**
+   * Construct a MultiReader aggregating the named set of (sub)readers.
+   *
+   * <p>Note that all subreaders are closed if this Multireader is closed.
+   *
+   * @param subReaders set of (sub)readers
+   */
   public MultiReader(IndexReader... subReaders) throws IOException {
     this(subReaders, true);
   }
 
   /**
-   * <p>Construct a MultiReader aggregating the named set of (sub)readers.
+   * Construct a MultiReader aggregating the named set of (sub)readers.
+   *
    * @param subReaders set of (sub)readers; this array will be cloned.
-   * @param closeSubReaders indicates whether the subreaders should be closed
-   * when this MultiReader is closed
+   * @param closeSubReaders indicates whether the subreaders should be closed when this MultiReader
+   *     is closed
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     super(subReaders.clone());

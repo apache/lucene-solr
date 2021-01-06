@@ -110,12 +110,14 @@ public class SolrMetricManager {
 
   public static final int DEFAULT_CLOUD_REPORTER_PERIOD = 60;
 
-  private MetricRegistry.MetricSupplier<Counter> counterSupplier;
-  private MetricRegistry.MetricSupplier<Meter> meterSupplier;
-  private MetricRegistry.MetricSupplier<Timer> timerSupplier;
-  private MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
+  private final MetricsConfig metricsConfig;
+  private final MetricRegistry.MetricSupplier<Counter> counterSupplier;
+  private final MetricRegistry.MetricSupplier<Meter> meterSupplier;
+  private final MetricRegistry.MetricSupplier<Timer> timerSupplier;
+  private final MetricRegistry.MetricSupplier<Histogram> histogramSupplier;
 
   public SolrMetricManager() {
+    metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
     counterSupplier = MetricSuppliers.counterSupplier(null, null);
     meterSupplier = MetricSuppliers.meterSupplier(null, null);
     timerSupplier = MetricSuppliers.timerSupplier(null, null);
@@ -123,6 +125,7 @@ public class SolrMetricManager {
   }
 
   public SolrMetricManager(SolrResourceLoader loader, MetricsConfig metricsConfig) {
+    this.metricsConfig = metricsConfig;
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
@@ -145,6 +148,35 @@ public class SolrMetricManager {
   public MetricRegistry.MetricSupplier<Histogram> getHistogramSupplier() {
     return histogramSupplier;
   }
+
+  /**
+   * Return an object used for representing a null (missing) numeric value.
+   */
+  public Object nullNumber() {
+    return metricsConfig.getNullNumber();
+  }
+
+  /**
+   * Return an object used for representing a "Not A Number" (NaN) value.
+   */
+  public Object notANumber() {
+    return metricsConfig.getNotANumber();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) string value.
+   */
+  public Object nullString() {
+    return metricsConfig.getNullString();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) object value.
+   */
+  public Object nullObject() {
+    return metricsConfig.getNullObject();
+  }
+
 
   /**
    * An implementation of {@link MetricFilter} that selects metrics
@@ -756,6 +788,9 @@ public class SolrMetricManager {
   }
 
   public <T> void registerGauge(SolrMetricsContext context, String registry, Gauge<T> gauge, String tag, ResolutionStrategy strategy, String metricName, String... metricPath) {
+    if (!metricsConfig.isEnabled()) {
+      gauge = MetricSuppliers.getNoOpGauge(gauge);
+    }
     registerMetric(context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
   }
 

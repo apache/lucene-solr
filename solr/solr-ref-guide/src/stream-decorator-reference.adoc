@@ -538,7 +538,7 @@ This command will stop a specific daemon function and remove it from memory.
 
 === Continuous Pull Streaming
 
-The {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming. Sample code:
+The {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming. Sample code:
 
 [source,java]
 ----
@@ -629,7 +629,7 @@ Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false`
 
 Users who wish to ignore concurrent updates and delete all matched documents should set `pruneVersionField=true` (or ensure that the inner stream tuples do not include any `\_version_` values).
 
-Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuring the {solr-javadocs}/solr-core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
+Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuring the {solr-javadocs}/core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
 ====
 
 

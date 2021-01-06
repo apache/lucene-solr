@@ -16,54 +16,56 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
+import java.io.Reader;
+import java.io.StringReader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-import java.io.Reader;
-import java.io.StringReader;
-
-/**
- * Simple tests to ensure the simple truncation filter factory is working.
- */
+/** Simple tests to ensure the simple truncation filter factory is working. */
 public class TestTruncateTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually truncates text.
-   */
+  /** Ensure the filter actually truncates text. */
   public void testTruncating() throws Exception {
     Reader reader = new StringReader("abcdefg 1234567 ABCDEFG abcde abc 12345 123");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     ((Tokenizer) stream).setReader(reader);
-    stream = tokenFilterFactory("Truncate",
-        TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "5").create(stream);
-    assertTokenStreamContents(stream, new String[]{"abcde", "12345", "ABCDE", "abcde", "abc", "12345", "123"});
+    stream =
+        tokenFilterFactory("Truncate", TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "5")
+            .create(stream);
+    assertTokenStreamContents(
+        stream, new String[] {"abcde", "12345", "ABCDE", "abcde", "abc", "12345", "123"});
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Truncate",
-          TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "5",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "Truncate",
+                  TruncateTokenFilterFactory.PREFIX_LENGTH_KEY,
+                  "5",
+                  "bogusArg",
+                  "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameter(s):"));
   }
 
-  /**
-   * Test that negative prefix length result in exception
-   */
+  /** Test that negative prefix length result in exception */
   public void testNonPositivePrefixLengthArgument() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Truncate",
-          TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "-5"
-      );
-    });
-    assertTrue(expected.getMessage().contains(TruncateTokenFilterFactory.PREFIX_LENGTH_KEY + " parameter must be a positive number: -5"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Truncate", TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "-5");
+            });
+    assertTrue(
+        expected
+            .getMessage()
+            .contains(
+                TruncateTokenFilterFactory.PREFIX_LENGTH_KEY
+                    + " parameter must be a positive number: -5"));
   }
 }
-
-

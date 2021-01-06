@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.util;
 
-
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,20 +33,21 @@ public class TestCollectionUtil extends LuceneTestCase {
     }
     return Arrays.asList(a);
   }
-  
+
   public void testIntroSort() {
     for (int i = 0, c = atLeast(100); i < c; i++) {
       List<Integer> list1 = createRandomList(2000), list2 = new ArrayList<>(list1);
       CollectionUtil.introSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
-      
+
       list1 = createRandomList(2000);
       list2 = new ArrayList<>(list1);
       CollectionUtil.introSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
       assertEquals(list2, list1);
-      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      // reverse back, so we can test that completely backwards sorted array (worst case) is
+      // working:
       CollectionUtil.introSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
@@ -60,13 +60,14 @@ public class TestCollectionUtil extends LuceneTestCase {
       CollectionUtil.timSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
-      
+
       list1 = createRandomList(2000);
       list2 = new ArrayList<>(list1);
       CollectionUtil.timSort(list1, Collections.reverseOrder());
       Collections.sort(list2, Collections.reverseOrder());
       assertEquals(list2, list1);
-      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      // reverse back, so we can test that completely backwards sorted array (worst case) is
+      // working:
       CollectionUtil.timSort(list1);
       Collections.sort(list2);
       assertEquals(list2, list1);
@@ -80,7 +81,7 @@ public class TestCollectionUtil extends LuceneTestCase {
     CollectionUtil.timSort(list);
     CollectionUtil.introSort(list, Collections.reverseOrder());
     CollectionUtil.timSort(list, Collections.reverseOrder());
-    
+
     // check that empty non-random access lists pass sorting without ex (as sorting is not needed)
     list = new LinkedList<>();
     CollectionUtil.introSort(list);
@@ -88,9 +89,10 @@ public class TestCollectionUtil extends LuceneTestCase {
     CollectionUtil.introSort(list, Collections.reverseOrder());
     CollectionUtil.timSort(list, Collections.reverseOrder());
   }
-  
+
   public void testOneElementListSort() {
-    // check that one-element non-random access lists pass sorting without ex (as sorting is not needed)
+    // check that one-element non-random access lists pass sorting without ex (as sorting is not
+    // needed)
     List<Integer> list = new LinkedList<>();
     list.add(1);
     CollectionUtil.introSort(list);
@@ -98,5 +100,4 @@ public class TestCollectionUtil extends LuceneTestCase {
     CollectionUtil.introSort(list, Collections.reverseOrder());
     CollectionUtil.timSort(list, Collections.reverseOrder());
   }
-  
 }

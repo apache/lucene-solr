@@ -16,31 +16,30 @@
  */
 package org.apache.lucene.codecs.blockterms;
 
-
+import java.io.Closeable;
+import java.io.IOException;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-/** 
- * Base class for terms index implementations to plug
- * into {@link BlockTermsWriter}.
- * 
+/**
+ * Base class for terms index implementations to plug into {@link BlockTermsWriter}.
+ *
  * @see TermsIndexReaderBase
- * @lucene.experimental 
+ * @lucene.experimental
  */
 public abstract class TermsIndexWriterBase implements Closeable {
 
-  /**
-   * Terms index API for a single field.
-   */
+  /** Terms index API for a single field. */
   public abstract class FieldWriter {
     public abstract boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException;
-    public abstract void add(BytesRef text, TermStats stats, long termsFilePointer) throws IOException;
+
+    public abstract void add(BytesRef text, TermStats stats, long termsFilePointer)
+        throws IOException;
+
     public abstract void finish(long termsFilePointer) throws IOException;
   }
 
-  public abstract FieldWriter addField(FieldInfo fieldInfo, long termsFilePointer) throws IOException;
+  public abstract FieldWriter addField(FieldInfo fieldInfo, long termsFilePointer)
+      throws IOException;
 }

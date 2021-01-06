@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.util.BitSet;
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 public class TestIntArrayDocIdSet extends BaseDocIdSetTestCase<IntArrayDocIdSet> {
@@ -36,5 +34,4 @@ public class TestIntArrayDocIdSet extends BaseDocIdSetTestCase<IntArrayDocIdSet>
     docs[l] = DocIdSetIterator.NO_MORE_DOCS;
     return new IntArrayDocIdSet(docs, l);
   }
-  
 }

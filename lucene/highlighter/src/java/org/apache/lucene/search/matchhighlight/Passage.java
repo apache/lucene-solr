@@ -32,6 +32,12 @@ public class Passage extends OffsetRange {
     this.markers = markers;
   }
 
+  /** Passages can't be sliced as it could split previously determined highlight markers. */
+  @Override
+  public OffsetRange slice(int from, int to) {
+    throw new RuntimeException("Passages.slice() does not make sense?");
+  }
+
   @Override
   public String toString() {
     return "[" + super.toString() + ", markers=" + markers + "]";

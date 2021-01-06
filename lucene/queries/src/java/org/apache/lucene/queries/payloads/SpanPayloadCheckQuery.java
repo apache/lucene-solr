@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.queries.payloads;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -37,14 +41,7 @@ import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-/**
- * Only return those matches that have a specific payload at the given position.
- */
+/** Only return those matches that have a specific payload at the given position. */
 public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final List<BytesRef> payloadToMatch;
@@ -96,9 +93,11 @@ public class SpanPayloadCheckQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     SpanWeight matchWeight = match.createWeight(searcher, scoreMode, boost);
-    return new SpanPayloadCheckWeight(searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, matchWeight, boost, payloadType);
+    return new SpanPayloadCheckWeight(
+        searcher, scoreMode.needsScores() ? getTermStates(matchWeight) : null, matchWeight, boost, payloadType);
   }
 
   @Override
@@ -117,14 +116,18 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
   }
 
-  /**
-   * Weight that pulls its Spans using a PayloadSpanCollector
-   */
+  /** Weight that pulls its Spans using a PayloadSpanCollector */
   public class SpanPayloadCheckWeight extends SpanWeight {
 
     final SpanWeight matchWeight;
 
-    public SpanPayloadCheckWeight(IndexSearcher searcher, Map<Term, TermStates> termStates, SpanWeight matchWeight, float boost, PayloadType payloadType) throws IOException {
+    public SpanPayloadCheckWeight(
+        IndexSearcher searcher,
+        Map<Term, TermStates> termStates,
+        SpanWeight matchWeight,
+        float boost, 
+        PayloadType payloadType)
+        throws IOException {
       super(SpanPayloadCheckQuery.this, searcher, termStates, boost);
       this.matchWeight = matchWeight;
     }
@@ -135,29 +138,37 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     }
     
     @Override
-    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
-      // create the correct checker for the operation.
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
+        throws IOException {
       final PayloadChecker collector = new PayloadChecker();
       collector.payloadMatcher = PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
-      return (matchSpans == null) ? null : new FilterSpans(matchSpans) {
-        @Override
-        protected AcceptStatus accept(Spans candidate) throws IOException {
-          collector.reset();
-          candidate.collect(collector);
-          return collector.match();
-        }
-      };
+      return (matchSpans == null)
+          ? null
+          : new FilterSpans(matchSpans) {
+            @Override
+            protected AcceptStatus accept(Spans candidate) throws IOException {
+              collector.reset();
+              candidate.collect(collector);
+              return collector.match();
+            }
+          };
     }
 
     @Override
     public SpanScorer scorer(LeafReaderContext context) throws IOException {
-      if (field == null)
+      if (field == null) {
         return null;
+      }
 
       Terms terms = context.reader().terms(field);
-      if (terms != null && !terms.hasPositions()) {
-        throw new IllegalStateException("field \"" + field + "\" was indexed without position data; cannot run SpanQuery (query=" + parentQuery + ")");
+      if (terms != null && terms.hasPositions() == false) {
+        throw new IllegalStateException(
+            "field \""
+                + field
+                + "\" was indexed without position data; cannot run SpanQuery (query="
+                + parentQuery
+                + ")");
       }
 
       final Spans spans = getSpans(context, Postings.PAYLOADS);
@@ -172,7 +183,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public boolean isCacheable(LeafReaderContext ctx) {
       return matchWeight.isCacheable(ctx);
     }
-
   }
 
 
@@ -184,8 +194,9 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
-      if (!matches)
+      if (!matches) {
         return;
+      }
       if (upto >= payloadToMatch.size()) {
         matches = false;
         return;

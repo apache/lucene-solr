@@ -554,7 +554,7 @@ With each iteration the `train` function emits a tuple with the model. The model
 
 * `collection`: (Mandatory) Collection that holds the training set
 * `q`: (Mandatory) The query that defines the training set. The IDF for the features will be generated on the
-* `name`: (Mandatory) The name of model. This can be used to retrieve the model if they stored in a Solr Cloud collection.
+* `name`: (Mandatory) The name of model. This can be used to retrieve the model if they stored in a SolrCloud collection.
 * `field`: (Mandatory) The text field to extract the features from.
 * `outcome`: (Mandatory) The field that defines the class, positive or negative
 * `maxIterations`: (Mandatory) How many training iterations to perform.

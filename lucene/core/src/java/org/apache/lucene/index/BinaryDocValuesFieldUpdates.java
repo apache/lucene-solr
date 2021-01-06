@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -26,21 +25,26 @@ import org.apache.lucene.util.packed.PagedGrowableWriter;
 import org.apache.lucene.util.packed.PagedMutable;
 
 /**
- * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single
- * {@link BinaryDocValuesField}.
- * 
+ * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single {@link
+ * BinaryDocValuesField}.
+ *
  * @lucene.experimental
  */
 final class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
-  
-  final static class Iterator extends DocValuesFieldUpdates.AbstractIterator {
+
+  static final class Iterator extends DocValuesFieldUpdates.AbstractIterator {
     private final PagedGrowableWriter offsets;
     private final PagedGrowableWriter lengths;
     private final BytesRef value;
     private int offset, length;
 
-    Iterator(int size, PagedGrowableWriter offsets, PagedGrowableWriter lengths, 
-             PagedMutable docs, BytesRef values, long delGen) {
+    Iterator(
+        int size,
+        PagedGrowableWriter offsets,
+        PagedGrowableWriter lengths,
+        PagedMutable docs,
+        BytesRef values,
+        long delGen) {
       super(size, docs, delGen);
       this.offsets = offsets;
       this.lengths = lengths;
@@ -87,7 +91,7 @@ final class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   }
 
   @Override
-  synchronized public void add(int doc, BytesRef value) {
+  public synchronized void add(int doc, BytesRef value) {
     int index = add(doc);
     offsets.set(index, values.length());
     lengths.set(index, value.length);
@@ -130,11 +134,11 @@ final class BinaryDocValuesFieldUpdates extends DocValuesFieldUpdates {
   @Override
   public long ramBytesUsed() {
     return super.ramBytesUsed()
-      + offsets.ramBytesUsed()
-      + lengths.ramBytesUsed()
-      + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-      + 2 * Integer.BYTES
-      + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
-      + values.bytes().length;
+        + offsets.ramBytesUsed()
+        + lengths.ramBytesUsed()
+        + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * Integer.BYTES
+        + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+        + values.bytes().length;
   }
 }

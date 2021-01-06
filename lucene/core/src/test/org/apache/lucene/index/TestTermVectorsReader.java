@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -39,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTermVectorsReader extends LuceneTestCase {
-  //Must be lexicographically sorted, will do in setup, versus trying to maintain here
+  // Must be lexicographically sorted, will do in setup, versus trying to maintain here
   private String[] testFields = {"f1", "f2", "f3", "f4"};
   private boolean[] testFieldsStorePos = {true, false, true, false};
   private boolean[] testFieldsStoreOff = {true, false, false, true};
@@ -55,6 +53,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     int pos;
     int startOffset;
     int endOffset;
+
     @Override
     public int compareTo(TestToken other) {
       return pos - other.pos;
@@ -91,40 +90,37 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Arrays.sort(tokens);
 
     dir = newDirectory();
-    IndexWriter writer = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MyAnalyzer()).
-            setMaxBufferedDocs(-1).
-            setMergePolicy(newLogMergePolicy(false, 10))
-            .setUseCompoundFile(false)
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MyAnalyzer())
+                .setMaxBufferedDocs(-1)
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setUseCompoundFile(false));
 
     Document doc = new Document();
-    for(int i=0;i<testFields.length;i++) {
+    for (int i = 0; i < testFields.length; i++) {
       FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
       if (testFieldsStorePos[i] && testFieldsStoreOff[i]) {
         customType.setStoreTermVectors(true);
         customType.setStoreTermVectorPositions(true);
         customType.setStoreTermVectorOffsets(true);
-      }
-      else if (testFieldsStorePos[i] && !testFieldsStoreOff[i]) {
+      } else if (testFieldsStorePos[i] && !testFieldsStoreOff[i]) {
         customType.setStoreTermVectors(true);
         customType.setStoreTermVectorPositions(true);
-      }
-      else if (!testFieldsStorePos[i] && testFieldsStoreOff[i]) {
+      } else if (!testFieldsStorePos[i] && testFieldsStoreOff[i]) {
         customType.setStoreTermVectors(true);
         customType.setStoreTermVectorPositions(true);
         customType.setStoreTermVectorOffsets(true);
-      }
-      else {
+      } else {
         customType.setStoreTermVectors(true);
       }
       doc.add(new Field(testFields[i], "", customType));
     }
 
-    //Create 5 documents for testing, they all have the same
-    //terms
-    for(int j=0;j<5;j++) {
+    // Create 5 documents for testing, they all have the same
+    // terms
+    for (int j = 0; j < 5; j++) {
       writer.addDocument(doc);
     }
     writer.commit();
@@ -133,7 +129,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     fieldInfos = IndexWriter.readFieldInfos(seg);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -142,18 +138,18 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   private class MyTokenizer extends Tokenizer {
     private int tokenUpto;
-    
+
     private final CharTermAttribute termAtt;
     private final PositionIncrementAttribute posIncrAtt;
     private final OffsetAttribute offsetAtt;
-    
+
     public MyTokenizer() {
       super();
       termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
     }
-    
+
     @Override
     public boolean incrementToken() {
       if (tokenUpto >= tokens.length) {
@@ -164,9 +160,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
         termAtt.append(testToken.text);
         offsetAtt.setOffset(testToken.startOffset, testToken.endOffset);
         if (tokenUpto > 1) {
-          posIncrAtt.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);
+          posIncrAtt.setPositionIncrement(testToken.pos - tokens[tokenUpto - 2].pos);
         } else {
-          posIncrAtt.setPositionIncrement(testToken.pos+1);
+          posIncrAtt.setPositionIncrement(testToken.pos + 1);
         }
         return true;
       }
@@ -187,7 +183,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void test() throws IOException {
-    //Check to see the files were created properly in setup
+    // Check to see the files were created properly in setup
     DirectoryReader reader = DirectoryReader.open(dir);
     for (LeafReaderContext ctx : reader.leaves()) {
       SegmentReader sr = (SegmentReader) ctx.reader();
@@ -197,7 +193,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader =
+        Codec.getDefault()
+            .termVectorsFormat()
+            .vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -207,16 +206,19 @@ public class TestTermVectorsReader extends LuceneTestCase {
         final BytesRef text = termsEnum.next();
         assertNotNull(text);
         String term = text.utf8ToString();
-        //System.out.println("Term: " + term);
+        // System.out.println("Term: " + term);
         assertEquals(testTerms[i], term);
       }
       assertNull(termsEnum.next());
     }
     reader.close();
   }
-  
+
   public void testDocsEnum() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader =
+        Codec.getDefault()
+            .termVectorsFormat()
+            .vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     for (int j = 0; j < 5; j++) {
       Terms vector = reader.get(j).terms(testFields[0]);
       assertNotNull(vector);
@@ -227,9 +229,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
         final BytesRef text = termsEnum.next();
         assertNotNull(text);
         String term = text.utf8ToString();
-        //System.out.println("Term: " + term);
+        // System.out.println("Term: " + term);
         assertEquals(testTerms[i], term);
-        
+
         postingsEnum = TestUtil.docs(random(), termsEnum, postingsEnum, PostingsEnum.NONE);
         assertNotNull(postingsEnum);
         int doc = postingsEnum.docID();
@@ -243,7 +245,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testPositionReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader =
+        Codec.getDefault()
+            .termVectorsFormat()
+            .vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     BytesRef[] terms;
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
@@ -254,7 +259,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       final BytesRef text = termsEnum.next();
       assertNotNull(text);
       String term = text.utf8ToString();
-      //System.out.println("Term: " + term);
+      // System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
 
       dpEnum = termsEnum.postings(dpEnum, PostingsEnum.ALL);
@@ -276,13 +281,13 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
         assertEquals(positions[i][j], dpEnum.nextPosition());
-        assertEquals(j*10, dpEnum.startOffset());
-        assertEquals(j*10 + testTerms[i].length(), dpEnum.endOffset());
+        assertEquals(j * 10, dpEnum.startOffset());
+        assertEquals(j * 10 + testTerms[i].length(), dpEnum.endOffset());
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
     }
 
-    Terms freqVector = reader.get(0).terms(testFields[1]); //no pos, no offset
+    Terms freqVector = reader.get(0).terms(testFields[1]); // no pos, no offset
     assertNotNull(freqVector);
     assertEquals(testTerms.length, freqVector.size());
     termsEnum = freqVector.iterator();
@@ -291,7 +296,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       final BytesRef text = termsEnum.next();
       assertNotNull(text);
       String term = text.utf8ToString();
-      //System.out.println("Term: " + term);
+      // System.out.println("Term: " + term);
       assertEquals(testTerms[i], term);
       assertNotNull(termsEnum.postings(null));
       assertNotNull(termsEnum.postings(null, PostingsEnum.ALL));
@@ -300,7 +305,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   public void testOffsetReader() throws IOException {
-    TermVectorsReader reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
+    TermVectorsReader reader =
+        Codec.getDefault()
+            .termVectorsFormat()
+            .vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
     Terms vector = reader.get(0).terms(testFields[0]);
     assertNotNull(vector);
     TermsEnum termsEnum = vector.iterator();
@@ -328,8 +336,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
       assertEquals(dpEnum.freq(), positions[i].length);
       for (int j = 0; j < positions[i].length; j++) {
         assertEquals(positions[i][j], dpEnum.nextPosition());
-        assertEquals(j*10, dpEnum.startOffset());
-        assertEquals(j*10 + testTerms[i].length(), dpEnum.endOffset());
+        assertEquals(j * 10, dpEnum.startOffset());
+        assertEquals(j * 10 + testTerms[i].length(), dpEnum.endOffset());
       }
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dpEnum.nextDoc());
     }
@@ -347,15 +355,20 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
 
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", expected.getMessage());
-    
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot index term vector payloads without term vector positions (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
-  
+
   public void testIllegalOffsetsWithoutVectors() throws Exception {
     Directory dir = newDirectory();
     MockAnalyzer a = new MockAnalyzer(random());
@@ -366,12 +379,17 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorOffsets(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot index term vector offsets when term vectors are not indexed (field=\"field\")", expected.getMessage());
-    
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot index term vector offsets when term vectors are not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -387,11 +405,16 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
 
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot index term vector positions when term vectors are not indexed (field=\"field\")", expected.getMessage());
-    
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot index term vector positions when term vectors are not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -406,12 +429,17 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorPayloads(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", expected.getMessage());
-    
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot index term vector payloads when term vectors are not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -425,12 +453,17 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectors(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot store term vectors for a field that is not indexed (field=\"field\")", expected.getMessage());
-    
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot store term vectors for a field that is not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -444,12 +477,17 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorPositions(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot store term vector positions for a field that is not indexed (field=\"field\")", expected.getMessage());
-    
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot store term vector positions for a field that is not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -463,16 +501,21 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorOffsets(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot store term vector offsets for a field that is not indexed (field=\"field\")", expected.getMessage());
-    
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot store term vector offsets for a field that is not indexed (field=\"field\")",
+        expected.getMessage());
+
     w.close();
     dir.close();
   }
-  
+
   public void testIllegalVectorPayloadsWithoutIndexed() throws Exception {
     Directory dir = newDirectory();
     MockAnalyzer a = new MockAnalyzer(random());
@@ -482,11 +525,16 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorPayloads(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
-    });
-    assertEquals("cannot store term vector payloads for a field that is not indexed (field=\"field\")", expected.getMessage());
+
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              w.addDocument(doc);
+            });
+    assertEquals(
+        "cannot store term vector payloads for a field that is not indexed (field=\"field\")",
+        expected.getMessage());
 
     w.close();
     dir.close();

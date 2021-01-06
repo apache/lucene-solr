@@ -16,47 +16,46 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestAlternateCasing extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("alternate-casing.aff", "alternate-casing.dic");
   }
-  
+
   public void testPossibilities() {
-    assertStemsTo("drink",   "drink");
-    assertStemsTo("DRİNK",   "drink");
+    assertStemsTo("drink", "drink");
+    assertStemsTo("DRİNK", "drink");
     assertStemsTo("DRINK");
-    assertStemsTo("drinki",  "drink");
-    assertStemsTo("DRİNKİ",  "drink");
+    assertStemsTo("drinki", "drink");
+    assertStemsTo("DRİNKİ", "drink");
     assertStemsTo("DRİNKI");
     assertStemsTo("DRINKI");
     assertStemsTo("DRINKİ");
-    assertStemsTo("idrink",  "drink");
-    assertStemsTo("İDRİNK",  "drink");
+    assertStemsTo("idrink", "drink");
+    assertStemsTo("İDRİNK", "drink");
     assertStemsTo("IDRİNK");
     assertStemsTo("IDRINK");
     assertStemsTo("İDRINK");
     assertStemsTo("idrinki", "drink");
     assertStemsTo("İDRİNKİ", "drink");
-    assertStemsTo("rıver",   "rıver");
-    assertStemsTo("RIVER",   "rıver");
+    assertStemsTo("rıver", "rıver");
+    assertStemsTo("RIVER", "rıver");
     assertStemsTo("RİVER");
-    assertStemsTo("rıverı",  "rıver");
-    assertStemsTo("RIVERI",  "rıver");
+    assertStemsTo("rıverı", "rıver");
+    assertStemsTo("RIVERI", "rıver");
     assertStemsTo("RİVERI");
     assertStemsTo("RİVERİ");
     assertStemsTo("RIVERİ");
-    assertStemsTo("ırıver",  "rıver");
-    assertStemsTo("IRIVER",  "rıver");
+    assertStemsTo("ırıver", "rıver");
+    assertStemsTo("IRIVER", "rıver");
     assertStemsTo("IRİVER");
     assertStemsTo("İRİVER");
     assertStemsTo("İRIVER");
-    assertStemsTo("ırıverı",  "rıver");
-    assertStemsTo("IRIVERI",  "rıver");
-    assertStemsTo("Irıverı",  "rıver");
+    assertStemsTo("ırıverı", "rıver");
+    assertStemsTo("IRIVERI", "rıver");
+    assertStemsTo("Irıverı", "rıver");
   }
 }

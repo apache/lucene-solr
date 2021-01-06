@@ -18,7 +18,6 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.QueryVisitor;
@@ -33,21 +32,25 @@ abstract class DifferenceIntervalsSource extends IntervalsSource {
     this.subtrahend = subtrahend;
   }
 
-  protected abstract IntervalIterator combine(IntervalIterator minuend, IntervalIterator subtrahend);
+  protected abstract IntervalIterator combine(
+      IntervalIterator minuend, IntervalIterator subtrahend);
 
   @Override
   public final IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     IntervalIterator minIt = minuend.intervals(field, ctx);
-    if (minIt == null)
+    if (minIt == null) {
       return null;
+    }
     IntervalIterator subIt = subtrahend.intervals(field, ctx);
-    if (subIt == null)
+    if (subIt == null) {
       return minIt;
+    }
     return combine(minIt, subIt);
   }
 
   @Override
-  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     IntervalMatchesIterator minIt = minuend.matches(field, ctx, doc);
     if (minIt == null) {
       return null;
@@ -56,7 +59,8 @@ abstract class DifferenceIntervalsSource extends IntervalsSource {
     if (subIt == null) {
       return minIt;
     }
-    IntervalIterator difference = combine(IntervalMatches.wrapMatches(minIt, doc), IntervalMatches.wrapMatches(subIt, doc));
+    IntervalIterator difference =
+        combine(IntervalMatches.wrapMatches(minIt, doc), IntervalMatches.wrapMatches(subIt, doc));
     return IntervalMatches.asMatches(difference, minIt, doc);
   }
 

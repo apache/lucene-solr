@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.ja;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -34,13 +33,14 @@ public class TestCSVUtil extends LuceneTestCase {
 
   public void testQuoteEscapeComma() throws IOException {
     final String input = "To be, or not to be ...";
-    final String expectedOutput = '"'+input+'"';
+    final String expectedOutput = '"' + input + '"';
     implTestQuoteEscape(input, expectedOutput);
   }
 
   public void testQuoteEscapeQuotesAndComma() throws IOException {
-    final String input = "\"To be, or not to be ...\" is a well-known phrase from Shakespeare's Hamlet.";
-    final String expectedOutput = '"'+input.replace("\"", "\"\"")+'"';
+    final String input =
+        "\"To be, or not to be ...\" is a well-known phrase from Shakespeare's Hamlet.";
+    final String expectedOutput = '"' + input.replace("\"", "\"\"") + '"';
     implTestQuoteEscape(input, expectedOutput);
   }
 
@@ -48,5 +48,4 @@ public class TestCSVUtil extends LuceneTestCase {
     final String actualOutput = CSVUtil.quoteEscape(input);
     assertEquals(expectedOutput, actualOutput);
   }
-
 }

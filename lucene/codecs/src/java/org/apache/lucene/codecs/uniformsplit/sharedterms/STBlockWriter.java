@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.codecs.uniformsplit.BlockEncoder;
 import org.apache.lucene.codecs.uniformsplit.BlockLine;
 import org.apache.lucene.codecs.uniformsplit.BlockWriter;
@@ -33,10 +32,10 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Writes terms blocks with the Shared Terms format.
- * <p>
- * As defined in {@link STUniformSplitTermsWriter}, all the fields terms are
- * shared in the same dictionary. Each block line contains a term and all the
- * fields {@link org.apache.lucene.index.TermState}s for this term.
+ *
+ * <p>As defined in {@link STUniformSplitTermsWriter}, all the fields terms are shared in the same
+ * dictionary. Each block line contains a term and all the fields {@link
+ * org.apache.lucene.index.TermState}s for this term.
  *
  * @lucene.experimental
  */
@@ -44,29 +43,35 @@ public class STBlockWriter extends BlockWriter {
 
   protected final Set<FieldMetadata> fieldsInBlock;
 
-  public STBlockWriter(IndexOutput blockOutput, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) {
+  public STBlockWriter(
+      IndexOutput blockOutput,
+      int targetNumBlockLines,
+      int deltaNumLines,
+      BlockEncoder blockEncoder) {
     super(blockOutput, targetNumBlockLines, deltaNumLines, blockEncoder);
     fieldsInBlock = new HashSet<>();
   }
 
   /**
    * Adds a new {@link BlockLine} term for the current field.
-   * <p>
-   * This method determines whether the new term is part of the current block,
-   * or if it is part of the next block. In the latter case, a new block is started
-   * (including one or more of the lastly added lines), the current block is
-   * written to the block file, and the current block key is added to the
-   * {@link org.apache.lucene.codecs.uniformsplit.IndexDictionary.Builder}.
    *
-   * @param term              The block line term. The {@link BytesRef} instance is used directly,
-   *                          the caller is responsible to make a deep copy if needed. This is required
-   *                          because we keep a list of block lines until we decide to write the
-   *                          current block, and each line must have a different term instance.
-   * @param termStates    Block line details for all fields in the line.
+   * <p>This method determines whether the new term is part of the current block, or if it is part
+   * of the next block. In the latter case, a new block is started (including one or more of the
+   * lastly added lines), the current block is written to the block file, and the current block key
+   * is added to the {@link org.apache.lucene.codecs.uniformsplit.IndexDictionary.Builder}.
+   *
+   * @param term The block line term. The {@link BytesRef} instance is used directly, the caller is
+   *     responsible to make a deep copy if needed. This is required because we keep a list of block
+   *     lines until we decide to write the current block, and each line must have a different term
+   *     instance.
+   * @param termStates Block line details for all fields in the line.
    * @param dictionaryBuilder to which the block keys are added.
    */
-  public void addLine(BytesRef term, List<FieldMetadataTermState> termStates,
-               IndexDictionary.Builder dictionaryBuilder) throws IOException {
+  public void addLine(
+      BytesRef term,
+      List<FieldMetadataTermState> termStates,
+      IndexDictionary.Builder dictionaryBuilder)
+      throws IOException {
     if (termStates.isEmpty()) {
       return;
     }
@@ -90,9 +95,17 @@ public class STBlockWriter extends BlockWriter {
   }
 
   @Override
-  protected void writeBlockLine(boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine) throws IOException {
-    blockLineWriter.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
-    ((STBlockLine.Serializer) blockLineWriter).writeLineTermStates(termStatesWriteBuffer, (STBlockLine) line, termStateSerializer);
+  protected void writeBlockLine(
+      boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine)
+      throws IOException {
+    blockLineWriter.writeLine(
+        blockLinesWriteBuffer,
+        line,
+        previousLine,
+        Math.toIntExact(termStatesWriteBuffer.size()),
+        isIncrementalEncodingSeed);
+    ((STBlockLine.Serializer) blockLineWriter)
+        .writeLineTermStates(termStatesWriteBuffer, (STBlockLine) line, termStateSerializer);
     ((STBlockLine) line).collectFields(fieldsInBlock);
   }
 

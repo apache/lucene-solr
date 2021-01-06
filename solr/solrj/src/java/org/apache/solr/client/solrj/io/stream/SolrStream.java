@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -69,6 +68,7 @@ public class SolrStream extends TupleStream {
   private boolean distrib = true;
   private String user;
   private String password;
+  private String core;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -78,6 +78,11 @@ public class SolrStream extends TupleStream {
   public SolrStream(String baseUrl, SolrParams params) {
     this.baseUrl = baseUrl;
     this.params = params;
+  }
+
+  SolrStream(String baseUrl, SolrParams params, String core) {
+    this(baseUrl, params);
+    this.core = core;
   }
 
   public void setFieldMappings(Map<String, String> fieldMappings) {
@@ -109,6 +114,8 @@ public class SolrStream extends TupleStream {
   **/
 
   public void open() throws IOException {
+
+    // Reuse the same client per node vs. having one per replica
     if(cache == null) {
       client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
@@ -120,7 +127,7 @@ public class SolrStream extends TupleStream {
       if (!distrib) {
         ((ModifiableSolrParams) requestParams).add("distrib","false");
       }
-      tupleStreamParser = constructParser(client, requestParams);
+      tupleStreamParser = constructParser(requestParams);
     } catch (Exception e) {
       throw new IOException("params " + params, e);
     }
@@ -187,7 +194,7 @@ public class SolrStream extends TupleStream {
     if (closeableHttpResponse != null) {
       closeableHttpResponse.close();
     }
-    if(cache == null) {
+    if(cache == null && client != null) {
       client.close();
     }
   }
@@ -268,8 +275,7 @@ public class SolrStream extends TupleStream {
     return fields;
   }
 
-  // temporary...
-  public TupleStreamParser constructParser(SolrClient server, SolrParams requestParams) throws IOException, SolrServerException {
+  private TupleStreamParser constructParser(SolrParams requestParams) throws IOException, SolrServerException {
     String p = requestParams.get("qt");
     if (p != null) {
       ModifiableSolrParams modifiableSolrParams = (ModifiableSolrParams) requestParams;
@@ -280,7 +286,14 @@ public class SolrStream extends TupleStream {
 
     String wt = requestParams.get(CommonParams.WT, "json");
     QueryRequest query = new QueryRequest(requestParams);
-    query.setPath(p);
+
+    // in order to reuse HttpSolrClient objects per node, we need to cache them without the core name in the URL
+    if (core != null) {
+      query.setPath("/"+core + (p != null ? p : "/select"));
+    } else {
+      query.setPath(p);
+    }
+
     query.setResponseParser(new InputStreamResponseParser(wt));
     query.setMethod(SolrRequest.METHOD.POST);
 
@@ -288,7 +301,7 @@ public class SolrStream extends TupleStream {
       query.setBasicAuthCredentials(user, password);
     }
 
-    NamedList<Object> genericResponse = server.request(query);
+    NamedList<Object> genericResponse = client.request(query);
     InputStream stream = (InputStream) genericResponse.get("stream");
     this.closeableHttpResponse = (CloseableHttpResponse)genericResponse.get("closeableResponse");
     if (CommonParams.JAVABIN.equals(wt)) {

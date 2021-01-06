@@ -23,7 +23,7 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/docker-solr/scripts:$PATH" \
+    PATH="/opt/solr/bin:/opt/docker-solr/scripts:/opt/solr/contrib/prometheus-exporter/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \
@@ -38,6 +38,9 @@ RUN set -ex; \
 COPY --chown=0:0 scripts /opt/docker-solr/scripts
 
 ARG SOLR_VERSION
+
+# Used by solr-fg
+ENV SOLR_VERSION $SOLR_VERSION
 
 COPY --from=solr_package "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz"
 
@@ -56,11 +59,7 @@ RUN set -ex; \
   mv /opt/solr/bin/solr.in.cmd /opt/solr/bin/solr.in.cmd.orig; \
   chown root:0 /etc/default/solr.in.sh; \
   chmod 0664 /etc/default/solr.in.sh; \
-  mkdir -p /var/solr/data /var/solr/logs; \
-  (cd /opt/solr/server/solr; cp solr.xml zoo.cfg /var/solr/data/); \
-  cp /opt/solr/server/resources/log4j2.xml /var/solr/log4j2.xml; \
-  find /var/solr -type d -print0 | xargs -0 chmod 0770; \
-  find /var/solr -type f -print0 | xargs -0 chmod 0660; \
+  mkdir -p -m0770 /var/solr; \
   sed -i -e "s/\"\$(whoami)\" == \"root\"/\$(id -u) == 0/" /opt/solr/bin/solr; \
   sed -i -e 's/lsof -PniTCP:/lsof -t -PniTCP:/' /opt/solr/bin/solr; \
   chown -R "0:0" /opt/solr-$SOLR_VERSION /docker-entrypoint-initdb.d /opt/docker-solr; \

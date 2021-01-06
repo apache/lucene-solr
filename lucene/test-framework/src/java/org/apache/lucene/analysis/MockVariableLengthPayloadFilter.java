@@ -18,13 +18,10 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * TokenFilter that adds random variable-length payloads.
- */
+/** TokenFilter that adds random variable-length payloads. */
 public final class MockVariableLengthPayloadFilter extends TokenFilter {
   private static final int MAXLENGTH = 129;
 

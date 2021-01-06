@@ -16,18 +16,17 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 public class TestMaxScoreSumPropagator extends LuceneTestCase {
 
@@ -165,14 +164,23 @@ public class TestMaxScoreSumPropagator extends LuceneTestCase {
   public void test2ClausesRandomScore() throws IOException {
     for (int iter = 0; iter < 10; ++iter) {
       FakeScorer a = new FakeScorer(random().nextFloat());
-      FakeScorer b = new FakeScorer(Math.nextUp(a.getMaxScore(NO_MORE_DOCS)) + random().nextFloat());
+      FakeScorer b =
+          new FakeScorer(Math.nextUp(a.getMaxScore(NO_MORE_DOCS)) + random().nextFloat());
 
       MaxScoreSumPropagator p = new MaxScoreSumPropagator(Arrays.asList(a, b));
-      assertEquals(a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS), p.getMaxScore(NO_MORE_DOCS), 0f);
+      assertEquals(
+          a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS),
+          p.getMaxScore(NO_MORE_DOCS),
+          0f);
       assertMinCompetitiveScore(Arrays.asList(a, b), p, Math.nextUp(a.getMaxScore(NO_MORE_DOCS)));
-      assertMinCompetitiveScore(Arrays.asList(a, b), p, (a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS)) / 2);
-      assertMinCompetitiveScore(Arrays.asList(a, b), p, Math.nextDown(a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS)));
-      assertMinCompetitiveScore(Arrays.asList(a, b), p, a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS));
+      assertMinCompetitiveScore(
+          Arrays.asList(a, b), p, (a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS)) / 2);
+      assertMinCompetitiveScore(
+          Arrays.asList(a, b),
+          p,
+          Math.nextDown(a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS)));
+      assertMinCompetitiveScore(
+          Arrays.asList(a, b), p, a.getMaxScore(NO_MORE_DOCS) + b.getMaxScore(NO_MORE_DOCS));
     }
   }
 
@@ -188,7 +196,7 @@ public class TestMaxScoreSumPropagator extends LuceneTestCase {
       }
 
       MaxScoreSumPropagator p = new MaxScoreSumPropagator(scorers);
-      assertTrue(p.getMaxScore(NO_MORE_DOCS)  >= (float) sumOfMaxScore);
+      assertTrue(p.getMaxScore(NO_MORE_DOCS) >= (float) sumOfMaxScore);
       for (int i = 0; i < 10; ++i) {
         final float minCompetitiveScore = random().nextFloat() * numScorers;
         assertMinCompetitiveScore(scorers, p, minCompetitiveScore);
@@ -200,7 +208,9 @@ public class TestMaxScoreSumPropagator extends LuceneTestCase {
     }
   }
 
-  private void assertMinCompetitiveScore(Collection<FakeScorer> scorers, MaxScoreSumPropagator p, float minCompetitiveScore) throws IOException {
+  private void assertMinCompetitiveScore(
+      Collection<FakeScorer> scorers, MaxScoreSumPropagator p, float minCompetitiveScore)
+      throws IOException {
     p.setMinCompetitiveScore(minCompetitiveScore);
 
     for (FakeScorer scorer : scorers) {
@@ -220,4 +230,3 @@ public class TestMaxScoreSumPropagator extends LuceneTestCase {
     }
   }
 }
-

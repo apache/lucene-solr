@@ -20,10 +20,10 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.Query;
 
 /**
- * DocValues field for FloatRange. This is a single valued field per document
- * due to being an extension of BinaryDocValuesField.
+ * DocValues field for FloatRange. This is a single valued field per document due to being an
+ * extension of BinaryDocValuesField.
  */
-public class FloatRangeDocValuesField extends BinaryRangeDocValuesField{
+public class FloatRangeDocValuesField extends BinaryRangeDocValuesField {
   final String field;
   final float[] min;
   final float[] max;
@@ -55,22 +55,23 @@ public class FloatRangeDocValuesField extends BinaryRangeDocValuesField{
     return max[dimension];
   }
 
-  private static Query newSlowRangeQuery(String field, final float[] min, final float[] max,
-                                        RangeFieldQuery.QueryType queryType) {
+  private static Query newSlowRangeQuery(
+      String field, final float[] min, final float[] max, RangeFieldQuery.QueryType queryType) {
     checkArgs(min, max);
     return new FloatRangeSlowRangeQuery(field, min, max, queryType);
   }
 
-  /** Create a new range query that finds all ranges that intersect using doc values.
-   *  NOTE: This doesn't leverage indexing and may be slow.
-   *  @see FloatRange#newIntersectsQuery */
+  /**
+   * Create a new range query that finds all ranges that intersect using doc values. NOTE: This
+   * doesn't leverage indexing and may be slow.
+   *
+   * @see FloatRange#newIntersectsQuery
+   */
   public static Query newSlowIntersectsQuery(String field, final float[] min, final float[] max) {
     return newSlowRangeQuery(field, min, max, RangeFieldQuery.QueryType.INTERSECTS);
   }
 
-  /**
-   * validate the arguments
-   */
+  /** validate the arguments */
   private static void checkArgs(final float[] min, final float[] max) {
     if (min == null || max == null || min.length == 0 || max.length == 0) {
       throw new IllegalArgumentException("min/max range values cannot be null or empty");
