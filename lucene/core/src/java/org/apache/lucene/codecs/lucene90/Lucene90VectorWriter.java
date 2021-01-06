@@ -96,8 +96,14 @@ public final class Lucene90VectorWriter extends VectorWriter {
 
   @Override
   public void writeField(FieldInfo fieldInfo, VectorValues vectors) throws IOException {
-    long vectorDataOffset = vectorData.getFilePointer();
-
+    long pos = vectorData.getFilePointer();
+    // write floats aligned at 4 bytes. This will not survive CFS, but it shows a small benefit when
+    // CFS is not used, eg for larger indexes
+    long padding = (4 - (pos & 0x3)) & 0x3;
+    long vectorDataOffset = pos + padding;
+    for (int i = 0; i < padding; i++) {
+      vectorData.writeByte((byte) 0);
+    }
     // TODO - use a better data structure; a bitset? DocsWithFieldSet is p.p. in o.a.l.index
     int[] docIds = new int[vectors.size()];
     int count = 0;
