@@ -95,10 +95,6 @@ public class PayloadMatcherFactory {
     
     private String decodeString(byte[] bytes, int offset, int length) {
       // TODO: consider just the raw byte array instead of a decoded String
-      // TODO: Encoding?  Is this correct?  What about null pointers? Do we need to deal with the offsets here?
-      // TODO: I think we need the byte array from the offset and beyond only?
-      // System.err.println("OFFSET : " + offset + " " + new String(bytes, StandardCharsets.UTF_8));
-      // System.err.println("Decoded : " + decoded);
       return new String(Arrays.copyOfRange(bytes, offset, offset+length), StandardCharsets.UTF_8);    
     }
     
@@ -110,8 +106,6 @@ public class PayloadMatcherFactory {
 
     @Override
     protected boolean stringCompare(String val, String thresh) {
-      // TODO: null check?  also is this logic backwards?
-      // System.err.println("Compare: " + val + " to " + thresh);
       int res = val.compareTo(thresh);
       return (res < 0) ? true : false; 
     }

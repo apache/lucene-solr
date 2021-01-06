@@ -137,36 +137,26 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
   }
 
   public void testInequalityPayloadChecks() throws Exception {
-    System.err.println("TEST UNORDERED!################################################");
-    //Test some greater thans...
-    // TODO: how do i know what should match?
+    // searching for the term five with a payload of either "pos: 0" or a payload of "pos: 1"
     SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    BytesRef pay = new BytesRef("pos: " + 1);
-    BytesRef payZero = new BytesRef("pos: " + 0);
-    // Greater than for a float?
-    SpanQuery floatGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "gt");
-    SpanQuery floatGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "gte");
-    SpanQuery floatLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "lt");
-    SpanQuery floatLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.FLOAT, "lte");
-    
-    SpanQuery intGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "gt");
-    SpanQuery intGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "gte");
-    SpanQuery intLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "lt");
-    SpanQuery intLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.INT, "lte");
-
-    SpanQuery stringGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "gt");
-    SpanQuery stringGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "gte");
-    SpanQuery stringLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(pay), SpanPayloadCheckQuery.PayloadType.STRING, "lt");
-    SpanQuery stringLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(payZero), SpanPayloadCheckQuery.PayloadType.STRING, "lte");
-
-    checkHits(stringLT, new int[] {5, 25, 35, 45, 55, 65, 75, 85, 95, 105, 125, 135, 145, 155, 165, 175, 185, 195, 205, 225, 235, 245, 255, 265, 275, 597, 598, 599, 605, 625, 635, 645, 655, 665, 675, 685, 695, 705, 725, 735, 745, 755, 765, 775, 785, 795, 805, 825, 835, 845, 855, 865, 875});
-    checkHits(stringLTE, new int[] {5, 25, 35, 45, 55, 65, 75, 85, 95, 105, 125, 135, 145, 155, 165, 175, 185, 195, 205, 225, 235, 245, 255, 265, 275, 597, 598, 599, 605, 625, 635, 645, 655, 665, 675, 685, 695, 705, 725, 735, 745, 755, 765, 775, 785, 795, 805, 825, 835, 845, 855, 865, 875});
-    //checkHits(stringGTE, new int[] {});
-    //checkHits(stringGTE, new int[] {});
-    //checkHits(stringGTE, new int[] {});
-    //checkHits(stringGTE, new int[] {});
-    
-    
+    BytesRef payloadOne = new BytesRef("pos: " + 1);
+    BytesRef payloadZero = new BytesRef("pos: " + 0);
+    BytesRef payloadFour = new BytesRef("pos: " + 4);
+    BytesRef payloadFive = new BytesRef("pos: " + 5);
+    // Terms that equal five with a payload of "pos: 1"
+    SpanQuery stringEQ1 = new SpanPayloadCheckQuery(term1, Collections.singletonList(payloadOne), SpanPayloadCheckQuery.PayloadType.STRING, "eq");
+    checkHits(stringEQ1, new int[] {25, 35, 45, 55, 65, 75, 85, 95});
+    // These queries return the same thing
+    SpanQuery stringLT = new SpanPayloadCheckQuery(term1, Collections.singletonList(payloadOne), SpanPayloadCheckQuery.PayloadType.STRING, "lt");
+    SpanQuery stringLTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(payloadZero), SpanPayloadCheckQuery.PayloadType.STRING, "lte");
+    // string less than and string less than or equal
+    checkHits(stringLT, new int[] {5, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599});
+    checkHits(stringLTE, new int[] {5, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599});
+    // greater than and greater than or equal tests.
+    SpanQuery stringGT = new SpanPayloadCheckQuery(term1, Collections.singletonList(payloadFour), SpanPayloadCheckQuery.PayloadType.STRING, "gt");
+    SpanQuery stringGTE = new SpanPayloadCheckQuery(term1, Collections.singletonList(payloadFive), SpanPayloadCheckQuery.PayloadType.STRING, "gte");
+    checkHits(stringGT, new int[] {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
+    checkHits(stringGTE, new int[] {1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285, 1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475, 1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665, 1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855, 1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995});
   }
   
   public void testUnorderedPayloadChecks() throws Exception {

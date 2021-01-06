@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
 public interface PayloadMatcher {
   
   /**
-   * This method tests if two BytesRef should be considered to match.
+   * This method tests if two BytesRef match.
    * 
    * @param source left side of the compare
    * @param payload right side of the compare
