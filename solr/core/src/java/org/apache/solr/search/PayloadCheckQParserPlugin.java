@@ -50,7 +50,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
     return new QParser(qstr, localParams, params, req) {
       @Override
-      public Query parse() {
+      public Query parse() throws SyntaxError {
         String field = localParams.get(QueryParsing.F);
         String value = localParams.get(QueryParsing.V);
         String p = localParams.get("payloads");
@@ -72,7 +72,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
         Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query;
+        SpanQuery query = null;
         try {
           query = PayloadUtils.createSpanQuery(field, value, analyzer);
         } catch (IOException e) {
@@ -107,8 +107,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
           if (rawPayload.length() > 0)
             payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
-        SpanPayloadCheckQuery q = new SpanPayloadCheckQuery(query, payloads, payloadType, op);
-        return q;
+        return new SpanPayloadCheckQuery(query, payloads, payloadType, op);
       }
     };
 

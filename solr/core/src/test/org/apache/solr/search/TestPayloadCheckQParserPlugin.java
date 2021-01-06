@@ -40,7 +40,6 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
     clearIndex();
 
     String[] should_matches = new String[] {
-        "{!payload_check f=vals_dps payloads='NOUN VERB'}cat jumped",
         "{!payload_check f=vals_dpi v=A payloads=1}",
         "{!payload_check f=vals_dpi v=B payloads=2}",
         "{!payload_check f=vals_dpi v=C payloads=3}",
@@ -50,6 +49,7 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
         "{!payload_check f=vals_dpf payloads='1 2'}one two",
         "{!payload_check f=vals_dpf payloads='1 2' op='eq'}one two",
         "{!payload_check f=vals_dpf payloads='1 2.0'}one two", // shows that FloatEncoder can handle "1"
+        "{!payload_check f=vals_dps payloads='NOUN VERB'}cat jumped",
         "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one",
         "{!payload_check f=vals_dpf payloads='0.75 1.5' op='gt'}one two",
         "{!payload_check f=vals_dpf payloads='1.25' op='lt'}one", // inequality on float lt
