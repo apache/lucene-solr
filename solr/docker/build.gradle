@@ -18,20 +18,20 @@
 import com.google.common.base.Preconditions
 import com.google.common.base.Strings
 
-apply plugin: 'base'
-apply plugin: 'com.palantir.docker'
-
-subprojects {
-  apply plugin: 'base'
-  apply plugin: 'com.palantir.docker'
-}
-
 description = 'Solr Docker image'
 
-def dockerPackage = project(':solr:docker:package')
+apply plugin: 'base'
+
+configurations {
+  docker {
+    canBeResolved = true
+  }
+}
+
+def dockerPackage = project(":solr:docker:package")
 
 dependencies {
-  docker dockerPackage
+  docker project(path: ":solr:docker:package", configuration: 'dockerPackage')
 }
 
 def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
@@ -40,21 +40,77 @@ def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCK
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
-docker {
-  name = dockerImageName
-  files file('include')
-  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}", 'GITHUB_URL': githubUrlOrMirror])
+task dockerTar(type: Tar) {
+  group = 'Docker'
+  description = 'Package docker context to prepare for docker build'
+
+  into('scripts') {
+    from file('scripts')
+  }
+  from file('Dockerfile')
+  destinationDirectory = file('build/distributions')
+  extension 'tgz'
+  compression = Compression.GZIP
 }
 
-tasks.docker {
-  // In order to create the solr docker image, the solr package image must be created first.
-  dependsOn(dockerPackage.tasks.docker)
+task dockerBuild(dependsOn: tasks.dockerTar) {
+  group = 'Docker'
+  description = 'Build Solr docker image'
+
+  //dependsOn dockerPackage.getByName('dockerBuild')
+
+  dependsOn configurations.named("docker")
+  doLast {
+    exec {
+      standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+      commandLine "docker", "build",
+              "--iidfile", "$buildDir/image-id",
+              "--build-arg", "BASE_IMAGE=${baseDockerImage}",
+              "--build-arg", "SOLR_PACKAGE_IMAGE=${configurations.docker.singleFile.text}",
+              "--build-arg", "SOLR_VERSION=${version}",
+              "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
+              "-"
+    }
+  }
+
+  outputs.files("$buildDir/image-id")
+}
+
+task dockerTag(dependsOn: tasks.dockerBuild) {
+  group = 'Docker'
+  description = 'Tag Solr docker image'
+
+  //dependsOn dockerPackage.getByName('dockerBuild')
+
+  doLast {
+    exec {
+      commandLine "docker", "tag", tasks.dockerBuild.outputs.files.singleFile.text, dockerImageName
+    }
+  }
 
   // Print information on the image after it has been created
   doLast {
     project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tName: $dockerImageName")
+    project.logger.lifecycle("\tTag: $dockerImageName")
     project.logger.lifecycle("\tBase Image: $baseDockerImage")
+  }
+}
+
+task dockerPush(dependsOn: tasks.dockerTag) {
+  group = 'Docker'
+  description = 'Push Solr docker image'
+
+  //dependsOn dockerPackage.getByName('dockerBuild')
+
+  doLast {
+    exec {
+      commandLine "docker", "push", dockerImageName
+    }
+  }
+
+  // Print information on the image after it has been created
+  doLast {
+    project.logger.lifecycle("Solr Docker Image Pushed: $dockerImageName")
   }
 }
 

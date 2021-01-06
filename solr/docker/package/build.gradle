@@ -17,20 +17,45 @@
 
 description = 'Solr Docker Package image'
 
+apply plugin: 'base'
+
+configurations {
+  dockerPackage {
+    canBeConsumed = true
+    canBeResolved = true
+  }
+}
+
 // The solr package docker image relies on the output of the solr:packaging project.
 Project solrPackaging = project(':solr:packaging')
 
-dependencies {
-  docker solrPackaging
+task dockerTar(type: Tar, dependsOn: solrPackaging.tasks.distTar) {
+  group = 'Docker'
+  description = 'Package docker context to prepare for solr-package docker build'
+
+  into('releases') {
+    from solrPackaging.tasks.distTar.outputs
+  }
+
+  from file('Dockerfile.local-package')
+  rename 'Dockerfile.*', 'Dockerfile'
+  destinationDirectory = file('build/distributions')
+  extension 'tgz'
+  compression = Compression.GZIP
 }
 
-docker {
-  name = 'apache/solr-build:local-package'
-  dockerfile file('Dockerfile.local-package')
-  files(solrPackaging.tasks.distTar.outputs)
-  getCopySpec().into('releases')
+task dockerBuild(type: Exec, dependsOn: tasks.dockerTar) {
+  group = 'Docker'
+  description = 'Build Solr package docker image'
+
+  standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+  commandLine "docker", "build", "-t", "apache/solr-build:${version}", "--iidfile", "$buildDir/image-id", "-"
+
+  outputs.files("$buildDir/image-id")
 }
 
-// Only allow the following docker tasks
-def availableDockerTasks = ["docker", "dockerClean", "dockerPrepare", "dockerfileZip"]
-project.tasks.configureEach { t -> t.enabled = t.getGroup() != "Docker" || availableDockerTasks.contains(t.getName()) }
+artifacts {
+  dockerPackage(tasks.dockerBuild.outputs.files.singleFile) {
+    builtBy(tasks.dockerBuild)
+  }
+}
