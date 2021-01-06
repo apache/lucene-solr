@@ -495,7 +495,7 @@ public class PerReplicaStates implements ReflectMapWriter {
     }
 
     /**
-     * Just creates and deletes a summy entry so that the {@link Stat#getCversion()} of states.json
+     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of states.json
      * is updated
      */
     public static WriteOps touchChildren() {

@@ -202,10 +202,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case PULL_REPLICAS:
       case TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
+      case PER_REPLICA_STATE:
       case AUTO_ADD_REPLICAS:
       case READ_ONLY:
-        return Boolean.parseBoolean(o.toString());
-      case PER_REPLICA_STATE:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
       case "rule":
@@ -346,7 +345,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   @Override
   public String toString() {
-    return "DocCollection("+name+"/" + znode + "/" + znodeVersion
+    return "DocCollection("+name+"/" + znode + "/" + znodeVersion+" "
         + (perReplicaStates == null ? "": perReplicaStates.toString())+")="
         + toJSONString(this);
   }
