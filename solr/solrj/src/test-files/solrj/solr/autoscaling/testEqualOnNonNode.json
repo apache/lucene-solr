@@ -6,53 +6,53 @@
       "replicas":{
         "r1":{//east
           "core":"r1",
-          "node_name":"node1_",
+          "node_name":"node1:80_",
           "state":"active"},
         "r2":{//west
           "core":"r2",
-          "node_name":"node2_",
+          "node_name":"node2:80_",
           "state":"active"}}},
     "shard2":{
       "range":"0-7fffffff",
       "replicas":{
         "r3":{//east
           "core":"r3",
-          "node_name":"node1_",
+          "node_name":"node1:80_",
           "state":"active"},
         "r4":{//west
           "core":"r4",
-          "node_name":"node4_",
+          "node_name":"node4:80_",
           "state":"active"},
         "r6":{//east
           "core":"r6",
-          "node_name":"node3_",
+          "node_name":"node3:80_",
           "state":"active"},
         "r5":{//east
           "core":"r5",
-          "node_name":"node1_",
+          "node_name":"node1:80_",
           "state":"active"}}}}}},
   {"nodeValues":{
-    "node1_":{
+    "node1:80_":{
       "cores":3,
       "freedisk":700,
       "totaldisk":1000,
       "sysprop.zone":"east"},
-    "node2_":{
+    "node2:80_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"west"},
-    "node3_":{
+    "node3:80_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"east"},
-    "node4_":{
+    "node4:80_":{
       "cores":1,
       "freedisk":900,
       "totaldisk":1000,
       "sysprop.zone":"west"},
-    "node5_":{
+    "node5:80_":{
       "cores":0,
       "freedisk":1000,
       "totaldisk":1000,

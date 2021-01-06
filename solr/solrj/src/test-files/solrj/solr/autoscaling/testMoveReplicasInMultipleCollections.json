@@ -8,13 +8,13 @@
         "replicas":{
           "core_node1":{
             "core":"collection1_shard1_replica_n1",
-            "node_name":"node1_",
+            "node_name":"node1:80_",
             "state":"active",
             "type":"NRT",
             "leader":"true"},
           "core_node6":{
             "core":"collection1_shard1_replica_n3",
-            "node_name":"node3_",
+            "node_name":"node3:80_",
             "state":"active",
             "type":"NRT"}}},
       "shard2":{
@@ -23,13 +23,13 @@
         "replicas":{
           "core_node3":{
             "core":"collection1_shard2_replica_n1",
-            "node_name":"node1_",
+            "node_name":"node1:80_",
             "state":"active",
             "type":"NRT",
             "leader":"true"},
           "core_node5":{
             "core":"collection1_shard2_replica_n3",
-            "node_name":"node3_",
+            "node_name":"node3:80_",
             "state":"active",
             "type":"NRT"}}}},
     "router":{
@@ -48,12 +48,12 @@
         "replicas":{
           "core_node1":{
             "core":"collection2_shard1_replica_n1",
-            "node_name":"node2_",
+            "node_name":"node2:80_",
             "state":"active",
             "type":"NRT"},
           "core_node2":{
             "core":"collection2_shard1_replica_n2",
-            "node_name":"node3_",
+            "node_name":"node3:80_",
             "state":"active",
             "type":"NRT",
             "leader":"true"}}},
@@ -63,12 +63,12 @@
         "replicas":{
           "core_node3":{
             "core":"collection2_shard2_replica_n1",
-            "node_name":"node2_",
+            "node_name":"node2:80_",
             "state":"active",
             "type":"NRT"},
           "core_node4":{
             "core":"collection2_shard2_replica_n2",
-            "node_name":"node3_",
+            "node_name":"node3:80_",
             "state":"active",
             "type":"NRT",
             "leader":"true"}}}},
