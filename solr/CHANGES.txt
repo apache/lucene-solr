@@ -236,6 +236,9 @@ Improvements
 
 * SOLR-15062: /api/cluster/zk/ls should give the stat of the current node (noble)
 
+* SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
+  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
