@@ -1672,8 +1672,6 @@ public class ZkStateReader implements SolrCloseable {
       throw new AlreadyClosedException();
     }
 
-    long waitStartTime = System.currentTimeMillis();
-    log.debug("waiting for collectionState at : {}", waitStartTime);
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1681,9 +1679,11 @@ public class ZkStateReader implements SolrCloseable {
       docCollection.set(c);
       boolean matches = predicate.matches(n, c);
       if (!matches) {
-          log.info(" CollectionStatePredicate failed for {}, after {} secs, cversion : {}", collection, (System.currentTimeMillis() - waitStartTime),
-              (c == null || c.getPerReplicaStates() == null ? "-1" : c.getPerReplicaStates()));
+        if (log.isDebugEnabled()) {
+          log.debug(" CollectionStatePredicate failed for {}, cversion : {}", collection,
+                  (c == null || c.getPerReplicaStates() == null ? "-1" : c.getPerReplicaStates()));
         }
+      }
       if (matches)
         latch.countDown();
 
