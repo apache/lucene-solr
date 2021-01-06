@@ -114,8 +114,8 @@ public class CollectionMutator {
     PerReplicaStates.WriteOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
       if (prop.equals(DocCollection.PER_REPLICA_STATE)) {
-         String val = message.getStr(DocCollection.PER_REPLICA_STATE);
-         if (val == null) continue;
+        String val = message.getStr(DocCollection.PER_REPLICA_STATE);
+        if (val == null) continue;
         boolean enable = Boolean.parseBoolean(val);
         if (enable == coll.isPerReplicaState()) {
           //already enabled
