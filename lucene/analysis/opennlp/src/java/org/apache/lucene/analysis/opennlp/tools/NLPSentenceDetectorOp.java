@@ -18,20 +18,18 @@
 package org.apache.lucene.analysis.opennlp.tools;
 
 import java.io.IOException;
-
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import opennlp.tools.util.Span;
 
 /**
- * Supply OpenNLP Sentence Detector tool
- * Requires binary models from OpenNLP project on SourceForge.
+ * Supply OpenNLP Sentence Detector tool Requires binary models from OpenNLP project on SourceForge.
  */
 public class NLPSentenceDetectorOp {
   private final SentenceDetectorME sentenceSplitter;
 
   public NLPSentenceDetectorOp(SentenceModel model) throws IOException {
-    sentenceSplitter  = new SentenceDetectorME(model);
+    sentenceSplitter = new SentenceDetectorME(model);
   }
 
   public NLPSentenceDetectorOp() {

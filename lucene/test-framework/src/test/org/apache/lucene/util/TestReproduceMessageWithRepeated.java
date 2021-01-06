@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
-/**
- * Test reproduce message is right with {@link Repeat} annotation.
- */
+/** Test reproduce message is right with {@link Repeat} annotation. */
 public class TestReproduceMessageWithRepeated extends WithNestedTests {
   public static class Nested extends AbstractNestedTest {
     @Test
@@ -39,7 +36,8 @@ public class TestReproduceMessageWithRepeated extends WithNestedTests {
 
   @Test
   public void testRepeatedMessage() throws Exception {
-    TestReproduceMessage.checkTestName(runAndReturnSyserr(), Nested.class.getSimpleName() + ".testMe");
+    TestReproduceMessage.checkTestName(
+        runAndReturnSyserr(), Nested.class.getSimpleName() + ".testMe");
   }
 
   private String runAndReturnSyserr() {

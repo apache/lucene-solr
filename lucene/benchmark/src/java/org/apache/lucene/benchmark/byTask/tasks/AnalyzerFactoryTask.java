@@ -16,17 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
-import org.apache.lucene.analysis.AbstractAnalysisFactory;
-import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.util.FilesystemResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
-import org.apache.lucene.util.Version;
-
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -37,34 +26,44 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.apache.lucene.analysis.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.util.FilesystemResourceLoader;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.util.Version;
 
 /**
- * Analyzer factory construction task.  The name given to the constructed factory may
- * be given to NewAnalyzerTask, which will call AnalyzerFactory.create().
+ * Analyzer factory construction task. The name given to the constructed factory may be given to
+ * NewAnalyzerTask, which will call AnalyzerFactory.create().
  *
- * Params are in the form argname:argvalue or argname:"argvalue" or argname:'argvalue';
- * use backslashes to escape '"' or "'" inside a quoted value when it's used as the enclosing
- * quotation mark,
+ * <p>Params are in the form argname:argvalue or argname:"argvalue" or argname:'argvalue'; use
+ * backslashes to escape '"' or "'" inside a quoted value when it's used as the enclosing quotation
+ * mark,
  *
- * Specify params in a comma separated list of the following, in order:
+ * <p>Specify params in a comma separated list of the following, in order:
+ *
  * <ol>
  *   <li>Analyzer args:
- *     <ul>
- *       <li><b>Required</b>: <code>name:<i>analyzer-factory-name</i></code></li>
- *       <li>Optional: <code>positionIncrementGap:<i>int value</i></code> (default: 0)</li>
- *       <li>Optional: <code>offsetGap:<i>int value</i></code> (default: 1)</li>
- *     </ul>
- *   </li>
- *   <li>zero or more CharFilterFactory's, followed by</li>
- *   <li>exactly one TokenizerFactory, followed by</li>
- *   <li>zero or more TokenFilterFactory's</li>
+ *       <ul>
+ *         <li><b>Required</b>: <code>name:<i>analyzer-factory-name</i></code>
+ *         <li>Optional: <code>positionIncrementGap:<i>int value</i></code> (default: 0)
+ *         <li>Optional: <code>offsetGap:<i>int value</i></code> (default: 1)
+ *       </ul>
+ *   <li>zero or more CharFilterFactory's, followed by
+ *   <li>exactly one TokenizerFactory, followed by
+ *   <li>zero or more TokenFilterFactory's
  * </ol>
  *
- * Each component analysis factory may specify <code>luceneMatchVersion</code> (defaults to
- * {@link Version#LATEST}) and any of the args understood by the specified
- * *Factory class, in the above-describe param format.
- * <p>
- * Example:
+ * Each component analysis factory may specify <code>luceneMatchVersion</code> (defaults to {@link
+ * Version#LATEST}) and any of the args understood by the specified *Factory class, in the
+ * above-describe param format.
+ *
+ * <p>Example:
+ *
  * <pre>
  *     -AnalyzerFactory(name:'strip html, fold to ascii, whitespace tokenize, max 10k tokens',
  *                      positionIncrementGap:100,
@@ -75,17 +74,21 @@ import java.util.regex.Pattern;
  *     [...]
  *     -NewAnalyzer('strip html, fold to ascii, whitespace tokenize, max 10k tokens')
  * </pre>
- * <p>
- * AnalyzerFactory will direct analysis component factories to look for resources
- * under the directory specified in the "work.dir" property.
+ *
+ * <p>AnalyzerFactory will direct analysis component factories to look for resources under the
+ * directory specified in the "work.dir" property.
  */
 public class AnalyzerFactoryTask extends PerfTask {
   private static final String LUCENE_ANALYSIS_PACKAGE_PREFIX = "org.apache.lucene.analysis.";
-  private static final Pattern ANALYSIS_COMPONENT_SUFFIX_PATTERN
-      = Pattern.compile("(?s:(?:(?:Token|Char)?Filter|Tokenizer)(?:Factory)?)$");
+  private static final Pattern ANALYSIS_COMPONENT_SUFFIX_PATTERN =
+      Pattern.compile("(?s:(?:(?:Token|Char)?Filter|Tokenizer)(?:Factory)?)$");
   private static final Pattern TRAILING_DOT_ZERO_PATTERN = Pattern.compile("\\.0$");
 
-  private enum ArgType {ANALYZER_ARG, ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER, TOKENFILTER }
+  private enum ArgType {
+    ANALYZER_ARG,
+    ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER,
+    TOKENFILTER
+  }
 
   String factoryName = null;
   Integer positionIncrementGap = null;
@@ -104,12 +107,11 @@ public class AnalyzerFactoryTask extends PerfTask {
   }
 
   /**
-   * Sets the params.
-   * Analysis component factory names may optionally include the "Factory" suffix.
+   * Sets the params. Analysis component factory names may optionally include the "Factory" suffix.
    *
    * @param params analysis pipeline specification: name, (optional) positionIncrementGap,
-   *               (optional) offsetGap, 0+ CharFilterFactory's, 1 TokenizerFactory,
-   *               and 0+ TokenFilterFactory's
+   *     (optional) offsetGap, 0+ CharFilterFactory's, 1 TokenizerFactory, and 0+
+   *     TokenFilterFactory's
    */
   @Override
   @SuppressWarnings("fallthrough")
@@ -129,138 +131,184 @@ public class AnalyzerFactoryTask extends PerfTask {
     try {
       while (stok.nextToken() != StreamTokenizer.TT_EOF) {
         switch (stok.ttype) {
-          case ',': {
-            // Do nothing
-            break;
-          }
-          case StreamTokenizer.TT_WORD: {
-            if (expectedArgType.equals(ArgType.ANALYZER_ARG)) {
-              final String argName = stok.sval;
-              if ( ! argName.equalsIgnoreCase("name")
-                  && ! argName.equalsIgnoreCase("positionIncrementGap")
-                  && ! argName.equalsIgnoreCase("offsetGap")) {
-                throw new RuntimeException
-                    ("Line #" + lineno(stok) + ": Missing 'name' param to AnalyzerFactory: '" + params + "'");
-              }
-              stok.nextToken();
-              if (stok.ttype != ':') {
-                throw new RuntimeException
-                    ("Line #" + lineno(stok) + ": Missing ':' after '" + argName + "' param to AnalyzerFactory");
-              }
-
-              stok.nextToken();
-              String argValue = stok.sval;
-              switch (stok.ttype) {
-                case StreamTokenizer.TT_NUMBER: {
-                  argValue = Double.toString(stok.nval);
-                  // Drop the ".0" from numbers, for integer arguments
-                  argValue = TRAILING_DOT_ZERO_PATTERN.matcher(argValue).replaceFirst("");
-                  // Intentional fallthrough
+          case ',':
+            {
+              // Do nothing
+              break;
+            }
+          case StreamTokenizer.TT_WORD:
+            {
+              if (expectedArgType.equals(ArgType.ANALYZER_ARG)) {
+                final String argName = stok.sval;
+                if (!argName.equalsIgnoreCase("name")
+                    && !argName.equalsIgnoreCase("positionIncrementGap")
+                    && !argName.equalsIgnoreCase("offsetGap")) {
+                  throw new RuntimeException(
+                      "Line #"
+                          + lineno(stok)
+                          + ": Missing 'name' param to AnalyzerFactory: '"
+                          + params
+                          + "'");
                 }
-                case '"':
-                case '\'':
-                case StreamTokenizer.TT_WORD: {
-                  if (argName.equalsIgnoreCase("name")) {
-                    factoryName = argValue;
-                    expectedArgType = ArgType.ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER;
-                  } else {
-                    int intArgValue = 0;
-                    try {
-                      intArgValue = Integer.parseInt(argValue);
-                    } catch (NumberFormatException e) {
-                      throw new RuntimeException
-                          ("Line #" + lineno(stok) + ": Exception parsing " + argName + " value '" + argValue + "'", e);
+                stok.nextToken();
+                if (stok.ttype != ':') {
+                  throw new RuntimeException(
+                      "Line #"
+                          + lineno(stok)
+                          + ": Missing ':' after '"
+                          + argName
+                          + "' param to AnalyzerFactory");
+                }
+
+                stok.nextToken();
+                String argValue = stok.sval;
+                switch (stok.ttype) {
+                  case StreamTokenizer.TT_NUMBER:
+                    {
+                      argValue = Double.toString(stok.nval);
+                      // Drop the ".0" from numbers, for integer arguments
+                      argValue = TRAILING_DOT_ZERO_PATTERN.matcher(argValue).replaceFirst("");
+                      // Intentional fallthrough
                     }
-                    if (argName.equalsIgnoreCase("positionIncrementGap")) {
-                      positionIncrementGap = intArgValue;
-                    } else if (argName.equalsIgnoreCase("offsetGap")) {
-                      offsetGap = intArgValue;
+                  case '"':
+                  case '\'':
+                  case StreamTokenizer.TT_WORD:
+                    {
+                      if (argName.equalsIgnoreCase("name")) {
+                        factoryName = argValue;
+                        expectedArgType = ArgType.ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER;
+                      } else {
+                        int intArgValue = 0;
+                        try {
+                          intArgValue = Integer.parseInt(argValue);
+                        } catch (NumberFormatException e) {
+                          throw new RuntimeException(
+                              "Line #"
+                                  + lineno(stok)
+                                  + ": Exception parsing "
+                                  + argName
+                                  + " value '"
+                                  + argValue
+                                  + "'",
+                              e);
+                        }
+                        if (argName.equalsIgnoreCase("positionIncrementGap")) {
+                          positionIncrementGap = intArgValue;
+                        } else if (argName.equalsIgnoreCase("offsetGap")) {
+                          offsetGap = intArgValue;
+                        }
+                      }
+                      break;
                     }
+                  case StreamTokenizer.TT_EOF:
+                    {
+                      throw new RuntimeException("Unexpected EOF: " + stok.toString());
+                    }
+                  default:
+                    {
+                      throw new RuntimeException(
+                          "Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
+                    }
+                }
+              } else if (expectedArgType.equals(ArgType.ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER)) {
+                final String argName = stok.sval;
+
+                if (argName.equalsIgnoreCase("positionIncrementGap")
+                    || argName.equalsIgnoreCase("offsetGap")) {
+                  stok.nextToken();
+                  if (stok.ttype != ':') {
+                    throw new RuntimeException(
+                        "Line #"
+                            + lineno(stok)
+                            + ": Missing ':' after '"
+                            + argName
+                            + "' param to AnalyzerFactory");
+                  }
+                  stok.nextToken();
+                  int intArgValue = (int) stok.nval;
+                  switch (stok.ttype) {
+                    case '"':
+                    case '\'':
+                    case StreamTokenizer.TT_WORD:
+                      {
+                        intArgValue = 0;
+                        try {
+                          intArgValue = Integer.parseInt(stok.sval.trim());
+                        } catch (NumberFormatException e) {
+                          throw new RuntimeException(
+                              "Line #"
+                                  + lineno(stok)
+                                  + ": Exception parsing "
+                                  + argName
+                                  + " value '"
+                                  + stok.sval
+                                  + "'",
+                              e);
+                        }
+                        // Intentional fall-through
+                      }
+                    case StreamTokenizer.TT_NUMBER:
+                      {
+                        if (argName.equalsIgnoreCase("positionIncrementGap")) {
+                          positionIncrementGap = intArgValue;
+                        } else if (argName.equalsIgnoreCase("offsetGap")) {
+                          offsetGap = intArgValue;
+                        }
+                        break;
+                      }
+                    case StreamTokenizer.TT_EOF:
+                      {
+                        throw new RuntimeException("Unexpected EOF: " + stok.toString());
+                      }
+                    default:
+                      {
+                        throw new RuntimeException(
+                            "Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
+                      }
                   }
                   break;
                 }
-                case StreamTokenizer.TT_EOF: {
-                  throw new RuntimeException("Unexpected EOF: " + stok.toString());
-                }
-                default: {
-                  throw new RuntimeException
-                      ("Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
-                }
-              }
-            } else if (expectedArgType.equals(ArgType.ANALYZER_ARG_OR_CHARFILTER_OR_TOKENIZER)) {
-              final String argName = stok.sval;
-
-              if (argName.equalsIgnoreCase("positionIncrementGap")
-                  || argName.equalsIgnoreCase("offsetGap")) {
-                stok.nextToken();
-                if (stok.ttype != ':') {
-                  throw new RuntimeException
-                      ("Line #" + lineno(stok) + ": Missing ':' after '" + argName + "' param to AnalyzerFactory");
-                }
-                stok.nextToken();
-                int intArgValue = (int)stok.nval;
-                switch (stok.ttype) {
-                  case '"':
-                  case '\'':
-                  case StreamTokenizer.TT_WORD: {
-                    intArgValue = 0;
-                    try {
-                      intArgValue = Integer.parseInt(stok.sval.trim());
-                    } catch (NumberFormatException e) {
-                      throw new RuntimeException
-                          ("Line #" + lineno(stok) + ": Exception parsing " + argName + " value '" + stok.sval + "'", e);
-                    }
-                    // Intentional fall-through
-                  }
-                  case StreamTokenizer.TT_NUMBER: {
-                    if (argName.equalsIgnoreCase("positionIncrementGap")) {
-                      positionIncrementGap = intArgValue;
-                    } else if (argName.equalsIgnoreCase("offsetGap")) {
-                      offsetGap = intArgValue;
-                    }
-                    break;
-                  }
-                  case StreamTokenizer.TT_EOF: {
-                    throw new RuntimeException("Unexpected EOF: " + stok.toString());
-                  }
-                  default: {
-                    throw new RuntimeException
-                        ("Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
-                  }
-                }
-                break;
-              }
-              try {
-                final Class<? extends CharFilterFactory> clazz;
-                clazz = lookupAnalysisClass(argName, CharFilterFactory.class);
-                createAnalysisPipelineComponent(stok, clazz);
-              } catch (IllegalArgumentException e) {
                 try {
-                  final Class<? extends TokenizerFactory> clazz;
-                  clazz = lookupAnalysisClass(argName, TokenizerFactory.class);
+                  final Class<? extends CharFilterFactory> clazz;
+                  clazz = lookupAnalysisClass(argName, CharFilterFactory.class);
                   createAnalysisPipelineComponent(stok, clazz);
-                  expectedArgType = ArgType.TOKENFILTER;
-                } catch (IllegalArgumentException e2) {
-                  throw new RuntimeException("Line #" + lineno(stok) + ": Can't find class '"
-                                             + argName + "' as CharFilterFactory or TokenizerFactory");
+                } catch (IllegalArgumentException e) {
+                  try {
+                    final Class<? extends TokenizerFactory> clazz;
+                    clazz = lookupAnalysisClass(argName, TokenizerFactory.class);
+                    createAnalysisPipelineComponent(stok, clazz);
+                    expectedArgType = ArgType.TOKENFILTER;
+                  } catch (IllegalArgumentException e2) {
+                    throw new RuntimeException(
+                        "Line #"
+                            + lineno(stok)
+                            + ": Can't find class '"
+                            + argName
+                            + "' as CharFilterFactory or TokenizerFactory");
+                  }
                 }
+              } else { // expectedArgType = ArgType.TOKENFILTER
+                final String className = stok.sval;
+                final Class<? extends TokenFilterFactory> clazz;
+                try {
+                  clazz = lookupAnalysisClass(className, TokenFilterFactory.class);
+                } catch (IllegalArgumentException e) {
+                  throw new RuntimeException(
+                      "Line #"
+                          + lineno(stok)
+                          + ": Can't find class '"
+                          + className
+                          + "' as TokenFilterFactory");
+                }
+                createAnalysisPipelineComponent(stok, clazz);
               }
-            } else { // expectedArgType = ArgType.TOKENFILTER
-              final String className = stok.sval;
-              final Class<? extends TokenFilterFactory> clazz;
-              try {
-                clazz = lookupAnalysisClass(className, TokenFilterFactory.class);
-              } catch (IllegalArgumentException e) {
-                  throw new RuntimeException
-                      ("Line #" + lineno(stok) + ": Can't find class '" + className + "' as TokenFilterFactory");
-              }
-              createAnalysisPipelineComponent(stok, clazz);
+              break;
             }
-            break;
-          }
-          default: {
-            throw new RuntimeException("Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
-          }
+          default:
+            {
+              throw new RuntimeException(
+                  "Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
+            }
         }
       }
     } catch (RuntimeException e) {
@@ -273,89 +321,103 @@ public class AnalyzerFactoryTask extends PerfTask {
       throw new RuntimeException("Line #" + lineno(stok) + ": ", t);
     }
 
-    final AnalyzerFactory analyzerFactory = new AnalyzerFactory
-        (charFilterFactories, tokenizerFactory, tokenFilterFactories);
+    final AnalyzerFactory analyzerFactory =
+        new AnalyzerFactory(charFilterFactories, tokenizerFactory, tokenFilterFactories);
     analyzerFactory.setPositionIncrementGap(positionIncrementGap);
     analyzerFactory.setOffsetGap(offsetGap);
     getRunData().getAnalyzerFactories().put(factoryName, analyzerFactory);
   }
 
   /**
-   * Instantiates the given analysis factory class after pulling params from
-   * the given stream tokenizer, then stores the result in the appropriate
-   * pipeline component list.
+   * Instantiates the given analysis factory class after pulling params from the given stream
+   * tokenizer, then stores the result in the appropriate pipeline component list.
    *
    * @param stok stream tokenizer from which to draw analysis factory params
    * @param clazz analysis factory class to instantiate
    */
   @SuppressWarnings("fallthrough")
-  private void createAnalysisPipelineComponent
-      (StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
-    Map<String,String> argMap = new HashMap<>();
+  private void createAnalysisPipelineComponent(
+      StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
+    Map<String, String> argMap = new HashMap<>();
     boolean parenthetical = false;
     try {
-      WHILE_LOOP: while (stok.nextToken() != StreamTokenizer.TT_EOF) {
+      WHILE_LOOP:
+      while (stok.nextToken() != StreamTokenizer.TT_EOF) {
         switch (stok.ttype) {
-          case ',': {
-            if (parenthetical) {
-              // Do nothing
-              break;
-            } else {
-              // Finished reading this analysis factory configuration
-              break WHILE_LOOP;
-            }
-          }
-          case '(': {
-            if (parenthetical) {
-              throw new RuntimeException
-                  ("Line #" + lineno(stok) + ": Unexpected opening parenthesis.");
-            }
-            parenthetical = true;
-            break;
-          }
-          case ')': {
-            if (parenthetical) {
-              parenthetical = false;
-            } else {
-              throw new RuntimeException
-                  ("Line #" + lineno(stok) + ": Unexpected closing parenthesis.");
-            }
-            break;
-          }
-          case StreamTokenizer.TT_WORD: {
-            if ( ! parenthetical) {
-              throw new RuntimeException("Line #" + lineno(stok) + ": Unexpected token '" + stok.sval + "'");
-            }
-            String argName = stok.sval;
-            stok.nextToken();
-            if (stok.ttype != ':') {
-              throw new RuntimeException
-                  ("Line #" + lineno(stok) + ": Missing ':' after '" + argName + "' param to " + clazz.getSimpleName());
-            }
-            stok.nextToken();
-            String argValue = stok.sval;
-            switch (stok.ttype) {
-              case StreamTokenizer.TT_NUMBER: {
-                  argValue = Double.toString(stok.nval);
-                  // Drop the ".0" from numbers, for integer arguments
-                  argValue = TRAILING_DOT_ZERO_PATTERN.matcher(argValue).replaceFirst("");
-                  // Intentional fall-through
-              }
-              case '"':
-              case '\'':
-              case StreamTokenizer.TT_WORD: {
-                argMap.put(argName, argValue);
+          case ',':
+            {
+              if (parenthetical) {
+                // Do nothing
                 break;
-              }
-              case StreamTokenizer.TT_EOF: {
-                throw new RuntimeException("Unexpected EOF: " + stok.toString());
-              }
-              default: {
-                throw new RuntimeException
-                    ("Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
+              } else {
+                // Finished reading this analysis factory configuration
+                break WHILE_LOOP;
               }
             }
-          }
+          case '(':
+            {
+              if (parenthetical) {
+                throw new RuntimeException(
+                    "Line #" + lineno(stok) + ": Unexpected opening parenthesis.");
+              }
+              parenthetical = true;
+              break;
+            }
+          case ')':
+            {
+              if (parenthetical) {
+                parenthetical = false;
+              } else {
+                throw new RuntimeException(
+                    "Line #" + lineno(stok) + ": Unexpected closing parenthesis.");
+              }
+              break;
+            }
+          case StreamTokenizer.TT_WORD:
+            {
+              if (!parenthetical) {
+                throw new RuntimeException(
+                    "Line #" + lineno(stok) + ": Unexpected token '" + stok.sval + "'");
+              }
+              String argName = stok.sval;
+              stok.nextToken();
+              if (stok.ttype != ':') {
+                throw new RuntimeException(
+                    "Line #"
+                        + lineno(stok)
+                        + ": Missing ':' after '"
+                        + argName
+                        + "' param to "
+                        + clazz.getSimpleName());
+              }
+              stok.nextToken();
+              String argValue = stok.sval;
+              switch (stok.ttype) {
+                case StreamTokenizer.TT_NUMBER:
+                  {
+                    argValue = Double.toString(stok.nval);
+                    // Drop the ".0" from numbers, for integer arguments
+                    argValue = TRAILING_DOT_ZERO_PATTERN.matcher(argValue).replaceFirst("");
+                    // Intentional fall-through
+                  }
+                case '"':
+                case '\'':
+                case StreamTokenizer.TT_WORD:
+                  {
+                    argMap.put(argName, argValue);
+                    break;
+                  }
+                case StreamTokenizer.TT_EOF:
+                  {
+                    throw new RuntimeException("Unexpected EOF: " + stok.toString());
+                  }
+                default:
+                  {
+                    throw new RuntimeException(
+                        "Line #" + lineno(stok) + ": Unexpected token: " + stok.toString());
+                  }
+              }
+            }
         }
       }
       if (!argMap.containsKey("luceneMatchVersion")) {
@@ -372,14 +434,14 @@ public class AnalyzerFactoryTask extends PerfTask {
         if (!Files.isDirectory(baseDir)) {
           baseDir = Paths.get(".");
         }
-        ((ResourceLoaderAware)instance).inform(new FilesystemResourceLoader(baseDir));
+        ((ResourceLoaderAware) instance).inform(new FilesystemResourceLoader(baseDir));
       }
       if (CharFilterFactory.class.isAssignableFrom(clazz)) {
-        charFilterFactories.add((CharFilterFactory)instance);
+        charFilterFactories.add((CharFilterFactory) instance);
       } else if (TokenizerFactory.class.isAssignableFrom(clazz)) {
-        tokenizerFactory = (TokenizerFactory)instance;
+        tokenizerFactory = (TokenizerFactory) instance;
       } else if (TokenFilterFactory.class.isAssignableFrom(clazz)) {
-        tokenFilterFactories.add((TokenFilterFactory)instance);
+        tokenFilterFactories.add((TokenFilterFactory) instance);
       }
     } catch (RuntimeException e) {
       if (e.getMessage().startsWith("Line #")) {
@@ -394,16 +456,16 @@ public class AnalyzerFactoryTask extends PerfTask {
 
   /**
    * This method looks up a class with its fully qualified name (FQN), or a short-name
-   * class-simplename, or with a package suffix, assuming "org.apache.lucene.analysis."
-   * as the package prefix (e.g. "standard.ClassicTokenizerFactory" -&gt;
+   * class-simplename, or with a package suffix, assuming "org.apache.lucene.analysis." as the
+   * package prefix (e.g. "standard.ClassicTokenizerFactory" -&gt;
    * "org.apache.lucene.analysis.standard.ClassicTokenizerFactory").
    *
-   * If className contains a period, the class is first looked up as-is, assuming that it
-   * is an FQN.  If this fails, lookup is retried after prepending the Lucene analysis
-   * package prefix to the class name.
+   * <p>If className contains a period, the class is first looked up as-is, assuming that it is an
+   * FQN. If this fails, lookup is retried after prepending the Lucene analysis package prefix to
+   * the class name.
    *
-   * If className does not contain a period, the analysis SPI *Factory.lookupClass()
-   * methods are used to find the class.
+   * <p>If className does not contain a period, the analysis SPI *Factory.lookupClass() methods are
+   * used to find the class.
    *
    * @param className The name or the short name of the class.
    * @param expectedType The superclass className is expected to extend
@@ -421,13 +483,19 @@ public class AnalyzerFactoryTask extends PerfTask {
           // Second, retry lookup after prepending the Lucene analysis package prefix
           return Class.forName(LUCENE_ANALYSIS_PACKAGE_PREFIX + className).asSubclass(expectedType);
         } catch (ClassNotFoundException e1) {
-          throw new ClassNotFoundException("Can't find class '" + className
-                                           + "' or '" + LUCENE_ANALYSIS_PACKAGE_PREFIX + className + "'");
+          throw new ClassNotFoundException(
+              "Can't find class '"
+                  + className
+                  + "' or '"
+                  + LUCENE_ANALYSIS_PACKAGE_PREFIX
+                  + className
+                  + "'");
         }
       }
     }
     // No dot - use analysis SPI lookup
-    final String analysisComponentName = ANALYSIS_COMPONENT_SUFFIX_PATTERN.matcher(className).replaceFirst("");
+    final String analysisComponentName =
+        ANALYSIS_COMPONENT_SUFFIX_PATTERN.matcher(className).replaceFirst("");
     if (CharFilterFactory.class.isAssignableFrom(expectedType)) {
       return CharFilterFactory.lookupClass(analysisComponentName).asSubclass(expectedType);
     } else if (TokenizerFactory.class.isAssignableFrom(expectedType)) {
@@ -438,7 +506,6 @@ public class AnalyzerFactoryTask extends PerfTask {
 
     throw new ClassNotFoundException("Can't find class '" + className + "'");
   }
-
 
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()

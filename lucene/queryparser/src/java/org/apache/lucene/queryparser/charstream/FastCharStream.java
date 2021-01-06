@@ -20,65 +20,60 @@ import java.io.*;
 
 /**
  * An efficient implementation of JavaCC's CharStream interface.
- * <p>
- * Note that this does not do line-number counting, but instead keeps track of the
- * character position of the token in the input, as required by Lucene's
- * {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
+ *
+ * <p>Note that this does not do line-number counting, but instead keeps track of the character
+ * position of the token in the input, as required by Lucene's {@link
+ * org.apache.lucene.analysis.tokenattributes.OffsetAttribute} API.
  */
 public final class FastCharStream implements CharStream {
   // See SOLR-11314
-  private final static IOException READ_PAST_EOF = new IOException("Read past EOF.");
+  private static final IOException READ_PAST_EOF = new IOException("Read past EOF.");
 
   char[] buffer = null;
 
-  int bufferLength = 0;          // end of valid chars
-  int bufferPosition = 0;        // next char to read
+  int bufferLength = 0; // end of valid chars
+  int bufferPosition = 0; // next char to read
 
-  int tokenStart = 0;          // offset in buffer
-  int bufferStart = 0;          // position in file of buffer
+  int tokenStart = 0; // offset in buffer
+  int bufferStart = 0; // position in file of buffer
 
-  Reader input;            // source of chars
+  Reader input; // source of chars
 
-  /**
-   * Constructs from a Reader.
-   */
+  /** Constructs from a Reader. */
   public FastCharStream(Reader r) {
     input = r;
   }
 
   @Override
   public final char readChar() throws IOException {
-    if (bufferPosition >= bufferLength)
-      refill();
+    if (bufferPosition >= bufferLength) refill();
     return buffer[bufferPosition++];
   }
 
   private void refill() throws IOException {
     int newPosition = bufferLength - tokenStart;
 
-    if (tokenStart == 0) {        // token won't fit in buffer
-      if (buffer == null) {        // first time: alloc buffer
+    if (tokenStart == 0) { // token won't fit in buffer
+      if (buffer == null) { // first time: alloc buffer
         buffer = new char[2048];
       } else if (bufferLength == buffer.length) { // grow buffer
         char[] newBuffer = new char[buffer.length * 2];
         System.arraycopy(buffer, 0, newBuffer, 0, bufferLength);
         buffer = newBuffer;
       }
-    } else {            // shift token to front
+    } else { // shift token to front
       System.arraycopy(buffer, tokenStart, buffer, 0, newPosition);
     }
 
-    bufferLength = newPosition;        // update state
+    bufferLength = newPosition; // update state
     bufferPosition = newPosition;
     bufferStart += tokenStart;
     tokenStart = 0;
 
-    int charsRead =          // fill space in buffer
+    int charsRead = // fill space in buffer
         input.read(buffer, newPosition, buffer.length - newPosition);
-    if (charsRead == -1)
-      throw READ_PAST_EOF;
-    else
-      bufferLength += charsRead;
+    if (charsRead == -1) throw READ_PAST_EOF;
+    else bufferLength += charsRead;
   }
 
   @Override

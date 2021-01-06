@@ -17,8 +17,6 @@
 package org.apache.lucene.queryparser.flexible.spans;
 
 import java.util.List;
-
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;
@@ -27,16 +25,15 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 
 /**
- * Validates every query node in a query node tree. This processor will pass
- * fine if the query nodes are only {@link BooleanQueryNode}s,
- * {@link OrQueryNode}s or {@link FieldQueryNode}s, otherwise an exception will
- * be thrown. <br>
+ * Validates every query node in a query node tree. This processor will pass fine if the query nodes
+ * are only {@link BooleanQueryNode}s, {@link OrQueryNode}s or {@link FieldQueryNode}s, otherwise an
+ * exception will be thrown. <br>
  * <br>
- * 
- * If they are {@link AndQueryNode} or an instance of anything else that
- * implements {@link FieldQueryNode} the exception will also be thrown.
+ * If they are {@link AndQueryNode} or an instance of anything else that implements {@link
+ * FieldQueryNode} the exception will also be thrown.
  */
 public class SpansValidatorQueryNodeProcessor extends QueryNodeProcessorImpl {
 
@@ -44,28 +41,22 @@ public class SpansValidatorQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
-
   }
 
   @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
-    if (!((node instanceof BooleanQueryNode && !(node instanceof AndQueryNode)) || node
-        .getClass() == FieldQueryNode.class)) {
-      throw new QueryNodeException(new MessageImpl(
-          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
+    if (!((node instanceof BooleanQueryNode && !(node instanceof AndQueryNode))
+        || node.getClass() == FieldQueryNode.class)) {
+      throw new QueryNodeException(new MessageImpl(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
     }
 
     return node;
-
   }
 
   @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
-      throws QueryNodeException {
+  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
 
     return children;
-
   }
-
 }

@@ -35,7 +35,7 @@ public class AssertingSimilarity extends Similarity {
     assert state.getLength() > 0;
     assert state.getPosition() >= 0;
     assert state.getOffset() >= 0;
-    assert state.getMaxTermFrequency() >= 0; // TODO: seems to be 0 for omitTFAP? 
+    assert state.getMaxTermFrequency() >= 0; // TODO: seems to be 0 for omitTFAP?
     assert state.getMaxTermFrequency() <= state.getLength();
     assert state.getNumOverlap() >= 0;
     assert state.getNumOverlap() < state.getLength();
@@ -47,7 +47,8 @@ public class AssertingSimilarity extends Similarity {
   }
 
   @Override
-  public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public SimScorer scorer(
+      float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     assert boost >= 0;
     assert collectionStats != null;
     assert termStats.length > 0;
@@ -59,11 +60,11 @@ public class AssertingSimilarity extends Similarity {
     assert scorer != null;
     return new AssertingSimScorer(scorer, boost);
   }
-  
+
   static class AssertingSimScorer extends SimScorer {
     final SimScorer delegate;
     final float boost;
-    
+
     AssertingSimScorer(SimScorer delegate, float boost) {
       super();
       this.delegate = delegate;
@@ -85,7 +86,7 @@ public class AssertingSimilarity extends Similarity {
 
     @Override
     public Explanation explain(Explanation freq, long norm) {
-      // freq in bounds 
+      // freq in bounds
       assert freq != null;
       assert Float.isFinite(freq.getValue().floatValue());
       // result in bounds
@@ -93,7 +94,8 @@ public class AssertingSimilarity extends Similarity {
       assert explanation != null;
       assert Float.isFinite(explanation.getValue().floatValue());
       // result matches score exactly
-      assert explanation.getValue().floatValue() == delegate.score(freq.getValue().floatValue(), norm);
+      assert explanation.getValue().floatValue()
+          == delegate.score(freq.getValue().floatValue(), norm);
       return explanation;
     }
   }
@@ -102,5 +104,4 @@ public class AssertingSimilarity extends Similarity {
   public String toString() {
     return "Asserting(" + delegate + ")";
   }
-
 }

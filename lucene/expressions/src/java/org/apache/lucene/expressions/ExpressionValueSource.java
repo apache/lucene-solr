@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -29,7 +28,8 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 
 /**
- * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link Bindings}.
+ * A {@link DoubleValuesSource} which evaluates a {@link Expression} given the context of an {@link
+ * Bindings}.
  */
 class ExpressionValueSource extends DoubleValuesSource {
   final DoubleValuesSource[] variables;
@@ -44,7 +44,8 @@ class ExpressionValueSource extends DoubleValuesSource {
     for (int i = 0; i < variables.length; i++) {
       DoubleValuesSource source = bindings.getDoubleValuesSource(expression.variables[i]);
       if (source == null) {
-        throw new RuntimeException("Internal error. Variable (" + expression.variables[i] + ") does not exist.");
+        throw new RuntimeException(
+            "Internal error. Variable (" + expression.variables[i] + ") does not exist.");
       }
       needsScores |= source.needsScores();
       variables[i] = source;
@@ -52,14 +53,16 @@ class ExpressionValueSource extends DoubleValuesSource {
     this.needsScores = needsScores;
   }
 
-  ExpressionValueSource(DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
+  ExpressionValueSource(
+      DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
     this.variables = variables;
     this.expression = expression;
     this.needsScores = needsScores;
   }
 
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
     Map<String, DoubleValues> valuesCache = new HashMap<>();
     DoubleValues[] externalValues = new DoubleValues[expression.variables.length];
 
@@ -69,8 +72,12 @@ class ExpressionValueSource extends DoubleValuesSource {
       if (values == null) {
         values = variables[i].getValues(readerContext, scores);
         if (values == null) {
-          throw new RuntimeException("Unrecognized variable (" + externalName + ") referenced in expression (" +
-              expression.sourceText + ").");
+          throw new RuntimeException(
+              "Unrecognized variable ("
+                  + externalName
+                  + ") referenced in expression ("
+                  + expression.sourceText
+                  + ").");
         }
         valuesCache.put(externalName, values);
       }
@@ -101,13 +108,12 @@ class ExpressionValueSource extends DoubleValuesSource {
   public String toString() {
     return "expr(" + expression.sourceText + ")";
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result
-        + ((expression == null) ? 0 : expression.sourceText.hashCode());
+    result = prime * result + ((expression == null) ? 0 : expression.sourceText.hashCode());
     result = prime * result + (needsScores ? 1231 : 1237);
     result = prime * result + Arrays.hashCode(variables);
     return result;
@@ -149,16 +155,20 @@ class ExpressionValueSource extends DoubleValuesSource {
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
     for (DoubleValuesSource v : variables) {
-      if (v.isCacheable(ctx) == false)
-        return false;
+      if (v.isCacheable(ctx) == false) return false;
     }
     return true;
   }
 
   @Override
-  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+      throws IOException {
     Explanation[] explanations = new Explanation[variables.length];
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
+    DoubleValues dv =
+        getValues(
+            ctx,
+            DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue())
+                .getValues(ctx, null));
     if (dv.advanceExact(docId) == false) {
       return Explanation.noMatch(expression.sourceText);
     }
@@ -166,7 +176,8 @@ class ExpressionValueSource extends DoubleValuesSource {
     for (DoubleValuesSource var : variables) {
       explanations[i++] = var.explain(ctx, docId, scoreExplanation);
     }
-    return Explanation.match(dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
+    return Explanation.match(
+        dv.doubleValue(), expression.sourceText + ", computed from:", explanations);
   }
 
   @Override

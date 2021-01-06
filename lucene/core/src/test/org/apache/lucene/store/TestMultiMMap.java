@@ -439,4 +439,23 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
       }
     }
   }
+
+  public void testLittleEndianFloatsCrossBoundary() throws Exception {
+    try (Directory dir = new MMapDirectory(createTempDir("testFloatsCrossBoundary"), 8)) {
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(3f)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(Float.MAX_VALUE)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(-3f)));
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        assertEquals(13, input.length());
+        assertEquals(2, input.readByte());
+        float[] ff = new float[4];
+        input.readLEFloats(ff, 1, 3);
+        assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
+        assertEquals(13, input.getFilePointer());
+      }
+    }
+  }
 }

@@ -17,22 +17,21 @@
 package org.apache.lucene.queryparser.surround.query;
 
 import java.util.Random;
-
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.ByteBuffersDirectory;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 
 public class SingleFieldTestDb {
   private Directory db;
   private String[] docs;
   private String fieldName;
-  
+
   public SingleFieldTestDb(Random random, String[] documents, String fName) {
     try {
       db = new MockDirectoryWrapper(random, new ByteBuffersDirectory());
@@ -49,10 +48,16 @@ public class SingleFieldTestDb {
       throw new Error(ioe);
     }
   }
-  
-  Directory getDb() {return db;}
-  String[] getDocs() {return docs;}
-  String getFieldname() {return fieldName;}
+
+  Directory getDb() {
+    return db;
+  }
+
+  String[] getDocs() {
+    return docs;
+  }
+
+  String getFieldname() {
+    return fieldName;
+  }
 }
-
-

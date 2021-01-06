@@ -21,7 +21,6 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -46,64 +45,45 @@ import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A {@link Query} that only accepts documents whose
- * term value in the specified field is contained in the
- * provided set of allowed terms.
+ * A {@link Query} that only accepts documents whose term value in the specified field is contained
+ * in the provided set of allowed terms.
  *
- * <p>
- * This is the same functionality as TermsQuery (from
- * queries/), but because of drastically different
- * implementations, they also have different performance
- * characteristics, as described below.
+ * <p>This is the same functionality as TermsQuery (from queries/), but because of drastically
+ * different implementations, they also have different performance characteristics, as described
+ * below.
  *
- * <p>
- * <b>NOTE</b>: be very careful using this query: it is
- * typically much slower than using {@code TermsQuery},
- * but in certain specialized cases may be faster.
+ * <p><b>NOTE</b>: be very careful using this query: it is typically much slower than using {@code
+ * TermsQuery}, but in certain specialized cases may be faster.
  *
- * <p>
- * With each search, this query translates the specified
- * set of Terms into a private {@link LongBitSet} keyed by
- * term number per unique {@link IndexReader} (normally one
- * reader per segment).  Then, during matching, the term
- * number for each docID is retrieved from the cache and
- * then checked for inclusion using the {@link LongBitSet}.
- * Since all testing is done using RAM resident data
- * structures, performance should be very fast, most likely
- * fast enough to not require further caching of the
- * DocIdSet for each possible combination of terms.
- * However, because docIDs are simply scanned linearly, an
- * index with a great many small documents may find this
- * linear scan too costly.
+ * <p>With each search, this query translates the specified set of Terms into a private {@link
+ * LongBitSet} keyed by term number per unique {@link IndexReader} (normally one reader per
+ * segment). Then, during matching, the term number for each docID is retrieved from the cache and
+ * then checked for inclusion using the {@link LongBitSet}. Since all testing is done using RAM
+ * resident data structures, performance should be very fast, most likely fast enough to not require
+ * further caching of the DocIdSet for each possible combination of terms. However, because docIDs
+ * are simply scanned linearly, an index with a great many small documents may find this linear scan
+ * too costly.
  *
- * <p>
- * In contrast, TermsQuery builds up an {@link FixedBitSet},
- * keyed by docID, every time it's created, by enumerating
- * through all matching docs using {@link org.apache.lucene.index.PostingsEnum} to seek
- * and scan through each term's docID list.  While there is
- * no linear scan of all docIDs, besides the allocation of
- * the underlying array in the {@link FixedBitSet}, this
- * approach requires a number of "disk seeks" in proportion
- * to the number of terms, which can be exceptionally costly
- * when there are cache misses in the OS's IO cache.
+ * <p>In contrast, TermsQuery builds up an {@link FixedBitSet}, keyed by docID, every time it's
+ * created, by enumerating through all matching docs using {@link
+ * org.apache.lucene.index.PostingsEnum} to seek and scan through each term's docID list. While
+ * there is no linear scan of all docIDs, besides the allocation of the underlying array in the
+ * {@link FixedBitSet}, this approach requires a number of "disk seeks" in proportion to the number
+ * of terms, which can be exceptionally costly when there are cache misses in the OS's IO cache.
  *
- * <p>
- * Generally, this filter will be slower on the first
- * invocation for a given field, but subsequent invocations,
- * even if you change the allowed set of Terms, should be
- * faster than TermsQuery, especially as the number of
- * Terms being matched increases.  If you are matching only
- * a very small number of terms, and those terms in turn
- * match a very small number of documents, TermsQuery may
- * perform faster.
+ * <p>Generally, this filter will be slower on the first invocation for a given field, but
+ * subsequent invocations, even if you change the allowed set of Terms, should be faster than
+ * TermsQuery, especially as the number of Terms being matched increases. If you are matching only a
+ * very small number of terms, and those terms in turn match a very small number of documents,
+ * TermsQuery may perform faster.
  *
- * <p>
- * Which query is best is very application dependent.
+ * <p>Which query is best is very application dependent.
  *
  * @lucene.experimental
  */
 public class DocValuesTermsQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesTermsQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(DocValuesTermsQuery.class);
 
   private final String field;
   private final PrefixCodedTerms termData;
@@ -131,28 +111,29 @@ public class DocValuesTermsQuery extends Query implements Accountable {
   }
 
   public DocValuesTermsQuery(String field, String... terms) {
-    this(field, new AbstractList<BytesRef>() {
-      @Override
-      public BytesRef get(int index) {
-        return new BytesRef(terms[index]);
-      }
-      @Override
-      public int size() {
-        return terms.length;
-      }
-    });
+    this(
+        field,
+        new AbstractList<BytesRef>() {
+          @Override
+          public BytesRef get(int index) {
+            return new BytesRef(terms[index]);
+          }
+
+          @Override
+          public int size() {
+            return terms.length;
+          }
+        });
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(DocValuesTermsQuery other) {
     // termData might be heavy to compare so check the hash code first
-    return termDataHashCode == other.termDataHashCode && 
-           termData.equals(other.termData);
+    return termDataHashCode == other.termDataHashCode && termData.equals(other.termData);
   }
 
   @Override
@@ -176,25 +157,21 @@ public class DocValuesTermsQuery extends Query implements Accountable {
     return builder.toString();
   }
 
-  /**
-   * @return the name of the field searched by this query.
-   */
+  /** @return the name of the field searched by this query. */
   public String getField() {
     return field;
   }
 
-  /**
-   * @return the terms looked up by this query, prefix-encoded.
-   */
+  /** @return the terms looked up by this query, prefix-encoded. */
   public PrefixCodedTerms getTerms() {
     return termData;
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(termData);
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(field)
+        + RamUsageEstimator.sizeOfObject(termData);
   }
 
   @Override
@@ -205,7 +182,8 @@ public class DocValuesTermsQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -224,32 +202,35 @@ public class DocValuesTermsQuery extends Query implements Accountable {
         if (matchesAtLeastOneTerm == false) {
           return null;
         }
-        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(
+            this,
+            score(),
+            scoreMode,
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            for (long ord = values.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = values.nextOrd()) {
-              if (bits.get(ord)) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                for (long ord = values.nextOrd();
+                    ord != SortedSetDocValues.NO_MORE_ORDS;
+                    ord = values.nextOrd()) {
+                  if (bits.get(ord)) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 3; // lookup in a bitset
-          }
-
-        });
+              @Override
+              public float matchCost() {
+                return 3; // lookup in a bitset
+              }
+            });
       }
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return DocValues.isCacheable(ctx, field);
       }
-
     };
   }
-
 }

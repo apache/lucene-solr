@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -31,16 +30,17 @@ import java.util.StringTokenizer;
 
 /**
  * Perf run configuration properties.
- * <p>
- * Numeric property containing ":", e.g. "10:100:5" is interpreted
- * as array of numeric values. It is extracted once, on first use, and
- * maintain a round number to return the appropriate value.
- * <p>
- * The config property "work.dir" tells where is the root of
- * docs data dirs and indexes dirs. It is set to either of: <ul>
- * <li>value supplied for it in the alg file;</li>
- * <li>otherwise, value of System property "benchmark.work.dir";</li>
- * <li>otherwise, "work".</li>
+ *
+ * <p>Numeric property containing ":", e.g. "10:100:5" is interpreted as array of numeric values. It
+ * is extracted once, on first use, and maintain a round number to return the appropriate value.
+ *
+ * <p>The config property "work.dir" tells where is the root of docs data dirs and indexes dirs. It
+ * is set to either of:
+ *
+ * <ul>
+ *   <li>value supplied for it in the alg file;
+ *   <li>otherwise, value of System property "benchmark.work.dir";
+ *   <li>otherwise, "work".
  * </ul>
  */
 public class Config {
@@ -83,7 +83,7 @@ public class Config {
     this.props = new Properties();
     props.load(new StringReader(sb.toString()));
 
-    // make sure work dir is set properly 
+    // make sure work dir is set properly
     if (props.get("work.dir") == null) {
       props.setProperty("work.dir", System.getProperty("benchmark.work.dir", "work"));
     }
@@ -103,11 +103,12 @@ public class Config {
 
   /**
    * Create config without algorithm - useful for a programmatic perf test.
+   *
    * @param props - configuration properties.
    */
-  public Config (Properties props) {
+  public Config(Properties props) {
     this.props = props;
-    if (Boolean.valueOf(props.getProperty("print.props",DEFAULT_PRINT_PROPS)).booleanValue()) {
+    if (Boolean.valueOf(props.getProperty("print.props", DEFAULT_PRINT_PROPS)).booleanValue()) {
       printProps();
     }
   }
@@ -158,10 +159,9 @@ public class Config {
   }
 
   /**
-   * Set a property.
-   * Note: once a multiple values property is set, it can no longer be modified.
+   * Set a property. Note: once a multiple values property is set, it can no longer be modified.
    *
-   * @param name  name of property.
+   * @param name name of property.
    * @param value either single or multiple property value (multiple values are separated by ":")
    */
   public void set(String name, String value) throws Exception {
@@ -172,10 +172,9 @@ public class Config {
   }
 
   /**
-   * Return an int property.
-   * If the property contain ":", e.g. "10:100:5", it is interpreted
-   * as array of ints. It is extracted once, on first call
-   * to get() it, and a by-round-value is returned.
+   * Return an int property. If the property contain ":", e.g. "10:100:5", it is interpreted as
+   * array of ints. It is extracted once, on first call to get() it, and a by-round-value is
+   * returned.
    *
    * @param name name of property
    * @param dflt default value
@@ -187,7 +186,7 @@ public class Config {
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
-    // done if not by round 
+    // done if not by round
     String sval = props.getProperty(name, "" + dflt);
     if (sval.indexOf(":") < 0) {
       return Integer.parseInt(sval);
@@ -203,10 +202,9 @@ public class Config {
   }
 
   /**
-   * Return a double property.
-   * If the property contain ":", e.g. "10:100:5", it is interpreted
-   * as array of doubles. It is extracted once, on first call
-   * to get() it, and a by-round-value is returned.
+   * Return a double property. If the property contain ":", e.g. "10:100:5", it is interpreted as
+   * array of doubles. It is extracted once, on first call to get() it, and a by-round-value is
+   * returned.
    *
    * @param name name of property
    * @param dflt default value
@@ -218,7 +216,7 @@ public class Config {
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
-    // done if not by round 
+    // done if not by round
     String sval = props.getProperty(name, "" + dflt);
     if (sval.indexOf(":") < 0) {
       return Double.parseDouble(sval);
@@ -234,10 +232,9 @@ public class Config {
   }
 
   /**
-   * Return a boolean property.
-   * If the property contain ":", e.g. "true.true.false", it is interpreted
-   * as array of booleans. It is extracted once, on first call
-   * to get() it, and a by-round-value is returned.
+   * Return a boolean property. If the property contain ":", e.g. "true.true.false", it is
+   * interpreted as array of booleans. It is extracted once, on first call to get() it, and a
+   * by-round-value is returned.
    *
    * @param name name of property
    * @param dflt default value
@@ -249,12 +246,12 @@ public class Config {
     if (vals != null) {
       return vals[roundNumber % vals.length];
     }
-    // done if not by round 
+    // done if not by round
     String sval = props.getProperty(name, "" + dflt);
     if (sval.indexOf(":") < 0) {
       return Boolean.valueOf(sval).booleanValue();
     }
-    // first time this prop is extracted by round 
+    // first time this prop is extracted by round
     int k = sval.indexOf(":");
     String colName = sval.substring(0, k);
     sval = sval.substring(k + 1);
@@ -272,7 +269,8 @@ public class Config {
   public int newRound() {
     roundNumber++;
 
-    StringBuilder sb = new StringBuilder("--> Round ").append(roundNumber - 1).append("-->").append(roundNumber);
+    StringBuilder sb =
+        new StringBuilder("--> Round ").append(roundNumber - 1).append("-->").append(roundNumber);
 
     // log changes in values
     if (valByRound.size() > 0) {
@@ -313,7 +311,7 @@ public class Config {
 
   private String[] propToStringArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new String[]{s};
+      return new String[] {s};
     }
 
     ArrayList<String> a = new ArrayList<>();
@@ -325,10 +323,10 @@ public class Config {
     return a.toArray(new String[a.size()]);
   }
 
-  // extract properties to array, e.g. for "10:100:5" return int[]{10,100,5}. 
+  // extract properties to array, e.g. for "10:100:5" return int[]{10,100,5}.
   private int[] propToIntArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new int[]{Integer.parseInt(s)};
+      return new int[] {Integer.parseInt(s)};
     }
 
     ArrayList<Integer> a = new ArrayList<>();
@@ -344,10 +342,10 @@ public class Config {
     return res;
   }
 
-  // extract properties to array, e.g. for "10.7:100.4:-2.3" return int[]{10.7,100.4,-2.3}. 
+  // extract properties to array, e.g. for "10.7:100.4:-2.3" return int[]{10.7,100.4,-2.3}.
   private double[] propToDoubleArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new double[]{Double.parseDouble(s)};
+      return new double[] {Double.parseDouble(s)};
     }
 
     ArrayList<Double> a = new ArrayList<>();
@@ -363,10 +361,10 @@ public class Config {
     return res;
   }
 
-  // extract properties to array, e.g. for "true:true:false" return boolean[]{true,false,false}. 
+  // extract properties to array, e.g. for "true:true:false" return boolean[]{true,false,false}.
   private boolean[] propToBooleanArray(String s) {
     if (s.indexOf(":") < 0) {
-      return new boolean[]{Boolean.valueOf(s).booleanValue()};
+      return new boolean[] {Boolean.valueOf(s).booleanValue()};
     }
 
     ArrayList<Boolean> a = new ArrayList<>();
@@ -382,9 +380,7 @@ public class Config {
     return res;
   }
 
-  /**
-   * @return names of params set by round, for reports title
-   */
+  /** @return names of params set by round, for reports title */
   public String getColsNamesForValsByRound() {
     if (colForValByRound.size() == 0) {
       return "";
@@ -396,9 +392,7 @@ public class Config {
     return sb.toString();
   }
 
-  /**
-   * @return values of params set by round, for reports lines.
-   */
+  /** @return values of params set by round, for reports lines. */
   public String getColsValuesForValsByRound(int roundNum) {
     if (colForValByRound.size() == 0) {
       return "";
@@ -437,18 +431,13 @@ public class Config {
     return sb.toString();
   }
 
-  /**
-   * @return the round number.
-   */
+  /** @return the round number. */
   public int getRoundNumber() {
     return roundNumber;
   }
 
-  /**
-   * @return Returns the algorithmText.
-   */
+  /** @return Returns the algorithmText. */
   public String getAlgorithmText() {
     return algorithmText;
   }
-
 }

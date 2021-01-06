@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -60,7 +59,8 @@ public final class CommitsImpl extends LukeModel implements Commits {
   }
 
   /**
-   * Constructs a CommitsImpl that holds the {@link Directory} wrapped in the given {@link DirectoryReader}.
+   * Constructs a CommitsImpl that holds the {@link Directory} wrapped in the given {@link
+   * DirectoryReader}.
    *
    * @param reader - the index reader
    * @param indexPath - the path to index directory
@@ -86,9 +86,8 @@ public final class CommitsImpl extends LukeModel implements Commits {
 
   @Override
   public List<Commit> listCommits() throws LukeException {
-    List<Commit> commits = getCommitMap().values().stream()
-        .map(Commit::of)
-        .collect(Collectors.toList());
+    List<Commit> commits =
+        getCommitMap().values().stream().map(Commit::of).collect(Collectors.toList());
     Collections.reverse(commits);
     return commits;
   }
@@ -122,7 +121,9 @@ public final class CommitsImpl extends LukeModel implements Commits {
           .sorted(Comparator.comparing(File::getFileName))
           .collect(Collectors.toList());
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to load files for commit generation %d", commitGen), e);
+      throw new LukeException(
+          String.format(Locale.ENGLISH, "Failed to load files for commit generation %d", commitGen),
+          e);
     }
   }
 
@@ -139,12 +140,16 @@ public final class CommitsImpl extends LukeModel implements Commits {
           .sorted(Comparator.comparing(Segment::getName))
           .collect(Collectors.toList());
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen), e);
+      throw new LukeException(
+          String.format(
+              Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen),
+          e);
     }
   }
 
   @Override
-  public Map<String, String> getSegmentAttributes(long commitGen, String name) throws LukeException {
+  public Map<String, String> getSegmentAttributes(long commitGen, String name)
+      throws LukeException {
     try {
       SegmentInfos infos = findSegmentInfos(commitGen);
       if (infos == null) {
@@ -157,12 +162,16 @@ public final class CommitsImpl extends LukeModel implements Commits {
           .map(seg -> seg.info.getAttributes())
           .orElse(Collections.emptyMap());
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen), e);
+      throw new LukeException(
+          String.format(
+              Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen),
+          e);
     }
   }
 
   @Override
-  public Map<String, String> getSegmentDiagnostics(long commitGen, String name) throws LukeException {
+  public Map<String, String> getSegmentDiagnostics(long commitGen, String name)
+      throws LukeException {
     try {
       SegmentInfos infos = findSegmentInfos(commitGen);
       if (infos == null) {
@@ -175,7 +184,10 @@ public final class CommitsImpl extends LukeModel implements Commits {
           .map(seg -> seg.info.getDiagnostics())
           .orElse(Collections.emptyMap());
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen), e);
+      throw new LukeException(
+          String.format(
+              Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen),
+          e);
     }
   }
 
@@ -192,7 +204,10 @@ public final class CommitsImpl extends LukeModel implements Commits {
           .findAny()
           .map(seg -> seg.info.getCodec());
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen), e);
+      throw new LukeException(
+          String.format(
+              Locale.ENGLISH, "Failed to load segment infos for commit generation %d", commitGen),
+          e);
     }
   }
 

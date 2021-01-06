@@ -23,19 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
-/**
- * Class used to match candidate queries selected by a Presearcher from a Monitor
- * query index.
- */
+/** Class used to match candidate queries selected by a Presearcher from a Monitor query index. */
 public abstract class CandidateMatcher<T extends QueryMatch> {
 
-  /**
-   * The searcher to run candidate queries against
-   */
+  /** The searcher to run candidate queries against */
   protected final IndexSearcher searcher;
 
   private final Map<String, Exception> errors = new HashMap<>();
@@ -62,15 +56,16 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   }
 
   /**
-   * Runs the supplied query against this CandidateMatcher's set of documents, storing any
-   * resulting match, and recording the query in the presearcher hits
+   * Runs the supplied query against this CandidateMatcher's set of documents, storing any resulting
+   * match, and recording the query in the presearcher hits
    *
-   * @param queryId    the query id
+   * @param queryId the query id
    * @param matchQuery the query to run
-   * @param metadata   the query metadata
+   * @param metadata the query metadata
    * @throws IOException on IO errors
    */
-  protected abstract void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException;
+  protected abstract void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
+      throws IOException;
 
   /**
    * Record a match
@@ -79,12 +74,14 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    */
   protected final void addMatch(T match, int doc) {
     MatchHolder<T> docMatches = matches.get(doc);
-    docMatches.matches.compute(match.getQueryId(), (key, oldValue) -> {
-      if (oldValue != null) {
-        return resolve(match, oldValue);
-      }
-      return match;
-    });
+    docMatches.matches.compute(
+        match.getQueryId(),
+        (key, oldValue) -> {
+          if (oldValue != null) {
+            return resolve(match, oldValue);
+          }
+          return match;
+        });
   }
 
   /**
@@ -97,37 +94,30 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    */
   public abstract T resolve(T match1, T match2);
 
-  /**
-   * Called by the Monitor if running a query throws an Exception
-   */
+  /** Called by the Monitor if running a query throws an Exception */
   void reportError(String queryId, Exception e) {
     this.errors.put(queryId, e);
   }
 
-  /**
-   * @return the matches from this matcher
-   */
+  /** @return the matches from this matcher */
   final MultiMatchingQueries<T> finish(long buildTime, int queryCount) {
     doFinish();
-    this.searchTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - searchTime, TimeUnit.NANOSECONDS);
+    this.searchTime =
+        TimeUnit.MILLISECONDS.convert(System.nanoTime() - searchTime, TimeUnit.NANOSECONDS);
     List<Map<String, T>> results = new ArrayList<>();
     for (MatchHolder<T> matchHolder : matches) {
       results.add(matchHolder.matches);
     }
-    return new MultiMatchingQueries<>(results, errors, buildTime, searchTime, queryCount, matches.size());
+    return new MultiMatchingQueries<>(
+        results, errors, buildTime, searchTime, queryCount, matches.size());
   }
 
-  /**
-   * Called when all monitoring of a batch of documents is complete
-   */
-  protected void doFinish() { }
+  /** Called when all monitoring of a batch of documents is complete */
+  protected void doFinish() {}
 
-  /**
-   * Copy all matches from another CandidateMatcher
-   */
+  /** Copy all matches from another CandidateMatcher */
   protected void copyMatches(CandidateMatcher<T> other) {
     this.matches.clear();
     this.matches.addAll(other.matches);
   }
-
 }

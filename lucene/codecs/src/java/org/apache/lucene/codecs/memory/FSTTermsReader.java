@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -25,18 +24,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.TermState;
@@ -62,29 +60,33 @@ import org.apache.lucene.util.fst.Util;
 /**
  * FST-based terms dictionary reader.
  *
- * The FST directly maps each term and its metadata, 
- * it is memory resident.
+ * <p>The FST directly maps each term and its metadata, it is memory resident.
  *
  * @lucene.experimental
  */
-
 public class FSTTermsReader extends FieldsProducer {
   final TreeMap<String, TermsReader> fields = new TreeMap<>();
   final PostingsReaderBase postingsReader;
-  //static boolean TEST = false;
+  // static boolean TEST = false;
 
-  public FSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader) throws IOException {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, FSTTermsWriter.TERMS_EXTENSION);
+  public FSTTermsReader(SegmentReadState state, PostingsReaderBase postingsReader)
+      throws IOException {
+    final String termsFileName =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, FSTTermsWriter.TERMS_EXTENSION);
 
     this.postingsReader = postingsReader;
     final IndexInput in = state.directory.openInput(termsFileName, state.context);
 
     boolean success = false;
     try {
-      CodecUtil.checkIndexHeader(in, FSTTermsWriter.TERMS_CODEC_NAME,
-                                       FSTTermsWriter.TERMS_VERSION_START,
-                                       FSTTermsWriter.TERMS_VERSION_CURRENT,
-                                       state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checkIndexHeader(
+          in,
+          FSTTermsWriter.TERMS_CODEC_NAME,
+          FSTTermsWriter.TERMS_VERSION_START,
+          FSTTermsWriter.TERMS_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
       CodecUtil.checksumEntireFile(in);
       this.postingsReader.init(in, state);
       seekDir(in);
@@ -97,9 +99,11 @@ public class FSTTermsReader extends FieldsProducer {
         long numTerms = in.readVLong();
         long sumTotalTermFreq = in.readVLong();
         // if frequencies are omitted, sumTotalTermFreq=sumDocFreq and we only write one value
-        long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
+        long sumDocFreq =
+            fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         int docCount = in.readVInt();
-        TermsReader current = new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount);
+        TermsReader current =
+            new TermsReader(fieldInfo, in, numTerms, sumTotalTermFreq, sumDocFreq, docCount);
         TermsReader previous = fields.put(fieldInfo.name, current);
         checkFieldSummary(state.segmentInfo, in, current, previous);
       }
@@ -117,18 +121,27 @@ public class FSTTermsReader extends FieldsProducer {
     in.seek(in.length() - CodecUtil.footerLength() - 8);
     in.seek(in.readLong());
   }
-  private void checkFieldSummary(SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {
+
+  private void checkFieldSummary(
+      SegmentInfo info, IndexInput in, TermsReader field, TermsReader previous) throws IOException {
     // #docs with field must be <= #docs
     if (field.docCount < 0 || field.docCount > info.maxDoc()) {
-      throw new CorruptIndexException("invalid docCount: " + field.docCount + " maxDoc: " + info.maxDoc(), in);
+      throw new CorruptIndexException(
+          "invalid docCount: " + field.docCount + " maxDoc: " + info.maxDoc(), in);
     }
     // #postings must be >= #docs with field
     if (field.sumDocFreq < field.docCount) {
-      throw new CorruptIndexException("invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount, in);
+      throw new CorruptIndexException(
+          "invalid sumDocFreq: " + field.sumDocFreq + " docCount: " + field.docCount, in);
     }
     // #positions must be >= #postings
     if (field.sumTotalTermFreq < field.sumDocFreq) {
-      throw new CorruptIndexException("invalid sumTotalTermFreq: " + field.sumTotalTermFreq + " sumDocFreq: " + field.sumDocFreq, in);
+      throw new CorruptIndexException(
+          "invalid sumTotalTermFreq: "
+              + field.sumTotalTermFreq
+              + " sumDocFreq: "
+              + field.sumDocFreq,
+          in);
     }
     if (previous != null) {
       throw new CorruptIndexException("duplicate fields: " + field.fieldInfo.name, in);
@@ -160,7 +173,9 @@ public class FSTTermsReader extends FieldsProducer {
     }
   }
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermsReader.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(TermsReader.class);
+
   final class TermsReader extends Terms implements Accountable {
 
     final FieldInfo fieldInfo;
@@ -170,7 +185,14 @@ public class FSTTermsReader extends FieldsProducer {
     final int docCount;
     final FST<FSTTermOutputs.TermData> dict;
 
-    TermsReader(FieldInfo fieldInfo, IndexInput in, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
+    TermsReader(
+        FieldInfo fieldInfo,
+        IndexInput in,
+        long numTerms,
+        long sumTotalTermFreq,
+        long sumDocFreq,
+        int docCount)
+        throws IOException {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
@@ -196,10 +218,18 @@ public class FSTTermsReader extends FieldsProducer {
         return Collections.singletonList(Accountables.namedAccountable("terms", dict));
       }
     }
-    
+
     @Override
     public String toString() {
-      return "FSTTerms(terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+      return "FSTTerms(terms="
+          + numTerms
+          + ",postings="
+          + sumDocFreq
+          + ",positions="
+          + sumTotalTermFreq
+          + ",docs="
+          + docCount
+          + ")";
     }
 
     @Override
@@ -209,7 +239,10 @@ public class FSTTermsReader extends FieldsProducer {
 
     @Override
     public boolean hasOffsets() {
-      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      return fieldInfo
+              .getIndexOptions()
+              .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+          >= 0;
     }
 
     @Override
@@ -313,7 +346,6 @@ public class FSTTermsReader extends FieldsProducer {
       }
     }
 
-
     // Iterates through all terms in this field
     private final class SegmentTermsEnum extends BaseTermsEnum {
       /* Current term, null when enum ends or unpositioned */
@@ -367,10 +399,10 @@ public class FSTTermsReader extends FieldsProducer {
 
       @Override
       public BytesRef next() throws IOException {
-        if (seekPending) {  // previously positioned, but termOutputs not fetched
+        if (seekPending) { // previously positioned, but termOutputs not fetched
           seekPending = false;
           SeekStatus status = seekCeil(term);
-          assert status == SeekStatus.FOUND;  // must positioned on valid term
+          assert status == SeekStatus.FOUND; // must positioned on valid term
         }
         updateEnum(fstEnum.next());
         return term;
@@ -419,7 +451,7 @@ public class FSTTermsReader extends FieldsProducer {
       Frame[] stack;
       int level;
 
-      /* to which level the metadata is accumulated 
+      /* to which level the metadata is accumulated
        * so that we can accumulate metadata lazily */
       int metaUpto;
 
@@ -452,14 +484,14 @@ public class FSTTermsReader extends FieldsProducer {
 
       IntersectTermsEnum(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
         super();
-        //if (TEST) System.out.println("Enum init, startTerm=" + startTerm);
+        // if (TEST) System.out.println("Enum init, startTerm=" + startTerm);
         this.fst = dict;
         this.fstReader = fst.getBytesReader();
         this.fstOutputs = dict.outputs;
         this.fsa = compiled.runAutomaton;
         this.level = -1;
         this.stack = new Frame[16];
-        for (int i = 0 ; i < stack.length; i++) {
+        for (int i = 0; i < stack.length; i++) {
           this.stack[i] = new Frame();
         }
 
@@ -476,7 +508,10 @@ public class FSTTermsReader extends FieldsProducer {
           pending = isAccept(topFrame());
         } else {
           doSeekCeil(startTerm);
-          pending = (term == null || !startTerm.equals(term.get())) && isValid(topFrame()) && isAccept(topFrame());
+          pending =
+              (term == null || !startTerm.equals(term.get()))
+                  && isValid(topFrame())
+                  && isAccept(topFrame());
         }
       }
 
@@ -530,31 +565,31 @@ public class FSTTermsReader extends FieldsProducer {
 
       @Override
       public BytesRef next() throws IOException {
-        //if (TEST) System.out.println("Enum next()");
+        // if (TEST) System.out.println("Enum next()");
         if (pending) {
           pending = false;
           loadMetaData();
           return term();
         }
         decoded = false;
-      DFS:
+        DFS:
         while (level > 0) {
           Frame frame = newFrame();
-          if (loadExpandFrame(topFrame(), frame) != null) {  // has valid target
+          if (loadExpandFrame(topFrame(), frame) != null) { // has valid target
             pushFrame(frame);
-            if (isAccept(frame)) {  // gotcha
+            if (isAccept(frame)) { // gotcha
               break;
             }
-            continue;  // check next target
-          } 
+            continue; // check next target
+          }
           frame = popFrame();
-          while(level > 0) {
-            if (loadNextFrame(topFrame(), frame) != null) {  // has valid sibling 
+          while (level > 0) {
+            if (loadNextFrame(topFrame(), frame) != null) { // has valid sibling
               pushFrame(frame);
-              if (isAccept(frame)) {  // gotcha
+              if (isAccept(frame)) { // gotcha
                 break DFS;
               }
-              continue DFS;   // check next target 
+              continue DFS; // check next target
             }
             frame = popFrame();
           }
@@ -565,28 +600,28 @@ public class FSTTermsReader extends FieldsProducer {
       }
 
       private BytesRef doSeekCeil(BytesRef target) throws IOException {
-        //if (TEST) System.out.println("Enum doSeekCeil()");
-        Frame frame= null;
+        // if (TEST) System.out.println("Enum doSeekCeil()");
+        Frame frame = null;
         int label, upto = 0, limit = target.length;
-        while (upto < limit) {  // to target prefix, or ceil label (rewind prefix)
+        while (upto < limit) { // to target prefix, or ceil label (rewind prefix)
           frame = newFrame();
           label = target.bytes[upto] & 0xff;
           frame = loadCeilFrame(label, topFrame(), frame);
           if (frame == null || frame.fstArc.label() != label) {
             break;
           }
-          assert isValid(frame);  // target must be fetched from automaton
+          assert isValid(frame); // target must be fetched from automaton
           pushFrame(frame);
           upto++;
         }
-        if (upto == limit) {  // got target
+        if (upto == limit) { // got target
           return term();
         }
-        if (frame != null) {  // got larger term('s prefix)
+        if (frame != null) { // got larger term('s prefix)
           pushFrame(frame);
           return isAccept(frame) ? term() : next();
         }
-        while (level > 0) {  // got target's prefix, advance to larger term
+        while (level > 0) { // got target's prefix, advance to larger term
           frame = popFrame();
           while (level > 0 && !canRewind(frame)) {
             frame = popFrame();
@@ -621,7 +656,7 @@ public class FSTTermsReader extends FieldsProducer {
         }
         frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target(), frame.fstArc, fstReader);
         frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label());
-        //if (TEST) System.out.println(" loadExpand frame="+frame);
+        // if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
@@ -641,7 +676,7 @@ public class FSTTermsReader extends FieldsProducer {
             break;
           }
         }
-        //if (TEST) System.out.println(" loadNext frame="+frame);
+        // if (TEST) System.out.println(" loadNext frame="+frame);
         if (frame.fsaState == -1) {
           return null;
         }
@@ -649,8 +684,10 @@ public class FSTTermsReader extends FieldsProducer {
         return frame;
       }
 
-      /** Load frame for target arc(node) on fst, so that 
-       *  arc.label &gt;= label and !fsa.reject(arc.label) */
+      /**
+       * Load frame for target arc(node) on fst, so that arc.label &gt;= label and
+       * !fsa.reject(arc.label)
+       */
       Frame loadCeilFrame(int label, Frame top, Frame frame) throws IOException {
         FST.Arc<FSTTermOutputs.TermData> arc = frame.fstArc;
         arc = Util.readCeilArc(label, fst, top.fstArc, arc, fstReader);
@@ -658,7 +695,7 @@ public class FSTTermsReader extends FieldsProducer {
           return null;
         }
         frame.fsaState = fsa.step(top.fsaState, arc.label());
-        //if (TEST) System.out.println(" loadCeil frame="+frame);
+        // if (TEST) System.out.println(" loadCeil frame="+frame);
         if (frame.fsaState == -1) {
           return loadNextFrame(top, frame);
         }
@@ -666,15 +703,18 @@ public class FSTTermsReader extends FieldsProducer {
         return frame;
       }
 
-      boolean isAccept(Frame frame) {  // reach a term both fst&fsa accepts
+      boolean isAccept(Frame frame) { // reach a term both fst&fsa accepts
         return fsa.isAccept(frame.fsaState) && frame.fstArc.isFinal();
       }
-      boolean isValid(Frame frame) {   // reach a prefix both fst&fsa won't reject
+
+      boolean isValid(Frame frame) { // reach a prefix both fst&fsa won't reject
         return /*frame != null &&*/ frame.fsaState != -1;
       }
-      boolean canGrow(Frame frame) {   // can walk forward on both fst&fsa
+
+      boolean canGrow(Frame frame) { // can walk forward on both fst&fsa
         return frame.fsaState != -1 && FST.targetHasArcs(frame.fstArc);
       }
+
       boolean canRewind(Frame frame) { // can jump to sibling
         return !frame.fstArc.isLast();
       }
@@ -682,27 +722,28 @@ public class FSTTermsReader extends FieldsProducer {
       void pushFrame(Frame frame) {
         term = grow(frame.fstArc.label());
         level++;
-        //if (TEST) System.out.println("  term=" + term + " level=" + level);
+        // if (TEST) System.out.println("  term=" + term + " level=" + level);
       }
 
       Frame popFrame() {
         term = shrink();
         level--;
         metaUpto = metaUpto > level ? level : metaUpto;
-        //if (TEST) System.out.println("  term=" + term + " level=" + level);
-        return stack[level+1];
+        // if (TEST) System.out.println("  term=" + term + " level=" + level);
+        return stack[level + 1];
       }
 
       Frame newFrame() {
-        if (level+1 == stack.length) {
-          final Frame[] temp = new Frame[ArrayUtil.oversize(level+2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        if (level + 1 == stack.length) {
+          final Frame[] temp =
+              new Frame[ArrayUtil.oversize(level + 2, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
           System.arraycopy(stack, 0, temp, 0, stack.length);
           for (int i = stack.length; i < temp.length; i++) {
             temp[i] = new Frame();
           }
           stack = temp;
         }
-        return stack[level+1];
+        return stack[level + 1];
       }
 
       Frame topFrame() {
@@ -713,7 +754,7 @@ public class FSTTermsReader extends FieldsProducer {
         if (term == null) {
           term = new BytesRefBuilder();
         } else {
-          term.append((byte)label);
+          term.append((byte) label);
         }
         return term;
       }
@@ -729,7 +770,7 @@ public class FSTTermsReader extends FieldsProducer {
     }
   }
 
-  static<T> void walk(FST<T> fst) throws IOException {
+  static <T> void walk(FST<T> fst) throws IOException {
     final ArrayList<FST.Arc<T>> queue = new ArrayList<>();
     final BitSet seen = new BitSet();
     final FST.BytesReader reader = fst.getBytesReader();
@@ -738,7 +779,7 @@ public class FSTTermsReader extends FieldsProducer {
     while (!queue.isEmpty()) {
       final FST.Arc<T> arc = queue.remove(0);
       final long node = arc.target();
-      //System.out.println(arc);
+      // System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);
         fst.readFirstRealTargetArc(node, arc, reader);
@@ -762,7 +803,7 @@ public class FSTTermsReader extends FieldsProducer {
     }
     return ramBytesUsed;
   }
-  
+
   @Override
   public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>(Accountables.namedAccountables("field", fields));
@@ -772,7 +813,12 @@ public class FSTTermsReader extends FieldsProducer {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(fields=" + fields.size() + ",delegate=" + postingsReader + ")";
+    return getClass().getSimpleName()
+        + "(fields="
+        + fields.size()
+        + ",delegate="
+        + postingsReader
+        + ")";
   }
 
   @Override

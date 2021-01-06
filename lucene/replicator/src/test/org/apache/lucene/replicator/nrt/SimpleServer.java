@@ -36,28 +36,29 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 
-/** Child process with silly naive TCP socket server to handle
- *  between-node commands, launched for each node  by TestNRTReplication. */
+/**
+ * Child process with silly naive TCP socket server to handle between-node commands, launched for
+ * each node by TestNRTReplication.
+ */
 @SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")
 @SuppressForbidden(reason = "We need Unsafe to actually crush :-)")
 public class SimpleServer extends LuceneTestCase {
 
-  final static Set<Thread> clientThreads = Collections.synchronizedSet(new HashSet<>());
-  final static AtomicBoolean stop = new AtomicBoolean();
+  static final Set<Thread> clientThreads = Collections.synchronizedSet(new HashSet<>());
+  static final AtomicBoolean stop = new AtomicBoolean();
 
   /** Handles one client connection */
   private static class ClientHandler extends Thread {
@@ -82,14 +83,15 @@ public class SimpleServer extends LuceneTestCase {
     public void run() {
       boolean success = false;
       try {
-        //node.message("using stream buffer size=" + bufferSize);
+        // node.message("using stream buffer size=" + bufferSize);
         InputStream is = new BufferedInputStream(socket.getInputStream(), bufferSize);
         DataInput in = new InputStreamDataInput(is);
         BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream(), bufferSize);
         DataOutput out = new OutputStreamDataOutput(bos);
 
         if (node instanceof SimplePrimaryNode) {
-          ((SimplePrimaryNode) node).handleOneConnection(random(), ss, stop, is, socket, in, out, bos);
+          ((SimplePrimaryNode) node)
+              .handleOneConnection(random(), ss, stop, is, socket, in, out, bos);
         } else {
           ((SimpleReplicaNode) node).handleOneConnection(ss, stop, is, socket, in, out, bos);
         }
@@ -101,7 +103,8 @@ public class SimpleServer extends LuceneTestCase {
 
         success = true;
       } catch (Throwable t) {
-        if (t instanceof SocketException == false && t instanceof NodeCommunicationException == false) {
+        if (t instanceof SocketException == false
+            && t instanceof NodeCommunicationException == false) {
           node.message("unexpected exception handling client connection; now failing test:");
           t.printStackTrace(System.out);
           IOUtils.closeWhileHandlingException(ss);
@@ -128,17 +131,14 @@ public class SimpleServer extends LuceneTestCase {
     }
   }
 
-  /**
-   * currently, this only works/tested on Sun and IBM.
-   */
+  /** currently, this only works/tested on Sun and IBM. */
 
-  // poached from TestIndexWriterOnJRECrash ... should we factor out to TestUtil?  seems dangerous to give it such "publicity"?
+  // poached from TestIndexWriterOnJRECrash ... should we factor out to TestUtil?  seems dangerous
+  // to give it such "publicity"?
   private static void crashJRE() {
     final String vendor = Constants.JAVA_VENDOR;
-    final boolean supportsUnsafeNpeDereference = 
-        vendor.startsWith("Oracle") || 
-        vendor.startsWith("Sun") || 
-        vendor.startsWith("Apple");
+    final boolean supportsUnsafeNpeDereference =
+        vendor.startsWith("Oracle") || vendor.startsWith("Sun") || vendor.startsWith("Apple");
 
     try {
       if (supportsUnsafeNpeDereference) {
@@ -151,7 +151,7 @@ public class SimpleServer extends LuceneTestCase {
           m.invoke(o, 0L, 0L);
         } catch (Throwable e) {
           System.out.println("Couldn't kill the JVM via Unsafe.");
-          e.printStackTrace(System.out); 
+          e.printStackTrace(System.out);
         }
       }
 
@@ -159,16 +159,17 @@ public class SimpleServer extends LuceneTestCase {
       Runtime.getRuntime().halt(-1);
     } catch (Exception e) {
       System.out.println("Couldn't kill the JVM.");
-      e.printStackTrace(System.out); 
+      e.printStackTrace(System.out);
     }
 
     // We couldn't get the JVM to crash for some reason.
     throw new RuntimeException("JVM refuses to die!");
   }
 
-  static void writeFilesMetaData(DataOutput out, Map<String,FileMetaData> files) throws IOException {
+  static void writeFilesMetaData(DataOutput out, Map<String, FileMetaData> files)
+      throws IOException {
     out.writeVInt(files.size());
-    for(Map.Entry<String,FileMetaData> ent : files.entrySet()) {
+    for (Map.Entry<String, FileMetaData> ent : files.entrySet()) {
       out.writeString(ent.getKey());
 
       FileMetaData fmd = ent.getValue();
@@ -181,13 +182,13 @@ public class SimpleServer extends LuceneTestCase {
     }
   }
 
-  static Map<String,FileMetaData> readFilesMetaData(DataInput in) throws IOException {
+  static Map<String, FileMetaData> readFilesMetaData(DataInput in) throws IOException {
     int fileCount = in.readVInt();
-    //System.out.println("readFilesMetaData: fileCount=" + fileCount);
-    Map<String,FileMetaData> files = new HashMap<>();
-    for(int i=0;i<fileCount;i++) {
+    // System.out.println("readFilesMetaData: fileCount=" + fileCount);
+    Map<String, FileMetaData> files = new HashMap<>();
+    for (int i = 0; i < fileCount; i++) {
       String fileName = in.readString();
-      //System.out.println("readFilesMetaData: fileName=" + fileName);
+      // System.out.println("readFilesMetaData: fileName=" + fileName);
       long length = in.readVLong();
       long checksum = in.readVLong();
       byte[] header = new byte[in.readVInt()];
@@ -208,11 +209,11 @@ public class SimpleServer extends LuceneTestCase {
 
     long gen = in.readVLong();
     long version = in.readVLong();
-    Map<String,FileMetaData> files = readFilesMetaData(in);
+    Map<String, FileMetaData> files = readFilesMetaData(in);
 
     int count = in.readVInt();
     Set<String> completedMergeFiles = new HashSet<>();
-    for(int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       completedMergeFiles.add(in.readString());
     }
     long primaryGen = in.readVLong();
@@ -234,15 +235,18 @@ public class SimpleServer extends LuceneTestCase {
       primaryTCPPort = Integer.parseInt(System.getProperty("tests.nrtreplication.primaryTCPPort"));
     } else {
       primaryTCPPort = -1;
-      forcePrimaryVersion = Long.parseLong(System.getProperty("tests.nrtreplication.forcePrimaryVersion"));
+      forcePrimaryVersion =
+          Long.parseLong(System.getProperty("tests.nrtreplication.forcePrimaryVersion"));
     }
     long primaryGen = Long.parseLong(System.getProperty("tests.nrtreplication.primaryGen"));
     Node.globalStartNS = Long.parseLong(System.getProperty("tests.nrtreplication.startNS"));
 
     boolean doRandomCrash = "true".equals(System.getProperty("tests.nrtreplication.doRandomCrash"));
     boolean doRandomClose = "true".equals(System.getProperty("tests.nrtreplication.doRandomClose"));
-    boolean doFlipBitsDuringCopy = "true".equals(System.getProperty("tests.nrtreplication.doFlipBitsDuringCopy"));
-    boolean doCheckIndexOnClose = "true".equals(System.getProperty("tests.nrtreplication.checkonclose"));
+    boolean doFlipBitsDuringCopy =
+        "true".equals(System.getProperty("tests.nrtreplication.doFlipBitsDuringCopy"));
+    boolean doCheckIndexOnClose =
+        "true".equals(System.getProperty("tests.nrtreplication.checkonclose"));
 
     // Create server socket that we listen for incoming requests on:
     try (final ServerSocket ss = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
@@ -251,14 +255,34 @@ public class SimpleServer extends LuceneTestCase {
       System.out.println("\nPORT: " + tcpPort);
       final Node node;
       if (isPrimary) {
-        node = new SimplePrimaryNode(random(), indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy, doCheckIndexOnClose);
+        node =
+            new SimplePrimaryNode(
+                random(),
+                indexPath,
+                id,
+                tcpPort,
+                primaryGen,
+                forcePrimaryVersion,
+                null,
+                doFlipBitsDuringCopy,
+                doCheckIndexOnClose);
         System.out.println("\nCOMMIT VERSION: " + ((PrimaryNode) node).getLastCommitVersion());
       } else {
         try {
-          node = new SimpleReplicaNode(random(), id, tcpPort, indexPath, primaryGen, primaryTCPPort, null, doCheckIndexOnClose);
+          node =
+              new SimpleReplicaNode(
+                  random(),
+                  id,
+                  tcpPort,
+                  indexPath,
+                  primaryGen,
+                  primaryTCPPort,
+                  null,
+                  doCheckIndexOnClose);
         } catch (RuntimeException re) {
           if (re.getMessage().startsWith("replica cannot start")) {
-            // this is "OK": it means MDW's refusal to delete a segments_N commit point means we cannot start:
+            // this is "OK": it means MDW's refusal to delete a segments_N commit point means we
+            // cannot start:
             assumeTrue(re.getMessage(), false);
           }
           throw re;
@@ -284,41 +308,45 @@ public class SimpleServer extends LuceneTestCase {
         }
 
         if (doClose) {
-          node.message("top: will close after " + (waitForMS/1000.0) + " seconds");
+          node.message("top: will close after " + (waitForMS / 1000.0) + " seconds");
         } else {
-          node.message("top: will crash after " + (waitForMS/1000.0) + " seconds");
+          node.message("top: will crash after " + (waitForMS / 1000.0) + " seconds");
         }
 
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-              long endTime = System.nanoTime() + waitForMS*1000000L;
-              while (System.nanoTime() < endTime) {
-                try {
-                  Thread.sleep(10);
-                } catch (InterruptedException e) {
-                }
-                if (stop.get()) {
-                  break;
-                }
-              }
-
-              if (stop.get() == false) {
-                if (doClose) {
+        Thread t =
+            new Thread() {
+              @Override
+              public void run() {
+                long endTime = System.nanoTime() + waitForMS * 1000000L;
+                while (System.nanoTime() < endTime) {
                   try {
-                    node.message("top: now force close server socket after " + (waitForMS/1000.0) + " seconds");
-                    node.state = "top-closing";
-                    ss.close();
-                  } catch (IOException ioe) {     
-                    throw new RuntimeException(ioe);
+                    Thread.sleep(10);
+                  } catch (InterruptedException e) {
                   }
-                } else {        
-                  node.message("top: now crash JVM after " + (waitForMS/1000.0) + " seconds");
-                  crashJRE();
+                  if (stop.get()) {
+                    break;
+                  }
+                }
+
+                if (stop.get() == false) {
+                  if (doClose) {
+                    try {
+                      node.message(
+                          "top: now force close server socket after "
+                              + (waitForMS / 1000.0)
+                              + " seconds");
+                      node.state = "top-closing";
+                      ss.close();
+                    } catch (IOException ioe) {
+                      throw new RuntimeException(ioe);
+                    }
+                  } else {
+                    node.message("top: now crash JVM after " + (waitForMS / 1000.0) + " seconds");
+                    crashJRE();
+                  }
                 }
               }
-            }
-          };
+            };
 
         if (isPrimary) {
           t.setName("crasher P" + id);
@@ -332,7 +360,7 @@ public class SimpleServer extends LuceneTestCase {
       }
       System.out.println("\nNODE STARTED");
 
-      //List<Thread> clientThreads = new ArrayList<>();
+      // List<Thread> clientThreads = new ArrayList<>();
 
       // Naive thread-per-connection server:
       while (true) {
@@ -358,14 +386,15 @@ public class SimpleServer extends LuceneTestCase {
             it.remove();
           }
         }
-        //node.message(clientThreads.size() + " client threads are still alive");
+        // node.message(clientThreads.size() + " client threads are still alive");
       }
 
       stop.set(true);
 
-      // Make sure all client threads are done, else we get annoying (yet ultimately "harmless") messages about threads still running /
+      // Make sure all client threads are done, else we get annoying (yet ultimately "harmless")
+      // messages about threads still running /
       // lingering for them to finish from the child processes:
-      for(Thread clientThread : clientThreads) {
+      for (Thread clientThread : clientThreads) {
         node.message("top: join clientThread=" + clientThread);
         clientThread.join();
         node.message("top: done join clientThread=" + clientThread);

@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,10 +40,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 public class TestGroupingSearch extends LuceneTestCase {
 
   // Tests some very basic usages...
@@ -52,10 +51,11 @@ public class TestGroupingSearch extends LuceneTestCase {
     customType.setStored(true);
 
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(
-        random(),
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = true;
     List<Document> documents = new ArrayList<>();
     // 0
@@ -122,7 +122,8 @@ public class TestGroupingSearch extends LuceneTestCase {
     Sort groupSort = Sort.RELEVANCE;
     GroupingSearch groupingSearch = createRandomGroupingSearch(groupField, groupSort, 5, canUseIDV);
 
-    TopGroups<?> groups = groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
+    TopGroups<?> groups =
+        groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
 
     assertEquals(7, groups.totalHitCount);
     assertEquals(7, groups.totalGroupedHitCount);
@@ -160,13 +161,14 @@ public class TestGroupingSearch extends LuceneTestCase {
 
     Query lastDocInBlock = new TermQuery(new Term("groupend", "x"));
     groupingSearch = new GroupingSearch(lastDocInBlock);
-    groups = groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
+    groups =
+        groupingSearch.search(indexSearcher, new TermQuery(new Term("content", "random")), 0, 10);
 
     assertEquals(7, groups.totalHitCount);
     assertEquals(7, groups.totalGroupedHitCount);
     assertEquals(4, groups.totalGroupCount.longValue());
     assertEquals(4, groups.groups.length);
-    
+
     indexSearcher.getIndexReader().close();
     dir.close();
   }
@@ -201,7 +203,8 @@ public class TestGroupingSearch extends LuceneTestCase {
     }
   }
 
-  private GroupingSearch createRandomGroupingSearch(String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) {
+  private GroupingSearch createRandomGroupingSearch(
+      String groupField, Sort groupSort, int docsInGroup, boolean canUseIDV) {
     GroupingSearch groupingSearch;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
@@ -222,10 +225,11 @@ public class TestGroupingSearch extends LuceneTestCase {
 
   public void testSetAllGroups() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(
-        random(),
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     Document doc = new Document();
     doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
     doc.add(new SortedDocValuesField("group", new BytesRef("foo")));
@@ -238,7 +242,7 @@ public class TestGroupingSearch extends LuceneTestCase {
     gs.setAllGroups(true);
     TopGroups<?> groups = gs.search(indexSearcher, new TermQuery(new Term("group", "foo")), 0, 10);
     assertEquals(1, groups.totalHitCount);
-    //assertEquals(1, groups.totalGroupCount.intValue());
+    // assertEquals(1, groups.totalGroupCount.intValue());
     assertEquals(1, groups.totalGroupedHitCount);
     assertEquals(1, gs.getAllMatchingGroups().size());
     indexSearcher.getIndexReader().close();

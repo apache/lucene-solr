@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
-
-/**
- * Test basic GeoPoint functionality.
- */
+/** Test basic GeoPoint functionality. */
 public class TestGeoPoint extends LuceneTestCase {
-  static final double DEGREES_TO_RADIANS =  Math.PI / 180;
+  static final double DEGREES_TO_RADIANS = Math.PI / 180;
 
   @Test
   public void testConversion() {
@@ -38,12 +36,17 @@ public class TestGeoPoint extends LuceneTestCase {
     for (int i = 0; i < times; i++) {
       final double pLat = (randomFloat() * 180.0 - 90.0) * DEGREES_TO_RADIANS;
       final double pLon = (randomFloat() * 360.0 - 180.0) * DEGREES_TO_RADIANS;
-      testPointRoundTrip(PlanetModel.SPHERE, pLat, pLon, 1e-6);//1e-6 since there's a square root in there (Karl says)
+      testPointRoundTrip(
+          PlanetModel.SPHERE,
+          pLat,
+          pLon,
+          1e-6); // 1e-6 since there's a square root in there (Karl says)
       testPointRoundTrip(PlanetModel.WGS84, pLat, pLon, 1e-6);
     }
   }
 
-  protected void testPointRoundTrip(PlanetModel planetModel, double pLat, double pLon, double epsilon) {
+  protected void testPointRoundTrip(
+      PlanetModel planetModel, double pLat, double pLon, double epsilon) {
     final GeoPoint p1 = new GeoPoint(planetModel, pLat, pLon);
     // In order to force the reverse conversion, we have to construct a geopoint from just x,y,z
     final GeoPoint p2 = new GeoPoint(p1.x, p1.y, p1.z);
@@ -65,23 +68,35 @@ public class TestGeoPoint extends LuceneTestCase {
       final GeoPoint p2 = new GeoPoint(PlanetModel.SPHERE, p2Lat, p2Lon);
       final double arcDistance = p1.arcDistance(p2);
       // Compute ellipsoid distance; it should agree for a sphere
-      final double surfaceDistance = PlanetModel.SPHERE.surfaceDistance(p1,p2);
+      final double surfaceDistance = PlanetModel.SPHERE.surfaceDistance(p1, p2);
       assertEquals(arcDistance, surfaceDistance, 1e-6);
     }
 
     // Now try some WGS84 points (taken randomly and compared against a known-good implementation)
-    assertEquals(1.1444648695765323, PlanetModel.WGS84.surfaceDistance(
-      new GeoPoint(PlanetModel.WGS84, 0.038203808753702884, -0.6701260455506466),
-      new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)), 1e-6);
-    assertEquals(1.4345148695890722, PlanetModel.WGS84.surfaceDistance(
-      new GeoPoint(PlanetModel.WGS84, 0.5220926323378574, 0.6758041581907408),
-      new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)), 1e-6);
-    assertEquals(2.32418144616446, PlanetModel.WGS84.surfaceDistance(
-      new GeoPoint(PlanetModel.WGS84, 0.09541335760967473, 1.2091829760623236),
-      new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)), 1e-6);
-    assertEquals(2.018421047005435, PlanetModel.WGS84.surfaceDistance(
-      new GeoPoint(PlanetModel.WGS84, 0.3402853531962009, -0.43544195327249957),
-      new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)), 1e-6);
+    assertEquals(
+        1.1444648695765323,
+        PlanetModel.WGS84.surfaceDistance(
+            new GeoPoint(PlanetModel.WGS84, 0.038203808753702884, -0.6701260455506466),
+            new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)),
+        1e-6);
+    assertEquals(
+        1.4345148695890722,
+        PlanetModel.WGS84.surfaceDistance(
+            new GeoPoint(PlanetModel.WGS84, 0.5220926323378574, 0.6758041581907408),
+            new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)),
+        1e-6);
+    assertEquals(
+        2.32418144616446,
+        PlanetModel.WGS84.surfaceDistance(
+            new GeoPoint(PlanetModel.WGS84, 0.09541335760967473, 1.2091829760623236),
+            new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)),
+        1e-6);
+    assertEquals(
+        2.018421047005435,
+        PlanetModel.WGS84.surfaceDistance(
+            new GeoPoint(PlanetModel.WGS84, 0.3402853531962009, -0.43544195327249957),
+            new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)),
+        1e-6);
   }
 
   @Test
@@ -102,7 +117,7 @@ public class TestGeoPoint extends LuceneTestCase {
       }
     }
   }
-  
+
   @Test(expected = IllegalArgumentException.class)
   public void testBadLatLon() {
     new GeoPoint(PlanetModel.SPHERE, 50.0, 32.2);

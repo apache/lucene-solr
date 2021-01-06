@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
@@ -29,6 +28,7 @@ import org.apache.lucene.util.Counter;
 
 /**
  * This wrapper buffers incoming elements.
+ *
  * @lucene.experimental
  */
 public class BufferedInputIterator implements InputIterator {
@@ -43,6 +43,7 @@ public class BufferedInputIterator implements InputIterator {
   protected int curPos = -1;
   /** buffered weights, parallel with {@link #entries} */
   protected long[] freqs = new long[1];
+
   private final BytesRefBuilder spare = new BytesRefBuilder();
   private final BytesRefBuilder payloadSpare = new BytesRefBuilder();
   private final boolean hasPayloads;
@@ -54,7 +55,7 @@ public class BufferedInputIterator implements InputIterator {
     int freqIndex = 0;
     hasPayloads = source.hasPayloads();
     hasContexts = source.hasContexts();
-    while((spare = source.next()) != null) {
+    while ((spare = source.next()) != null) {
       entries.append(spare);
       if (hasPayloads) {
         payloads.append(source.payload());
@@ -63,11 +64,10 @@ public class BufferedInputIterator implements InputIterator {
         contextSets.add(source.contexts());
       }
       if (freqIndex >= freqs.length) {
-        freqs = ArrayUtil.grow(freqs, freqs.length+1);
+        freqs = ArrayUtil.grow(freqs, freqs.length + 1);
       }
       freqs[freqIndex++] = source.weight();
     }
-   
   }
 
   @Override

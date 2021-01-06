@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
-
 import org.apache.lucene.facet.DrillSidewaysScorer.DocsAndCost;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -36,8 +35,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
-/** Only purpose is to punch through and return a
- *  DrillSidewaysScorer*/ 
+/** Only purpose is to punch through and return a DrillSidewaysScorer */
 
 // TODO change the way DrillSidewaysScorer is used, this query does not work
 // with filter caching
@@ -48,7 +46,12 @@ class DrillSidewaysQuery extends Query {
   final Query[] drillDownQueries;
   final boolean scoreSubDocsAtOnce;
 
-  DrillSidewaysQuery(Query baseQuery, Collector drillDownCollector, Collector[] drillSidewaysCollectors, Query[] drillDownQueries, boolean scoreSubDocsAtOnce) {
+  DrillSidewaysQuery(
+      Query baseQuery,
+      Collector drillDownCollector,
+      Collector[] drillSidewaysCollectors,
+      Query[] drillDownQueries,
+      boolean scoreSubDocsAtOnce) {
     this.baseQuery = Objects.requireNonNull(baseQuery);
     this.drillDownCollector = drillDownCollector;
     this.drillSidewaysCollectors = drillSidewaysCollectors;
@@ -64,7 +67,7 @@ class DrillSidewaysQuery extends Query {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query newQuery = baseQuery;
-    while(true) {
+    while (true) {
       Query rewrittenQuery = newQuery.rewrite(reader);
       if (rewrittenQuery == newQuery) {
         break;
@@ -74,7 +77,12 @@ class DrillSidewaysQuery extends Query {
     if (newQuery == baseQuery) {
       return super.rewrite(reader);
     } else {
-      return new DrillSidewaysQuery(newQuery, drillDownCollector, drillSidewaysCollectors, drillDownQueries, scoreSubDocsAtOnce);
+      return new DrillSidewaysQuery(
+          newQuery,
+          drillDownCollector,
+          drillSidewaysCollectors,
+          drillDownQueries,
+          scoreSubDocsAtOnce);
     }
   }
 
@@ -82,13 +90,16 @@ class DrillSidewaysQuery extends Query {
   public void visit(QueryVisitor visitor) {
     visitor.visitLeaf(this);
   }
-  
+
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     final Weight baseWeight = baseQuery.createWeight(searcher, scoreMode, boost);
     final Weight[] drillDowns = new Weight[drillDownQueries.length];
-    for(int dim=0;dim<drillDownQueries.length;dim++) {
-      drillDowns[dim] = searcher.createWeight(searcher.rewrite(drillDownQueries[dim]), ScoreMode.COMPLETE_NO_SCORES, 1);
+    for (int dim = 0; dim < drillDownQueries.length; dim++) {
+      drillDowns[dim] =
+          searcher.createWeight(
+              searcher.rewrite(drillDownQueries[dim]), ScoreMode.COMPLETE_NO_SCORES, 1);
     }
 
     return new Weight(DrillSidewaysQuery.this) {
@@ -105,11 +116,13 @@ class DrillSidewaysQuery extends Query {
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
-        if (baseWeight.isCacheable(ctx) == false)
+        if (baseWeight.isCacheable(ctx) == false) {
           return false;
+        }
         for (Weight w : drillDowns) {
-          if (w.isCacheable(ctx) == false)
+          if (w.isCacheable(ctx) == false) {
             return false;
+          }
         }
         return true;
       }
@@ -118,13 +131,15 @@ class DrillSidewaysQuery extends Query {
       public BulkScorer bulkScorer(LeafReaderContext context) throws IOException {
         Scorer baseScorer = baseWeight.scorer(context);
 
-        DrillSidewaysScorer.DocsAndCost[] dims = new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
+        DrillSidewaysScorer.DocsAndCost[] dims =
+            new DrillSidewaysScorer.DocsAndCost[drillDowns.length];
         int nullCount = 0;
-        for(int dim=0;dim<dims.length;dim++) {
+        for (int dim = 0; dim < dims.length; dim++) {
           Scorer scorer = drillDowns[dim].scorer(context);
           if (scorer == null) {
             nullCount++;
-            scorer = new ConstantScoreScorer(drillDowns[dim], 0f, scoreMode, DocIdSetIterator.empty());
+            scorer =
+                new ConstantScoreScorer(drillDowns[dim], 0f, scoreMode, DocIdSetIterator.empty());
           }
 
           dims[dim] = new DrillSidewaysScorer.DocsAndCost(scorer, drillSidewaysCollectors[dim]);
@@ -134,27 +149,27 @@ class DrillSidewaysQuery extends Query {
         // are no hits nor drill-sideways counts.  Or, if we
         // have only one dim and that dim has no matches,
         // same thing.
-        //if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
+        // if (nullCount > 1 || (nullCount == 1 && dims.length == 1)) {
         if (nullCount > 1) {
           return null;
         }
 
         // Sort drill-downs by most restrictive first:
-        Arrays.sort(dims, new Comparator<DrillSidewaysScorer.DocsAndCost>() {
-          @Override
-          public int compare(DocsAndCost o1, DocsAndCost o2) {
-            return Long.compare(o1.approximation.cost(), o2.approximation.cost());
-          }
-        });
+        Arrays.sort(
+            dims,
+            new Comparator<DrillSidewaysScorer.DocsAndCost>() {
+              @Override
+              public int compare(DocsAndCost o1, DocsAndCost o2) {
+                return Long.compare(o1.approximation.cost(), o2.approximation.cost());
+              }
+            });
 
         if (baseScorer == null) {
           return null;
         }
 
-        return new DrillSidewaysScorer(context,
-                                       baseScorer,
-                                       drillDownCollector, dims,
-                                       scoreSubDocsAtOnce);
+        return new DrillSidewaysScorer(
+            context, baseScorer, drillDownCollector, dims, scoreSubDocsAtOnce);
       }
     };
   }
@@ -174,14 +189,13 @@ class DrillSidewaysQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(DrillSidewaysQuery other) {
-    return Objects.equals(baseQuery, other.baseQuery) &&
-           Objects.equals(drillDownCollector, other.drillDownCollector) &&
-           Arrays.equals(drillDownQueries, other.drillDownQueries) &&
-           Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors);
+    return Objects.equals(baseQuery, other.baseQuery)
+        && Objects.equals(drillDownCollector, other.drillDownCollector)
+        && Arrays.equals(drillDownQueries, other.drillDownQueries)
+        && Arrays.equals(drillSidewaysCollectors, other.drillSidewaysCollectors);
   }
 }

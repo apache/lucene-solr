@@ -19,7 +19,6 @@ package org.apache.lucene.backward_index;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentInfos;
@@ -39,20 +38,29 @@ public class TestIndexWriterOnOldIndex extends LuceneTestCase {
     Directory dir = newFSDirectory(path);
     for (OpenMode openMode : OpenMode.values()) {
       Directory tmpDir = newDirectory(dir);
-      assertEquals(7 /** 7.0.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
+      assertEquals(
+          7
+          /** 7.0.0 */
+          ,
+          SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       IndexWriter w = new IndexWriter(tmpDir, newIndexWriterConfig().setOpenMode(openMode));
       w.commit();
       w.close();
       switch (openMode) {
         case CREATE:
-          assertEquals(Version.LATEST.major, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
+          assertEquals(
+              Version.LATEST.major,
+              SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
           break;
         default:
-          assertEquals(7 /** 7.0.0 */, SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
+          assertEquals(
+              7
+              /** 7.0.0 */
+              ,
+              SegmentInfos.readLatestCommit(tmpDir).getIndexCreatedVersionMajor());
       }
       tmpDir.close();
     }
     dir.close();
   }
-
 }

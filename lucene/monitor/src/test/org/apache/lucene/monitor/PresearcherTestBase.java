@@ -18,7 +18,6 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -58,15 +57,15 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("field_1:test")));
 
-      assertEquals(0,
-          monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
+      assertEquals(
+          0, monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
     }
-
   }
 
   public void testEmptyMonitorHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER);
+      MatchingQueries<QueryMatch> matches =
+          monitor.match(buildDoc("field_2", "test"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
     }
@@ -75,22 +74,24 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
   public void testMatchAllQueryHandling() throws IOException {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
-      assertEquals(1,
-          monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
+      assertEquals(
+          1, monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER).getMatchCount());
     }
   }
 
   public void testNegativeQueryHandling() throws IOException {
-    Query q = new BooleanQuery.Builder()
-        .add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("f", "foo")), BooleanClause.Occur.MUST_NOT)
-        .build();
+    Query q =
+        new BooleanQuery.Builder()
+            .add(new MatchAllDocsQuery(), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("f", "foo")), BooleanClause.Occur.MUST_NOT)
+            .build();
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", q));
 
-      MultiMatchingQueries<QueryMatch> matches = monitor.match(new Document[]{
-          buildDoc("f", "bar"), buildDoc("f", "foo")
-      }, QueryMatch.SIMPLE_MATCHER);
+      MultiMatchingQueries<QueryMatch> matches =
+          monitor.match(
+              new Document[] {buildDoc("f", "bar"), buildDoc("f", "foo")},
+              QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount(0));
       assertEquals(0, matches.getMatchCount(1));
     }
@@ -100,13 +101,14 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", new MatchAllDocsQuery()));
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER);
+      MatchingQueries<QueryMatch> matches =
+          monitor.match(buildDoc("f", "wibble"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.getQueriesRun());
     }
   }
 
-  private static final BytesRef NON_STRING_TERM = new BytesRef(new byte[]{60, 8, 0, 0, 0, 9});
+  private static final BytesRef NON_STRING_TERM = new BytesRef(new byte[] {60, 8, 0, 0, 0, 9});
 
   static class BytesRefAttribute extends AttributeImpl implements TermToBytesRefAttribute {
 
@@ -116,19 +118,13 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
     }
 
     @Override
-    public void clear() {
-
-    }
+    public void clear() {}
 
     @Override
-    public void reflectWith(AttributeReflector attributeReflector) {
-
-    }
+    public void reflectWith(AttributeReflector attributeReflector) {}
 
     @Override
-    public void copyTo(AttributeImpl attribute) {
-
-    }
+    public void copyTo(AttributeImpl attribute) {}
   }
 
   static final class NonStringTokenStream extends TokenStream {
@@ -143,8 +139,7 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
 
     @Override
     public boolean incrementToken() {
-      if (done)
-        return false;
+      if (done) return false;
       return done = true;
     }
   }
@@ -164,7 +159,6 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
       assertEquals(1, m.getMatchCount());
       assertEquals(1, m.getQueriesRun());
     }
-
   }
 
   public static BooleanClause must(Query q) {
@@ -174,5 +168,4 @@ public abstract class PresearcherTestBase extends MonitorTestBase {
   public static BooleanClause should(Query q) {
     return new BooleanClause(q, BooleanClause.Occur.SHOULD);
   }
-
 }

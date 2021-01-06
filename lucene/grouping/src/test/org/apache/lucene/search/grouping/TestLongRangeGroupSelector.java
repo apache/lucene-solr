@@ -42,8 +42,8 @@ public class TestLongRangeGroupSelector extends BaseGroupSelectorTestCase<LongRa
 
   @Override
   protected GroupSelector<LongRange> getGroupSelector() {
-    return new LongRangeGroupSelector(LongValuesSource.fromLongField("long"),
-        new LongRangeFactory(100, 100, 900));
+    return new LongRangeGroupSelector(
+        LongValuesSource.fromLongField("long"), new LongRangeFactory(100, 100, 900));
   }
 
   @Override

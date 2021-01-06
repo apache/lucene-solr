@@ -21,6 +21,10 @@ New Features
   Improve support for arbitrary container-level plugins. Add ClusterSingleton
   support for plugins that require only one active instance in the cluster. (ab, noble)
 
+* SOLR-14613: Autoscaling replacement using placement plugins (ilan, ab, noble)
+
+* SOLR-15019: Replica placement API needs a way to fetch existing replica metrics. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -230,6 +234,11 @@ Improvements
 
 * SOLR-14413: Allow timeAllowed and cursorMark parameters together. (John Gallagher via Mike Drob)
 
+* SOLR-15062: /api/cluster/zk/ls should give the stat of the current node (noble)
+
+* SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
+  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
@@ -274,6 +283,18 @@ Bug Fixes
 
 * SOLR-15031: Fix preventing null being wrapped in a QueryValueSource subQuery. Such null queries can be caused by query text
   resulting in an empty token stream. (Pieter van Boxtel via Mike Drob)
+
+* SOLR-15061: Fix NPE in SearchHandler when shards.info and no QueryComponent configured. (Bruno Roustant)
+
+* SOLR-14571: Download speed was hard-coded in the "Replication" screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
+
+* SOLR-15048: Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent that are in the
+  null group to treat them consistently regardless of collapse field type or group head selector. (hossman)
+
+* SOLR-15058: Enforce node_name contains colon and port and find first underscore after colon to parse context
+  when converting a node_name to a base URL. (Timothy Potter, Su Sasa)
+
+* SOLR-15047: Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group (hossman)
 
 Other Changes
 ---------------------

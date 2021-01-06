@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.util.BytesRef;
@@ -57,14 +56,13 @@ public class BytesRefIteratorTokenStream extends TokenStream {
     } else {
       clearAttributes();
       bytesAtt.setBytesRef(bytes);
-      //note: we don't bother setting posInc or type attributes.  There's no point to it.
+      // note: we don't bother setting posInc or type attributes.  There's no point to it.
       return true;
     }
   }
 
-  //members
+  // members
   private final BytesTermAttribute bytesAtt = addAttribute(BytesTermAttribute.class);
 
   private BytesRefIterator bytesIter = null; // null means not initialized
-
 }

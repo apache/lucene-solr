@@ -17,12 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -31,7 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.components.SearchTabOperator;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
@@ -169,10 +168,20 @@ public final class SortPaneProvider implements SortTabOperator {
 
     List<SortField> li = new ArrayList<>();
     if (!StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem())) {
-      searchModel.getSortType((String) fieldCombo1.getSelectedItem(), (String) typeCombo1.getSelectedItem(), isReverse(orderCombo1)).ifPresent(li::add);
+      searchModel
+          .getSortType(
+              (String) fieldCombo1.getSelectedItem(),
+              (String) typeCombo1.getSelectedItem(),
+              isReverse(orderCombo1))
+          .ifPresent(li::add);
     }
     if (!StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
-      searchModel.getSortType((String) fieldCombo2.getSelectedItem(), (String) typeCombo2.getSelectedItem(), isReverse(orderCombo2)).ifPresent(li::add);
+      searchModel
+          .getSortType(
+              (String) fieldCombo2.getSelectedItem(),
+              (String) typeCombo2.getSelectedItem(),
+              isReverse(orderCombo2))
+          .ifPresent(li::add);
     }
     return new Sort(li.toArray(new SortField[0]));
   }
@@ -192,22 +201,26 @@ public final class SortPaneProvider implements SortTabOperator {
       resetExactHitsCnt();
     }
 
-    private void resetField(JComboBox<String> fieldCombo, JComboBox<String> typeCombo, JComboBox<String> orderCombo) {
+    private void resetField(
+        JComboBox<String> fieldCombo, JComboBox<String> typeCombo, JComboBox<String> orderCombo) {
       typeCombo.removeAllItems();
       if (StringUtils.isNullOrEmpty((String) fieldCombo.getSelectedItem())) {
         typeCombo.addItem("");
         typeCombo.setEnabled(false);
         orderCombo.setEnabled(false);
       } else {
-        List<SortField> sortFields = searchModel.guessSortTypes((String) fieldCombo.getSelectedItem());
+        List<SortField> sortFields =
+            searchModel.guessSortTypes((String) fieldCombo.getSelectedItem());
         sortFields.stream()
-            .map(sf -> {
-              if (sf instanceof SortedNumericSortField) {
-                return ((SortedNumericSortField) sf).getNumericType().name();
-              } else {
-                return sf.getType().name();
-              }
-            }).forEach(typeCombo::addItem);
+            .map(
+                sf -> {
+                  if (sf instanceof SortedNumericSortField) {
+                    return ((SortedNumericSortField) sf).getNumericType().name();
+                  } else {
+                    return sf.getType().name();
+                  }
+                })
+            .forEach(typeCombo::addItem);
         typeCombo.setEnabled(true);
         orderCombo.setEnabled(true);
       }
@@ -232,21 +245,25 @@ public final class SortPaneProvider implements SortTabOperator {
     }
 
     private void resetExactHitsCnt() {
-      operatorRegistry.get(SearchTabOperator.class).ifPresent(operator -> {
-        if (StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem()) &&
-            StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
-          operator.enableExactHitsCB(true);
-          operator.setExactHits(false);
-        } else {
-          operator.enableExactHitsCB(false);
-          operator.setExactHits(true);
-        }
-      });
+      operatorRegistry
+          .get(SearchTabOperator.class)
+          .ifPresent(
+              operator -> {
+                if (StringUtils.isNullOrEmpty((String) fieldCombo1.getSelectedItem())
+                    && StringUtils.isNullOrEmpty((String) fieldCombo2.getSelectedItem())) {
+                  operator.enableExactHitsCB(true);
+                  operator.setExactHits(false);
+                } else {
+                  operator.enableExactHitsCB(false);
+                  operator.setExactHits(true);
+                }
+              });
     }
   }
 
   enum Order {
-    ASC, DESC;
+    ASC,
+    DESC;
 
     static String[] names() {
       return Arrays.stream(values()).map(Order::name).toArray(String[]::new);

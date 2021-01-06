@@ -33,9 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * Testcase for {@link org.apache.lucene.classification.utils.DocToDoubleVectorUtils}
- */
+/** Testcase for {@link org.apache.lucene.classification.utils.DocToDoubleVectorUtils} */
 public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
 
   private IndexReader index;
@@ -57,7 +55,11 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
     for (int i = 0; i < 10; i++) {
       doc = new Document();
       doc.add(new Field("id", Integer.toString(i), ft));
-      doc.add(new Field("text", random().nextInt(10) + " " + random().nextInt(10) + " " + random().nextInt(10), ft));
+      doc.add(
+          new Field(
+              "text",
+              random().nextInt(10) + " " + random().nextInt(10) + " " + random().nextInt(10),
+              ft));
       indexWriter.addDocument(doc);
     }
 
@@ -79,7 +81,8 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
   @Test
   public void testDenseFreqDoubleArrayConversion() throws Exception {
     IndexSearcher indexSearcher = new IndexSearcher(index);
-    for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
+    for (ScoreDoc scoreDoc :
+        indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
       Terms docTerms = index.getTermVector(scoreDoc.doc, "text");
       Double[] vector = DocToDoubleVectorUtils.toDenseLocalFreqDoubleArray(docTerms);
       assertNotNull(vector);
@@ -92,7 +95,8 @@ public class DocToDoubleVectorUtilsTest extends LuceneTestCase {
     Terms fieldTerms = MultiTerms.getTerms(index, "text");
     if (fieldTerms != null && fieldTerms.size() != -1) {
       IndexSearcher indexSearcher = new IndexSearcher(index);
-      for (ScoreDoc scoreDoc : indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
+      for (ScoreDoc scoreDoc :
+          indexSearcher.search(new MatchAllDocsQuery(), Integer.MAX_VALUE).scoreDocs) {
         Terms docTerms = index.getTermVector(scoreDoc.doc, "text");
         Double[] vector = DocToDoubleVectorUtils.toSparseLocalFreqDoubleArray(docTerms, fieldTerms);
         assertNotNull(vector);

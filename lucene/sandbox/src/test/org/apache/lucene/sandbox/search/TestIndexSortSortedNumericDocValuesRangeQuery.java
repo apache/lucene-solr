@@ -16,8 +16,9 @@
  */
 package org.apache.lucene.sandbox.search;
 
-import java.io.IOException;
+import static org.hamcrest.CoreMatchers.instanceOf;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
@@ -28,7 +29,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.sandbox.search.IndexSortSortedNumericDocValuesRangeQuery;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -46,8 +46,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCase {
 
@@ -83,8 +81,10 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
       iw.close();
 
       for (int i = 0; i < 100; ++i) {
-        final long min = random().nextBoolean() ? Long.MIN_VALUE : TestUtil.nextLong(random(), -100, 10000);
-        final long max = random().nextBoolean() ? Long.MAX_VALUE : TestUtil.nextLong(random(), -100, 10000);
+        final long min =
+            random().nextBoolean() ? Long.MIN_VALUE : TestUtil.nextLong(random(), -100, 10000);
+        final long max =
+            random().nextBoolean() ? Long.MAX_VALUE : TestUtil.nextLong(random(), -100, 10000);
         final Query q1 = LongPoint.newRangeQuery("idx", min, max);
         final Query q2 = createQuery("dv", min, max);
         assertSameHits(searcher, q1, q2, false);
@@ -95,7 +95,8 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     }
   }
 
-  private void assertSameHits(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameHits(IndexSearcher searcher, Query q1, Query q2, boolean scores)
+      throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
@@ -122,11 +123,17 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     assertEquals("[3 TO 5]", q1.toString("foo"));
     assertEquals("foo:[3 TO 5]", q1.toString("bar"));
 
-    Query q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
+    Query q2 =
+        SortedSetDocValuesField.newSlowRangeQuery(
+            "foo", new BytesRef("bar"), new BytesRef("baz"), true, true);
     assertEquals("foo:[[62 61 72] TO [62 61 7a]]", q2.toString());
-    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, true);
+    q2 =
+        SortedSetDocValuesField.newSlowRangeQuery(
+            "foo", new BytesRef("bar"), new BytesRef("baz"), false, true);
     assertEquals("foo:{[62 61 72] TO [62 61 7a]]", q2.toString());
-    q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), new BytesRef("baz"), false, false);
+    q2 =
+        SortedSetDocValuesField.newSlowRangeQuery(
+            "foo", new BytesRef("bar"), new BytesRef("baz"), false, false);
     assertEquals("foo:{[62 61 72] TO [62 61 7a]}", q2.toString());
     q2 = SortedSetDocValuesField.newSlowRangeQuery("foo", new BytesRef("bar"), null, true, true);
     assertEquals("foo:[[62 61 72] TO *}", q2.toString());
@@ -265,7 +272,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     testIndexSortDocValuesWithSingleValue(true);
   }
 
-  private void testIndexSortDocValuesWithSingleValue(boolean reverse) throws IOException{
+  private void testIndexSortDocValuesWithSingleValue(boolean reverse) throws IOException {
     Directory dir = newDirectory();
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
@@ -364,7 +371,8 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     assertNotEquals(query, rewrittenQuery);
     assertThat(rewrittenQuery, instanceOf(IndexSortSortedNumericDocValuesRangeQuery.class));
 
-    IndexSortSortedNumericDocValuesRangeQuery rangeQuery = (IndexSortSortedNumericDocValuesRangeQuery) rewrittenQuery;
+    IndexSortSortedNumericDocValuesRangeQuery rangeQuery =
+        (IndexSortSortedNumericDocValuesRangeQuery) rewrittenQuery;
     assertEquals(new MatchNoDocsQuery(), rangeQuery.getFallbackQuery());
 
     writer.close();
@@ -372,9 +380,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     dir.close();
   }
 
-  /**
-   * Test that the index sort optimization not activated if there is no index sort.
-   */
+  /** Test that the index sort optimization not activated if there is no index sort. */
   public void testNoIndexSort() throws Exception {
     Directory dir = newDirectory();
 
@@ -387,10 +393,7 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
     dir.close();
   }
 
-  /**
-   * Test that the index sort optimization is not activated when the sort is
-   * on the wrong field.
-   */
+  /** Test that the index sort optimization is not activated when the sort is on the wrong field. */
   public void testIndexSortOnWrongField() throws Exception {
     Directory dir = newDirectory();
 
@@ -408,8 +411,8 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
   }
 
   /**
-   * Test that the index sort optimization is not activated when some documents
-   * have multiple values.
+   * Test that the index sort optimization is not activated when some documents have multiple
+   * values.
    */
   public void testMultiDocValues() throws Exception {
     Directory dir = newDirectory();
@@ -454,7 +457,9 @@ public class TestIndexSortSortedNumericDocValuesRangeQuery extends LuceneTestCas
   }
 
   private Query createQuery(String field, long lowerValue, long upperValue) {
-    Query fallbackQuery = SortedNumericDocValuesField.newSlowRangeQuery(field, lowerValue, upperValue);
-    return new IndexSortSortedNumericDocValuesRangeQuery(field, lowerValue, upperValue, fallbackQuery);
+    Query fallbackQuery =
+        SortedNumericDocValuesField.newSlowRangeQuery(field, lowerValue, upperValue);
+    return new IndexSortSortedNumericDocValuesRangeQuery(
+        field, lowerValue, upperValue, fallbackQuery);
   }
 }

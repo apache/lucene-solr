@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -27,16 +26,19 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
- * A Query matching documents that have an {@link SpatialRelation#INTERSECTS}
- * (i.e. not DISTINCT) relationship with a provided query shape.
+ * A Query matching documents that have an {@link SpatialRelation#INTERSECTS} (i.e. not DISTINCT)
+ * relationship with a provided query shape.
  *
  * @lucene.internal
  */
 public class IntersectsPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
 
-  public IntersectsPrefixTreeQuery(Shape queryShape, String fieldName,
-                                   SpatialPrefixTree grid, int detailLevel,
-                                   int prefixGridScanLevel) {
+  public IntersectsPrefixTreeQuery(
+      Shape queryShape,
+      String fieldName,
+      SpatialPrefixTree grid,
+      int detailLevel,
+      int prefixGridScanLevel) {
     super(queryShape, fieldName, grid, detailLevel, prefixGridScanLevel);
   }
 
@@ -77,18 +79,17 @@ public class IntersectsPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
       protected void visitLeaf(Cell cell) throws IOException {
         collectDocs(results);
       }
-
     }.getDocIdSet();
   }
 
   @Override
   public String toString(String field) {
-    return getClass().getSimpleName() + "(" +
-        "fieldName=" + fieldName + "," +
-        "queryShape=" + queryShape + "," +
-        "detailLevel=" + detailLevel + "," +
-        "prefixGridScanLevel=" + prefixGridScanLevel +
-        ")";
+    return getClass().getSimpleName()
+        + "("
+        + ("fieldName=" + fieldName + ",")
+        + ("queryShape=" + queryShape + ",")
+        + ("detailLevel=" + detailLevel + ",")
+        + ("prefixGridScanLevel=" + prefixGridScanLevel)
+        + ")";
   }
-
 }

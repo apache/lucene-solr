@@ -28,27 +28,32 @@ public class TestRunWithRestrictedPermissions extends LuceneTestCase {
   }
 
   public void testNormallyAllowedStuff() throws Exception {
-    expectThrows(SecurityException.class, () -> runWithRestrictedPermissions(this::doSomeForbiddenStuff));
+    expectThrows(
+        SecurityException.class, () -> runWithRestrictedPermissions(this::doSomeForbiddenStuff));
   }
 
   public void testCompletelyForbidden1() throws Exception {
-    expectThrows(SecurityException.class, () -> runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff));
+    expectThrows(
+        SecurityException.class,
+        () -> runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff));
   }
 
   public void testCompletelyForbidden2() throws Exception {
-    expectThrows(SecurityException.class, () ->
-        runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff, new AllPermission()));
+    expectThrows(
+        SecurityException.class,
+        () ->
+            runWithRestrictedPermissions(
+                this::doSomeCompletelyForbiddenStuff, new AllPermission()));
   }
 
   private Void doSomeForbiddenStuff() throws IOException {
     createTempDir("cannot_create_temp_folder");
     return null; // Void
   }
-  
+
   // something like this should not never pass!!
   private Void doSomeCompletelyForbiddenStuff() throws IOException {
     Files.createFile(Paths.get("denied"));
     return null; // Void
   }
-  
 }

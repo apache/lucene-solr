@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
-import java.util.List;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanQuery;
+import java.util.List;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 
 class SrndBooleanQuery {
   public static void addQueriesToBoolean(
-          BooleanQuery.Builder bq,
-          List<Query> queries,
-          BooleanClause.Occur occur) {
+      BooleanQuery.Builder bq, List<Query> queries, BooleanClause.Occur occur) {
     for (int i = 0; i < queries.size(); i++) {
-      bq.add( queries.get(i), occur);
+      bq.add(queries.get(i), occur);
     }
   }
-  
-  public static Query makeBooleanQuery(
-          List<Query> queries,
-          BooleanClause.Occur occur) {
+
+  public static Query makeBooleanQuery(List<Query> queries, BooleanClause.Occur occur) {
     if (queries.size() <= 1) {
       throw new AssertionError("Too few subqueries: " + queries.size());
     }

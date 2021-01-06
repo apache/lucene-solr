@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
@@ -41,21 +40,18 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Like {@link DocValuesTermsQuery}, but this query only
- * runs on a long {@link NumericDocValuesField} or a
- * {@link SortedNumericDocValuesField}, matching
- * all documents whose value in the specified field is
- * contained in the provided set of long values.
+ * Like {@link DocValuesTermsQuery}, but this query only runs on a long {@link
+ * NumericDocValuesField} or a {@link SortedNumericDocValuesField}, matching all documents whose
+ * value in the specified field is contained in the provided set of long values.
  *
- * <p>
- * <b>NOTE</b>: be very careful using this query: it is
- * typically much slower than using {@code TermsQuery},
- * but in certain specialized cases may be faster.
+ * <p><b>NOTE</b>: be very careful using this query: it is typically much slower than using {@code
+ * TermsQuery}, but in certain specialized cases may be faster.
  *
  * @lucene.experimental
  */
 public class DocValuesNumbersQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesNumbersQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(DocValuesNumbersQuery.class);
 
   private final String field;
   private final LongHashSet numbers;
@@ -76,13 +72,11 @@ public class DocValuesNumbersQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(DocValuesNumbersQuery other) {
-    return field.equals(other.field) &&
-           numbers.equals(other.numbers);
+    return field.equals(other.field) && numbers.equals(other.numbers);
   }
 
   @Override
@@ -107,53 +101,52 @@ public class DocValuesNumbersQuery extends Query implements Accountable {
 
   @Override
   public String toString(String defaultField) {
-    return new StringBuilder()
-        .append(field)
-        .append(": ")
-        .append(numbers.toString())
-        .toString();
+    return new StringBuilder().append(field).append(": ").append(numbers.toString()).toString();
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(numbers);
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(field)
+        + RamUsageEstimator.sizeOfObject(numbers);
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(
+            this,
+            score(),
+            scoreMode,
+            new TwoPhaseIterator(values) {
 
-          @Override
-          public boolean matches() throws IOException {
-            int count = values.docValueCount();
-            for(int i=0;i<count;i++) {
-              if (numbers.contains(values.nextValue())) {
-                return true;
+              @Override
+              public boolean matches() throws IOException {
+                int count = values.docValueCount();
+                for (int i = 0; i < count; i++) {
+                  if (numbers.contains(values.nextValue())) {
+                    return true;
+                  }
+                }
+                return false;
               }
-            }
-            return false;
-          }
 
-          @Override
-          public float matchCost() {
-            return 5; // lookup in the set
-          }
-        });
+              @Override
+              public float matchCost() {
+                return 5; // lookup in the set
+              }
+            });
       }
 
       @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
-
 }

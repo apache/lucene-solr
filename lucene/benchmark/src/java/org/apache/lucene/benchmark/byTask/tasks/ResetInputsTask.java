@@ -18,12 +18,9 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
-
-
-
 /**
- * Reset inputs so that the test run would behave, input wise, 
- * as if it just started. This affects e.g. the generation of docs and queries.
+ * Reset inputs so that the test run would behave, input wise, as if it just started. This affects
+ * e.g. the generation of docs and queries.
  */
 public class ResetInputsTask extends PerfTask {
 
@@ -36,7 +33,7 @@ public class ResetInputsTask extends PerfTask {
     getRunData().resetInputs();
     return 0;
   }
-  
+
   /*
    * (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#shouldNotRecordStats()
@@ -45,6 +42,4 @@ public class ResetInputsTask extends PerfTask {
   protected boolean shouldNotRecordStats() {
     return true;
   }
-
-
 }

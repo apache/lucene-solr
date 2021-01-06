@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
@@ -38,39 +37,41 @@ import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
-  
+
   private Document newDocument(TaxonomyWriter taxoWriter) throws IOException {
     FacetsConfig config = new FacetsConfig();
     Document doc = new Document();
     doc.add(new FacetField("A", "1"));
     return config.build(taxoWriter, doc);
   }
-  
+
   @Test
   public void testNoCommit() throws Exception {
     Directory indexDir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
-    
+
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     // should fail when there are no commits to snapshot
-    expectThrows(IllegalStateException.class, () -> {
-      new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
+        });
 
     indexWriter.close();
     IOUtils.close(taxoWriter, taxoDir, indexDir);
   }
-  
+
   @Test
   public void testRevisionRelease() throws Exception {
     Directory indexDir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
-    
+
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     try {
@@ -82,8 +83,10 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       rev1.release();
       assertTrue(slowFileExists(indexDir, IndexFileNames.SEGMENTS + "_1"));
       assertTrue(slowFileExists(taxoDir, IndexFileNames.SEGMENTS + "_1"));
-      
-      rev1 = new IndexAndTaxonomyRevision(indexWriter, taxoWriter); // create revision again, so the files are snapshotted
+
+      rev1 =
+          new IndexAndTaxonomyRevision(
+              indexWriter, taxoWriter); // create revision again, so the files are snapshotted
       indexWriter.addDocument(newDocument(taxoWriter));
       indexWriter.commit();
       taxoWriter.commit();
@@ -95,14 +98,14 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
   }
-  
+
   @Test
   public void testSegmentsFileLast() throws Exception {
     Directory indexDir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
-    
+
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     try {
@@ -110,7 +113,7 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       indexWriter.commit();
       taxoWriter.commit();
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
-      Map<String,List<RevisionFile>> sourceFiles = rev.getSourceFiles();
+      Map<String, List<RevisionFile>> sourceFiles = rev.getSourceFiles();
       assertEquals(2, sourceFiles.size());
       for (List<RevisionFile> files : sourceFiles.values()) {
         String lastFile = files.get(files.size() - 1).fileName;
@@ -121,14 +124,14 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
   }
-  
+
   @Test
   public void testOpen() throws Exception {
     Directory indexDir = newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
-    
+
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
     try {
@@ -136,7 +139,7 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       indexWriter.commit();
       taxoWriter.commit();
       Revision rev = new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
-      for (Entry<String,List<RevisionFile>> e : rev.getSourceFiles().entrySet()) {
+      for (Entry<String, List<RevisionFile>> e : rev.getSourceFiles().entrySet()) {
         String source = e.getKey();
         @SuppressWarnings("resource") // silly, both directories are closed in the end
         Directory dir = source.equals(IndexAndTaxonomyRevision.INDEX_SOURCE) ? indexDir : taxoDir;
@@ -167,5 +170,4 @@ public class TestIndexAndTaxonomyRevision extends ReplicatorTestCase {
       IOUtils.close(indexWriter, taxoWriter, taxoDir, indexDir);
     }
   }
-  
 }

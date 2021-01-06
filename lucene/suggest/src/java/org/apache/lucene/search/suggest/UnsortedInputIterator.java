@@ -19,13 +19,12 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /**
- * This wrapper buffers the incoming elements and makes sure they are in
- * random order.
+ * This wrapper buffers the incoming elements and makes sure they are in random order.
+ *
  * @lucene.experimental
  */
 public class UnsortedInputIterator extends BufferedInputIterator {
@@ -34,9 +33,9 @@ public class UnsortedInputIterator extends BufferedInputIterator {
   private int currentOrd = -1;
   private final BytesRefBuilder spare = new BytesRefBuilder();
   private final BytesRefBuilder payloadSpare = new BytesRefBuilder();
-  /** 
-   * Creates a new iterator, wrapping the specified iterator and
-   * returning elements in a random order.
+  /**
+   * Creates a new iterator, wrapping the specified iterator and returning elements in a random
+   * order.
    */
   public UnsortedInputIterator(InputIterator source) throws IOException {
     super(source);
@@ -52,7 +51,7 @@ public class UnsortedInputIterator extends BufferedInputIterator {
       ords[randomPosition] = temp;
     }
   }
-  
+
   @Override
   public long weight() {
     assert currentOrd == ords[curPos];
@@ -63,11 +62,11 @@ public class UnsortedInputIterator extends BufferedInputIterator {
   public BytesRef next() throws IOException {
     if (++curPos < entries.size()) {
       currentOrd = ords[curPos];
-      return entries.get(spare, currentOrd);  
+      return entries.get(spare, currentOrd);
     }
     return null;
   }
-  
+
   @Override
   public BytesRef payload() {
     if (hasPayloads() && curPos < payloads.size()) {
@@ -76,7 +75,7 @@ public class UnsortedInputIterator extends BufferedInputIterator {
     }
     return null;
   }
-  
+
   @Override
   public Set<BytesRef> contexts() {
     if (hasContexts() && curPos < contextSets.size()) {

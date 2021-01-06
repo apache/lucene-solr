@@ -17,7 +17,6 @@
 package org.apache.lucene.util;
 
 import java.util.ArrayList;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.rules.RuleChain;
@@ -27,10 +26,9 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 
 /**
- * A {@link TestRule} that guarantees the execution of {@link #after} even
- * if an exception has been thrown from delegate {@link Statement}. This is much
- * like {@link AfterClass} or {@link After} annotations but can be used with
- * {@link RuleChain} to guarantee the order of execution.
+ * A {@link TestRule} that guarantees the execution of {@link #after} even if an exception has been
+ * thrown from delegate {@link Statement}. This is much like {@link AfterClass} or {@link After}
+ * annotations but can be used with {@link RuleChain} to guarantee the order of execution.
  */
 abstract class AbstractBeforeAfterRule implements TestRule {
   @Override
@@ -46,7 +44,7 @@ abstract class AbstractBeforeAfterRule implements TestRule {
         } catch (Throwable t) {
           errors.add(t);
         }
-        
+
         try {
           after();
         } catch (Throwable t) {
@@ -59,5 +57,6 @@ abstract class AbstractBeforeAfterRule implements TestRule {
   }
 
   protected void before() throws Exception {}
+
   protected void after() throws Exception {}
 }

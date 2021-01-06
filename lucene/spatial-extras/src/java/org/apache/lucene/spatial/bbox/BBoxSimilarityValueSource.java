@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -29,12 +28,10 @@ import org.apache.lucene.spatial.ShapeValuesSource;
 import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
- * A base class for calculating a spatial relevance rank per document from a provided
- * {@link ShapeValuesSource} returning a {@link
- * org.locationtech.spatial4j.shape.Rectangle} per-document.
- * <p>
- * Implementers: remember to implement equals and hashCode if you have
- * fields!
+ * A base class for calculating a spatial relevance rank per document from a provided {@link
+ * ShapeValuesSource} returning a {@link org.locationtech.spatial4j.shape.Rectangle} per-document.
+ *
+ * <p>Implementers: remember to implement equals and hashCode if you have fields!
  *
  * @lucene.experimental
  */
@@ -53,32 +50,42 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName()+"(" + bboxValueSource.toString() + "," + similarityDescription() + ")";
+    return getClass().getSimpleName()
+        + "("
+        + bboxValueSource.toString()
+        + ","
+        + similarityDescription()
+        + ")";
   }
 
-  /** A comma-separated list of configurable items of the subclass to put into {@link #toString()}. */
+  /**
+   * A comma-separated list of configurable items of the subclass to put into {@link #toString()}.
+   */
   protected abstract String similarityDescription();
 
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
 
     final ShapeValues shapeValues = bboxValueSource.getValues(readerContext);
-    return DoubleValues.withDefault(new DoubleValues() {
-      @Override
-      public double doubleValue() throws IOException {
-        return score((Rectangle) shapeValues.value(), null);
-      }
+    return DoubleValues.withDefault(
+        new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return score((Rectangle) shapeValues.value(), null);
+          }
 
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        return shapeValues.advanceExact(doc);
-      }
-    }, 0);
-
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return shapeValues.advanceExact(doc);
+          }
+        },
+        0);
   }
 
   /**
    * Return a relevancy score. If {@code exp} is provided then diagnostic information is added.
+   *
    * @param rect The indexed rectangle; not null.
    * @param exp Optional diagnostic holder.
    * @return a score.
@@ -88,7 +95,7 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;//same class
+    if (o == null || getClass() != o.getClass()) return false; // same class
 
     BBoxSimilarityValueSource that = (BBoxSimilarityValueSource) o;
 
@@ -103,8 +110,13 @@ public abstract class BBoxSimilarityValueSource extends DoubleValuesSource {
   }
 
   @Override
-  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
-    DoubleValues dv = getValues(ctx, DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue()).getValues(ctx, null));
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+      throws IOException {
+    DoubleValues dv =
+        getValues(
+            ctx,
+            DoubleValuesSource.constant(scoreExplanation.getValue().doubleValue())
+                .getValues(ctx, null));
     if (dv.advanceExact(docId)) {
       AtomicReference<Explanation> explanation = new AtomicReference<>();
       final ShapeValues shapeValues = bboxValueSource.getValues(ctx);

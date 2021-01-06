@@ -21,10 +21,7 @@ import java.io.IOException;
 import opennlp.tools.chunker.ChunkerME;
 import opennlp.tools.chunker.ChunkerModel;
 
-/**
- * Supply OpenNLP Chunking tool
- * Requires binary models from OpenNLP project on SourceForge.
- */
+/** Supply OpenNLP Chunking tool Requires binary models from OpenNLP project on SourceForge. */
 public class NLPChunkerOp {
   private ChunkerME chunker = null;
 
@@ -34,8 +31,7 @@ public class NLPChunkerOp {
 
   public synchronized String[] getChunks(String[] words, String[] tags, double[] probs) {
     String[] chunks = chunker.chunk(words, tags);
-    if (probs != null)
-      chunker.probs(probs);
+    if (probs != null) chunker.probs(probs);
     return chunks;
   }
 }

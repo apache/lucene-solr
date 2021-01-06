@@ -25,5 +25,4 @@ public class DocumentsFactory {
   public Documents newInstance(IndexReader reader) {
     return new DocumentsImpl(reader);
   }
-
 }

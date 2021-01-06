@@ -22,7 +22,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -32,7 +31,7 @@ import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 public class TestSessionToken extends ReplicatorTestCase {
-  
+
   @Test
   public void testSerialization() throws IOException {
     Directory dir = newDirectory();
@@ -42,7 +41,7 @@ public class TestSessionToken extends ReplicatorTestCase {
     writer.addDocument(new Document());
     writer.commit();
     Revision rev = new IndexRevision(writer);
-    
+
     SessionToken session1 = new SessionToken("17", rev);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     session1.serialize(new DataOutputStream(baos));
@@ -60,5 +59,4 @@ public class TestSessionToken extends ReplicatorTestCase {
     writer.close();
     IOUtils.close(dir);
   }
-  
 }

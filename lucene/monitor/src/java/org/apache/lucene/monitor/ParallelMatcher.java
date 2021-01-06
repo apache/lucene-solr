@@ -28,20 +28,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 /**
  * Matcher class that runs matching queries in parallel.
- * <p>
- * This class delegates the actual matching to separate CandidateMatcher classes,
- * built from a passed in MatcherFactory.
- * <p>
- * Use this when individual queries can take a long time to run, and you want
- * to minimize latency.  The matcher distributes queries amongst its worker
- * threads using a BlockingQueue, and synchronization overhead may affect performance
- * if the individual queries are very fast.
+ *
+ * <p>This class delegates the actual matching to separate CandidateMatcher classes, built from a
+ * passed in MatcherFactory.
+ *
+ * <p>Use this when individual queries can take a long time to run, and you want to minimize
+ * latency. The matcher distributes queries amongst its worker threads using a BlockingQueue, and
+ * synchronization overhead may affect performance if the individual queries are very fast.
  *
  * @param <T> the QueryMatch type returned
  * @see PartitionMatcher
@@ -57,13 +55,16 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   /**
    * Create a new ParallelMatcher
    *
-   * @param searcher       the IndexSearcher to match against
-   * @param executor       an ExecutorService to use for parallel execution
+   * @param searcher the IndexSearcher to match against
+   * @param executor an ExecutorService to use for parallel execution
    * @param matcherFactory MatcherFactory to use to create CandidateMatchers
-   * @param threads        the number of threads to execute on
+   * @param threads the number of threads to execute on
    */
-  private ParallelMatcher(IndexSearcher searcher, ExecutorService executor,
-                          MatcherFactory<T> matcherFactory, int threads) {
+  private ParallelMatcher(
+      IndexSearcher searcher,
+      ExecutorService executor,
+      MatcherFactory<T> matcherFactory,
+      int threads) {
     super(searcher);
     for (int i = 0; i < threads; i++) {
       MatcherWorker mw = new MatcherWorker(matcherFactory);
@@ -73,7 +74,8 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   }
 
   @Override
-  protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+  protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
+      throws IOException {
     try {
       queue.put(new MatcherTask(queryId, matchQuery, metadata));
     } catch (InterruptedException e) {
@@ -134,7 +136,6 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
       }
       return matcher;
     }
-
   }
 
   private static class MatcherTask {
@@ -151,7 +152,7 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   }
 
   /* Marker object placed on the queue after all matches are done, to indicate to the
-     worker threads that they should finish */
+  worker threads that they should finish */
   private static final MatcherTask END = new MatcherTask("", null, Collections.emptyMap());
 
   private static class ParallelMatcherFactory<T extends QueryMatch> implements MatcherFactory<T> {
@@ -160,8 +161,8 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
     private final MatcherFactory<T> matcherFactory;
     private final int threads;
 
-    ParallelMatcherFactory(ExecutorService executor, MatcherFactory<T> matcherFactory,
-                                  int threads) {
+    ParallelMatcherFactory(
+        ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
       this.executor = executor;
       this.matcherFactory = matcherFactory;
       this.threads = threads;
@@ -176,30 +177,29 @@ public class ParallelMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
   /**
    * Create a new MatcherFactory for a ParallelMatcher
    *
-   * @param executor       the ExecutorService to use
+   * @param executor the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
-   * @param threads        the number of threads to use
-   * @param <T>            the type of QueryMatch generated
+   * @param threads the number of threads to use
+   * @param <T> the type of QueryMatch generated
    */
-  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
-                                                                         MatcherFactory<T> matcherFactory, int threads) {
+  public static <T extends QueryMatch> MatcherFactory<T> factory(
+      ExecutorService executor, MatcherFactory<T> matcherFactory, int threads) {
     return new ParallelMatcherFactory<>(executor, matcherFactory, threads);
   }
 
   /**
    * Create a new MatcherFactory for a ParallelMatcher
-   * <p>
-   * This factory will create a ParallelMatcher that uses as many threads as there are cores available
-   * to the JVM (as determined by {@code Runtime.getRuntime().availableProcessors()}).
    *
-   * @param executor       the ExecutorService to use
+   * <p>This factory will create a ParallelMatcher that uses as many threads as there are cores
+   * available to the JVM (as determined by {@code Runtime.getRuntime().availableProcessors()}).
+   *
+   * @param executor the ExecutorService to use
    * @param matcherFactory the MatcherFactory to use to create submatchers
-   * @param <T>            the type of QueryMatch generated
+   * @param <T> the type of QueryMatch generated
    */
-  public static <T extends QueryMatch> MatcherFactory<T> factory(ExecutorService executor,
-                                                                         MatcherFactory<T> matcherFactory) {
+  public static <T extends QueryMatch> MatcherFactory<T> factory(
+      ExecutorService executor, MatcherFactory<T> matcherFactory) {
     int threads = Runtime.getRuntime().availableProcessors();
     return new ParallelMatcherFactory<>(executor, matcherFactory, threads);
   }
-
 }

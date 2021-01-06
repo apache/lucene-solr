@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.analysis.ja.tokenattributes;
 
-
 import org.apache.lucene.analysis.ja.Token;
 import org.apache.lucene.util.Attribute;
 
-/**
- * Attribute for {@link Token#getPartOfSpeech()}.
- */
+/** Attribute for {@link Token#getPartOfSpeech()}. */
 public interface PartOfSpeechAttribute extends Attribute {
   public String getPartOfSpeech();
+
   public void setToken(Token token);
 }

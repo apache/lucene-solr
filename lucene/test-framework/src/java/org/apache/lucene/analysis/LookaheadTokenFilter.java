@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -29,16 +28,18 @@ import org.apache.lucene.util.RollingBuffer;
 // TODO: cut SynFilter over to this
 // TODO: somehow add "nuke this input token" capability...
 
-/** An abstract TokenFilter to make it easier to build graph
- *  token filters requiring some lookahead.  This class handles
- *  the details of buffering up tokens, recording them by
- *  position, restoring them, providing access to them, etc. */
+/**
+ * An abstract TokenFilter to make it easier to build graph token filters requiring some lookahead.
+ * This class handles the details of buffering up tokens, recording them by position, restoring
+ * them, providing access to them, etc.
+ */
+public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Position>
+    extends TokenFilter {
 
-public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Position> extends TokenFilter {
+  private static final boolean DEBUG = false;
 
-  private final static boolean DEBUG = false;
-
-  protected final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  protected final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   protected final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   protected final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
@@ -47,15 +48,16 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
 
   // Position of next possible output token to return:
   protected int outputPos;
-  
+
   // True if we hit end from our input:
   protected boolean end;
 
   private boolean tokenPending;
   private boolean insertPending;
 
-  /** Holds all state for a single position; subclass this
-   *  to record other state at each position. */ 
+  /**
+   * Holds all state for a single position; subclass this to record other state at each position.
+   */
   protected static class Position implements RollingBuffer.Resettable {
     // Buffered input tokens at this position:
     public final List<AttributeSource.State> inputTokens = new ArrayList<>();
@@ -91,9 +93,10 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     super(input);
   }
 
-  /** Call this only from within afterPosition, to insert a new
-   *  token.  After calling this you should set any
-   *  necessary token you need. */
+  /**
+   * Call this only from within afterPosition, to insert a new token. After calling this you should
+   * set any necessary token you need.
+   */
   protected void insertToken() throws IOException {
     if (tokenPending) {
       positions.get(inputPos).add(captureState());
@@ -103,27 +106,33 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     insertPending = true;
   }
 
-  /** This is called when all input tokens leaving a given
-   *  position have been returned.  Override this and
-   *  call insertToken and then set whichever token's
-   *  attributes you want, if you want to inject
-   *  a token starting from this position. */
-  protected void afterPosition() throws IOException {
-  }
+  /**
+   * This is called when all input tokens leaving a given position have been returned. Override this
+   * and call insertToken and then set whichever token's attributes you want, if you want to inject
+   * a token starting from this position.
+   */
+  protected void afterPosition() throws IOException {}
 
   protected abstract T newPosition();
 
-  protected final RollingBuffer<T> positions = new RollingBuffer<T>() {
-    @Override
-    protected T newInstance() {
-      return newPosition();
-    }
-  };
+  protected final RollingBuffer<T> positions =
+      new RollingBuffer<T>() {
+        @Override
+        protected T newInstance() {
+          return newPosition();
+        }
+      };
 
   /** Returns true if there is a new token. */
   protected boolean peekToken() throws IOException {
     if (DEBUG) {
-      System.out.println("LTF.peekToken inputPos=" + inputPos + " outputPos=" + outputPos + " tokenPending=" + tokenPending);
+      System.out.println(
+          "LTF.peekToken inputPos="
+              + inputPos
+              + " outputPos="
+              + outputPos
+              + " tokenPending="
+              + tokenPending);
     }
     assert !end;
     assert inputPos == -1 || outputPos <= inputPos;
@@ -141,7 +150,7 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
       if (DEBUG) {
         System.out.println("  now inputPos=" + inputPos);
       }
-      
+
       final Position startPosData = positions.get(inputPos);
       final Position endPosData = positions.get(inputPos + posLenAtt.getPositionLength());
 
@@ -150,7 +159,13 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
         startPosData.startOffset = startOffset;
       } else {
         // Make sure our input isn't messing up offsets:
-        assert startPosData.startOffset == startOffset: "prev startOffset=" + startPosData.startOffset + " vs new startOffset=" + startOffset + " inputPos=" + inputPos;
+        assert startPosData.startOffset == startOffset
+            : "prev startOffset="
+                + startPosData.startOffset
+                + " vs new startOffset="
+                + startOffset
+                + " inputPos="
+                + inputPos;
       }
 
       final int endOffset = offsetAtt.endOffset();
@@ -158,7 +173,13 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
         endPosData.endOffset = endOffset;
       } else {
         // Make sure our input isn't messing up offsets:
-        assert endPosData.endOffset == endOffset: "prev endOffset=" + endPosData.endOffset + " vs new endOffset=" + endOffset + " inputPos=" + inputPos;
+        assert endPosData.endOffset == endOffset
+            : "prev endOffset="
+                + endPosData.endOffset
+                + " vs new endOffset="
+                + endOffset
+                + " inputPos="
+                + inputPos;
       }
 
       tokenPending = true;
@@ -169,13 +190,20 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     return gotToken;
   }
 
-  /** Call this when you are done looking ahead; it will set
-   *  the next token to return.  Return the boolean back to
-   *  the caller. */
+  /**
+   * Call this when you are done looking ahead; it will set the next token to return. Return the
+   * boolean back to the caller.
+   */
   protected boolean nextToken() throws IOException {
-    //System.out.println("  nextToken: tokenPending=" + tokenPending);
+    // System.out.println("  nextToken: tokenPending=" + tokenPending);
     if (DEBUG) {
-      System.out.println("LTF.nextToken inputPos=" + inputPos + " outputPos=" + outputPos + " tokenPending=" + tokenPending);
+      System.out.println(
+          "LTF.nextToken inputPos="
+              + inputPos
+              + " outputPos="
+              + outputPos
+              + " tokenPending="
+              + tokenPending);
     }
 
     Position posData = positions.get(outputPos);
@@ -184,10 +212,10 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     // skip over a hole from the input:
     while (true) {
 
-      //System.out.println("    check buffer @ outputPos=" +
-      //outputPos + " inputPos=" + inputPos + " nextRead=" +
-      //posData.nextRead + " vs size=" +
-      //posData.inputTokens.size());
+      // System.out.println("    check buffer @ outputPos=" +
+      // outputPos + " inputPos=" + inputPos + " nextRead=" +
+      // posData.nextRead + " vs size=" +
+      // posData.inputTokens.size());
 
       // See if we have a previously buffered token to
       // return at the current position:
@@ -201,14 +229,14 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
           tokenPending = false;
         }
         restoreState(positions.get(outputPos).nextState());
-        //System.out.println("      return!");
+        // System.out.println("      return!");
         return true;
       }
 
       if (inputPos == -1 || outputPos == inputPos) {
         // No more buffered tokens:
         // We may still get input tokens at this position
-        //System.out.println("    break buffer");
+        // System.out.println("    break buffer");
         if (tokenPending) {
           // Fast path: just return token we had just incr'd,
           // without having captured/restored its state:
@@ -271,7 +299,8 @@ public abstract class LookaheadTokenFilter<T extends LookaheadTokenFilter.Positi
     final int posLen = posLenAtt.getPositionLength();
     final Position endPosData = positions.get(outputPos + posLen);
     assert endPosData.endOffset != -1;
-    assert offsetAtt.endOffset() == endPosData.endOffset: "offsetAtt.endOffset=" + offsetAtt.endOffset() + " vs expected=" + endPosData.endOffset;
+    assert offsetAtt.endOffset() == endPosData.endOffset
+        : "offsetAtt.endOffset=" + offsetAtt.endOffset() + " vs expected=" + endPosData.endOffset;
     return true;
   }
 

@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.backward_codecs.lucene86.Lucene86RWCodec;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
@@ -34,10 +33,9 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
   protected Codec getCodec() {
     return new Lucene86RWCodec(Mode.BEST_COMPRESSION);
   }
-  
+
   /**
-   * Change compression params (leaving it the same for old segments)
-   * and tests that nothing breaks.
+   * Change compression params (leaving it the same for old segments) and tests that nothing breaks.
    */
   public void testMixedCompressions() throws Exception {
     Directory dir = newDirectory();
@@ -55,7 +53,7 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
       iw.commit();
       iw.close();
     }
-    
+
     DirectoryReader ir = DirectoryReader.open(dir);
     assertEquals(10, ir.numDocs());
     for (int i = 0; i < 10; i++) {
@@ -67,14 +65,18 @@ public class TestLucene50StoredFieldsFormatHighCompression extends BaseStoredFie
     // checkindex
     dir.close();
   }
-  
-  public void testInvalidOptions() {
-    expectThrows(NullPointerException.class, () -> {
-      new Lucene86RWCodec(null);
-    });
 
-    expectThrows(NullPointerException.class, () -> {
-      new Lucene50StoredFieldsFormat(null);
-    });
+  public void testInvalidOptions() {
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          new Lucene86RWCodec(null);
+        });
+
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          new Lucene50StoredFieldsFormat(null);
+        });
   }
 }

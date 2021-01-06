@@ -17,6 +17,20 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -33,21 +47,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import org.apache.lucene.luke.app.IndexHandler;
 import org.apache.lucene.luke.app.IndexObserver;
 import org.apache.lucene.luke.app.LukeState;
@@ -127,7 +126,8 @@ public final class OverviewPanelProvider {
     panel.setLayout(new GridLayout(1, 1));
     panel.setBorder(BorderFactory.createLineBorder(Color.gray));
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
     splitPane.setDividerLocation(0.4);
     splitPane.setOpaque(false);
     panel.add(splitPane);
@@ -149,7 +149,8 @@ public final class OverviewPanelProvider {
 
     c.gridx = GRIDX_DESC;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_path"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_path"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -159,7 +160,8 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_fields"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_fields"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -169,7 +171,8 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_docs"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_docs"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -179,7 +182,8 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_terms"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.num_terms"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -189,7 +193,8 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.del_opt"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.del_opt"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -199,7 +204,9 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_version"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_version"), JLabel.RIGHT),
+        c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -209,7 +216,9 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_format"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.index_format"), JLabel.RIGHT),
+        c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -219,7 +228,8 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.dir_impl"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.dir_impl"), JLabel.RIGHT), c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -229,7 +239,9 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.commit_point"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(MessageUtils.getLocalizedMessage("overview.label.commit_point"), JLabel.RIGHT),
+        c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -239,7 +251,10 @@ public final class OverviewPanelProvider {
     c.gridx = GRIDX_DESC;
     c.gridy += 1;
     c.weightx = WEIGHTX_DESC;
-    panel.add(new JLabel(MessageUtils.getLocalizedMessage("overview.label.commit_userdata"), JLabel.RIGHT), c);
+    panel.add(
+        new JLabel(
+            MessageUtils.getLocalizedMessage("overview.label.commit_userdata"), JLabel.RIGHT),
+        c);
 
     c.gridx = GRIDX_VAL;
     c.weightx = WEIGHTX_VAL;
@@ -257,7 +272,8 @@ public final class OverviewPanelProvider {
     label.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
     panel.add(label, BorderLayout.PAGE_START);
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initTermCountsPanel(), initTopTermsPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initTermCountsPanel(), initTopTermsPanel());
     splitPane.setOpaque(false);
     splitPane.setDividerLocation(320);
     splitPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -274,13 +290,18 @@ public final class OverviewPanelProvider {
     label.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
     panel.add(label, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(termCountsTable, ListSelectionModel.SINGLE_SELECTION, new TermCountsTableModel(),
+    TableUtils.setupTable(
+        termCountsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new TermCountsTableModel(),
         new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
             listeners.selectField(e);
           }
-        }, TermCountsTableModel.Column.NAME.getColumnWidth(), TermCountsTableModel.Column.TERM_COUNT.getColumnWidth());
+        },
+        TermCountsTableModel.Column.NAME.getColumnWidth(),
+        TermCountsTableModel.Column.TERM_COUNT.getColumnWidth());
     JScrollPane scrollPane = new JScrollPane(termCountsTable);
     panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -344,13 +365,18 @@ public final class OverviewPanelProvider {
     label.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
     termsPanel.add(label, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(topTermsTable, ListSelectionModel.SINGLE_SELECTION, new TopTermsTableModel(),
+    TableUtils.setupTable(
+        topTermsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new TopTermsTableModel(),
         new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
             listeners.showTopTermsContextMenu(e);
           }
-        }, TopTermsTableModel.Column.RANK.getColumnWidth(), TopTermsTableModel.Column.FREQ.getColumnWidth());
+        },
+        TopTermsTableModel.Column.RANK.getColumnWidth(),
+        TopTermsTableModel.Column.FREQ.getColumnWidth());
     JScrollPane scrollPane = new JScrollPane(topTermsTable);
     termsPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -364,11 +390,13 @@ public final class OverviewPanelProvider {
   }
 
   private void setUpTopTermsContextMenu() {
-    JMenuItem item1 = new JMenuItem(MessageUtils.getLocalizedMessage("overview.toptermtable.menu.item1"));
+    JMenuItem item1 =
+        new JMenuItem(MessageUtils.getLocalizedMessage("overview.toptermtable.menu.item1"));
     item1.addActionListener(listeners::browseByTerm);
     topTermsContextMenu.add(item1);
 
-    JMenuItem item2 = new JMenuItem(MessageUtils.getLocalizedMessage("overview.toptermtable.menu.item2"));
+    JMenuItem item2 =
+        new JMenuItem(MessageUtils.getLocalizedMessage("overview.toptermtable.menu.item2"));
     item2.addActionListener(listeners::searchByTerm);
     topTermsContextMenu.add(item2);
   }
@@ -388,27 +416,39 @@ public final class OverviewPanelProvider {
 
     // update top terms table
     topTermsTable.setModel(new TopTermsTableModel(termStats, numTerms));
-    topTermsTable.getColumnModel().getColumn(TopTermsTableModel.Column.RANK.getIndex()).setMaxWidth(TopTermsTableModel.Column.RANK.getColumnWidth());
-    topTermsTable.getColumnModel().getColumn(TopTermsTableModel.Column.FREQ.getIndex()).setMaxWidth(TopTermsTableModel.Column.FREQ.getColumnWidth());
+    topTermsTable
+        .getColumnModel()
+        .getColumn(TopTermsTableModel.Column.RANK.getIndex())
+        .setMaxWidth(TopTermsTableModel.Column.RANK.getColumnWidth());
+    topTermsTable
+        .getColumnModel()
+        .getColumn(TopTermsTableModel.Column.FREQ.getIndex())
+        .setMaxWidth(TopTermsTableModel.Column.FREQ.getColumnWidth());
     messageBroker.clearStatusMessage();
   }
 
   private void browseByTerm() {
     String field = getSelectedField();
     String term = getSelectedTerm();
-    operatorRegistry.get(DocumentsTabOperator.class).ifPresent(operator -> {
-      operator.browseTerm(field, term);
-      tabSwitcher.switchTab(TabbedPaneProvider.Tab.DOCUMENTS);
-    });
+    operatorRegistry
+        .get(DocumentsTabOperator.class)
+        .ifPresent(
+            operator -> {
+              operator.browseTerm(field, term);
+              tabSwitcher.switchTab(TabbedPaneProvider.Tab.DOCUMENTS);
+            });
   }
 
   private void searchByTerm() {
     String field = getSelectedField();
     String term = getSelectedTerm();
-    operatorRegistry.get(SearchTabOperator.class).ifPresent(operator -> {
-      operator.searchByTerm(field, term);
-      tabSwitcher.switchTab(TabbedPaneProvider.Tab.SEARCH);
-    });
+    operatorRegistry
+        .get(SearchTabOperator.class)
+        .ifPresent(
+            operator -> {
+              operator.searchByTerm(field, term);
+              tabSwitcher.switchTab(TabbedPaneProvider.Tab.SEARCH);
+            });
   }
 
   private String getSelectedField() {
@@ -419,7 +459,8 @@ public final class OverviewPanelProvider {
     if (row < 0 || row >= termCountsTable.getRowCount()) {
       throw new IllegalStateException("Field is not selected.");
     }
-    return (String) termCountsTable.getModel().getValueAt(row, TermCountsTableModel.Column.NAME.getIndex());
+    return (String)
+        termCountsTable.getModel().getValueAt(row, TermCountsTableModel.Column.NAME.getIndex());
   }
 
   private String getSelectedTerm() {
@@ -427,7 +468,8 @@ public final class OverviewPanelProvider {
     if (rowTerm < 0 || rowTerm >= topTermsTable.getRowCount()) {
       throw new IllegalStateException("Term is not selected.");
     }
-    return (String) topTermsTable.getModel().getValueAt(rowTerm, TopTermsTableModel.Column.TEXT.getIndex());
+    return (String)
+        topTermsTable.getModel().getValueAt(rowTerm, TopTermsTableModel.Column.TEXT.getIndex());
   }
 
   private class ListenerFunctions {
@@ -457,7 +499,6 @@ public final class OverviewPanelProvider {
     void searchByTerm(ActionEvent e) {
       OverviewPanelProvider.this.searchByTerm();
     }
-
   }
 
   private class Observer implements IndexObserver {
@@ -471,7 +512,10 @@ public final class OverviewPanelProvider {
       numFieldsLbl.setText(Integer.toString(overviewModel.getNumFields()));
       numDocsLbl.setText(Integer.toString(overviewModel.getNumDocuments()));
       numTermsLbl.setText(Long.toString(overviewModel.getNumTerms()));
-      String del = overviewModel.hasDeletions() ? String.format(Locale.ENGLISH, "Yes (%d)", overviewModel.getNumDeletedDocs()) : "No";
+      String del =
+          overviewModel.hasDeletions()
+              ? String.format(Locale.ENGLISH, "Yes (%d)", overviewModel.getNumDeletedDocs())
+              : "No";
       String opt = overviewModel.isOptimized().map(b -> b ? "Yes" : "No").orElse("?");
       delOptLbl.setText(del + " / " + opt);
       indexVerLbl.setText(overviewModel.getIndexVersion().map(v -> Long.toString(v)).orElse("?"));
@@ -485,16 +529,31 @@ public final class OverviewPanelProvider {
       long numTerms = overviewModel.getNumTerms();
       termCountsTable.setModel(new TermCountsTableModel(numTerms, termCounts));
       termCountsTable.setRowSorter(new TableRowSorter<>(termCountsTable.getModel()));
-      termCountsTable.getColumnModel().getColumn(TermCountsTableModel.Column.NAME.getIndex()).setMaxWidth(TermCountsTableModel.Column.NAME.getColumnWidth());
-      termCountsTable.getColumnModel().getColumn(TermCountsTableModel.Column.TERM_COUNT.getIndex()).setMaxWidth(TermCountsTableModel.Column.TERM_COUNT.getColumnWidth());
+      termCountsTable
+          .getColumnModel()
+          .getColumn(TermCountsTableModel.Column.NAME.getIndex())
+          .setMaxWidth(TermCountsTableModel.Column.NAME.getColumnWidth());
+      termCountsTable
+          .getColumnModel()
+          .getColumn(TermCountsTableModel.Column.TERM_COUNT.getIndex())
+          .setMaxWidth(TermCountsTableModel.Column.TERM_COUNT.getColumnWidth());
       DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
       rightRenderer.setHorizontalAlignment(JLabel.RIGHT);
-      termCountsTable.getColumnModel().getColumn(TermCountsTableModel.Column.RATIO.getIndex()).setCellRenderer(rightRenderer);
+      termCountsTable
+          .getColumnModel()
+          .getColumn(TermCountsTableModel.Column.RATIO.getIndex())
+          .setCellRenderer(rightRenderer);
 
       // top terms table
       topTermsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-      topTermsTable.getColumnModel().getColumn(TopTermsTableModel.Column.RANK.getIndex()).setMaxWidth(TopTermsTableModel.Column.RANK.getColumnWidth());
-      topTermsTable.getColumnModel().getColumn(TopTermsTableModel.Column.FREQ.getIndex()).setMaxWidth(TopTermsTableModel.Column.FREQ.getColumnWidth());
+      topTermsTable
+          .getColumnModel()
+          .getColumn(TopTermsTableModel.Column.RANK.getIndex())
+          .setMaxWidth(TopTermsTableModel.Column.RANK.getColumnWidth());
+      topTermsTable
+          .getColumnModel()
+          .getColumn(TopTermsTableModel.Column.FREQ.getIndex())
+          .setMaxWidth(TopTermsTableModel.Column.FREQ.getColumnWidth());
       topTermsTable.getColumnModel().setColumnMargin(StyleConstants.TABLE_COLUMN_MARGIN_DEFAULT);
     }
 
@@ -518,13 +577,11 @@ public final class OverviewPanelProvider {
       termCountsTable.setModel(new TermCountsTableModel());
       topTermsTable.setModel(new TopTermsTableModel());
     }
-
   }
 
   static final class TermCountsTableModel extends TableModelBase<TermCountsTableModel.Column> {
 
     enum Column implements TableColumnInfo {
-
       NAME("Name", 0, String.class, 150),
       TERM_COUNT("Term count", 1, Long.class, 100),
       RATIO("%", 2, String.class, Integer.MAX_VALUE);
@@ -572,7 +629,10 @@ public final class OverviewPanelProvider {
       for (Map.Entry<String, Long> e : termCounts.entrySet()) {
         String term = e.getKey();
         Long count = e.getValue();
-        data[i++] = new Object[]{term, count, String.format(Locale.ENGLISH, "%.2f %%", count / numTerms * 100)};
+        data[i++] =
+            new Object[] {
+              term, count, String.format(Locale.ENGLISH, "%.2f %%", count / numTerms * 100)
+            };
       }
     }
 
@@ -632,7 +692,7 @@ public final class OverviewPanelProvider {
         int rank = i + 1;
         int freq = termStats.get(i).getDocFreq();
         String termText = termStats.get(i).getDecodedTermText();
-        data[i] = new Object[]{rank, freq, termText};
+        data[i] = new Object[] {rank, freq, termText};
       }
     }
 

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
@@ -29,54 +28,94 @@ import org.apache.lucene.util.ClasspathResourceLoader;
 import org.junit.Test;
 
 /**
- * Tests the Tokenizer as well- the Tokenizer needs the OpenNLP model files,
- * which this can load from src/test-files/opennlp/solr/conf
- *
+ * Tests the Tokenizer as well- the Tokenizer needs the OpenNLP model files, which this can load
+ * from src/test-files/opennlp/solr/conf
  */
 public class TestOpenNLPTokenizerFactory extends BaseTokenStreamTestCase {
 
-  static private String SENTENCES = "Sentence number 1 has 6 words. Sentence number 2, 5 words.";
-  static private String[] SENTENCES_punc = {"Sentence", "number", "1", "has", "6", "words", ".", "Sentence", "number", "2", ",", "5", "words", "."};
-  static private int[] SENTENCES_startOffsets = {0, 9, 16, 18, 22, 24, 29, 31, 40, 47, 48, 50, 52, 57};
-  static private int[] SENTENCES_endOffsets = {8, 15, 17, 21, 23, 29, 30, 39, 46, 48, 49, 51, 57, 58};
+  private static String SENTENCES = "Sentence number 1 has 6 words. Sentence number 2, 5 words.";
+  private static String[] SENTENCES_punc = {
+    "Sentence",
+    "number",
+    "1",
+    "has",
+    "6",
+    "words",
+    ".",
+    "Sentence",
+    "number",
+    "2",
+    ",",
+    "5",
+    "words",
+    "."
+  };
+  private static int[] SENTENCES_startOffsets = {
+    0, 9, 16, 18, 22, 24, 29, 31, 40, 47, 48, 50, 52, 57
+  };
+  private static int[] SENTENCES_endOffsets = {
+    8, 15, 17, 21, 23, 29, 30, 39, 46, 48, 49, 51, 57, 58
+  };
 
-  static private String SENTENCE1 = "Sentence number 1 has 6 words.";
-  static private String[] SENTENCE1_punc = {"Sentence", "number", "1", "has", "6", "words", "."};
+  private static String SENTENCE1 = "Sentence number 1 has 6 words.";
+  private static String[] SENTENCE1_punc = {"Sentence", "number", "1", "has", "6", "words", "."};
 
   @Test
   public void testTokenizer() throws IOException {
-    CustomAnalyzer analyzer = CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
-        .withTokenizer("opennlp", "sentenceModel", "en-test-sent.bin", "tokenizerModel", "en-test-tokenizer.bin")
-        .build();
-    assertAnalyzesTo(analyzer, SENTENCES, SENTENCES_punc, SENTENCES_startOffsets, SENTENCES_endOffsets);
+    CustomAnalyzer analyzer =
+        CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
+            .withTokenizer(
+                "opennlp",
+                "sentenceModel",
+                "en-test-sent.bin",
+                "tokenizerModel",
+                "en-test-tokenizer.bin")
+            .build();
+    assertAnalyzesTo(
+        analyzer, SENTENCES, SENTENCES_punc, SENTENCES_startOffsets, SENTENCES_endOffsets);
     assertAnalyzesTo(analyzer, SENTENCE1, SENTENCE1_punc);
   }
 
   @Test
   public void testTokenizerNoSentenceDetector() throws IOException {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      CustomAnalyzer analyzer = CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
-          .withTokenizer("opennlp", "tokenizerModel", "en-test-tokenizer.bin")
-          .build();
-    });
-    assertTrue(expected.getMessage().contains("Configuration Error: missing parameter 'sentenceModel'"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              CustomAnalyzer analyzer =
+                  CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
+                      .withTokenizer("opennlp", "tokenizerModel", "en-test-tokenizer.bin")
+                      .build();
+            });
+    assertTrue(
+        expected.getMessage().contains("Configuration Error: missing parameter 'sentenceModel'"));
   }
 
   @Test
   public void testTokenizerNoTokenizer() throws IOException {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      CustomAnalyzer analyzer = CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
-          .withTokenizer("opennlp", "sentenceModel", "en-test-sent.bin")
-          .build();
-    });
-    assertTrue(expected.getMessage().contains("Configuration Error: missing parameter 'tokenizerModel'"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              CustomAnalyzer analyzer =
+                  CustomAnalyzer.builder(new ClasspathResourceLoader(getClass()))
+                      .withTokenizer("opennlp", "sentenceModel", "en-test-sent.bin")
+                      .build();
+            });
+    assertTrue(
+        expected.getMessage().contains("Configuration Error: missing parameter 'tokenizerModel'"));
   }
 
   // test analyzer caching the tokenizer
   @Test
   public void testClose() throws IOException {
-    Map<String,String> args = new HashMap<String,String>() {{ put("sentenceModel", "en-test-sent.bin");
-                                                              put("tokenizerModel", "en-test-tokenizer.bin"); }};
+    Map<String, String> args =
+        new HashMap<String, String>() {
+          {
+            put("sentenceModel", "en-test-sent.bin");
+            put("tokenizerModel", "en-test-tokenizer.bin");
+          }
+        };
     OpenNLPTokenizerFactory factory = new OpenNLPTokenizerFactory(args);
     factory.inform(new ClasspathResourceLoader(getClass()));
 

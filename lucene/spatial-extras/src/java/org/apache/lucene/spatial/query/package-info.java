@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Spatial Query options useful for client side requests
- */
+/** Spatial Query options useful for client side requests */
 package org.apache.lucene.spatial.query;

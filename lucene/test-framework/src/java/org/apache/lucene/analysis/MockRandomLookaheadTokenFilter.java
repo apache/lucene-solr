@@ -18,15 +18,12 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-/**
- * Uses {@link LookaheadTokenFilter} to randomly peek at future tokens.
- */
-
-public final class MockRandomLookaheadTokenFilter extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
-  private final static boolean DEBUG = false;
+/** Uses {@link LookaheadTokenFilter} to randomly peek at future tokens. */
+public final class MockRandomLookaheadTokenFilter
+    extends LookaheadTokenFilter<LookaheadTokenFilter.Position> {
+  private static final boolean DEBUG = false;
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final Random random;

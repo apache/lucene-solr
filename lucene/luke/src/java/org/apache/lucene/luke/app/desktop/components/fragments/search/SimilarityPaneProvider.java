@@ -17,6 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -24,12 +29,6 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
@@ -78,12 +77,14 @@ public final class SimilarityPaneProvider implements SimilarityTabOperator {
     tfidfCB.setOpaque(false);
     panel.add(tfidfCB);
 
-    discardOverlapsCB.setText(MessageUtils.getLocalizedMessage("search_similarity.checkbox.discount_overlaps"));
+    discardOverlapsCB.setText(
+        MessageUtils.getLocalizedMessage("search_similarity.checkbox.discount_overlaps"));
     discardOverlapsCB.setSelected(config.isUseClassicSimilarity());
     discardOverlapsCB.setOpaque(false);
     panel.add(discardOverlapsCB);
 
-    JLabel bm25Label = new JLabel(MessageUtils.getLocalizedMessage("search_similarity.label.bm25_params"));
+    JLabel bm25Label =
+        new JLabel(MessageUtils.getLocalizedMessage("search_similarity.label.bm25_params"));
     panel.add(bm25Label);
 
     JPanel bm25Params = new JPanel(new FlowLayout(FlowLayout.LEADING));
@@ -141,5 +142,4 @@ public final class SimilarityPaneProvider implements SimilarityTabOperator {
       }
     }
   }
-
 }

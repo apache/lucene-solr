@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.analysis.icu.tokenattributes;
 
-
+import com.ibm.icu.text.Collator;
+import com.ibm.icu.text.RawCollationKey;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.util.BytesRef;
 
-import com.ibm.icu.text.Collator;
-import com.ibm.icu.text.RawCollationKey;
-
 /**
- * Extension of {@link CharTermAttributeImpl} that encodes the term
- * text as a binary Unicode collation key instead of as UTF-8 bytes.
+ * Extension of {@link CharTermAttributeImpl} that encodes the term text as a binary Unicode
+ * collation key instead of as UTF-8 bytes.
  */
 public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
   private final Collator collator;
@@ -33,6 +31,7 @@ public class ICUCollatedTermAttributeImpl extends CharTermAttributeImpl {
 
   /**
    * Create a new ICUCollatedTermAttributeImpl
+   *
    * @param collator Collation key generator
    */
   public ICUCollatedTermAttributeImpl(Collator collator) {

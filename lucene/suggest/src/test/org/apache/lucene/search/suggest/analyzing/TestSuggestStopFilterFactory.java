@@ -19,7 +19,6 @@ package org.apache.lucene.search.suggest.analyzing;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
@@ -32,24 +31,23 @@ public class TestSuggestStopFilterFactory extends BaseTokenStreamTestCase {
   public void testInform() throws Exception {
     ResourceLoader loader = new ClasspathResourceLoader(getClass());
     assertTrue("loader is null and it shouldn't be", loader != null);
-    SuggestStopFilterFactory factory = createFactory(
-        "words", "stop-1.txt",
-        "ignoreCase", "true");
+    SuggestStopFilterFactory factory =
+        createFactory(
+            "words", "stop-1.txt",
+            "ignoreCase", "true");
     CharArraySet words = factory.getStopWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);
 
-    factory = createFactory("words", "stop-1.txt, stop-2.txt",
-        "ignoreCase", "true");
+    factory = createFactory("words", "stop-1.txt, stop-2.txt", "ignoreCase", "true");
     words = factory.getStopWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 4, words.size() == 4);
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);
 
-    factory = createFactory("words", "stop-snowball.txt",
-        "format", "snowball",
-        "ignoreCase", "true");
+    factory =
+        createFactory("words", "stop-snowball.txt", "format", "snowball", "ignoreCase", "true");
     words = factory.getStopWords();
     assertEquals(8, words.size());
     assertTrue(words.contains("he"));
@@ -69,42 +67,50 @@ public class TestSuggestStopFilterFactory extends BaseTokenStreamTestCase {
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      createFactory("bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              createFactory("bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusFormats() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      createFactory("words", "stop-snowball.txt",
-          "format", "bogus");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              createFactory("words", "stop-snowball.txt", "format", "bogus");
+            });
 
     String msg = expected.getMessage();
     assertTrue(msg, msg.contains("Unknown"));
     assertTrue(msg, msg.contains("format"));
     assertTrue(msg, msg.contains("bogus"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      createFactory(
-          // implicit default words file
-          "format", "bogus");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              createFactory(
+                  // implicit default words file
+                  "format", "bogus");
+            });
     msg = expected.getMessage();
     assertTrue(msg, msg.contains("can not be specified"));
     assertTrue(msg, msg.contains("format"));
     assertTrue(msg, msg.contains("bogus"));
-  }                                             
+  }
 
-  private SuggestStopFilterFactory createFactory(String ... params) throws IOException {
-    if(params.length%2 != 0) {
+  private SuggestStopFilterFactory createFactory(String... params) throws IOException {
+    if (params.length % 2 != 0) {
       throw new IllegalArgumentException("invalid keysAndValues map");
     }
-    Map<String, String> args = new HashMap<>(params.length/2);
-    for(int i=0; i<params.length; i+=2) {
-      String previous = args.put(params[i], params[i+1]);
+    Map<String, String> args = new HashMap<>(params.length / 2);
+    for (int i = 0; i < params.length; i += 2) {
+      String previous = args.put(params[i], params[i + 1]);
       assertNull("duplicate values for key: " + params[i], previous);
     }
     args.put("luceneMatchVersion", Version.LATEST.toString());
