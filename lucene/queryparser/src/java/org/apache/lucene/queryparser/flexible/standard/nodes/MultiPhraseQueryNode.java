@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.nodes;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
@@ -26,22 +25,19 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 
 /**
- * A {@link MultiPhraseQueryNode} indicates that its children should be used to
- * build a {@link MultiPhraseQuery} instead of {@link PhraseQuery}.
+ * A {@link MultiPhraseQueryNode} indicates that its children should be used to build a {@link
+ * MultiPhraseQuery} instead of {@link PhraseQuery}.
  */
-public class MultiPhraseQueryNode extends QueryNodeImpl implements
-    FieldableNode {
+public class MultiPhraseQueryNode extends QueryNodeImpl implements FieldableNode {
 
   public MultiPhraseQueryNode() {
     setLeaf(false);
     allocate();
-
   }
 
   @Override
   public String toString() {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "<multiPhrase/>";
+    if (getChildren() == null || getChildren().size() == 0) return "<multiPhrase/>";
     StringBuilder sb = new StringBuilder();
     sb.append("<multiPhrase>");
     for (QueryNode child : getChildren()) {
@@ -54,8 +50,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChildren() == null || getChildren().size() == 0)
-      return "";
+    if (getChildren() == null || getChildren().size() == 0) return "";
 
     StringBuilder sb = new StringBuilder();
     String filler = "";
@@ -86,7 +81,6 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
     } else {
       return ((FieldableNode) children.get(0)).getField();
     }
-
   }
 
   @Override
@@ -100,11 +94,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
         if (child instanceof FieldableNode) {
           ((FieldableNode) child).setField(fieldName);
         }
-
       }
-
     }
-
   }
-
 } // end class MultitermQueryNode

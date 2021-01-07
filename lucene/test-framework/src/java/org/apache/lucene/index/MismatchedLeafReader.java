@@ -24,18 +24,18 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Shuffles field numbers around to try to trip bugs where field numbers
- * are assumed to always be consistent across segments.
+ * Shuffles field numbers around to try to trip bugs where field numbers are assumed to always be
+ * consistent across segments.
  */
 public class MismatchedLeafReader extends FilterLeafReader {
   final FieldInfos shuffled;
-  
+
   /** Creates a new reader which will renumber fields in {@code in} */
   public MismatchedLeafReader(LeafReader in, Random random) {
     super(in);
     shuffled = shuffleInfos(in.getFieldInfos(), random);
   }
-  
+
   @Override
   public FieldInfos getFieldInfos() {
     return shuffled;
@@ -63,41 +63,41 @@ public class MismatchedLeafReader extends FilterLeafReader {
       shuffled.add(info);
     }
     Collections.shuffle(shuffled, random);
-    
+
     // now renumber:
     for (int i = 0; i < shuffled.size(); i++) {
       FieldInfo oldInfo = shuffled.get(i);
       // TODO: should we introduce "gaps" too?
-      FieldInfo newInfo = new FieldInfo(oldInfo.name,                // name
-                                        i,                           // number
-                                        oldInfo.hasVectors(),        // storeTermVector
-                                        oldInfo.omitsNorms(),        // omitNorms
-                                        oldInfo.hasPayloads(),       // storePayloads
-                                        oldInfo.getIndexOptions(),   // indexOptions
-                                        oldInfo.getDocValuesType(),  // docValuesType
-                                        oldInfo.getDocValuesGen(),   // dvGen
-                                        oldInfo.attributes(),        // attributes
-                                        oldInfo.getPointDimensionCount(),      // data dimension count
-                                        oldInfo.getPointIndexDimensionCount(),      // index dimension count
-                                        oldInfo.getPointNumBytes(),  // dimension numBytes
-                                        oldInfo.getVectorDimension(), // number of dimensions of the field's vector
-                                        oldInfo.getVectorSearchStrategy(),      // distance function for calculating similarity of the field's vector
-                                        oldInfo.isSoftDeletesField()); // used as soft-deletes field
+      FieldInfo newInfo =
+          new FieldInfo(
+              oldInfo.name, // name
+              i, // number
+              oldInfo.hasVectors(), // storeTermVector
+              oldInfo.omitsNorms(), // omitNorms
+              oldInfo.hasPayloads(), // storePayloads
+              oldInfo.getIndexOptions(), // indexOptions
+              oldInfo.getDocValuesType(), // docValuesType
+              oldInfo.getDocValuesGen(), // dvGen
+              oldInfo.attributes(), // attributes
+              oldInfo.getPointDimensionCount(), // data dimension count
+              oldInfo.getPointIndexDimensionCount(), // index dimension count
+              oldInfo.getPointNumBytes(), // dimension numBytes
+              oldInfo.getVectorDimension(), // number of dimensions of the field's vector
+              // distance function for calculating similarity of the field's vector
+              oldInfo.getVectorSearchStrategy(),
+              oldInfo.isSoftDeletesField()); // used as soft-deletes field
       shuffled.set(i, newInfo);
     }
-    
+
     return new FieldInfos(shuffled.toArray(new FieldInfo[shuffled.size()]));
   }
-  
-  /**
-   * StoredFieldsVisitor that remaps actual field numbers
-   * to our new shuffled ones.
-   */
+
+  /** StoredFieldsVisitor that remaps actual field numbers to our new shuffled ones. */
   // TODO: its strange this part of our IR api exposes FieldInfo,
   // no other "user-accessible" codec apis do this?
   class MismatchedVisitor extends StoredFieldVisitor {
     final StoredFieldVisitor in;
-    
+
     MismatchedVisitor(StoredFieldVisitor in) {
       this.in = in;
     }
@@ -109,7 +109,8 @@ public class MismatchedLeafReader extends FilterLeafReader {
 
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-      in.stringField(renumber(fieldInfo), Objects.requireNonNull(value, "String value should not be null"));
+      in.stringField(
+          renumber(fieldInfo), Objects.requireNonNull(value, "String value should not be null"));
     }
 
     @Override
@@ -136,7 +137,7 @@ public class MismatchedLeafReader extends FilterLeafReader {
     public Status needsField(FieldInfo fieldInfo) throws IOException {
       return in.needsField(renumber(fieldInfo));
     }
-    
+
     FieldInfo renumber(FieldInfo original) {
       FieldInfo renumbered = shuffled.fieldInfo(original.name);
       if (renumbered == null) {

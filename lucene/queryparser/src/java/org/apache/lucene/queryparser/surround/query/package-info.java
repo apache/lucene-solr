@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- *  This package contains SrndQuery and its subclasses.
- *  <p>
- *  The parser in the org.apache.lucene.queryparser.surround.parser package
- *  normally generates a SrndQuery.
- *  <p>
- *  For searching an org.apache.lucene.search.Query is provided by
- *  the SrndQuery.makeLuceneQueryField method.
- *  For this, TermQuery, BooleanQuery and SpanQuery are used from Lucene.
+
+/**
+ * This package contains SrndQuery and its subclasses.
+ *
+ * <p>The parser in the org.apache.lucene.queryparser.surround.parser package normally generates a
+ * SrndQuery.
+ *
+ * <p>For searching an org.apache.lucene.search.Query is provided by the
+ * SrndQuery.makeLuceneQueryField method. For this, TermQuery, BooleanQuery and SpanQuery are used
+ * from Lucene.
  */
 package org.apache.lucene.queryparser.surround.query;
-

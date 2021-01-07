@@ -17,7 +17,6 @@
 package org.apache.lucene.sandbox.codecs.idversion;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.util.BytesRef;
 
@@ -39,7 +38,7 @@ class SingleDocsEnum extends PostingsEnum {
     } else {
       doc = NO_MORE_DOCS;
     }
-    
+
     return doc;
   }
 

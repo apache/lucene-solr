@@ -21,20 +21,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Reports on slow queries in a given match run
- */
+/** Reports on slow queries in a given match run */
 public class SlowLog implements Iterable<SlowLog.Entry> {
 
   private final List<Entry> slowQueries = new ArrayList<>();
 
   /**
    * Add a query and time taken to the slow log.
-   * <p>
-   * The query will only be recorded if the time is above the configured limit
+   *
+   * <p>The query will only be recorded if the time is above the configured limit
    *
    * @param query the query id
-   * @param time  the time taken by the query in ns
+   * @param time the time taken by the query in ns
    */
   void addQuery(String query, long time) {
     slowQueries.add(new Entry(query, time));
@@ -56,19 +54,13 @@ public class SlowLog implements Iterable<SlowLog.Entry> {
     return slowQueries.iterator();
   }
 
-  /**
-   * An individual entry in the slow log
-   */
+  /** An individual entry in the slow log */
   public static class Entry {
 
-    /**
-     * The query id
-     */
+    /** The query id */
     final String queryId;
 
-    /**
-     * The time taken to execute the query in ms
-     */
+    /** The time taken to execute the query in ms */
     final long time;
 
     Entry(String queryId, long time) {

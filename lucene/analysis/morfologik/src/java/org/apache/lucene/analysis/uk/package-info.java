@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Ukrainian.
- */
+/** Analyzer for Ukrainian. */
 package org.apache.lucene.analysis.uk;

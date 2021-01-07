@@ -32,9 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Testcase for {@link SimpleNaiveBayesClassifier}
- */
+/** Testcase for {@link SimpleNaiveBayesClassifier} */
 public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
@@ -43,7 +41,9 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      SimpleNaiveBayesClassifier classifier =
+          new SimpleNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
       checkCorrectClassification(classifier, POLITICS_INPUT, POLITICS_RESULT);
     } finally {
@@ -60,7 +60,9 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "a"));
-      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, query, categoryFieldName, textFieldName);
+      SimpleNaiveBayesClassifier classifier =
+          new SimpleNaiveBayesClassifier(
+              leafReader, analyzer, query, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
       checkCorrectClassification(classifier, POLITICS_INPUT, POLITICS_RESULT);
     } finally {
@@ -76,7 +78,9 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     try {
       Analyzer analyzer = new NGramAnalyzer();
       leafReader = getSampleIndex(analyzer);
-      SimpleNaiveBayesClassifier classifier = new SimpleNaiveBayesClassifier(leafReader, analyzer, null, categoryFieldName, textFieldName);
+      SimpleNaiveBayesClassifier classifier =
+          new SimpleNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -89,7 +93,10 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
+      return new TokenStreamComponents(
+          tokenizer,
+          new ReverseStringFilter(
+              new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 
@@ -99,11 +106,13 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     int numDocs = atLeast(10);
     LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
-      SimpleNaiveBayesClassifier simpleNaiveBayesClassifier = new SimpleNaiveBayesClassifier(leafReader,
-          analyzer, null, categoryFieldName, textFieldName);
+      SimpleNaiveBayesClassifier simpleNaiveBayesClassifier =
+          new SimpleNaiveBayesClassifier(
+              leafReader, analyzer, null, categoryFieldName, textFieldName);
 
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              leafReader, simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
 
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
@@ -144,7 +153,5 @@ public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase<Bytes
     } finally {
       leafReader.close();
     }
-
   }
-
 }

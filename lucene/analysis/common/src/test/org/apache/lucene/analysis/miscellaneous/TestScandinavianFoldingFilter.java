@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,20 +25,21 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String field) {
-        final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        final TokenStream stream = new ScandinavianFoldingFilter(tokenizer);
-        return new TokenStreamComponents(tokenizer, stream);
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String field) {
+            final Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            final TokenStream stream = new ScandinavianFoldingFilter(tokenizer);
+            return new TokenStreamComponents(tokenizer, stream);
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
@@ -56,7 +56,6 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "bøen", "boen");
     checkOneTerm(analyzer, "åene", "aene");
 
-
     checkOneTerm(analyzer, "blåbærsyltetøj", "blabarsyltetoj");
     checkOneTerm(analyzer, "blaabaarsyltetoej", "blabarsyltetoj");
     checkOneTerm(analyzer, "blåbärsyltetöj", "blabarsyltetoj");
@@ -66,7 +65,6 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "ræksmørgås", "raksmorgas");
     checkOneTerm(analyzer, "raeksmoergaas", "raksmorgas");
     checkOneTerm(analyzer, "ræksmörgaos", "raksmorgas");
-
 
     checkOneTerm(analyzer, "ab", "ab");
     checkOneTerm(analyzer, "ob", "ob");
@@ -97,12 +95,10 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "Ae", "A");
     checkOneTerm(analyzer, "AE", "A");
 
-
     checkOneTerm(analyzer, "ö", "o");
     checkOneTerm(analyzer, "ø", "o");
     checkOneTerm(analyzer, "Ö", "O");
     checkOneTerm(analyzer, "Ø", "O");
-
 
     checkOneTerm(analyzer, "oo", "o");
     checkOneTerm(analyzer, "oe", "o");
@@ -114,20 +110,21 @@ public class TestScandinavianFoldingFilter extends BaseTokenStreamTestCase {
     checkOneTerm(analyzer, "OO", "O");
     checkOneTerm(analyzer, "OE", "O");
   }
-  
+
   /** check that the empty string doesn't cause issues */
   public void testEmptyTerm() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new ScandinavianFoldingFilter(tokenizer));
-      } 
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new ScandinavianFoldingFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomData() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);

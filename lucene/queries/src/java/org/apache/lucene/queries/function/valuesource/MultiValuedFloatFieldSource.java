@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -30,8 +29,10 @@ import org.apache.lucene.search.SortedNumericSelector.Type;
 import org.apache.lucene.search.SortedNumericSortField;
 
 /**
- * Obtains float field values from {@link org.apache.lucene.index.LeafReader#getSortedNumericDocValues} and using a 
- * {@link org.apache.lucene.search.SortedNumericSelector} it gives a single-valued ValueSource view of a field.
+ * Obtains float field values from {@link
+ * org.apache.lucene.index.LeafReader#getSortedNumericDocValues} and using a {@link
+ * org.apache.lucene.search.SortedNumericSelector} it gives a single-valued ValueSource view of a
+ * field.
  */
 public class MultiValuedFloatFieldSource extends FloatFieldSource {
 
@@ -41,29 +42,31 @@ public class MultiValuedFloatFieldSource extends FloatFieldSource {
     super(field);
     this.selector = selector;
     Objects.requireNonNull(field, "Field is required to create a MultiValuedFloatFieldSource");
-    Objects.requireNonNull(selector, "SortedNumericSelector is required to create a MultiValuedFloatFieldSource");
+    Objects.requireNonNull(
+        selector, "SortedNumericSelector is required to create a MultiValuedFloatFieldSource");
   }
-  
+
   @Override
   public SortField getSortField(boolean reverse) {
     return new SortedNumericSortField(field, SortField.Type.FLOAT, reverse, selector);
   }
-  
+
   @Override
   public String description() {
     return "float(" + field + ',' + selector.name() + ')';
   }
-  
+
   @Override
-  protected NumericDocValues getNumericDocValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  protected NumericDocValues getNumericDocValues(
+      Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
     SortedNumericDocValues sortedDv = DocValues.getSortedNumeric(readerContext.reader(), field);
     return SortedNumericSelector.wrap(sortedDv, selector, SortField.Type.FLOAT);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() !=  MultiValuedFloatFieldSource.class) return false;
-    MultiValuedFloatFieldSource other = (MultiValuedFloatFieldSource)o;
+    if (o.getClass() != MultiValuedFloatFieldSource.class) return false;
+    MultiValuedFloatFieldSource other = (MultiValuedFloatFieldSource) o;
     if (this.selector != other.selector) return false;
     return this.field.equals(other.field);
   }
@@ -74,5 +77,4 @@ public class MultiValuedFloatFieldSource extends FloatFieldSource {
     h += selector.hashCode();
     return h;
   }
-
 }

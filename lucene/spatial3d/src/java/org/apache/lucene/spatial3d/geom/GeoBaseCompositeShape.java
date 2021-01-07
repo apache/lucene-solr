@@ -17,12 +17,12 @@
 
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * Base class to create a composite of GeoShapes.
@@ -30,16 +30,13 @@ import java.io.IOException;
  * @param <T> is the type of GeoShapes of the composite.
  * @lucene.experimental
  */
-public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlanetObject implements GeoShape {
+public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlanetObject
+    implements GeoShape {
 
-  /**
-   * Shape's container
-   */
+  /** Shape's container */
   protected final List<T> shapes = new ArrayList<>();
 
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   public GeoBaseCompositeShape(PlanetModel planetModel) {
     super(planetModel);
   }
@@ -51,7 +48,8 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
    */
   public void addShape(final T shape) {
     if (!shape.getPlanetModel().equals(planetModel)) {
-      throw new IllegalArgumentException("Cannot add a shape into a composite with different planet models.");
+      throw new IllegalArgumentException(
+          "Cannot add a shape into a composite with different planet models.");
     }
     shapes.add(shape);
   }
@@ -76,11 +74,14 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    * @param clazz is the class of the generic.
    */
-  public GeoBaseCompositeShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
+  public GeoBaseCompositeShape(
+      final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz)
+      throws IOException {
     this(planetModel);
     final T[] array = SerializableObject.readHeterogeneousArray(planetModel, inputStream, clazz);
     for (final SerializableObject member : array) {
@@ -101,8 +102,9 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     for (GeoShape shape : shapes) {
-      if (shape.isWithin(x, y, z))
+      if (shape.isWithin(x, y, z)) {
         return true;
+      }
     }
     return false;
   }
@@ -117,10 +119,12 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     for (GeoShape shape : shapes) {
-      if (shape.intersects(p, notablePoints, bounds))
+      if (shape.intersects(p, notablePoints, bounds)) {
         return true;
+      }
     }
     return false;
   }
@@ -139,8 +143,9 @@ public abstract class GeoBaseCompositeShape<T extends GeoShape> extends BasePlan
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoBaseCompositeShape<?>))
+    if (!(o instanceof GeoBaseCompositeShape<?>)) {
       return false;
+    }
     GeoBaseCompositeShape<?> other = (GeoBaseCompositeShape<?>) o;
     return super.equals(other) && shapes.equals(other.shapes);
   }

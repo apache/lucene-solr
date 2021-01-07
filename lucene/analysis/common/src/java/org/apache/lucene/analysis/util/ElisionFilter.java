@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * Removes elisions from a {@link TokenStream}. For example, "l'avion" (the plane) will be
- * tokenized as "avion" (plane).
- * 
+ * Removes elisions from a {@link TokenStream}. For example, "l'avion" (the plane) will be tokenized
+ * as "avion" (plane).
+ *
  * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
 public final class ElisionFilter extends TokenFilter {
   private final CharArraySet articles;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  
+
   /**
    * Constructs an elision filter with a Set of stop words
+   *
    * @param input the source {@link TokenStream}
    * @param articles a set of stopword articles
    */
@@ -44,9 +43,7 @@ public final class ElisionFilter extends TokenFilter {
     this.articles = articles;
   }
 
-  /**
-   * Increments the {@link TokenStream} with a {@link CharTermAttribute} without elisioned start
-   */
+  /** Increments the {@link TokenStream} with a {@link CharTermAttribute} without elisioned start */
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {

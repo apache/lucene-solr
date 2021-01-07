@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>, which assign classes of type
- * <code>T</code>
+ * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>, which
+ * assign classes of type <code>T</code>
  *
  * @lucene.experimental
  */
@@ -40,19 +40,21 @@ public interface Classifier<T> {
    * Get all the classes (sorted by score, descending) assigned to the given text String.
    *
    * @param text a String containing text to be classified
-   * @return the whole list of {@link ClassificationResult}, the classes and scores. Returns <code>null</code> if the classifier can't make lists.
+   * @return the whole list of {@link ClassificationResult}, the classes and scores. Returns <code>
+   *     null</code> if the classifier can't make lists.
    * @throws IOException If there is a low-level I/O error.
    */
   List<ClassificationResult<T>> getClasses(String text) throws IOException;
 
   /**
-   * Get the first <code>max</code> classes (sorted by score, descending) assigned to the given text String.
+   * Get the first <code>max</code> classes (sorted by score, descending) assigned to the given text
+   * String.
    *
    * @param text a String containing text to be classified
-   * @param max  the number of return list elements
-   * @return the whole list of {@link ClassificationResult}, the classes and scores. Cut for "max" number of elements. Returns <code>null</code> if the classifier can't make lists.
+   * @param max the number of return list elements
+   * @return the whole list of {@link ClassificationResult}, the classes and scores. Cut for "max"
+   *     number of elements. Returns <code>null</code> if the classifier can't make lists.
    * @throws IOException If there is a low-level I/O error.
    */
   List<ClassificationResult<T>> getClasses(String text, int max) throws IOException;
-
 }

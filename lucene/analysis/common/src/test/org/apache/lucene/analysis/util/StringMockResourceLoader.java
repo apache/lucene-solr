@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.analysis.util;
 
-
-import org.apache.lucene.util.ResourceLoader;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import org.apache.lucene.util.ResourceLoader;
 
 /** Fake resource loader for tests: works if you want to fake reading a single file */
 public class StringMockResourceLoader implements ResourceLoader {
@@ -31,7 +29,7 @@ public class StringMockResourceLoader implements ResourceLoader {
   public StringMockResourceLoader(String text) {
     this.text = text;
   }
-  
+
   @Override
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
     try {

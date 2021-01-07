@@ -17,23 +17,18 @@
 package org.apache.lucene.queryparser.flexible.core;
 
 import java.util.Locale;
-
+import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.messages.Message;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.messages.NLS;
 import org.apache.lucene.queryparser.flexible.messages.NLSException;
-import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 
 /**
- * <p>
- * This exception should be thrown if something wrong happens when dealing with
- * {@link QueryNode}s.
- * </p>
- * <p>
- * It also supports NLS messages.
- * </p>
- * 
+ * This exception should be thrown if something wrong happens when dealing with {@link QueryNode}s.
+ *
+ * <p>It also supports NLS messages.
+ *
  * @see Message
  * @see NLS
  * @see NLSException
@@ -47,7 +42,6 @@ public class QueryNodeException extends Exception implements NLSException {
     super(message.getKey());
 
     this.message = message;
-
   }
 
   public QueryNodeException(Throwable throwable) {
@@ -58,7 +52,6 @@ public class QueryNodeException extends Exception implements NLSException {
     super(message.getKey(), throwable);
 
     this.message = message;
-
   }
 
   @Override
@@ -84,5 +77,4 @@ public class QueryNodeException extends Exception implements NLSException {
   public String toString() {
     return this.message.getKey() + ": " + getLocalizedMessage();
   }
-
 }

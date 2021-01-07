@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Lucene Query Node Processors.
- * 
+ *
  * <h2>Lucene Query Node Processors</h2>
- * <p>
- * The package org.apache.lucene.queryparser.flexible.standard.processors contains every processor needed to assembly a pipeline
- * that modifies the query node tree according to the actual Lucene queries.
- * <p>
- * These processors are already assembled correctly in the StandardQueryNodeProcessorPipeline. 
+ *
+ * <p>The package org.apache.lucene.queryparser.flexible.standard.processors contains every
+ * processor needed to assembly a pipeline that modifies the query node tree according to the actual
+ * Lucene queries.
+ *
+ * <p>These processors are already assembled correctly in the StandardQueryNodeProcessorPipeline.
  */
 package org.apache.lucene.queryparser.flexible.standard.processors;
-

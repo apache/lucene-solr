@@ -34,43 +34,41 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
   int NUM_DOCS = 11;
   Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
       doc.add(newStringField("id", i + "", Field.Store.YES));
       doc.add(newTextField("f", i + " " + i, Field.Store.YES));
       w.addDocument(doc);
-      if (i%3==0) w.commit();
+      if (i % 3 == 0) w.commit();
     }
     w.commit();
-    w.deleteDocuments(new Term("id", "" + (NUM_DOCS-1)));
+    w.deleteDocuments(new Term("id", "" + (NUM_DOCS - 1)));
     w.close();
     input = DirectoryReader.open(dir);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     input.close();
     dir.close();
     super.tearDown();
   }
-  
-  /**
-   * Test round-robin splitting.
-   */
+
+  /** Test round-robin splitting. */
   public void testSplitRR() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
-    Directory[] dirs = new Directory[]{
-            newDirectory(),
-            newDirectory(),
-            newDirectory()
-    };
+    Directory[] dirs = new Directory[] {newDirectory(), newDirectory(), newDirectory()};
     splitter.split(input, dirs, false);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
@@ -102,20 +100,13 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("0")));
     assertNotSame("0", te.term().utf8ToString());
     ir.close();
-    for (Directory d : dirs)
-      d.close();
+    for (Directory d : dirs) d.close();
   }
-  
-  /**
-   * Test sequential splitting.
-   */
+
+  /** Test sequential splitting. */
   public void testSplitSeq() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
-    Directory[] dirs = new Directory[]{
-            newDirectory(),
-            newDirectory(),
-            newDirectory()
-    };
+    Directory[] dirs = new Directory[] {newDirectory(), newDirectory(), newDirectory()};
     splitter.split(input, dirs, true);
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
@@ -140,7 +131,6 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef(t.text())));
     assertNotSame(t.text(), te.term().utf8ToString());
     ir.close();
-    for (Directory d : dirs)
-      d.close();
+    for (Directory d : dirs) d.close();
   }
 }

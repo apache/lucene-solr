@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.table.AbstractTableModel;
-
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -33,7 +25,13 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 import org.apache.lucene.luke.app.desktop.components.TableModelBase;
@@ -76,17 +74,27 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
 
     JPanel hint = new JPanel(new FlowLayout(FlowLayout.LEADING));
     hint.setOpaque(false);
-    hint.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.hint.show_attributes_step_by_step")));
+    hint.add(
+        new JLabel(MessageUtils.getLocalizedMessage("analysis.hint.show_attributes_step_by_step")));
     panel.add(hint, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(charfilterTextsRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(),
+    TableUtils.setupTable(
+        charfilterTextsRowHeader,
+        ListSelectionModel.SINGLE_SELECTION,
+        new RowHeaderTableModel(),
         null);
-    TableUtils.setupTable(charfilterTextsTable, ListSelectionModel.SINGLE_SELECTION, new CharfilterTextTableModel(),
+    TableUtils.setupTable(
+        charfilterTextsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new CharfilterTextTableModel(),
         null);
 
-    TableUtils.setupTable(namedTokensRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(),
-        null);
-    TableUtils.setupTable(namedTokensTable, ListSelectionModel.SINGLE_SELECTION, new NamedTokensTableModel(),
+    TableUtils.setupTable(
+        namedTokensRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(), null);
+    TableUtils.setupTable(
+        namedTokensTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new NamedTokensTableModel(),
         new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
@@ -94,7 +102,11 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
           }
         });
     namedTokensTable.setColumnSelectionAllowed(true);
-    JSplitPane inner = new JSplitPane(JSplitPane.VERTICAL_SPLIT, initResultScroll(charfilterTextsTable, charfilterTextsRowHeader), initResultScroll(namedTokensTable, namedTokensRowHeader));
+    JSplitPane inner =
+        new JSplitPane(
+            JSplitPane.VERTICAL_SPLIT,
+            initResultScroll(charfilterTextsTable, charfilterTextsRowHeader),
+            initResultScroll(namedTokensTable, namedTokensRowHeader));
     inner.setDividerLocation(60);
 
     panel.add(inner, BorderLayout.CENTER);
@@ -110,7 +122,6 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
     return scroll;
   }
 
-
   @Override
   public void setAnalysisModel(Analysis analysisModel) {
     this.analysisModel = analysisModel;
@@ -119,11 +130,13 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
   @Override
   public void executeAnalysisStepByStep(String text) {
     result = analysisModel.analyzeStepByStep(text);
-    RowHeaderTableModel charfilterTextsHeaderModel = new RowHeaderTableModel(result.getCharfilteredTexts());
+    RowHeaderTableModel charfilterTextsHeaderModel =
+        new RowHeaderTableModel(result.getCharfilteredTexts());
     charfilterTextsRowHeader.setModel(charfilterTextsHeaderModel);
     charfilterTextsRowHeader.setShowGrid(true);
 
-    CharfilterTextTableModel charfilterTextTableModel = new CharfilterTextTableModel(result.getCharfilteredTexts());
+    CharfilterTextTableModel charfilterTextTableModel =
+        new CharfilterTextTableModel(result.getCharfilteredTexts());
     charfilterTextsTable.setModel(charfilterTextTableModel);
     charfilterTextsTable.setShowGrid(true);
 
@@ -135,36 +148,48 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
     namedTokensTable.setModel(tableModel);
     namedTokensTable.setShowGrid(true);
     for (int i = 0; i < tableModel.getColumnCount(); i++) {
-      namedTokensTable.getColumnModel().getColumn(i).setPreferredWidth(tableModel.getColumnWidth(i));
+      namedTokensTable
+          .getColumnModel()
+          .getColumn(i)
+          .setPreferredWidth(tableModel.getColumnWidth(i));
     }
   }
 
   @Override
   public void clearTable() {
-    TableUtils.setupTable(charfilterTextsRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(),
+    TableUtils.setupTable(
+        charfilterTextsRowHeader,
+        ListSelectionModel.SINGLE_SELECTION,
+        new RowHeaderTableModel(),
         null);
-    TableUtils.setupTable(charfilterTextsTable, ListSelectionModel.SINGLE_SELECTION, new CharfilterTextTableModel(),
+    TableUtils.setupTable(
+        charfilterTextsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new CharfilterTextTableModel(),
         null);
 
-    TableUtils.setupTable(namedTokensRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(),
-        null);
-    TableUtils.setupTable(namedTokensTable, ListSelectionModel.SINGLE_SELECTION, new NamedTokensTableModel(),
-        null);
+    TableUtils.setupTable(
+        namedTokensRowHeader, ListSelectionModel.SINGLE_SELECTION, new RowHeaderTableModel(), null);
+    TableUtils.setupTable(
+        namedTokensTable, ListSelectionModel.SINGLE_SELECTION, new NamedTokensTableModel(), null);
   }
 
   private void showAttributeValues(int rowIndex, int columnIndex) {
-    Analysis.NamedTokens namedTokens =
-        this.result.getNamedTokens().get(rowIndex);
+    Analysis.NamedTokens namedTokens = this.result.getNamedTokens().get(rowIndex);
     List<Analysis.Token> tokens = namedTokens.getTokens();
 
     if (rowIndex <= tokens.size()) {
       String term = "\"" + tokens.get(columnIndex).getTerm() + "\" BY " + namedTokens.getName();
       List<Analysis.TokenAttribute> attributes = tokens.get(columnIndex).getAttributes();
-      new DialogOpener<>(tokenAttrDialogFactory).open("Token Attributes", 650, 400,
-          factory -> {
-            factory.setTerm(term);
-            factory.setAttributes(attributes);
-          });
+      new DialogOpener<>(tokenAttrDialogFactory)
+          .open(
+              "Token Attributes",
+              650,
+              400,
+              factory -> {
+                factory.setTerm(term);
+                factory.setAttributes(attributes);
+              });
     }
   }
 
@@ -184,7 +209,7 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
     }
   }
 
-  /** Table model for row header (display charfilter/tokenizer/filter name)  */
+  /** Table model for row header (display charfilter/tokenizer/filter name) */
   private static class RowHeaderTableModel extends TableModelBase<RowHeaderTableModel.Column> {
 
     enum Column implements TableColumnInfo {
@@ -241,7 +266,8 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
   }
 
   /** Table model for charfilter result */
-  private static class CharfilterTextTableModel extends TableModelBase<CharfilterTextTableModel.Column> {
+  private static class CharfilterTextTableModel
+      extends TableModelBase<CharfilterTextTableModel.Column> {
 
     enum Column implements TableColumnInfo {
       TEXT("Text", 0, String.class, 1000);
@@ -338,7 +364,6 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
 
     private final Object[][] data;
 
-
     NamedTokensTableModel() {
       this.data = new Object[0][0];
     }
@@ -381,7 +406,6 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
       return columnMap.size();
     }
 
-
     @Override
     public String getColumnName(int colIndex) {
       if (columnMap.containsKey(colIndex)) {
@@ -411,5 +435,4 @@ public class StepByStepAnalyzeResultPanelProvider implements StepByStepAnalyzeRe
   private static String shortenName(String name) {
     return name.substring(name.lastIndexOf('.') + 1);
   }
-
 }

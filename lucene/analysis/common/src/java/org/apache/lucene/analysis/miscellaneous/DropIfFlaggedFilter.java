@@ -47,5 +47,4 @@ public final class DropIfFlaggedFilter extends FilteringTokenFilter {
   protected boolean accept() {
     return (flagsAtt.getFlags() & dropFlags) != dropFlags;
   }
-
 }

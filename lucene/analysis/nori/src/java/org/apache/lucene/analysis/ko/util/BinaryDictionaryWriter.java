@@ -27,18 +27,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.analysis.ko.POS;
+import org.apache.lucene.analysis.ko.dict.BinaryDictionary;
 import org.apache.lucene.analysis.ko.dict.Dictionary;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 
-import org.apache.lucene.analysis.ko.dict.BinaryDictionary;
-
 abstract class BinaryDictionaryWriter {
-  private final static int ID_LIMIT = 8192;
+  private static final int ID_LIMIT = 8192;
 
   private final Class<? extends BinaryDictionary> implClazz;
   protected ByteBuffer buffer;
@@ -51,12 +49,13 @@ abstract class BinaryDictionaryWriter {
     this.implClazz = implClazz;
     buffer = ByteBuffer.allocateDirect(size);
   }
-  
+
   /**
    * put the entry in map
    *
-   * mecab-ko-dic features
+   * <p>mecab-ko-dic features
    *
+   * <pre>
    * 0   - surface
    * 1   - left cost
    * 2   - right cost
@@ -69,6 +68,7 @@ abstract class BinaryDictionaryWriter {
    * 9   - left POS
    * 10  - right POS
    * 11  - expression
+   * </pre>
    *
    * @return current position of buffer, which will be wordId of next entry
    */
@@ -94,16 +94,17 @@ abstract class BinaryDictionaryWriter {
     // extend buffer if necessary
     int left = buffer.remaining();
     // worst case, 3 short + 4 bytes and features (all as utf-16)
-    int worstCase = 9 + 2*(expression.length() + reading.length());
+    int worstCase = 9 + 2 * (expression.length() + reading.length());
     if (worstCase > left) {
-      ByteBuffer newBuffer = ByteBuffer.allocateDirect(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
+      ByteBuffer newBuffer =
+          ByteBuffer.allocateDirect(ArrayUtil.oversize(buffer.limit() + worstCase - left, 1));
       buffer.flip();
       newBuffer.put(buffer);
       buffer = newBuffer;
     }
 
     // add pos mapping
-    int toFill = 1+leftId - posDict.size();
+    int toFill = 1 + leftId - posDict.size();
     for (int i = 0; i < toFill; i++) {
       posDict.add(null);
     }
@@ -145,7 +146,7 @@ abstract class BinaryDictionaryWriter {
     if (posType.ordinal() >= 4) {
       throw new IllegalArgumentException("posType.ordinal() >= " + 4 + ": " + posType.name());
     }
-    buffer.putShort((short)(leftId << 2 | posType.ordinal()));
+    buffer.putShort((short) (leftId << 2 | posType.ordinal()));
     buffer.putShort((short) (rightId << 2 | flags));
     buffer.putShort(wordCost);
 
@@ -185,7 +186,8 @@ abstract class BinaryDictionaryWriter {
 
   void addMapping(int sourceId, int wordId) {
     if (wordId <= lastWordId) {
-      throw new IllegalStateException("words out of order: " + wordId + " vs lastID: " + lastWordId);
+      throw new IllegalStateException(
+          "words out of order: " + wordId + " vs lastID: " + lastWordId);
     }
 
     if (sourceId > lastSourceId) {
@@ -194,7 +196,11 @@ abstract class BinaryDictionaryWriter {
         targetMapOffsets[i] = targetMapEndOffset;
       }
     } else if (sourceId != lastSourceId) {
-      throw new IllegalStateException("source ids not in increasing order: lastSourceId=" + lastSourceId + " vs sourceId=" + sourceId);
+      throw new IllegalStateException(
+          "source ids not in increasing order: lastSourceId="
+              + lastSourceId
+              + " vs sourceId="
+              + sourceId);
     }
 
     targetMap = ArrayUtil.grow(targetMap, targetMapEndOffset + 1);
@@ -204,13 +210,14 @@ abstract class BinaryDictionaryWriter {
     lastSourceId = sourceId;
     lastWordId = wordId;
   }
-  
+
   final String getBaseFileName() {
     return implClazz.getName().replace('.', '/');
   }
 
   /**
    * Write dictionary in file
+   *
    * @throws IOException if an I/O error occurs writing the dictionary files
    */
   public void write(Path baseDir) throws IOException {
@@ -223,7 +230,7 @@ abstract class BinaryDictionaryWriter {
   private void writeTargetMap(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.TARGETMAP_HEADER, BinaryDictionary.VERSION);
 
@@ -243,7 +250,8 @@ abstract class BinaryDictionaryWriter {
         prev += delta;
       }
       if (sourceId != numSourceIds) {
-        throw new IllegalStateException("sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
+        throw new IllegalStateException(
+            "sourceId:" + sourceId + " != numSourceIds:" + numSourceIds);
       }
     }
   }
@@ -251,7 +259,7 @@ abstract class BinaryDictionaryWriter {
   private void writePosDict(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.POSDICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(posDict.size());
@@ -261,24 +269,25 @@ abstract class BinaryDictionaryWriter {
         } else {
           String[] data = CSVUtil.parse(s);
           if (data.length != 2) {
-            throw new IllegalArgumentException("Malformed pos/inflection: " + s + "; expected 2 characters");
+            throw new IllegalArgumentException(
+                "Malformed pos/inflection: " + s + "; expected 2 characters");
           }
           out.writeByte((byte) POS.Tag.valueOf(data[0]).ordinal());
         }
       }
     }
   }
-  
+
   private void writeDictionary(Path path) throws IOException {
     Files.createDirectories(path.getParent());
     try (OutputStream os = Files.newOutputStream(path);
-         OutputStream bos = new BufferedOutputStream(os)) {
+        OutputStream bos = new BufferedOutputStream(os)) {
       final DataOutput out = new OutputStreamDataOutput(bos);
       CodecUtil.writeHeader(out, BinaryDictionary.DICT_HEADER, BinaryDictionary.VERSION);
       out.writeVInt(buffer.position());
       final WritableByteChannel channel = Channels.newChannel(bos);
       // Write Buffer
-      buffer.flip();  // set position to 0, set limit to current position
+      buffer.flip(); // set position to 0, set limit to current position
       channel.write(buffer);
       assert buffer.remaining() == 0L;
     }

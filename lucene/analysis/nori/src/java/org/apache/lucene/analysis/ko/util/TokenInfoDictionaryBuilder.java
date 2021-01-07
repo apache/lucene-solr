@@ -28,18 +28,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
-
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 class TokenInfoDictionaryBuilder {
-  
-  /** Internal word id - incrementally assigned as entries are read and added. This will be byte offset of dictionary file */
+
+  /**
+   * Internal word id - incrementally assigned as entries are read and added. This will be byte
+   * offset of dictionary file
+   */
   private int offset = 0;
-  
+
   private String encoding;
   private Normalizer.Form normalForm;
 
@@ -47,13 +48,14 @@ class TokenInfoDictionaryBuilder {
     this.encoding = encoding;
     normalForm = normalizeEntries ? Normalizer.Form.NFKC : null;
   }
-  
+
   public TokenInfoDictionaryWriter build(Path dir) throws IOException {
     try (Stream<Path> files = Files.list(dir)) {
-      List<Path> csvFiles = files
-          .filter(path -> path.getFileName().toString().endsWith(".csv"))
-          .sorted()
-          .collect(Collectors.toList());
+      List<Path> csvFiles =
+          files
+              .filter(path -> path.getFileName().toString().endsWith(".csv"))
+              .sorted()
+              .collect(Collectors.toList());
       return buildDictionary(csvFiles);
     }
   }
@@ -69,7 +71,8 @@ class TokenInfoDictionaryBuilder {
           String[] entry = CSVUtil.parse(line);
 
           if (entry.length < 12) {
-            throw new IllegalArgumentException("Entry in CSV is not valid (12 field values expected): " + line);
+            throw new IllegalArgumentException(
+                "Entry in CSV is not valid (12 field values expected): " + line);
           }
 
           // NFKC normalize dictionary entry
@@ -85,7 +88,7 @@ class TokenInfoDictionaryBuilder {
         }
       }
     }
-    
+
     // sort by term: we sorted the files already and use a stable sort.
     lines.sort(Comparator.comparing(left -> left[0]));
 
@@ -103,7 +106,7 @@ class TokenInfoDictionaryBuilder {
       }
       int next = dictionary.put(entry);
 
-      if(next == offset) {
+      if (next == offset) {
         throw new IllegalStateException("Failed to process line: " + Arrays.toString(entry));
       }
 

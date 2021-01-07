@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-
 import static org.apache.lucene.backward_codecs.lucene50.ForUtil.MAX_DATA_SIZE;
 import static org.apache.lucene.backward_codecs.lucene50.ForUtil.MAX_ENCODED_SIZE;
 import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
@@ -28,12 +27,11 @@ import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.
 import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.VERSION_CURRENT;
 
 import java.io.IOException;
-
+import org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
-import org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -48,10 +46,9 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Concrete class that writes docId(maybe frq,pos,offset,payloads) list
- * with postings format.
+ * Concrete class that writes docId(maybe frq,pos,offset,payloads) list with postings format.
  *
- * Postings list for each term will be stored separately. 
+ * <p>Postings list for each term will be stored separately.
  *
  * @see Lucene50SkipWriter for details about skipping setting and postings layout.
  * @lucene.experimental
@@ -62,7 +59,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
   IndexOutput posOut;
   IndexOutput payOut;
 
-  final static IntBlockTermState emptyState = new IntBlockTermState();
+  static final IntBlockTermState emptyState = new IntBlockTermState();
   IntBlockTermState lastState;
 
   // Holds starting file pointers for current term:
@@ -101,27 +98,32 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   private boolean fieldHasNorms;
   private NumericDocValues norms;
-  private final CompetitiveImpactAccumulator competitiveFreqNormAccumulator = new CompetitiveImpactAccumulator();
+  private final CompetitiveImpactAccumulator competitiveFreqNormAccumulator =
+      new CompetitiveImpactAccumulator();
 
   /** Creates a postings writer */
   public Lucene50PostingsWriter(SegmentWriteState state) throws IOException {
     final float acceptableOverheadRatio = PackedInts.COMPACT;
 
-    String docFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.DOC_EXTENSION);
+    String docFileName =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.DOC_EXTENSION);
     docOut = state.directory.createOutput(docFileName, state.context);
     IndexOutput posOut = null;
     IndexOutput payOut = null;
     boolean success = false;
     try {
-      CodecUtil.writeIndexHeader(docOut, DOC_CODEC, VERSION_CURRENT, 
-                                   state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          docOut, DOC_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
-        String posFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.POS_EXTENSION);
+        String posFileName =
+            IndexFileNames.segmentFileName(
+                state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.POS_EXTENSION);
         posOut = state.directory.createOutput(posFileName, state.context);
-        CodecUtil.writeIndexHeader(posOut, POS_CODEC, VERSION_CURRENT,
-                                     state.segmentInfo.getId(), state.segmentSuffix);
+        CodecUtil.writeIndexHeader(
+            posOut, POS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
 
         if (state.fieldInfos.hasPayloads()) {
           payloadBytes = new byte[128];
@@ -140,10 +142,14 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
         }
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
-          String payFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene50PostingsFormat.PAY_EXTENSION);
+          String payFileName =
+              IndexFileNames.segmentFileName(
+                  state.segmentInfo.name,
+                  state.segmentSuffix,
+                  Lucene50PostingsFormat.PAY_EXTENSION);
           payOut = state.directory.createOutput(payFileName, state.context);
-          CodecUtil.writeIndexHeader(payOut, PAY_CODEC, VERSION_CURRENT,
-                                       state.segmentInfo.getId(), state.segmentSuffix);
+          CodecUtil.writeIndexHeader(
+              payOut, PAY_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
         }
       } else {
         posDeltaBuffer = null;
@@ -165,12 +171,9 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     freqBuffer = new int[MAX_DATA_SIZE];
 
     // TODO: should we try skipping every 2/4 blocks...?
-    skipWriter = new Lucene50SkipWriter(MAX_SKIP_LEVELS,
-                                        BLOCK_SIZE, 
-                                        state.segmentInfo.maxDoc(),
-                                        docOut,
-                                        posOut,
-                                        payOut);
+    skipWriter =
+        new Lucene50SkipWriter(
+            MAX_SKIP_LEVELS, BLOCK_SIZE, state.segmentInfo.maxDoc(), docOut, posOut, payOut);
 
     encoded = new byte[MAX_ENCODED_SIZE];
   }
@@ -182,7 +185,8 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
-    CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    CodecUtil.writeIndexHeader(
+        termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
     termsOut.writeVInt(BLOCK_SIZE);
   }
 
@@ -212,26 +216,33 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
   @Override
   public void startDoc(int docID, int termDocFreq) throws IOException {
-    // Have collected a block of docs, and get a new doc. 
+    // Have collected a block of docs, and get a new doc.
     // Should write skip data as well as postings list for
     // current block.
     if (lastBlockDocID != -1 && docBufferUpto == 0) {
-      skipWriter.bufferSkip(lastBlockDocID, competitiveFreqNormAccumulator, docCount,
-          lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockPayloadByteUpto);
+      skipWriter.bufferSkip(
+          lastBlockDocID,
+          competitiveFreqNormAccumulator,
+          docCount,
+          lastBlockPosFP,
+          lastBlockPayFP,
+          lastBlockPosBufferUpto,
+          lastBlockPayloadByteUpto);
       competitiveFreqNormAccumulator.clear();
     }
 
     final int docDelta = docID - lastDocID;
 
     if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
-      throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )", docOut);
+      throw new CorruptIndexException(
+          "docs out of order (" + docID + " <= " + lastDocID + " )", docOut);
     }
 
     docDeltaBuffer[docBufferUpto] = docDelta;
     if (writeFreqs) {
       freqBuffer[docBufferUpto] = termDocFreq;
     }
-    
+
     docBufferUpto++;
     docCount++;
 
@@ -244,7 +255,6 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
       // finishDoc will do so (because it needs to see that
       // the block was filled so it can save skip data)
     }
-
 
     lastDocID = docID;
     lastPosition = 0;
@@ -270,9 +280,16 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset) throws IOException {
+  public void addPosition(int position, BytesRef payload, int startOffset, int endOffset)
+      throws IOException {
     if (position > IndexWriter.MAX_POSITION) {
-      throw new CorruptIndexException("position=" + position + " is too large (> IndexWriter.MAX_POSITION=" + IndexWriter.MAX_POSITION + ")", docOut);
+      throw new CorruptIndexException(
+          "position="
+              + position
+              + " is too large (> IndexWriter.MAX_POSITION="
+              + IndexWriter.MAX_POSITION
+              + ")",
+          docOut);
     }
     if (position < 0) {
       throw new CorruptIndexException("position=" + position + " is < 0", docOut);
@@ -287,7 +304,8 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
         if (payloadByteUpto + payload.length > payloadBytes.length) {
           payloadBytes = ArrayUtil.grow(payloadBytes, payloadByteUpto + payload.length);
         }
-        System.arraycopy(payload.bytes, payload.offset, payloadBytes, payloadByteUpto, payload.length);
+        System.arraycopy(
+            payload.bytes, payload.offset, payloadBytes, payloadByteUpto, payload.length);
         payloadByteUpto += payload.length;
       }
     }
@@ -299,7 +317,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
       offsetLengthBuffer[posBufferUpto] = endOffset - startOffset;
       lastStartOffset = startOffset;
     }
-    
+
     posBufferUpto++;
     lastPosition = position;
     if (posBufferUpto == BLOCK_SIZE) {
@@ -322,7 +340,7 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
   @Override
   public void finishDoc() throws IOException {
     // Since we don't know df for current term, we had to buffer
-    // those skip data for each block, and when a new doc comes, 
+    // those skip data for each block, and when a new doc comes,
     // write them to skip file.
     if (docBufferUpto == BLOCK_SIZE) {
       lastBlockDocID = lastDocID;
@@ -346,9 +364,10 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
 
     // TODO: wasteful we are counting this (counting # docs
     // for this term) in two places?
-    assert state.docFreq == docCount: state.docFreq + " vs " + docCount;
-    
-    // docFreq == 1, don't write the single docid/freq to a separate file along with a pointer to it.
+    assert state.docFreq == docCount : state.docFreq + " vs " + docCount;
+
+    // docFreq == 1, don't write the single docid/freq to a separate file along with a pointer to
+    // it.
     final int singletonDocID;
     if (state.docFreq == 1) {
       // pulse the singleton docid into the term dictionary, freq is implicitly totalTermFreq
@@ -356,15 +375,15 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     } else {
       singletonDocID = -1;
       // vInt encode the remaining doc deltas and freqs:
-      for(int i=0;i<docBufferUpto;i++) {
+      for (int i = 0; i < docBufferUpto; i++) {
         final int docDelta = docDeltaBuffer[i];
         final int freq = freqBuffer[i];
         if (!writeFreqs) {
           docOut.writeVInt(docDelta);
         } else if (freqBuffer[i] == 1) {
-          docOut.writeVInt((docDelta<<1)|1);
+          docOut.writeVInt((docDelta << 1) | 1);
         } else {
-          docOut.writeVInt(docDelta<<1);
+          docOut.writeVInt(docDelta << 1);
           docOut.writeVInt(freq);
         }
       }
@@ -382,26 +401,26 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
       } else {
         lastPosBlockOffset = -1;
       }
-      if (posBufferUpto > 0) {       
+      if (posBufferUpto > 0) {
         // TODO: should we send offsets/payloads to
         // .pay...?  seems wasteful (have to store extra
         // vLong for low (< BLOCK_SIZE) DF terms = vast vast
         // majority)
 
         // vInt encode the remaining positions/payloads/offsets:
-        int lastPayloadLength = -1;  // force first payload length to be written
-        int lastOffsetLength = -1;   // force first offset length to be written
+        int lastPayloadLength = -1; // force first payload length to be written
+        int lastOffsetLength = -1; // force first offset length to be written
         int payloadBytesReadUpto = 0;
-        for(int i=0;i<posBufferUpto;i++) {
+        for (int i = 0; i < posBufferUpto; i++) {
           final int posDelta = posDeltaBuffer[i];
           if (writePayloads) {
             final int payloadLength = payloadLengthBuffer[i];
             if (payloadLength != lastPayloadLength) {
               lastPayloadLength = payloadLength;
-              posOut.writeVInt((posDelta<<1)|1);
+              posOut.writeVInt((posDelta << 1) | 1);
               posOut.writeVInt(payloadLength);
             } else {
-              posOut.writeVInt(posDelta<<1);
+              posOut.writeVInt(posDelta << 1);
             }
 
             if (payloadLength != 0) {
@@ -452,10 +471,12 @@ public final class Lucene50PostingsWriter extends PushPostingsWriterBase {
     lastDocID = 0;
     docCount = 0;
   }
-  
+
   @Override
-  public void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
-    IntBlockTermState state = (IntBlockTermState)_state;
+  public void encodeTerm(
+      DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute)
+      throws IOException {
+    IntBlockTermState state = (IntBlockTermState) _state;
     if (absolute) {
       lastState = emptyState;
     }

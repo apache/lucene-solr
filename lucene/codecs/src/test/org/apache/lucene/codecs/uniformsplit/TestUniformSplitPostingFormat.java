@@ -24,9 +24,7 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 
-/**
- * Tests {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher.
- */
+/** Tests {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher. */
 public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
 
   protected final boolean checkEncoding;
@@ -39,9 +37,14 @@ public class TestUniformSplitPostingFormat extends BasePostingsFormatTestCase {
   }
 
   protected PostingsFormat getPostingsFormat() {
-    return checkEncoding ? new UniformSplitRot13PostingsFormat()
-    : new UniformSplitPostingsFormat(UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES, UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
-        null, null, random().nextBoolean());
+    return checkEncoding
+        ? new UniformSplitRot13PostingsFormat()
+        : new UniformSplitPostingsFormat(
+            UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
+            UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
+            null,
+            null,
+            random().nextBoolean());
   }
 
   @Override

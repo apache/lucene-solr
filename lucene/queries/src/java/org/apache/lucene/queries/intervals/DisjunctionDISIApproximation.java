@@ -17,12 +17,12 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * A {@link DocIdSetIterator} which is a disjunction of the approximations of
- * the provided iterators.
+ * A {@link DocIdSetIterator} which is a disjunction of the approximations of the provided
+ * iterators.
+ *
  * @lucene.internal
  */
 class DisjunctionDISIApproximation extends DocIdSetIterator {
@@ -72,5 +72,3 @@ class DisjunctionDISIApproximation extends DocIdSetIterator {
     return top.doc;
   }
 }
-
-

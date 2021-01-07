@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import java.util.stream.DoubleStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field.Store;
@@ -244,13 +243,16 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         int numDocsWithoutField = (int) isNull(docValues).count();
         assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
-          LongSummaryStatistics sumStats = filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
+          LongSummaryStatistics sumStats =
+              filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().longValue());
           assertEquals(sumStats.getMin(), stats.min().longValue());
           assertEquals(sumStats.getAverage(), stats.mean(), 0.00001);
           assertEquals(sumStats.getSum(), stats.sum().longValue());
           assertEquals(sumStats.getCount(), stats.valuesCount());
-          double variance = computeVariance(filterAndFlatValues(docValues, (v) -> v != null), stats.mean, stats.count());
+          double variance =
+              computeVariance(
+                  filterAndFlatValues(docValues, (v) -> v != null), stats.mean, stats.count());
           assertEquals(variance, stats.variance(), 0.00001);
           assertEquals(Math.sqrt(variance), stats.stdev(), 0.00001);
         }
@@ -299,13 +301,16 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         int numDocsWithoutField = (int) isNull(docValues).count();
         assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
-          DoubleSummaryStatistics sumStats = filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
+          DoubleSummaryStatistics sumStats =
+              filterAndFlatValues(docValues, (v) -> v != null).summaryStatistics();
           assertEquals(sumStats.getMax(), stats.max().longValue(), 0.00001);
           assertEquals(sumStats.getMin(), stats.min().longValue(), 0.00001);
           assertEquals(sumStats.getAverage(), stats.mean(), 0.00001);
           assertEquals(sumStats.getSum(), stats.sum().doubleValue(), 0.00001);
           assertEquals(sumStats.getCount(), stats.valuesCount());
-          double variance = computeVariance(filterAndFlatValues(docValues, (v) -> v != null), stats.mean, stats.count());
+          double variance =
+              computeVariance(
+                  filterAndFlatValues(docValues, (v) -> v != null), stats.mean, stats.count());
           assertEquals(variance, stats.variance(), 0.00001);
           assertEquals(Math.sqrt(variance), stats.stdev(), 0.00001);
         }
@@ -392,15 +397,21 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
         IndexSearcher searcher = new IndexSearcher(reader);
         SortedSetDocValuesStats stats = new SortedSetDocValuesStats(field);
         TotalHitCountCollector totalHitCount = new TotalHitCountCollector();
-        searcher.search(new MatchAllDocsQuery(), MultiCollector.wrap(totalHitCount, new DocValuesStatsCollector(stats)));
+        searcher.search(
+            new MatchAllDocsQuery(),
+            MultiCollector.wrap(totalHitCount, new DocValuesStatsCollector(stats)));
 
         int expCount = (int) nonNull(docValues).count();
         assertEquals(expCount, stats.count());
         int numDocsWithoutField = (int) isNull(docValues).count();
         assertEquals(computeExpMissing(numDocsWithoutField, numDocs, reader), stats.missing());
         if (stats.count() > 0) {
-          assertEquals(nonNull(docValues).flatMap(Arrays::stream).min(BytesRef::compareTo).get(), stats.min());
-          assertEquals(nonNull(docValues).flatMap(Arrays::stream).max(BytesRef::compareTo).get(), stats.max());
+          assertEquals(
+              nonNull(docValues).flatMap(Arrays::stream).min(BytesRef::compareTo).get(),
+              stats.min());
+          assertEquals(
+              nonNull(docValues).flatMap(Arrays::stream).max(BytesRef::compareTo).get(),
+              stats.max());
         }
       }
     }
@@ -423,27 +434,28 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
   }
 
   private static double computeVariance(long[] values, double mean, int count) {
-    return getPositiveValues(values).mapToDouble(v -> (v - mean) * (v-mean)).sum() / count;
+    return getPositiveValues(values).mapToDouble(v -> (v - mean) * (v - mean)).sum() / count;
   }
 
   private static double computeVariance(double[] values, double mean, int count) {
-    return getPositiveValues(values).map(v -> (v - mean) * (v-mean)).sum() / count;
+    return getPositiveValues(values).map(v -> (v - mean) * (v - mean)).sum() / count;
   }
 
   private static LongStream filterAndFlatValues(long[][] values, Predicate<? super long[]> p) {
     return nonNull(values).flatMapToLong(Arrays::stream);
   }
 
-  private static DoubleStream filterAndFlatValues(double[][] values, Predicate<? super double[]> p) {
+  private static DoubleStream filterAndFlatValues(
+      double[][] values, Predicate<? super double[]> p) {
     return nonNull(values).flatMapToDouble(Arrays::stream);
   }
 
   private static double computeVariance(LongStream values, double mean, int count) {
-    return values.mapToDouble(v -> (v - mean) * (v-mean)).sum() / count;
+    return values.mapToDouble(v -> (v - mean) * (v - mean)).sum() / count;
   }
 
   private static double computeVariance(DoubleStream values, double mean, int count) {
-    return values.map(v -> (v - mean) * (v-mean)).sum() / count;
+    return values.map(v -> (v - mean) * (v - mean)).sum() / count;
   }
 
   private static <T> Stream<T> nonNull(T[] values) {
@@ -458,9 +470,12 @@ public class TestDocValuesStatsCollector extends LuceneTestCase {
     return Arrays.stream(values).filter(p);
   }
 
-  private static int computeExpMissing(int numDocsWithoutField, int numIndexedDocs, IndexReader reader) {
-    // The number of missing documents equals the number of docs without the field (not indexed with it, or were
-    // deleted). However, in case we deleted all documents in a segment before the reader was opened, there will be
+  private static int computeExpMissing(
+      int numDocsWithoutField, int numIndexedDocs, IndexReader reader) {
+    // The number of missing documents equals the number of docs without the field (not indexed with
+    // it, or were
+    // deleted). However, in case we deleted all documents in a segment before the reader was
+    // opened, there will be
     // a mismatch between numDocs (how many we indexed) to reader.maxDoc(), so compensate for that.
     return numDocsWithoutField - reader.numDeletedDocs() - (numIndexedDocs - reader.maxDoc());
   }

@@ -35,29 +35,30 @@ public class SimpleIniFileReader implements IniFileReader {
     final Map<String, OptionMap> sections = new LinkedHashMap<>();
 
     try (BufferedReader r = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-      r.lines().forEach(line -> {
-        line = line.trim();
+      r.lines()
+          .forEach(
+              line -> {
+                line = line.trim();
 
-        if (isSectionLine(line)) {
-          // set section if this is a valid section string
-          currentSection = line.substring(1, line.length()-1);
-          sections.putIfAbsent(currentSection, new OptionMap());
-        } else if (!currentSection.equals("")) {
-          // put option if this is a valid option string
-          String[] ary = line.split("=", 2);
-          if (ary.length == 2 && !ary[0].trim().equals("") && !ary[1].trim().equals("")) {
-            sections.get(currentSection).put(ary[0].trim(), ary[1].trim());
-          }
-        }
-
-      });
+                if (isSectionLine(line)) {
+                  // set section if this is a valid section string
+                  currentSection = line.substring(1, line.length() - 1);
+                  sections.putIfAbsent(currentSection, new OptionMap());
+                } else if (!currentSection.equals("")) {
+                  // put option if this is a valid option string
+                  String[] ary = line.split("=", 2);
+                  if (ary.length == 2 && !ary[0].trim().equals("") && !ary[1].trim().equals("")) {
+                    sections.get(currentSection).put(ary[0].trim(), ary[1].trim());
+                  }
+                }
+              });
     }
     return sections;
   }
 
   private boolean isSectionLine(String line) {
-    return line.startsWith("[") && line.endsWith("]")
-        && line.substring(1, line.length()-1).matches("^[a-zA-Z0-9]+$");
+    return line.startsWith("[")
+        && line.endsWith("]")
+        && line.substring(1, line.length() - 1).matches("^[a-zA-Z0-9]+$");
   }
-
 }

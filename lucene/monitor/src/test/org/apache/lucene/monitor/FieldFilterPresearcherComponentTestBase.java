@@ -17,14 +17,13 @@
 
 package org.apache.lucene.monitor;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.io.IOException;
 import java.util.Collections;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.MatchAllDocsQuery;
-
-import static org.hamcrest.CoreMatchers.containsString;
 
 public abstract class FieldFilterPresearcherComponentTestBase extends PresearcherTestBase {
 
@@ -47,7 +46,8 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
       doc3.add(newTextField(TEXTFIELD, "wahl is a misspelling of whale", Field.Store.NO));
       doc3.add(newTextField("language", "en", Field.Store.NO));
 
-      MultiMatchingQueries<QueryMatch> matches = monitor.match(new Document[]{ doc1, doc2, doc3 }, QueryMatch.SIMPLE_MATCHER);
+      MultiMatchingQueries<QueryMatch> matches =
+          monitor.match(new Document[] {doc1, doc2, doc3}, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount(0));
       assertNotNull(matches.matches("1", 0));
       assertEquals(1, matches.getMatchCount(1));
@@ -67,8 +67,10 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
     doc2.add(newTextField("language", "de", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
-      IllegalArgumentException e
-          = expectThrows(IllegalArgumentException.class, () -> monitor.match(new Document[]{ doc1, doc2 }, QueryMatch.SIMPLE_MATCHER));
+      IllegalArgumentException e =
+          expectThrows(
+              IllegalArgumentException.class,
+              () -> monitor.match(new Document[] {doc1, doc2}, QueryMatch.SIMPLE_MATCHER));
       assertThat(e.getMessage(), containsString("language:"));
     }
   }
@@ -114,7 +116,9 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testFilteringOnMatchAllQueries() throws IOException {
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("1", new MatchAllDocsQuery(), null, Collections.singletonMap("language", "de")));
+      monitor.register(
+          new MonitorQuery(
+              "1", new MatchAllDocsQuery(), null, Collections.singletonMap("language", "de")));
 
       Document enDoc = new Document();
       enDoc.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
@@ -127,7 +131,8 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
 
   public void testDebugQueries() throws Exception {
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("1", parse("test"), null, Collections.singletonMap("language", "en")));
+      monitor.register(
+          new MonitorQuery("1", parse("test"), null, Collections.singletonMap("language", "en")));
 
       Document enDoc = new Document();
       enDoc.add(newTextField(TEXTFIELD, "this is a test", Field.Store.NO));
@@ -137,5 +142,4 @@ public abstract class FieldFilterPresearcherComponentTestBase extends Presearche
       assertFalse(matches.match("1", 0).presearcherMatches.isEmpty());
     }
   }
-
 }

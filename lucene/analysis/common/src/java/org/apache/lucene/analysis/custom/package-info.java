@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/** 
- * A general-purpose Analyzer that can be created with a builder-style API.
- */
+/** A general-purpose Analyzer that can be created with a builder-style API. */
 package org.apache.lucene.analysis.custom;

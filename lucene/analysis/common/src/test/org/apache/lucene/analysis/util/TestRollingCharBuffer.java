@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.io.StringReader;
 import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -27,11 +25,11 @@ public class TestRollingCharBuffer extends LuceneTestCase {
 
   public void test() throws Exception {
     final int ITERS = atLeast(100);
-    
+
     RollingCharBuffer buffer = new RollingCharBuffer();
 
     Random random = random();
-    for(int iter=0;iter<ITERS;iter++) {
+    for (int iter = 0; iter < ITERS; iter++) {
       final int stringLen = random.nextBoolean() ? random.nextInt(50) : random.nextInt(20000);
       final String s;
       if (stringLen == 0) {
@@ -45,7 +43,7 @@ public class TestRollingCharBuffer extends LuceneTestCase {
       buffer.reset(new StringReader(s));
       int nextRead = 0;
       int availCount = 0;
-      while(nextRead < s.length()) {
+      while (nextRead < s.length()) {
         if (VERBOSE) {
           System.out.println("  cycle nextRead=" + nextRead + " avail=" + availCount);
         }
@@ -76,21 +74,20 @@ public class TestRollingCharBuffer extends LuceneTestCase {
           if (length == availCount) {
             start = nextRead - availCount;
           } else {
-            start = nextRead - availCount + random.nextInt(availCount-length);
+            start = nextRead - availCount + random.nextInt(availCount - length);
           }
           if (VERBOSE) {
             System.out.println("    slice start=" + start + " length=" + length);
           }
-          assertEquals(s.substring(start, start+length),
-                       new String(buffer.get(start, length)));
+          assertEquals(s.substring(start, start + length), new String(buffer.get(start, length)));
         }
 
         if (availCount > 0 && random.nextInt(20) == 17) {
           final int toFree = random.nextInt(availCount);
           if (VERBOSE) {
-            System.out.println("    free " + toFree + " (avail=" + (availCount-toFree) + ")");
+            System.out.println("    free " + toFree + " (avail=" + (availCount - toFree) + ")");
           }
-          buffer.freeBefore(nextRead-(availCount-toFree));
+          buffer.freeBefore(nextRead - (availCount - toFree));
           availCount -= toFree;
         }
       }

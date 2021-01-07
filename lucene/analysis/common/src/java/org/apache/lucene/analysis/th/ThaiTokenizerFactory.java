@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.analysis.th;
 
-
 import java.util.Map;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-/** 
+/**
  * Factory for {@link ThaiTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_thai" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,15 +38,15 @@ public class ThaiTokenizerFactory extends TokenizerFactory {
 
   /** SPI name */
   public static final String NAME = "thai";
-  
+
   /** Creates a new ThaiTokenizerFactory */
-  public ThaiTokenizerFactory(Map<String,String> args) {
+  public ThaiTokenizerFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public ThaiTokenizerFactory() {
     throw defaultCtorException();
@@ -58,4 +57,3 @@ public class ThaiTokenizerFactory extends TokenizerFactory {
     return new ThaiTokenizer(factory);
   }
 }
-

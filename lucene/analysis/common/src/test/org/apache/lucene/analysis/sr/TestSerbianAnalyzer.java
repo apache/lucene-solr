@@ -16,19 +16,14 @@
  */
 package org.apache.lucene.analysis.sr;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
-import java.io.IOException;
-
-/**
- * Test the SerbianAnalyzer
- *
- */
+/** Test the SerbianAnalyzer */
 public class TestSerbianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new SerbianAnalyzer().close();
   }
@@ -48,9 +43,8 @@ public class TestSerbianAnalyzer extends BaseTokenStreamTestCase {
 
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("decimalnim"), false);
-    Analyzer a = new SerbianAnalyzer(
-                 SerbianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("decimalnim"), false);
+    Analyzer a = new SerbianAnalyzer(SerbianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "decimalnim", "decimalnim");
     checkOneTerm(a, "decimalni", "decimaln");
     a.close();

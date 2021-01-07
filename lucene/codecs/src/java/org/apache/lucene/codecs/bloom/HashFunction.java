@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 package org.apache.lucene.codecs.bloom;
+
 import org.apache.lucene.util.BytesRef;
 
-
 /**
- * Base class for hashing functions that can be referred to by name.
- * Subclasses are expected to provide threadsafe implementations of the hash function
- * on the range of bytes referenced in the provided {@link BytesRef}
+ * Base class for hashing functions that can be referred to by name. Subclasses are expected to
+ * provide threadsafe implementations of the hash function on the range of bytes referenced in the
+ * provided {@link BytesRef}
+ *
  * @lucene.experimental
  */
 public abstract class HashFunction {
 
   /**
    * Hashes the contents of the referenced bytes
+   *
    * @param bytes the data to be hashed
    * @return the hash of the bytes referenced by bytes.offset and length bytes.length
    */
   public abstract int hash(BytesRef bytes);
-
 }

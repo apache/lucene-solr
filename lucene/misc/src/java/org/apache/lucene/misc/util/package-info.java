@@ -15,6 +15,5 @@
  * limitations under the License.
  */
 
-/** Memory Tracker interface which allows defining custom collector
- level memory trackers */
+/** Memory Tracker interface which allows defining custom collector level memory trackers */
 package org.apache.lucene.misc.util;

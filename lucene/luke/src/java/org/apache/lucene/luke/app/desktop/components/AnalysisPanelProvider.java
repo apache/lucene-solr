@@ -17,16 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTextArea;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -39,7 +29,16 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -126,16 +125,21 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
 
     operatorRegistry.register(AnalysisTabOperator.class, this);
 
-    operatorRegistry.get(PresetAnalyzerPanelOperator.class).ifPresent(operator -> {
-      // Scanning all Analyzer types will take time...
-      ExecutorService executorService =
-          Executors.newFixedThreadPool(1, new NamedThreadFactory("load-preset-analyzer-types"));
-      executorService.execute(() -> {
-        operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
-        operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
-      });
-      executorService.shutdown();
-    });
+    operatorRegistry
+        .get(PresetAnalyzerPanelOperator.class)
+        .ifPresent(
+            operator -> {
+              // Scanning all Analyzer types will take time...
+              ExecutorService executorService =
+                  Executors.newFixedThreadPool(
+                      1, new NamedThreadFactory("load-preset-analyzer-types"));
+              executorService.execute(
+                  () -> {
+                    operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
+                    operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
+                  });
+              executorService.shutdown();
+            });
   }
 
   public JPanel get() {
@@ -143,7 +147,8 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     panel.setOpaque(false);
     panel.setBorder(BorderFactory.createLineBorder(Color.gray));
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
     splitPane.setOpaque(false);
     splitPane.setDividerLocation(320);
     panel.add(splitPane);
@@ -194,16 +199,18 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
 
     JPanel analyzerName = new JPanel(new FlowLayout(FlowLayout.LEADING, 10, 2));
     analyzerName.setOpaque(false);
-    analyzerName.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.label.selected_analyzer")));
+    analyzerName.add(
+        new JLabel(MessageUtils.getLocalizedMessage("analysis.label.selected_analyzer")));
     analyzerNameLbl.setText(analysisModel.currentAnalyzer().getClass().getName());
     analyzerName.add(analyzerNameLbl);
     showChainLbl.setText(MessageUtils.getLocalizedMessage("analysis.label.show_chain"));
-    showChainLbl.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        listeners.showAnalysisChain(e);
-      }
-    });
+    showChainLbl.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            listeners.showAnalysisChain(e);
+          }
+        });
     showChainLbl.setVisible(analysisModel.currentAnalyzer() instanceof CustomAnalyzer);
     analyzerName.add(FontUtils.toLinkText(showChainLbl));
     inner1.add(analyzerName, BorderLayout.PAGE_START);
@@ -217,8 +224,10 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     inputArea.setText(MessageUtils.getLocalizedMessage("analysis.textarea.prompt"));
     input.add(new JScrollPane(inputArea));
 
-    JButton executeBtn = new JButton(FontUtils.elegantIconHtml("&#xe007;",
-        MessageUtils.getLocalizedMessage("analysis.button.test")));
+    JButton executeBtn =
+        new JButton(
+            FontUtils.elegantIconHtml(
+                "&#xe007;", MessageUtils.getLocalizedMessage("analysis.button.test")));
     executeBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     executeBtn.setMargin(new Insets(3, 3, 3, 3));
     executeBtn.addActionListener(listeners::executeAnalysis);
@@ -233,13 +242,16 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     JButton clearBtn = new JButton(MessageUtils.getLocalizedMessage("button.clear"));
     clearBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     clearBtn.setMargin(new Insets(5, 5, 5, 5));
-    clearBtn.addActionListener(e -> {
-      inputArea.setText("");
-      operatorRegistry.get(SimpleAnalyzeResultPanelOperator.class).ifPresent(
-          SimpleAnalyzeResultPanelOperator::clearTable);
-      operatorRegistry.get(StepByStepAnalyzeResultPanelOperator.class).ifPresent(
-          StepByStepAnalyzeResultPanelOperator::clearTable);
-    });
+    clearBtn.addActionListener(
+        e -> {
+          inputArea.setText("");
+          operatorRegistry
+              .get(SimpleAnalyzeResultPanelOperator.class)
+              .ifPresent(SimpleAnalyzeResultPanelOperator::clearTable);
+          operatorRegistry
+              .get(StepByStepAnalyzeResultPanelOperator.class)
+              .ifPresent(StepByStepAnalyzeResultPanelOperator::clearTable);
+        });
     input.add(clearBtn);
 
     inner1.add(input, BorderLayout.CENTER);
@@ -259,20 +271,26 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
       mainPanel.remove(custom);
       mainPanel.add(preset, BorderLayout.CENTER);
 
-      operatorRegistry.get(PresetAnalyzerPanelOperator.class).ifPresent(operator -> {
-        operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
-        operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
-      });
+      operatorRegistry
+          .get(PresetAnalyzerPanelOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
+                operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
+              });
       stepByStepCB.setSelected(false);
       stepByStepCB.setVisible(false);
     } else if (command.equalsIgnoreCase(TYPE_CUSTOM)) {
       mainPanel.remove(preset);
       mainPanel.add(custom, BorderLayout.CENTER);
 
-      operatorRegistry.get(CustomAnalyzerPanelOperator.class).ifPresent(operator -> {
-        operator.setAnalysisModel(analysisModel);
-        operator.resetAnalysisComponents();
-      });
+      operatorRegistry
+          .get(CustomAnalyzerPanelOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setAnalysisModel(analysisModel);
+                operator.resetAnalysisComponents();
+              });
       stepByStepCB.setVisible(true);
     }
     mainPanel.setVisible(false);
@@ -282,16 +300,20 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
   void executeAnalysis() {
     String text = inputArea.getText();
     if (Objects.isNull(text) || text.isEmpty()) {
-      messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
+      messageBroker.showStatusMessage(
+          MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
     }
 
     lowerPanel.remove(stepByStepResult);
     lowerPanel.add(simpleResult, BorderLayout.CENTER);
 
-    operatorRegistry.get(SimpleAnalyzeResultPanelOperator.class).ifPresent(operator -> {
-      operator.setAnalysisModel(analysisModel);
-      operator.executeAnalysis(text);
-    });
+    operatorRegistry
+        .get(SimpleAnalyzeResultPanelOperator.class)
+        .ifPresent(
+            operator -> {
+              operator.setAnalysisModel(analysisModel);
+              operator.executeAnalysis(text);
+            });
 
     lowerPanel.setVisible(false);
     lowerPanel.setVisible(true);
@@ -300,14 +322,18 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
   void executeAnalysisStepByStep() {
     String text = inputArea.getText();
     if (Objects.isNull(text) || text.isEmpty()) {
-      messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
+      messageBroker.showStatusMessage(
+          MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
     }
     lowerPanel.remove(simpleResult);
     lowerPanel.add(stepByStepResult, BorderLayout.CENTER);
-    operatorRegistry.get(StepByStepAnalyzeResultPanelOperator.class).ifPresent(operator -> {
-      operator.setAnalysisModel(analysisModel);
-      operator.executeAnalysisStepByStep(text);
-    });
+    operatorRegistry
+        .get(StepByStepAnalyzeResultPanelOperator.class)
+        .ifPresent(
+            operator -> {
+              operator.setAnalysisModel(analysisModel);
+              operator.executeAnalysisStepByStep(text);
+            });
 
     lowerPanel.setVisible(false);
     lowerPanel.setVisible(true);
@@ -316,10 +342,14 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
   void showAnalysisChainDialog() {
     if (getCurrentAnalyzer() instanceof CustomAnalyzer) {
       CustomAnalyzer analyzer = (CustomAnalyzer) getCurrentAnalyzer();
-      new DialogOpener<>(analysisChainDialogFactory).open("Analysis chain", 600, 320,
-          (factory) -> {
-            factory.setAnalyzer(analyzer);
-          });
+      new DialogOpener<>(analysisChainDialogFactory)
+          .open(
+              "Analysis chain",
+              600,
+              320,
+              (factory) -> {
+                factory.setAnalyzer(analyzer);
+              });
     }
   }
 
@@ -328,12 +358,15 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     analysisModel.createAnalyzerFromClassName(analyzerType);
     analyzerNameLbl.setText(analysisModel.currentAnalyzer().getClass().getName());
     showChainLbl.setVisible(false);
-    operatorRegistry.get(AnalyzerTabOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
-    operatorRegistry.get(MLTTabOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
-    operatorRegistry.get(AddDocumentDialogOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(AnalyzerTabOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(MLTTabOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(AddDocumentDialogOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
   }
 
   @Override
@@ -341,12 +374,15 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     analysisModel.buildCustomAnalyzer(config);
     analyzerNameLbl.setText(analysisModel.currentAnalyzer().getClass().getName());
     showChainLbl.setVisible(true);
-    operatorRegistry.get(AnalyzerTabOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
-    operatorRegistry.get(MLTTabOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
-    operatorRegistry.get(AddDocumentDialogOperator.class).ifPresent(operator ->
-        operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(AnalyzerTabOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(MLTTabOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
+    operatorRegistry
+        .get(AddDocumentDialogOperator.class)
+        .ifPresent(operator -> operator.setAnalyzer(analysisModel.currentAnalyzer()));
   }
 
   @Override
@@ -372,9 +408,6 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
       }
     }
 
-    void executeAnalysisStepByStep(ActionEvent e) {
-    }
+    void executeAnalysisStepByStep(ActionEvent e) {}
   }
-
 }
-

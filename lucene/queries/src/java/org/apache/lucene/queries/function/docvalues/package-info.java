@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * FunctionValues for different data types.
- */
+/** FunctionValues for different data types. */
 package org.apache.lucene.queries.function.docvalues;

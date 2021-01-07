@@ -16,12 +16,15 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -35,10 +38,6 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
 
 public class TestContextQuery extends LuceneTestCase {
   public Directory dir;
@@ -55,17 +54,23 @@ public class TestContextQuery extends LuceneTestCase {
 
   @Test
   public void testIllegalInnerQuery() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new ContextQuery(new ContextQuery(
-          new PrefixCompletionQuery(new MockAnalyzer(random()), new Term("suggest_field", "sugg"))));
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new ContextQuery(
+                  new ContextQuery(
+                      new PrefixCompletionQuery(
+                          new MockAnalyzer(random()), new Term("suggest_field", "sugg"))));
+            });
     assertTrue(expected.getMessage().contains(ContextQuery.class.getSimpleName()));
   }
 
   @Test
   public void testSimpleContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 8, "type1"));
@@ -83,18 +88,19 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type1", 1);
     query.addContext("type2", 2);
     query.addContext("type3", 3);
     query.addContext("type4", 4);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion4", "type4", 5 * 4),
         new Entry("suggestion3", "type3", 6 * 3),
         new Entry("suggestion2", "type2", 7 * 2),
-        new Entry("suggestion1", "type1", 8 * 1)
-    );
+        new Entry("suggestion1", "type1", 8 * 1));
 
     reader.close();
     iw.close();
@@ -103,7 +109,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testContextQueryOnSuggestField() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new SuggestField("suggest_field", "abc", 3));
@@ -121,10 +128,14 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab")));
-    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
-      suggestIndexSearcher.suggest(query, 4, false);
-    });
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab")));
+    IllegalStateException expected =
+        expectThrows(
+            IllegalStateException.class,
+            () -> {
+              suggestIndexSearcher.suggest(query, 4, false);
+            });
     assertTrue(expected.getMessage().contains("SuggestField"));
 
     reader.close();
@@ -134,7 +145,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testNonExactContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -152,10 +164,12 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type", 1, false);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
@@ -168,7 +182,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testContextPrecedenceBoost() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "typetype"));
@@ -181,14 +196,15 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type", 1);
     query.addContext("typetype", 2);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "typetype", 4 * 2),
-        new Entry("suggestion2", "type", 3 * 1)
-    );
+        new Entry("suggestion2", "type", 3 * 1));
 
     reader.close();
     iw.close();
@@ -197,7 +213,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testEmptyContext() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion_no_ctx", 4));
@@ -213,11 +230,11 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
-        new Entry("suggestion_no_ctx", null, 4),
-        new Entry("suggestion", "type4", 1));
+    assertSuggestions(
+        suggest, new Entry("suggestion_no_ctx", null, 4), new Entry("suggestion", "type4", 1));
 
     reader.close();
     iw.close();
@@ -226,7 +243,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testEmptyContextWithBoosts() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4));
@@ -245,16 +263,17 @@ public class TestContextQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
 
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type4", 10);
     query.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion4", "type4", 1 * 10),
         new Entry("suggestion1", null, 4),
         new Entry("suggestion2", null, 3),
-        new Entry("suggestion3", null, 2)
-    );
+        new Entry("suggestion3", null, 2));
     reader.close();
     iw.close();
   }
@@ -262,10 +281,12 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testSameSuggestionMultipleContext() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
-    document.add(new ContextSuggestField("suggest_field", "suggestion", 4, "type1", "type2", "type3"));
+    document.add(
+        new ContextSuggestField("suggest_field", "suggestion", 4, "type1", "type2", "type3"));
     iw.addDocument(document);
 
     document = new Document();
@@ -278,18 +299,19 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type1", 10);
     query.addContext("type2", 2);
     query.addContext("type3", 3);
     query.addContext("type4", 4);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion", "type1", 4 * 10),
         new Entry("suggestion", "type3", 4 * 3),
         new Entry("suggestion", "type2", 4 * 2),
-        new Entry("suggestion", "type4", 1 * 4)
-    );
+        new Entry("suggestion", "type4", 1 * 4));
 
     reader.close();
     iw.close();
@@ -298,7 +320,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testMixedContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -316,17 +339,18 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type1", 7);
     query.addContext("type2", 6);
     query.addAllContexts();
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4 * 7),
         new Entry("suggestion2", "type2", 3 * 6),
         new Entry("suggestion3", "type3", 2),
-        new Entry("suggestion4", "type4", 1)
-    );
+        new Entry("suggestion4", "type4", 1));
 
     reader.close();
     iw.close();
@@ -335,7 +359,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testFilteringContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -353,14 +378,15 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type3", 3);
     query.addContext("type4", 4);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion3", "type3", 2 * 3),
-        new Entry("suggestion4", "type4", 1 * 4)
-    );
+        new Entry("suggestion4", "type4", 1 * 4));
 
     reader.close();
     iw.close();
@@ -369,7 +395,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testContextQueryRewrite() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -389,7 +416,8 @@ public class TestContextQuery extends LuceneTestCase {
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
@@ -402,7 +430,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testMultiContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 8, "type1", "type3"));
@@ -420,13 +449,15 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     query.addContext("type1", 1);
     query.addContext("type2", 2);
     query.addContext("type3", 3);
     query.addContext("type4", 4);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type3", 8 * 3),
         new Entry("suggestion4", "type4", 5 * 4),
         new Entry("suggestion3", "type3", 6 * 3),
@@ -440,7 +471,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testAllContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -458,9 +490,11 @@ public class TestContextQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
@@ -473,7 +507,8 @@ public class TestContextQuery extends LuceneTestCase {
   @Test
   public void testRandomContextQueryScoring() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    try(RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"))) {
+    try (RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"))) {
       int numSuggestions = atLeast(20);
       int numContexts = atLeast(5);
 
@@ -501,21 +536,25 @@ public class TestContextQuery extends LuceneTestCase {
       }
       Entry[] expectedResults = expectedEntries.toArray(new Entry[expectedEntries.size()]);
 
-      ArrayUtil.introSort(expectedResults, new Comparator<Entry>() {
-        @Override
-        public int compare(Entry o1, Entry o2) {
-          int cmp = Float.compare(o2.value, o1.value);
-          if (cmp != 0) {
-            return cmp;
-          } else {
-            return o1.output.compareTo(o2.output);
-          }
-        }
-      });
+      ArrayUtil.introSort(
+          expectedResults,
+          new Comparator<Entry>() {
+            @Override
+            public int compare(Entry o1, Entry o2) {
+              int cmp = Float.compare(o2.value, o1.value);
+              if (cmp != 0) {
+                return cmp;
+              } else {
+                return o1.output.compareTo(o2.output);
+              }
+            }
+          });
 
-      try(DirectoryReader reader = iw.getReader()) {
+      try (DirectoryReader reader = iw.getReader()) {
         SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-        ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
+        ContextQuery query =
+            new ContextQuery(
+                new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg")));
         for (int i = 0; i < contexts.size(); i++) {
           query.addContext(contexts.get(i), i + 1);
         }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Codec for testing that throws random IOExceptions
- */
+/** Codec for testing that throws random IOExceptions */
 package org.apache.lucene.codecs.cranky;

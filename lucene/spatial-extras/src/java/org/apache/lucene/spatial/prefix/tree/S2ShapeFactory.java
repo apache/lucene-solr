@@ -17,18 +17,17 @@
 
 package org.apache.lucene.spatial.prefix.tree;
 
-
 import com.google.common.geometry.S2CellId;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 
 /**
- * Shape factory for Spatial contexts that support S2 geometry. It is an extension of
- * Spatial4j {@link ShapeFactory}.
+ * Shape factory for Spatial contexts that support S2 geometry. It is an extension of Spatial4j
+ * {@link ShapeFactory}.
  *
  * @lucene.experimental
  */
-public interface S2ShapeFactory extends ShapeFactory{
+public interface S2ShapeFactory extends ShapeFactory {
 
   /**
    * Factory method for S2 cell shapes.

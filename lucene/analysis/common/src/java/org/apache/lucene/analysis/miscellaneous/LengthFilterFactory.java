@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link LengthFilter}. 
+ * Factory for {@link LengthFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lngth" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -54,7 +53,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public LengthFilterFactory() {
     throw defaultCtorException();
@@ -62,7 +61,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
 
   @Override
   public LengthFilter create(TokenStream input) {
-    final LengthFilter filter = new LengthFilter(input,min,max);
+    final LengthFilter filter = new LengthFilter(input, min, max);
     return filter;
   }
 }

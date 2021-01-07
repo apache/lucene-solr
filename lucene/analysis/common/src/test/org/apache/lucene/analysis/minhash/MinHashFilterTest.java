@@ -23,7 +23,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,9 +34,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 import org.junit.Test;
 
-/**
- * Tests for {@link MinHashFilter}
- */
+/** Tests for {@link MinHashFilter} */
 public class MinHashFilterTest extends BaseTokenStreamTestCase {
 
   @Test
@@ -174,39 +171,76 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testMockShingleTokenizer() throws IOException {
-    Tokenizer mockShingleTokenizer = createMockShingleTokenizer(5,
-        "woof woof woof woof woof" + " " + "woof woof woof woof puff");
-    assertTokenStreamContents(mockShingleTokenizer,
-        new String[]{"woof woof woof woof woof", "woof woof woof woof puff"});
+    Tokenizer mockShingleTokenizer =
+        createMockShingleTokenizer(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff");
+    assertTokenStreamContents(
+        mockShingleTokenizer,
+        new String[] {"woof woof woof woof woof", "woof woof woof woof puff"});
   }
 
   @Test
   public void testTokenStreamSingleInput() throws IOException {
-    String[] hashes = new String[]{"℁팽徭聙↝ꇁ홱杯"};
+    String[] hashes = new String[] {"℁팽徭聙↝ꇁ홱杯"};
     TokenStream ts = createTokenStream(5, "woof woof woof woof woof", 1, 1, 100, false);
-    assertTokenStreamContents(ts, hashes, new int[]{0},
-        new int[]{24}, new String[]{MinHashFilter.MIN_HASH_TYPE}, new int[]{1}, new int[]{1}, 24, 0, null,
-        true, null);
+    assertTokenStreamContents(
+        ts,
+        hashes,
+        new int[] {0},
+        new int[] {24},
+        new String[] {MinHashFilter.MIN_HASH_TYPE},
+        new int[] {1},
+        new int[] {1},
+        24,
+        0,
+        null,
+        true,
+        null);
 
     ts = createTokenStream(5, "woof woof woof woof woof", 2, 1, 1, false);
-    assertTokenStreamContents(ts, new String[]{new String(new char[]{0, 0, 8449, 54077, 64133, 32857, 8605, 41409}),
-            new String(new char[]{0, 1, 16887, 58164, 39536, 14926, 6529, 17276})}, new int[]{0, 0},
-        new int[]{24, 24}, new String[]{MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE}, new int[]{1, 0},
-        new int[]{1, 1}, 24, 0, null,
-        true, null);
+    assertTokenStreamContents(
+        ts,
+        new String[] {
+          new String(new char[] {0, 0, 8449, 54077, 64133, 32857, 8605, 41409}),
+          new String(new char[] {0, 1, 16887, 58164, 39536, 14926, 6529, 17276})
+        },
+        new int[] {0, 0},
+        new int[] {24, 24},
+        new String[] {MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE},
+        new int[] {1, 0},
+        new int[] {1, 1},
+        24,
+        0,
+        null,
+        true,
+        null);
   }
 
   @Test
   public void testTokenStream1() throws IOException {
-    String[] hashes = new String[]{"℁팽徭聙↝ꇁ홱杯",
-        new String(new char[]{36347, 63457, 43013, 56843, 52284, 34231, 57934, 42302})}; // String is degenerate as
+    String[] hashes =
+        new String[] {
+          "℁팽徭聙↝ꇁ홱杯",
+          new String(new char[] {36347, 63457, 43013, 56843, 52284, 34231, 57934, 42302})
+        }; // String is degenerate as
     // characters!
 
-    TokenStream ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 1, 100,
-        false);
-    assertTokenStreamContents(ts, hashes, new int[]{0, 0},
-        new int[]{49, 49}, new String[]{MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE}, new int[]{1, 0},
-        new int[]{1, 1}, 49, 0, null, true, null);
+    TokenStream ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 1, 100, false);
+    assertTokenStreamContents(
+        ts,
+        hashes,
+        new int[] {0, 0},
+        new int[] {49, 49},
+        new String[] {MinHashFilter.MIN_HASH_TYPE, MinHashFilter.MIN_HASH_TYPE},
+        new int[] {1, 0},
+        new int[] {1, 1},
+        49,
+        0,
+        null,
+        true,
+        null);
   }
 
   private ArrayList<String> getTokens(TokenStream ts) throws IOException {
@@ -225,8 +259,9 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testTokenStream2() throws IOException {
-    TokenStream ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 100, 1, 1,
-        false);
+    TokenStream ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 100, 1, 1, false);
     ArrayList<String> tokens = getTokens(ts);
     ts.close();
 
@@ -235,8 +270,9 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testTokenStream3() throws IOException {
-    TokenStream ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 1, 10,
-        false);
+    TokenStream ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 1, 10, false);
     ArrayList<String> tokens = getTokens(ts);
     ts.close();
 
@@ -245,31 +281,36 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
 
   @Test
   public void testTokenStream4() throws IOException {
-    TokenStream ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 10, 1,
-        false);
+    TokenStream ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 10, 1, false);
     ArrayList<String> tokens = getTokens(ts);
     ts.close();
 
     assertEquals(20, tokens.size());
 
-    ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 10, 1, true);
+    ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 10, 10, 1, true);
     tokens = getTokens(ts);
     ts.close();
 
     assertEquals(100, tokens.size());
-
   }
 
   @Test
   public void testTokenStream5() throws IOException {
-    TokenStream ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 100, 1,
-        false);
+    TokenStream ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 100, 1, false);
     ArrayList<String> tokens = getTokens(ts);
     ts.close();
 
     assertEquals(2, tokens.size());
 
-    ts = createTokenStream(5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 100, 1, true);
+    ts =
+        createTokenStream(
+            5, "woof woof woof woof woof" + " " + "woof woof woof woof puff", 1, 100, 1, true);
     tokens = getTokens(ts);
     ts.close();
 
@@ -301,11 +342,15 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
       }
       last = current;
     }
-
   }
 
-  public static TokenStream createTokenStream(int shingleSize, String shingles, int hashCount, int bucketCount,
-                                              int hashSetSize, boolean withRotation) {
+  public static TokenStream createTokenStream(
+      int shingleSize,
+      String shingles,
+      int hashCount,
+      int bucketCount,
+      int hashSetSize,
+      boolean withRotation) {
     Tokenizer tokenizer = createMockShingleTokenizer(shingleSize, shingles);
     HashMap<String, String> lshffargs = new HashMap<>();
     lshffargs.put("hashCount", "" + hashCount);
@@ -317,9 +362,12 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
   }
 
   private static Tokenizer createMockShingleTokenizer(int shingleSize, String shingles) {
-    MockTokenizer tokenizer = new MockTokenizer(
-        new CharacterRunAutomaton(new RegExp("[^ \t\r\n]+([ \t\r\n]+[^ \t\r\n]+){" + (shingleSize - 1) + "}").toAutomaton()),
-        true);
+    MockTokenizer tokenizer =
+        new MockTokenizer(
+            new CharacterRunAutomaton(
+                new RegExp("[^ \t\r\n]+([ \t\r\n]+[^ \t\r\n]+){" + (shingleSize - 1) + "}")
+                    .toAutomaton()),
+            true);
     tokenizer.setEnableChecks(true);
     if (shingles != null) {
       tokenizer.setReader(new StringReader(shingles));
@@ -328,6 +376,7 @@ public class MinHashFilterTest extends BaseTokenStreamTestCase {
   }
 
   private boolean isLessThan(LongPair hash1, LongPair hash2) {
-    return MinHashFilter.isLessThanUnsigned(hash1.val2, hash2.val2) || hash1.val2 == hash2.val2 && (MinHashFilter.isLessThanUnsigned(hash1.val1, hash2.val1));
+    return MinHashFilter.isLessThanUnsigned(hash1.val2, hash2.val2)
+        || hash1.val2 == hash2.val2 && (MinHashFilter.isLessThanUnsigned(hash1.val1, hash2.val1));
   }
 }

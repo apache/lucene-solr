@@ -22,11 +22,11 @@ import java.io.IOException;
 /**
  * Wraps an IntervalIterator and extends the bounds of its intervals
  *
- * Useful for specifying gaps in an ordered iterator; if you want to match
- * `a b [2 spaces] c`, you can search for phrase(a, extended(b, 0, 2), c)
+ * <p>Useful for specifying gaps in an ordered iterator; if you want to match `a b [2 spaces] c`,
+ * you can search for phrase(a, extended(b, 0, 2), c)
  *
- * An interval with prefix bounds extended by n will skip over matches that
- * appear in positions lower than n
+ * <p>An interval with prefix bounds extended by n will skip over matches that appear in positions
+ * lower than n
  */
 class ExtendedIntervalIterator extends IntervalIterator {
 
@@ -38,9 +38,10 @@ class ExtendedIntervalIterator extends IntervalIterator {
 
   /**
    * Create a new ExtendedIntervalIterator
-   * @param in      the iterator to wrap
-   * @param before  the number of positions to extend before the delegated interval
-   * @param after   the number of positions to extend beyond the delegated interval
+   *
+   * @param in the iterator to wrap
+   * @param before the number of positions to extend before the delegated interval
+   * @param after the number of positions to extend beyond the delegated interval
    */
   ExtendedIntervalIterator(IntervalIterator in, int before, int after) {
     this.in = in;

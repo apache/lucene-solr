@@ -17,28 +17,22 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 /**
- * This class implements a simple char vector with access to the underlying
- * array.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ * This class implements a simple char vector with access to the underlying array.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
 public class CharVector implements Cloneable {
 
-  /**
-   * Capacity increment size
-   */
+  /** Capacity increment size */
   private static final int DEFAULT_BLOCK_SIZE = 2048;
 
   private int blockSize;
 
-  /**
-   * The encapsulated array
-   */
+  /** The encapsulated array */
   private char[] array;
 
-  /**
-   * Points to next free item
-   */
+  /** Points to next free item */
   private int n;
 
   public CharVector() {
@@ -71,9 +65,7 @@ public class CharVector implements Cloneable {
     n = a.length;
   }
 
-  /**
-   * Reset Vector but don't resize or clear elements
-   */
+  /** Reset Vector but don't resize or clear elements */
   public void clear() {
     n = 0;
   }
@@ -89,16 +81,12 @@ public class CharVector implements Cloneable {
     return array;
   }
 
-  /**
-   * return number of items in array
-   */
+  /** return number of items in array */
   public int length() {
     return n;
   }
 
-  /**
-   * returns current capacity of array
-   */
+  /** returns current capacity of array */
   public int capacity() {
     return array.length;
   }
@@ -130,5 +118,4 @@ public class CharVector implements Cloneable {
       array = aux;
     }
   }
-
 }

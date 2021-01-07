@@ -370,7 +370,9 @@ public class AttributeSource {
       } else {
         return !other.hasAttributes();
       }
-    } else return false;
+    } else {
+      return false;
+    }
   }
 
   /**

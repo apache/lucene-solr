@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.analysis.gl;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Galician plural stem factory is working.
- */
+/** Simple tests to ensure the Galician plural stem factory is working. */
 public class TestGalicianMinimalStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("elefantes");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("GalicianMinimalStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "elefante" });
+    assertTokenStreamContents(stream, new String[] {"elefante"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("GalicianMinimalStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("GalicianMinimalStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

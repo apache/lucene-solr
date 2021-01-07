@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
+import java.io.IOException;
+import java.io.StreamTokenizer;
+import java.io.StringReader;
+import java.lang.reflect.Constructor;
+import java.util.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.AnalyzerFactory;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
-import java.io.StreamTokenizer;
-import java.io.StringReader;
-import java.util.*;
-import java.lang.reflect.Constructor;
-
 /**
- * Create a new {@link org.apache.lucene.analysis.Analyzer} and set it in the getRunData() for use by all future tasks.
- *
+ * Create a new {@link org.apache.lucene.analysis.Analyzer} and set it in the getRunData() for use
+ * by all future tasks.
  */
 public class NewAnalyzerTask extends PerfTask {
   private List<String> analyzerNames;
@@ -39,11 +38,12 @@ public class NewAnalyzerTask extends PerfTask {
     super(runData);
     analyzerNames = new ArrayList<>();
   }
-  
-  public static final Analyzer createAnalyzer(String className) throws Exception{
+
+  public static final Analyzer createAnalyzer(String className) throws Exception {
     final Class<? extends Analyzer> clazz = Class.forName(className).asSubclass(Analyzer.class);
     try {
-      // first try to use a ctor with version parameter (needed for many new Analyzers that have no default one anymore
+      // first try to use a ctor with version parameter (needed for many new Analyzers that have no
+      // default one anymore
       Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
       return cnstr.newInstance(Version.LATEST);
     } catch (NoSuchMethodException nsme) {
@@ -95,18 +95,22 @@ public class NewAnalyzerTask extends PerfTask {
   }
 
   /**
-   * Set the params (analyzerName only),  Comma-separate list of Analyzer class names.  If the Analyzer lives in
-   * org.apache.lucene.analysis, the name can be shortened by dropping the o.a.l.a part of the Fully Qualified Class Name.
-   * <p>
-   * Analyzer names may also refer to previously defined AnalyzerFactory's.
-   * <p>
-   * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) &gt;
-   * <p>
-   * Example AnalyzerFactory usage:
+   * Set the params (analyzerName only), Comma-separate list of Analyzer class names. If the
+   * Analyzer lives in org.apache.lucene.analysis, the name can be shortened by dropping the o.a.l.a
+   * part of the Fully Qualified Class Name.
+   *
+   * <p>Analyzer names may also refer to previously defined AnalyzerFactory's.
+   *
+   * <p>Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer,
+   * StopAnalyzer, standard.StandardAnalyzer) &gt;
+   *
+   * <p>Example AnalyzerFactory usage:
+   *
    * <pre>
    * -AnalyzerFactory(name:'whitespace tokenized',WhitespaceTokenizer)
    * -NewAnalyzer('whitespace tokenized')
    * </pre>
+   *
    * @param params analyzerClassName, or empty for the StandardAnalyzer
    */
   @Override
@@ -120,19 +124,22 @@ public class NewAnalyzerTask extends PerfTask {
     try {
       while (stok.nextToken() != StreamTokenizer.TT_EOF) {
         switch (stok.ttype) {
-          case ',': {
-            // Do nothing
-            break;
-          }
+          case ',':
+            {
+              // Do nothing
+              break;
+            }
           case '\'':
           case '\"':
-          case StreamTokenizer.TT_WORD: {
-            analyzerNames.add(stok.sval);
-            break;
-          }
-          default: {
-            throw new RuntimeException("Unexpected token: " + stok.toString());
-          }
+          case StreamTokenizer.TT_WORD:
+            {
+              analyzerNames.add(stok.sval);
+              break;
+            }
+          default:
+            {
+              throw new RuntimeException("Unexpected token: " + stok.toString());
+            }
         }
       }
     } catch (RuntimeException e) {
@@ -144,8 +151,6 @@ public class NewAnalyzerTask extends PerfTask {
     } catch (Throwable t) {
       throw new RuntimeException("Line #" + (stok.lineno() + getAlgLineNum()) + ": ", t);
     }
-
-
   }
 
   /* (non-Javadoc)

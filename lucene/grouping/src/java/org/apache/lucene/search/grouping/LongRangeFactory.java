@@ -17,9 +17,7 @@
 
 package org.apache.lucene.search.grouping;
 
-/**
- * Groups double values into ranges
- */
+/** Groups double values into ranges */
 public class LongRangeFactory {
 
   private final long min;
@@ -28,11 +26,12 @@ public class LongRangeFactory {
 
   /**
    * Creates a new LongRangeFactory
-   * @param min     a minimum value; all longs below this value are grouped into a single range
-   * @param width   a standard width; all ranges between {@code min} and {@code max} are this wide,
-   *                with the exception of the final range which may be up to this width.  Ranges
-   *                are inclusive at the lower end, and exclusive at the upper end.
-   * @param max     a maximum value; all longs above this value are grouped into a single range
+   *
+   * @param min a minimum value; all longs below this value are grouped into a single range
+   * @param width a standard width; all ranges between {@code min} and {@code max} are this wide,
+   *     with the exception of the final range which may be up to this width. Ranges are inclusive
+   *     at the lower end, and exclusive at the upper end.
+   * @param max a maximum value; all longs above this value are grouped into a single range
    */
   public LongRangeFactory(long min, long width, long max) {
     this.min = min;
@@ -42,12 +41,14 @@ public class LongRangeFactory {
 
   /**
    * Finds the LongRange that a value should be grouped into
+   *
    * @param value the value to group
    * @param reuse an existing LongRange object to reuse
    */
   public LongRange getRange(long value, LongRange reuse) {
-    if (reuse == null)
+    if (reuse == null) {
       reuse = new LongRange(Long.MIN_VALUE, Long.MAX_VALUE);
+    }
     if (value < min) {
       reuse.max = min;
       reuse.min = Long.MIN_VALUE;
@@ -63,5 +64,4 @@ public class LongRangeFactory {
     reuse.max = reuse.min + width;
     return reuse;
   }
-
 }

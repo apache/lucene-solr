@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
 
 /**
@@ -33,6 +34,7 @@ import java.nio.LongBuffer;
  * </code>).
  */
 public abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
+  private static final FloatBuffer EMPTY_FLOATBUFFER = FloatBuffer.allocate(0);
   private static final LongBuffer EMPTY_LONGBUFFER = LongBuffer.allocate(0);
 
   protected final long length;
@@ -44,6 +46,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected int curBufIndex = -1;
   protected ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
   private LongBuffer[] curLongBufferViews;
+  private FloatBuffer[] curFloatBufferViews;
 
   protected boolean isClone = false;
 
@@ -79,6 +82,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected void setCurBuf(ByteBuffer curBuf) {
     this.curBuf = curBuf;
     curLongBufferViews = null;
+    curFloatBufferViews = null;
   }
 
   @Override
@@ -155,6 +159,36 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
       super.readLELongs(dst, offset, length);
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public final void readLEFloats(float[] floats, int offset, int len) throws IOException {
+    // See notes about readELongs above
+    if (curFloatBufferViews == null) {
+      curFloatBufferViews = new FloatBuffer[Float.BYTES];
+      for (int i = 0; i < Float.BYTES; ++i) {
+        // Compute a view for each possible alignment.
+        if (i < curBuf.limit()) {
+          ByteBuffer dup = curBuf.duplicate().order(ByteOrder.LITTLE_ENDIAN);
+          dup.position(i);
+          curFloatBufferViews[i] = dup.asFloatBuffer();
+        } else {
+          curFloatBufferViews[i] = EMPTY_FLOATBUFFER;
+        }
+      }
+    }
+    try {
+      final int position = curBuf.position();
+      FloatBuffer floatBuffer = curFloatBufferViews[position & 0x03];
+      floatBuffer.position(position >>> 2);
+      guard.getFloats(floatBuffer, floats, offset, len);
+      // if the above call succeeded, then we know the below sum cannot overflow
+      curBuf.position(position + (len << 2));
+    } catch (BufferUnderflowException e) {
+      super.readLEFloats(floats, offset, len);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }

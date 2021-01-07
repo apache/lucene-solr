@@ -35,7 +35,7 @@ public class TestTermGroupSelector extends BaseGroupSelectorTestCase<BytesRef> {
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
-      return;   // missing value
+      return; // missing value
     }
     String groupValue = "group" + random().nextInt(10);
     document.add(new SortedDocValuesField("groupField", new BytesRef(groupValue)));

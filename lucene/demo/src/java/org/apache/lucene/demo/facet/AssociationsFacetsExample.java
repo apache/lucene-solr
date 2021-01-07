@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.demo.facet;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.DrillDownQuery;
@@ -59,10 +57,11 @@ public class AssociationsFacetsExample {
     config.setMultiValued("genre", true);
     config.setIndexFieldName("genre", "$genre");
   }
-  
+
   /** Build the example index. */
   private void index() throws IOException {
-    IndexWriterConfig iwc = new IndexWriterConfig(new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE);
+    IndexWriterConfig iwc =
+        new IndexWriterConfig(new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE);
     IndexWriter indexWriter = new IndexWriter(indexDir, iwc);
 
     // Writes facet ords to a separate directory from the main index
@@ -95,14 +94,14 @@ public class AssociationsFacetsExample {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    
+
     FacetsCollector fc = new FacetsCollector();
-    
+
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
     // you'd use a "normal" query:
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
-    
+
     Facets tags = new TaxonomyFacetSumIntAssociations("$tags", taxoReader, config, fc);
     Facets genre = new TaxonomyFacetSumFloatAssociations("$genre", taxoReader, config, fc);
 
@@ -113,10 +112,10 @@ public class AssociationsFacetsExample {
 
     indexReader.close();
     taxoReader.close();
-    
+
     return results;
   }
-  
+
   /** User drills down on 'tags/solr'. */
   private FacetResult drillDown() throws IOException {
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
@@ -138,16 +137,16 @@ public class AssociationsFacetsExample {
 
     indexReader.close();
     taxoReader.close();
-    
+
     return result;
   }
-  
+
   /** Runs summing association example. */
   public List<FacetResult> runSumAssociations() throws IOException {
     index();
     return sumAssociations();
   }
-  
+
   /** Runs the drill-down example. */
   public FacetResult runDrillDown() throws IOException {
     index();

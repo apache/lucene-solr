@@ -17,40 +17,32 @@
 package org.apache.lucene.queryparser.flexible.precedence;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline;
 import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline;
-import org.apache.lucene.queryparser.flexible.precedence.processors.PrecedenceQueryNodeProcessorPipeline;
 
 /**
- * <p>
- * This query parser works exactly as the standard query parser ( {@link StandardQueryParser} ), 
- * except that it respect the boolean precedence, so &lt;a AND b OR c AND d&gt; is parsed to &lt;(+a +b) (+c +d)&gt;
- * instead of &lt;+a +b +c +d&gt;.
- * </p>
- * <p>
- * EXPERT: This class extends {@link StandardQueryParser}, but uses {@link PrecedenceQueryNodeProcessorPipeline}
- * instead of {@link StandardQueryNodeProcessorPipeline} to process the query tree.
- * </p>
- * 
+ * This query parser works exactly as the standard query parser ( {@link StandardQueryParser} ),
+ * except that it respect the boolean precedence, so &lt;a AND b OR c AND d&gt; is parsed to &lt;(+a
+ * +b) (+c +d)&gt; instead of &lt;+a +b +c +d&gt;.
+ *
+ * <p>EXPERT: This class extends {@link StandardQueryParser}, but uses {@link
+ * PrecedenceQueryNodeProcessorPipeline} instead of {@link StandardQueryNodeProcessorPipeline} to
+ * process the query tree.
+ *
  * @see StandardQueryParser
  */
 public class PrecedenceQueryParser extends StandardQueryParser {
-  
-  /**
-   * @see StandardQueryParser#StandardQueryParser()
-   */
+
+  /** @see StandardQueryParser#StandardQueryParser() */
   public PrecedenceQueryParser() {
     setQueryNodeProcessor(new PrecedenceQueryNodeProcessorPipeline(getQueryConfigHandler()));
   }
-  
-  /**
-   * @see StandardQueryParser#StandardQueryParser(Analyzer)
-   */
+
+  /** @see StandardQueryParser#StandardQueryParser(Analyzer) */
   public PrecedenceQueryParser(Analyzer analyer) {
     super(analyer);
-    
-    setQueryNodeProcessor(new PrecedenceQueryNodeProcessorPipeline(getQueryConfigHandler()));
-    
-  }
 
+    setQueryNodeProcessor(new PrecedenceQueryNodeProcessorPipeline(getQueryConfigHandler()));
+  }
 }

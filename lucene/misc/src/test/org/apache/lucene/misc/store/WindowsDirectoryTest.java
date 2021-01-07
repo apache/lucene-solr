@@ -18,19 +18,18 @@ package org.apache.lucene.misc.store;
 
 import com.carrotsearch.randomizedtesting.LifecycleScope;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.io.IOException;
+import java.util.EnumSet;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 
-import java.io.IOException;
-import java.util.EnumSet;
-
 public class WindowsDirectoryTest extends LuceneTestCase {
   @Rule
-  public static TestRule requiresNative = new NativeLibEnableRule(
-      EnumSet.of(NativeLibEnableRule.OperatingSystem.WINDOWS));
+  public static TestRule requiresNative =
+      new NativeLibEnableRule(EnumSet.of(NativeLibEnableRule.OperatingSystem.WINDOWS));
 
   public void testLibraryLoaded() throws IOException {
     try (Directory dir = new WindowsDirectory(RandomizedTest.newTempDir(LifecycleScope.TEST))) {

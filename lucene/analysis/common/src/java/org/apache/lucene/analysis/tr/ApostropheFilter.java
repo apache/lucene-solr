@@ -16,22 +16,19 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-import java.io.IOException;
-
 /**
  * Strips all characters after an apostrophe (including the apostrophe itself).
- * <p>
- * In Turkish, apostrophe is used to separate suffixes from proper names
- * (continent, sea, river, lake, mountain, upland, proper names related to
- * religion and mythology). This filter intended to be used before stem filters.
- * For more information, see <a href="http://www.ipcsit.com/vol57/015-ICNI2012-M021.pdf">
- * Role of Apostrophes in Turkish Information Retrieval</a>
- * </p>
+ *
+ * <p>In Turkish, apostrophe is used to separate suffixes from proper names (continent, sea, river,
+ * lake, mountain, upland, proper names related to religion and mythology). This filter intended to
+ * be used before stem filters. For more information, see <a
+ * href="http://www.ipcsit.com/vol57/015-ICNI2012-M021.pdf">Role of Apostrophes in Turkish
+ * Information Retrieval</a>
  */
 public final class ApostropheFilter extends TokenFilter {
 
@@ -43,8 +40,7 @@ public final class ApostropheFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if (!input.incrementToken())
-      return false;
+    if (!input.incrementToken()) return false;
 
     final char[] buffer = termAtt.buffer();
     final int length = termAtt.length();

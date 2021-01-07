@@ -25,34 +25,29 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * A representation of a node in a query tree
  *
- * Queries are analyzed and converted into an abstract tree, consisting
- * of conjunction and disjunction nodes, and leaf nodes containing terms.
+ * <p>Queries are analyzed and converted into an abstract tree, consisting of conjunction and
+ * disjunction nodes, and leaf nodes containing terms.
  *
- * Terms may be collected from a node, which will use the weights of its
- * sub-nodes to determine which paths are followed.  The path may be changed
- * by calling {@link #advancePhase(double)}
+ * <p>Terms may be collected from a node, which will use the weights of its sub-nodes to determine
+ * which paths are followed. The path may be changed by calling {@link #advancePhase(double)}
  */
 public abstract class QueryTree {
 
-  /**
-   * The weight of this node
-   */
+  /** The weight of this node */
   public abstract double weight();
 
-  /**
-   * Collect terms from the most highly-weighted path below this node
-   */
+  /** Collect terms from the most highly-weighted path below this node */
   public abstract void collectTerms(BiConsumer<String, BytesRef> termCollector);
 
   /**
    * Find the next-most highly-weighted path below this node
+   *
    * @param minWeight do not advance if the next path has a weight below this value
    * @return {@code false} if there are no more paths above the minimum weight
    */
@@ -60,6 +55,7 @@ public abstract class QueryTree {
 
   /**
    * Returns a string representation of the node
+   *
    * @param depth the current depth of this node in the overall query tree
    */
   public abstract String toString(int depth);
@@ -69,9 +65,7 @@ public abstract class QueryTree {
     return toString(0);
   }
 
-  /**
-   * Returns a string of {@code width} spaces
-   */
+  /** Returns a string of {@code width} spaces */
   protected String space(int width) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < width; i++) {
@@ -80,9 +74,7 @@ public abstract class QueryTree {
     return sb.toString();
   }
 
-  /**
-   * Returns a leaf node for a particular term
-   */
+  /** Returns a leaf node for a particular term */
   public static QueryTree term(Term term, TermWeightor weightor) {
     return term(term.field(), term.bytes(), weightor.applyAsDouble(term));
   }
@@ -90,7 +82,7 @@ public abstract class QueryTree {
   /**
    * Returns a leaf node for a particular term and weight
    *
-   * The weight must be greater than 0
+   * <p>The weight must be greater than 0
    */
   public static QueryTree term(Term term, double weight) {
     return term(term.field(), term.bytes(), weight);
@@ -99,7 +91,7 @@ public abstract class QueryTree {
   /**
    * Returns a leaf node for a particular term and weight
    *
-   * The weight must be greater than 0
+   * <p>The weight must be greater than 0
    */
   public static QueryTree term(String field, BytesRef term, double weight) {
     return new QueryTree() {
@@ -128,9 +120,7 @@ public abstract class QueryTree {
     };
   }
 
-  /**
-   * Returns a leaf node that will match any document
-   */
+  /** Returns a leaf node that will match any document */
   public static QueryTree anyTerm(String reason) {
     return new QueryTree() {
       @Override
@@ -140,7 +130,8 @@ public abstract class QueryTree {
 
       @Override
       public void collectTerms(BiConsumer<String, BytesRef> termCollector) {
-        termCollector.accept(TermFilteredPresearcher.ANYTOKEN_FIELD, new BytesRef(TermFilteredPresearcher.ANYTOKEN));
+        termCollector.accept(
+            TermFilteredPresearcher.ANYTOKEN_FIELD, new BytesRef(TermFilteredPresearcher.ANYTOKEN));
       }
 
       @Override
@@ -155,19 +146,18 @@ public abstract class QueryTree {
     };
   }
 
-  /**
-   * Returns a conjunction of a set of child nodes
-   */
-  public static QueryTree conjunction(List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
+  /** Returns a conjunction of a set of child nodes */
+  public static QueryTree conjunction(
+      List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
     if (children.size() == 0) {
       throw new IllegalArgumentException("Cannot build a conjunction with no children");
     }
     if (children.size() == 1) {
       return children.get(0).apply(weightor);
     }
-    List<QueryTree> qt = children.stream()
-        .map(f -> f.apply(weightor)).collect(Collectors.toList());
-    List<QueryTree> restricted = qt.stream().filter(t -> t.weight() > 0).collect(Collectors.toList());
+    List<QueryTree> qt = children.stream().map(f -> f.apply(weightor)).collect(Collectors.toList());
+    List<QueryTree> restricted =
+        qt.stream().filter(t -> t.weight() > 0).collect(Collectors.toList());
     if (restricted.size() == 0) {
       // all children are ANY, so just return the first one
       return qt.get(0);
@@ -179,18 +169,16 @@ public abstract class QueryTree {
     return new ConjunctionQueryTree(Arrays.asList(children));
   }
 
-  /**
-   * Returns a disjunction of a set of child nodes
-   */
-  public static QueryTree disjunction(List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
+  /** Returns a disjunction of a set of child nodes */
+  public static QueryTree disjunction(
+      List<Function<TermWeightor, QueryTree>> children, TermWeightor weightor) {
     if (children.size() == 0) {
       throw new IllegalArgumentException("Cannot build a disjunction with no children");
     }
     if (children.size() == 1) {
       return children.get(0).apply(weightor);
     }
-    List<QueryTree> qt = children.stream()
-        .map(f -> f.apply(weightor)).collect(Collectors.toList());
+    List<QueryTree> qt = children.stream().map(f -> f.apply(weightor)).collect(Collectors.toList());
     Optional<QueryTree> firstAnyChild = qt.stream().filter(q -> q.weight() == 0).findAny();
     // if any of the children is an ANY node, just return that, otherwise build the disjunction
     return firstAnyChild.orElseGet(() -> new DisjunctionQueryTree(qt));
@@ -202,7 +190,8 @@ public abstract class QueryTree {
 
   private static class ConjunctionQueryTree extends QueryTree {
 
-    private static final Comparator<QueryTree> COMPARATOR = Comparator.comparingDouble(QueryTree::weight).reversed();
+    private static final Comparator<QueryTree> COMPARATOR =
+        Comparator.comparingDouble(QueryTree::weight).reversed();
 
     final List<QueryTree> children = new ArrayList<>();
 
@@ -239,11 +228,13 @@ public abstract class QueryTree {
 
     @Override
     public String toString(int depth) {
-      StringBuilder sb = new StringBuilder(space(depth)).append("Conjunction[")
-          .append(children.size())
-          .append("]^")
-          .append(weight())
-          .append("\n");
+      StringBuilder sb =
+          new StringBuilder(space(depth))
+              .append("Conjunction[")
+              .append(children.size())
+              .append("]^")
+              .append(weight())
+              .append("\n");
       for (QueryTree child : children) {
         sb.append(child.toString(depth + 2)).append("\n");
       }

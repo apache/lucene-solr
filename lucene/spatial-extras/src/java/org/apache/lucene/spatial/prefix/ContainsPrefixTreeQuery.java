@@ -18,9 +18,6 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 import java.util.Arrays;
-
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
@@ -33,34 +30,42 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.SentinelIntSet;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
- * Finds docs where its indexed shape {@link org.apache.lucene.spatial.query.SpatialOperation#Contains
- * CONTAINS} the query shape. For use on {@link RecursivePrefixTreeStrategy}.
+ * Finds docs where its indexed shape {@link
+ * org.apache.lucene.spatial.query.SpatialOperation#Contains CONTAINS} the query shape. For use on
+ * {@link RecursivePrefixTreeStrategy}.
  *
  * @lucene.experimental
  */
 public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
   /**
-   * If the spatial data for a document is comprised of multiple overlapping or adjacent parts,
-   * it might fail to match a query shape when doing the CONTAINS predicate when the sum of
-   * those shapes contain the query shape but none do individually.  Set this to false to
-   * increase performance if you don't care about that circumstance (such as if your indexed
-   * data doesn't even have such conditions).  See LUCENE-5062.
+   * If the spatial data for a document is comprised of multiple overlapping or adjacent parts, it
+   * might fail to match a query shape when doing the CONTAINS predicate when the sum of those
+   * shapes contain the query shape but none do individually. Set this to false to increase
+   * performance if you don't care about that circumstance (such as if your indexed data doesn't
+   * even have such conditions). See LUCENE-5062.
    */
   protected final boolean multiOverlappingIndexedShapes;
 
-  public ContainsPrefixTreeQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel, boolean multiOverlappingIndexedShapes) {
+  public ContainsPrefixTreeQuery(
+      Shape queryShape,
+      String fieldName,
+      SpatialPrefixTree grid,
+      int detailLevel,
+      boolean multiOverlappingIndexedShapes) {
     super(queryShape, fieldName, grid, detailLevel);
     this.multiOverlappingIndexedShapes = multiOverlappingIndexedShapes;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!super.equals(o))
-      return false;
-    return multiOverlappingIndexedShapes == ((ContainsPrefixTreeQuery)o).multiOverlappingIndexedShapes;
+    if (!super.equals(o)) return false;
+    return multiOverlappingIndexedShapes
+        == ((ContainsPrefixTreeQuery) o).multiOverlappingIndexedShapes;
   }
 
   @Override
@@ -70,12 +75,13 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
   @Override
   public String toString(String field) {
-    return getClass().getSimpleName() + "(" +
-        "fieldName=" + fieldName + "," +
-        "queryShape=" + queryShape + "," +
-        "detailLevel=" + detailLevel + "," +
-        "multiOverlappingIndexedShapes=" + multiOverlappingIndexedShapes +
-        ")";
+    return getClass().getSimpleName()
+        + "("
+        + ("fieldName=" + fieldName + ",")
+        + ("queryShape=" + queryShape + ",")
+        + ("detailLevel=" + detailLevel + ",")
+        + ("multiOverlappingIndexedShapes=" + multiOverlappingIndexedShapes)
+        + ")";
   }
 
   @Override
@@ -88,25 +94,26 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     public ContainsVisitor(LeafReaderContext context) throws IOException {
       super(context);
       if (termsEnum != null) {
-        nextTerm();//advance to first
+        nextTerm(); // advance to first
       }
     }
 
-    BytesRef seekTerm = new BytesRef();//temp; see seek()
-    BytesRef thisTerm;//current term in termsEnum
-    Cell indexedCell;//the cell wrapper around thisTerm
+    BytesRef seekTerm = new BytesRef(); // temp; see seek()
+    BytesRef thisTerm; // current term in termsEnum
+    Cell indexedCell; // the cell wrapper around thisTerm
 
-    /** This is the primary algorithm; recursive.  Returns null if finds none. */
+    /** This is the primary algorithm; recursive. Returns null if finds none. */
     private SmallDocSet visit(Cell cell, Bits acceptContains) throws IOException {
 
-      if (thisTerm == null)//signals all done
-        return null;
+      if (thisTerm == null) // signals all done
+      return null;
 
       // Get the AND of all child results (into combinedSubResults)
       SmallDocSet combinedSubResults = null;
       //   Optimization: use null subCellsFilter when we know cell is within the query shape.
       Shape subCellsFilter = queryShape;
-      if (cell.getLevel() != 0 && ((cell.getShapeRel() == null || cell.getShapeRel() == SpatialRelation.WITHIN))) {
+      if (cell.getLevel() != 0
+          && ((cell.getShapeRel() == null || cell.getShapeRel() == SpatialRelation.WITHIN))) {
         subCellsFilter = null;
         assert cell.getShape().relate(queryShape) == SpatialRelation.WITHIN;
       }
@@ -117,38 +124,36 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
           combinedSubResults = null;
         } else if (subCell.getLevel() == detailLevel) {
           combinedSubResults = getDocs(subCell, acceptContains);
-        } else if (!multiOverlappingIndexedShapes &&
-            subCell.getShapeRel() == SpatialRelation.WITHIN) {
+        } else if (!multiOverlappingIndexedShapes
+            && subCell.getShapeRel() == SpatialRelation.WITHIN) {
           combinedSubResults = getLeafDocs(subCell, acceptContains);
         } else {
-          //OR the leaf docs with all child results
+          // OR the leaf docs with all child results
           SmallDocSet leafDocs = getLeafDocs(subCell, acceptContains);
-          SmallDocSet subDocs = visit(subCell, acceptContains); //recursion
+          SmallDocSet subDocs = visit(subCell, acceptContains); // recursion
           combinedSubResults = union(leafDocs, subDocs);
         }
 
-        if (combinedSubResults == null)
-          break;
-        acceptContains = combinedSubResults;//has the 'AND' effect on next iteration
+        if (combinedSubResults == null) break;
+        acceptContains = combinedSubResults; // has the 'AND' effect on next iteration
       }
 
       return combinedSubResults;
     }
 
     private boolean seek(Cell cell) throws IOException {
-      if (thisTerm == null)
-        return false;
+      if (thisTerm == null) return false;
       final int compare = indexedCell.compareToNoLeaf(cell);
       if (compare > 0) {
-        return false;//leap-frog effect
+        return false; // leap-frog effect
       } else if (compare == 0) {
         return true; // already there!
-      } else {//compare > 0
-        //seek!
+      } else { // compare > 0
+        // seek!
         seekTerm = cell.getTokenBytesNoLeaf(seekTerm);
         final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(seekTerm);
         if (seekStatus == TermsEnum.SeekStatus.END) {
-          thisTerm = null;//all done
+          thisTerm = null; // all done
           return false;
         }
         thisTerm = termsEnum.term();
@@ -163,8 +168,8 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     /** Get prefix & leaf docs at this cell. */
     private SmallDocSet getDocs(Cell cell, Bits acceptContains) throws IOException {
       assert indexedCell.compareToNoLeaf(cell) == 0;
-      //called when we've reached detailLevel.
-      if (indexedCell.isLeaf()) {//only a leaf
+      // called when we've reached detailLevel.
+      if (indexedCell.isLeaf()) { // only a leaf
         SmallDocSet result = collectDocs(acceptContains);
         nextTerm();
         return result;
@@ -173,7 +178,7 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
         if (!nextTerm()) {
           return docsAtPrefix;
         }
-        //collect leaf too
+        // collect leaf too
         if (indexedCell.isLeaf() && indexedCell.compareToNoLeaf(cell) == 0) {
           SmallDocSet docsAtLeaf = collectDocs(acceptContains);
           nextTerm();
@@ -187,7 +192,7 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     /** Gets docs on the leaf of the given cell, _if_ there is a leaf cell, otherwise null. */
     private SmallDocSet getLeafDocs(Cell cell, Bits acceptContains) throws IOException {
       assert indexedCell.compareToNoLeaf(cell) == 0;
-      //Advance past prefix if we're at a prefix; return null if no leaf
+      // Advance past prefix if we're at a prefix; return null if no leaf
       if (!indexedCell.isLeaf()) {
         if (!nextTerm() || !indexedCell.isLeaf() || indexedCell.getLevel() != cell.getLevel()) {
           return null;
@@ -199,17 +204,15 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     }
 
     private boolean nextTerm() throws IOException {
-      if ((thisTerm = termsEnum.next()) == null)
-        return false;
+      if ((thisTerm = termsEnum.next()) == null) return false;
       indexedCell = grid.readCell(thisTerm, indexedCell);
       return true;
     }
 
     private SmallDocSet union(SmallDocSet aSet, SmallDocSet bSet) {
       if (bSet != null) {
-        if (aSet == null)
-          return bSet;
-        return aSet.union(bSet);//union is 'or'
+        if (aSet == null) return bSet;
+        return aSet.union(bSet); // union is 'or'
       }
       return aSet;
     }
@@ -225,19 +228,19 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
         }
         if (set == null) {
           int size = termsEnum.docFreq();
-          if (size <= 0)
-            size = 16;
+          if (size <= 0) size = 16;
           set = new SmallDocSet(size);
         }
         set.set(docid);
       }
       return set;
     }
+  } // class ContainsVisitor
 
-  }//class ContainsVisitor
-
-  /** A hash based mutable set of docIds. If this were Solr code then we might
-   * use a combination of HashDocSet and SortedIntDocSet instead. */
+  /**
+   * A hash based mutable set of docIds. If this were Solr code then we might use a combination of
+   * HashDocSet and SortedIntDocSet instead.
+   */
   // TODO use DocIdSetBuilder?
   private static class SmallDocSet extends DocIdSet implements Bits {
 
@@ -255,8 +258,7 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
     public void set(int index) {
       intSet.put(index);
-      if (index > maxInt)
-        maxInt = index;
+      if (index > maxInt) maxInt = index;
     }
 
     /** Largest docid. */
@@ -281,10 +283,9 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
         bigger = this;
         smaller = other;
       }
-      //modify bigger
+      // modify bigger
       for (int v : smaller.intSet.keys) {
-        if (v == smaller.intSet.emptyVal)
-          continue;
+        if (v == smaller.intSet.emptyVal) continue;
         bigger.set(v);
       }
       return bigger;
@@ -292,31 +293,30 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
     @Override
     public Bits bits() throws IOException {
-      //if the # of docids is super small, return null since iteration is going
+      // if the # of docids is super small, return null since iteration is going
       // to be faster
       return size() > 4 ? this : null;
     }
 
     @Override
     public DocIdSetIterator iterator() throws IOException {
-      if (size() == 0)
-        return null;
-      //copy the unsorted values to a new array then sort them
+      if (size() == 0) return null;
+      // copy the unsorted values to a new array then sort them
       int d = 0;
       final int[] docs = new int[intSet.size()];
       for (int v : intSet.keys) {
-        if (v == intSet.emptyVal)
-          continue;
+        if (v == intSet.emptyVal) continue;
         docs[d++] = v;
       }
       assert d == intSet.size();
       final int size = d;
 
-      //sort them
+      // sort them
       Arrays.sort(docs, 0, size);
 
       return new DocIdSetIterator() {
         int idx = -1;
+
         @Override
         public int docID() {
           if (idx < 0) {
@@ -330,14 +330,13 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
 
         @Override
         public int nextDoc() throws IOException {
-          if (++idx < size)
-            return docs[idx];
+          if (++idx < size) return docs[idx];
           return NO_MORE_DOCS;
         }
 
         @Override
         public int advance(int target) throws IOException {
-          //for this small set this is likely faster vs. a binary search
+          // for this small set this is likely faster vs. a binary search
           // into the sorted array
           return slowAdvance(target);
         }
@@ -352,11 +351,8 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     @Override
     public long ramBytesUsed() {
       return RamUsageEstimator.alignObjectSize(
-            RamUsageEstimator.NUM_BYTES_OBJECT_REF
-          + Integer.BYTES)
+              RamUsageEstimator.NUM_BYTES_OBJECT_REF + Integer.BYTES)
           + intSet.ramBytesUsed();
     }
-
-  }//class SmallDocSet
-
+  } // class SmallDocSet
 }

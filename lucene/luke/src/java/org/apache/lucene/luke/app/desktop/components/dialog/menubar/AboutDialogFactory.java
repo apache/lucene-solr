@@ -17,18 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JEditorPane;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -42,7 +30,18 @@ import java.awt.Window;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Objects;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import org.apache.lucene.LucenePackage;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
@@ -62,7 +61,7 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
 
   private JDialog dialog;
 
-  public synchronized static AboutDialogFactory getInstance() throws IOException {
+  public static synchronized AboutDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new AboutDialogFactory();
     }
@@ -143,12 +142,17 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
     editorPane.setText(LICENSE_NOTICE);
     editorPane.setEditable(false);
     editorPane.addHyperlinkListener(hyperlinkListener);
-    JScrollPane scrollPane = new JScrollPane(editorPane, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+    JScrollPane scrollPane =
+        new JScrollPane(
+            editorPane,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     scrollPane.setBorder(BorderFactory.createLineBorder(Color.gray));
-    SwingUtilities.invokeLater(() -> {
-      // Set the scroll bar position to top
-      scrollPane.getVerticalScrollBar().setValue(0);
-    });
+    SwingUtilities.invokeLater(
+        () -> {
+          // Set the scroll bar position to top
+          scrollPane.getVerticalScrollBar().setValue(0);
+        });
     return scrollPane;
   }
 
@@ -164,37 +168,37 @@ public final class AboutDialogFactory implements DialogOpener.DialogFactory {
     return panel;
   }
 
-  private static final String LUCENE_IMPLEMENTATION_VERSION = LucenePackage.get().getImplementationVersion();
+  private static final String LUCENE_IMPLEMENTATION_VERSION =
+      LucenePackage.get().getImplementationVersion();
 
   private static final String LICENSE_NOTICE =
-      "<p>[Implementation Version]</p>" +
-          "<p>" + (Objects.nonNull(LUCENE_IMPLEMENTATION_VERSION) ? LUCENE_IMPLEMENTATION_VERSION : "") + "</p>" +
-          "<p>[License]</p>" +
-          "<p>Luke is distributed under <a href=\"http://www.apache.org/licenses/LICENSE-2.0\">Apache License Version 2.0</a> (http://www.apache.org/licenses/LICENSE-2.0) " +
-          "and includes <a href=\"https://www.elegantthemes.com/blog/resources/elegant-icon-font\">The Elegant Icon Font</a> (https://www.elegantthemes.com/blog/resources/elegant-icon-font) " +
-          "licensed under <a href=\"https://opensource.org/licenses/MIT\">MIT</a> (https://opensource.org/licenses/MIT)</p>" +
-          "<p>[Brief history]</p>" +
-          "<ul>" +
-          "<li>The original author is Andrzej Bialecki</li>" +
-          "<li>The project has been mavenized by Neil Ireson</li>" +
-          "<li>The project has been ported to Lucene trunk (marked as 5.0 at the time) by Dmitry Kan\n</li>" +
-          "<li>The project has been back-ported to Lucene 4.3 by sonarname</li>" +
-          "<li>There are updates to the (non-mavenized) project done by tarzanek</li>" +
-          "<li>The UI and core components has been re-implemented on top of Swing by Tomoko Uchida</li>" +
-          "</ul>"
-      ;
+      "<p>[Implementation Version]</p>"
+          + "<p>"
+          + (Objects.nonNull(LUCENE_IMPLEMENTATION_VERSION) ? LUCENE_IMPLEMENTATION_VERSION : "")
+          + "</p>"
+          + "<p>[License]</p>"
+          + "<p>Luke is distributed under <a href=\"http://www.apache.org/licenses/LICENSE-2.0\">Apache License Version 2.0</a> (http://www.apache.org/licenses/LICENSE-2.0) "
+          + "and includes <a href=\"https://www.elegantthemes.com/blog/resources/elegant-icon-font\">The Elegant Icon Font</a> (https://www.elegantthemes.com/blog/resources/elegant-icon-font) "
+          + "licensed under <a href=\"https://opensource.org/licenses/MIT\">MIT</a> (https://opensource.org/licenses/MIT)</p>"
+          + "<p>[Brief history]</p>"
+          + "<ul>"
+          + "<li>The original author is Andrzej Bialecki</li>"
+          + "<li>The project has been mavenized by Neil Ireson</li>"
+          + "<li>The project has been ported to Lucene trunk (marked as 5.0 at the time) by Dmitry Kan\n</li>"
+          + "<li>The project has been back-ported to Lucene 4.3 by sonarname</li>"
+          + "<li>There are updates to the (non-mavenized) project done by tarzanek</li>"
+          + "<li>The UI and core components has been re-implemented on top of Swing by Tomoko Uchida</li>"
+          + "</ul>";
 
-
-  private static final HyperlinkListener hyperlinkListener = e -> {
-    if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED)
-      if (Desktop.isDesktopSupported()) {
-        try {
-          Desktop.getDesktop().browse(e.getURL().toURI());
-        } catch (IOException | URISyntaxException ex) {
-          throw new LukeException(ex.getMessage(), ex);
-        }
-      }
-  };
-
-
+  private static final HyperlinkListener hyperlinkListener =
+      e -> {
+        if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED)
+          if (Desktop.isDesktopSupported()) {
+            try {
+              Desktop.getDesktop().browse(e.getURL().toURI());
+            } catch (IOException | URISyntaxException ex) {
+              throw new LukeException(ex.getMessage(), ex);
+            }
+          }
+      };
 }

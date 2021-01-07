@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link HyphenatedWordsFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_hyphn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,21 +38,21 @@ public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "hyphenatedWords";
-  
+
   /** Creates a new HyphenatedWordsFilterFactory */
-  public HyphenatedWordsFilterFactory(Map<String,String> args) {
+  public HyphenatedWordsFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public HyphenatedWordsFilterFactory() {
     throw defaultCtorException();
   }
 
-@Override
+  @Override
   public HyphenatedWordsFilter create(TokenStream input) {
     return new HyphenatedWordsFilter(input);
   }

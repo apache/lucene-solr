@@ -19,17 +19,12 @@ package org.apache.lucene.queryparser.flexible.core.parser;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 
-/**
- * A parser needs to implement {@link SyntaxParser} interface
- */
+/** A parser needs to implement {@link SyntaxParser} interface */
 public interface SyntaxParser {
   /**
-   * @param query
-   *          - query data to be parsed
-   * @param field
-   *          - default field name
+   * @param query - query data to be parsed
+   * @param field - default field name
    * @return QueryNode tree
    */
-  public QueryNode parse(CharSequence query, CharSequence field)
-      throws QueryNodeParseException;
+  public QueryNode parse(CharSequence query, CharSequence field) throws QueryNodeParseException;
 }

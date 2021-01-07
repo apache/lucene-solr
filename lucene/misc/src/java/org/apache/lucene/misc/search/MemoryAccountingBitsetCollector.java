@@ -18,7 +18,6 @@
 package org.apache.lucene.misc.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.misc.CollectorMemoryTracker;
 import org.apache.lucene.search.ScoreMode;

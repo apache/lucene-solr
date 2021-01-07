@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
@@ -39,9 +38,14 @@ public class STBlockReader extends BlockReader {
 
   protected final FieldInfos fieldInfos;
 
-  public STBlockReader(IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
-                       IndexInput blockInput, PostingsReaderBase postingsReader,
-                       FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
+  public STBlockReader(
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
+      IndexInput blockInput,
+      PostingsReaderBase postingsReader,
+      FieldMetadata fieldMetadata,
+      BlockDecoder blockDecoder,
+      FieldInfos fieldInfos)
+      throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
     this.fieldInfos = fieldInfos;
   }
@@ -67,9 +71,9 @@ public class STBlockReader extends BlockReader {
   }
 
   /**
-   * Moves to the next term line and reads it, whichever are the corresponding fields.
-   * The term details are not read yet. They will be read only when needed
-   * with {@link #readTermStateIfNotRead()}.
+   * Moves to the next term line and reads it, whichever are the corresponding fields. The term
+   * details are not read yet. They will be read only when needed with {@link
+   * #readTermStateIfNotRead()}.
    *
    * @return The read term bytes.
    */
@@ -111,7 +115,8 @@ public class STBlockReader extends BlockReader {
 
   @Override
   protected boolean isBeyondLastTerm(BytesRef searchedTerm, long blockStartFP) {
-    return blockStartFP > fieldMetadata.getLastBlockStartFP() || super.isBeyondLastTerm(searchedTerm, blockStartFP);
+    return blockStartFP > fieldMetadata.getLastBlockStartFP()
+        || super.isBeyondLastTerm(searchedTerm, blockStartFP);
   }
 
   @Override
@@ -126,15 +131,18 @@ public class STBlockReader extends BlockReader {
    */
   @Override
   protected BlockTermState readTermState() throws IOException {
-    termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return termState = ((STBlockLine.Serializer) blockLineReader).readTermStateForField(
-        fieldMetadata.getFieldInfo().number,
-        termStatesReadBuffer,
-        termStateSerializer,
-        blockHeader,
-        fieldInfos,
-        scratchTermState
-    );
+    termStatesReadBuffer.setPosition(
+        blockFirstLineStart
+            + blockHeader.getTermStatesBaseOffset()
+            + blockLine.getTermStateRelativeOffset());
+    return termState =
+        ((STBlockLine.Serializer) blockLineReader)
+            .readTermStateForField(
+                fieldMetadata.getFieldInfo().number,
+                termStatesReadBuffer,
+                termStateSerializer,
+                blockHeader,
+                fieldInfos,
+                scratchTermState);
   }
 }
-

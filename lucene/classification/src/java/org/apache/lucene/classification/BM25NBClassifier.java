@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -47,49 +46,42 @@ import org.apache.lucene.util.BytesRef;
  */
 public class BM25NBClassifier implements Classifier<BytesRef> {
 
-  /**
-   * {@link IndexReader} used to access the {@link Classifier}'s
-   * index
-   */
+  /** {@link IndexReader} used to access the {@link Classifier}'s index */
   private final IndexReader indexReader;
 
-  /**
-   * names of the fields to be used as input text
-   */
+  /** names of the fields to be used as input text */
   private final String[] textFieldNames;
 
-  /**
-   * name of the field to be used as a class / category output
-   */
+  /** name of the field to be used as a class / category output */
   private final String classFieldName;
 
-  /**
-   * {@link Analyzer} to be used for tokenizing unseen input text
-   */
+  /** {@link Analyzer} to be used for tokenizing unseen input text */
   private final Analyzer analyzer;
 
-  /**
-   * {@link IndexSearcher} to run searches on the index for retrieving frequencies
-   */
+  /** {@link IndexSearcher} to run searches on the index for retrieving frequencies */
   private final IndexSearcher indexSearcher;
 
-  /**
-   * {@link Query} used to eventually filter the document set to be used to classify
-   */
+  /** {@link Query} used to eventually filter the document set to be used to classify */
   private final Query query;
 
   /**
    * Creates a new NaiveBayes classifier.
    *
-   * @param indexReader    the reader on the index to be used for classification
-   * @param analyzer       an {@link Analyzer} used to analyze unseen text
-   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
-   * @param classFieldName the name of the field used as the output for the classifier NOTE: must not be heavely analyzed
-   *                       as the returned class will be a token indexed for this field
-   * @param textFieldNames the name of the fields used as the inputs for the classifier, NO boosting supported per field
+   * @param indexReader the reader on the index to be used for classification
+   * @param analyzer an {@link Analyzer} used to analyze unseen text
+   * @param query a {@link Query} to eventually filter the docs used for training the classifier, or
+   *     {@code null} if all the indexed docs should be used
+   * @param classFieldName the name of the field used as the output for the classifier NOTE: must
+   *     not be heavely analyzed as the returned class will be a token indexed for this field
+   * @param textFieldNames the name of the fields used as the inputs for the classifier, NO boosting
+   *     supported per field
    */
-  public BM25NBClassifier(IndexReader indexReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
+  public BM25NBClassifier(
+      IndexReader indexReader,
+      Analyzer analyzer,
+      Query query,
+      String classFieldName,
+      String... textFieldNames) {
     this.indexReader = indexReader;
     this.indexSearcher = new IndexSearcher(this.indexReader);
     this.indexSearcher.setSimilarity(new BM25Similarity());
@@ -125,7 +117,8 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
    * @return a {@code List} of {@code ClassificationResult}, one for each existing class
    * @throws IOException if assigning probabilities fails
    */
-  private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
+  private List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument)
+      throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
 
     Terms classes = MultiTerms.getTerms(indexReader, classFieldName);
@@ -135,7 +128,10 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
     while ((next = classesEnum.next()) != null) {
       if (next.length > 0) {
         Term term = new Term(this.classFieldName, next);
-        assignedClasses.add(new ClassificationResult<>(term.bytes(), calculateLogPrior(term) + calculateLogLikelihood(tokenizedText, term)));
+        assignedClasses.add(
+            new ClassificationResult<>(
+                term.bytes(),
+                calculateLogPrior(term) + calculateLogLikelihood(tokenizedText, term)));
       }
     }
 
@@ -148,7 +144,8 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
    * @param assignedClasses the list of assigned classes
    * @return the normalized results
    */
-  private ArrayList<ClassificationResult<BytesRef>> normClassificationResults(List<ClassificationResult<BytesRef>> assignedClasses) {
+  private ArrayList<ClassificationResult<BytesRef>> normClassificationResults(
+      List<ClassificationResult<BytesRef>> assignedClasses) {
     // normalization; the values transforms to a 0-1 range
     ArrayList<ClassificationResult<BytesRef>> returnList = new ArrayList<>();
     if (!assignedClasses.isEmpty()) {
@@ -210,7 +207,9 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
     builder.add(new BooleanClause(new TermQuery(classTerm), BooleanClause.Occur.MUST));
     for (String textFieldName : textFieldNames) {
       for (String word : words) {
-        builder.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
+        builder.add(
+            new BooleanClause(
+                new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
       }
     }
     if (query != null) {
@@ -230,5 +229,4 @@ public class BM25NBClassifier implements Classifier<BytesRef> {
     TopDocs topDocs = indexSearcher.search(bq.build(), 1);
     return topDocs.totalHits.value > 0 ? Math.log(topDocs.scoreDocs[0].score) : 0;
   }
-
 }

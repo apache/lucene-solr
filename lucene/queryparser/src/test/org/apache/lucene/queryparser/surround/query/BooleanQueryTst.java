@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -52,8 +51,10 @@ public class BooleanQueryTst {
     this.testCase = testCase;
     this.qf = qf;
   }
-  
-  public void setVerbose(boolean verbose) {this.verbose = verbose;}
+
+  public void setVerbose(boolean verbose) {
+    this.verbose = verbose;
+  }
 
   class TestCollector extends SimpleCollector { // FIXME: use check hits from Lucene tests
     int totalMatched;
@@ -75,7 +76,7 @@ public class BooleanQueryTst {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       docBase = context.docBase;
     }
-    
+
     @Override
     public void collect(int docNr) throws IOException {
       float score = scorer.score();
@@ -85,7 +86,7 @@ public class BooleanQueryTst {
       Assert.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);
       int i;
       for (i = 0; i < expectedDocNrs.length; i++) {
-        if ((! encountered[i]) && (expectedDocNrs[i] == docNr)) {
+        if ((!encountered[i]) && (expectedDocNrs[i] == docNr)) {
           encountered[i] = true;
           break;
         }
@@ -95,7 +96,7 @@ public class BooleanQueryTst {
       }
       totalMatched++;
     }
-    
+
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE;
@@ -108,15 +109,15 @@ public class BooleanQueryTst {
 
   public void doTest() throws Exception {
 
-    if (verbose) {    
-        System.out.println("");
-        System.out.println("Query: " + queryText);
+    if (verbose) {
+      System.out.println("");
+      System.out.println("Query: " + queryText);
     }
-    
+
     SrndQuery lq = QueryParser.parse(queryText);
-    
+
     /* if (verbose) System.out.println("Srnd: " + lq.toString()); */
-    
+
     Query query = lq.makeLuceneQueryField(fieldName, qf);
     /* if (verbose) System.out.println("Lucene: " + query.toString()); */
 
@@ -131,5 +132,3 @@ public class BooleanQueryTst {
     tc.checkNrHits();
   }
 }
-
-

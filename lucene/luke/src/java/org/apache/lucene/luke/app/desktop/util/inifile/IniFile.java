@@ -32,5 +32,4 @@ public interface IniFile {
   String getString(String section, String option);
 
   Boolean getBoolean(String section, String option);
-
 }

@@ -17,13 +17,12 @@
 package org.apache.lucene.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
 /**
- * A {@link RunListener} that detects suite/ test failures. We need it because failures
- * due to thread leaks happen outside of any rule contexts.
+ * A {@link RunListener} that detects suite/ test failures. We need it because failures due to
+ * thread leaks happen outside of any rule contexts.
  */
 public class FailureMarker extends RunListener {
   static final AtomicInteger failures = new AtomicInteger();

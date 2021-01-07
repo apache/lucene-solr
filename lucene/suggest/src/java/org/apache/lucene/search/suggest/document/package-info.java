@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Support for document suggestion
- */
+/** Support for document suggestion */
 package org.apache.lucene.search.suggest.document;

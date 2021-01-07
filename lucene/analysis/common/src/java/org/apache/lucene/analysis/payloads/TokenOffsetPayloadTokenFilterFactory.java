@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.payloads;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link TokenOffsetPayloadTokenFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_tokenoffset" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,15 +38,15 @@ public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "tokenOffsetPayload";
-  
+
   /** Creates a new TokenOffsetPayloadTokenFilterFactory */
-  public TokenOffsetPayloadTokenFilterFactory(Map<String,String> args) {
+  public TokenOffsetPayloadTokenFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public TokenOffsetPayloadTokenFilterFactory() {
     throw defaultCtorException();
@@ -58,4 +57,3 @@ public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
     return new TokenOffsetPayloadTokenFilter(input);
   }
 }
-

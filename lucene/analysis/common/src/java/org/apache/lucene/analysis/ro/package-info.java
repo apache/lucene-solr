@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Romanian.
- */
+/** Analyzer for Romanian. */
 package org.apache.lucene.analysis.ro;

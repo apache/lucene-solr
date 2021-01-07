@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
@@ -357,6 +358,11 @@ public class IndexSchema {
     } else {
       return val.toString();
     }
+  }
+
+  /** Given a readable/printable uniqueKey value, return an indexable version */
+  public BytesRef indexableUniqueKey(String idStr) {
+    return new BytesRef(uniqueKeyFieldType.toInternal(idStr));
   }
 
   private SchemaField getIndexedField(String fname) {

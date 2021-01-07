@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link ASCIIFoldingFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ascii" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -43,16 +42,16 @@ public class ASCIIFoldingFilterFactory extends TokenFilterFactory {
   private static final String PRESERVE_ORIGINAL = "preserveOriginal";
 
   private final boolean preserveOriginal;
-  
+
   /** Creates a new ASCIIFoldingFilterFactory */
-  public ASCIIFoldingFilterFactory(Map<String,String> args) {
+  public ASCIIFoldingFilterFactory(Map<String, String> args) {
     super(args);
     preserveOriginal = getBoolean(args, PRESERVE_ORIGINAL, false);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public ASCIIFoldingFilterFactory() {
     throw defaultCtorException();
@@ -71,6 +70,4 @@ public class ASCIIFoldingFilterFactory extends TokenFilterFactory {
     // emit only the folded token
     return new ASCIIFoldingFilter(input, false);
   }
-
 }
-

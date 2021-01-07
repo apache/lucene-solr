@@ -18,14 +18,11 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Test utility for simple ROT13 cipher (https://en.wikipedia.org/wiki/ROT13).
- */
+/** Test utility for simple ROT13 cipher (https://en.wikipedia.org/wiki/ROT13). */
 public class Rot13CypherTestUtil {
 
   private static final int ENCODING_OFFSET = 7;
@@ -34,7 +31,7 @@ public class Rot13CypherTestUtil {
   public static byte[] encode(DataInput bytesInput, int length) throws IOException {
     byte[] encodedBytes = new byte[length + ENCODING_OFFSET];
     for (int i = 0; i < length; i++) {
-      encodedBytes[i + ENCODING_OFFSET] = (byte)(bytesInput.readByte() + ENCODING_ROTATION);
+      encodedBytes[i + ENCODING_OFFSET] = (byte) (bytesInput.readByte() + ENCODING_ROTATION);
     }
     return encodedBytes;
   }
@@ -44,7 +41,7 @@ public class Rot13CypherTestUtil {
     bytesInput.skipBytes(ENCODING_OFFSET);
     byte[] decodedBytes = new byte[Math.toIntExact(length)];
     for (int i = 0; i < length; i++) {
-      decodedBytes[i] = (byte)(bytesInput.readByte() - ENCODING_ROTATION);
+      decodedBytes[i] = (byte) (bytesInput.readByte() - ENCODING_ROTATION);
     }
     return decodedBytes;
   }

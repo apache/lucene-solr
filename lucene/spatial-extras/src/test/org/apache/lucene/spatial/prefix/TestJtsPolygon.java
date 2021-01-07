@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.spatial.prefix;
 
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
+import java.text.ParseException;
+import java.util.HashMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -33,43 +32,47 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Test;
-
-import java.text.ParseException;
-import java.util.HashMap;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class TestJtsPolygon extends StrategyTestCase {
 
-  private static final double LUCENE_4464_distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;//DEFAULT 2.5%
+  private static final double LUCENE_4464_distErrPct =
+      SpatialArgs.DEFAULT_DISTERRPCT; // DEFAULT 2.5%
 
   public TestJtsPolygon() {
     try {
       HashMap<String, String> args = new HashMap<>();
-      args.put("spatialContextFactory",
+      args.put(
+          "spatialContextFactory",
           "org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
       ctx = SpatialContextFactory.makeSpatialContext(args, getClass().getClassLoader());
     } catch (NoClassDefFoundError e) {
-      assumeTrue("This test requires JTS jar: "+e, false);
+      assumeTrue("This test requires JTS jar: " + e, false);
     }
 
-    GeohashPrefixTree grid = new GeohashPrefixTree(ctx, 11);//< 1 meter == 11 maxLevels
+    GeohashPrefixTree grid = new GeohashPrefixTree(ctx, 11); // < 1 meter == 11 maxLevels
     this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
-    ((RecursivePrefixTreeStrategy)this.strategy).setDistErrPct(LUCENE_4464_distErrPct);//1% radius (small!)
+    ((RecursivePrefixTreeStrategy) this.strategy)
+        .setDistErrPct(LUCENE_4464_distErrPct); // 1% radius (small!)
   }
 
   @Test
   /** LUCENE-4464 */
   public void testCloseButNoMatch() throws Exception {
     getAddAndVerifyIndexedDocuments("LUCENE-4464.txt");
-    SpatialArgs args = q(
-        "POLYGON((-93.18100824442227 45.25676372469945," +
-            "-93.23182001200654 45.21421290799412," +
-            "-93.16315546122038 45.23742639412364," +
-            "-93.18100824442227 45.25676372469945))",
-        LUCENE_4464_distErrPct);
+    SpatialArgs args =
+        q(
+            "POLYGON((-93.18100824442227 45.25676372469945,"
+                + "-93.23182001200654 45.21421290799412,"
+                + "-93.16315546122038 45.23742639412364,"
+                + "-93.18100824442227 45.25676372469945))",
+            LUCENE_4464_distErrPct);
     SearchResults got = executeQuery(strategy.makeQuery(args), 100);
     assertEquals(1, got.numFound);
     assertEquals("poly2", got.results.get(0).document.get("id"));
-    //did not find poly 1 !
+    // did not find poly 1 !
   }
 
   private SpatialArgs q(String shapeStr, double distErrPct) throws ParseException {
@@ -80,13 +83,15 @@ public class TestJtsPolygon extends StrategyTestCase {
   }
 
   /**
-   * A PrefixTree pruning optimization gone bad.
-   * See <a href="https://issues.apache.org/jira/browse/LUCENE-4770">LUCENE-4770</a>.
+   * A PrefixTree pruning optimization gone bad. See <a
+   * href="https://issues.apache.org/jira/browse/LUCENE-4770">LUCENE-4770</a>.
    */
   @Test
   public void testBadPrefixTreePrune() throws Exception {
 
-    Shape area = ctx.readShapeFromWkt("POLYGON((-122.83 48.57, -122.77 48.56, -122.79 48.53, -122.83 48.57))");
+    Shape area =
+        ctx.readShapeFromWkt(
+            "POLYGON((-122.83 48.57, -122.77 48.56, -122.79 48.53, -122.83 48.57))");
 
     SpatialPrefixTree trie = new QuadPrefixTree(ctx, 12);
     TermQueryPrefixTreeStrategy strategy = new TermQueryPrefixTreeStrategy(trie, "geo");
@@ -102,7 +107,10 @@ public class TestJtsPolygon extends StrategyTestCase {
     Point upperleft = ctx.getShapeFactory().pointXY(-122.88, 48.54);
     Point lowerright = ctx.getShapeFactory().pointXY(-122.82, 48.62);
 
-    Query query = strategy.makeQuery(new SpatialArgs(SpatialOperation.Intersects, ctx.getShapeFactory().rect(upperleft, lowerright)));
+    Query query =
+        strategy.makeQuery(
+            new SpatialArgs(
+                SpatialOperation.Intersects, ctx.getShapeFactory().rect(upperleft, lowerright)));
     commit();
 
     TopDocs search = indexSearcher.search(query, 10);
@@ -113,5 +121,4 @@ public class TestJtsPolygon extends StrategyTestCase {
 
     assertEquals(1, search.totalHits.value);
   }
-
 }

@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
 import java.text.CharacterIterator;
 
 /**
  * Wraps a char[] as CharacterIterator for processing with a BreakIterator
+ *
  * @lucene.experimental
  */
 final class CharArrayIterator implements CharacterIterator {
@@ -30,21 +30,21 @@ final class CharArrayIterator implements CharacterIterator {
   private int length;
   private int limit;
 
-  public char [] getText() {
+  public char[] getText() {
     return array;
   }
-  
+
   public int getStart() {
     return start;
   }
-  
+
   public int getLength() {
     return length;
   }
-  
+
   /**
    * Set a new region of text to be examined by this iterator
-   * 
+   *
    * @param array text buffer to examine
    * @param start offset into buffer
    * @param length maximum length to examine

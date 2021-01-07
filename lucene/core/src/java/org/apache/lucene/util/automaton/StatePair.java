@@ -68,7 +68,9 @@ public class StatePair {
     if (obj instanceof StatePair) {
       StatePair p = (StatePair) obj;
       return p.s1 == s1 && p.s2 == s2;
-    } else return false;
+    } else {
+      return false;
+    }
   }
 
   /**

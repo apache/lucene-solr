@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
 import java.util.Collection;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.search.MLTConfig;

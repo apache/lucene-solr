@@ -16,55 +16,51 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
 import com.ibm.icu.text.Collator;
-
+import java.util.Locale;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CollationTestBase;
 import org.apache.lucene.util.BytesRef;
-
-import java.util.Locale;
 
 public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
   private Collator collator = Collator.getInstance(new Locale("fa"));
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new ICUCollationKeyAnalyzer(collator);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
 
-  private BytesRef firstRangeBeginning = new BytesRef
-    (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
-  private BytesRef firstRangeEnd = new BytesRef
-    (collator.getCollationKey(firstRangeEndOriginal).toByteArray());
-  private BytesRef secondRangeBeginning = new BytesRef
-    (collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
-  private BytesRef secondRangeEnd = new BytesRef
-    (collator.getCollationKey(secondRangeEndOriginal).toByteArray());
+  private BytesRef firstRangeBeginning =
+      new BytesRef(collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
+  private BytesRef firstRangeEnd =
+      new BytesRef(collator.getCollationKey(firstRangeEndOriginal).toByteArray());
+  private BytesRef secondRangeBeginning =
+      new BytesRef(collator.getCollationKey(secondRangeBeginningOriginal).toByteArray());
+  private BytesRef secondRangeEnd =
+      new BytesRef(collator.getCollationKey(secondRangeEndOriginal).toByteArray());
 
   public void testFarsiRangeFilterCollating() throws Exception {
-    testFarsiRangeFilterCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
-                                  secondRangeBeginning, secondRangeEnd);
+    testFarsiRangeFilterCollating(
+        analyzer, firstRangeBeginning, firstRangeEnd, secondRangeBeginning, secondRangeEnd);
   }
- 
+
   public void testFarsiRangeQueryCollating() throws Exception {
-    testFarsiRangeQueryCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
-                                 secondRangeBeginning, secondRangeEnd);
+    testFarsiRangeQueryCollating(
+        analyzer, firstRangeBeginning, firstRangeEnd, secondRangeBeginning, secondRangeEnd);
   }
 
   public void testFarsiTermRangeQuery() throws Exception {
-    testFarsiTermRangeQuery
-      (analyzer, firstRangeBeginning, firstRangeEnd, 
-       secondRangeBeginning, secondRangeEnd);
+    testFarsiTermRangeQuery(
+        analyzer, firstRangeBeginning, firstRangeEnd, secondRangeBeginning, secondRangeEnd);
   }
 
   public void testThreadSafe() throws Exception {
