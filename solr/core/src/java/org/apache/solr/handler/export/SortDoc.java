@@ -135,7 +135,7 @@ class SortDoc implements Comparable<SortDoc> {
         return comp;
       }
     }
-    return docId + docBase - sd.docId - sd.docBase;
+    return (sd.docId + sd.docBase) - (docId + docBase);
   }
 
   public String toString() {
