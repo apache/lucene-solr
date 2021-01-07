@@ -109,11 +109,9 @@ Solr supports modifying, adding and removing child documents as part of atomic u
 Syntactically, updates changing the children of a document are very similar to regular atomic updates of simple fields, as demonstrated by the examples below.
 
 Schema and configuration requirements for updating child documents use the same
-<<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above, combined with the <<indexing-nested-documents#schema-configuration,schema configuration rules for Indexing Nested Documents>> -- notably:
-* The `\_root_` field must configured with `stored="true"` or `docValues="true"`
-* The `\_nest_path_` field must exist (it is implicitly `docValues="true"`)
+<<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above.
 
-Under the hood, When Solr processes atomic updates on nested documents, it retrieves the entire block structure (up to and including the common "Root" document), reindexes the structure after applying the atomic update, and deletes the old documents.
+Under the hood, Solr conceptually behaves similarly for nested documents as for non-nested documents, it's just that it applies to entire trees (from the root) of nested documents instead of stand-alone documents.  You can expect more overhead because of this.  In-place updates avoid that.
 
 [IMPORTANT]
 ====
@@ -165,7 +163,7 @@ As with normal (multiValued) fields, the `set` keyword can be used to replace al
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P22!S22",
-  "_root_": "P11",
+  "_root_": "P22",
   "manuals": { "set": [ { "id": "P22!D77",
                           "name_s": "Why Red Pens Are the Best",
                           "content_t": "... correcting papers ...",
