@@ -50,7 +50,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -60,8 +59,6 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 public abstract class LBSolrClient extends SolrClient {
-
-  public static final String LB_PREFERRED_SERVER = "lb.preferredServer";
 
   // defaults
   protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
@@ -153,8 +150,6 @@ public abstract class LBSolrClient extends SolrClient {
     final Map<String, ServerWrapper> zombieServers;
     final Req req;
 
-    private boolean usedPreferred = false;
-
     public ServerIterator(Req req, Map<String, ServerWrapper> zombieServers) {
       this.it = req.getServers().iterator();
       this.req = req;
@@ -175,37 +170,26 @@ public abstract class LBSolrClient extends SolrClient {
         return;
       }
 
-      if (!usedPreferred) {
-        SolrParams reqParams = req.request.getParams();
-        String preferredServer = reqParams != null ? reqParams.get(LB_PREFERRED_SERVER) : null;
-        if (preferredServer != null) {
-          // ugh ~ reg.servers has un-normalized urls, but zombies has normalized, hence the extra if here
-          if (req.getServers() != null && req.getServers().contains(preferredServer)) {
-            preferredServer = normalize(preferredServer);
-            if (!skipIfZombie(preferredServer)) {
-              serverStr = preferredServer;
-              usedPreferred = true; // only try the preferred once, otherwise fallback to normal LB logic
+      while (it.hasNext()) {
+        serverStr = it.next();
+        serverStr = normalize(serverStr);
+        // if the server is currently a zombie, just skip to the next one
+        ServerWrapper wrapper = zombieServers.get(serverStr);
+        if (wrapper != null) {
+          final int numDeadServersToTry = req.getNumDeadServersToTry();
+          if (numDeadServersToTry > 0) {
+            if (skipped == null) {
+              skipped = new ArrayList<>(numDeadServersToTry);
+              skipped.add(wrapper.getBaseUrl());
+            } else if (skipped.size() < numDeadServersToTry) {
+              skipped.add(wrapper.getBaseUrl());
             }
           }
-
-          // clean-up this internal param if we can modify the request params
-          if (reqParams instanceof ModifiableSolrParams) {
-            ((ModifiableSolrParams)reqParams).remove(LB_PREFERRED_SERVER);
-          }
+          continue;
         }
-      }
 
-      if (serverStr == null) {
-        while (it.hasNext()) {
-          serverStr = it.next();
-          serverStr = normalize(serverStr);
-          if (skipIfZombie(serverStr)) {
-            continue;
-          }
-          break;
-        }
+        break;
       }
-
       if (serverStr == null && skipped != null) {
         if (skippedIt == null) {
           skippedIt = skipped.iterator();
@@ -214,26 +198,6 @@ public abstract class LBSolrClient extends SolrClient {
           serverStr = skippedIt.next();
         }
       }
-    }
-
-    private boolean skipIfZombie(final String server) {
-      // if the server is currently a zombie, just skip to the next one
-      boolean skip = false;
-      ServerWrapper wrapper = zombieServers.get(server);
-      if (wrapper != null) {
-        final int numDeadServersToTry = req.getNumDeadServersToTry();
-        if (numDeadServersToTry > 0) {
-          if (skipped == null) {
-            skipped = new ArrayList<>(numDeadServersToTry);
-            skipped.add(wrapper.getBaseUrl());
-          } else if (skipped.size() < numDeadServersToTry) {
-            skipped.add(wrapper.getBaseUrl());
-          }
-        }
-        skip = true;
-      }
-
-      return skip;
     }
 
     boolean isServingZombieServer() {
