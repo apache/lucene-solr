@@ -281,14 +281,14 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       final int offset = random().nextInt(4);
       final int length = TestUtil.nextInt(random(), 1, 16);
       try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
-        byte[] b = new byte[offset + length * Float.BYTES - TestUtil.nextInt(random(), 1, Float.BYTES)];
+        byte[] b =
+            new byte[offset + length * Float.BYTES - TestUtil.nextInt(random(), 1, Float.BYTES)];
         random().nextBytes(b);
         out.writeBytes(b, b.length);
       }
       try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
         input.seek(offset);
-        expectThrows(EOFException.class,
-            () -> input.readLEFloats(new float[length], 0, length));
+        expectThrows(EOFException.class, () -> input.readLEFloats(new float[length], 0, length));
       }
     }
   }
