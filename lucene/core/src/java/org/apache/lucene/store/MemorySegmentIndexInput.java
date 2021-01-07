@@ -41,6 +41,8 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   static final VarHandle VH_getInt = MemoryHandles.varHandle(int.class, 1L, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
   static final VarHandle VH_getLong = MemoryHandles.varHandle(long.class, 1L, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
   
+  static final boolean IS_LITTLE_ENDIAN = (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN);
+  
   final boolean isClone;
   final long length;
   final long chunkSizeMask;
@@ -168,37 +170,37 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
 
   @Override
   public void readLELongs(long[] dst, int offset, int length) throws IOException {
-    if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN) {
+    if (IS_LITTLE_ENDIAN) {
+      final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
+          .asSlice((long) offset << 3, (long) length << 3);
+      try {
+        targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
+        curPosition += targetSlice.byteSize();
+      } catch (IndexOutOfBoundsException iobe) {
+        super.readLELongs(dst, offset, length);
+      } catch (NullPointerException | IllegalStateException e) {
+        throw wrapAlreadyClosedException(e);
+      }
+    } else {
       super.readLELongs(dst, offset, length);
-      return;
-    }
-    final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
-        .asSlice((long) offset << 3, (long) length << 3);
-    try {
-      targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
-      curPosition += targetSlice.byteSize();
-    } catch (IndexOutOfBoundsException iobe) {
-      super.readLELongs(dst, offset, length);
-    } catch (NullPointerException | IllegalStateException e) {
-      throw wrapAlreadyClosedException(e);
     }
   }
 
   @Override
   public void readLEFloats(float[] dst, int offset, int length) throws IOException {
-    if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN) {
+    if (IS_LITTLE_ENDIAN) {
+      final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
+          .asSlice((long) offset << 2, (long) length << 2);
+      try {
+        targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
+        curPosition += targetSlice.byteSize();
+      } catch (IndexOutOfBoundsException iobe) {
+        super.readLEFloats(dst, offset, length);
+      } catch (NullPointerException | IllegalStateException e) {
+        throw wrapAlreadyClosedException(e);
+      }
+    } else {
       super.readLEFloats(dst, offset, length);
-      return;
-    }
-    final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
-        .asSlice((long) offset << 2, (long) length << 2);
-    try {
-      targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
-      curPosition += targetSlice.byteSize();
-    } catch (IndexOutOfBoundsException iobe) {
-      super.readLEFloats(dst, offset, length);
-    } catch (NullPointerException | IllegalStateException e) {
-      throw wrapAlreadyClosedException(e);
     }
   }
 
