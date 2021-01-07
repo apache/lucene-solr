@@ -37,8 +37,14 @@ are the supported continuous probability distributions.
 The `empiricalDistribution` function creates a continuous probability
 distribution from actual data.
 
+<<<<<<< HEAD
 Empirical distributions can be used to conveniently visualize the probability density function of a random sample from a SolrCloud collection.
 The example below shows the `zplot` function visualizing the probability
+=======
+Empirical distributions can be used to conveniently visualize the probability density
+function of a random sample from a SolrCloud
+collection. The example below shows the zplot function visualizing the probability
+>>>>>>> Fix a some typos, parameter/field name formatting
 density of a random sample with a 32 bin histogram.
 
 image::images/math-expressions/empirical.png[]

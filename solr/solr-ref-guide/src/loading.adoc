@@ -16,13 +16,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
+<<<<<<< HEAD
 Streaming expressions has support for reading, parsing, transforming, visualizing and loading CSV and TSV formatted data.
 These functions are designed to cut down the time spent on data preparation and allow users to begin data exploration before the data is loaded into Solr.
+=======
+Streaming Expressions has support for reading, parsing, transforming, visualizing
+and loading CSV and TSV formatted data. These functions are designed to cut down the
+time spent on data preparation and allow users to begin data exploration before the data is
+loaded into Solr.
+>>>>>>> Fix a some typos, parameter/field name formatting
 
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
+<<<<<<< HEAD
 `$SOLR_HOME`. The `cat` function takes two parameters.
+=======
+$SOLR_HOME. The `cat` function takes two parameters.
+>>>>>>> Fix a some typos, parameter/field name formatting
 
 The first parameter is a comma-delimited list of paths.
 If the path list contains directories, `cat` will crawl all the files in the directory and sub-directories.
@@ -185,9 +196,15 @@ image::images/math-expressions/update.png[]
 
 == Transforming Data
 
+<<<<<<< HEAD
 Streaming expressions and math expressions provide a powerful set of functions
 for transforming data.
 The section below shows some useful transformations that can be applied while analyzing, visualizing, and loading CSV and TSV files.
+=======
+Streaming Expressions and Math Expression provide a powerful set of functions
+for transforming data. The section below shows some useful transformations that
+can be applied while analyzing, visualizing, and loading CSV and TSV files.
+>>>>>>> Fix a some typos, parameter/field name formatting
 
 === Unique IDs
 

@@ -1,5 +1,9 @@
 = Streaming Expressions and Math Expressions
+<<<<<<< HEAD
 :page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, computational-geometry, logs
+=======
+:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry, logs
+>>>>>>> Fix a some typos, parameter/field name formatting
 :page-show-toc: false
 
 // Licensed to the Apache Software Foundation (ASF) under one

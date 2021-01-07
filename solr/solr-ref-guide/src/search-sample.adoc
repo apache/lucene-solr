@@ -50,7 +50,11 @@ We have also limited the result set to three specific fields.
 image::images/math-expressions/search-sort.png[]
 
 Once the data is loaded into the table we can switch to a scatter plot and plot the `filesize_d` column
+<<<<<<< HEAD
 on the *x-axis* and the `response_d` column on the *y-axis*.
+=======
+on the *x axis* and the `response_d` column on the *y axis*.
+>>>>>>> Fix a some typos, parameter/field name formatting
 
 image::images/math-expressions/search-sort-plot.png[]
 
@@ -84,11 +88,19 @@ and <<machine-learning.adoc,Machine Learning>> sections.
 In the example below the `random` function is called in its simplest form with just a collection name as the parameter.
 
 When called with no other parameters the `random` function returns a random sample of 500 records with all fields from the collection.
+<<<<<<< HEAD
 When called without the field list parameter (`fl`) the `random` function also generates a sequence, 0-499 in this case, which can be used for plotting the x-axis.
 This sequence is returned in a field called `x`.
 
 The visualization below shows a scatter plot with the `filesize_d` field
 plotted on the y-axis and the `x` sequence plotted on the x-axis.
+=======
+When called without the field list parameter (`fl`) the `random` function also generates a sequence, 0-499 in this case, which can be used for plotting the `x` axis.
+This sequence is returned in a field called `x`.
+
+The visualization below shows a scatter plot with the `filesize_d` field
+plotted on the `y` axis and the `x` sequence plotted on the `x` axis.
+>>>>>>> Fix a some typos, parameter/field name formatting
 The effect of this is to spread the `filesize_d` samples across the length
 of the plot so they can be more easily studied.
 
@@ -114,7 +126,11 @@ The field list (`fl`) now specifies two fields to be
 returned with each sample: `filesize_d` and `response_d`.
 The `q` and `rows` parameters are the same as the defaults but are included as an example of how to set these parameters.
 
+<<<<<<< HEAD
 By plotting `filesize_d` on the x-axis and `response_d` on the y-axis we can begin to study the relationship between the two variables.
+=======
+By plotting `filesize_d` on the *x* axis and `response_d` on the *y* axis we can begin to study the relationship between the two variables.
+>>>>>>> Fix a some typos, parameter/field name formatting
 
 By studying the scatter plot we can learn the following:
 
