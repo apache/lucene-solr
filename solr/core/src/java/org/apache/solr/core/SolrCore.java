@@ -3145,14 +3145,17 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
         SolrConfigHandler configHandler = ((SolrConfigHandler) core.getRequestHandler("/config"));
-        if (configHandler.getReloadLock().tryLock()) {
-
+	      if ((!core.schema.isMutable() || core.schema.getSchemaUpdateLock().tryLock())
+          && configHandler.getReloadLock().tryLock()) {
           try {
             cc.reload(coreName, coreId);
           } catch (SolrCoreState.CoreIsClosedException e) {
             /*no problem this core is already closed*/
           } finally {
             configHandler.getReloadLock().unlock();
+            if (core.schema.isMutable()) {
+            	core.schema.getSchemaUpdateLock().unlock();
+            }
           }
 
         } else {

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -103,8 +104,9 @@ public class SchemaManager {
     String errorMsg = "Unable to persist managed schema. ";
     List errors = Collections.emptyList();
     int latestVersion = -1;
-
-    synchronized (req.getSchema().getSchemaUpdateLock()) {
+   Lock schemaChangeLock = req.getSchema().getSchemaUpdateLock();
+   try {
+	    schemaChangeLock.lock();
       while (!timeOut.hasTimedOut()) {
         managedIndexSchema = getFreshManagedSchema(req.getCore());
         for (CommandOperation op : operations) {
@@ -150,6 +152,9 @@ public class SchemaManager {
           break;
         }
       }
+    }
+    finally {
+     schemaChangeLock.unlock();
     }
     if (req.getCore().getResourceLoader() instanceof ZkSolrResourceLoader) {
       // Don't block further schema updates while waiting for a pending update to propagate to other replicas.
@@ -454,8 +459,8 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        Lock schemaLock = (Lock) core.getLatestSchema().getSchemaUpdateLock();
+        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version, schemaLock );
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

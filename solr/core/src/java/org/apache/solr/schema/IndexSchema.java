@@ -43,6 +43,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -1878,7 +1879,7 @@ public class IndexSchema {
    *
    * @return the schema update lock object to synchronize on
    */
-  public Object getSchemaUpdateLock() {
+  public Lock getSchemaUpdateLock() {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
