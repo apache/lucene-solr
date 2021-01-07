@@ -222,7 +222,6 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
   @Test
   @Ignore
-  //nocommit
   public void testCanWaitForNonexistantCollection() throws Exception {
 
     Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
