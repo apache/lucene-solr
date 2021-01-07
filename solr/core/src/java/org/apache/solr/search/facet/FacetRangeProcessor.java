@@ -484,19 +484,26 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
+    final boolean hasSubFacets = !freq.getSubFacets().isEmpty();
+
     int slotCount = rangeList.size() + otherList.size();
-    intersections = new DocSet[slotCount];
-    filters = new Query[slotCount];
+    if (hasSubFacets) {
+      intersections = new DocSet[slotCount];
+      filters = new Query[slotCount];
+    } else {
+      intersections = null;
+      filters = null;
+    }
 
 
     createAccs(fcontext.base.size(), slotCount);
 
     for (int idx = 0; idx<rangeList.size(); idx++) {
-      rangeStats(rangeList.get(idx), idx);
+      rangeStats(rangeList.get(idx), idx, hasSubFacets);
     }
 
     for (int idx = 0; idx<otherList.size(); idx++) {
-      rangeStats(otherList.get(idx), rangeList.size() + idx);
+      rangeStats(otherList.get(idx), rangeList.size() + idx, hasSubFacets);
     }
 
 
@@ -511,7 +518,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       buckets.add(bucket);
       bucket.add("val", range.label);
       addStats(bucket, idx);
-      doSubs(bucket, idx);
+      if (hasSubFacets) doSubs(bucket, idx);
     }
 
     for (int idx = 0; idx<otherList.size(); idx++) {
@@ -520,7 +527,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       SimpleOrderedMap bucket = new SimpleOrderedMap();
       res.add(range.label.toString(), bucket);
       addStats(bucket, rangeList.size() + idx);
-      doSubs(bucket, rangeList.size() + idx);
+      if (hasSubFacets) doSubs(bucket, rangeList.size() + idx);
     }
 
     if (null != actual_end) {
@@ -532,7 +539,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   private Query[] filters;
   private DocSet[] intersections;
-  private void rangeStats(Range range, int slot) throws IOException {
+  private void rangeStats(Range range, int slot, boolean hasSubFacets) throws IOException {
     final Query rangeQ;
     {
       final Query rangeQuery = sf.getType().getRangeQuery(null, sf, range.low == null ? null : calc.formatValue(range.low), range.high==null ? null : calc.formatValue(range.high), range.includeLower, range.includeUpper);
@@ -549,8 +556,10 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     // TODO: specialize count only
     DocSet intersection = fcontext.searcher.getDocSet(rangeQ, fcontext.base);
-    filters[slot] = rangeQ;
-    intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
+    if (hasSubFacets) {
+      filters[slot] = rangeQ;
+      intersections[slot] = intersection;  // save for later  // TODO: only save if number of slots is small enough?
+    }
     int num = collect(intersection, slot, slotNum -> { return new SlotAcc.SlotContext(rangeQ); });
     countAcc.incrementCount(slot, num); // TODO: roll this into collect()
   }
@@ -558,14 +567,12 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void doSubs(SimpleOrderedMap bucket, int slot) throws IOException {
     // handle sub-facets for this bucket
-    if (freq.getSubFacets().size() > 0) {
-      DocSet subBase = intersections[slot];
-      try {
-        processSubs(bucket, filters[slot], subBase, false, null);
-      } finally {
-        // subContext.base.decref();  // OFF-HEAP
-        // subContext.base = null;  // do not modify context after creation... there may be deferred execution (i.e. streaming)
-      }
+    DocSet subBase = intersections[slot];
+    try {
+      processSubs(bucket, filters[slot], subBase, false, null);
+    } finally {
+      // subContext.base.decref();  // OFF-HEAP
+      // subContext.base = null;  // do not modify context after creation... there may be deferred execution (i.e. streaming)
     }
   }
 
