@@ -28,6 +28,7 @@ import java.util.concurrent.Future;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Unwrapable;
 
 import jdk.incubator.foreign.MappedMemorySegments;
 import jdk.incubator.foreign.MemorySegment;
@@ -253,7 +254,8 @@ public class MMapDirectory extends FSDirectory {
 
     boolean success = false;
     try {
-      path = unwrapPath(path);
+      // Work around for JDK-8259028: we need to unwrap our test-only file system layers
+      path = Unwrapable.unwrapAll(path);
       long startOffset = 0L;
       for (int segNr = 0; segNr < nrSegments; segNr++) {
         long segSize =
@@ -275,23 +277,6 @@ public class MMapDirectory extends FSDirectory {
     } finally {
       if (success == false) {
         IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
-      }
-    }
-  }
-  
-  /** Work around for JDK-8259028: we need to unwrap our test-only file system layers
-   * @see "https://bugs.openjdk.java.net/browse/JDK-8259028"
-   */
-  private static Path unwrapPath(Path path) {
-    for (;;) {
-      final Class<? extends Path> cls = path.getClass();
-      if (false == cls.getName().startsWith("org.apache.lucene.")) {
-        return path;
-      }
-      try {
-        path = (Path) cls.getMethod("getDelegate").invoke(path);
-      } catch (ReflectiveOperationException | ClassCastException e) {
-        return path;
       }
     }
   }
