@@ -327,6 +327,8 @@ Other Changes
 
 * SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
 
+* SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.
