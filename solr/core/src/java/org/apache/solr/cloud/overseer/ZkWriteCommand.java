@@ -17,7 +17,7 @@
 package org.apache.solr.cloud.overseer;
 
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 
 public class ZkWriteCommand {
 
@@ -27,9 +27,9 @@ public class ZkWriteCommand {
   public final boolean noop;
   // persist the collection state. If this is false, it means the collection state is not modified
   public final boolean persistCollState;
-  public final PerReplicaStates.WriteOps ops;
+  public final PerReplicaStatesOps ops;
 
-  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStates.WriteOps replicaOps, boolean persistCollState) {
+  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStatesOps replicaOps, boolean persistCollState) {
     boolean isPerReplicaState = collection.isPerReplicaState();
     this.name = name;
     this.collection = collection;
@@ -43,7 +43,7 @@ public class ZkWriteCommand {
     this.noop = false;
     persistCollState = true;
     this.ops = collection != null && collection.isPerReplicaState() ?
-        PerReplicaStates.WriteOps.touchChildren():
+        PerReplicaStatesOps.touchChildren():
         null;
   }
 

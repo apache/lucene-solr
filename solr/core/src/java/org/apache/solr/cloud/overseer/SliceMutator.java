@@ -31,6 +31,7 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.RoutingRule;
@@ -98,7 +99,7 @@ public class SliceMutator {
     if (collection.isPerReplicaState()) {
       PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());
       return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica),
-          PerReplicaStates.WriteOps.addReplica(replica.getName(), replica.getState(), replica.isLeader(), prs), true);
+          PerReplicaStatesOps.addReplica(replica.getName(), replica.getState(), replica.isLeader(), prs), true);
     } else {
       return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
     }
@@ -130,7 +131,7 @@ public class SliceMutator {
 
 
     if (coll.isPerReplicaState()) {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), PerReplicaStates.WriteOps.deleteReplica(cnn, coll.getPerReplicaStates()) , true);
+      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices), PerReplicaStatesOps.deleteReplica(cnn, coll.getPerReplicaStates()) , true);
     } else {
       return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
     }
@@ -172,7 +173,7 @@ public class SliceMutator {
     if (coll.isPerReplicaState()) {
       PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
       return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice),
-          PerReplicaStates.WriteOps.flipLeader(
+          PerReplicaStatesOps.flipLeader(
               slice.getReplicaNames(),
               newLeader == null ? null : newLeader.getName(),
               prs), false);
