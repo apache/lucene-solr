@@ -279,7 +279,7 @@ the 9th floor was `415000` (row 3, column 3).
 
 The `bicubicSpline` function is then used to
 interpolate the grid, and the `predict` function is used to predict a value for year 2003, floor 8.
-Notice that the matrix does not include a data point for year 2003, floor 8. The `bicupicSpline`
+Notice that the matrix does not include a data point for year 2003, floor 8. The `bicubicSpline`
 function creates that data point based on the surrounding data in the matrix:
 
 [source,json]

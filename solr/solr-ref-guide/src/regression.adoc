@@ -164,8 +164,8 @@ When this expression is sent to the `/stream` handler it responds with:
 === Regression Plot
 
 Using *zplot* and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
-the same scatter plot. In the example below zplot is plotting the filesize_d observations on the
-*x* axis, the response_d observations on the *y* access and the predictions on the *y1* access.
+the same scatter plot. In the example below zplot is plotting the *filesize_d* observations on the
+*x* axis, the *response_d* observations on the *y* access and the predictions on the *y1* access.
 
 image::images/math-expressions/linear.png[]
 

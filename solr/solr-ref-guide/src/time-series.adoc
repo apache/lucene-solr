@@ -112,7 +112,7 @@ functions are often used to confirm the direction of the trend.
 === Moving Average
 
 The `movingAvg` function computes a simple moving average over a sliding window of data.
-The example below generates a time series, vectorizes the avg(close_d) field and computes the
+The example below generates a time series, vectorizes the *avg(close_d)* field and computes the
 moving average with a window size of 5.
 
 The moving average function returns an array that is of shorter length
@@ -131,7 +131,7 @@ image::images/math-expressions/movingavg.png[]
 
 The `expMovingAvg` function uses a different formula for computing the moving average that
 responds faster to changes in the underlying data. This means that it is
-less of a lagging indicator then the simple moving average.
+less of a lagging indicator than the simple moving average.
 
 Below is an example that computes a moving average and exponential moving average and plots them
 along with the original y values. Notice how the exponential moving average is more sensitive
@@ -143,7 +143,7 @@ image::images/math-expressions/expmoving.png[]
 === Moving Median
 
 The `movingMedian` function uses the median of the sliding window rather than the average.
-In many cases the moving median will be more *robust* to outliers then moving averages.
+In many cases the moving median will be more *robust* to outliers than moving averages.
 
 Below is an example computing the moving median:
 
@@ -218,7 +218,7 @@ The `movingMAD` (moving mean absolute deviation) function can be used to surface
 in a time series by measuring dispersion (deviation from the mean) within a sliding window.
 
 The `movingMAD` function operates in a similar manner as a moving average, except it
-measures the mean absolute deviation within the window rather then the average. By
+measures the mean absolute deviation within the window rather than the average. By
 looking for unusually high or low dispersion we can find anomalies in the time
 series.
 
@@ -253,7 +253,7 @@ The `outliers` function takes four parameters:
 * Probability distribution
 * Numeric vector
 * Low probability threshold
-* High probablity threshold
+* High probability threshold
 * List of results that the numeric vector was selected from.
 
 The `outliers` function iterates the numeric vector and uses the probability

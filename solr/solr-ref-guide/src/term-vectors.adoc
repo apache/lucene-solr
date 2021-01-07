@@ -129,7 +129,7 @@ The phrase query "Man on Fire" is searched for and the top 5000 results, by scor
 returned. A single field from the results is return which is the "review_t" field that
 contains text of the movie review.
 
-Then `cartesiaProduct` function is run over the search results. The `cartesianProduct`
+Then `cartesianProduct` function is run over the search results. The `cartesianProduct`
 function applies the `analyze` function, which takes the *review_t* field and analyzes
 it with the Lucene/Solr analyzer attached to the *text_bigrams* schema field. This analyzer
 emits the bigrams found in the text field. The `cartesianProduct` function explodes each
@@ -266,7 +266,7 @@ the noisy terms helps keep the term vector matrix small enough to fit comfortabl
 
 There are four parameters designed to filter noisy terms from the term vector matrix:
 
-`minTermLength`::
+minTermLength::
 The minimum term length required to include the term in the matrix.
 
 minDocFreq::
@@ -276,5 +276,5 @@ maxDocFreq::
 The maximum percentage, expressed as a number between 0 and 1, of documents the term can appear in to be included in the index.
 
 exclude::
-A comma delimited list of strings used to exclude terms. If a term contains any of the exclude strings that
+A comma delimited list of strings used to exclude terms. If a term contains any of the excluded strings that
 term will be excluded from the term vector.

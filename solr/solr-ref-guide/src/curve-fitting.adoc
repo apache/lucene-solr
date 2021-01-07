@@ -124,12 +124,12 @@ oscillations. This is particularly true if the sine wave has noise. After the cu
 extrapolated to any point in time in the past or future.
 
 
-In the example below the orginal control points are shown in blue and the fitted curve is shown in yellow.
+In the example below the original control points are shown in blue and the fitted curve is shown in yellow.
 
 image::images/math-expressions/harmfit.png[]
 
 
-The output of `harmfit` is a model that can be used by the `predict` function to interpolate and exptrapolate
+The output of `harmfit` is a model that can be used by the `predict` function to interpolate and extrapolate
 the sine wave. In the example below the `natural` function creates an *x* axis from 0 to 127
 used to predict results for the model. This extrapolates the sine wave out to 128 points, when
 the original model curve had only 19 control points.

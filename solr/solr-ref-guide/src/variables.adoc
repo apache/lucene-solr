@@ -208,8 +208,8 @@ be cached in-memory for future use.
 
 The `putCache` function adds a variable to the cache.
 
-In the example below an array is cached in the `workspace` "workspace1"
-and bound to the `key` "key1". The workspace allows different users to cache
+In the example below an array is cached in the workspace *workspace1*
+and bound to the key *key1*. The workspace allows different users to cache
 objects in their own workspace. The `putCache` function returns
 the variable that was added to the cache.
 

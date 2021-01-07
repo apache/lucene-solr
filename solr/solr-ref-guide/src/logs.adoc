@@ -55,7 +55,7 @@ When working with unfamiliar installations exploration can be used to understand
 covered in the logs, what shards and cores are in those collections and the types of operations being
 performed on those collections.
 
-With familiar Solr installations exploration is still extremely
+Even with familiar Solr installations exploration is still extremely
 important while trouble shooting because it will often turn up surprises such as unknown errors or
 unexpected admin or indexing operations.
 
@@ -150,7 +150,7 @@ better understanding of what's contained in the logs.
 
 == Query Counting
 
-Distributed searches produce more then one log record for each query. There will be one *top level* log
+Distributed searches produce more than one log record for each query. There will be one *top level* log
 record for
 the top level distributed query and a *shard level* log record on one replica from each shard. There may also
 be a set of *ids* queries to retrieve fields by id from the shards to complete the page of results.
@@ -186,7 +186,7 @@ image::images/math-expressions/query-ids.png[]
 
 == Query Performance
 
-One of the important tasks of Solr log analytics is understanding how well a Solr Cluster
+One of the important tasks of Solr log analytics is understanding how well a Solr cluster
 is performing.
 
 The *qtime_i* field contains the query time (QTime) in millis
@@ -218,7 +218,7 @@ from the mean.
 
 === Highest QTime Scatter Plot
 
-Its often useful to be able to visualize the highest query times recorded in the log data.
+It's often useful to be able to visualize the highest query times recorded in the log data.
 This can be done by using the `search` function and sorting on *qtime_i desc*.
 
 In the example below the `search` function returns the highest 500 query times from the *ptest1*
@@ -252,7 +252,7 @@ This converts the query times from milli-seconds to seconds. The result is set t
 *c*.
 
 The `round` function then rounds all elements of the query times vector to the nearest second.
-The means all query times less then 500 millis will round to 0.
+This means all query times less than 500 millis will round to 0.
 
 The `freqTable` function is then applied to the vector of query times rounded to
 the nearest second.
@@ -362,7 +362,7 @@ image::images/math-expressions/query-spike.png[]
 
 
 The next step is to generate a time series that counts commits across the same time intervals.
-The time series below uses the sames *start*, *end* and *gap* as the initial time series. But
+The time series below uses the same *start*, *end* and *gap* as the initial time series. But
 this time series is computed for records that have a log type of *commit*. The count for the
 commits is calculated and plotted on *y-axis*.
 

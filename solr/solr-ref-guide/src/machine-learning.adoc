@@ -64,7 +64,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below the distance is calculated using *Manahattan* distance.
+Below the distance is calculated using *Manhattan* distance.
 
 [source,text]
 ----
@@ -314,7 +314,7 @@ r=knnRegress(obs, quality, 5, cosine()),
 
 2) The `robust` named parameter can be used to perform a regression analysis that is robust
 to outliers in the outcomes. When the `robust` named parameter is used the median outcome
-of the K nearest neighbors is used rather then then average.
+of the K nearest neighbors is used rather than the average.
 
 Sample syntax:
 
@@ -488,7 +488,7 @@ field. This analyzer returns bigrams which are then annotated to documents in a 
 
 The `termVectors` function then creates TD-IDF term vectors from the bigrams stored in the *terms* field.
 The `kmeans` function is then used to cluster the bigram term vectors into 5 clusters.
-Finally the top 5 features are extracted from the centroids an returned. Notice
+Finally the top 5 features are extracted from the centroids and returned. Notice
 that the features are all bigram phrases with semantic significance.
 
 [source,text]

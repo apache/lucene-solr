@@ -48,7 +48,7 @@ Autocorrelation measures the degree to which a signal is correlated with itself.
 if a vector contains a signal or if there is dependency between values in a time series. If there is no
 signal and no dependency between values in the time series then the time series is random.
 
-Its useful to plot the autocorrelation of the *change_d* vector to confirm that it is indeed random.
+It's useful to plot the autocorrelation of the *change_d* vector to confirm that it is indeed random.
 
 In the example below the search results are set to a variable and then the *change_d* field
 is vectorized and stored in variable *b*. Then the
@@ -158,7 +158,7 @@ image::images/math-expressions/randomwalk5.1.png[]
 The `monteCarlo` function can also be used to model a random walk of
 daily stock prices from the `normalDistribution` of daily stock returns.
 A random walk is a time series where each step is calculated by adding a random sample to the previous
-step. This creates a time series where each value is dependant on the previous value,
+step. This creates a time series where each value is dependent on the previous value,
 which simulates the autocorrelation of stock prices.
 
 In the example below the random walk is achieved by adding a random sample to the

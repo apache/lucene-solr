@@ -162,7 +162,7 @@ image::images/math-expressions/cumProb.png[]
 
 Custom histograms can be defined and visualized by combining the output from multiple
 `stats` functions into a single histogram. Instead of automatically binning a numeric
-field the custom histogram allows for comparision of bins based on queries.
+field the custom histogram allows for comparison of bins based on queries.
 
 NOTE: The `stats` function is first discussed in the *Searching, Sampling and Aggregation* section of the
 user guide.
@@ -194,7 +194,7 @@ the occurrence of each discrete data value and returns a list of tuples with the
 frequency statistics for each value.
 
 Below is an example of a frequency table built from a result set
-of rounded *differences* in daily opening stock prises for the stock ticker *amzn*.
+of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
 This example is interesting because it shows a multi-step process to arrive
 at the result. The first step is to *search* for records in the the *stocks*
@@ -538,7 +538,7 @@ from the same population.
 drawn from the same population.
 
 * `mannWhitney`: The Mann-Whitney test is a non-parametric test that tests if two
-samples of continuous were pulled
+samples of continuous data were pulled
 from the same population. The Mann-Whitney test is often used instead of the T-test when the
 underlying assumptions of the T-test are not
 met.
