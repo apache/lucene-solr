@@ -21,8 +21,8 @@ import java.util.stream.StreamSupport;
 import org.apache.lucene.util.PriorityQueue;
 
 /** Util class for Scorer related methods */
-public class ScorerUtil {
-  public static long costWithMinShouldMatch(LongStream costs, int numScorers, int minShouldMatch) {
+class ScorerUtil {
+  static long costWithMinShouldMatch(LongStream costs, int numScorers, int minShouldMatch) {
     // the idea here is the following: a boolean query c1,c2,...cn with minShouldMatch=m
     // could be rewritten to:
     // (c1 AND (c2..cn|msm=m-1)) OR (!c1 AND (c2..cn|msm=m))
