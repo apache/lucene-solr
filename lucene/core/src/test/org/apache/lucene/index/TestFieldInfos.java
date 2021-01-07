@@ -187,4 +187,20 @@ public class TestFieldInfos extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  public void testFieldNumbersAutoIncrement() {
+    FieldInfos.FieldNumbers fieldNumbers = new FieldInfos.FieldNumbers("softDeletes");
+    for (int i = 0; i < 10; i++) {
+      fieldNumbers.addOrGet("field" + i, -1, IndexOptions.NONE, DocValuesType.NONE,
+          0, 0, 0, false);
+    }
+    int idx = fieldNumbers.addOrGet("EleventhField", -1, IndexOptions.NONE, DocValuesType.NONE,
+        0, 0, 0, false);
+    assertEquals("Field numbers 0 through 9 were allocated", 10, idx);
+
+    fieldNumbers.clear();
+    idx = fieldNumbers.addOrGet("PostClearField", -1, IndexOptions.NONE, DocValuesType.NONE,
+        0, 0, 0, false);
+    assertEquals("Field numbers should reset after clear()", 0, idx);
+  }
 }

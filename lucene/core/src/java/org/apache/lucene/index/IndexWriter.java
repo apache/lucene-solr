@@ -5175,7 +5175,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
    * <p>This method should be called on a tragic event ie. if a downstream class of the writer
    * hits an unrecoverable exception. This method does not rethrow the tragic event exception. 
    * <p>Note: This method will not close the writer but can be called from any location without respecting any lock order
-   * <p>This method is visible for testing, and is not expected to be called by client code
+   * @lucene.internal
    */
   public void onTragicEvent(Throwable tragedy, String location) {
     // This is not supposed to be tragic: IW is supposed to catch this and

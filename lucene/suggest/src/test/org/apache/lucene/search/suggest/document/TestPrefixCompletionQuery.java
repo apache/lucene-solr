@@ -34,6 +34,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.suggest.BitsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -432,6 +433,12 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "")));
     query.addContext("type", 1);
 
+    // Ensure that context queries optimize an empty prefix to a fully empty automaton.
+    CompletionWeight weight = (CompletionWeight) query.createWeight(
+        suggestIndexSearcher, ScoreMode.COMPLETE, 1.0F);
+    assertEquals(0, weight.getAutomaton().getNumStates());
+
+    // Check that there are no suggestions.
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
     assertEquals(0, suggest.scoreDocs.length);
 

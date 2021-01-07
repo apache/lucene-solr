@@ -32,8 +32,8 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/queryparser/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/replicator/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/sandbox/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/lucene/spatial/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/spatial-extras/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/spatial3d/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/suggest/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/test-framework/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/tools/build.xml" />
@@ -43,7 +43,6 @@
     <buildFile url="file://$PROJECT_DIR$/solr/core/build.xml" />
 
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/analysis-extras/build.xml" />
-    <buildFile url="file://$PROJECT_DIR$/solr/contrib/clustering/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler-extras/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/dataimporthandler/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/solr/contrib/extraction/build.xml" />

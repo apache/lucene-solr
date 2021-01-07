@@ -409,8 +409,7 @@
            autowarmCount - the number of entries to prepopulate from
                and old cache.
       -->
-    <filterCache class="solr.FastLRUCache"
-                 size="512"
+    <filterCache size="512"
                  initialSize="512"
                  autowarmCount="0"/>
 
@@ -419,8 +418,7 @@
          Caches results of searches - ordered lists of document ids
          (DocList) based on a query, a sort, and the range of documents requested.
       -->
-    <queryResultCache class="solr.LRUCache"
-                     size="512"
+    <queryResultCache size="512"
                      initialSize="512"
                      autowarmCount="0"/>
 
@@ -430,14 +428,12 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.
       -->
-    <documentCache class="solr.LRUCache"
-                   size="512"
+    <documentCache size="512"
                    initialSize="512"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
     <cache name="perSegFilter"
-      class="solr.search.LRUCache"
       size="10"
       initialSize="0"
       autowarmCount="10"
@@ -450,8 +446,7 @@
          even if not configured here.
       -->
     <!--
-       <fieldValueCache class="solr.FastLRUCache"
-                        size="512"
+       <fieldValueCache size="512"
                         autowarmCount="128"
                         showItems="32" />
       -->
@@ -467,7 +462,6 @@
       -->
     <!--
        <cache name="myUserCache"
-              class="solr.LRUCache"
               size="4096"
               initialSize="1024"
               autowarmCount="1024"

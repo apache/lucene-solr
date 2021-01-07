@@ -23,6 +23,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
+import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
@@ -92,6 +93,11 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Component2D toRectangle2D(double minX, double maxX, double minY, double maxY) {
+    return XYGeometry.create(new XYRectangle((float)minX, (float)maxX, (float)minY, (float)maxY));
+  }
+
+  @Override
   protected Component2D toCircle2D(Object circle) {
     return XYGeometry.create((XYCircle) circle);
   }
@@ -126,22 +132,10 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     return false;
   }
 
-  /** use {@link ShapeTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
+  /** use {@link ShapeTestUtil#nextPolygon()} to create a random line */
   @Override
   public XYLine nextLine() {
-    return getNextLine();
-  }
-
-  public static XYLine getNextLine() {
-    XYPolygon poly = ShapeTestUtil.nextPolygon();
-    float[] x = new float[poly.numPoints() - 1];
-    float[] y = new float[x.length];
-    for (int i = 0; i < x.length; ++i) {
-      x[i] = poly.getPolyX(i);
-      y[i] = poly.getPolyY(i);
-    }
-
-    return new XYLine(x, y);
+    return ShapeTestUtil.nextLine();
   }
 
   @Override
@@ -197,46 +191,32 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       double quantizeYCeil(double raw) {
         return decode(encode((float) raw));
       }
-
-      @Override
-      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-        return new double[]{decode(decoded.aY), decode(decoded.aX), decode(decoded.bY), decode(decoded.bX), decode(decoded.cY), decode(decoded.cX)};
-      }
-
-      @Override
-      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encode((float) ay), encode((float) ax), ab, encode((float) by), encode((float) bx), bc, encode((float) cy), encode((float) cx), ca);
-        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
-        ShapeField.decodeTriangle(encoded, triangle);
-        return triangle;
-      }
     };
   }
 
   /** internal shape type for testing different shape types */
   protected enum ShapeType {
     POINT() {
-      public Point nextShape() {
-        return new Point((float)random().nextDouble(), (float)random().nextDouble());
+      public XYPoint nextShape() {
+        return ShapeTestUtil.nextPoint();
       }
     },
     LINE() {
       public XYLine nextShape() {
-        XYPolygon p = ShapeTestUtil.nextPolygon();
-        float[] x = new float[p.numPoints() - 1];
-        float[] y = new float[x.length];
-        for (int i = 0; i < x.length; ++i) {
-          x[i] = p.getPolyX(i);
-          y[i] = p.getPolyY(i);
-        }
-        return new XYLine(x, y);
+        return ShapeTestUtil.nextLine();
       }
     },
     POLYGON() {
       public XYPolygon nextShape() {
-        return ShapeTestUtil.nextPolygon();
+        while (true) {
+          XYPolygon p = ShapeTestUtil.nextPolygon();
+          try {
+            Tessellator.tessellate(p);
+            return p;
+          } catch (IllegalArgumentException e) {
+            // if we can't tessellate; then random polygon generator created a malformed shape
+          }
+        }
       }
     },
     MIXED() {
@@ -251,37 +231,5 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
     }
 
     public abstract Object nextShape();
-
-    static ShapeType fromObject(Object shape) {
-      if (shape instanceof Point) {
-        return POINT;
-      } else if (shape instanceof XYLine) {
-        return LINE;
-      } else if (shape instanceof XYPolygon) {
-        return POLYGON;
-      }
-      throw new IllegalArgumentException("invalid shape type from " + shape.toString());
-    }
-  }
-
-  /** internal point class for testing point shapes */
-  protected static class Point {
-    float x;
-    float y;
-
-    public Point(float x, float y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("POINT(");
-      sb.append(x);
-      sb.append(',');
-      sb.append(y);
-      sb.append(')');
-      return sb.toString();
-    }
   }
 }

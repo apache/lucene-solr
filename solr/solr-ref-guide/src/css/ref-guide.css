@@ -1184,7 +1184,6 @@ tfoot tr th p
 p.tableblock > code:only-child
 {
     padding: 0;
-    background: none;
 }
 
 td > div.verse

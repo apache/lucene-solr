@@ -25,8 +25,10 @@ import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -86,6 +88,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   @Override
   protected Component2D toPolygon2D(Object... polygons) {
     return LatLonGeometry.create(Arrays.stream(polygons).toArray(Polygon[]::new));
+  }
+
+  @Override
+  protected Component2D toRectangle2D(double minX, double maxX, double minY, double maxY) {
+    return LatLonGeometry.create(new Rectangle(minY, maxY, minX, maxX));
   }
 
   @Override
@@ -251,11 +258,6 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
   }
 
-  /** factory method to create a new point query */
-  protected Query newPointQuery(String field, QueryRelation queryRelation, double[]... points) {
-    return LatLonShape.newPointQuery(field, queryRelation, points);
-  }
-
   public void testPolygonQueryEqualsAndHashcode() {
     Polygon polygon = GeoTestUtil.nextPolygon();
     QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
@@ -293,21 +295,10 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   protected boolean rectCrossesDateline(Object rect) {
     return ((Rectangle)rect).crossesDateline();
   }
-
-  /** use {@link GeoTestUtil#nextPolygon()} to create a random line; TODO: move to GeoTestUtil */
+  
   @Override
   public Line nextLine() {
-    return getNextLine();
-  }
-
-  public static Line getNextLine() {
-    Polygon poly = GeoTestUtil.nextPolygon();
-    double[] lats = new double[poly.numPoints() - 1];
-    double[] lons = new double[lats.length];
-    System.arraycopy(poly.getPolyLats(), 0, lats, 0, lats.length);
-    System.arraycopy(poly.getPolyLons(), 0, lons, 0, lons.length);
-
-    return new Line(lats, lons);
+    return GeoTestUtil.nextLine();
   }
 
   @Override
@@ -347,41 +338,6 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       double quantizeYCeil(double raw) {
         return decodeLatitude(encodeLatitudeCeil(raw));
       }
-
-      /** quantizes a latitude value to be consistent with index encoding */
-      protected double quantizeLat(double rawLat) {
-        return quantizeY(rawLat);
-      }
-
-      /** quantizes a provided latitude value rounded up to the nearest encoded integer */
-      protected double quantizeLatCeil(double rawLat) {
-        return quantizeYCeil(rawLat);
-      }
-
-      /** quantizes a longitude value to be consistent with index encoding */
-      protected double quantizeLon(double rawLon) {
-        return quantizeX(rawLon);
-      }
-
-      /** quantizes a provided longitude value rounded up to the nearest encoded integer */
-      protected double quantizeLonCeil(double rawLon) {
-        return quantizeXCeil(rawLon);
-      }
-
-      @Override
-      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
-        return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
-      }
-
-      @Override
-      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
-        byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
-        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
-        ShapeField.decodeTriangle(encoded, triangle);
-        return triangle;
-      }
     };
   }
 
@@ -389,24 +345,25 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   protected enum ShapeType {
     POINT() {
       public Point nextShape() {
-        return new Point(nextLongitude(), nextLatitude());
+        return GeoTestUtil.nextPoint();
       }
     },
     LINE() {
       public Line nextShape() {
-        Polygon p = GeoTestUtil.nextPolygon();
-        double[] lats = new double[p.numPoints() - 1];
-        double[] lons = new double[lats.length];
-        for (int i = 0; i < lats.length; ++i) {
-          lats[i] = p.getPolyLat(i);
-          lons[i] = p.getPolyLon(i);
-        }
-        return new Line(lats, lons);
+        return GeoTestUtil.nextLine();
       }
     },
     POLYGON() {
       public Polygon nextShape() {
-        return GeoTestUtil.nextPolygon();
+        while (true) {
+          Polygon p =  GeoTestUtil.nextPolygon();
+          try {
+            Tessellator.tessellate(p);
+            return p;
+          } catch (IllegalArgumentException e) {
+            // if we can't tessellate; then random polygon generator created a malformed shape
+          }
+        }
       }
     },
     MIXED() {
@@ -421,37 +378,5 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
     }
 
     public abstract Object nextShape();
-
-    static ShapeType fromObject(Object shape) {
-      if (shape instanceof Point) {
-        return POINT;
-      } else if (shape instanceof Line) {
-        return LINE;
-      } else if (shape instanceof Polygon) {
-        return POLYGON;
-      }
-      throw new IllegalArgumentException("invalid shape type from " + shape.toString());
-    }
-  }
-
-  /** internal lat lon point class for testing point shapes */
-  protected static class Point {
-    double lon;
-    double lat;
-
-    public Point(double lon, double lat) {
-      this.lon = lon;
-      this.lat = lat;
-    }
-
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("POINT(");
-      sb.append(lon);
-      sb.append(',');
-      sb.append(lat);
-      sb.append(')');
-      return sb.toString();
-    }
   }
 }

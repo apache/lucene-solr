@@ -66,8 +66,8 @@ public final class ShapeField {
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
       setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.isEdgefromPolygon(0),
-                       t.getEncodedX(1), t.getEncodedY(1), t.isEdgefromPolygon(1),
-                       t.getEncodedX(2), t.getEncodedY(2), t.isEdgefromPolygon(2));
+          t.getEncodedX(1), t.getEncodedY(1), t.isEdgefromPolygon(1),
+          t.getEncodedX(2), t.getEncodedY(2), t.isEdgefromPolygon(2));
     }
 
     /** sets the vertices of the triangle as integer encoded values */
@@ -110,43 +110,14 @@ public final class ShapeField {
    * Triangles are encoded with CCW orientation and might be rotated to limit the number of possible reconstructions to 2^3.
    * Reconstruction always happens from west to east.
    */
-  public static void encodeTriangle(byte[] bytes, int aLat, int aLon, boolean abFromShape, int bLat, int bLon, boolean bcFromShape, int cLat, int cLon, boolean caFromShape) {
+  public static void encodeTriangle(byte[] bytes, int aY, int aX, boolean ab, int bY, int bX, boolean bc, int cY, int cX, boolean ca) {
     assert bytes.length == 7 * BYTES;
-    int aX;
-    int bX;
-    int cX;
-    int aY;
-    int bY;
-    int cY;
-    boolean ab, bc, ca;
-    //change orientation if CW
-    if (GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat) == -1) {
-      aX = cLon;
-      bX = bLon;
-      cX = aLon;
-      aY = cLat;
-      bY = bLat;
-      cY = aLat;
-      ab = bcFromShape;
-      bc = abFromShape;
-      ca = caFromShape;
-    } else {
-      aX = aLon;
-      bX = bLon;
-      cX = cLon;
-      aY = aLat;
-      bY = bLat;
-      cY = cLat;
-      ab = abFromShape;
-      bc = bcFromShape;
-      ca = caFromShape;
-    }
-    //rotate edges and place minX at the beginning
+    // rotate edges and place minX at the beginning
     if (bX < aX || cX < aX) {
+      final int tempX = aX;
+      final int tempY = aY;
+      final boolean tempBool = ab;
       if (bX < cX) {
-        int tempX = aX;
-        int tempY = aY;
-        boolean tempBool = ab;
         aX = bX;
         aY = bY;
         ab = bc;
@@ -156,10 +127,7 @@ public final class ShapeField {
         cX = tempX;
         cY = tempY;
         ca = tempBool;
-      } else if (cX < aX) {
-        int tempX = aX;
-        int tempY = aY;
-        boolean tempBool = ab;
+      } else {
         aX = cX;
         aY = cY;
         ab = ca;
@@ -171,13 +139,13 @@ public final class ShapeField {
         bc = tempBool;
       }
     } else if (aX == bX && aX == cX) {
-      //degenerated case, all points with same longitude
-      //we need to prevent that aX is in the middle (not part of the MBS)
+      // degenerated case, all points with same longitude
+      // we need to prevent that aX is in the middle (not part of the MBS)
       if (bY < aY || cY < aY) {
+        final int tempX = aX;
+        final int tempY = aY;
+        final boolean tempBool = ab;
         if (bY < cY) {
-          int tempX = aX;
-          int tempY = aY;
-          boolean tempBool = ab;
           aX = bX;
           aY = bY;
           ab = bc;
@@ -187,10 +155,7 @@ public final class ShapeField {
           cX = tempX;
           cY = tempY;
           ca = tempBool;
-        } else if (cY < aY) {
-          int tempX = aX;
-          int tempY = aY;
-          boolean tempBool = ab;
+        } else {
           aX = cX;
           aY = cY;
           ab = ca;
@@ -202,6 +167,22 @@ public final class ShapeField {
           bc = tempBool;
         }
       }
+    }
+
+    // change orientation if CW
+    if (GeoUtils.orient(aX, aY, bX, bY, cX, cY) == -1) {
+      // swap b with c
+      final int tempX = bX;
+      final int tempY = bY;
+      final boolean tempBool = ab;
+      // aX and aY do not change, ab becomes bc
+      ab = bc;
+      bX = cX;
+      bY = cY;
+      // bc does not change, ca becomes ab
+      cX = tempX;
+      cY = tempY;
+      ca = tempBool;
     }
 
     int minX = aX;
@@ -298,7 +279,7 @@ public final class ShapeField {
         aY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
         aX  = NumericUtils.sortableBytesToInt(t, 1 * BYTES);
         bY = NumericUtils.sortableBytesToInt(t, 0 * BYTES);
-       bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
+        bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         cY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
         cX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
         break;

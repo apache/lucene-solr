@@ -196,7 +196,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     //  node2: collection1 -> shard1: [ replica2 (active), replica4 (down) ]
     //         collection2 -> shard1: [ replica1 (active) ]
     try (ZkStateReader reader = ClusterStateMockUtil.buildClusterState(
-        "csrr2rDr2Dcsr2FrR", 1, 1, "node1", "node2")) {
+        "csrr2rDr2Dcsr2FrR", 1, "baseUrl1:8983_", "baseUrl2:8984_")) {
       ClusterState clusterState = reader.getClusterState();
 
       // Node 1

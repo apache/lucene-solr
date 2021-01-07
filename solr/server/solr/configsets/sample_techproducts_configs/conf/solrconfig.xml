@@ -439,8 +439,7 @@
                       to occupy. Note that when this option is specified, the size
                       and initialSize parameters are ignored.
       -->
-    <filterCache class="solr.FastLRUCache"
-                 size="512"
+    <filterCache size="512"
                  initialSize="512"
                  autowarmCount="0"/>
 
@@ -452,8 +451,7 @@
            maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                       to occupy
      -->
-    <queryResultCache class="solr.LRUCache"
-                     size="512"
+    <queryResultCache size="512"
                      initialSize="512"
                      autowarmCount="0"/>
 
@@ -463,14 +461,12 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.
       -->
-    <documentCache class="solr.LRUCache"
-                   size="512"
+    <documentCache size="512"
                    initialSize="512"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
     <cache name="perSegFilter"
-      class="solr.search.LRUCache"
       size="10"
       initialSize="0"
       autowarmCount="10"
@@ -483,8 +479,7 @@
          even if not configured here.
       -->
     <!--
-       <fieldValueCache class="solr.FastLRUCache"
-                        size="512"
+       <fieldValueCache size="512"
                         autowarmCount="128"
                         showItems="32" />
       -->
@@ -500,7 +495,6 @@
          https://lucene.apache.org/solr/guide/learning-to-rank.html
       -->
     <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
-           class="solr.search.LRUCache"
            size="4096"
            initialSize="2048"
            autowarmCount="4096"
@@ -517,7 +511,6 @@
       -->
     <!--
        <cache name="myUserCache"
-              class="solr.LRUCache"
               size="4096"
               initialSize="1024"
               autowarmCount="1024"

@@ -23,11 +23,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -165,5 +168,81 @@ public class TestBM25FQuery extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  public void testDocWithNegativeNorms() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig();
+    iwc.setSimilarity(new NegativeNormSimilarity());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    String queryString = "foo";
+
+    Document doc = new Document();
+    //both fields must contain tokens that match the query string "foo"
+    doc.add(new TextField("f", "foo", Store.NO));
+    doc.add(new TextField("g", "foo baz", Store.NO));
+    w.addDocument(doc);
+
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    BM25FQuery query = new BM25FQuery.Builder()
+            .addField("f")
+            .addField("g")
+            .addTerm(new BytesRef(queryString))
+            .build();
+    TopDocs topDocs = searcher.search(query, 10);
+    CheckHits.checkDocIds("queried docs do not match", new int[]{0}, topDocs.scoreDocs);
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testMultipleDocsNegativeNorms() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig();
+    iwc.setSimilarity(new NegativeNormSimilarity());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    String queryString = "foo";
+
+    Document doc0 = new Document();
+    doc0.add(new TextField("f", "foo", Store.NO));
+    doc0.add(new TextField("g", "foo baz", Store.NO));
+    w.addDocument(doc0);
+
+    Document doc1 = new Document();
+    // add another match on the query string to the second doc
+    doc1.add(new TextField("f", "foo is foo", Store.NO));
+    doc1.add(new TextField("g", "foo baz", Store.NO));
+    w.addDocument(doc1);
+
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    BM25FQuery query = new BM25FQuery.Builder()
+            .addField("f")
+            .addField("g")
+            .addTerm(new BytesRef(queryString))
+            .build();
+    TopDocs topDocs = searcher.search(query, 10);
+    //Return doc1 ahead of doc0 since its tf is higher
+    CheckHits.checkDocIds("queried docs do not match", new int[]{1,0}, topDocs.scoreDocs);
+
+    reader.close();
+    w.close();
+    dir.close();
+  }
+
+  private static final class NegativeNormSimilarity extends Similarity {
+    @Override
+    public long computeNorm(FieldInvertState state) {
+      return -128;
+    }
+
+    @Override
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      return new BM25Similarity().scorer(boost, collectionStats, termStats);
+    }
   }
 }

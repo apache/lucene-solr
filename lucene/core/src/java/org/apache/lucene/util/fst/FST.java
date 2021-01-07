@@ -335,7 +335,7 @@ public final class FST<T> implements Accountable {
     static class BitTable {
 
       /** See {@link BitTableUtil#isBitSet(int, FST.BytesReader)}. */
-      static boolean isBitSet(int bitIndex, Arc arc, FST.BytesReader in) throws IOException {
+      static boolean isBitSet(int bitIndex, Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         in.setPosition(arc.bitTableStart);
         return BitTableUtil.isBitSet(bitIndex, in);
@@ -345,28 +345,28 @@ public final class FST<T> implements Accountable {
        * See {@link BitTableUtil#countBits(int, FST.BytesReader)}.
        * The count of bit set is the number of arcs of a direct addressing node.
        */
-      static int countBits(Arc arc, FST.BytesReader in) throws IOException {
+      static int countBits(Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         in.setPosition(arc.bitTableStart);
         return BitTableUtil.countBits(getNumPresenceBytes(arc.numArcs()), in);
       }
 
       /** See {@link BitTableUtil#countBitsUpTo(int, FST.BytesReader)}. */
-      static int countBitsUpTo(int bitIndex, Arc arc, FST.BytesReader in) throws IOException {
+      static int countBitsUpTo(int bitIndex, Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         in.setPosition(arc.bitTableStart);
         return BitTableUtil.countBitsUpTo(bitIndex, in);
       }
 
       /** See {@link BitTableUtil#nextBitSet(int, int, FST.BytesReader)}. */
-      static int nextBitSet(int bitIndex, Arc arc, FST.BytesReader in) throws IOException {
+      static int nextBitSet(int bitIndex, Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         in.setPosition(arc.bitTableStart);
         return BitTableUtil.nextBitSet(bitIndex, getNumPresenceBytes(arc.numArcs()), in);
       }
 
       /** See {@link BitTableUtil#previousBitSet(int, FST.BytesReader)}. */
-      static int previousBitSet(int bitIndex, Arc arc, FST.BytesReader in) throws IOException {
+      static int previousBitSet(int bitIndex, Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         in.setPosition(arc.bitTableStart);
         return BitTableUtil.previousBitSet(bitIndex, in);
@@ -375,7 +375,7 @@ public final class FST<T> implements Accountable {
       /**
        * Asserts the bit-table of the provided {@link Arc} is valid.
        */
-      static boolean assertIsValid(Arc arc, FST.BytesReader in) throws IOException {
+      static boolean assertIsValid(Arc<?> arc, FST.BytesReader in) throws IOException {
         assert arc.bytesPerArc() > 0;
         assert arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
         // First bit must be set.

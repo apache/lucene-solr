@@ -26,8 +26,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler" />
   <query>
-    <cache name="myPerSegmentCache" 
-           class="solr.LRUCache"
+    <cache name="myPerSegmentCache"
            size="3"
            initialSize="0"
            autowarmCount="100%"
