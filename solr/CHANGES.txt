@@ -239,6 +239,9 @@ Improvements
 * SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
   (David Smiley)
 
+* SOLR-15059: Add panels to the default Grafana dashboard for query performance monitoring, includes updates
+  to the Prometheus exporter to export query performance metrics, such as QPS and p95. (Timothy Potter)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
