@@ -238,7 +238,10 @@ public class IndexSortDocValuesNumbersQuery extends Query {
                                                                                 NumericDocValues delegate) throws IOException {
     long miss = sortField.getMissingValue() == null ? 0L : (long) sortField.getMissingValue();
     int maxDoc = context.reader().maxDoc();
-    NumericDocValues tmp = DocValues.unwrapSingleton(context.reader().getSortedNumericDocValues(sortField.getField()));
+    NumericDocValues tmp = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), sortField.getField()));
+    if (tmp == null) {
+      return null;
+    }
     tmp.nextDoc();
     long first = tmp.longValue();
     long last = tmp.advanceExact(maxDoc - 1) ? tmp.longValue() : miss;
