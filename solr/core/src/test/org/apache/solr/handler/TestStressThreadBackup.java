@@ -35,7 +35,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.client.solrj.SolrClient;
@@ -61,7 +60,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Nightly
+//@Nightly
 @SuppressCodecs({"SimpleText"})
 @LogLevel("org.apache.solr.handler.SnapShooter=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG")
 public class TestStressThreadBackup extends SolrCloudTestCase {
@@ -96,7 +95,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         .configure();
 
     assertEquals(0, (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
-                     .process(cluster.getSolrClient()).getStatus()));
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient()).getStatus()));
     adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
     initCoreNameAndSolrCoreClient();
   }

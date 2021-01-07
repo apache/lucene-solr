@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -201,7 +202,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 3, 3);
     } else {
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
       create.setMaxShardsPerNode(1);
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);

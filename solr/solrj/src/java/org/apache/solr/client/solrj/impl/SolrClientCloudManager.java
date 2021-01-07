@@ -187,6 +187,9 @@ public class SolrClientCloudManager implements SolrCloudManager {
       return EMPTY;
     }
   }
+  public SolrZkClient getZkClient() {
+    return zkClient;
+  }
 
   @Override
   public DistributedQueueFactory getDistributedQueueFactory() {

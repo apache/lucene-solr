@@ -126,7 +126,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       CollectionAdminRequest.createCollection(collection, "_default", 2, 2)
-        .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
         .process(cluster.getSolrClient());
     }
     

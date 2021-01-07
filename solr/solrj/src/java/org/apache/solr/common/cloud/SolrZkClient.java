@@ -331,6 +331,18 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * Returns children of the node at the path
+   */
+  public List<String> getChildren(final String path, final Watcher watcher,Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher) , stat));
+    } else {
+      return keeper.getChildren(path, wrapWatcher(watcher), stat);
+    }
+  }
+
+  /**
    * Returns node's data
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
