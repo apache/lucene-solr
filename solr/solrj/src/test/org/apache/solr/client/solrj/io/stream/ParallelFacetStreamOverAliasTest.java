@@ -18,8 +18,8 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,33 +35,25 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.RTimer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Verify auto-plist with rollup over a facet expression when using collection alias over multiple collections.
  */
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
-@LogLevel("org.apache.solr.client.solrj.io.stream=INFO;org.apache.solr.common.cloud.ZkStateReader=WARN;org.apache.solr.metrics=WARN;org.apache.solr.core.SolrCore=WARN;org.apache.solr.cloud=WARN;org.apache.solr.update=WARN;org.apache.solr.rest=ERROR;org.apache.solr.servlet.HttpSolrCall=WARN;org.apache.solr=WARN;org.apache.solr.client.solrj.impl=INFO")
 public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String ALIAS_NAME = "SOME_ALIAS_WITH_MANY_COLLS";
 
@@ -82,8 +74,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         .configure();
     cleanup();
     setupCollectionsAndAlias();
-    if (log.isInfoEnabled())
-      log.info("Took {}ms to setup cluster with {} collections", timer.getTime(), NUM_COLLECTIONS);
   }
 
   /**
@@ -97,26 +87,30 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     }
 
     List<String> collections = new ArrayList<>(NUM_COLLECTIONS);
-    Stream.iterate(1, n -> n + 1).limit(NUM_COLLECTIONS)
-        .forEach(colIdx -> {
-          final String collectionName = "coll" + colIdx;
-          collections.add(collectionName);
-          try {
-            CollectionAdminRequest.createCollection(collectionName, "conf", NUM_SHARDS_PER_COLLECTION, 1).process(cluster.getSolrClient());
-            cluster.waitForActiveCollection(collectionName, NUM_SHARDS_PER_COLLECTION, NUM_SHARDS_PER_COLLECTION);
+    List<Exception> errors = new LinkedList<>();
+    Stream.iterate(1, n -> n + 1).limit(NUM_COLLECTIONS).forEach(colIdx -> {
+      final String collectionName = "coll" + colIdx;
+      collections.add(collectionName);
+      try {
+        CollectionAdminRequest.createCollection(collectionName, "conf", NUM_SHARDS_PER_COLLECTION, 1).process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collectionName, NUM_SHARDS_PER_COLLECTION, NUM_SHARDS_PER_COLLECTION);
 
-            // want a variable num of docs per collection so that avg of avg does not work ;-)
-            final int numDocsInColl = colIdx % 2 == 0 ? NUM_DOCS_PER_COLLECTION / 2 : NUM_DOCS_PER_COLLECTION;
-            final int limit = NUM_COLLECTIONS == 1 ? NUM_DOCS_PER_COLLECTION * 2 : numDocsInColl;
-            UpdateRequest ur = new UpdateRequest();
-            Stream.iterate(0, n -> n + 1).limit(limit)
-                .forEach(docId -> ur.add(id, UUID.randomUUID().toString(),
-                    "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARD), "a_d", String.valueOf(dists[docId % dists.length].sample())));
-            ur.commit(cluster.getSolrClient(), collectionName);
-          } catch (SolrServerException | IOException e) {
-            log.error("problem creating and loading data into collection", e);
-          }
-        });
+        // want a variable num of docs per collection so that avg of avg does not work ;-)
+        final int numDocsInColl = colIdx % 2 == 0 ? NUM_DOCS_PER_COLLECTION / 2 : NUM_DOCS_PER_COLLECTION;
+        final int limit = NUM_COLLECTIONS == 1 ? NUM_DOCS_PER_COLLECTION * 2 : numDocsInColl;
+        UpdateRequest ur = new UpdateRequest();
+        Stream.iterate(0, n -> n + 1).limit(limit)
+            .forEach(docId -> ur.add(id, UUID.randomUUID().toString(),
+                "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARD), "a_d", String.valueOf(dists[docId % dists.length].sample())));
+        ur.commit(cluster.getSolrClient(), collectionName);
+      } catch (SolrServerException | IOException e) {
+        errors.add(e);
+      }
+    });
+
+    if (!errors.isEmpty()) {
+      throw errors.get(0);
+    }
     listOfCollections = collections;
     String aliasedCollectionString = String.join(",", collections);
     CollectionAdminRequest.createAlias(ALIAS_NAME, aliasedCollectionString).process(cluster.getSolrClient());
@@ -147,6 +141,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @Test
   public void testDrillOverAlias() throws Exception {
 
+    /*
     for (int c = 0; c < CARD; c++) {
       SolrQuery query = new SolrQuery("a_i:" + c);
       query.setRows(1000);
@@ -156,6 +151,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
       SolrDocumentList results = resp.getResults();
       System.out.println("For query " + query + ", found: " + results.getNumFound() + "; stats: " + resp.getFieldStatsInfo().get("a_d"));
     }
+     */
 
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -184,9 +180,11 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     TupleStream stream = factory.constructStream(drillExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
+    /*
     for (Tuple t : tuples) {
       System.out.println(t.getFields());
     }
+     */
 
     solrClientCache.close();
   }
@@ -221,10 +219,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> plistTuples = getTuples(stream);
-
-    if (log.isInfoEnabled()) {
-      log.info("stream {} tuples, took: {}ms, fields: {}", plistTuples.size(), timer.getTime(), plistTuples.get(0).getFields().keySet());
-    }
 
     assertEquals(CARD, plistTuples.size());
 

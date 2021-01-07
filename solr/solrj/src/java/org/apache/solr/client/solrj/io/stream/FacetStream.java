@@ -37,6 +37,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -339,6 +340,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
         zkHost);
   }
 
+  // see usage in parallelize method
   private FacetStream() {
   }
 
@@ -418,7 +420,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       sorts.add(buff.toString());
     }
 
-    return sorts.toArray(new String[sorts.size()]);
+    return sorts.toArray(new String[0]);
   }
 
   private void init(String collection, SolrParams params, Bucket[] buckets, FieldComparator[] bucketSorts, Metric[] metrics, int rows, int offset, int bucketSizeLimit, boolean refine, String method, boolean serializeBucketSizeLimit, int overfetch, String zkHost) throws IOException {
@@ -571,10 +573,13 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       cloudSolrClient = new Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000).build();
     }
 
+    // Parallelize the facet expression across multiple collections for an alias using plist if possible
     if (params.getBool("plist", true)) {
       params.remove("plist");
-      final List<String> resolved = cloudSolrClient.getClusterStateProvider().resolveAlias(collection);
-      if (resolved.size() > 1) {
+
+      ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();
+      final List<String> resolved = clusterStateProvider != null ? clusterStateProvider.resolveAlias(collection) : null;
+      if (resolved != null && resolved.size() > 1) {
         Optional<TupleStream> maybeParallelize = openParallelStream(context, resolved, metrics);
         if (maybeParallelize.isPresent()) {
           this.parallelizedStream = maybeParallelize.get();
@@ -591,8 +596,6 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams(params);
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
-
-    // TJP: TODO ~ try not to send the request to the same node if doing a plist
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
@@ -967,7 +970,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   }
 
   @Override
-  public StreamComparator getParallelListSortOrder() throws IOException {
+  public StreamComparator getRollupSorter() throws IOException {
     String sortParam = params.get("sort");
     FieldComparator[] comps;
     if (sortParam != null) {
