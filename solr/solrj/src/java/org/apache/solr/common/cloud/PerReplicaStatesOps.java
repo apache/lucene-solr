@@ -243,7 +243,7 @@ public class PerReplicaStatesOps {
    */
   public static PerReplicaStatesOps touchChildren() {
     PerReplicaStatesOps result = new PerReplicaStatesOps(prs -> {
-      List<PerReplicaStates.Operation> operations = new ArrayList<>();
+      List<PerReplicaStates.Operation> operations = new ArrayList<>(2);
       PerReplicaStates.State st = new PerReplicaStates.State(".dummy." + System.nanoTime(), Replica.State.DOWN, Boolean.FALSE, 0);
       operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, st));
       operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
