@@ -131,32 +131,36 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
     }
   }
 
-  @SuppressWarnings("resource")
   @Override
   public final void readBytes(byte[] b, int offset, int len) throws IOException {
-    try (final MemorySegment arraySegment = MemorySegment.ofArray(b)) {
-      MemorySegment targetSlice = arraySegment.asSlice(offset, len);
-      try {
-        targetSlice.copyFrom(curSegment.asSlice(curPosition, len));
-        curPosition += len;
-      } catch (IndexOutOfBoundsException e) {
-        long curAvail = curSegment.byteSize() - curPosition;
-        while (len > curAvail) {
-          targetSlice.copyFrom(curSegment.asSlice(curPosition, curAvail));
-          len -= curAvail;
-          offset += curAvail;
-          curSegmentIndex++;
-          if (curSegmentIndex >= segments.length) {
-            throw new EOFException("read past EOF: " + this);
-          }
-          curSegment = segments[curSegmentIndex];
-          curPosition = 0L;
-          curAvail = curSegment.byteSize();
-          targetSlice = arraySegment.asSlice(offset, len);
+    final MemorySegment arraySegment = MemorySegment.ofArray(b);
+    try {
+      arraySegment.asSlice(offset).copyFrom(curSegment.asSlice(curPosition, len));
+      curPosition += len;
+    } catch (IndexOutOfBoundsException e) {
+      readBytesBoundary(arraySegment, offset, len);
+    } catch (NullPointerException | IllegalStateException e) {
+      throw wrapAlreadyClosedException(e);
+    }
+  }
+
+  private void readBytesBoundary(final MemorySegment arraySegment, int offset, int len) throws IOException {
+    try {
+      long curAvail = curSegment.byteSize() - curPosition;
+      while (len > curAvail) {
+        arraySegment.asSlice(offset).copyFrom(curSegment.asSlice(curPosition, curAvail));
+        len -= curAvail;
+        offset += curAvail;
+        curSegmentIndex++;
+        if (curSegmentIndex >= segments.length) {
+          throw new EOFException("read past EOF: " + this);
         }
-        targetSlice.copyFrom(curSegment.asSlice(curPosition, len));
-        curPosition += len;
+        curSegment = segments[curSegmentIndex];
+        curPosition = 0L;
+        curAvail = curSegment.byteSize();
       }
+      arraySegment.asSlice(offset).copyFrom(curSegment.asSlice(curPosition, len));
+      curPosition += len;
     } catch (NullPointerException | IllegalStateException e) {
       throw wrapAlreadyClosedException(e);
     }
@@ -168,8 +172,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       super.readLELongs(dst, offset, length);
       return;
     }
-    try (final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
-        .asSlice((long) offset << 3, (long) length << 3)) {
+    final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
+        .asSlice((long) offset << 3, (long) length << 3);
+    try {
       targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
       curPosition += targetSlice.byteSize();
     } catch (IndexOutOfBoundsException iobe) {
@@ -185,8 +190,9 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
       super.readLEFloats(dst, offset, length);
       return;
     }
-    try (final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
-        .asSlice((long) offset << 2, (long) length << 2)) {
+    final MemorySegment targetSlice =  MemorySegment.ofArray(dst)
+        .asSlice((long) offset << 2, (long) length << 2);
+    try {
       targetSlice.copyFrom(curSegment.asSlice(curPosition, targetSlice.byteSize()));
       curPosition += targetSlice.byteSize();
     } catch (IndexOutOfBoundsException iobe) {
