@@ -130,7 +130,7 @@ public class AtomicUpdateDocumentMerger {
               break;
             default:
               throw new SolrException(ErrorCode.BAD_REQUEST,
-                  "Unknown operation for the an atomic update, operation ignored: " + key + " for " + getID(toDoc, schema));
+                  "Error:" + getID(toDoc, schema) + " Unknown operation for the an atomic update: " + key);
           }
           // validate that the field being modified is not the id field.
           if (idField.getName().equals(sif.getName())) {
@@ -150,7 +150,7 @@ public class AtomicUpdateDocumentMerger {
   private static String getID(SolrInputDocument doc, IndexSchema schema) {
     String id = "";
     SchemaField sf = schema.getUniqueKeyField();
-    if( sf != null ) {
+    if (sf != null) {
       id = "[doc="+doc.getFieldValue( sf.getName() )+"] ";
     }
     return id;
