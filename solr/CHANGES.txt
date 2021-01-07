@@ -236,6 +236,9 @@ Improvements
 
 * SOLR-15062: /api/cluster/zk/ls should give the stat of the current node (noble)
 
+* SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
+  (David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
@@ -290,6 +293,10 @@ Bug Fixes
 
 * SOLR-15058: Enforce node_name contains colon and port and find first underscore after colon to parse context
   when converting a node_name to a base URL. (Timothy Potter, Su Sasa)
+
+* SOLR-15047: Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group (hossman)
+
+ * SOLR-10860: Return proper error code for bad input in case of inplace updates (Tomas Eduardo Fernandez Lobbe, Munendra S N)
 
 Other Changes
 ---------------------
