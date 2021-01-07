@@ -223,7 +223,6 @@ include::{example-source-dir}IndexingNestedDocuments.java[tag=nest-path]
 --
 
 
-
 == Schema Configuration
 
 Indexing nested documents _requires_ an indexed field named `\_root_`:
@@ -241,6 +240,7 @@ to do so if you find it useful.  If you want to use `uniqueBlock(\_root_)`
 <<json-facet-api#stat-facet-functions,field type limitation>>, then you should enable docValues.
 
 Preferably, you will also define `\_nest_path_` which adds features and ease-of-use:
+
 [source,xml]
 ----
 <fieldType name="_nest_path_" class="solr.NestPathField" />
@@ -262,6 +262,7 @@ You might optionally want to define `\_nest_parent_` to store parent IDs:
 ----
 <field name="_nest_parent_" type="string" indexed="true" stored="true" />
 ----
+
 * Solr automatically populates this field in child documents but not root documents.
 
 

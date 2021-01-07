@@ -244,7 +244,8 @@ public class RealTimeGetComponent extends SearchComponent
      BytesRefBuilder idBytes = new BytesRefBuilder();
      for (String idStr : reqIds.allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
-       if (!opennedRealtimeSearcher && !params.get(ShardParams._ROUTE_, idStr).equals(idStr)) { // idStr is a child doc
+       // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
+       if (!opennedRealtimeSearcher && !params.get(ShardParams._ROUTE_, idStr).equals(idStr)) {
          searcherInfo.clear();
          resultContext = null;
          ulog.openRealtimeSearcher();  // force open a new realtime searcher
@@ -369,7 +370,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
-    BytesRef idBytes = new BytesRef(idStr);
+    BytesRef idBytes = req.getSchema().indexableUniqueKey(idStr);
     AtomicLong version = new AtomicLong();
     SolrInputDocument doc = getInputDocument(req.getCore(), idBytes, idBytes, version, null, Resolution.ROOT_WITH_CHILDREN);
     log.info("getInputDocument called for id={}, returning {}", idStr, doc);
