@@ -16,9 +16,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-<<Language, Language>> -
-<<Execution, Execution>> -
-<<Visualization, Visualization>>
 
 == Language
 
@@ -137,13 +134,3 @@ The `zplot` function has support for plotting *vectors*, *matrices*, *probabilit
 
 There are many examples in the guide which show how to visualize both Streaming Expressions
 and Math Expressions.
-
-
-
-
-
-
-
-
-
-

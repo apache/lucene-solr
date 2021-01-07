@@ -22,13 +22,6 @@ and loading CSV and TSV formatted data. These functions are designed to cut down
 time spent on data preparation and allow users to begin data exploration before the data is
 loaded into Solr.
 
-<<Reading Files, Reading>> -
-<<Parsing CSV and TSV Files, Parsing>> -
-<<Visualizing, Visualizing>> -
-<<Selecting Fields and Field Types, Selecting Fields and Types>> -
-<<Loading, Loading >> -
-<<Transforming Data, Transforming>>
-
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
@@ -194,13 +187,13 @@ where the output of the `update` function can be spooled to disk.
 
 image::images/math-expressions/update.png[]
 
-= Transforming Data
+== Transforming Data
 
 Streaming Expressions and Math Expression provide a powerful set of functions
 for transforming data. The section below shows some useful transformations that
 can be applied while analyzing, visualizing and loading CSV and TSV files.
 
-== Unique IDs
+=== Unique IDs
 
 Both `parseCSV` and `parseTSV` emit an *id* field if one is not present in the data already.
 The *id* field is a concatenation of the file path and the line number. This is a
@@ -222,7 +215,7 @@ Below is an example using the `uuid` function to create a new id.
 
 image::images/math-expressions/selectuuid.png[]
 
-== Record Numbers
+=== Record Numbers
 
 The `recNum` function can be used inside of a `select` function to add a record number
 to each tuple. The record number is useful for tracking location in the result set
@@ -234,7 +227,7 @@ The example below shows the syntax of the `recNum` function:
 image::images/math-expressions/recNum.png[]
 
 
-== Parsing Dates
+=== Parsing Dates
 
 The `dateTime` function can be used to parse dates into ISO 8601 format
 needed for loading into a Solr date time field.
@@ -308,7 +301,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-== String Manipulation
+=== String Manipulation
 
 The `upper`, `lower`, `split`, `valueAt`, `trim` and `concat` functions can be used to manipulate
 strings inside of the `select` function.
@@ -368,8 +361,7 @@ When this expression is sent to the `/stream` handler it responds with:
           "iris.csv",
           "3"
         ]
-      },
-      ...
+      }]}}
 ----
 
 The `valueAt` function can be used to select a specific index from
@@ -377,7 +369,7 @@ a split array.
 
 image::images/math-expressions/valueat.png[]
 
-== Filtering Results
+=== Filtering Results
 
 The `having` function can be used to filter records. Filtering can be used to systematically
 explore specific record sets before indexing or to filter records that are sent for indexing.
@@ -389,28 +381,28 @@ The following boolean functions are supported: `eq`, `gt`, `gteq`, `lt`, `lteq`,
 
 Below are some strategies for using the `having` function to filter records.
 
-=== Finding a Specific Id or Record Number
+==== Finding a Specific Id or Record Number
 
 The `eq` (equals) function can be used with the `having` expression to filter the result set
 to a single record number:
 
 image::images/math-expressions/havingId.png[]
 
-=== Skipping
+==== Skipping
 
 The `gt` (greater than) function can be used on the `recNum` field to filter the result set to
 records with a recNum greater then a specific value:
 
 image::images/math-expressions/skipping.png[]
 
-=== Paging
+==== Paging
 
 The `and` function with nested `lt` and `gt` functions can be used to select records within a specific
 record number range:
 
 image::images/math-expressions/paging.png[]
 
-=== Striding
+==== Striding
 
 The `eq` and nested `mod` function can be used to stride through the data at specific
 record number intervals. This allows for a sample to be taken at different intervals in the data
@@ -418,14 +410,14 @@ in a systematic way.
 
 image::images/math-expressions/striding.png[]
 
-=== Regex Matching
+==== Regex Matching
 
 The `matches` function can be used to test if a field in the record matches a specific
 regular expression. This provides a powerful *grep* like capability over the record set.
 
 image::images/math-expressions/matches.png[]
 
-== Handling Nulls
+=== Handling Nulls
 
 In most cases nulls do not need to be handled directly unless there is specific logic needed
 to handle nulls during the load.
@@ -440,7 +432,7 @@ will simply be left off the record.
 In certain scenarios it can be important to directly filter or replace nulls. The sections below cover these
 scenarios.
 
-=== Filtering Nulls
+==== Filtering Nulls
 
 The `having` and `isNull`, `notNull` functions can be combined to filter records that can contain null
 values.
@@ -455,7 +447,7 @@ In the example below the `having` function returns all documents because the `is
 
 image::images/math-expressions/havingIsNull.png[]
 
-=== Replacing Nulls
+==== Replacing Nulls
 
 The `if` function and `isNull`, `notNull` functions can be combined to replace null values inside a `select` function.
 
@@ -466,7 +458,7 @@ In the second example it replace null *field1* values with the string literal "N
 
 image::images/math-expressions/ifIsNull.png[]
 
-== Text Analysis
+=== Text Analysis
 
 The `analyze` function can be used from inside a `select` function to analyze
 a text field with a Lucene/Solr analyzer. The output of `analyze` is a
@@ -477,14 +469,14 @@ function can be used to expand the list of tokens to a stream of tuples.
 
 There are a number of interesting use cases for the `analyze` function:
 
-- Previewing the output of different analyzers before indexing.
-- Annotating documents with NLP generated tokens (entity extraction, noun phrases etc...)
+* Previewing the output of different analyzers before indexing.
+* Annotating documents with NLP generated tokens (entity extraction, noun phrases etc...)
 before the documents reach the indexing pipeline.
 This removes heavy NLP processing from the servers that may also be handling queries. It also allows
 more compute resources to be applied to the NLP indexing then is available on the search cluster.
-- Using the `cartesianProduct` function the analyzed tokens can be indexed as individual documents which allows
+* Using the `cartesianProduct` function the analyzed tokens can be indexed as individual documents which allows
 analyzed tokens to be searched and analyzed with Solr's aggregation and graph expressions.
-- Also using `cartesianProduct` the analyzed tokens can be aggregated, analyzed and visualized using
+* Also using `cartesianProduct` the analyzed tokens can be aggregated, analyzed and visualized using
 Streaming Expressions directly before indexing occurs.
 
 

@@ -18,14 +18,6 @@
 
 This section explores the interrelated Math Expressions for Interpolation and Numerical Calculus.
 
-<<Interpolation, Interpolation>> -
-<<Smoothing Interpolation, Smoothing>> -
-<<Derivatives, Derivatives>> -
-<<Integrals, Integrals>> -
-<<Cumulative Integral Plot, Integral Plot>> -
-<<Bicubic Spline, Bicubic Spline>>
-
-
 == Interpolation
 
 Interpolation is used to construct new data points between a set of known control of points.

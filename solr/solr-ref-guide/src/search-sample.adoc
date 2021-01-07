@@ -21,10 +21,6 @@ provides an overview of the key functions for retrieving data for
 visualization and statistical analysis: searching, sampling
 and aggregation.
 
-<<Searching, Searching>> - <<Sampling, Sampling>> - <<Aggregation, Aggregation>>
-- <<stats, stats>> - <<facet, facet>> - <<facet2D, facet2D>> - <<timeseries, timeseries>> -
-<<significantTerms, significantTerms>> - <<nodes, nodes>>
-
 == Searching
 
 === Exploring
@@ -323,4 +319,3 @@ image::images/math-expressions/nodestab.png[]
 
 The `nodes` function supports any combination of the following aggregate functions: count(*), sum, avg, min,
 max.
-

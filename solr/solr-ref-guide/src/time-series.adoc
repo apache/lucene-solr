@@ -19,14 +19,6 @@
 This section of the user guide provides an overview of some of the time series capabilities available
 in Streaming Expressions and Math Expressions.
 
-<<Time Series Aggregation, Aggregation>> -
-<<Vectorizing the Time Series, Vectorization>> -
-<<Smoothing, Smoothing>> -
-<<Differencing, Differencing>> -
-<<Anomaly Detection, Anomaly Detection>> -
-<<Modeling, Modeling>> -
-<<Forecasting, Forecasting>>
-
 == Time Series Aggregation
 
 The `timeseries` function performs fast, distributed time

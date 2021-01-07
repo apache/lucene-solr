@@ -19,11 +19,6 @@
 This section of the user guide presents an overview of the text analysis, text analytics
 and TF-IDF term vector functions in math expressions.
 
-<<Text Analysis, Text Analysis>> -
-<<Annotating Documents, Annotating Documents>> -
-<<Text Analytics, Text Analytics>> -
-<<TF-IDF Term Vectors, TF-IDF Term Vectors>>
-
 == Text Analysis
 
 The `analyze` function applies a Solr analyzer to a text field and returns the tokens

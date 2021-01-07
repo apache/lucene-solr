@@ -74,7 +74,7 @@ This expression returns the following response:
 }
 ----
 
-=== Visualization
+== Visualization
 
 In the Zeppelin-Solr interpreter you can simply type in scalar math functions and the
 result will be shown in a table format.
@@ -84,8 +84,6 @@ image::images/math-expressions/scalar.png[]
 The *Number* visualization can be used to visualize the number with text and icons.
 
 image::images/math-expressions/num.png[]
-
-
 
 == Streaming Scalar Math
 
@@ -139,7 +137,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-=== Visualization
+== Visualization
 
 The expression above can be visualized as a table using Zeppelin-Solr.
 
@@ -158,4 +156,3 @@ The following scalar math functions are available in the math expressions librar
 `pow`, `mod`, `ceil`, `floor`, `sin`, `asin`,
 `sinh`, `cos`, `acos`, `cosh`, `tan`, `atan`,
 `tanh`, `round`, `precision`, `recip`, `sqrt`, `cbrt`
-

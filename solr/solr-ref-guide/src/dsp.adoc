@@ -19,14 +19,6 @@
 This section of the user guide explores functions that are commonly used in the field of
 Digital Signal Processing (DSP).
 
-<<Convolution, Convolution>> -
-<<Convolutional Smoothing, Smoothing>> -
-<<Cross-Correlation, Cross-Correlation>> -
-<<Find Delay, Find Delay>> -
-<<Oscillate (Sine Wave), Oscillate (Sine Wave)>> -
-<<Autocorrelation, Autocorrelation>> -
-<<Discrete Fourier Transform, Discrete Fourier Transform>>
-
 == Convolution
 
 The `conv` function calculates the convolution of two vectors. The convolution is calculated by *reversing*

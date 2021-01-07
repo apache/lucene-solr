@@ -20,11 +20,6 @@
 This section of the user guide describes how to assign and visualize
 variables with math expressions.
 
-<<The Let Expression, Let>> -
-<<Echoing Variables, Echo>> -
-<<Visualizing Variables, Visualizing>> -
-<<Caching Variables, Caching>>
-
 == The Let Expression
 
 The `let` expression sets variables and returns

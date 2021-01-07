@@ -20,16 +20,6 @@
 This section of the math expressions user guide covers machine learning
 functions.
 
-<<Distance and Distance Measures, Distance>> -
-<<K-Nearest Neighbor (KNN), KNN>> -
-<<K-Nearest Neighbor Regression, KNN Regression>> -
-<<knnSearch, knnSearch>> -
-<<DBSCAN, DBSCAN>> -
-<<K-Means Clustering, K-means>> -
-<<Fuzzy K-Means Clustering, Fuzzy K-means>> -
-<<Feature Scaling, Feature Scaling>>
-
-
 == Distance and Distance Matrices
 
 The `distance` function computes the distance for two numeric arrays or a distance matrix for the columns of a matrix.
@@ -430,7 +420,7 @@ Once the clustering has been completed there are a number of useful functions av
 for examining and visualizing the clusters and centroids.
 
 
-==== Clustered Scatter Plot
+=== Clustered Scatter Plot
 
 In this example we'll again be clustering 2D lat/lon points of rat sightings. But unlike the DBSCAN example, k-means clustering
 does not on its own
@@ -461,7 +451,7 @@ insight into the densities of rat sightings throughout the five boroughs of New 
 example it highlights a cluster of dense sightings in Brooklyn at cluster1
 surrounded by less dense but still high activity clusters.
 
-==== Plotting the Centroids
+=== Plotting the Centroids
 
 The centroids of each cluster can then be plotted on a *map* to visualize the center of the
 clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`

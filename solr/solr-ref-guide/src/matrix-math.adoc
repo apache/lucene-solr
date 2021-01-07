@@ -21,16 +21,6 @@ as both inputs and outputs of many mathematical functions.
 This section of the user guide covers the basics of matrix creation,
 manipulation and matrix math.
 
-<<Matrices, Matrices>> -
-<<Row and Column Labels, Labels>> -
-<<Visualization, Visualization>> -
-<<Accessing Rows and Columns, Rows and Columns>> -
-<<Attributes, Attributes>> -
-<<Dimensions, Dimensions>> -
-<<Transposition, Transposition>> -
-<<Summations, Summations>> -
-<<Scalar Matrix Math, Matrix Math>>
-
 == Matrices
 
 A matrix can be created with the `matrix` function.

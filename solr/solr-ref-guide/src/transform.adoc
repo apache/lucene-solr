@@ -20,16 +20,6 @@
 Streaming Expressions provides a powerful set of functions for transforming result sets. This section
 of the user guide provides an overview of useful transformations applied to result sets.
 
-
-<<Selecting and Adding Fields, Selecting>> -
-<<Filtering Tuples, Filtering>> -
-<<Paging, Paging>> -
-<<Handling Nulls, Handling Nulls>> -
-<<Regex Matching, Regex Matching>> -
-<<Sorting, Sorting>> -
-<<Rollups, Rollups>>
-
-
 == Selecting and Adding Fields
 
 The `select` function wraps another streaming expression can perform the following operations on each tuple

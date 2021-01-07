@@ -19,10 +19,6 @@
 
 This section of the math expressions user guide covers computational geometry functions.
 
-<<Convex Hull, Convex Hull>> -
-<<Visualization, Visualization>> -
-<<Enclosing Disk, Enclosing Disk>>
-
 == Convex Hull
 
 A convex hull is the smallest convex set of points that encloses a data set. Math expressions has support for computing

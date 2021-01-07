@@ -18,11 +18,6 @@
 
 These functions support constructing a curve through bivariate non-linear data.
 
-<<Polynomial Curve Fitting, Polynomial>> -
-<<Gaussian Curve Fitting, Gaussian>> -
-<<Harmonic Curve Fitting, Harmonic>>
-
-
 == Polynomial Curve Fitting
 
 The `polyfit` function is a general purpose curve fitter used to model
@@ -140,5 +135,3 @@ used to predict results for the model. This extrapolates the sine wave out to 12
 the original model curve had only 19 control points.
 
 image::images/math-expressions/harmfit2.png[]
-
-

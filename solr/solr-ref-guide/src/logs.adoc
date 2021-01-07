@@ -16,18 +16,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 This section of the user guide provides an introduction to Solr log analytics.
 
 NOTE: This is an appendix of the <<math-expressions.adoc#streaming-Expressions-and-math-expressions,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are convered in detail in the guide.
 See the <<math-start.adoc#math-start,Getting Started>> chapter to learn how to get started with visualizations and Apache Zeppelin.
-
-<<Loading, Loading>> -
-<<Exploring, Exploring>> -
-<<Query Counting, Query Counting>> -
-<<Query Performance, Query Performance>> -
-<<Performance Trouble Shooting, Performance Trouble Shooting>> -
-<<Errors, Errors>>
 
 == Loading
 
@@ -412,4 +404,3 @@ If the error is followed by a stack trace the stack trace will be present in the
 result.
 
 image::images/math-expressions/stack.png[]
-
