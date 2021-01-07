@@ -18,11 +18,15 @@
 package org.apache.solr.prometheus.exporter;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.thisptr.jackson.jq.exception.JsonQueryException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.core.XmlConfigFile;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class MetricsConfiguration {
 
@@ -46,6 +50,53 @@ public class MetricsConfiguration {
     this.searchConfiguration = searchConfiguration;
   }
 
+  public static MetricsConfiguration from(XmlConfigFile config) throws Exception {
+    Node settings = config.getNode("/config/settings", false);
+
+    NodeList jqTemplates = config.getNodeList("/config/jq-templates/template", false);
+    Map<String, MetricsQueryTemplate> jqTemplatesMap =
+        (jqTemplates != null && jqTemplates.getLength() > 0) ? loadJqTemplates(jqTemplates) : Collections.emptyMap();
+
+    Node pingConfig = config.getNode("/config/rules/ping", false);
+    Node metricsConfig = config.getNode("/config/rules/metrics", false);
+    Node collectionsConfig = config.getNode("/config/rules/collections", false);
+    Node searchConfiguration = config.getNode("/config/rules/search", false);
+
+    return new MetricsConfiguration(
+        settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
+        toMetricQueries(pingConfig, jqTemplatesMap),
+        toMetricQueries(metricsConfig, jqTemplatesMap),
+        toMetricQueries(collectionsConfig, jqTemplatesMap),
+        toMetricQueries(searchConfiguration, jqTemplatesMap)
+    );
+  }
+
+  private static List<MetricsQuery> toMetricQueries(Node node, Map<String, MetricsQueryTemplate> jqTemplatesMap) throws JsonQueryException {
+    if (node == null) {
+      return Collections.emptyList();
+    }
+
+    return MetricsQuery.from(node, jqTemplatesMap);
+  }
+
+  static Map<String, MetricsQueryTemplate> loadJqTemplates(NodeList jqTemplates) {
+    Map<String, MetricsQueryTemplate> map = new HashMap<>();
+    for (int t = 0; t < jqTemplates.getLength(); t++) {
+      Node template = jqTemplates.item(t);
+      if (template.getNodeType() == Node.ELEMENT_NODE && template.hasAttributes()) {
+        Node nameAttr = template.getAttributes().getNamedItem("name");
+        String name = nameAttr != null ? nameAttr.getNodeValue() : null;
+        String tmpl = template.getTextContent();
+        if (!StringUtils.isEmpty(name) && !StringUtils.isEmpty(tmpl)) {
+          Node defaultTypeAttr = template.getAttributes().getNamedItem("defaultType");
+          String defaultType = defaultTypeAttr != null ? defaultTypeAttr.getNodeValue() : null;
+          map.put(name, new MetricsQueryTemplate(name, tmpl, defaultType));
+        }
+      }
+    }
+    return map;
+  }
+
   public PrometheusExporterSettings getSettings() {
     return settings;
   }
@@ -65,30 +116,4 @@ public class MetricsConfiguration {
   public List<MetricsQuery> getSearchConfiguration() {
     return searchConfiguration;
   }
-
-  public static MetricsConfiguration from(XmlConfigFile config) throws Exception {
-    Node settings = config.getNode("/config/settings", false);
-
-    Node pingConfig = config.getNode("/config/rules/ping", false);
-    Node metricsConfig = config.getNode("/config/rules/metrics", false);
-    Node collectionsConfig = config.getNode("/config/rules/collections", false);
-    Node searchConfiguration = config.getNode("/config/rules/search", false);
-
-    return new MetricsConfiguration(
-        settings == null ? PrometheusExporterSettings.builder().build() : PrometheusExporterSettings.from(settings),
-        toMetricQueries(pingConfig),
-        toMetricQueries(metricsConfig),
-        toMetricQueries(collectionsConfig),
-        toMetricQueries(searchConfiguration)
-    );
-  }
-
-  private static List<MetricsQuery> toMetricQueries(Node node) throws JsonQueryException {
-    if (node == null) {
-      return Collections.emptyList();
-    }
-
-    return MetricsQuery.from(node);
-  }
-
 }
