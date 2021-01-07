@@ -26,14 +26,16 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.BrokenBarrierException;
 
-import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.handler.export.ExportWriter.MergeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +53,6 @@ class ExportBuffers {
   final List<LeafReaderContext> leaves;
   final ExportWriter exportWriter;
   final OutputStream os;
-  final Timer writeOutputBufferTimer;
-  final Timer fillerWaitTimer;
-  final Timer writerWaitTimer;
   final IteratorWriter.ItemWriter rawWriter;
   final IteratorWriter.ItemWriter writer;
   final CyclicBarrier barrier;
@@ -68,7 +67,7 @@ class ExportBuffers {
 
   ExportBuffers(ExportWriter exportWriter, List<LeafReaderContext> leaves, SolrIndexSearcher searcher,
                 OutputStream os, IteratorWriter.ItemWriter rawWriter, Sort sort, int queueSize, int totalHits,
-                Timer writeOutputBufferTimer, Timer fillerWaitTimer, Timer writerWaitTimer) throws IOException {
+                FixedBitSet[] sets) throws IOException {
     this.exportWriter = exportWriter;
     this.leaves = leaves;
     this.os = os;
@@ -81,55 +80,60 @@ class ExportBuffers {
         return this;
       }
     };
-    this.writeOutputBufferTimer = writeOutputBufferTimer;
-    this.fillerWaitTimer = fillerWaitTimer;
-    this.writerWaitTimer = writerWaitTimer;
+
     this.bufferOne = new Buffer(queueSize);
     this.bufferTwo = new Buffer(queueSize);
     this.totalHits = totalHits;
     fillBuffer = bufferOne;
     outputBuffer = bufferTwo;
     SortDoc writerSortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
+
+    MergeIterator mergeIterator = exportWriter.getMergeIterator(leaves, sets, writerSortDoc);
+
     bufferOne.initialize(writerSortDoc);
     bufferTwo.initialize(writerSortDoc);
     barrier = new CyclicBarrier(2, () -> swapBuffers());
     filler = () -> {
       try {
         // log.debug("--- filler start {}", Thread.currentThread());
-        SortDoc sortDoc = exportWriter.getSortDoc(searcher, sort.getSort());
         Buffer buffer = getFillBuffer();
-        SortQueue queue = new SortQueue(queueSize, sortDoc);
         long lastOutputCounter = 0;
         for (int count = 0; count < totalHits; ) {
           // log.debug("--- filler fillOutDocs in {}", fillBuffer);
-          exportWriter.fillOutDocs(leaves, sortDoc, queue, buffer);
+          exportWriter.fillOutDocs(mergeIterator, buffer);
           count += (buffer.outDocsIndex + 1);
           // log.debug("--- filler count={}, exchange buffer from {}", count, buffer);
-          Timer.Context timerContext = getFillerWaitTimer().time();
           try {
+            long startBufferWait = System.nanoTime();
             exchangeBuffers();
+            long endBufferWait = System.nanoTime();
+            log.debug("Waited for writer thread:"+Long.toString(((endBufferWait-startBufferWait)/1000000)));
           } finally {
-            timerContext.stop();
+
           }
+
           buffer = getFillBuffer();
           if (outputCounter.longValue() > lastOutputCounter) {
             lastOutputCounter = outputCounter.longValue();
             flushOutput();
           }
-          // log.debug("--- filler got empty buffer {}", buffer);
         }
         buffer.outDocsIndex = Buffer.NO_MORE_DOCS;
-        // log.debug("--- filler final exchange buffer from {}", buffer);
-        Timer.Context timerContext = getFillerWaitTimer().time();
         try {
           exchangeBuffers();
         } finally {
-          timerContext.stop();
+
         }
         buffer = getFillBuffer();
         // log.debug("--- filler final got buffer {}", buffer);
       } catch (Throwable e) {
-        log.error("filler", e);
+        if(!(e instanceof InterruptedException) && !(e instanceof BrokenBarrierException)) {
+          /*
+          Don't log the interrupt or BrokenBarrierException as it creates noise during early client disconnects and
+          doesn't log anything particularly useful in other situations.
+           */
+          log.error("filler", e);
+        }
         error(e);
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
@@ -155,7 +159,7 @@ class ExportBuffers {
   }
 
   private void swapBuffers() {
-    log.debug("--- swap buffers");
+    //log.debug("--- swap buffers");
     Buffer one = fillBuffer;
     fillBuffer = outputBuffer;
     outputBuffer = one;
@@ -172,18 +176,6 @@ class ExportBuffers {
 
   public Buffer getFillBuffer() {
     return fillBuffer;
-  }
-
-  public Timer getWriteOutputBufferTimer() {
-    return writeOutputBufferTimer;
-  }
-
-  public Timer getFillerWaitTimer() {
-    return fillerWaitTimer;
-  }
-
-  public Timer getWriterWaitTimer() {
-    return writerWaitTimer;
   }
 
   // decorated writer that keeps track of number of writes
@@ -231,7 +223,23 @@ class ExportBuffers {
 //        allDone.join();
       log.debug("-- finished.");
     } catch (Exception e) {
-      log.error("Exception running filler / writer", e);
+      Throwable ex = e;
+      boolean ignore = false;
+      while (ex != null) {
+        String m = ex.getMessage();
+        if (m != null && m.contains("Broken pipe")) {
+          ignore = true;
+          break;
+        }
+        ex = ex.getCause();
+      }
+      if(!ignore) {
+        /*
+         Ignore Broken pipes. Broken pipes occur normally when using the export handler for
+         merge joins when the join is complete before both sides of the join are fully read.
+         */
+        log.error("Exception running filler / writer", e);
+      }
       error(e);
       //
     } finally {

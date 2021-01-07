@@ -19,9 +19,9 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.common.MapWriter;
 
 abstract class FieldWriter {
-  public abstract boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException;
+  public abstract boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex) throws IOException;
 }
