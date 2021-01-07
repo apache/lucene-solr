@@ -269,7 +269,7 @@ with the date string, a template to parse the date using a Java SimpleDateFormat
 and an optional time zone.
 
 If the time zone is not present the time zone defaults to GMT time unless
-its included in the date string itself.
+it's included in the date string itself.
 
 Below is an example of the `dateTime` function applied to the date format
 in the example above.
@@ -453,7 +453,7 @@ The `if` function and `isNull`, `notNull` functions can be combined to replace n
 
 In the example below the `if` function applies the `isNull` boolean expression to two different fields.
 
-In the first example it replaces null *patel_width* values with 0, and returns the *petal_width* if present.
+In the first example it replaces null *petal_width* values with 0, and returns the *petal_width* if present.
 In the second example it replace null *field1* values with the string literal "NA" and returns *field1* if present.
 
 image::images/math-expressions/ifIsNull.png[]

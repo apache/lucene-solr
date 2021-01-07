@@ -54,7 +54,7 @@ When this expression is sent to the `/stream` handler it responds with a JSON ar
 
 == Visualization
 
-The *zplot* function can be used to visualize vectors using Zeppeling-Solr.
+The *zplot* function can be used to visualize vectors using Zeppelin-Solr.
 
 Let's first see what happens when we visualize the array function as a table.
 

@@ -48,7 +48,7 @@ The `having` function can be used to filter tuples in the stream based on
 boolean logic.
 
 In the example below the `having` function is filtering the output of the
-`facet` function to only emit tuples that have `count(*)` greater then 20404.
+`facet` function to only emit tuples that have `count(*)` greater than 20404.
 
 image::images/math-expressions/having.png[]
 

@@ -29,7 +29,7 @@ The *search* function can be used to search a Solr Cloud collection and return a
 result set.
 
 Below is an example of the most basic *search* function called from the Zeppelin-Solr interpreter.
-Zeppelin-Solr sends the *seach(logs)* call to the /stream handler and displays the results
+Zeppelin-Solr sends the *search(logs)* call to the /stream handler and displays the results
 in *table* format.
 
 
@@ -129,7 +129,7 @@ the relationship between the two variables.
 
 By studying the scatter plot we can learn the following:
 
-* As filesize_d rises response_d tends to rise.
+* As *filesize_d* rises *response_d* tends to rise.
 * This relationship appears to be linear, as a straight line put through the data could
 be used to model the relationship.
 * The points appear to cluster more densely along a straight line through the middle
@@ -263,7 +263,7 @@ In the next example the `significantTerms` function returns the top 5 significan
 in the *complaint_type_s* field for the borough of Brooklyn. The highest scoring term,
 Elder Abuse, has a foreground count of 285 and background count of 298. This means
 that there were 298 Elder Abuse complaints in the entire data set, and 285 of them
-were in Brooklyn. This shows that Elder Abuse complaints have a much higher occurrence
+where in Brooklyn. This shows that Elder Abuse complaints have a much higher occurrence
 rate in Brooklyn than the other boroughs.
 
 image::images/math-expressions/significantTerms2.png[]
@@ -289,7 +289,7 @@ The example below finds stock tickers whose daily movements tend to be correlate
 ticker *jpm* (JP Morgan).
 
 The inner `search` expression finds records between a specific date range
-where the ticker symbol is *jpm* and the change_d field (daily change in stock price)
+where the ticker symbol is *jpm* and the *change_d* field (daily change in stock price)
 is greater then .25. This search returns all fields in the index including
 the *yearMonthDay_s* which is the string representation of the year, month and day
 of the matching records.
@@ -301,7 +301,7 @@ yearMonthDay_s field value returned
 by the initial search, and will return records for all tickers on those days.
 A filter query is applied to the search to filter the search to rows that have a *change_d*
 greater the .25. This will find all records on the matching days, that have a
-daily change greater then .25.
+daily change greater than .25.
 
 The *gather* parameter tells the nodes expression to gather the *ticker_s* symbols during the
 breadth first search. The `count(*)` parameter counts the occurrences of the tickers.
