@@ -51,8 +51,6 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   public void test() throws Exception {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-
         .process(cluster.getSolrClient());
     testModifyField(collection);
     testReloadAndAddSimple(collection);

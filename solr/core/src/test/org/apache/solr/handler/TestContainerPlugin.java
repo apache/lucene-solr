@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+//import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
 

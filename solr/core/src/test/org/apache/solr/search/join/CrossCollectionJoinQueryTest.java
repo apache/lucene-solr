@@ -54,11 +54,9 @@ public class CrossCollectionJoinQueryTest extends SolrCloudTestCase {
 
 
     CollectionAdminRequest.createCollection("products", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection("parts", "ccjoin", NUM_SHARDS, NUM_REPLICAS)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
   }

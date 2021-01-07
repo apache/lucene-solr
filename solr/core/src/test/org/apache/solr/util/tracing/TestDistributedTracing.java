@@ -56,7 +56,6 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     waitForSampleRateUpdated(1.0);
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", 2, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
   }

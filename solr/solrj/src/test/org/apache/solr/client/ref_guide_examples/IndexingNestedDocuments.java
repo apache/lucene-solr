@@ -70,9 +70,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
    */
   public void testIndexingAnonKids() throws Exception {
     final String collection = "test_anon";
-    CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1).process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
     
     //

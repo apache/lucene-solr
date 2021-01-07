@@ -60,7 +60,6 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setMaxShardsPerNode(2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
   }
   @AfterClass

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -26,11 +23,9 @@ import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Replica extends ZkNodeProps {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   /**
    * The replica's state. In general, if the node the replica is hosted on is
    * not under {@code /live_nodes} in ZK, the replica's state should be
@@ -48,7 +43,7 @@ public class Replica extends ZkNodeProps {
      * {@link ClusterState#liveNodesContain(String)}).
      * </p>
      */
-    ACTIVE("A"),
+    ACTIVE,
     
     /**
      * The first state before {@link State#RECOVERING}. A node in this state
@@ -59,13 +54,13 @@ public class Replica extends ZkNodeProps {
      * should not be relied on.
      * </p>
      */
-    DOWN("D"),
+    DOWN,
     
     /**
      * The node is recovering from the leader. This might involve peer-sync,
      * full replication or finding out things are already in sync.
      */
-    RECOVERING("R"),
+    RECOVERING,
     
     /**
      * Recovery attempts have not worked, something is not right.
@@ -75,16 +70,8 @@ public class Replica extends ZkNodeProps {
      * cluster and it's state should be discarded.
      * </p>
      */
-    RECOVERY_FAILED("F");
-
-    /**short name for a state. Used to encode this in the state node see {@link PerReplicaStates.State}
-     */
-    public final String shortName;
-
-    State(String c) {
-      this.shortName = c;
-    }
-
+    RECOVERY_FAILED;
+    
     @Override
     public String toString() {
       return super.toString().toLowerCase(Locale.ROOT);
@@ -92,7 +79,7 @@ public class Replica extends ZkNodeProps {
     
     /** Converts the state string to a State instance. */
     public static State getState(String stateStr) {
-      return stateStr == null ? null : Replica.State.valueOf(stateStr.toUpperCase(Locale.ROOT));
+      return stateStr == null ? null : State.valueOf(stateStr.toUpperCase(Locale.ROOT));
     }
   }
 
@@ -127,7 +114,6 @@ public class Replica extends ZkNodeProps {
   private final State state;
   private final Type type;
   public final String slice, collection;
-  private PerReplicaStates.State replicaState;
 
   public Replica(String name, Map<String,Object> propMap, String collection, String slice) {
     super(propMap);
@@ -143,23 +129,11 @@ public class Replica extends ZkNodeProps {
     Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
     Objects.requireNonNull(this.core, "'core' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
-    ClusterState.getReplicaStatesProvider().get().ifPresent(it -> {
-      log.debug("A replica  {} state fetched from per-replica state", name);
-      replicaState = it.getStates().get(name);
-      if (replicaState!= null) {
-        propMap.put(ZkStateReader.STATE_PROP, replicaState.state.toString().toLowerCase(Locale.ROOT));
-        if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
-      }
-    }) ;
-    if (replicaState == null) {
-      if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-        this.state = Replica.State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
-      } else {
-        this.state = Replica.State.ACTIVE;                         //Default to ACTIVE
-        propMap.put(ZkStateReader.STATE_PROP, state.toString());
-      }
+    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
+      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
     } else {
-      this.state = replicaState.state;
+      this.state = State.ACTIVE;                         //Default to ACTIVE
+      propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
     propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.nodeName));
   }
@@ -216,7 +190,7 @@ public class Replica extends ZkNodeProps {
   }
 
   public boolean isActive(Set<String> liveNodes) {
-    return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == Replica.State.ACTIVE;
+    return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
   }
   
   public Type getType() {
@@ -234,40 +208,6 @@ public class Replica extends ZkNodeProps {
     return propertyValue;
   }
 
-  public Replica copyWith(PerReplicaStates.State state) {
-    log.debug("A replica is updated with new state : {}", state);
-    Map<String, Object> props = new LinkedHashMap<>(propMap);
-    if (state == null) {
-      props.put(ZkStateReader.STATE_PROP, State.DOWN.toString());
-      props.remove(Slice.LEADER);
-    } else {
-      props.put(ZkStateReader.STATE_PROP, state.state.toString());
-      if (state.isLeader) props.put(Slice.LEADER, "true");
-    }
-    Replica r = new Replica(name, props, collection, slice);
-    r.replicaState = state;
-    return r;
-  }
-
-  public PerReplicaStates.State getReplicaState() {
-    return replicaState;
-  }
-
-  private static final Map<String, State> STATES = new HashMap<>();
-  static {
-    STATES.put(Replica.State.ACTIVE.shortName, Replica.State.ACTIVE);
-    STATES.put(Replica.State.DOWN.shortName, Replica.State.DOWN);
-    STATES.put(Replica.State.RECOVERING.shortName, Replica.State.RECOVERING);
-    STATES.put(Replica.State.RECOVERY_FAILED.shortName, Replica.State.RECOVERY_FAILED);
-  }
-  public static State getState(String c) {
-  return STATES.get(c);
-  }
-
-  public boolean isLeader() {
-    if (replicaState != null) return replicaState.isLeader;
-     return getStr(Slice.LEADER) != null;
-  }
   @Override
   public String toString() {
     return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)

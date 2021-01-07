@@ -77,7 +77,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 @Slow
-@LogLevel("org.apache.solr.common.cloud.PerReplicaStates=DEBUG;org.apache.solr.common.cloud=DEBUG;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
+@LogLevel("org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.OverseerTaskProcessor=DEBUG;org.apache.solr.util.TestInjection=DEBUG")
 public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -140,7 +140,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     String collectionName = "testSplitStaticIndexReplication_" + splitMethod.toLower();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
-    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.setCreateNodeSet(nodeName); // we want to create the leader on a fixed node so that we know which one to restart later
     create.process(cloudClient);
@@ -360,7 +359,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     waitForThingsToLevelOut(15);
     String collectionName = "testSplitMixedReplicaTypes_" + splitMethod.toLower();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
-    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.setMaxShardsPerNode(5); // some high number so we can create replicas without hindrance
     create.process(cloudClient);
     
@@ -654,7 +652,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     log.info("Starting testSplitShardWithRule");
     String collectionName = "shardSplitWithRule_" + splitMethod.toLower();
     CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setRule("shard:*,replica:<2,node:*");
 
     CollectionAdminResponse response = createRequest.process(cloudClient);
@@ -823,9 +820,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           OverseerCollectionMessageHandler.NUM_SLICES, numShards,
           "router.field", shard_fld);
-      if (SolrCloudTestCase.USE_PER_REPLICA_STATE) {
-        props.put(DocCollection.PER_REPLICA_STATE, Boolean.TRUE);
-      }
 
       createCollection(collectionInfos, collectionName, props, client);
     }
@@ -887,9 +881,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           REPLICATION_FACTOR, replicationFactor,
           MAX_SHARDS_PER_NODE, maxShardsPerNode,
           OverseerCollectionMessageHandler.NUM_SLICES, numShards);
-     if (SolrCloudTestCase.USE_PER_REPLICA_STATE) {
-       props.put(DocCollection.PER_REPLICA_STATE, Boolean.TRUE);
-     }
+
       createCollection(collectionInfos, collectionName,props,client);
     }
 

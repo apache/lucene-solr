@@ -95,8 +95,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
     // create .system collection
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
-        "conf", 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
+        "conf", 1, 1);
     create.process(solrClient);
     CloudUtil.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
         CollectionAdminParams.SYSTEM_COLL, CloudUtil.clusterShape(1, 1));

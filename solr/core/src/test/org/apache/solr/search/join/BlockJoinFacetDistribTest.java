@@ -66,7 +66,6 @@ public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
     int shards = 3;
     int replicas = 2 ;
     CollectionAdminRequest.createCollection(collection, configName, shards, replicas)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
     

@@ -57,7 +57,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +81,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Boolean USE_PER_REPLICA_STATE =  Boolean.FALSE;
 
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
@@ -92,14 +90,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Config(String name, Path path) {
       this.name = name;
       this.path = path;
-    }
-  }
-
-  @BeforeClass
-  public static void b4Class() {
-    USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.perreplica", String.valueOf(random().nextBoolean())));
-    if(USE_PER_REPLICA_STATE) {
-      log.info("Using per-replica state");
     }
   }
 
