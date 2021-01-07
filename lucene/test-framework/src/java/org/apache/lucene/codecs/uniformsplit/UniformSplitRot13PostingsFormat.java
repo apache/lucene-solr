@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -33,9 +32,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-/**
- *  {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher.
- */
+/** {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher. */
 public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   public static volatile boolean encoderCalled;
@@ -77,20 +74,24 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
-  protected FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
-    return new UniformSplitTermsWriter(postingsWriter, segmentWriteState,
+  protected FieldsConsumer createFieldsConsumer(
+      SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
+    return new UniformSplitTermsWriter(
+        postingsWriter,
+        segmentWriteState,
         UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
         UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
-        getBlockEncoder()
-    ) {
+        getBlockEncoder()) {
       @Override
       protected void writeDictionary(IndexDictionary.Builder dictionaryBuilder) throws IOException {
         recordBlockEncodingCall();
         super.writeDictionary(dictionaryBuilder);
         recordDictionaryEncodingCall();
       }
+
       @Override
-      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput)
+          throws IOException {
         super.writeEncodedFieldsMetadata(fieldsOutput);
         recordFieldsMetadataEncodingCall();
       }
@@ -151,8 +152,10 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
-  protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
+  protected FieldsProducer createFieldsProducer(
+      SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
+    return new UniformSplitTermsReader(
+        postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
   }
 
   protected BlockDecoder getBlockDecoder() {

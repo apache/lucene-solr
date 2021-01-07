@@ -21,16 +21,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-/** Utility class to do efficient primary-key (only 1 doc contains the
- *  given term) lookups by segment, re-using the enums.  This class is
- *  not thread safe, so it is the caller's job to create and use one
- *  instance of this per thread.  Do not use this if a term may appear
- *  in more than one document!  It will only return the first one it
- *  finds. */
+/**
+ * Utility class to do efficient primary-key (only 1 doc contains the given term) lookups by
+ * segment, re-using the enums. This class is not thread safe, so it is the caller's job to create
+ * and use one instance of this per thread. Do not use this if a term may appear in more than one
+ * document! It will only return the first one it finds.
+ */
 public class PerThreadPKLookup {
 
   protected final TermsEnum[] termsEnums;
@@ -45,12 +44,14 @@ public class PerThreadPKLookup {
     List<LeafReaderContext> leaves = new ArrayList<>(r.leaves());
 
     // Larger segments are more likely to have the id, so we sort largest to smallest by numDocs:
-    Collections.sort(leaves, new Comparator<LeafReaderContext>() {
-        @Override
-        public int compare(LeafReaderContext c1, LeafReaderContext c2) {
-          return c2.reader().numDocs() - c1.reader().numDocs();
-        }
-      });
+    Collections.sort(
+        leaves,
+        new Comparator<LeafReaderContext>() {
+          @Override
+          public int compare(LeafReaderContext c1, LeafReaderContext c2) {
+            return c2.reader().numDocs() - c1.reader().numDocs();
+          }
+        });
 
     termsEnums = new TermsEnum[leaves.size()];
     postingsEnums = new PostingsEnum[leaves.size()];
@@ -58,7 +59,7 @@ public class PerThreadPKLookup {
     docBases = new int[leaves.size()];
     int numSegs = 0;
     boolean hasDeletions = false;
-    for(int i=0;i<leaves.size();i++) {
+    for (int i = 0; i < leaves.size(); i++) {
       Terms terms = leaves.get(i).reader().terms(idFieldName);
       if (terms != null) {
         termsEnums[numSegs] = terms.iterator();
@@ -72,10 +73,10 @@ public class PerThreadPKLookup {
     this.numSegs = numSegs;
     this.hasDeletions = hasDeletions;
   }
-    
+
   /** Returns docID if found, else -1. */
   public int lookup(BytesRef id) throws IOException {
-    for(int seg=0;seg<numSegs;seg++) {
+    for (int seg = 0; seg < numSegs; seg++) {
       if (termsEnums[seg].seekExact(id)) {
         postingsEnums[seg] = termsEnums[seg].postings(postingsEnums[seg], 0);
         int docID = postingsEnums[seg].nextDoc();

@@ -17,23 +17,24 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * Distance shapes have capabilities of both geohashing and distance
- * computation (which also includes point membership determination).
+ * Distance shapes have capabilities of both geohashing and distance computation (which also
+ * includes point membership determination).
  *
  * @lucene.experimental
  */
 public interface GeoDistanceShape extends GeoAreaShape, GeoDistance {
 
   /**
-   * Compute a bound based on a provided distance measure.
-   * This method takes an input distance and distance metric and provides bounds on the
-   * shape if reduced to match that distance.  The method is allowed to return
-   * bounds that are larger than the distance would indicate, but never smaller.
+   * Compute a bound based on a provided distance measure. This method takes an input distance and
+   * distance metric and provides bounds on the shape if reduced to match that distance. The method
+   * is allowed to return bounds that are larger than the distance would indicate, but never
+   * smaller.
+   *
    * @param bounds is the bounds object to update.
    * @param distanceStyle describes the type of distance metric provided.
-   * @param distanceValue is the distance metric to use.  It is presumed that the distance metric
-   *  was produced with the same distance style as is provided to this method.
+   * @param distanceValue is the distance metric to use. It is presumed that the distance metric was
+   *     produced with the same distance style as is provided to this method.
    */
-  public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue);
-
+  public void getDistanceBounds(
+      final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue);
 }

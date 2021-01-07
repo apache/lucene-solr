@@ -17,16 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTextArea;
-import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -39,7 +29,16 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
+import javax.swing.SwingWorker;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.luke.app.DirectoryHandler;
@@ -95,7 +94,7 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
 
   private final ListenerFunctions listeners = new ListenerFunctions();
 
-  public synchronized static CheckIndexDialogFactory getInstance() throws IOException {
+  public static synchronized CheckIndexDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new CheckIndexDialogFactory();
     }
@@ -115,7 +114,9 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
   }
 
   private void initialize() {
-    repairBtn.setText(FontUtils.elegantIconHtml("&#xe036;", MessageUtils.getLocalizedMessage("checkidx.button.fix")));
+    repairBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#xe036;", MessageUtils.getLocalizedMessage("checkidx.button.fix")));
     repairBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     repairBtn.setMargin(new Insets(3, 3, 3, 3));
     repairBtn.setEnabled(false);
@@ -125,7 +126,6 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
 
     logArea.setEditable(false);
   }
-
 
   @Override
   public JDialog create(Window owner, String title, int width, int height) {
@@ -171,7 +171,10 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
 
     JPanel execButtons = new JPanel(new FlowLayout(FlowLayout.TRAILING));
     execButtons.setOpaque(false);
-    JButton checkBtn = new JButton(FontUtils.elegantIconHtml("&#xe0f7;", MessageUtils.getLocalizedMessage("checkidx.button.check")));
+    JButton checkBtn =
+        new JButton(
+            FontUtils.elegantIconHtml(
+                "&#xe0f7;", MessageUtils.getLocalizedMessage("checkidx.button.check")));
     checkBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     checkBtn.setMargin(new Insets(3, 0, 3, 0));
     checkBtn.addActionListener(listeners::checkIndex);
@@ -199,7 +202,8 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
     repair.setOpaque(false);
     repair.add(repairBtn);
 
-    JTextArea warnArea = new JTextArea(MessageUtils.getLocalizedMessage("checkidx.label.warn"), 3, 30);
+    JTextArea warnArea =
+        new JTextArea(MessageUtils.getLocalizedMessage("checkidx.label.warn"), 3, 30);
     warnArea.setLineWrap(true);
     warnArea.setEditable(false);
     warnArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -234,7 +238,9 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
     @Override
     public void openIndex(LukeState state) {
       lukeState = state;
-      toolsModel = indexToolsFactory.newInstance(state.getIndexReader(), state.useCompound(), state.keepAllCommits());
+      toolsModel =
+          indexToolsFactory.newInstance(
+              state.getIndexReader(), state.useCompound(), state.keepAllCommits());
     }
 
     @Override
@@ -261,46 +267,48 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
   private class ListenerFunctions {
 
     void checkIndex(ActionEvent e) {
-      ExecutorService executor = Executors.newFixedThreadPool(1, new NamedThreadFactory("check-index-dialog-check"));
+      ExecutorService executor =
+          Executors.newFixedThreadPool(1, new NamedThreadFactory("check-index-dialog-check"));
 
-      SwingWorker<CheckIndex.Status, Void> task = new SwingWorker<CheckIndex.Status, Void>() {
+      SwingWorker<CheckIndex.Status, Void> task =
+          new SwingWorker<CheckIndex.Status, Void>() {
 
-        @Override
-        protected CheckIndex.Status doInBackground() {
-          setProgress(0);
-          statusLbl.setText("Running...");
-          indicatorLbl.setVisible(true);
-          TextAreaPrintStream ps;
-          try {
-            ps = new TextAreaPrintStream(logArea);
-            CheckIndex.Status status = toolsModel.checkIndex(ps);
-            ps.flush();
-            return status;
-          } catch (Exception e) {
-            statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
-            throw e;
-          } finally {
-            setProgress(100);
-          }
-        }
-
-        @Override
-        protected void done() {
-          try {
-            CheckIndex.Status st = get();
-            resultLbl.setText(createResultsMessage(st));
-            indicatorLbl.setVisible(false);
-            statusLbl.setText("Done");
-            if (!st.clean) {
-              repairBtn.setEnabled(true);
+            @Override
+            protected CheckIndex.Status doInBackground() {
+              setProgress(0);
+              statusLbl.setText("Running...");
+              indicatorLbl.setVisible(true);
+              TextAreaPrintStream ps;
+              try {
+                ps = new TextAreaPrintStream(logArea);
+                CheckIndex.Status status = toolsModel.checkIndex(ps);
+                ps.flush();
+                return status;
+              } catch (Exception e) {
+                statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
+                throw e;
+              } finally {
+                setProgress(100);
+              }
             }
-            status = st;
-          } catch (Exception e) {
-            log.error("Error checking index", e);
-            statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
-          }
-        }
-      };
+
+            @Override
+            protected void done() {
+              try {
+                CheckIndex.Status st = get();
+                resultLbl.setText(createResultsMessage(st));
+                indicatorLbl.setVisible(false);
+                statusLbl.setText("Done");
+                if (!st.clean) {
+                  repairBtn.setEnabled(true);
+                }
+                status = st;
+              } catch (Exception e) {
+                log.error("Error checking index", e);
+                statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
+              }
+            }
+          };
 
       executor.submit(task);
       executor.shutdown();
@@ -337,44 +345,45 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
         return;
       }
 
-      ExecutorService executor = Executors.newFixedThreadPool(1, new NamedThreadFactory("check-index-dialog-repair"));
+      ExecutorService executor =
+          Executors.newFixedThreadPool(1, new NamedThreadFactory("check-index-dialog-repair"));
 
-      SwingWorker<CheckIndex.Status, Void> task = new SwingWorker<CheckIndex.Status, Void>() {
+      SwingWorker<CheckIndex.Status, Void> task =
+          new SwingWorker<CheckIndex.Status, Void>() {
 
-        @Override
-        protected CheckIndex.Status doInBackground() {
-          setProgress(0);
-          statusLbl.setText("Running...");
-          indicatorLbl.setVisible(true);
-          logArea.setText("");
-          TextAreaPrintStream ps;
-          try {
-            ps = new TextAreaPrintStream(logArea);
-            toolsModel.repairIndex(status, ps);
-            statusLbl.setText("Done");
-            ps.flush();
-            return status;
-          } catch (Exception e) {
-            statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
-            throw e;
-          } finally {
-            setProgress(100);
-          }
-        }
+            @Override
+            protected CheckIndex.Status doInBackground() {
+              setProgress(0);
+              statusLbl.setText("Running...");
+              indicatorLbl.setVisible(true);
+              logArea.setText("");
+              TextAreaPrintStream ps;
+              try {
+                ps = new TextAreaPrintStream(logArea);
+                toolsModel.repairIndex(status, ps);
+                statusLbl.setText("Done");
+                ps.flush();
+                return status;
+              } catch (Exception e) {
+                statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
+                throw e;
+              } finally {
+                setProgress(100);
+              }
+            }
 
-        @Override
-        protected void done() {
-          indexHandler.open(lukeState.getIndexPath(), lukeState.getDirImpl());
-          logArea.append("Repairing index done.");
-          resultLbl.setText("");
-          indicatorLbl.setVisible(false);
-          repairBtn.setEnabled(false);
-        }
-      };
+            @Override
+            protected void done() {
+              indexHandler.open(lukeState.getIndexPath(), lukeState.getDirImpl());
+              logArea.append("Repairing index done.");
+              resultLbl.setText("");
+              indicatorLbl.setVisible(false);
+              repairBtn.setEnabled(false);
+            }
+          };
 
       executor.submit(task);
       executor.shutdown();
     }
   }
-
 }

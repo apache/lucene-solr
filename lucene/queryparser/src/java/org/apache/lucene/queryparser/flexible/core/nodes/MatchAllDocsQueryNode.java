@@ -19,8 +19,8 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
 /**
- * A {@link MatchAllDocsQueryNode} indicates that a query node tree or subtree
- * will match all documents if executed in the index.
+ * A {@link MatchAllDocsQueryNode} indicates that a query node tree or subtree will match all
+ * documents if executed in the index.
  */
 public class MatchAllDocsQueryNode extends QueryNodeImpl {
 

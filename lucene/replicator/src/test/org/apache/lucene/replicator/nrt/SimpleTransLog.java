@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -34,10 +33,12 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
 
-/** This is a stupid yet functional transaction log: it never fsync's, never prunes, it's over-synchronized, it hard-wires id field name to "docid", can
- *  only handle specific docs/fields used by this test, etc.  It's just barely enough to show how a translog could work on top of NRT
- *  replication to guarantee no data loss when nodes crash */
-
+/**
+ * This is a stupid yet functional transaction log: it never fsync's, never prunes, it's
+ * over-synchronized, it hard-wires id field name to "docid", can only handle specific docs/fields
+ * used by this test, etc. It's just barely enough to show how a translog could work on top of NRT
+ * replication to guarantee no data loss when nodes crash
+ */
 class SimpleTransLog implements Closeable {
 
   final FileChannel channel;
@@ -45,12 +46,14 @@ class SimpleTransLog implements Closeable {
   final byte[] intBuffer = new byte[4];
   final ByteBuffer intByteBuffer = ByteBuffer.wrap(intBuffer);
 
-  private final static byte OP_ADD_DOCUMENT = (byte) 0;
-  private final static byte OP_UPDATE_DOCUMENT = (byte) 1;
-  private final static byte OP_DELETE_DOCUMENTS = (byte) 2;
+  private static final byte OP_ADD_DOCUMENT = (byte) 0;
+  private static final byte OP_UPDATE_DOCUMENT = (byte) 1;
+  private static final byte OP_DELETE_DOCUMENTS = (byte) 2;
 
   public SimpleTransLog(Path path) throws IOException {
-    channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+    channel =
+        FileChannel.open(
+            path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
   }
 
   public synchronized long getNextLocation() throws IOException {
@@ -120,7 +123,10 @@ class SimpleTransLog implements Closeable {
     }
   }
 
-  /** Replays ops between start and end location against the provided writer.  Can run concurrently with ongoing operations. */
+  /**
+   * Replays ops between start and end location against the provided writer. Can run concurrently
+   * with ongoing operations.
+   */
   public void replay(NodeProcess primary, long start, long end) throws IOException {
     try (Connection c = new Connection(primary.tcpPort)) {
       c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
@@ -134,49 +140,51 @@ class SimpleTransLog implements Closeable {
         intByteBuffer.limit(4);
         readBytesFromChannel(pos, intByteBuffer);
         pos += 4;
-        int len = ((intBuffer[0] & 0xff) << 24) |
-          (intBuffer[1] & 0xff) << 16 |
-          (intBuffer[2] & 0xff) << 8 |
-          (intBuffer[3] & 0xff);
+        int len =
+            ((intBuffer[0] & 0xff) << 24)
+                | (intBuffer[1] & 0xff) << 16
+                | (intBuffer[2] & 0xff) << 8
+                | (intBuffer[3] & 0xff);
 
         byte[] bytes = new byte[len];
         readBytesFromChannel(pos, ByteBuffer.wrap(bytes));
         pos += len;
 
         in.reset(bytes);
-        
+
         byte op = in.readByte();
-        //System.out.println("xlog: replay op=" + op);
+        // System.out.println("xlog: replay op=" + op);
         switch (op) {
-        case 0:
-          // We replay add as update:
-          replayAddDocument(c, primary, in);
-          break;
+          case 0:
+            // We replay add as update:
+            replayAddDocument(c, primary, in);
+            break;
 
-        case 1:
-          // We replay add as update:
-          replayAddDocument(c, primary, in);
-          break;
+          case 1:
+            // We replay add as update:
+            replayAddDocument(c, primary, in);
+            break;
 
-        case 2:
-          replayDeleteDocuments(c, primary, in);
-          break;
+          case 2:
+            replayDeleteDocuments(c, primary, in);
+            break;
 
-        default:
-          throw new CorruptIndexException("invalid operation " + op, in);
+          default:
+            throw new CorruptIndexException("invalid operation " + op, in);
         }
       }
       assert pos == end;
-      //System.out.println("xlog: done replay");
+      // System.out.println("xlog: done replay");
       c.out.writeByte(SimplePrimaryNode.CMD_INDEXING_DONE);
       c.flush();
-      //System.out.println("xlog: done flush");
+      // System.out.println("xlog: done flush");
       c.in.readByte();
-      //System.out.println("xlog: done readByte");
+      // System.out.println("xlog: done readByte");
     }
   }
 
-  private void replayAddDocument(Connection c, NodeProcess primary, DataInput in) throws IOException {
+  private void replayAddDocument(Connection c, NodeProcess primary, DataInput in)
+      throws IOException {
     String id = in.readString();
 
     Document doc = new Document();
@@ -193,7 +201,7 @@ class SimpleTransLog implements Closeable {
     }
     String marker = readNullableString(in);
     if (marker != null) {
-      //TestStressNRTReplication.message("xlog: replay marker=" + id);
+      // TestStressNRTReplication.message("xlog: replay marker=" + id);
       doc.add(new StringField("marker", marker, Field.Store.YES));
     }
 
@@ -203,16 +211,19 @@ class SimpleTransLog implements Closeable {
     primary.addOrUpdateDocument(c, doc, false);
   }
 
-
-  private void replayDeleteDocuments(Connection c, NodeProcess primary, DataInput in) throws IOException {
+  private void replayDeleteDocuments(Connection c, NodeProcess primary, DataInput in)
+      throws IOException {
     String id = in.readString();
     // nocomit what if this fails?
     primary.deleteDocument(c, id);
   }
 
-  /** Encodes doc into buffer.  NOTE: this is NOT general purpose!  It only handles the fields used in this test! */
+  /**
+   * Encodes doc into buffer. NOTE: this is NOT general purpose! It only handles the fields used in
+   * this test!
+   */
   private synchronized void encode(String id, Document doc) throws IOException {
-    assert id.equals(doc.get("docid")): "id=" + id + " vs docid=" + doc.get("docid");
+    assert id.equals(doc.get("docid")) : "id=" + id + " vs docid=" + doc.get("docid");
     buffer.writeString(id);
     writeNullableString(doc.get("title"));
     writeNullableString(doc.get("body"));

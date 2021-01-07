@@ -21,7 +21,8 @@ import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.analysis.Analysis;
 
 /** Operator of the Step by step analyze result panel */
-public interface StepByStepAnalyzeResultPanelOperator extends ComponentOperatorRegistry.ComponentOperator {
+public interface StepByStepAnalyzeResultPanelOperator
+    extends ComponentOperatorRegistry.ComponentOperator {
 
   void setAnalysisModel(Analysis analysisModel);
 

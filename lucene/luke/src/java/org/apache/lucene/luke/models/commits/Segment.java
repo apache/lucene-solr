@@ -18,12 +18,9 @@
 package org.apache.lucene.luke.models.commits;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.SegmentCommitInfo;
 
-/**
- * Holder for a segment.
- */
+/** Holder for a segment. */
 public final class Segment {
 
   private String name;
@@ -90,6 +87,5 @@ public final class Segment {
     return useCompoundFile;
   }
 
-  private Segment() {
-  }
+  private Segment() {}
 }

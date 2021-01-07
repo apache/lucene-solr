@@ -23,16 +23,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.luke.util.LoggerFactory;
 
-/**
- * An utility class to access to the term vectors.
- */
+/** An utility class to access to the term vectors. */
 final class TermVectorsAdapter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -44,8 +41,8 @@ final class TermVectorsAdapter {
   }
 
   /**
-   * Returns the term vectors for the specified field in the specified document.
-   * If no term vector is available for the field, empty list is returned.
+   * Returns the term vectors for the specified field in the specified document. If no term vector
+   * is available for the field, empty list is returned.
    *
    * @param docid - document id
    * @param field - field name
@@ -67,5 +64,4 @@ final class TermVectorsAdapter {
     }
     return res;
   }
-
 }

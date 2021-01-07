@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Messages usually used by query parser implementations.
- * 
+ *
  * <h2>Query Parser Messages</h2>
- * 
+ *
  * Messages for the Flexible Query Parser, they use <code>org.apache.lucene.messages.NLS</code> API.
  */
 package org.apache.lucene.queryparser.flexible.core.messages;
-

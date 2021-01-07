@@ -23,9 +23,7 @@ import org.apache.lucene.search.spans.SpanPositionRangeQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.w3c.dom.Element;
 
-/**
- * Builder for {@link SpanPositionRangeQuery}
- */
+/** Builder for {@link SpanPositionRangeQuery} */
 public class SpanPositionRangeBuilder extends SpanBuilderBase {
 
   private final SpanQueryBuilder factory;
@@ -46,5 +44,4 @@ public class SpanPositionRangeBuilder extends SpanBuilderBase {
     float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
     return new SpanBoostQuery(query, boost);
   }
-
 }

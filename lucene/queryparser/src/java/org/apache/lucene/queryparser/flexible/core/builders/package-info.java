@@ -19,14 +19,14 @@
  * Necessary classes to implement query builders.
  *
  * <h2>Query Parser Builders</h2>
- * <p>
- * The package <code>org.apache.lucene.queryParser.builders</code> contains the interface that
- * builders must implement, it also contain a utility {@link org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder}, which walks the tree
- * and call the Builder for each node in the tree.
- * Builder normally convert QueryNode Object into a Lucene Query Object,
- * and normally it's a one-to-one mapping class.
  *
- * But other builders implementations can by written to convert QueryNode objects to other non lucene objects.
+ * <p>The package <code>org.apache.lucene.queryParser.builders</code> contains the interface that
+ * builders must implement, it also contain a utility {@link
+ * org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder}, which walks the tree and
+ * call the Builder for each node in the tree. Builder normally convert QueryNode Object into a
+ * Lucene Query Object, and normally it's a one-to-one mapping class.
+ *
+ * <p>But other builders implementations can by written to convert QueryNode objects to other non
+ * lucene objects.
  */
 package org.apache.lucene.queryparser.flexible.core.builders;
-

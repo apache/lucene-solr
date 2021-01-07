@@ -21,21 +21,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.luke.models.LukeException;
 
-/**
- * A dedicated interface for Luke's Analysis tab.
- */
+/** A dedicated interface for Luke's Analysis tab. */
 public interface Analysis {
 
-  /**
-   * Holder for a token.
-   */
+  /** Holder for a token. */
   class Token {
     private final String term;
     private final List<TokenAttribute> attributes;
@@ -45,24 +40,18 @@ public interface Analysis {
       this.attributes = Objects.requireNonNull(attributes);
     }
 
-    /**
-     * Returns the string representation of this token.
-     */
+    /** Returns the string representation of this token. */
     public String getTerm() {
       return term;
     }
 
-    /**
-     * Returns attributes of this token.
-     */
+    /** Returns attributes of this token. */
     public List<TokenAttribute> getAttributes() {
       return List.copyOf(attributes);
     }
   }
 
-  /**
-   * Holder for a token attribute.
-   */
+  /** Holder for a token attribute. */
   class TokenAttribute {
     private final String attClass;
     private final Map<String, String> attValues;
@@ -72,21 +61,16 @@ public interface Analysis {
       this.attValues = Objects.requireNonNull(attValues);
     }
 
-    /**
-     * Returns attribute class name.
-     */
+    /** Returns attribute class name. */
     public String getAttClass() {
       return attClass;
     }
 
-    /**
-     * Returns value of this attribute.
-     */
+    /** Returns value of this attribute. */
     public Map<String, String> getAttValues() {
       return Map.copyOf(attValues);
     }
   }
-
 
   /** Base class for named object */
   abstract class NamedObject {
@@ -101,9 +85,7 @@ public interface Analysis {
     }
   }
 
-  /**
-   * Holder for a pair tokenizer/filter and token list
-   */
+  /** Holder for a pair tokenizer/filter and token list */
   class NamedTokens extends NamedObject {
     private final List<Token> tokens;
 
@@ -117,9 +99,7 @@ public interface Analysis {
     }
   }
 
-  /**
-   * Holder for a charfilter name and text that output by the charfilter
-   */
+  /** Holder for a charfilter name and text that output by the charfilter */
   class CharfilteredText extends NamedObject {
     private final String text;
 
@@ -133,14 +113,13 @@ public interface Analysis {
     }
   }
 
-  /**
-   * Step-by-step analysis result holder.
-   */
+  /** Step-by-step analysis result holder. */
   class StepByStepResult {
     private List<CharfilteredText> charfilteredTexts;
     private List<NamedTokens> namedTokens;
 
-    public StepByStepResult(List<CharfilteredText> charfilteredTexts, List<NamedTokens> namedTokens) {
+    public StepByStepResult(
+        List<CharfilteredText> charfilteredTexts, List<NamedTokens> namedTokens) {
       this.charfilteredTexts = charfilteredTexts;
       this.namedTokens = namedTokens;
     }
@@ -154,24 +133,16 @@ public interface Analysis {
     }
   }
 
-  /**
-   * Returns built-in {@link Analyzer}s.
-   */
+  /** Returns built-in {@link Analyzer}s. */
   Collection<Class<? extends Analyzer>> getPresetAnalyzerTypes();
 
-  /**
-   * Returns available char filter names.
-   */
+  /** Returns available char filter names. */
   Collection<String> getAvailableCharFilters();
 
-  /**
-   * Returns available tokenizer names.
-   */
+  /** Returns available tokenizer names. */
   Collection<String> getAvailableTokenizers();
 
-  /**
-   * Returns available token filter names.
-   */
+  /** Returns available token filter names. */
   Collection<String> getAvailableTokenFilters();
 
   /**
@@ -203,25 +174,26 @@ public interface Analysis {
 
   /**
    * Returns current analyzer.
+   *
    * @throws LukeException - if current analyzer not set
    */
   Analyzer currentAnalyzer();
 
   /**
-   * Adds external jar files to classpath and loads custom {@link CharFilterFactory}s, {@link TokenizerFactory}s, or {@link TokenFilterFactory}s.
+   * Adds external jar files to classpath and loads custom {@link CharFilterFactory}s, {@link
+   * TokenizerFactory}s, or {@link TokenFilterFactory}s.
    *
    * @param jarFiles - list of paths to jar file
    * @throws LukeException - if an internal error occurs when loading jars
    */
   void addExternalJars(List<String> jarFiles);
 
-
   /**
    * Analyzes given text with the current Analyzer.
    *
    * @param text - text string to analyze
-   * @return the list of text by charfilter and the list of pair of Tokenizer/TokenFilter name and tokens
+   * @return the list of text by charfilter and the list of pair of Tokenizer/TokenFilter name and
+   *     tokens
    */
   StepByStepResult analyzeStepByStep(String text);
-
 }

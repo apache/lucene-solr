@@ -34,12 +34,13 @@ public class UrlSchemeTest extends SolrTestCase {
     //  mock a SolrZkClient with some live nodes and cluster props set.
     String liveNode1 = "192.168.1.1:8983_solr";
     String liveNode2 = "127.0.0.1:8983_solr";
-    String liveNode3 = "127.0.0.1_";
+    String liveNode3 = "127.0.0.1:80_";
     String liveNode4 = "127.0.0.1:61631_l_%2Fig";
+    String liveNode5 = "some_weird_hostname-here:8983_solr%2Fx";
 
     assertEquals("https://192.168.1.1:8983/solr", t.getBaseUrlForNodeName(liveNode1));
     assertEquals("https://127.0.0.1:8983/solr", t.getBaseUrlForNodeName(liveNode2));
-    assertEquals("https://127.0.0.1", t.getBaseUrlForNodeName(liveNode3));
+    assertEquals("https://127.0.0.1:80", t.getBaseUrlForNodeName(liveNode3));
     assertEquals("https://127.0.0.1:61631/l_/ig", t.getBaseUrlForNodeName(liveNode4));
     // heal wrong scheme too
     assertEquals("https://127.0.0.1:8983/solr", t.applyUrlScheme("127.0.0.1:8983/solr"));
@@ -48,8 +49,10 @@ public class UrlSchemeTest extends SolrTestCase {
     t.setUrlScheme(HTTP);
     assertEquals("http://192.168.1.1:8983/solr", t.getBaseUrlForNodeName(liveNode1));
     assertEquals("http://127.0.0.1:8983/solr", t.getBaseUrlForNodeName(liveNode2));
-    assertEquals("http://127.0.0.1", t.getBaseUrlForNodeName(liveNode3));
+    assertEquals("http://127.0.0.1:80", t.getBaseUrlForNodeName(liveNode3));
     assertEquals("http://127.0.0.1:61631/l_/ig", t.getBaseUrlForNodeName(liveNode4));
+    assertEquals("http://some_weird_hostname-here:8983/solr/x", t.getBaseUrlForNodeName(liveNode5));
+
     // heal wrong scheme too
     assertEquals("http://127.0.0.1:8983/solr", t.applyUrlScheme("https://127.0.0.1:8983/solr"));
   }

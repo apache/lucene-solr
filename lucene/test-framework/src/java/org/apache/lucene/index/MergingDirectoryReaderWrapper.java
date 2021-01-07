@@ -19,21 +19,22 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 /**
- * {@link DirectoryReader} wrapper that uses the merge instances of the wrapped
- * {@link CodecReader}s.
- * NOTE: This class will fail to work if the leaves of the wrapped directory are
- * not codec readers.
+ * {@link DirectoryReader} wrapper that uses the merge instances of the wrapped {@link
+ * CodecReader}s. NOTE: This class will fail to work if the leaves of the wrapped directory are not
+ * codec readers.
  */
 public final class MergingDirectoryReaderWrapper extends FilterDirectoryReader {
 
   /** Wrap the given directory. */
   public MergingDirectoryReaderWrapper(DirectoryReader in) throws IOException {
-    super(in, new SubReaderWrapper() {
-      @Override
-      public LeafReader wrap(LeafReader reader) {
-        return new MergingCodecReader((CodecReader) reader);
-      }
-    });
+    super(
+        in,
+        new SubReaderWrapper() {
+          @Override
+          public LeafReader wrap(LeafReader reader) {
+            return new MergingCodecReader((CodecReader) reader);
+          }
+        });
   }
 
   @Override
@@ -46,5 +47,4 @@ public final class MergingDirectoryReaderWrapper extends FilterDirectoryReader {
     // doesn't change the content: can delegate
     return in.getReaderCacheHelper();
   }
-
 }

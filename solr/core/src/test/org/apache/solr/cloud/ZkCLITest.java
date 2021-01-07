@@ -386,8 +386,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    zkClient.close();
-    zkServer.shutdown();
+    if (zkClient != null) {
+      zkClient.close();
+    }
+    if (zkServer != null) {
+      zkServer.shutdown();
+    }
     super.tearDown();
   }
 

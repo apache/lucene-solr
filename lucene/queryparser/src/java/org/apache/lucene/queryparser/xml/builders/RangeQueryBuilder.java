@@ -23,9 +23,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.w3c.dom.Element;
 
-/**
- * Builder for {@link TermRangeQuery}
- */
+/** Builder for {@link TermRangeQuery} */
 public class RangeQueryBuilder implements QueryBuilder {
 
   @Override
@@ -36,7 +34,7 @@ public class RangeQueryBuilder implements QueryBuilder {
     String upperTerm = e.getAttribute("upperTerm");
     boolean includeLower = DOMUtils.getAttribute(e, "includeLower", true);
     boolean includeUpper = DOMUtils.getAttribute(e, "includeUpper", true);
-    return TermRangeQuery.newStringRange(fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
+    return TermRangeQuery.newStringRange(
+        fieldName, lowerTerm, upperTerm, includeLower, includeUpper);
   }
-
 }

@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
-import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
-
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
-/**
- * Query that matches wildcards
- */
+/** Query that matches wildcards */
 public class SrndTruncQuery extends SimpleTerm {
   public SrndTruncQuery(String truncated, char unlimited, char mask) {
     super(false); /* not quoted */
@@ -39,35 +36,34 @@ public class SrndTruncQuery extends SimpleTerm {
     this.mask = mask;
     truncatedToPrefixAndPattern();
   }
-  
+
   private final String truncated;
   private final char unlimited;
   private final char mask;
-  
+
   private String prefix;
   private BytesRef prefixRef;
   private Pattern pattern;
-  
-  
-  public String getTruncated() {return truncated;}
-  
-  @Override
-  public String toStringUnquoted() {return getTruncated();}
 
-  
+  public String getTruncated() {
+    return truncated;
+  }
+
+  @Override
+  public String toStringUnquoted() {
+    return getTruncated();
+  }
+
   protected boolean matchingChar(char c) {
     return (c != unlimited) && (c != mask);
   }
 
   protected void appendRegExpForChar(char c, StringBuilder re) {
-    if (c == unlimited)
-      re.append(".*");
-    else if (c == mask)
-      re.append(".");
-    else
-      re.append(c);
+    if (c == unlimited) re.append(".*");
+    else if (c == mask) re.append(".");
+    else re.append(c);
   }
-  
+
   protected void truncatedToPrefixAndPattern() {
     int i = 0;
     while ((i < truncated.length()) && matchingChar(truncated.charAt(i))) {
@@ -75,7 +71,7 @@ public class SrndTruncQuery extends SimpleTerm {
     }
     prefix = truncated.substring(0, i);
     prefixRef = new BytesRef(prefix);
-    
+
     StringBuilder re = new StringBuilder();
     while (i < truncated.length()) {
       appendRegExpForChar(truncated.charAt(i), re);
@@ -83,13 +79,10 @@ public class SrndTruncQuery extends SimpleTerm {
     }
     pattern = Pattern.compile(re.toString());
   }
-  
+
   @Override
-  public void visitMatchingTerms(
-    IndexReader reader,
-    String fieldName,
-    MatchingTermVisitor mtv) throws IOException
-  {
+  public void visitMatchingTerms(IndexReader reader, String fieldName, MatchingTermVisitor mtv)
+      throws IOException {
     int prefixLength = prefix.length();
     Terms terms = MultiTerms.getTerms(reader, fieldName);
     if (terms != null) {
@@ -107,7 +100,7 @@ public class SrndTruncQuery extends SimpleTerm {
           text = null;
         }
 
-        while(text != null) {
+        while (text != null) {
           if (text != null && StringHelper.startsWith(text, prefixRef)) {
             String textString = text.utf8ToString();
             matcher.reset(textString.substring(prefixLength));

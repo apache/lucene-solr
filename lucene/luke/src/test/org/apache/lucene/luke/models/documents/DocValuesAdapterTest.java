@@ -19,7 +19,6 @@ package org.apache.lucene.luke.models.documents;
 
 import java.io.IOException;
 import java.util.Collections;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -62,7 +61,8 @@ public class DocValuesAdapterTest extends DocumentsTestBase {
   @Test
   public void testGetDocValues_binary() throws Exception {
     DocValuesAdapter adapterImpl = new DocValuesAdapter(reader);
-    DocValues values = adapterImpl.getDocValues(0, "dv_binary").orElseThrow(IllegalStateException::new);
+    DocValues values =
+        adapterImpl.getDocValues(0, "dv_binary").orElseThrow(IllegalStateException::new);
     assertEquals(DocValuesType.BINARY, values.getDvType());
     assertEquals(new BytesRef("lucene"), values.getValues().get(0));
     assertEquals(Collections.emptyList(), values.getNumericValues());
@@ -71,7 +71,8 @@ public class DocValuesAdapterTest extends DocumentsTestBase {
   @Test
   public void testGetDocValues_sorted() throws Exception {
     DocValuesAdapter adapterImpl = new DocValuesAdapter(reader);
-    DocValues values = adapterImpl.getDocValues(0, "dv_sorted").orElseThrow(IllegalStateException::new);
+    DocValues values =
+        adapterImpl.getDocValues(0, "dv_sorted").orElseThrow(IllegalStateException::new);
     assertEquals(DocValuesType.SORTED, values.getDvType());
     assertEquals(new BytesRef("abc"), values.getValues().get(0));
     assertEquals(Collections.emptyList(), values.getNumericValues());
@@ -80,7 +81,8 @@ public class DocValuesAdapterTest extends DocumentsTestBase {
   @Test
   public void testGetDocValues_sorted_set() throws Exception {
     DocValuesAdapter adapterImpl = new DocValuesAdapter(reader);
-    DocValues values = adapterImpl.getDocValues(0, "dv_sortedset").orElseThrow(IllegalStateException::new);
+    DocValues values =
+        adapterImpl.getDocValues(0, "dv_sortedset").orElseThrow(IllegalStateException::new);
     assertEquals(DocValuesType.SORTED_SET, values.getDvType());
     assertEquals(new BytesRef("java"), values.getValues().get(0));
     assertEquals(new BytesRef("python"), values.getValues().get(1));
@@ -90,7 +92,8 @@ public class DocValuesAdapterTest extends DocumentsTestBase {
   @Test
   public void testGetDocValues_numeric() throws Exception {
     DocValuesAdapter adapterImpl = new DocValuesAdapter(reader);
-    DocValues values = adapterImpl.getDocValues(0, "dv_numeric").orElseThrow(IllegalStateException::new);
+    DocValues values =
+        adapterImpl.getDocValues(0, "dv_numeric").orElseThrow(IllegalStateException::new);
     assertEquals(DocValuesType.NUMERIC, values.getDvType());
     assertEquals(Collections.emptyList(), values.getValues());
     assertEquals(42L, values.getNumericValues().get(0).longValue());
@@ -99,7 +102,8 @@ public class DocValuesAdapterTest extends DocumentsTestBase {
   @Test
   public void testGetDocValues_sorted_numeric() throws Exception {
     DocValuesAdapter adapterImpl = new DocValuesAdapter(reader);
-    DocValues values = adapterImpl.getDocValues(0, "dv_sortednumeric").orElseThrow(IllegalStateException::new);
+    DocValues values =
+        adapterImpl.getDocValues(0, "dv_sortednumeric").orElseThrow(IllegalStateException::new);
     assertEquals(DocValuesType.SORTED_NUMERIC, values.getDvType());
     assertEquals(Collections.emptyList(), values.getValues());
     assertEquals(11L, values.getNumericValues().get(0).longValue());

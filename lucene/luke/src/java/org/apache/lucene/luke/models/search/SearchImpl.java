@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocValuesType;
@@ -94,6 +93,7 @@ public final class SearchImpl extends LukeModel implements Search {
 
   /**
    * Constructs a SearchImpl that holds given {@link IndexReader}
+   *
    * @param reader - the index reader
    */
   public SearchImpl(IndexReader reader) {
@@ -134,30 +134,36 @@ public final class SearchImpl extends LukeModel implements Search {
   }
 
   @Override
-  public Query parseQuery(String expression, String defField, Analyzer analyzer,
-                          QueryParserConfig config, boolean rewrite) {
+  public Query parseQuery(
+      String expression,
+      String defField,
+      Analyzer analyzer,
+      QueryParserConfig config,
+      boolean rewrite) {
     Objects.requireNonNull(expression);
     Objects.requireNonNull(defField);
     Objects.requireNonNull(analyzer);
     Objects.requireNonNull(config);
 
-    Query query = config.isUseClassicParser() ?
-        parseByClassicParser(expression, defField, analyzer, config) :
-        parseByStandardParser(expression, defField, analyzer, config);
+    Query query =
+        config.isUseClassicParser()
+            ? parseByClassicParser(expression, defField, analyzer, config)
+            : parseByStandardParser(expression, defField, analyzer, config);
 
     if (rewrite) {
       try {
         query = query.rewrite(reader);
       } catch (IOException e) {
-        throw new LukeException(String.format(Locale.ENGLISH, "Failed to rewrite query: %s", query.toString()), e);
+        throw new LukeException(
+            String.format(Locale.ENGLISH, "Failed to rewrite query: %s", query.toString()), e);
       }
     }
 
     return query;
   }
 
-  private Query parseByClassicParser(String expression, String defField, Analyzer analyzer,
-                                     QueryParserConfig config) {
+  private Query parseByClassicParser(
+      String expression, String defField, Analyzer analyzer, QueryParserConfig config) {
     QueryParser parser = new QueryParser(defField, analyzer);
 
     switch (config.getDefaultOperator()) {
@@ -170,7 +176,8 @@ public final class SearchImpl extends LukeModel implements Search {
     }
 
     parser.setSplitOnWhitespace(config.isSplitOnWhitespace());
-    parser.setAutoGenerateMultiTermSynonymsPhraseQuery(config.isAutoGenerateMultiTermSynonymsPhraseQuery());
+    parser.setAutoGenerateMultiTermSynonymsPhraseQuery(
+        config.isAutoGenerateMultiTermSynonymsPhraseQuery());
     parser.setAutoGeneratePhraseQueries(config.isAutoGeneratePhraseQueries());
     parser.setEnablePositionIncrements(config.isEnablePositionIncrements());
     parser.setAllowLeadingWildcard(config.isAllowLeadingWildcard());
@@ -184,13 +191,13 @@ public final class SearchImpl extends LukeModel implements Search {
     try {
       return parser.parse(expression);
     } catch (ParseException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to parse query expression: %s", expression), e);
+      throw new LukeException(
+          String.format(Locale.ENGLISH, "Failed to parse query expression: %s", expression), e);
     }
-
   }
 
-  private Query parseByStandardParser(String expression, String defField, Analyzer analyzer,
-                                      QueryParserConfig config) {
+  private Query parseByStandardParser(
+      String expression, String defField, Analyzer analyzer, QueryParserConfig config) {
     StandardQueryParser parser = new StandardQueryParser(analyzer);
 
     switch (config.getDefaultOperator()) {
@@ -223,7 +230,8 @@ public final class SearchImpl extends LukeModel implements Search {
         } else if (type == Float.class || type == Double.class) {
           pc = new PointsConfig(NumberFormat.getNumberInstance(Locale.ROOT), type);
         } else {
-          log.warn(String.format(Locale.ENGLISH, "Ignored invalid number type: %s.", type.getName()));
+          log.warn(
+              String.format(Locale.ENGLISH, "Ignored invalid number type: %s.", type.getName()));
           continue;
         }
         pointsConfigMap.put(field, pc);
@@ -235,9 +243,9 @@ public final class SearchImpl extends LukeModel implements Search {
     try {
       return parser.parse(expression, defField);
     } catch (QueryNodeException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to parse query expression: %s", expression), e);
+      throw new LukeException(
+          String.format(Locale.ENGLISH, "Failed to parse query expression: %s", expression), e);
     }
-
   }
 
   @Override
@@ -259,15 +267,25 @@ public final class SearchImpl extends LukeModel implements Search {
 
   @Override
   public SearchResults search(
-      Query query, SimilarityConfig simConfig, Set<String> fieldsToLoad, int pageSize, boolean exactHitsCount) {
+      Query query,
+      SimilarityConfig simConfig,
+      Set<String> fieldsToLoad,
+      int pageSize,
+      boolean exactHitsCount) {
     return search(query, simConfig, null, fieldsToLoad, pageSize, exactHitsCount);
   }
 
   @Override
   public SearchResults search(
-      Query query, SimilarityConfig simConfig, Sort sort, Set<String> fieldsToLoad, int pageSize, boolean exactHitsCount) {
+      Query query,
+      SimilarityConfig simConfig,
+      Sort sort,
+      Set<String> fieldsToLoad,
+      int pageSize,
+      boolean exactHitsCount) {
     if (pageSize < 0) {
-      throw new LukeException(new IllegalArgumentException("Negative integer is not acceptable for page size."));
+      throw new LukeException(
+          new IllegalArgumentException("Negative integer is not acceptable for page size."));
     }
 
     // reset internal status to prepare for a new search session
@@ -310,7 +328,8 @@ public final class SearchImpl extends LukeModel implements Search {
     System.arraycopy(topDocs.scoreDocs, 0, newDocs, docs.length, topDocs.scoreDocs.length);
     this.docs = newDocs;
 
-    return SearchResults.of(topDocs.totalHits, topDocs.scoreDocs, currentPage * pageSize, searcher, fieldsToLoad);
+    return SearchResults.of(
+        topDocs.totalHits, topDocs.scoreDocs, currentPage * pageSize, searcher, fieldsToLoad);
   }
 
   @Override
@@ -322,8 +341,9 @@ public final class SearchImpl extends LukeModel implements Search {
     // proceed to next page
     currentPage += 1;
 
-    if (totalHits.value == 0 ||
-        (totalHits.relation == TotalHits.Relation.EQUAL_TO && currentPage * pageSize >= totalHits.value)) {
+    if (totalHits.value == 0
+        || (totalHits.relation == TotalHits.Relation.EQUAL_TO
+            && currentPage * pageSize >= totalHits.value)) {
       log.warn("No more next search results are available.");
       return Optional.empty();
     }
@@ -344,7 +364,6 @@ public final class SearchImpl extends LukeModel implements Search {
       throw new LukeException("Search Failed.", e);
     }
   }
-
 
   @Override
   public Optional<SearchResults> prevPage() {
@@ -401,26 +420,32 @@ public final class SearchImpl extends LukeModel implements Search {
         return Collections.emptyList();
 
       case NUMERIC:
-        return Arrays.stream(new SortField[]{
-            new SortField(name, SortField.Type.INT),
-            new SortField(name, SortField.Type.LONG),
-            new SortField(name, SortField.Type.FLOAT),
-            new SortField(name, SortField.Type.DOUBLE)
-        }).collect(Collectors.toList());
+        return Arrays.stream(
+                new SortField[] {
+                  new SortField(name, SortField.Type.INT),
+                  new SortField(name, SortField.Type.LONG),
+                  new SortField(name, SortField.Type.FLOAT),
+                  new SortField(name, SortField.Type.DOUBLE)
+                })
+            .collect(Collectors.toList());
 
       case SORTED_NUMERIC:
-        return Arrays.stream(new SortField[]{
-            new SortedNumericSortField(name, SortField.Type.INT),
-            new SortedNumericSortField(name, SortField.Type.LONG),
-            new SortedNumericSortField(name, SortField.Type.FLOAT),
-            new SortedNumericSortField(name, SortField.Type.DOUBLE)
-        }).collect(Collectors.toList());
+        return Arrays.stream(
+                new SortField[] {
+                  new SortedNumericSortField(name, SortField.Type.INT),
+                  new SortedNumericSortField(name, SortField.Type.LONG),
+                  new SortedNumericSortField(name, SortField.Type.FLOAT),
+                  new SortedNumericSortField(name, SortField.Type.DOUBLE)
+                })
+            .collect(Collectors.toList());
 
       case SORTED:
-        return Arrays.stream(new SortField[] {
-            new SortField(name, SortField.Type.STRING),
-            new SortField(name, SortField.Type.STRING_VAL)
-        }).collect(Collectors.toList());
+        return Arrays.stream(
+                new SortField[] {
+                  new SortField(name, SortField.Type.STRING),
+                  new SortField(name, SortField.Type.STRING_VAL)
+                })
+            .collect(Collectors.toList());
 
       case SORTED_SET:
         return Collections.singletonList(new SortedSetSortField(name, false));
@@ -428,7 +453,6 @@ public final class SearchImpl extends LukeModel implements Search {
       default:
         return Collections.singletonList(new SortField(name, SortField.Type.DOC));
     }
-
   }
 
   @Override
@@ -465,7 +489,13 @@ public final class SearchImpl extends LukeModel implements Search {
     try {
       return searcher.explain(query, docid);
     } catch (IOException e) {
-      throw new LukeException(String.format(Locale.ENGLISH, "Failed to create explanation for doc: %d for query: \"%s\"", docid, query.toString()), e);
+      throw new LukeException(
+          String.format(
+              Locale.ENGLISH,
+              "Failed to create explanation for doc: %d for query: \"%s\"",
+              docid,
+              query.toString()),
+          e);
     }
   }
 }

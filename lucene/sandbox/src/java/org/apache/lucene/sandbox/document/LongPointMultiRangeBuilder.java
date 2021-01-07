@@ -17,10 +17,10 @@
 
 package org.apache.lucene.sandbox.document;
 
-import org.apache.lucene.sandbox.search.MultiRangeQuery;
-
 import static org.apache.lucene.document.LongPoint.decodeDimension;
 import static org.apache.lucene.document.LongPoint.pack;
+
+import org.apache.lucene.sandbox.search.MultiRangeQuery;
 
 /** Builder for multi range queries for LongPoints */
 public class LongPointMultiRangeBuilder extends MultiRangeQuery.Builder {
@@ -40,12 +40,14 @@ public class LongPointMultiRangeBuilder extends MultiRangeQuery.Builder {
 
   public void add(long[] lowerValue, long[] upperValue) {
     if (upperValue.length != numDims || lowerValue.length != numDims) {
-      throw new IllegalArgumentException("Passed in range does not conform to specified dimensions");
+      throw new IllegalArgumentException(
+          "Passed in range does not conform to specified dimensions");
     }
 
     for (int i = 0; i < numDims; i++) {
       if (upperValue[i] < lowerValue[i]) {
-        throw new IllegalArgumentException("Upper value of range should be greater than lower value of range");
+        throw new IllegalArgumentException(
+            "Upper value of range should be greater than lower value of range");
       }
     }
     add(pack(lowerValue).bytes, pack(upperValue).bytes);

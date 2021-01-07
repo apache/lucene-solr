@@ -23,5 +23,4 @@ public interface IndexObserver extends Observer {
   void openIndex(LukeState state);
 
   void closeIndex();
-
 }

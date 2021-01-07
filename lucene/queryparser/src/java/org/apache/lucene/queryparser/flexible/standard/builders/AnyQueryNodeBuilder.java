@@ -17,22 +17,18 @@
 package org.apache.lucene.queryparser.flexible.standard.builders;
 
 import java.util.List;
-
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.AnyQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher.TooManyClauses;
+import org.apache.lucene.search.Query;
 
-/**
- * Builds a BooleanQuery of SHOULD clauses, possibly with
- * some minimum number to match.
- */
+/** Builds a BooleanQuery of SHOULD clauses, possibly with some minimum number to match. */
 public class AnyQueryNodeBuilder implements StandardQueryBuilder {
 
   public AnyQueryNodeBuilder() {
@@ -58,24 +54,18 @@ public class AnyQueryNodeBuilder implements StandardQueryBuilder {
             bQuery.add(query, BooleanClause.Occur.SHOULD);
           } catch (TooManyClauses ex) {
 
-            throw new QueryNodeException(new MessageImpl(
-            /*
+            throw new QueryNodeException(
+                new MessageImpl(/*
              * IQQQ.Q0028E_TOO_MANY_BOOLEAN_CLAUSES,
              * BooleanQuery.getMaxClauseCount()
-             */QueryParserMessages.EMPTY_MESSAGE), ex);
-
+             */ QueryParserMessages.EMPTY_MESSAGE), ex);
           }
-
         }
-
       }
-
     }
 
     bQuery.setMinimumNumberShouldMatch(andNode.getMinimumMatchingElements());
 
     return bQuery.build();
-
   }
-
 }

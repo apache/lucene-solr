@@ -17,19 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.menubar;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSeparator;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -48,7 +35,19 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JSeparator;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -98,7 +97,7 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
 
   private JDialog dialog;
 
-  public synchronized static OpenIndexDialogFactory getInstance() throws IOException {
+  public static synchronized OpenIndexDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new OpenIndexDialogFactory();
     }
@@ -115,7 +114,8 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
   private void initialize() {
     idxPathCombo.setPreferredSize(new Dimension(360, 40));
 
-    browseBtn.setText(FontUtils.elegantIconHtml("&#x6e;", MessageUtils.getLocalizedMessage("button.browse")));
+    browseBtn.setText(
+        FontUtils.elegantIconHtml("&#x6e;", MessageUtils.getLocalizedMessage("button.browse")));
     browseBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     browseBtn.setPreferredSize(new Dimension(120, 40));
     browseBtn.addActionListener(listeners::browseDirectory);
@@ -126,12 +126,14 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
     readOnlyCB.setOpaque(false);
 
     // Scanning all Directory types will take time...
-    ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("load-directory-types"));
-    executorService.execute(() -> {
-      for (String clazzName : supportedDirImpls()) {
-        dirImplCombo.addItem(clazzName);
-      }
-    });
+    ExecutorService executorService =
+        Executors.newFixedThreadPool(1, new NamedThreadFactory("load-directory-types"));
+    executorService.execute(
+        () -> {
+          for (String clazzName : supportedDirImpls()) {
+            dirImplCombo.addItem(clazzName);
+          }
+        });
     executorService.shutdown();
     dirImplCombo.setPreferredSize(new Dimension(350, 30));
     dirImplCombo.setSelectedItem(prefs.getDirImpl());
@@ -144,14 +146,14 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
     useCompoundCB.setSelected(prefs.isUseCompound());
     useCompoundCB.setOpaque(false);
 
-    keepLastCommitRB.setText(MessageUtils.getLocalizedMessage("openindex.radio.keep_only_last_commit"));
+    keepLastCommitRB.setText(
+        MessageUtils.getLocalizedMessage("openindex.radio.keep_only_last_commit"));
     keepLastCommitRB.setSelected(!prefs.isKeepAllCommits());
     keepLastCommitRB.setOpaque(false);
 
     keepAllCommitsRB.setText(MessageUtils.getLocalizedMessage("openindex.radio.keep_all_commits"));
     keepAllCommitsRB.setSelected(prefs.isKeepAllCommits());
     keepAllCommitsRB.setOpaque(false);
-
   }
 
   @Override
@@ -334,24 +336,32 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
         String selectedPath = (String) idxPathCombo.getSelectedItem();
         String dirImplClazz = (String) dirImplCombo.getSelectedItem();
         if (selectedPath == null || selectedPath.length() == 0) {
-          String message = MessageUtils.getLocalizedMessage("openindex.message.index_path_not_selected");
-          JOptionPane.showMessageDialog(dialog, message, "Empty index path", JOptionPane.ERROR_MESSAGE);
+          String message =
+              MessageUtils.getLocalizedMessage("openindex.message.index_path_not_selected");
+          JOptionPane.showMessageDialog(
+              dialog, message, "Empty index path", JOptionPane.ERROR_MESSAGE);
         } else if (isNoReader()) {
           directoryHandler.open(selectedPath, dirImplClazz);
           addHistory(selectedPath);
         } else {
-          indexHandler.open(selectedPath, dirImplClazz, isReadOnly(), useCompound(), keepAllCommits());
+          indexHandler.open(
+              selectedPath, dirImplClazz, isReadOnly(), useCompound(), keepAllCommits());
           addHistory(selectedPath);
         }
         prefs.setIndexOpenerPrefs(
-            isReadOnly(), dirImplClazz,
-            isNoReader(), useCompound(), keepAllCommits());
+            isReadOnly(), dirImplClazz, isNoReader(), useCompound(), keepAllCommits());
         closeDialog();
       } catch (LukeException ex) {
-        String message = ex.getMessage() + System.lineSeparator() + "See Logs tab or log file for more details.";
-        JOptionPane.showMessageDialog(dialog, message, "Invalid index path", JOptionPane.ERROR_MESSAGE);
+        String message =
+            ex.getMessage() + System.lineSeparator() + "See Logs tab or log file for more details.";
+        JOptionPane.showMessageDialog(
+            dialog, message, "Invalid index path", JOptionPane.ERROR_MESSAGE);
       } catch (Throwable cause) {
-        JOptionPane.showMessageDialog(dialog, MessageUtils.getLocalizedMessage("message.error.unknown"), "Unknown Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(
+            dialog,
+            MessageUtils.getLocalizedMessage("message.error.unknown"),
+            "Unknown Error",
+            JOptionPane.ERROR_MESSAGE);
         log.error("Error opening index or directory", cause);
       }
     }
@@ -379,7 +389,5 @@ public final class OpenIndexDialogFactory implements DialogOpener.DialogFactory 
     private void addHistory(String indexPath) throws IOException {
       prefs.addHistory(indexPath);
     }
-
   }
-
 }

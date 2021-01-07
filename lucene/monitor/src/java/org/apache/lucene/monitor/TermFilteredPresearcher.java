@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
-
 import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -49,24 +48,20 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
- * Presearcher implementation that uses terms extracted from queries to index
- * them in the Monitor, and builds a disjunction from terms in a document to match
- * them.
+ * Presearcher implementation that uses terms extracted from queries to index them in the Monitor,
+ * and builds a disjunction from terms in a document to match them.
  *
- * Handling of queries that do not support term extraction through the
- * {@link org.apache.lucene.search.QueryVisitor} API can be configured by passing
- * a list of {@link CustomQueryHandler} implementations.
+ * <p>Handling of queries that do not support term extraction through the {@link
+ * org.apache.lucene.search.QueryVisitor} API can be configured by passing a list of {@link
+ * CustomQueryHandler} implementations.
  *
- * Filtering by additional fields can be configured by passing a set of field names.
- * Documents that contain values in those fields will only be checked against
- * {@link MonitorQuery} instances that have the same fieldname-value mapping in
- * their metadata.
+ * <p>Filtering by additional fields can be configured by passing a set of field names. Documents
+ * that contain values in those fields will only be checked against {@link MonitorQuery} instances
+ * that have the same fieldname-value mapping in their metadata.
  */
 public class TermFilteredPresearcher extends Presearcher {
 
-  /**
-   * The default TermWeightor, weighting by token length
-   */
+  /** The default TermWeightor, weighting by token length */
   public static final TermWeightor DEFAULT_WEIGHTOR = TermWeightor.DEFAULT;
 
   private final QueryAnalyzer extractor;
@@ -78,9 +73,7 @@ public class TermFilteredPresearcher extends Presearcher {
   static final String ANYTOKEN_FIELD = "__anytokenfield";
   static final String ANYTOKEN = "__ANYTOKEN__";
 
-  /**
-   * Creates a new TermFilteredPresearcher using the default term weighting
-   */
+  /** Creates a new TermFilteredPresearcher using the default term weighting */
   public TermFilteredPresearcher() {
     this(DEFAULT_WEIGHTOR, Collections.emptyList(), Collections.emptySet());
   }
@@ -88,11 +81,15 @@ public class TermFilteredPresearcher extends Presearcher {
   /**
    * Creates a new TermFilteredPresearcher
    *
-   * @param weightor            the TermWeightor
-   * @param customQueryHandlers A list of custom query handlers to extract terms from non-core queries
-   * @param filterFields        A set of fields to filter on
+   * @param weightor the TermWeightor
+   * @param customQueryHandlers A list of custom query handlers to extract terms from non-core
+   *     queries
+   * @param filterFields A set of fields to filter on
    */
-  public TermFilteredPresearcher(TermWeightor weightor, List<CustomQueryHandler> customQueryHandlers, Set<String> filterFields) {
+  public TermFilteredPresearcher(
+      TermWeightor weightor,
+      List<CustomQueryHandler> customQueryHandlers,
+      Set<String> filterFields) {
     this.extractor = new QueryAnalyzer(customQueryHandlers);
     this.filterFields = filterFields;
     this.queryHandlers.addAll(customQueryHandlers);
@@ -115,20 +112,22 @@ public class TermFilteredPresearcher extends Presearcher {
           ts = handler.wrapTermStream(field.name, ts);
         }
 
-        ts = new FilteringTokenFilter(ts) {
-          TermToBytesRefAttribute termAtt = addAttribute(TermToBytesRefAttribute.class);
-          @Override
-          protected boolean accept() {
-            return filterFields.contains(field.name) == false && termAcceptor.test(field.name, termAtt.getBytesRef());
-          }
-        };
+        ts =
+            new FilteringTokenFilter(ts) {
+              TermToBytesRefAttribute termAtt = addAttribute(TermToBytesRefAttribute.class);
+
+              @Override
+              protected boolean accept() {
+                return filterFields.contains(field.name) == false
+                    && termAcceptor.test(field.name, termAtt.getBytesRef());
+              }
+            };
 
         TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
         while (ts.incrementToken()) {
           queryBuilder.addTerm(field.name, BytesRef.deepCopyOf(termAtt.getBytesRef()));
         }
         ts.close();
-
       }
       Query presearcherQuery = queryBuilder.build();
 
@@ -170,8 +169,7 @@ public class TermFilteredPresearcher extends Presearcher {
   private Query buildFilterClause(LeafReader reader, String field) throws IOException {
 
     Terms terms = reader.terms(field);
-    if (terms == null)
-      return null;
+    if (terms == null) return null;
 
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
 
@@ -183,39 +181,32 @@ public class TermFilteredPresearcher extends Presearcher {
       // we need to check that every document in the batch has the same field values, otherwise
       // this filtering will not work
       if (te.docFreq() != docsInBatch)
-        throw new IllegalArgumentException("Some documents in this batch do not have a term value of "
-            + field + ":" + Term.toString(term));
+        throw new IllegalArgumentException(
+            "Some documents in this batch do not have a term value of "
+                + field
+                + ":"
+                + Term.toString(term));
       bq.add(new TermQuery(new Term(field, BytesRef.deepCopyOf(term))), BooleanClause.Occur.SHOULD);
     }
 
     BooleanQuery built = bq.build();
 
-    if (built.clauses().size() == 0)
-      return null;
+    if (built.clauses().size() == 0) return null;
 
     return built;
   }
 
-  /**
-   * Constructs a document disjunction from a set of terms
-   */
+  /** Constructs a document disjunction from a set of terms */
   protected interface DocumentQueryBuilder {
 
-    /**
-     * Add a term from this document
-     */
+    /** Add a term from this document */
     void addTerm(String field, BytesRef term) throws IOException;
 
-    /**
-     * @return the final Query
-     */
+    /** @return the final Query */
     Query build();
-
   }
 
-  /**
-   * Returns a {@link DocumentQueryBuilder} for this presearcher
-   */
+  /** Returns a {@link DocumentQueryBuilder} for this presearcher */
   protected DocumentQueryBuilder getQueryBuilder() {
     return new DocumentQueryBuilder() {
 
@@ -231,7 +222,8 @@ public class TermFilteredPresearcher extends Presearcher {
       public Query build() {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (Map.Entry<String, List<BytesRef>> entry : terms.entrySet()) {
-          builder.add(new TermInSetQuery(entry.getKey(), entry.getValue()), BooleanClause.Occur.SHOULD);
+          builder.add(
+              new TermInSetQuery(entry.getKey(), entry.getValue()), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       }
@@ -258,41 +250,38 @@ public class TermFilteredPresearcher extends Presearcher {
     return doc;
   }
 
-  /**
-   * Builds a {@link Document} from the terms extracted from a query
-   */
+  /** Builds a {@link Document} from the terms extracted from a query */
   protected Document buildQueryDocument(QueryTree querytree) {
     Map<String, BytesRefHash> fieldTerms = collectTerms(querytree);
     Document doc = new Document();
     for (Map.Entry<String, BytesRefHash> entry : fieldTerms.entrySet()) {
-      doc.add(new Field(entry.getKey(),
-          new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())), QUERYFIELDTYPE));
+      doc.add(
+          new Field(
+              entry.getKey(),
+              new TermsEnumTokenStream(new BytesRefHashIterator(entry.getValue())),
+              QUERYFIELDTYPE));
     }
     return doc;
   }
 
-  /**
-   * Collects terms from a {@link QueryTree} and maps them per-field
-   */
+  /** Collects terms from a {@link QueryTree} and maps them per-field */
   protected Map<String, BytesRefHash> collectTerms(QueryTree querytree) {
     Map<String, BytesRefHash> fieldTerms = new HashMap<>();
-    querytree.collectTerms((field, term) -> {
-      BytesRefHash tt = fieldTerms.computeIfAbsent(field, f -> new BytesRefHash());
-      tt.add(term);
-    });
+    querytree.collectTerms(
+        (field, term) -> {
+          BytesRefHash tt = fieldTerms.computeIfAbsent(field, f -> new BytesRefHash());
+          tt.add(term);
+        });
     return fieldTerms;
   }
 
-  /**
-   * Implements a {@link BytesRefIterator} over a {@link BytesRefHash}
-   */
+  /** Implements a {@link BytesRefIterator} over a {@link BytesRefHash} */
   protected class BytesRefHashIterator implements BytesRefIterator {
 
     final BytesRef scratch = new BytesRef();
     final BytesRefHash terms;
     final int[] sortedTerms;
     int upto = -1;
-
 
     BytesRefHashIterator(BytesRefHash terms) {
       this.terms = terms;
@@ -301,14 +290,11 @@ public class TermFilteredPresearcher extends Presearcher {
 
     @Override
     public BytesRef next() {
-      if (upto >= sortedTerms.length)
-        return null;
+      if (upto >= sortedTerms.length) return null;
       upto++;
-      if (sortedTerms[upto] == -1)
-        return null;
+      if (sortedTerms[upto] == -1) return null;
       this.terms.get(sortedTerms[upto], scratch);
       return scratch;
     }
   }
-
 }

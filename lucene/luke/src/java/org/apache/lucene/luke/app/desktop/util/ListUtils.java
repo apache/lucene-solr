@@ -17,12 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.JList;
-import javax.swing.ListModel;
 import java.util.List;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.swing.JList;
+import javax.swing.ListModel;
 
 /** List model utilities */
 public class ListUtils {
@@ -37,7 +37,5 @@ public class ListUtils {
     return IntStream.range(0, model.getSize()).mapToObj(mapFunc).collect(Collectors.toList());
   }
 
-  private ListUtils() {
-  }
-
+  private ListUtils() {}
 }

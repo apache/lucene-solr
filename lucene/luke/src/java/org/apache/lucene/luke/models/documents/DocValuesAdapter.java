@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
@@ -34,9 +33,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.luke.models.util.IndexUtils;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * An utility class to access to the doc values.
- */
+/** An utility class to access to the doc values. */
 final class DocValuesAdapter {
 
   private final IndexReader reader;
@@ -46,8 +43,8 @@ final class DocValuesAdapter {
   }
 
   /**
-   * Returns the doc values for the specified field in the specified document.
-   * Empty Optional instance is returned if no doc values is available for the field.
+   * Returns the doc values for the specified field in the specified document. Empty Optional
+   * instance is returned if no doc values is available for the field.
    *
    * @param docid - document id
    * @param field - field name
@@ -78,10 +75,11 @@ final class DocValuesAdapter {
     BinaryDocValues bvalues = IndexUtils.getBinaryDocValues(reader, field);
 
     if (bvalues.advanceExact(docid)) {
-      DocValues dv = DocValues.of(
-          dvType,
-          Collections.singletonList(BytesRef.deepCopyOf(bvalues.binaryValue())),
-          Collections.emptyList());
+      DocValues dv =
+          DocValues.of(
+              dvType,
+              Collections.singletonList(BytesRef.deepCopyOf(bvalues.binaryValue())),
+              Collections.emptyList());
       return Optional.of(dv);
     }
 
@@ -89,23 +87,21 @@ final class DocValuesAdapter {
   }
 
   private Optional<DocValues> createNumericDocValues(int docid, String field, DocValuesType dvType)
-      throws IOException{
+      throws IOException {
     NumericDocValues nvalues = IndexUtils.getNumericDocValues(reader, field);
 
     if (nvalues.advanceExact(docid)) {
-      DocValues dv = DocValues.of(
-          dvType,
-          Collections.emptyList(),
-          Collections.singletonList(nvalues.longValue())
-      );
+      DocValues dv =
+          DocValues.of(
+              dvType, Collections.emptyList(), Collections.singletonList(nvalues.longValue()));
       return Optional.of(dv);
     }
 
     return Optional.empty();
   }
 
-  private Optional<DocValues> createSortedNumericDocValues(int docid, String field, DocValuesType dvType)
-      throws IOException {
+  private Optional<DocValues> createSortedNumericDocValues(
+      int docid, String field, DocValuesType dvType) throws IOException {
     SortedNumericDocValues snvalues = IndexUtils.getSortedNumericDocValues(reader, field);
 
     if (snvalues.advanceExact(docid)) {
@@ -116,11 +112,7 @@ final class DocValuesAdapter {
         numericValues.add(snvalues.nextValue());
       }
 
-      DocValues dv = DocValues.of(
-          dvType,
-          Collections.emptyList(),
-          numericValues
-      );
+      DocValues dv = DocValues.of(dvType, Collections.emptyList(), numericValues);
       return Optional.of(dv);
     }
 
@@ -132,19 +124,19 @@ final class DocValuesAdapter {
     SortedDocValues svalues = IndexUtils.getSortedDocValues(reader, field);
 
     if (svalues.advanceExact(docid)) {
-      DocValues dv = DocValues.of(
-          dvType,
-          Collections.singletonList(BytesRef.deepCopyOf(svalues.binaryValue())),
-          Collections.emptyList()
-      );
+      DocValues dv =
+          DocValues.of(
+              dvType,
+              Collections.singletonList(BytesRef.deepCopyOf(svalues.binaryValue())),
+              Collections.emptyList());
       return Optional.of(dv);
     }
 
     return Optional.empty();
   }
 
-  private Optional<DocValues> createSortedSetDocValues(int docid, String field, DocValuesType dvType)
-      throws IOException {
+  private Optional<DocValues> createSortedSetDocValues(
+      int docid, String field, DocValuesType dvType) throws IOException {
     SortedSetDocValues ssvalues = IndexUtils.getSortedSetDocvalues(reader, field);
 
     if (ssvalues.advanceExact(docid)) {
@@ -155,11 +147,7 @@ final class DocValuesAdapter {
         values.add(BytesRef.deepCopyOf(ssvalues.lookupOrd(ord)));
       }
 
-      DocValues dv = DocValues.of(
-          dvType,
-          values,
-          Collections.emptyList()
-      );
+      DocValues dv = DocValues.of(dvType, values, Collections.emptyList());
       return Optional.of(dv);
     }
 

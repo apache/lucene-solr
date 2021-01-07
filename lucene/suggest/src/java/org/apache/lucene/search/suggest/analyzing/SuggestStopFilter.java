@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenFilter;
@@ -27,22 +26,20 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-/** Like {@link StopFilter} except it will not remove the
- *  last token if that token was not followed by some token
- *  separator.  For example, a query 'find the' would
- *  preserve the 'the' since it was not followed by a space or
- *  punctuation or something, and mark it KEYWORD so future
- *  stemmers won't touch it either while a query like "find
- *  the popsicle' would remove 'the' as a stopword.
+/**
+ * Like {@link StopFilter} except it will not remove the last token if that token was not followed
+ * by some token separator. For example, a query 'find the' would preserve the 'the' since it was
+ * not followed by a space or punctuation or something, and mark it KEYWORD so future stemmers won't
+ * touch it either while a query like "find the popsicle' would remove 'the' as a stopword.
  *
- *  <p>Normally you'd use the ordinary {@link StopFilter}
- *  in your indexAnalyzer and then this class in your
- *  queryAnalyzer, when using one of the analyzing suggesters. */
-
+ * <p>Normally you'd use the ordinary {@link StopFilter} in your indexAnalyzer and then this class
+ * in your queryAnalyzer, when using one of the analyzing suggesters.
+ */
 public final class SuggestStopFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final CharArraySet stopWords;

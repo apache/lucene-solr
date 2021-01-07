@@ -25,5 +25,4 @@ import java.util.Map;
 public interface IniFileWriter {
 
   void writeSections(Path path, Map<String, OptionMap> sections) throws IOException;
-
 }

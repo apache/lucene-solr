@@ -19,24 +19,20 @@ package org.apache.lucene.search.suggest.document;
 import org.apache.lucene.codecs.PostingsFormat;
 
 /**
- * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat}
- * for {@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat}
+ * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat} for {@link
+ * org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat}
  *
  * @lucene.experimental
  */
 public class Completion84PostingsFormat extends CompletionPostingsFormat {
-  /**
-   * Creates a {@link Completion84PostingsFormat} that will load
-   * the completion FST on-heap.
-   */
+  /** Creates a {@link Completion84PostingsFormat} that will load the completion FST on-heap. */
   public Completion84PostingsFormat() {
     this(FSTLoadMode.ON_HEAP);
   }
 
   /**
-   * Creates a {@link Completion84PostingsFormat} that will
-   * use the provided <code>fstLoadMode</code> to determine
-   * if the completion FST should be loaded on or off heap.
+   * Creates a {@link Completion84PostingsFormat} that will use the provided <code>fstLoadMode
+   * </code> to determine if the completion FST should be loaded on or off heap.
    */
   public Completion84PostingsFormat(FSTLoadMode fstLoadMode) {
     super("Completion84", fstLoadMode);

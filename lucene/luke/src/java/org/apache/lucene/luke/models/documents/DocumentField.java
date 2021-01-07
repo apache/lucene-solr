@@ -19,7 +19,6 @@ package org.apache.lucene.luke.models.documents;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -29,9 +28,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Holder for a document field's information and data.
- */
+/** Holder for a document field's information and data. */
 public final class DocumentField {
 
   // field name
@@ -57,8 +54,7 @@ public final class DocumentField {
   private int pointDimensionCount;
   private int pointNumBytes;
 
-  static DocumentField of(FieldInfo finfo, IndexReader reader, int docId)
-      throws IOException {
+  static DocumentField of(FieldInfo finfo, IndexReader reader, int docId) throws IOException {
     return of(finfo, null, reader, docId);
   }
 
@@ -154,16 +150,22 @@ public final class DocumentField {
 
   @Override
   public String toString() {
-    return "DocumentField{" +
-        "name='" + name + '\'' +
-        ", idxOptions=" + idxOptions +
-        ", hasTermVectors=" + hasTermVectors +
-        ", isStored=" + isStored +
-        ", dvType=" + dvType +
-        ", pointDimensionCount=" + pointDimensionCount +
-        '}';
+    return "DocumentField{"
+        + "name='"
+        + name
+        + '\''
+        + ", idxOptions="
+        + idxOptions
+        + ", hasTermVectors="
+        + hasTermVectors
+        + ", isStored="
+        + isStored
+        + ", dvType="
+        + dvType
+        + ", pointDimensionCount="
+        + pointDimensionCount
+        + '}';
   }
 
-  private DocumentField() {
-  }
+  private DocumentField() {}
 }

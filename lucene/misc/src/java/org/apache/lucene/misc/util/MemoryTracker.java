@@ -17,10 +17,9 @@
 
 package org.apache.lucene.misc.util;
 
-/**
- * Tracks dynamic allocations/deallocations of memory for transient objects
- */
+/** Tracks dynamic allocations/deallocations of memory for transient objects */
 public interface MemoryTracker {
   void updateBytes(long bytes);
+
   long getBytes();
 }

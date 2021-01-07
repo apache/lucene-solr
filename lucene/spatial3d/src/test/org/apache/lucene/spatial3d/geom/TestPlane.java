@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import org.junit.Test;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
 
-/**
- * Test basic plane functionality.
- */
+import org.junit.Test;
+
+/** Test basic plane functionality. */
 public class TestPlane {
 
   @Test
@@ -45,9 +43,9 @@ public class TestPlane {
 
   @Test
   public void testIdenticalVector() {
-    final Vector v1  = new Vector(1, 0 , 0);
-    final Vector v2  = new Vector(1, 0 , 0);
-    final Vector v3  = new Vector(-1, 0 , 0);
+    final Vector v1 = new Vector(1, 0, 0);
+    final Vector v2 = new Vector(1, 0, 0);
+    final Vector v3 = new Vector(-1, 0, 0);
     assertTrue(v1.isNumericallyIdentical(v2));
     assertFalse(v1.isNumericallyIdentical(v3));
   }
@@ -57,19 +55,22 @@ public class TestPlane {
     // [X=0.35168818443386646, Y=-0.19637966197066342, Z=0.9152870857244183],
     // [X=0.5003343189532654, Y=0.522128543226148, Z=0.6906861469771293],
 
-    final GeoPoint start = new GeoPoint(0.35168818443386646, -0.19637966197066342, 0.9152870857244183);
+    final GeoPoint start =
+        new GeoPoint(0.35168818443386646, -0.19637966197066342, 0.9152870857244183);
     final GeoPoint end = new GeoPoint(0.5003343189532654, 0.522128543226148, 0.6906861469771293);
 
-    // [A=-0.6135342247741855, B=0.21504338363863665, C=0.28188192383666794, D=0.0, side=-1.0] internal? false;
+    // [A=-0.6135342247741855, B=0.21504338363863665, C=0.28188192383666794, D=0.0, side=-1.0]
+    // internal? false;
     final Plane p = new Plane(-0.6135342247741855, 0.21504338363863665, 0.28188192383666794, 0.0);
 
-    final GeoPoint[] points = p.interpolate(PlanetModel.SPHERE, start, end, new double[]{0.25, 0.50, 0.75});
+    final GeoPoint[] points =
+        p.interpolate(PlanetModel.SPHERE, start, end, new double[] {0.25, 0.50, 0.75});
 
     for (GeoPoint point : points) {
       assertTrue(p.evaluateIsZero(point));
     }
   }
-  
+
   @Test
   public void testFindArcPoints() {
     // Create two points
@@ -87,6 +88,4 @@ public class TestPlane {
     assertEquals(0.20, p1.arcDistance(newPoints[0]), 1e-6);
     assertEquals(0.20, p1.arcDistance(newPoints[1]), 1e-6);
   }
-  
 }
-

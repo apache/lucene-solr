@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
@@ -30,17 +29,16 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 
 /**
- * This processor is used to expand terms so the query looks for the same term
- * in different fields. It also boosts a query based on its field. <br>
+ * This processor is used to expand terms so the query looks for the same term in different fields.
+ * It also boosts a query based on its field. <br>
  * <br>
- * This processor looks for every {@link FieldableNode} contained in the query
- * node tree. If a {@link FieldableNode} is found, it checks if there is a
- * {@link ConfigurationKeys#MULTI_FIELDS} defined in the {@link QueryConfigHandler}. If
- * there is, the {@link FieldableNode} is cloned N times and the clones are
- * added to a {@link BooleanQueryNode} together with the original node. N is
- * defined by the number of fields that it will be expanded to. The
- * {@link BooleanQueryNode} is returned.
- * 
+ * This processor looks for every {@link FieldableNode} contained in the query node tree. If a
+ * {@link FieldableNode} is found, it checks if there is a {@link ConfigurationKeys#MULTI_FIELDS}
+ * defined in the {@link QueryConfigHandler}. If there is, the {@link FieldableNode} is cloned N
+ * times and the clones are added to a {@link BooleanQueryNode} together with the original node. N
+ * is defined by the number of fields that it will be expanded to. The {@link BooleanQueryNode} is
+ * returned.
+ *
  * @see ConfigurationKeys#MULTI_FIELDS
  */
 public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
@@ -55,7 +53,6 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
-
   }
 
   @Override
@@ -67,7 +64,6 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
     } else {
       this.processChildren = true;
     }
-
   }
 
   @Override
@@ -112,12 +108,10 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
     }
 
     return node;
-
   }
 
   @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
-      throws QueryNodeException {
+  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
     return children;
   }
 }

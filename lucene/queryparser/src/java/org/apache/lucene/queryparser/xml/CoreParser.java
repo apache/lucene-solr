@@ -16,6 +16,12 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.InputStream;
+import java.util.Locale;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.xml.builders.*;
@@ -27,29 +33,18 @@ import org.xml.sax.EntityResolver;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.InputStream;
-import java.util.Locale;
-
-/**
- * Assembles a QueryBuilder which uses only core Lucene Query objects
- */
+/** Assembles a QueryBuilder which uses only core Lucene Query objects */
 public class CoreParser implements QueryBuilder, SpanQueryBuilder {
 
   protected String defaultField;
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected QueryBuilderFactory queryFactory;
-  final protected SpanQueryBuilderFactory spanFactory;
-
+  protected final SpanQueryBuilderFactory spanFactory;
 
   /**
-   * Construct an XML parser that uses a single instance QueryParser for handling
-   * UserQuery tags - all parse operations are synchronised on this parser
+   * Construct an XML parser that uses a single instance QueryParser for handling UserQuery tags -
+   * all parse operations are synchronised on this parser
    *
    * @param parser A QueryParser which will be synchronized on during parse calls.
    */
@@ -122,8 +117,8 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
   }
 
   /**
-   * Parses the given stream as XML file and returns a {@link Query}.
-   * By default this disallows external entities for security reasons.
+   * Parses the given stream as XML file and returns a {@link Query}. By default this disallows
+   * external entities for security reasons.
    */
   public Query parse(InputStream xmlStream) throws ParserException {
     return getQuery(parseXML(xmlStream).getDocumentElement());
@@ -148,19 +143,19 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
   }
 
   /**
-   * Returns a SAX {@link EntityResolver} to be used by {@link DocumentBuilder}.
-   * By default this returns {@link #DISALLOW_EXTERNAL_ENTITY_RESOLVER}, which disallows the
-   * expansion of external entities (for security reasons). To restore legacy behavior,
-   * override this method to return {@code null}.
+   * Returns a SAX {@link EntityResolver} to be used by {@link DocumentBuilder}. By default this
+   * returns {@link #DISALLOW_EXTERNAL_ENTITY_RESOLVER}, which disallows the expansion of external
+   * entities (for security reasons). To restore legacy behavior, override this method to return
+   * {@code null}.
    */
   protected EntityResolver getEntityResolver() {
     return DISALLOW_EXTERNAL_ENTITY_RESOLVER;
   }
 
   /**
-   * Subclass and override to return a SAX {@link ErrorHandler} to be used by {@link DocumentBuilder}.
-   * By default this returns {@code null} so no error handler is used.
-   * This method can be used to redirect XML parse errors/warnings to a custom logger.
+   * Subclass and override to return a SAX {@link ErrorHandler} to be used by {@link
+   * DocumentBuilder}. By default this returns {@code null} so no error handler is used. This method
+   * can be used to redirect XML parse errors/warnings to a custom logger.
    */
   protected ErrorHandler getErrorHandler() {
     return null;
@@ -199,10 +194,13 @@ public class CoreParser implements QueryBuilder, SpanQueryBuilder {
     return spanFactory.getSpanQuery(e);
   }
 
-  public static final EntityResolver DISALLOW_EXTERNAL_ENTITY_RESOLVER = (String publicId, String systemId) -> {
-    throw new SAXException(String.format(Locale.ENGLISH,
-        "External Entity resolving unsupported:  publicId=\"%s\" systemId=\"%s\"",
-        publicId, systemId));
-  };
-
+  public static final EntityResolver DISALLOW_EXTERNAL_ENTITY_RESOLVER =
+      (String publicId, String systemId) -> {
+        throw new SAXException(
+            String.format(
+                Locale.ENGLISH,
+                "External Entity resolving unsupported:  publicId=\"%s\" systemId=\"%s\"",
+                publicId,
+                systemId));
+      };
 }

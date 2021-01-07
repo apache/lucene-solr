@@ -19,7 +19,6 @@ package org.apache.lucene.sandbox.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -27,7 +26,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -47,10 +45,14 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
 
   public void testEquals() {
     assertEquals(new DocValuesTermsQuery("foo", "bar"), new DocValuesTermsQuery("foo", "bar"));
-    assertEquals(new DocValuesTermsQuery("foo", "bar"), new DocValuesTermsQuery("foo", "bar", "bar"));
-    assertEquals(new DocValuesTermsQuery("foo", "bar", "baz"), new DocValuesTermsQuery("foo", "baz", "bar"));
-    assertFalse(new DocValuesTermsQuery("foo", "bar").equals(new DocValuesTermsQuery("foo2", "bar")));
-    assertFalse(new DocValuesTermsQuery("foo", "bar").equals(new DocValuesTermsQuery("foo", "baz")));
+    assertEquals(
+        new DocValuesTermsQuery("foo", "bar"), new DocValuesTermsQuery("foo", "bar", "bar"));
+    assertEquals(
+        new DocValuesTermsQuery("foo", "bar", "baz"), new DocValuesTermsQuery("foo", "baz", "bar"));
+    assertFalse(
+        new DocValuesTermsQuery("foo", "bar").equals(new DocValuesTermsQuery("foo2", "bar")));
+    assertFalse(
+        new DocValuesTermsQuery("foo", "bar").equals(new DocValuesTermsQuery("foo", "baz")));
   }
 
   public void testDuelTermsQuery() throws IOException {
@@ -88,7 +90,8 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
-        final int numQueryTerms = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
+        final int numQueryTerms =
+            TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
         List<Term> queryTerms = new ArrayList<>();
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
@@ -102,7 +105,8 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (Term term : queryTerms) {
           bytesTerms.add(term.text());
         }
-        final Query q2 = new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
+        final Query q2 =
+            new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
         assertSameMatches(searcher, q1, q2, true);
       }
 
@@ -146,7 +150,8 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
-        final int numQueryTerms = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
+        final int numQueryTerms =
+            TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
         List<Term> queryTerms = new ArrayList<>();
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
@@ -160,7 +165,8 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
         for (Term term : queryTerms) {
           bytesTerms.add(term.text());
         }
-        final Query q2 = new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
+        final Query q2 =
+            new BoostQuery(new DocValuesTermsQuery("f", bytesTerms.toArray(new String[0])), boost);
 
         BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
         bq1.add(q1, Occur.MUST);
@@ -178,7 +184,8 @@ public class TestDocValuesTermsQuery extends LuceneTestCase {
     }
   }
 
-  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores)
+      throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);

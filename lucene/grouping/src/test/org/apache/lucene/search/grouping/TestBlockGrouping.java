@@ -20,7 +20,6 @@ package org.apache.lucene.search.grouping;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -65,16 +64,16 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
       String bookName = searcher.doc(tg.groups[i].scoreDocs[0].doc).get("book");
       // The contents of each group should be equal to the results of a search for
       // that group alone
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10);
       assertScoreDocsEquals(td.scoreDocs, tg.groups[i].scoreDocs);
     }
 
     shard.close();
-
   }
 
   public void testTopLevelSort() throws IOException {
@@ -88,7 +87,8 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     Query blockEndQuery = new TermQuery(new Term("blockEnd", "true"));
     GroupingSearch grouper = new GroupingSearch(blockEndQuery);
     grouper.setGroupDocsLimit(10);
-    grouper.setGroupSort(sort);     // groups returned sorted by length, chapters within group sorted by relevancy
+    // groups returned sorted by length, chapters within group sorted by relevancy
+    grouper.setGroupSort(sort);
 
     Query topLevel = new TermQuery(new Term("text", "grandmother"));
     TopGroups<?> tg = grouper.search(searcher, topLevel, 0, 5);
@@ -96,16 +96,17 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     // The sort value of the top doc in the top group should be the same as the sort value
     // of the top result from the same search done with no grouping
     TopDocs topDoc = searcher.search(topLevel, 1, sort);
-    assertEquals(((FieldDoc)topDoc.scoreDocs[0]).fields[0], tg.groups[0].groupSortValues[0]);
+    assertEquals(((FieldDoc) topDoc.scoreDocs[0]).fields[0], tg.groups[0].groupSortValues[0]);
 
     for (int i = 0; i < tg.groups.length; i++) {
       String bookName = searcher.doc(tg.groups[i].scoreDocs[0].doc).get("book");
       // The contents of each group should be equal to the results of a search for
       // that group alone, sorted by score
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10);
       assertScoreDocsEquals(td.scoreDocs, tg.groups[i].scoreDocs);
       if (i > 1) {
@@ -114,7 +115,6 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     }
 
     shard.close();
-
   }
 
   public void testWithinGroupSort() throws IOException {
@@ -128,7 +128,8 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     Query blockEndQuery = new TermQuery(new Term("blockEnd", "true"));
     GroupingSearch grouper = new GroupingSearch(blockEndQuery);
     grouper.setGroupDocsLimit(10);
-    grouper.setSortWithinGroup(sort);     // groups returned sorted by relevancy, chapters within group sorted by length
+    // groups returned sorted by relevancy, chapters within group sorted by length
+    grouper.setSortWithinGroup(sort);
 
     Query topLevel = new TermQuery(new Term("text", "grandmother"));
     TopGroups<?> tg = grouper.search(searcher, topLevel, 0, 5);
@@ -136,16 +137,17 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     // We're sorting by score, so the score of the top group should be the same as the
     // score of the top document from the same query with no grouping
     TopDocs topDoc = searcher.search(topLevel, 1);
-    assertEquals(topDoc.scoreDocs[0].score, (float)tg.groups[0].groupSortValues[0], 0);
+    assertEquals(topDoc.scoreDocs[0].score, (float) tg.groups[0].groupSortValues[0], 0);
 
     for (int i = 0; i < tg.groups.length; i++) {
       String bookName = searcher.doc(tg.groups[i].scoreDocs[0].doc).get("book");
       // The contents of each group should be equal to the results of a search for
       // that group alone, sorted by length
-      Query filtered = new BooleanQuery.Builder()
-          .add(topLevel, BooleanClause.Occur.MUST)
-          .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(topLevel, BooleanClause.Occur.MUST)
+              .add(new TermQuery(new Term("book", bookName)), BooleanClause.Occur.FILTER)
+              .build();
       TopDocs td = searcher.search(filtered, 10, sort);
       assertFieldDocsEquals(td.scoreDocs, tg.groups[i].scoreDocs);
       // We're sorting by score, so the group sort value for each group should be a float,
@@ -188,14 +190,15 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
     return block;
   }
 
-  private static final String[] TEXT = new String[]{
-      "It was the day my grandmother exploded",
-      "It was the best of times, it was the worst of times",
-      "It was a bright cold morning in April",
-      "It is a truth universally acknowledged",
-      "I have just returned from a visit to my landlord",
-      "I've been here and I've been there"
-  };
+  private static final String[] TEXT =
+      new String[] {
+        "It was the day my grandmother exploded",
+        "It was the best of times, it was the worst of times",
+        "It was a bright cold morning in April",
+        "It is a truth universally acknowledged",
+        "I have just returned from a visit to my landlord",
+        "I've been here and I've been there"
+      };
 
   private static String randomText() {
     StringBuilder sb = new StringBuilder(TEXT[random().nextInt(TEXT.length)]);
@@ -209,7 +212,7 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
   private void assertSortsBefore(GroupDocs<?> first, GroupDocs<?> second) {
     Object[] groupSortValues = second.groupSortValues;
     Object[] prevSortValues = first.groupSortValues;
-    assertTrue(((Long)prevSortValues[0]).compareTo((Long)groupSortValues[0]) <= 0);
+    assertTrue(((Long) prevSortValues[0]).compareTo((Long) groupSortValues[0]) <= 0);
   }
 
   protected static void assertFieldDocsEquals(ScoreDoc[] expected, ScoreDoc[] actual) {
@@ -221,5 +224,4 @@ public class TestBlockGrouping extends AbstractGroupingTestCase {
       assertArrayEquals(e.fields, a.fields);
     }
   }
-
 }

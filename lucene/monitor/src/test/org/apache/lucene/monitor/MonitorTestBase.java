@@ -20,7 +20,6 @@ package org.apache.lucene.monitor;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;

@@ -20,16 +20,19 @@ import java.util.Arrays;
 
 /**
  * Similarity measure for short strings such as person names.
+ *
  * <p>
- * @see <a href="http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance">http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance</a>
+ *
+ * @see <a
+ *     href="http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance">http://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance</a>
  */
 public class JaroWinklerDistance implements StringDistance {
 
   private float threshold = 0.7f;
-  
+
   /**
-   * Creates a new distance metric with the default threshold
-   * for the Jaro Winkler bonus (0.7)
+   * Creates a new distance metric with the default threshold for the Jaro Winkler bonus (0.7)
+   *
    * @see #setThreshold(float)
    */
   public JaroWinklerDistance() {}
@@ -50,8 +53,9 @@ public class JaroWinklerDistance implements StringDistance {
     int matches = 0;
     for (int mi = 0; mi < min.length(); mi++) {
       char c1 = min.charAt(mi);
-      for (int xi = Math.max(mi - range, 0), xn = Math.min(mi + range + 1, max
-          .length()); xi < xn; xi++) {
+      for (int xi = Math.max(mi - range, 0), xn = Math.min(mi + range + 1, max.length());
+          xi < xn;
+          xi++) {
         if (!matchFlags[xi] && c1 == max.charAt(xi)) {
           matchIndexes[mi] = xi;
           matchFlags[xi] = true;
@@ -88,7 +92,7 @@ public class JaroWinklerDistance implements StringDistance {
         break;
       }
     }
-    return new int[] { matches, transpositions / 2, prefix, max.length() };
+    return new int[] {matches, transpositions / 2, prefix, max.length()};
   }
 
   @Override
@@ -99,14 +103,14 @@ public class JaroWinklerDistance implements StringDistance {
       return 0f;
     }
     float j = ((m / s1.length() + m / s2.length() + (m - mtp[1]) / m)) / 3;
-    float jw = j < getThreshold() ? j : j + Math.min(0.1f, 1f / mtp[3]) * mtp[2]
-        * (1 - j);
+    float jw = j < getThreshold() ? j : j + Math.min(0.1f, 1f / mtp[3]) * mtp[2] * (1 - j);
     return jw;
   }
 
   /**
-   * Sets the threshold used to determine when Winkler bonus should be used.
-   * Set to a negative value to get the Jaro distance.
+   * Sets the threshold used to determine when Winkler bonus should be used. Set to a negative value
+   * to get the Jaro distance.
+   *
    * @param threshold the new value of the threshold
    */
   public void setThreshold(float threshold) {
@@ -114,8 +118,9 @@ public class JaroWinklerDistance implements StringDistance {
   }
 
   /**
-   * Returns the current value of the threshold used for adding the Winkler bonus.
-   * The default value is 0.7.
+   * Returns the current value of the threshold used for adding the Winkler bonus. The default value
+   * is 0.7.
+   *
    * @return the current value of the threshold
    */
   public float getThreshold() {
@@ -131,15 +136,13 @@ public class JaroWinklerDistance implements StringDistance {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (null == obj || getClass() != obj.getClass()) return false;
-    
-    JaroWinklerDistance o = (JaroWinklerDistance)obj;
-    return (Float.floatToIntBits(o.threshold) 
-            == Float.floatToIntBits(this.threshold));
+
+    JaroWinklerDistance o = (JaroWinklerDistance) obj;
+    return (Float.floatToIntBits(o.threshold) == Float.floatToIntBits(this.threshold));
   }
 
   @Override
   public String toString() {
     return "jarowinkler(" + threshold + ")";
   }
-
 }

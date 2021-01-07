@@ -23,7 +23,7 @@ package org.apache.lucene.queryparser.surround.query;
  * Use this class to limit the buffer usage for reading terms from an index.
  * Default is 1024, the same as the max. number of subqueries for a BooleanQuery.
  */
- 
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -34,23 +34,30 @@ public class BasicQueryFactory {
     this.maxBasicQueries = maxBasicQueries;
     this.queriesMade = 0;
   }
-  
+
   public BasicQueryFactory() {
     this(1024);
   }
-  
+
   private int maxBasicQueries;
   private int queriesMade;
-  
-  public int getNrQueriesMade() {return queriesMade;}
-  public int getMaxBasicQueries() {return maxBasicQueries;}
-  
+
+  public int getNrQueriesMade() {
+    return queriesMade;
+  }
+
+  public int getMaxBasicQueries() {
+    return maxBasicQueries;
+  }
+
   @Override
   public String toString() {
     return getClass().getName()
-    + "(maxBasicQueries: " + maxBasicQueries
-    + ", queriesMade: " + queriesMade
-    + ")";
+        + "(maxBasicQueries: "
+        + maxBasicQueries
+        + ", queriesMade: "
+        + queriesMade
+        + ")";
   }
 
   private boolean atMax() {
@@ -58,16 +65,15 @@ public class BasicQueryFactory {
   }
 
   protected synchronized void checkMax() throws TooManyBasicQueries {
-    if (atMax())
-      throw new TooManyBasicQueries(getMaxBasicQueries());
+    if (atMax()) throw new TooManyBasicQueries(getMaxBasicQueries());
     queriesMade++;
   }
-  
+
   public TermQuery newTermQuery(Term term) throws TooManyBasicQueries {
     checkMax();
     return new TermQuery(term);
   }
-  
+
   public SpanTermQuery newSpanTermQuery(Term term) throws TooManyBasicQueries {
     checkMax();
     return new SpanTermQuery(term);
@@ -75,19 +81,17 @@ public class BasicQueryFactory {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode() ^ (atMax() ? 7 : 31*32);
+    return getClass().hashCode() ^ (atMax() ? 7 : 31 * 32);
   }
 
-  /** Two BasicQueryFactory's are equal when they generate
-   *  the same types of basic queries, or both cannot generate queries anymore.
+  /**
+   * Two BasicQueryFactory's are equal when they generate the same types of basic queries, or both
+   * cannot generate queries anymore.
    */
   @Override
   public boolean equals(Object obj) {
-    if (! (obj instanceof BasicQueryFactory))
-      return false;
+    if (!(obj instanceof BasicQueryFactory)) return false;
     BasicQueryFactory other = (BasicQueryFactory) obj;
     return atMax() == other.atMax();
   }
 }
-
-
