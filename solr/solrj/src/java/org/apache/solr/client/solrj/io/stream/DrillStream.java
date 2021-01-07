@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -32,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -252,29 +254,27 @@ public class DrillStream extends CloudSolrStream implements Expressible {
   }
 
   protected void constructStreams() throws IOException {
-
     try {
-
       Object pushStream = ((Expressible) tupleStream).toExpression(streamFactory);
-
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
-
-      for(int w=0; w<shardUrls.size(); w++) {
-        ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
-        paramsLoc.set(DISTRIB,"false"); // We are the aggregator.
-        paramsLoc.set("expr", pushStream.toString());
-        paramsLoc.set("qt","/export");
-        paramsLoc.set("fl", fl);
-        paramsLoc.set("sort", sort);
-        paramsLoc.set("q", q);
-        String url = shardUrls.get(w);
-        SolrStream solrStream = new SolrStream(url, paramsLoc);
+      final ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+      paramsLoc.set(DISTRIB,"false"); // We are the aggregator.
+      paramsLoc.set("expr", pushStream.toString());
+      paramsLoc.set("qt","/export");
+      paramsLoc.set("fl", fl);
+      paramsLoc.set("sort", sort);
+      paramsLoc.set("q", q);
+      getReplicas(this.zkHost, this.collection, this.streamContext, paramsLoc).forEach(r -> {
+        SolrStream solrStream = new SolrStream(r.getBaseUrl(), paramsLoc, r.getCoreName());
         solrStream.setStreamContext(streamContext);
         solrStreams.add(solrStream);
-      }
-
+      });
     } catch (Exception e) {
-      throw new IOException(e);
+      Throwable rootCause = ExceptionUtils.getRootCause(e);
+      if (rootCause instanceof IOException) {
+        throw (IOException)rootCause;
+      } else {
+        throw new IOException(e);
+      }
     }
   }
 }

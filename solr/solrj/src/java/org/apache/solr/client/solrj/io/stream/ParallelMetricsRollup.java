@@ -36,10 +36,14 @@ import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
  * using a rollup of metrics from each collection.
  */
 public interface ParallelMetricsRollup {
+
   TupleStream[] parallelize(List<String> partitions) throws IOException;
+
   StreamComparator getParallelListSortOrder() throws IOException;
+
   RollupStream getRollupStream(SortStream sortStream, Metric[] rollupMetrics) throws IOException;
-  Map<String,String> getRollupSelectFields(Metric[] rollupMetrics);
+
+  Map<String, String> getRollupSelectFields(Metric[] rollupMetrics);
 
   default Optional<TupleStream> openParallelStream(StreamContext context, List<String> partitions, Metric[] metrics) throws IOException {
     Optional<Metric[]> maybeRollupMetrics = getRollupMetrics(metrics);
@@ -47,7 +51,6 @@ public interface ParallelMetricsRollup {
       return Optional.empty(); // some metric is incompatible with doing a rollup over the plist results
 
     TupleStream[] parallelStreams = parallelize(partitions);
-
     // the tuples from each plist need to be sorted using the same order to do a rollup
     Metric[] rollupMetrics = maybeRollupMetrics.get();
     StreamComparator comparator = getParallelListSortOrder();
@@ -63,7 +66,7 @@ public interface ParallelMetricsRollup {
   default Optional<Metric[]> getRollupMetrics(Metric[] metrics) {
     Metric[] rollup = new Metric[metrics.length];
     CountMetric count = null;
-    for (int m=0; m < rollup.length; m++) {
+    for (int m = 0; m < rollup.length; m++) {
       Metric nextRollup;
       Metric next = metrics[m];
       if (next instanceof SumMetric) {
@@ -78,15 +81,15 @@ public interface ParallelMetricsRollup {
       } else if (next instanceof CountMetric) {
         // sum of counts
         nextRollup = new SumMetric(next.getIdentifier());
-        count = (CountMetric)next;
+        count = (CountMetric) next;
       } else if (next instanceof MeanMetric) {
         // WeightedSumMetric must have a count to compute the weighted avg. rollup from ...
         // if the user is not requesting count, then we can't parallelize
         if (count == null) {
           // just look past the current position
-          for (int n=m+1; n < metrics.length; n++) {
+          for (int n = m + 1; n < metrics.length; n++) {
             if (metrics[n] instanceof CountMetric) {
-              count = (CountMetric)metrics[n];
+              count = (CountMetric) metrics[n];
               break;
             }
           }
