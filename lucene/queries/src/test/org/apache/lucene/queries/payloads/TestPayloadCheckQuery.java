@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.payloads;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -152,6 +154,88 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     checkHits(query, new int[] {505});
   }
 
+  public void testInequalityPayloadChecks() throws Exception {
+    // searching for the term five with a payload of either "pos: 0" or a payload of "pos: 1"
+    SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
+    BytesRef payloadOne = new BytesRef("pos: " + 1);
+    BytesRef payloadZero = new BytesRef("pos: " + 0);
+    BytesRef payloadFour = new BytesRef("pos: " + 4);
+    BytesRef payloadFive = new BytesRef("pos: " + 5);
+    // Terms that equal five with a payload of "pos: 1"
+    SpanQuery stringEQ1 =
+        new SpanPayloadCheckQuery(
+            term1,
+            Collections.singletonList(payloadOne),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            "eq");
+    checkHits(stringEQ1, new int[] {25, 35, 45, 55, 65, 75, 85, 95});
+    // These queries return the same thing
+    SpanQuery stringLT =
+        new SpanPayloadCheckQuery(
+            term1,
+            Collections.singletonList(payloadOne),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            "lt");
+    SpanQuery stringLTE =
+        new SpanPayloadCheckQuery(
+            term1,
+            Collections.singletonList(payloadZero),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            "lte");
+    // string less than and string less than or equal
+    checkHits(
+        stringLT,
+        new int[] {
+          5, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516,
+          517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534,
+          535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552,
+          553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570,
+          571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588,
+          589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599
+        });
+    checkHits(
+        stringLTE,
+        new int[] {
+          5, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516,
+          517, 518, 519, 520, 521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534,
+          535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552,
+          553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570,
+          571, 572, 573, 574, 575, 576, 577, 578, 579, 580, 581, 582, 583, 584, 585, 586, 587, 588,
+          589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599
+        });
+    // greater than and greater than or equal tests.
+    SpanQuery stringGT =
+        new SpanPayloadCheckQuery(
+            term1,
+            Collections.singletonList(payloadFour),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            "gt");
+    SpanQuery stringGTE =
+        new SpanPayloadCheckQuery(
+            term1,
+            Collections.singletonList(payloadFive),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            "gte");
+    checkHits(
+        stringGT,
+        new int[] {
+          1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285,
+          1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475,
+          1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665,
+          1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855,
+          1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995
+        });
+    checkHits(
+        stringGTE,
+        new int[] {
+          1125, 1135, 1145, 1155, 1165, 1175, 1185, 1195, 1225, 1235, 1245, 1255, 1265, 1275, 1285,
+          1295, 1325, 1335, 1345, 1355, 1365, 1375, 1385, 1395, 1425, 1435, 1445, 1455, 1465, 1475,
+          1485, 1495, 1525, 1535, 1545, 1555, 1565, 1575, 1585, 1595, 1625, 1635, 1645, 1655, 1665,
+          1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855,
+          1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995
+        });
+  }
+
   public void testUnorderedPayloadChecks() throws Exception {
 
     SpanTermQuery term5 = new SpanTermQuery(new Term("field", "five"));
@@ -226,6 +310,46 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     assertFalse(query2.equals(query3));
     assertFalse(query2.equals(query4));
     assertFalse(query3.equals(query4));
+
+    // Create an integer and a float encoded payload
+    Integer i = 451;
+    BytesRef intPayload = new BytesRef(ByteBuffer.allocate(4).putInt(i).array());
+    Float e = 2.71828f;
+    BytesRef floatPayload = new BytesRef(ByteBuffer.allocate(4).putFloat(e).array());
+
+    SpanQuery floatLTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lt");
+    SpanQuery floatLTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lte");
+    SpanQuery floatGTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gt");
+    SpanQuery floatGTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gte");
+
+    SpanQuery intLTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, "lt");
+    SpanQuery intLTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, "lte");
+    SpanQuery intGTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, "gt");
+    SpanQuery intGTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, "gte");
+
+    assertFalse(floatLTQuery.equals(floatLTEQuery));
+    assertFalse(floatLTQuery.equals(floatGTQuery));
+    assertFalse(floatLTQuery.equals(floatGTEQuery));
+    assertFalse(floatLTQuery.equals(intLTQuery));
+    assertFalse(floatLTQuery.equals(intLTEQuery));
+    assertFalse(floatLTQuery.equals(intGTQuery));
+    assertFalse(floatLTQuery.equals(intGTEQuery));
   }
 
   public void testRewrite() throws IOException {
