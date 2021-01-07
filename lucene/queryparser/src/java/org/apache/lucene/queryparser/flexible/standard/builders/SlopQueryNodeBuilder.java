@@ -25,10 +25,9 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 
 /**
- * This builder basically reads the {@link Query} object set on the
- * {@link SlopQueryNode} child using
- * {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} and applies the slop value
- * defined in the {@link SlopQueryNode}.
+ * This builder basically reads the {@link Query} object set on the {@link SlopQueryNode} child
+ * using {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} and applies the slop value defined in the
+ * {@link SlopQueryNode}.
  */
 public class SlopQueryNodeBuilder implements StandardQueryBuilder {
 
@@ -40,8 +39,8 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
   public Query build(QueryNode queryNode) throws QueryNodeException {
     SlopQueryNode phraseSlopNode = (SlopQueryNode) queryNode;
 
-    Query query = (Query) phraseSlopNode.getChild().getTag(
-        QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
+    Query query =
+        (Query) phraseSlopNode.getChild().getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
 
     if (query instanceof PhraseQuery) {
       PhraseQuery.Builder builder = new PhraseQuery.Builder();
@@ -55,17 +54,15 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
       query = builder.build();
 
     } else {
-      MultiPhraseQuery mpq = (MultiPhraseQuery)query;
-      
+      MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+
       int slop = phraseSlopNode.getValue();
-      
+
       if (slop != mpq.getSlop()) {
         query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
       }
     }
 
     return query;
-
   }
-
 }

@@ -18,13 +18,15 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYPoint;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code x, y} points */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of {@code
+ * x, y} points
+ */
 public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
@@ -35,7 +37,7 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
   protected XYPoint[] nextShape() {
     int n = random().nextInt(4) + 1;
     XYPoint[] points = new XYPoint[n];
-    for (int i =0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       points[i] = ShapeTestUtil.nextPoint();
     }
     return points;
@@ -61,6 +63,7 @@ public class TestXYMultiPointShapeQueries extends BaseXYShapeTestCase {
 
   protected class MultiPointValidator extends Validator {
     TestXYPointShapeQueries.PointValidator POINTVALIDATOR;
+
     MultiPointValidator(Encoder encoder) {
       super(encoder);
       POINTVALIDATOR = new TestXYPointShapeQueries.PointValidator(encoder);

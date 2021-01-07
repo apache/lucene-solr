@@ -16,37 +16,27 @@
  */
 package org.apache.lucene.search.spell;
 
-
 /**
  * SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p>
- * Default sort is first by score, then by frequency.
+ *
+ * <p>Default sort is first by score, then by frequency.
  */
-public final class SuggestWord{
-  
-  /**
-   * Creates a new empty suggestion with null text.
-   */
+public final class SuggestWord {
+
+  /** Creates a new empty suggestion with null text. */
   public SuggestWord() {}
-  
-  /**
-   * the score of the word
-   */
+
+  /** the score of the word */
   public float score;
 
-  /**
-   * The freq of the word
-   */
+  /** The freq of the word */
   public int freq;
 
-  /**
-   * the suggested word
-   */
+  /** the suggested word */
   public String string;
 
   @Override
   public String toString() {
     return "SuggestWord(string=" + string + ", score=" + score + ", freq=" + freq + ")";
   }
-
 }

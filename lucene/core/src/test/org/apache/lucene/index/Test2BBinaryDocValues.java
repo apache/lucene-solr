@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -25,13 +25,12 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @SuppressCodecs({"SimpleText", "Direct"})
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
@@ -40,33 +39,35 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 @Monster("takes ~ 6 hours if the heap is 5gb")
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed.")
 public class Test2BBinaryDocValues extends LuceneTestCase {
-  
+
   // indexes IndexWriter.MAX_DOCS docs with a fixed binary field
   public void testFixedBinary() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BFixedBinary"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    
-    IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-        .setCodec(TestUtil.getDefaultCodec()));
+
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setRAMBufferSizeMB(256.0)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     byte bytes[] = new byte[4];
     BytesRef data = new BytesRef(bytes);
     BinaryDocValuesField dvField = new BinaryDocValuesField("dv", data);
     doc.add(dvField);
-    
+
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
-      bytes[0] = (byte)(i >> 24);
-      bytes[1] = (byte)(i >> 16);
-      bytes[2] = (byte)(i >> 8);
+      bytes[0] = (byte) (i >> 24);
+      bytes[1] = (byte) (i >> 16);
+      bytes[2] = (byte) (i >> 8);
       bytes[3] = (byte) i;
       w.addDocument(doc);
       if (i % 100000 == 0) {
@@ -74,22 +75,22 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         System.out.flush();
       }
     }
-    
+
     w.forceMerge(1);
     w.close();
-    
+
     System.out.println("verifying...");
     System.out.flush();
-    
+
     DirectoryReader r = DirectoryReader.open(dir);
     int expectedValue = 0;
     for (LeafReaderContext context : r.leaves()) {
       LeafReader reader = context.reader();
       BinaryDocValues dv = reader.getBinaryDocValues("dv");
       for (int i = 0; i < reader.maxDoc(); i++) {
-        bytes[0] = (byte)(expectedValue >> 24);
-        bytes[1] = (byte)(expectedValue >> 16);
-        bytes[2] = (byte)(expectedValue >> 8);
+        bytes[0] = (byte) (expectedValue >> 24);
+        bytes[1] = (byte) (expectedValue >> 16);
+        bytes[2] = (byte) (expectedValue >> 8);
         bytes[3] = (byte) expectedValue;
         assertEquals(i, dv.nextDoc());
         final BytesRef term = dv.binaryValue();
@@ -97,26 +98,28 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         expectedValue++;
       }
     }
-    
+
     r.close();
     dir.close();
   }
-  
+
   // indexes IndexWriter.MAX_DOCS docs with a variable binary field
   public void testVariableBinary() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BVariableBinary"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    
-    IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-        .setCodec(TestUtil.getDefaultCodec()));
+
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            new IndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setRAMBufferSizeMB(256.0)
+                .setMergeScheduler(new ConcurrentMergeScheduler())
+                .setMergePolicy(newLogMergePolicy(false, 10))
+                .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                .setCodec(TestUtil.getDefaultCodec()));
 
     Document doc = new Document();
     byte bytes[] = new byte[4];
@@ -124,7 +127,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
     BytesRef data = new BytesRef(bytes);
     BinaryDocValuesField dvField = new BinaryDocValuesField("dv", data);
     doc.add(dvField);
-    
+
     for (int i = 0; i < IndexWriter.MAX_DOCS; i++) {
       encoder.reset(bytes);
       encoder.writeVInt(i % 65535); // 1, 2, or 3 bytes
@@ -135,13 +138,13 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         System.out.flush();
       }
     }
-    
+
     w.forceMerge(1);
     w.close();
-    
+
     System.out.println("verifying...");
     System.out.flush();
-    
+
     DirectoryReader r = DirectoryReader.open(dir);
     int expectedValue = 0;
     ByteArrayDataInput input = new ByteArrayDataInput();
@@ -157,7 +160,7 @@ public class Test2BBinaryDocValues extends LuceneTestCase {
         expectedValue++;
       }
     }
-    
+
     r.close();
     dir.close();
   }

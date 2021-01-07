@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import org.apache.lucene.util.BytesRef;
 
-/** 
- * DataInput backed by a byte array.
- * <b>WARNING:</b> This class omits all low-level checks.
- * @lucene.experimental 
+/**
+ * DataInput backed by a byte array. <b>WARNING:</b> This class omits all low-level checks.
+ *
+ * @lucene.experimental
  */
 public final class ByteArrayDataInput extends DataInput {
 
@@ -56,7 +55,7 @@ public final class ByteArrayDataInput extends DataInput {
   public int getPosition() {
     return pos;
   }
-  
+
   public void setPosition(int pos) {
     this.pos = pos;
   }
@@ -82,22 +81,30 @@ public final class ByteArrayDataInput extends DataInput {
 
   @Override
   public short readShort() {
-    return (short) (((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF));
+    return (short) (((bytes[pos++] & 0xFF) << 8) | (bytes[pos++] & 0xFF));
   }
- 
+
   @Override
   public int readInt() {
-    return ((bytes[pos++] & 0xFF) << 24) | ((bytes[pos++] & 0xFF) << 16)
-      | ((bytes[pos++] & 0xFF) <<  8) |  (bytes[pos++] & 0xFF);
+    return ((bytes[pos++] & 0xFF) << 24)
+        | ((bytes[pos++] & 0xFF) << 16)
+        | ((bytes[pos++] & 0xFF) << 8)
+        | (bytes[pos++] & 0xFF);
   }
- 
+
   @Override
   public long readLong() {
-    final int i1 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
-      ((bytes[pos++] & 0xff) << 8) | (bytes[pos++] & 0xff);
-    final int i2 = ((bytes[pos++] & 0xff) << 24) | ((bytes[pos++] & 0xff) << 16) |
-      ((bytes[pos++] & 0xff) << 8) | (bytes[pos++] & 0xff);
-    return (((long)i1) << 32) | (i2 & 0xFFFFFFFFL);
+    final int i1 =
+        ((bytes[pos++] & 0xff) << 24)
+            | ((bytes[pos++] & 0xff) << 16)
+            | ((bytes[pos++] & 0xff) << 8)
+            | (bytes[pos++] & 0xff);
+    final int i2 =
+        ((bytes[pos++] & 0xff) << 24)
+            | ((bytes[pos++] & 0xff) << 16)
+            | ((bytes[pos++] & 0xff) << 8)
+            | (bytes[pos++] & 0xff);
+    return (((long) i1) << 32) | (i2 & 0xFFFFFFFFL);
   }
 
   @Override
@@ -120,7 +127,7 @@ public final class ByteArrayDataInput extends DataInput {
     if ((b & 0xF0) == 0) return i;
     throw new RuntimeException("Invalid vInt detected (too many bits)");
   }
- 
+
   @Override
   public long readVLong() {
     byte b = bytes[pos++];

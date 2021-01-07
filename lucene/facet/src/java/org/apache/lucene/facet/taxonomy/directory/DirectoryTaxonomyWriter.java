@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -41,15 +40,15 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.writercache.UTF8TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
+import org.apache.lucene.facet.taxonomy.writercache.UTF8TaxonomyWriterCache;
 import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -65,65 +64,62 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * {@link TaxonomyWriter} which uses a {@link Directory} to store the taxonomy
- * information on disk, and keeps an additional in-memory cache of some or all
- * categories.
- * <p>
- * In addition to the permanently-stored information in the {@link Directory},
- * efficiency dictates that we also keep an in-memory cache of <B>recently
- * seen</B> or <B>all</B> categories, so that we do not need to go back to disk
- * for every category addition to see which ordinal this category already has,
- * if any. A {@link TaxonomyWriterCache} object determines the specific caching
- * algorithm used.
- * <p>
- * This class offers some hooks for extending classes to control the
- * {@link IndexWriter} instance that is used. See {@link #openIndexWriter}.
- * 
+ * {@link TaxonomyWriter} which uses a {@link Directory} to store the taxonomy information on disk,
+ * and keeps an additional in-memory cache of some or all categories.
+ *
+ * <p>In addition to the permanently-stored information in the {@link Directory}, efficiency
+ * dictates that we also keep an in-memory cache of <B>recently seen</B> or <B>all</B> categories,
+ * so that we do not need to go back to disk for every category addition to see which ordinal this
+ * category already has, if any. A {@link TaxonomyWriterCache} object determines the specific
+ * caching algorithm used.
+ *
+ * <p>This class offers some hooks for extending classes to control the {@link IndexWriter} instance
+ * that is used. See {@link #openIndexWriter}.
+ *
  * @lucene.experimental
  */
 public class DirectoryTaxonomyWriter implements TaxonomyWriter {
-  
+
   /**
-   * Property name of user commit data that contains the index epoch. The epoch
-   * changes whenever the taxonomy is recreated (i.e. opened with
-   * {@link OpenMode#CREATE}.
-   * <p>
-   * Applications should not use this property in their commit data because it
-   * will be overridden by this taxonomy writer.
+   * Property name of user commit data that contains the index epoch. The epoch changes whenever the
+   * taxonomy is recreated (i.e. opened with {@link OpenMode#CREATE}.
+   *
+   * <p>Applications should not use this property in their commit data because it will be overridden
+   * by this taxonomy writer.
    */
   public static final String INDEX_EPOCH = "index.epoch";
-  
+
   private final Directory dir;
   private final IndexWriter indexWriter;
   private final TaxonomyWriterCache cache;
   private final AtomicInteger cacheMisses = new AtomicInteger(0);
-  
+
   // Records the taxonomy index epoch, updated on replaceTaxonomy as well.
   private long indexEpoch;
 
-  private SinglePositionTokenStream parentStream = new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
+  private SinglePositionTokenStream parentStream =
+      new SinglePositionTokenStream(Consts.PAYLOAD_PARENT);
   private Field parentStreamField;
   private Field fullPathField;
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
-  
+
   // even though lazily initialized, not volatile so that access to it is
   // faster. we keep a volatile boolean init instead.
   private ReaderManager readerManager;
   private volatile boolean initializedReaderManager = false;
   private volatile boolean shouldRefreshReaderManager;
-  
+
   /**
-   * We call the cache "complete" if we know that every category in our
-   * taxonomy is in the cache. When the cache is <B>not</B> complete, and
-   * we can't find a category in the cache, we still need to look for it
-   * in the on-disk index; Therefore when the cache is not complete, we
-   * need to open a "reader" to the taxonomy index.
-   * The cache becomes incomplete if it was never filled with the existing
-   * categories, or if a put() to the cache ever returned true (meaning
-   * that some of the cached data was cleared).
+   * We call the cache "complete" if we know that every category in our taxonomy is in the cache.
+   * When the cache is <B>not</B> complete, and we can't find a category in the cache, we still need
+   * to look for it in the on-disk index; Therefore when the cache is not complete, we need to open
+   * a "reader" to the taxonomy index. The cache becomes incomplete if it was never filled with the
+   * existing categories, or if a put() to the cache ever returned true (meaning that some of the
+   * cached data was cleared).
    */
   private volatile boolean cacheIsComplete;
+
   private volatile boolean isClosed = false;
   private volatile TaxonomyIndexArrays taxoArrays;
   private volatile int nextID;
@@ -133,44 +129,36 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
     return infos.getUserData();
   }
-  
+
   /**
    * Construct a Taxonomy writer.
-   * 
-   * @param directory
-   *    The {@link Directory} in which to store the taxonomy. Note that
-   *    the taxonomy is written directly to that directory (not to a
-   *    subdirectory of it).
-   * @param openMode
-   *    Specifies how to open a taxonomy for writing: <code>APPEND</code>
-   *    means open an existing index for append (failing if the index does
-   *    not yet exist). <code>CREATE</code> means create a new index (first
-   *    deleting the old one if it already existed).
-   *    <code>APPEND_OR_CREATE</code> appends to an existing index if there
-   *    is one, otherwise it creates a new index.
-   * @param cache
-   *    A {@link TaxonomyWriterCache} implementation which determines
-   *    the in-memory caching policy. See for example
-   *    {@link LruTaxonomyWriterCache} and {@link UTF8TaxonomyWriterCache}.
-   *    If null or missing, {@link #defaultTaxonomyWriterCache()} is used.
-   * @throws CorruptIndexException
-   *     if the taxonomy is corrupted.
-   * @throws LockObtainFailedException
-   *     if the taxonomy is locked by another writer.
-   * @throws IOException
-   *     if another error occurred.
+   *
+   * @param directory The {@link Directory} in which to store the taxonomy. Note that the taxonomy
+   *     is written directly to that directory (not to a subdirectory of it).
+   * @param openMode Specifies how to open a taxonomy for writing: <code>APPEND</code> means open an
+   *     existing index for append (failing if the index does not yet exist). <code>CREATE</code>
+   *     means create a new index (first deleting the old one if it already existed). <code>
+   *     APPEND_OR_CREATE</code> appends to an existing index if there is one, otherwise it creates
+   *     a new index.
+   * @param cache A {@link TaxonomyWriterCache} implementation which determines the in-memory
+   *     caching policy. See for example {@link LruTaxonomyWriterCache} and {@link
+   *     UTF8TaxonomyWriterCache}. If null or missing, {@link #defaultTaxonomyWriterCache()} is
+   *     used.
+   * @throws CorruptIndexException if the taxonomy is corrupted.
+   * @throws LockObtainFailedException if the taxonomy is locked by another writer.
+   * @throws IOException if another error occurred.
    */
-  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode,
-      TaxonomyWriterCache cache) throws IOException {
+  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode, TaxonomyWriterCache cache)
+      throws IOException {
 
     dir = directory;
     IndexWriterConfig config = createIndexWriterConfig(openMode);
     indexWriter = openIndexWriter(dir, config);
 
-    // verify (to some extent) that merge policy in effect would preserve category docids 
-    assert !(indexWriter.getConfig().getMergePolicy() instanceof TieredMergePolicy) : 
-      "for preserving category docids, merging none-adjacent segments is not allowed";
-    
+    // verify (to some extent) that merge policy in effect would preserve category docids
+    assert !(indexWriter.getConfig().getMergePolicy() instanceof TieredMergePolicy)
+        : "for preserving category docids, merging none-adjacent segments is not allowed";
+
     // after we opened the writer, and the index is locked, it's safe to check
     // the commit data and read the index epoch
     openMode = config.getOpenMode();
@@ -186,11 +174,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // of a better value.
       indexEpoch = epochStr == null ? 1 : Long.parseLong(epochStr, 16);
     }
-    
+
     if (openMode == OpenMode.CREATE) {
       ++indexEpoch;
     }
-    
+
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setOmitNorms(true);
     parentStreamField = new Field(Consts.FIELD_PAYLOADS, parentStream, ft);
@@ -226,20 +214,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * Open internal index writer, which contains the taxonomy data.
-   * <p>
-   * Extensions may provide their own {@link IndexWriter} implementation or instance. 
-   * <br><b>NOTE:</b> the instance this method returns will be closed upon calling
-   * to {@link #close()}.
-   * <br><b>NOTE:</b> the merge policy in effect must not merge none adjacent segments. See
-   * comment in {@link #createIndexWriterConfig(IndexWriterConfig.OpenMode)} for the logic behind this.
-   *  
+   *
+   * <p>Extensions may provide their own {@link IndexWriter} implementation or instance. <br>
+   * <b>NOTE:</b> the instance this method returns will be closed upon calling to {@link #close()}.
+   * <br>
+   * <b>NOTE:</b> the merge policy in effect must not merge none adjacent segments. See comment in
+   * {@link #createIndexWriterConfig(IndexWriterConfig.OpenMode)} for the logic behind this.
+   *
    * @see #createIndexWriterConfig(IndexWriterConfig.OpenMode)
-   * 
-   * @param directory
-   *          the {@link Directory} on top of which an {@link IndexWriter}
-   *          should be opened.
-   * @param config
-   *          configuration for the internal index writer.
+   * @param directory the {@link Directory} on top of which an {@link IndexWriter} should be opened.
+   * @param config configuration for the internal index writer.
    */
   protected IndexWriter openIndexWriter(Directory directory, IndexWriterConfig config)
       throws IOException {
@@ -248,16 +232,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
   /**
    * Create the {@link IndexWriterConfig} that would be used for opening the internal index writer.
-   * <br>Extensions can configure the {@link IndexWriter} as they see fit,
-   * including setting a {@link org.apache.lucene.index.MergeScheduler merge-scheduler}, or
-   * {@link org.apache.lucene.index.IndexDeletionPolicy deletion-policy}, different RAM size
-   * etc.<br>
-   * <br><b>NOTE:</b> internal docids of the configured index must not be altered.
-   * For that, categories are never deleted from the taxonomy index.
-   * In addition, merge policy in effect must not merge none adjacent segments.
-   * 
+   * <br>
+   * Extensions can configure the {@link IndexWriter} as they see fit, including setting a {@link
+   * org.apache.lucene.index.MergeScheduler merge-scheduler}, or {@link
+   * org.apache.lucene.index.IndexDeletionPolicy deletion-policy}, different RAM size etc.<br>
+   * <br>
+   * <b>NOTE:</b> internal docids of the configured index must not be altered. For that, categories
+   * are never deleted from the taxonomy index. In addition, merge policy in effect must not merge
+   * none adjacent segments.
+   *
    * @see #openIndexWriter(Directory, IndexWriterConfig)
-   * 
    * @param openMode see {@link OpenMode}
    */
   protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
@@ -266,10 +250,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
-    return new IndexWriterConfig(null).setOpenMode(openMode).setMergePolicy(
-        new LogByteSizeMergePolicy());
+    return new IndexWriterConfig(null)
+        .setOpenMode(openMode)
+        .setMergePolicy(new LogByteSizeMergePolicy());
   }
-  
+
   /** Opens a {@link ReaderManager} from the internal {@link IndexWriter}. */
   private void initReaderManager() throws IOException {
     if (!initializedReaderManager) {
@@ -286,20 +271,19 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Creates a new instance with a default cache as defined by
-   * {@link #defaultTaxonomyWriterCache()}.
+   * Creates a new instance with a default cache as defined by {@link
+   * #defaultTaxonomyWriterCache()}.
    */
-  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode)
-  throws IOException {
+  public DirectoryTaxonomyWriter(Directory directory, OpenMode openMode) throws IOException {
     this(directory, openMode, defaultTaxonomyWriterCache());
   }
 
   /**
-   * Defines the default {@link TaxonomyWriterCache} to use in constructors
-   * which do not specify one.
-   * <P>  
-   * The current default is {@link UTF8TaxonomyWriterCache}, i.e.,
-   * the entire taxonomy is cached in memory while building it.
+   * Defines the default {@link TaxonomyWriterCache} to use in constructors which do not specify
+   * one.
+   *
+   * <p>The current default is {@link UTF8TaxonomyWriterCache}, i.e., the entire taxonomy is cached
+   * in memory while building it.
    */
   public static TaxonomyWriterCache defaultTaxonomyWriterCache() {
     return new UTF8TaxonomyWriterCache();
@@ -311,9 +295,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Frees used resources as well as closes the underlying {@link IndexWriter},
-   * which commits whatever changes made to it to the underlying
-   * {@link Directory}.
+   * Frees used resources as well as closes the underlying {@link IndexWriter}, which commits
+   * whatever changes made to it to the underlying {@link Directory}.
    */
   @Override
   public synchronized void close() throws IOException {
@@ -323,18 +306,18 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       doClose();
     }
   }
-  
+
   private void doClose() throws IOException {
     isClosed = true;
     closeResources();
   }
 
   /**
-   * A hook for extending classes to close additional resources that were used.
-   * The default implementation closes the {@link IndexReader} as well as the
-   * {@link TaxonomyWriterCache} instances that were used. <br>
-   * <b>NOTE:</b> if you override this method, you should include a
-   * <code>super.closeResources()</code> call in your implementation.
+   * A hook for extending classes to close additional resources that were used. The default
+   * implementation closes the {@link IndexReader} as well as the {@link TaxonomyWriterCache}
+   * instances that were used. <br>
+   * <b>NOTE:</b> if you override this method, you should include a <code>super.closeResources()
+   * </code> call in your implementation.
    */
   protected synchronized void closeResources() throws IOException {
     if (initializedReaderManager) {
@@ -348,9 +331,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Look up the given category in the cache and/or the on-disk storage,
-   * returning the category's ordinal, or a negative number in case the
-   * category does not yet exist in the taxonomy.
+   * Look up the given category in the cache and/or the on-disk storage, returning the category's
+   * ordinal, or a negative number in case the category does not yet exist in the taxonomy.
    */
   protected synchronized int findCategory(FacetLabel categoryPath) throws IOException {
     // If we can find the category in the cache, or we know the cache is
@@ -378,14 +360,15 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     // if we get here, it means the category is not in the cache, and it is not
     // complete, and therefore we must look for the category on disk.
-    
+
     // We need to get an answer from the on-disk index.
     initReaderManager();
 
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
-      final BytesRef catTerm = new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
+      final BytesRef catTerm =
+          new BytesRef(FacetsConfig.pathToString(categoryPath.components, categoryPath.length));
       PostingsEnum docs = null; // reuse
       for (LeafReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
@@ -435,13 +418,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Add a new category into the index (and the cache), and return its new
-   * ordinal.
-   * <p>
-   * Actually, we might also need to add some of the category's ancestors
-   * before we can add the category itself (while keeping the invariant that a
-   * parent is always added to the taxonomy before its child). We do this by
-   * recursion.
+   * Add a new category into the index (and the cache), and return its new ordinal.
+   *
+   * <p>Actually, we might also need to add some of the category's ancestors before we can add the
+   * category itself (while keeping the invariant that a parent is always added to the taxonomy
+   * before its child). We do this by recursion.
    */
   private int internalAddCategory(FacetLabel cp) throws IOException {
     // Find our parent's ordinal (recursively adding the parent category
@@ -466,18 +447,17 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Verifies that this instance wasn't closed, or throws
-   * {@link AlreadyClosedException} if it is.
+   * Verifies that this instance wasn't closed, or throws {@link AlreadyClosedException} if it is.
    */
   protected final void ensureOpen() {
     if (isClosed) {
       throw new AlreadyClosedException("The taxonomy writer has already been closed");
     }
   }
-  
+
   /**
-   * Note that the methods calling addCategoryDocument() are synchornized, so
-   * this method is effectively synchronized as well.
+   * Note that the methods calling addCategoryDocument() are synchornized, so this method is
+   * effectively synchronized as well.
    */
   private int addCategoryDocument(FacetLabel categoryPath, int parent) throws IOException {
     // Before Lucene 2.9, position increments >=0 were supported, so we
@@ -488,7 +468,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // backward-compatible with existing indexes, we can't just fix what
     // we write here (e.g., to write parent+2), and need to do a workaround
     // in the reader (which knows that anyway only category 0 has a parent
-    // -1).    
+    // -1).
     parentStream.set(Math.max(parent + 1, 1));
     Document d = new Document();
     d.add(parentStreamField);
@@ -506,7 +486,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     // added a category document, mark that ReaderManager is not up-to-date
     shouldRefreshReaderManager = true;
-    
+
     // also add to the parent array
     taxoArrays = getTaxoArrays().add(id, parent);
 
@@ -532,16 +512,15 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
 
     /**
-     * Set the value we want to keep, as the position increment.
-     * Note that when TermPositions.nextPosition() is later used to
-     * retrieve this value, val-1 will be returned, not val.
-     * <P>
-     * IMPORTANT NOTE: Before Lucene 2.9, val&gt;=0 were safe (for val==0,
-     * the retrieved position would be -1). But starting with Lucene 2.9,
-     * this unfortunately changed, and only val&gt;0 are safe. val=0 can
-     * still be used, but don't count on the value you retrieve later
-     * (it could be 0 or -1, depending on circumstances or versions).
-     * This change is described in Lucene's JIRA: LUCENE-1542. 
+     * Set the value we want to keep, as the position increment. Note that when
+     * TermPositions.nextPosition() is later used to retrieve this value, val-1 will be returned,
+     * not val.
+     *
+     * <p>IMPORTANT NOTE: Before Lucene 2.9, val&gt;=0 were safe (for val==0, the retrieved position
+     * would be -1). But starting with Lucene 2.9, this unfortunately changed, and only val&gt;0 are
+     * safe. val=0 can still be used, but don't count on the value you retrieve later (it could be 0
+     * or -1, depending on circumstances or versions). This change is described in Lucene's JIRA:
+     * LUCENE-1542.
      */
     public void set(int val) {
       this.val = val;
@@ -567,7 +546,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       // If cache.put() returned true, it means the cache was limited in
       // size, became full, and parts of it had to be evicted. It is
       // possible that a relatively-new category that isn't yet visible
-      // to our 'reader' was evicted, and therefore we must now refresh 
+      // to our 'reader' was evicted, and therefore we must now refresh
       // the reader.
       refreshReaderManager();
       cacheIsComplete = false;
@@ -577,7 +556,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private synchronized void refreshReaderManager() throws IOException {
     // this method is synchronized since it cannot happen concurrently with
     // addCategoryDocument -- when this method returns, we must know that the
-    // reader manager's state is current. also, it sets shouldRefresh to false, 
+    // reader manager's state is current. also, it sets shouldRefresh to false,
     // and this cannot overlap with addCatDoc too.
     // NOTE: since this method is sync'ed, it can call maybeRefresh, instead of
     // maybeRefreshBlocking. If ever this is changed, make sure to change the
@@ -587,20 +566,20 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       shouldRefreshReaderManager = false;
     }
   }
-  
+
   @Override
   public synchronized long commit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
 
-    Map<String,String> data = new HashMap<>();
-    Iterable<Map.Entry<String,String>> iter = indexWriter.getLiveCommitData();
+    Map<String, String> data = new HashMap<>();
+    Iterable<Map.Entry<String, String>> iter = indexWriter.getLiveCommitData();
     if (iter != null) {
-      for(Map.Entry<String,String> ent : iter) {
+      for (Map.Entry<String, String> ent : iter) {
         data.put(ent.getKey(), ent.getValue());
       }
     }
-    
+
     String epochStr = data.get(INDEX_EPOCH);
     if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
       indexWriter.setLiveCommitData(combinedCommitData(indexWriter.getLiveCommitData()));
@@ -609,39 +588,39 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /** Combine original user data with the taxonomy epoch. */
-  private Iterable<Map.Entry<String,String>> combinedCommitData(Iterable<Map.Entry<String,String>> commitData) {
-    Map<String,String> m = new HashMap<>();
+  private Iterable<Map.Entry<String, String>> combinedCommitData(
+      Iterable<Map.Entry<String, String>> commitData) {
+    Map<String, String> m = new HashMap<>();
     if (commitData != null) {
-      for(Map.Entry<String,String> ent : commitData) {
+      for (Map.Entry<String, String> ent : commitData) {
         m.put(ent.getKey(), ent.getValue());
       }
     }
     m.put(INDEX_EPOCH, Long.toString(indexEpoch, 16));
     return m.entrySet();
   }
-  
+
   @Override
-  public void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData) {
+  public void setLiveCommitData(Iterable<Map.Entry<String, String>> commitUserData) {
     indexWriter.setLiveCommitData(combinedCommitData(commitUserData));
   }
-  
+
   @Override
-  public Iterable<Map.Entry<String,String>> getLiveCommitData() {
+  public Iterable<Map.Entry<String, String>> getLiveCommitData() {
     return combinedCommitData(indexWriter.getLiveCommitData());
   }
-  
+
   /**
-   * prepare most of the work needed for a two-phase commit.
-   * See {@link IndexWriter#prepareCommit}.
+   * prepare most of the work needed for a two-phase commit. See {@link IndexWriter#prepareCommit}.
    */
   @Override
   public synchronized long prepareCommit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
-    Map<String,String> data = new HashMap<>();
-    Iterable<Map.Entry<String,String>> iter = indexWriter.getLiveCommitData();
+    Map<String, String> data = new HashMap<>();
+    Iterable<Map.Entry<String, String>> iter = indexWriter.getLiveCommitData();
     if (iter != null) {
-      for(Map.Entry<String,String> ent : iter) {
+      for (Map.Entry<String, String> ent : iter) {
         data.put(ent.getKey(), ent.getValue());
       }
     }
@@ -651,35 +630,34 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
     return indexWriter.prepareCommit();
   }
-  
+
   @Override
   public int getSize() {
     ensureOpen();
     return nextID;
   }
-  
+
   /**
-   * Set the number of cache misses before an attempt is made to read the entire
-   * taxonomy into the in-memory cache.
-   * <p>
-   * This taxonomy writer holds an in-memory cache of recently seen categories
-   * to speed up operation. On each cache-miss, the on-disk index needs to be
-   * consulted. When an existing taxonomy is opened, a lot of slow disk reads
-   * like that are needed until the cache is filled, so it is more efficient to
-   * read the entire taxonomy into memory at once. We do this complete read
+   * Set the number of cache misses before an attempt is made to read the entire taxonomy into the
+   * in-memory cache.
+   *
+   * <p>This taxonomy writer holds an in-memory cache of recently seen categories to speed up
+   * operation. On each cache-miss, the on-disk index needs to be consulted. When an existing
+   * taxonomy is opened, a lot of slow disk reads like that are needed until the cache is filled, so
+   * it is more efficient to read the entire taxonomy into memory at once. We do this complete read
    * after a certain number (defined by this method) of cache misses.
-   * <p>
-   * If the number is set to {@code 0}, the entire taxonomy is read into the
-   * cache on first use, without fetching individual categories first.
-   * <p>
-   * NOTE: it is assumed that this method is called immediately after the
-   * taxonomy writer has been created.
+   *
+   * <p>If the number is set to {@code 0}, the entire taxonomy is read into the cache on first use,
+   * without fetching individual categories first.
+   *
+   * <p>NOTE: it is assumed that this method is called immediately after the taxonomy writer has
+   * been created.
    */
   public void setCacheMissesUntilFill(int i) {
     ensureOpen();
     cacheMissesUntilFill = i;
   }
-  
+
   // we need to guarantee that if several threads call this concurrently, only
   // one executes it, and after it returns, the cache is updated and is either
   // complete or not.
@@ -687,13 +665,13 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (cacheMisses.get() < cacheMissesUntilFill) {
       return;
     }
-    
+
     if (!shouldFillCache) {
       // we already filled the cache once, there's no need to re-fill it
       return;
     }
     shouldFillCache = false;
-    
+
     initReaderManager();
 
     boolean aborted = false;
@@ -718,7 +696,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               boolean res = cache.put(cp, postingsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
             } else {
-              // the cache is full and the next put() will evict entries from it, therefore abort the iteration.
+              // the cache is full and the next put() will evict entries from it, therefore abort
+              // the iteration.
               aborted = true;
               break;
             }
@@ -765,7 +744,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
     return taxoArrays;
   }
-  
+
   @Override
   public int getParent(int ordinal) throws IOException {
     ensureOpen();
@@ -773,17 +752,17 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // for the parent of a nonexistant category - even if the parent array
     // was allocated bigger than it really needs to be.
     Objects.checkIndex(ordinal, nextID);
-    
+
     int[] parents = getTaxoArrays().parents();
-    assert ordinal < parents.length : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";
+    assert ordinal < parents.length
+        : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";
     return parents[ordinal];
   }
-  
+
   /**
-   * Takes the categories from the given taxonomy directory, and adds the
-   * missing ones to this taxonomy. Additionally, it fills the given
-   * {@link OrdinalMap} with a mapping from the original ordinal to the new
-   * ordinal.
+   * Takes the categories from the given taxonomy directory, and adds the missing ones to this
+   * taxonomy. Additionally, it fills the given {@link OrdinalMap} with a mapping from the original
+   * ordinal to the new ordinal.
    */
   public void addTaxonomy(Directory taxoDir, OrdinalMap map) throws IOException {
     ensureOpen();
@@ -814,28 +793,23 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Mapping from old ordinal to new ordinals, used when merging indexes 
-   * with separate taxonomies.
-   * <p> 
-   * addToTaxonomies() merges one or more taxonomies into the given taxonomy
-   * (this). An OrdinalMap is filled for each of the added taxonomies,
-   * containing the new ordinal (in the merged taxonomy) of each of the
-   * categories in the old taxonomy.
-   * <P>  
-   * There exist two implementations of OrdinalMap: MemoryOrdinalMap and
-   * DiskOrdinalMap. As their names suggest, the former keeps the map in
-   * memory and the latter in a temporary disk file. Because these maps will
-   * later be needed one by one (to remap the counting lists), not all at the
-   * same time, it is recommended to put the first taxonomy's map in memory,
-   * and all the rest on disk (later to be automatically read into memory one
-   * by one, when needed).
+   * Mapping from old ordinal to new ordinals, used when merging indexes with separate taxonomies.
+   *
+   * <p>addToTaxonomies() merges one or more taxonomies into the given taxonomy (this). An
+   * OrdinalMap is filled for each of the added taxonomies, containing the new ordinal (in the
+   * merged taxonomy) of each of the categories in the old taxonomy.
+   *
+   * <p>There exist two implementations of OrdinalMap: MemoryOrdinalMap and DiskOrdinalMap. As their
+   * names suggest, the former keeps the map in memory and the latter in a temporary disk file.
+   * Because these maps will later be needed one by one (to remap the counting lists), not all at
+   * the same time, it is recommended to put the first taxonomy's map in memory, and all the rest on
+   * disk (later to be automatically read into memory one by one, when needed).
    */
   public static interface OrdinalMap {
     /**
-     * Set the size of the map. This MUST be called before addMapping().
-     * It is assumed (but not verified) that addMapping() will then be
-     * called exactly 'size' times, with different origOrdinals between 0
-     * and size-1.  
+     * Set the size of the map. This MUST be called before addMapping(). It is assumed (but not
+     * verified) that addMapping() will then be called exactly 'size' times, with different
+     * origOrdinals between 0 and size-1.
      */
     public void setSize(int size) throws IOException;
 
@@ -843,51 +817,50 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     public void addMapping(int origOrdinal, int newOrdinal) throws IOException;
 
     /**
-     * Call addDone() to say that all addMapping() have been done.
-     * In some implementations this might free some resources. 
+     * Call addDone() to say that all addMapping() have been done. In some implementations this
+     * might free some resources.
      */
     public void addDone() throws IOException;
 
     /**
-     * Return the map from the taxonomy's original (consecutive) ordinals
-     * to the new taxonomy's ordinals. If the map has to be read from disk
-     * and ordered appropriately, it is done when getMap() is called.
-     * getMap() should only be called once, and only when the map is actually
-     * needed. Calling it will also free all resources that the map might
-     * be holding (such as temporary disk space), other than the returned int[].
+     * Return the map from the taxonomy's original (consecutive) ordinals to the new taxonomy's
+     * ordinals. If the map has to be read from disk and ordered appropriately, it is done when
+     * getMap() is called. getMap() should only be called once, and only when the map is actually
+     * needed. Calling it will also free all resources that the map might be holding (such as
+     * temporary disk space), other than the returned int[].
      */
     public int[] getMap() throws IOException;
   }
 
-  /**
-   * {@link OrdinalMap} maintained in memory
-   */
+  /** {@link OrdinalMap} maintained in memory */
   public static final class MemoryOrdinalMap implements OrdinalMap {
     int[] map;
 
     /** Sole constructor. */
-    public MemoryOrdinalMap() {
-    }
+    public MemoryOrdinalMap() {}
 
     @Override
     public void setSize(int taxonomySize) {
       map = new int[taxonomySize];
     }
+
     @Override
     public void addMapping(int origOrdinal, int newOrdinal) {
       map[origOrdinal] = newOrdinal;
     }
+
     @Override
-    public void addDone() { /* nothing to do */ }
+    public void addDone() {
+      /* nothing to do */
+    }
+
     @Override
     public int[] getMap() {
       return map;
     }
   }
 
-  /**
-   * {@link OrdinalMap} maintained on file system
-   */
+  /** {@link OrdinalMap} maintained on file system */
   public static final class DiskOrdinalMap implements OrdinalMap {
     Path tmpfile;
     DataOutputStream out;
@@ -895,8 +868,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     /** Sole constructor. */
     public DiskOrdinalMap(Path tmpfile) throws IOException {
       this.tmpfile = tmpfile;
-      out = new DataOutputStream(new BufferedOutputStream(
-          Files.newOutputStream(tmpfile)));
+      out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(tmpfile)));
     }
 
     @Override
@@ -912,7 +884,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     @Override
     public void addDone() throws IOException {
-      if (out!=null) {
+      if (out != null) {
         out.close();
         out = null;
       }
@@ -922,17 +894,17 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
 
     @Override
     public int[] getMap() throws IOException {
-      if (map!=null) {
+      if (map != null) {
         return map;
       }
       addDone(); // in case this wasn't previously called
-      try (DataInputStream in = new DataInputStream(new BufferedInputStream(
-          Files.newInputStream(tmpfile)))) {
+      try (DataInputStream in =
+          new DataInputStream(new BufferedInputStream(Files.newInputStream(tmpfile)))) {
         map = new int[in.readInt()];
         // NOTE: The current code assumes here that the map is complete,
         // i.e., every ordinal gets one and exactly one value. Otherwise,
         // we may run into an EOF here, or vice versa, not read everything.
-        for (int i=0; i<map.length; i++) {
+        for (int i = 0; i < map.length; i++) {
           int origordinal = in.readInt();
           int newordinal = in.readInt();
           map[origordinal] = newordinal;
@@ -947,9 +919,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
 
   /**
-   * Rollback changes to the taxonomy writer and closes the instance. Following
-   * this method the instance becomes unusable (calling any of its API methods
-   * will yield an {@link AlreadyClosedException}).
+   * Rollback changes to the taxonomy writer and closes the instance. Following this method the
+   * instance becomes unusable (calling any of its API methods will yield an {@link
+   * AlreadyClosedException}).
    */
   @Override
   public synchronized void rollback() throws IOException {
@@ -957,12 +929,11 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     indexWriter.rollback();
     doClose();
   }
-  
+
   /**
-   * Replaces the current taxonomy with the given one. This method should
-   * generally be called in conjunction with
-   * {@link IndexWriter#addIndexes(Directory...)} to replace both the taxonomy
-   * as well as the search index content.
+   * Replaces the current taxonomy with the given one. This method should generally be called in
+   * conjunction with {@link IndexWriter#addIndexes(Directory...)} to replace both the taxonomy as
+   * well as the search index content.
    */
   public synchronized void replaceTaxonomy(Directory taxoDir) throws IOException {
     // replace the taxonomy by doing IW optimized operations
@@ -973,14 +944,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     refreshReaderManager();
     nextID = indexWriter.getDocStats().maxDoc;
     taxoArrays = null; // must nullify so that it's re-computed next time it's needed
-    
+
     // need to clear the cache, so that addCategory won't accidentally return
     // old categories that are in the cache.
     cache.clear();
     cacheIsComplete = false;
     shouldFillCache = true;
     cacheMisses.set(0);
-    
+
     // update indexEpoch as a taxonomy replace is just like it has be recreated
     ++indexEpoch;
   }
@@ -989,23 +960,23 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public Directory getDirectory() {
     return dir;
   }
-  
+
   /**
    * Used by {@link DirectoryTaxonomyReader} to support NRT.
-   * <p>
-   * <b>NOTE:</b> you should not use the obtained {@link IndexWriter} in any
-   * way, other than opening an IndexReader on it, or otherwise, the taxonomy
-   * index may become corrupt!
+   *
+   * <p><b>NOTE:</b> you should not use the obtained {@link IndexWriter} in any way, other than
+   * opening an IndexReader on it, or otherwise, the taxonomy index may become corrupt!
    */
   final IndexWriter getInternalIndexWriter() {
     return indexWriter;
   }
-  
-  /** Expert: returns current index epoch, if this is a
-   * near-real-time reader.  Used by {@link
-   * DirectoryTaxonomyReader} to support NRT. 
+
+  /**
+   * Expert: returns current index epoch, if this is a near-real-time reader. Used by {@link
+   * DirectoryTaxonomyReader} to support NRT.
    *
-   * @lucene.internal */
+   * @lucene.internal
+   */
   public final long getTaxonomyEpoch() {
     return indexEpoch;
   }

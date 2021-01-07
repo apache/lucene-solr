@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -158,33 +157,34 @@ public class SearchImplTest extends LuceneTestCase {
   @Test
   public void testGetSortableFieldNames() {
     SearchImpl search = new SearchImpl(reader);
-    assertArrayEquals(new String[]{"f2", "f3", "f4", "f5", "f6", "f7"},
+    assertArrayEquals(
+        new String[] {"f2", "f3", "f4", "f5", "f6", "f7"},
         search.getSortableFieldNames().toArray());
   }
 
   @Test
   public void testGetSearchableFieldNames() {
     SearchImpl search = new SearchImpl(reader);
-    assertArrayEquals(new String[]{"f1"},
-        search.getSearchableFieldNames().toArray());
+    assertArrayEquals(new String[] {"f1"}, search.getSearchableFieldNames().toArray());
   }
 
   @Test
   public void testGetRangeSearchableFieldNames() {
     SearchImpl search = new SearchImpl(reader);
-    assertArrayEquals(new String[]{"f8", "f9", "f10", "f11"}, search.getRangeSearchableFieldNames().toArray());
+    assertArrayEquals(
+        new String[] {"f8", "f9", "f10", "f11"}, search.getRangeSearchableFieldNames().toArray());
   }
 
   @Test
   public void testParseClassic() {
     SearchImpl search = new SearchImpl(reader);
-    QueryParserConfig config = new QueryParserConfig.Builder()
-        .allowLeadingWildcard(true)
-        .defaultOperator(QueryParserConfig.Operator.AND)
-        .fuzzyMinSim(1.0f)
-        .build();
-    Query q = search.parseQuery("app~ f2:*ie", "f1", new StandardAnalyzer(),
-        config, false);
+    QueryParserConfig config =
+        new QueryParserConfig.Builder()
+            .allowLeadingWildcard(true)
+            .defaultOperator(QueryParserConfig.Operator.AND)
+            .fuzzyMinSim(1.0f)
+            .build();
+    Query q = search.parseQuery("app~ f2:*ie", "f1", new StandardAnalyzer(), config, false);
     assertEquals("+f1:app~1 +f2:*ie", q.toString());
   }
 
@@ -194,12 +194,9 @@ public class SearchImplTest extends LuceneTestCase {
     Map<String, Class<? extends Number>> types = new HashMap<>();
     types.put("f8", Integer.class);
 
-    QueryParserConfig config = new QueryParserConfig.Builder()
-        .useClassicParser(false)
-        .typeMap(types)
-        .build();
-    Query q = search.parseQuery("f8:[10 TO 20]", "f1", new StandardAnalyzer(),
-        config, false);
+    QueryParserConfig config =
+        new QueryParserConfig.Builder().useClassicParser(false).typeMap(types).build();
+    Query q = search.parseQuery("f8:[10 TO 20]", "f1", new StandardAnalyzer(), config, false);
     assertEquals("f8:[10 TO 20]", q.toString());
     assertTrue(q instanceof PointRangeQuery);
   }
@@ -211,45 +208,49 @@ public class SearchImplTest extends LuceneTestCase {
     assertTrue(search.guessSortTypes("f1").isEmpty());
 
     assertArrayEquals(
-        new SortField[]{
-            new SortField("f2", SortField.Type.STRING),
-            new SortField("f2", SortField.Type.STRING_VAL)},
+        new SortField[] {
+          new SortField("f2", SortField.Type.STRING), new SortField("f2", SortField.Type.STRING_VAL)
+        },
         search.guessSortTypes("f2").toArray());
 
     assertArrayEquals(
-        new SortField[]{new SortedSetSortField("f3", false)},
+        new SortField[] {new SortedSetSortField("f3", false)},
         search.guessSortTypes("f3").toArray());
 
     assertArrayEquals(
-        new SortField[]{
-            new SortField("f4", SortField.Type.INT),
-            new SortField("f4", SortField.Type.LONG),
-            new SortField("f4", SortField.Type.FLOAT),
-            new SortField("f4", SortField.Type.DOUBLE)},
+        new SortField[] {
+          new SortField("f4", SortField.Type.INT),
+          new SortField("f4", SortField.Type.LONG),
+          new SortField("f4", SortField.Type.FLOAT),
+          new SortField("f4", SortField.Type.DOUBLE)
+        },
         search.guessSortTypes("f4").toArray());
 
     assertArrayEquals(
-        new SortField[]{
-            new SortField("f5", SortField.Type.INT),
-            new SortField("f5", SortField.Type.LONG),
-            new SortField("f5", SortField.Type.FLOAT),
-            new SortField("f5", SortField.Type.DOUBLE)},
+        new SortField[] {
+          new SortField("f5", SortField.Type.INT),
+          new SortField("f5", SortField.Type.LONG),
+          new SortField("f5", SortField.Type.FLOAT),
+          new SortField("f5", SortField.Type.DOUBLE)
+        },
         search.guessSortTypes("f5").toArray());
 
     assertArrayEquals(
-        new SortField[]{
-            new SortField("f6", SortField.Type.INT),
-            new SortField("f6", SortField.Type.LONG),
-            new SortField("f6", SortField.Type.FLOAT),
-            new SortField("f6", SortField.Type.DOUBLE)},
+        new SortField[] {
+          new SortField("f6", SortField.Type.INT),
+          new SortField("f6", SortField.Type.LONG),
+          new SortField("f6", SortField.Type.FLOAT),
+          new SortField("f6", SortField.Type.DOUBLE)
+        },
         search.guessSortTypes("f6").toArray());
 
     assertArrayEquals(
-        new SortField[]{
-            new SortedNumericSortField("f7", SortField.Type.INT),
-            new SortedNumericSortField("f7", SortField.Type.LONG),
-            new SortedNumericSortField("f7", SortField.Type.FLOAT),
-            new SortedNumericSortField("f7", SortField.Type.DOUBLE)},
+        new SortField[] {
+          new SortedNumericSortField("f7", SortField.Type.INT),
+          new SortedNumericSortField("f7", SortField.Type.LONG),
+          new SortedNumericSortField("f7", SortField.Type.FLOAT),
+          new SortedNumericSortField("f7", SortField.Type.DOUBLE)
+        },
         search.guessSortTypes("f7").toArray());
   }
 
@@ -265,26 +266,31 @@ public class SearchImplTest extends LuceneTestCase {
 
     assertFalse(search.getSortType("f1", "STRING", false).isPresent());
 
-    assertEquals(new SortField("f2", SortField.Type.STRING, false),
+    assertEquals(
+        new SortField("f2", SortField.Type.STRING, false),
         search.getSortType("f2", "STRING", false).get());
     assertFalse(search.getSortType("f2", "INT", false).isPresent());
 
-    assertEquals(new SortedSetSortField("f3", false),
-        search.getSortType("f3", "CUSTOM", false).get());
+    assertEquals(
+        new SortedSetSortField("f3", false), search.getSortType("f3", "CUSTOM", false).get());
 
-    assertEquals(new SortField("f4", SortField.Type.LONG, false),
+    assertEquals(
+        new SortField("f4", SortField.Type.LONG, false),
         search.getSortType("f4", "LONG", false).get());
     assertFalse(search.getSortType("f4", "STRING", false).isPresent());
 
-    assertEquals(new SortField("f5", SortField.Type.FLOAT, false),
+    assertEquals(
+        new SortField("f5", SortField.Type.FLOAT, false),
         search.getSortType("f5", "FLOAT", false).get());
     assertFalse(search.getSortType("f5", "STRING", false).isPresent());
 
-    assertEquals(new SortField("f6", SortField.Type.DOUBLE, false),
+    assertEquals(
+        new SortField("f6", SortField.Type.DOUBLE, false),
         search.getSortType("f6", "DOUBLE", false).get());
     assertFalse(search.getSortType("f6", "STRING", false).isPresent());
 
-    assertEquals(new SortedNumericSortField("f7", SortField.Type.LONG, false),
+    assertEquals(
+        new SortedNumericSortField("f7", SortField.Type.LONG, false),
         search.getSortType("f7", "LONG", false).get());
     assertFalse(search.getSortType("f7", "STRING", false).isPresent());
   }
@@ -300,7 +306,8 @@ public class SearchImplTest extends LuceneTestCase {
   public void testSearch() throws Exception {
     SearchImpl search = new SearchImpl(reader);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("apple");
-    SearchResults res = search.search(query, new SimilarityConfig.Builder().build(), null, 10, true);
+    SearchResults res =
+        search.search(query, new SimilarityConfig.Builder().build(), null, 10, true);
 
     assertEquals(10, res.getTotalHits().value);
     assertEquals(10, res.size());
@@ -312,7 +319,8 @@ public class SearchImplTest extends LuceneTestCase {
     SearchImpl search = new SearchImpl(reader);
     Query query = new QueryParser("f1", new StandardAnalyzer()).parse("apple");
     Sort sort = new Sort(new SortField("f2", SortField.Type.STRING, true));
-    SearchResults res = search.search(query, new SimilarityConfig.Builder().build(), sort, null, 10, true);
+    SearchResults res =
+        search.search(query, new SimilarityConfig.Builder().build(), sort, null, 10, true);
 
     assertEquals(10, res.getTotalHits().value);
     assertEquals(10, res.size());
@@ -376,5 +384,4 @@ public class SearchImplTest extends LuceneTestCase {
     search.search(query, new SimilarityConfig.Builder().build(), null, 10, true);
     assertFalse(search.prevPage().isPresent());
   }
-
 }

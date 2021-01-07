@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.spatial;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -46,31 +45,31 @@ public class TestDistanceStrategy extends StrategyTestCase {
     SpatialPrefixTree grid;
     SpatialStrategy strategy;
 
-    grid = new QuadPrefixTree(ctx,25);
+    grid = new QuadPrefixTree(ctx, 25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
-    grid = new GeohashPrefixTree(ctx,12);
+    grid = new GeohashPrefixTree(ctx, 12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
-    grid = new PackedQuadPrefixTree(ctx,25);
+    grid = new PackedQuadPrefixTree(ctx, 25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_packedquad");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
     strategy = PointVectorStrategy.newInstance(ctx, "pointvector");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
-//  Can't test this without un-inverting since PVS legacy config didn't have docValues.
-//    However, note that Solr's tests use UninvertingReader and thus test this.
-//    strategy = PointVectorStrategy.newLegacyInstance(ctx, "pointvector_legacy");
-//    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    //  Can't test this without un-inverting since PVS legacy config didn't have docValues.
+    //    However, note that Solr's tests use UninvertingReader and thus test this.
+    //    strategy = PointVectorStrategy.newLegacyInstance(ctx, "pointvector_legacy");
+    //    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = BBoxStrategy.newInstance(ctx, "bbox");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
     strategy = new SerializedDVStrategy(ctx, "serialized");
-    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+    ctorArgs.add(new Object[] {strategy.getFieldName(), strategy});
 
     return ctorArgs;
   }
@@ -85,9 +84,9 @@ public class TestDistanceStrategy extends StrategyTestCase {
     ShapeFactory shapeFactory = ctx.getShapeFactory();
     adoc("100", shapeFactory.pointXY(2, 1));
     adoc("101", shapeFactory.pointXY(-1, 4));
-    adoc("103", (Shape)null);//test score for nothing
+    adoc("103", (Shape) null); // test score for nothing
     commit();
-    //FYI distances are in docid order
+    // FYI distances are in docid order
     checkDistValueSource(shapeFactory.pointXY(4, 3), 2.8274937f, 5.0898066f, 180f);
     checkDistValueSource(shapeFactory.pointXY(0, 4), 3.6043684f, 0.9975641f, 180f);
   }
@@ -98,13 +97,13 @@ public class TestDistanceStrategy extends StrategyTestCase {
     adoc("100", p100);
     Point p101 = ctx.getShapeFactory().pointXY(-1.001, 4.001);
     adoc("101", p101);
-    adoc("103", (Shape)null);//test score for nothing
+    adoc("103", (Shape) null); // test score for nothing
     commit();
 
     double dist = ctx.getDistCalc().distance(p100, p101);
     Shape queryShape = ctx.makeCircle(2.01, 0.99, dist);
-    checkValueSource(strategy.makeRecipDistanceValueSource(queryShape),
-        new float[]{1.00f, 0.10f, 0f}, 0.09f);
+    checkValueSource(
+        strategy.makeRecipDistanceValueSource(queryShape), new float[] {1.00f, 0.10f, 0f}, 0.09f);
   }
 
   void checkDistValueSource(Point pt, float... distances) throws IOException {

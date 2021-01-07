@@ -17,9 +17,8 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
@@ -27,28 +26,22 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  * Factory for {@link ConcatenateGraphFilter}.
  *
  * <ul>
- *   <li><code>preserveSep</code>:
- *                            For lucene versions lesser than {@link org.apache.lucene.util.Version#LUCENE_8_4_0}
- *                            Whether {@link ConcatenateGraphFilter#SEP_LABEL}
- *                            should separate the input tokens in the concatenated token
- *                            </li>
- *   <li><code>tokenSeparator</code>:
- *                            Separator to use for concatenation. If not present,
- *                            {@link ConcatenateGraphFilter#DEFAULT_TOKEN_SEPARATOR} will be used.
- *                            If empty, tokens will be concatenated without any separators.
- *                            </li>
- *   <li><code>preservePositionIncrements</code>:
- *                                       Whether to add an empty token for missing positions.
- *                                       The effect is a consecutive {@link ConcatenateGraphFilter#SEP_LABEL}.
- *                                       When false, it's as if there were no missing positions
- *                                         (we pretend the surrounding tokens were adjacent).
- *                                       </li>
- *   <li><code>maxGraphExpansions</code>:
- *                            If the tokenStream graph has more than this many possible paths through, then we'll throw
- *                            {@link TooComplexToDeterminizeException} to preserve the stability and memory of the
- *                            machine.
- *                            </li>
+ *   <li><code>preserveSep</code>: For lucene versions lesser than {@link
+ *       org.apache.lucene.util.Version#LUCENE_8_4_0} Whether {@link
+ *       ConcatenateGraphFilter#SEP_LABEL} should separate the input tokens in the concatenated
+ *       token
+ *   <li><code>tokenSeparator</code>: Separator to use for concatenation. If not present, {@link
+ *       ConcatenateGraphFilter#DEFAULT_TOKEN_SEPARATOR} will be used. If empty, tokens will be
+ *       concatenated without any separators.
+ *   <li><code>preservePositionIncrements</code>: Whether to add an empty token for missing
+ *       positions. The effect is a consecutive {@link ConcatenateGraphFilter#SEP_LABEL}. When
+ *       false, it's as if there were no missing positions (we pretend the surrounding tokens were
+ *       adjacent).
+ *   <li><code>maxGraphExpansions</code>: If the tokenStream graph has more than this many possible
+ *       paths through, then we'll throw {@link TooComplexToDeterminizeException} to preserve the
+ *       stability and memory of the machine.
  * </ul>
+ *
  * @see ConcatenateGraphFilter
  * @since 7.4.0
  * @lucene.spi {@value #NAME}
@@ -68,13 +61,20 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
     @SuppressWarnings("deprecation")
     Version LUCENE_8_4_0 = Version.LUCENE_8_4_0;
     if (luceneMatchVersion.onOrAfter(LUCENE_8_4_0)) {
-      tokenSeparator = getCharacter(args, "tokenSeparator", ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR);
+      tokenSeparator =
+          getCharacter(args, "tokenSeparator", ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR);
     } else {
-      boolean preserveSep = getBoolean(args, "preserveSep", ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP);
+      boolean preserveSep =
+          getBoolean(args, "preserveSep", ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP);
       tokenSeparator = (preserveSep) ? ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR : null;
     }
-    preservePositionIncrements = getBoolean(args, "preservePositionIncrements", ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS);
-    maxGraphExpansions = getInt(args, "maxGraphExpansions", ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
+    preservePositionIncrements =
+        getBoolean(
+            args,
+            "preservePositionIncrements",
+            ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS);
+    maxGraphExpansions =
+        getInt(args, "maxGraphExpansions", ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
 
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
@@ -88,10 +88,11 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new ConcatenateGraphFilter(input, tokenSeparator, preservePositionIncrements, maxGraphExpansions);
+    return new ConcatenateGraphFilter(
+        input, tokenSeparator, preservePositionIncrements, maxGraphExpansions);
   }
 
-  protected Character getCharacter(Map<String,String> args, String name, Character defaultVal) {
+  protected Character getCharacter(Map<String, String> args, String name, Character defaultVal) {
     String s = args.remove(name);
     if (s == null) {
       return defaultVal;

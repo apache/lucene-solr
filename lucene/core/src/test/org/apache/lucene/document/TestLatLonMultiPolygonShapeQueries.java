@@ -18,12 +18,14 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon}
+ * types
+ */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
@@ -35,7 +37,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
   protected Polygon[] nextShape() {
     int n = random().nextInt(4) + 1;
     Polygon[] polygons = new Polygon[n];
-    for (int i =0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       int repetitions = 0;
       while (true) {
         Polygon p = (Polygon) getShapeType().nextShape();
@@ -60,9 +62,9 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     for (Polygon polygon : polygons) {
       if (polygon != null) {
         if (getEncoder().quantizeY(polygon.minLat) > getEncoder().quantizeY(check.maxLat)
-                || getEncoder().quantizeY(polygon.maxLat) < getEncoder().quantizeY(check.minLat)
-                || getEncoder().quantizeX(polygon.minLon) > getEncoder().quantizeX(check.maxLon)
-                || getEncoder().quantizeX(polygon.maxLon) < getEncoder().quantizeX(check.minLon)) {
+            || getEncoder().quantizeY(polygon.maxLat) < getEncoder().quantizeY(check.minLat)
+            || getEncoder().quantizeX(polygon.minLon) > getEncoder().quantizeX(check.maxLon)
+            || getEncoder().quantizeX(polygon.maxLon) < getEncoder().quantizeX(check.minLon)) {
           continue;
         }
         return false;
@@ -70,7 +72,7 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     }
     return true;
   }
-  
+
   @Override
   protected Field[] createIndexableFields(String name, Object o) {
     Polygon[] polygons = (Polygon[]) o;

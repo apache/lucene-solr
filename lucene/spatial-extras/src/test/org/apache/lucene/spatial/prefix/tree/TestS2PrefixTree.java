@@ -27,10 +27,8 @@ import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 
-/**
- * Test for S2 Spatial prefix tree.
- */
-public class TestS2PrefixTree extends LuceneTestCase{
+/** Test for S2 Spatial prefix tree. */
+public class TestS2PrefixTree extends LuceneTestCase {
 
   @Test
   @Repeat(iterations = 10)
@@ -50,12 +48,16 @@ public class TestS2PrefixTree extends LuceneTestCase{
       if (pos == 2) continue;
       id = id.next();
     }
-    S2PrefixTree tree = new S2PrefixTree(new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(arity), arity);
+    S2PrefixTree tree =
+        new S2PrefixTree(
+            new Geo3dSpatialContextFactory().newSpatialContext(),
+            S2PrefixTree.getMaxLevels(arity),
+            arity);
     S2PrefixTreeCell cell = new S2PrefixTreeCell(tree, id);
     BytesRef ref = cell.getTokenBytesWithLeaf(null);
     if (random().nextBoolean()) {
       int newOffset = random().nextInt(10) + 1;
-      byte[] newBytes = new byte[ref.bytes.length +  newOffset];
+      byte[] newBytes = new byte[ref.bytes.length + newOffset];
       for (int i = 0; i < ref.bytes.length; i++) {
         newBytes[i + newOffset] = ref.bytes[i];
       }
@@ -70,32 +72,36 @@ public class TestS2PrefixTree extends LuceneTestCase{
   @Test
   @Repeat(iterations = 10)
   public void testDistanceAndLevels() {
-    S2PrefixTree tree = new S2PrefixTree(new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(1), 1);
+    S2PrefixTree tree =
+        new S2PrefixTree(
+            new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(1), 1);
 
     double randomDist = random().nextDouble() * 5;
     int levelDistance = tree.getLevelForDistance(randomDist);
     double distanceLevel = tree.getDistanceForLevel(levelDistance);
     assertTrue(randomDist > distanceLevel);
 
-
-    tree = new S2PrefixTree(new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(2), 2);
-
-    levelDistance = tree.getLevelForDistance(randomDist);
-    distanceLevel = tree.getDistanceForLevel(levelDistance);
-    assertTrue(randomDist > distanceLevel);
-
-    tree = new S2PrefixTree(new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(3), 3);
+    tree =
+        new S2PrefixTree(
+            new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(2), 2);
 
     levelDistance = tree.getLevelForDistance(randomDist);
     distanceLevel = tree.getDistanceForLevel(levelDistance);
     assertTrue(randomDist > distanceLevel);
 
+    tree =
+        new S2PrefixTree(
+            new Geo3dSpatialContextFactory().newSpatialContext(), S2PrefixTree.getMaxLevels(3), 3);
+
+    levelDistance = tree.getLevelForDistance(randomDist);
+    distanceLevel = tree.getDistanceForLevel(levelDistance);
+    assertTrue(randomDist > distanceLevel);
   }
 
   @Test
   @Repeat(iterations = 10)
   public void testPrecision() {
-    int arity = random().nextInt(3) +1;
+    int arity = random().nextInt(3) + 1;
     SpatialContext context = new Geo3dSpatialContextFactory().newSpatialContext();
     S2PrefixTree tree = new S2PrefixTree(context, S2PrefixTree.getMaxLevels(arity), arity);
     double precision = random().nextDouble();
@@ -104,7 +110,7 @@ public class TestS2PrefixTree extends LuceneTestCase{
     CellIterator iterator = tree.getTreeCellIterator(point, level);
     S2PrefixTreeCell cell = null;
     while (iterator.hasNext()) {
-      cell = (S2PrefixTreeCell)iterator.next();
+      cell = (S2PrefixTreeCell) iterator.next();
     }
     assertTrue(cell.getLevel() == level);
     double precisionCell = S2Projections.MAX_WIDTH.getValue(cell.cellId.level());

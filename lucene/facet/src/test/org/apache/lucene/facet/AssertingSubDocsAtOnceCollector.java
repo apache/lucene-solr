@@ -19,13 +19,11 @@ package org.apache.lucene.facet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
-/** Verifies in collect() that all child subScorers are on
- *  the collected doc. */
+/** Verifies in collect() that all child subScorers are on the collected doc. */
 class AssertingSubDocsAtOnceCollector extends SimpleCollector {
 
   // TODO: allow wrapping another Collector
@@ -38,7 +36,7 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
     allScorers = new ArrayList<>();
     allScorers.add(s);
     int upto = 0;
-    while(upto < allScorers.size()) {
+    while (upto < allScorers.size()) {
       s = allScorers.get(upto++);
       for (Scorable.ChildScorable sub : s.getChildren()) {
         allScorers.add(sub.child);
@@ -48,9 +46,10 @@ class AssertingSubDocsAtOnceCollector extends SimpleCollector {
 
   @Override
   public void collect(int docID) {
-    for(Scorable s : allScorers) {
+    for (Scorable s : allScorers) {
       if (docID != s.docID()) {
-        throw new IllegalStateException("subScorer=" + s + " has docID=" + s.docID() + " != collected docID=" + docID);
+        throw new IllegalStateException(
+            "subScorer=" + s + " has docID=" + s.docID() + " != collected docID=" + docID);
       }
     }
   }

@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -31,18 +31,21 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import java.io.IOException;
-
 public class TestTermVectors extends LuceneTestCase {
   private static IndexReader reader;
   private static Directory directory;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {                  
+  public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy()));
-    //writer.setNoCFSRatio(1.0);
-    //writer.infoStream = System.out;
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true))
+                .setMergePolicy(newLogMergePolicy()));
+    // writer.setNoCFSRatio(1.0);
+    // writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
       FieldType ft = new FieldType(TextField.TYPE_STORED);
@@ -62,14 +65,14 @@ public class TestTermVectors extends LuceneTestCase {
         ft.setStoreTermVectors(true);
       }
       doc.add(new Field("field", English.intToEnglish(i), ft));
-      //test no term vectors too
+      // test no term vectors too
       doc.add(new TextField("noTV", English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
     writer.close();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
@@ -79,8 +82,8 @@ public class TestTermVectors extends LuceneTestCase {
   }
 
   private IndexWriter createWriter(Directory dir) throws IOException {
-    return new IndexWriter(dir, newIndexWriterConfig(
-        new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    return new IndexWriter(
+        dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(2));
   }
 
   private void createDir(Directory dir) throws IOException {
@@ -103,11 +106,13 @@ public class TestTermVectors extends LuceneTestCase {
     IndexReader r = DirectoryReader.open(dir);
     int numDocs = r.numDocs();
     for (int i = 0; i < numDocs; i++) {
-      assertNotNull("term vectors should not have been null for document " + i, r.getTermVectors(i).terms("c"));
+      assertNotNull(
+          "term vectors should not have been null for document " + i,
+          r.getTermVectors(i).terms("c"));
     }
     r.close();
   }
-  
+
   public void testFullMergeAddDocs() throws Exception {
     Directory target = newDirectory();
     IndexWriter writer = createWriter(target);
@@ -118,19 +123,19 @@ public class TestTermVectors extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    
+
     verifyIndex(target);
     target.close();
   }
 
   public void testFullMergeAddIndexesDir() throws Exception {
-    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory[] input = new Directory[] {newDirectory(), newDirectory()};
     Directory target = newDirectory();
-    
+
     for (Directory dir : input) {
       createDir(dir);
     }
-    
+
     IndexWriter writer = createWriter(target);
     writer.addIndexes(input);
     writer.forceMerge(1);
@@ -140,15 +145,15 @@ public class TestTermVectors extends LuceneTestCase {
 
     IOUtils.close(target, input[0], input[1]);
   }
-  
+
   public void testFullMergeAddIndexesReader() throws Exception {
-    Directory[] input = new Directory[] { newDirectory(), newDirectory() };
+    Directory[] input = new Directory[] {newDirectory(), newDirectory()};
     Directory target = newDirectory();
-    
+
     for (Directory dir : input) {
       createDir(dir);
     }
-    
+
     IndexWriter writer = createWriter(target);
     for (Directory dir : input) {
       DirectoryReader r = DirectoryReader.open(dir);
@@ -157,9 +162,8 @@ public class TestTermVectors extends LuceneTestCase {
     }
     writer.forceMerge(1);
     writer.close();
-    
+
     verifyIndex(target);
     IOUtils.close(target, input[0], input[1]);
   }
-
 }

@@ -16,12 +16,11 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-
-import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 
 public class TestGroupFiltering extends LuceneTestCase {
   @Documented
@@ -29,7 +28,7 @@ public class TestGroupFiltering extends LuceneTestCase {
   @Retention(RetentionPolicy.RUNTIME)
   @TestGroup(enabled = false)
   public @interface Foo {}
-  
+
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
@@ -43,11 +42,12 @@ public class TestGroupFiltering extends LuceneTestCase {
   public @interface Jira {
     String bug();
   }
-  
+
   @Foo
   public void testFoo() {}
-  
-  @Foo @Bar
+
+  @Foo
+  @Bar
   public void testFooBar() {}
 
   @Bar

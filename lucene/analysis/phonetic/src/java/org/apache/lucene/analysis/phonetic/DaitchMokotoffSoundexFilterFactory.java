@@ -17,18 +17,19 @@
 package org.apache.lucene.analysis.phonetic;
 
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link DaitchMokotoffSoundexFilter}.
  *
- * Create tokens based on Daitch–Mokotoff Soundex phonetic filter.
- * <p>
- * This takes one optional argument:
+ * <p>Create tokens based on Daitch–Mokotoff Soundex phonetic filter.
+ *
+ * <p>This takes one optional argument:
+ *
  * <dl>
- *  <dt>inject</dt><dd> (default=true) add tokens to the stream with the offset=0</dd>
+ *   <dt>inject
+ *   <dd>(default=true) add tokens to the stream with the offset=0
  * </dl>
  *
  * <pre class="prettyprint">
@@ -40,7 +41,6 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @see DaitchMokotoffSoundexFilter
- *
  * @lucene.experimental
  * @since 5.0.0
  * @lucene.spi {@value #NAME}
@@ -53,10 +53,10 @@ public class DaitchMokotoffSoundexFilterFactory extends TokenFilterFactory {
   /** parameter name: true if encoded tokens should be added as synonyms */
   public static final String INJECT = "inject"; // boolean
 
-  final boolean inject; //accessed by the test
+  final boolean inject; // accessed by the test
 
   /** Creates a new PhoneticFilterFactory */
-  public DaitchMokotoffSoundexFilterFactory(Map<String,String> args) {
+  public DaitchMokotoffSoundexFilterFactory(Map<String, String> args) {
     super(args);
     inject = getBoolean(args, INJECT, true);
     if (!args.isEmpty()) {
@@ -73,5 +73,4 @@ public class DaitchMokotoffSoundexFilterFactory extends TokenFilterFactory {
   public DaitchMokotoffSoundexFilter create(TokenStream input) {
     return new DaitchMokotoffSoundexFilter(input, inject);
   }
-
 }

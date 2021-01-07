@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analysis components for Synonyms.
- */
+/** Analysis components for Synonyms. */
 package org.apache.lucene.analysis.synonym;

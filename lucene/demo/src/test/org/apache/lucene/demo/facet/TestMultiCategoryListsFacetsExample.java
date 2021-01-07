@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.demo.facet;
 
-
 import java.util.List;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -29,7 +27,11 @@ public class TestMultiCategoryListsFacetsExample extends LuceneTestCase {
   public void testExample() throws Exception {
     List<FacetResult> results = new MultiCategoryListsFacetsExample().runSearch();
     assertEquals(2, results.size());
-    assertEquals("dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n", results.get(0).toString());
-    assertEquals("dim=Publish Date path=[] value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n", results.get(1).toString());
+    assertEquals(
+        "dim=Author path=[] value=5 childCount=4\n  Lisa (2)\n  Bob (1)\n  Susan (1)\n  Frank (1)\n",
+        results.get(0).toString());
+    assertEquals(
+        "dim=Publish Date path=[] value=5 childCount=3\n  2010 (2)\n  2012 (2)\n  1999 (1)\n",
+        results.get(1).toString());
   }
 }

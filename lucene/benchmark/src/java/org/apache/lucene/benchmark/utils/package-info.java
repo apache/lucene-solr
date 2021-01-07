@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Benchmark Utility functions.
- */
+/** Benchmark Utility functions. */
 package org.apache.lucene.benchmark.utils;

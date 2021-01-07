@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -39,7 +38,7 @@ import org.apache.lucene.spatial.util.ShapeValuesPredicate;
  */
 public class CompositeVerifyQuery extends Query {
 
-  private final Query indexQuery;//approximation (matches more than needed)
+  private final Query indexQuery; // approximation (matches more than needed)
   private final ShapeValuesPredicate predicateValueSource;
 
   public CompositeVerifyQuery(Query indexQuery, ShapeValuesPredicate predicateValueSource) {
@@ -58,13 +57,12 @@ public class CompositeVerifyQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(CompositeVerifyQuery other) {
-    return indexQuery.equals(other.indexQuery) &&
-           predicateValueSource.equals(other.predicateValueSource);
+    return indexQuery.equals(other.indexQuery)
+        && predicateValueSource.equals(other.predicateValueSource);
   }
 
   @Override
@@ -77,8 +75,13 @@ public class CompositeVerifyQuery extends Query {
 
   @Override
   public String toString(String field) {
-    //TODO verify this looks good
-    return getClass().getSimpleName() + "(" + indexQuery.toString(field) + ", " + predicateValueSource + ")";
+    // TODO verify this looks good
+    return getClass().getSimpleName()
+        + "("
+        + indexQuery.toString(field)
+        + ", "
+        + predicateValueSource
+        + ")";
   }
 
   @Override
@@ -87,8 +90,11 @@ public class CompositeVerifyQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    final Weight indexQueryWeight = indexQuery.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, boost);//scores aren't unsupported
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
+    final Weight indexQueryWeight =
+        indexQuery.createWeight(
+            searcher, ScoreMode.COMPLETE_NO_SCORES, boost); // scores aren't unsupported
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -100,7 +106,8 @@ public class CompositeVerifyQuery extends Query {
           return null;
         }
 
-        final TwoPhaseIterator predFuncValues = predicateValueSource.iterator(context, indexQueryScorer.iterator());
+        final TwoPhaseIterator predFuncValues =
+            predicateValueSource.iterator(context, indexQueryScorer.iterator());
         return new ConstantScoreScorer(this, score(), scoreMode, predFuncValues);
       }
 
@@ -108,7 +115,6 @@ public class CompositeVerifyQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return predicateValueSource.isCacheable(ctx);
       }
-
     };
   }
 }

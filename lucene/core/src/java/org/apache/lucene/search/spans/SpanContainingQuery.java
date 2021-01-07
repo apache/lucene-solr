@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -29,10 +27,10 @@ import org.apache.lucene.search.ScoreMode;
 
 /** Keep matches that contain another SpanScorer. */
 public final class SpanContainingQuery extends SpanContainQuery {
-  /** Construct a SpanContainingQuery matching spans from <code>big</code>
-   * that contain at least one spans from <code>little</code>.
-   * This query has the boost of <code>big</code>.
-   * <code>big</code> and <code>little</code> must be in the same field.
+  /**
+   * Construct a SpanContainingQuery matching spans from <code>big</code> that contain at least one
+   * spans from <code>little</code>. This query has the boost of <code>big</code>. <code>big</code>
+   * and <code>little</code> must be in the same field.
    */
   public SpanContainingQuery(SpanQuery big, SpanQuery little) {
     super(big, little);
@@ -44,21 +42,32 @@ public final class SpanContainingQuery extends SpanContainQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     SpanWeight bigWeight = big.createWeight(searcher, scoreMode, boost);
     SpanWeight littleWeight = little.createWeight(searcher, scoreMode, boost);
-    return new SpanContainingWeight(searcher, scoreMode.needsScores() ? getTermStates(bigWeight, littleWeight) : null,
-                                      bigWeight, littleWeight, boost);
+    return new SpanContainingWeight(
+        searcher,
+        scoreMode.needsScores() ? getTermStates(bigWeight, littleWeight) : null,
+        bigWeight,
+        littleWeight,
+        boost);
   }
 
   /**
    * Creates SpanContainingQuery scorer instances
+   *
    * @lucene.internal
    */
   public class SpanContainingWeight extends SpanContainWeight {
 
-    public SpanContainingWeight(IndexSearcher searcher, Map<Term, TermStates> terms,
-                                SpanWeight bigWeight, SpanWeight littleWeight, float boost) throws IOException {
+    public SpanContainingWeight(
+        IndexSearcher searcher,
+        Map<Term, TermStates> terms,
+        SpanWeight bigWeight,
+        SpanWeight littleWeight,
+        float boost)
+        throws IOException {
       super(searcher, terms, bigWeight, littleWeight, boost);
     }
 
@@ -67,7 +76,8 @@ public final class SpanContainingQuery extends SpanContainQuery {
      * The payload is from the spans of <code>big</code>.
      */
     @Override
-    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings) throws IOException {
+    public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
+        throws IOException {
       ArrayList<Spans> containerContained = prepareConjunction(context, requiredPostings);
       if (containerContained == null) {
         return null;
@@ -125,6 +135,5 @@ public final class SpanContainingQuery extends SpanContainQuery {
     public boolean isCacheable(LeafReaderContext ctx) {
       return bigWeight.isCacheable(ctx) && littleWeight.isCacheable(ctx);
     }
-
   }
 }

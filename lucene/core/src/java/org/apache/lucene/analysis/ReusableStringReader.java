@@ -18,18 +18,20 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
-
-/** Internal class to enable reuse of the string reader by {@link Analyzer#tokenStream(String,String)} */
+/**
+ * Internal class to enable reuse of the string reader by {@link
+ * Analyzer#tokenStream(String,String)}
+ */
 final class ReusableStringReader extends Reader {
   private int pos = 0, size = 0;
   private String s = null;
-  
+
   void setValue(String s) {
     this.s = s;
     this.size = s.length();
     this.pos = 0;
   }
-  
+
   @Override
   public int read() {
     if (pos < size) {
@@ -39,12 +41,12 @@ final class ReusableStringReader extends Reader {
       return -1;
     }
   }
-  
+
   @Override
   public int read(char[] c, int off, int len) {
     if (pos < size) {
-      len = Math.min(len, size-pos);
-      s.getChars(pos, pos+len, c, off);
+      len = Math.min(len, size - pos);
+      s.getChars(pos, pos + len, c, off);
       pos += len;
       return len;
     } else {
@@ -52,7 +54,7 @@ final class ReusableStringReader extends Reader {
       return -1;
     }
   }
-  
+
   @Override
   public void close() {
     pos = size; // this prevents NPE when reading after close!

@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * Degenerate longitude slice.
@@ -40,9 +40,7 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   /** Notable points for the slice (north and south poles) */
   protected final GeoPoint[] planePoints;
 
-  /**
-   * Accepts only values in the following ranges: lon: {@code -PI -> PI}
-   */
+  /** Accepts only values in the following ranges: lon: {@code -PI -> PI} */
   public GeoDegenerateLongitudeSlice(final PlanetModel planetModel, final double longitude) {
     super(planetModel);
     // Argument checking
@@ -54,19 +52,22 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
     final double cosLongitude = Math.cos(longitude);
 
     this.plane = new Plane(cosLongitude, sinLongitude);
-    // We need a bounding plane too, which is perpendicular to the longitude plane and sided so that the point (0.0, longitude) is inside.
+    // We need a bounding plane too, which is perpendicular to the longitude plane and sided so that
+    // the point (0.0, longitude) is inside.
     this.interiorPoint = new GeoPoint(planetModel, 0.0, sinLongitude, 1.0, cosLongitude);
     this.boundingPlane = new SidedPlane(interiorPoint, -sinLongitude, cosLongitude);
-    this.edgePoints = new GeoPoint[]{interiorPoint};
-    this.planePoints = new GeoPoint[]{planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
+    this.edgePoints = new GeoPoint[] {interiorPoint};
+    this.planePoints = new GeoPoint[] {planetModel.NORTH_POLE, planetModel.SOUTH_POLE};
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoDegenerateLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
+  public GeoDegenerateLongitudeSlice(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
     this(planetModel, SerializableObject.readDouble(inputStream));
   }
 
@@ -85,13 +86,13 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(
+        planetModel, Math.PI * 0.5, -Math.PI * 0.5, newLeftLon, newRightLon);
   }
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return plane.evaluateIsZero(x, y, z) &&
-        boundingPlane.isWithin(x, y, z);
+    return plane.evaluateIsZero(x, y, z) && boundingPlane.isWithin(x, y, z);
   }
 
   @Override
@@ -110,7 +111,8 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
     return p.intersects(planetModel, plane, notablePoints, planePoints, bounds, boundingPlane);
   }
 
@@ -123,38 +125,42 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
     bounds
-      .addVerticalPlane(planetModel, longitude, plane, boundingPlane)
-      .addPoint(planetModel.NORTH_POLE).addPoint(planetModel.SOUTH_POLE);
+        .addVerticalPlane(planetModel, longitude, plane, boundingPlane)
+        .addPoint(planetModel.NORTH_POLE)
+        .addPoint(planetModel.SOUTH_POLE);
   }
 
   @Override
   public int getRelationship(final GeoShape path) {
     // Look for intersections.
-    if (intersects(path))
+    if (intersects(path)) {
       return OVERLAPS;
+    }
 
-    if (path.isWithin(interiorPoint))
+    if (path.isWithin(interiorPoint)) {
       return CONTAINS;
+    }
 
     return DISJOINT;
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    final double distance = distanceStyle.computeDistance(planetModel, plane, x,y,z, boundingPlane);
-    
-    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x,y,z);
-    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x,y,z);
-    
-    return Math.min(
-      distance,
-      Math.min(northDistance, southDistance));
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double distance =
+        distanceStyle.computeDistance(planetModel, plane, x, y, z, boundingPlane);
+
+    final double northDistance = distanceStyle.computeDistance(planetModel.NORTH_POLE, x, y, z);
+    final double southDistance = distanceStyle.computeDistance(planetModel.SOUTH_POLE, x, y, z);
+
+    return Math.min(distance, Math.min(northDistance, southDistance));
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoDegenerateLongitudeSlice))
+    if (!(o instanceof GeoDegenerateLongitudeSlice)) {
       return false;
+    }
     GeoDegenerateLongitudeSlice other = (GeoDegenerateLongitudeSlice) o;
     return super.equals(other) && other.longitude == longitude;
   }
@@ -169,8 +175,12 @@ class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoDegenerateLongitudeSlice: {planetmodel="+planetModel+", longitude=" + longitude + "(" + longitude * 180.0 / Math.PI + ")}";
+    return "GeoDegenerateLongitudeSlice: {planetmodel="
+        + planetModel
+        + ", longitude="
+        + longitude
+        + "("
+        + longitude * 180.0 / Math.PI
+        + ")}";
   }
 }
-  
-

@@ -17,13 +17,12 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import java.io.Serializable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Core;
 import org.apache.logging.log4j.core.Filter;
@@ -36,7 +35,11 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
 /** Log appender for text areas */
-@Plugin(name = "TextArea", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE, printObject = true)
+@Plugin(
+    name = "TextArea",
+    category = Core.CATEGORY_NAME,
+    elementType = Appender.ELEMENT_TYPE,
+    printObject = true)
 public final class TextAreaAppender extends AbstractAppender {
 
   private static JTextArea textArea;
@@ -45,8 +48,11 @@ public final class TextAreaAppender extends AbstractAppender {
   private static final Lock readLock = rwLock.readLock();
   private static final Lock writeLock = rwLock.writeLock();
 
-  protected TextAreaAppender(String name, Filter filter,
-                             org.apache.logging.log4j.core.Layout<? extends Serializable> layout, final boolean ignoreExceptions) {
+  protected TextAreaAppender(
+      String name,
+      Filter filter,
+      org.apache.logging.log4j.core.Layout<? extends Serializable> layout,
+      final boolean ignoreExceptions) {
     super(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY);
   }
 
@@ -70,11 +76,12 @@ public final class TextAreaAppender extends AbstractAppender {
         // just ignore any events logged before the area is available
         return;
       }
-  
+
       final String message = ((StringLayout) getLayout()).toSerializable(event);
-      SwingUtilities.invokeLater(() -> {
-        textArea.append(message);
-      });
+      SwingUtilities.invokeLater(
+          () -> {
+            textArea.append(message);
+          });
     } finally {
       readLock.unlock();
     }
@@ -98,5 +105,4 @@ public final class TextAreaAppender extends AbstractAppender {
   public static <B extends Builder<B>> B newBuilder() {
     return new Builder<B>().asBuilder();
   }
-
 }

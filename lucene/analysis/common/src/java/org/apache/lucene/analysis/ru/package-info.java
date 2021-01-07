@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Russian.
- */
+/** Analyzer for Russian. */
 package org.apache.lucene.analysis.ru;

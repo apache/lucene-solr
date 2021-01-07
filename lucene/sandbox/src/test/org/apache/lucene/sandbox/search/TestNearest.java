@@ -18,7 +18,6 @@ package org.apache.lucene.sandbox.search;
 
 import java.util.Arrays;
 import java.util.Comparator;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LatLonDocValuesField;
@@ -33,7 +32,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.LatLonPointPrototypeQueries;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -44,7 +42,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
- 
+
 public class TestNearest extends LuceneTestCase {
 
   public void testNearestNeighborWithDeletedDocs() throws Exception {
@@ -61,15 +59,18 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
-    FieldDoc hit = (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
+    FieldDoc hit =
+        (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 
     w.deleteDocuments(new Term("id", "0"));
     r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     s = newSearcher(r, false);
     hit = (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("1", r.document(hit.doc).getField("id").stringValue());
@@ -91,18 +92,22 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
-    FieldDoc hit = (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
+    FieldDoc hit =
+        (FieldDoc) LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 
     w.deleteDocuments(new Term("id", "0"));
     w.deleteDocuments(new Term("id", "1"));
     r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     s = newSearcher(r, false);
-    assertEquals(0, LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs.length);
+    assertEquals(
+        0, LatLonPointPrototypeQueries.nearest(s, "point", 40.0, 50.0, 1).scoreDocs.length);
     r.close();
     w.close();
     dir.close();
@@ -121,8 +126,11 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = DirectoryReader.open(w);
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
-    ScoreDoc[] hits = LatLonPointPrototypeQueries.nearest(newSearcher(r, false), "point", 45.0, 50.0, 2).scoreDocs;
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
+    ScoreDoc[] hits =
+        LatLonPointPrototypeQueries.nearest(newSearcher(r, false), "point", 45.0, 50.0, 2)
+            .scoreDocs;
     assertEquals("0", r.document(hits[0].doc).getField("id").stringValue());
     assertEquals("1", r.document(hits[1].doc).getField("id").stringValue());
 
@@ -135,8 +143,13 @@ public class TestNearest extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, getIndexWriterConfig());
     DirectoryReader r = w.getReader();
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
-    assertEquals(0, LatLonPointPrototypeQueries.nearest(newSearcher(r, false), "point", 40.0, 50.0, 1).scoreDocs.length);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
+    assertEquals(
+        0,
+        LatLonPointPrototypeQueries.nearest(newSearcher(r, false), "point", 40.0, 50.0, 1)
+            .scoreDocs
+            .length);
     r.close();
     w.close();
     dir.close();
@@ -151,7 +164,7 @@ public class TestNearest extends LuceneTestCase {
   }
 
   public void testNearestNeighborRandom() throws Exception {
-    
+
     int numPoints = atLeast(1000);
     Directory dir;
     if (numPoints > 100000) {
@@ -166,7 +179,7 @@ public class TestNearest extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    for(int id=0;id<numPoints;id++) {
+    for (int id = 0; id < numPoints; id++) {
       lats[id] = quantizeLat(GeoTestUtil.nextLatitude());
       lons[id] = quantizeLon(GeoTestUtil.nextLongitude());
       Document doc = new Document();
@@ -181,14 +194,15 @@ public class TestNearest extends LuceneTestCase {
     }
 
     DirectoryReader r = w.getReader();
-    if (VERBOSE) {      
+    if (VERBOSE) {
       System.out.println("TEST: reader=" + r);
     }
-    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps
+    // with its own points impl:
     IndexSearcher s = newSearcher(r, false);
     int iters = atLeast(100);
-    for(int iter=0;iter<iters;iter++) {
-      if (VERBOSE) {      
+    for (int iter = 0; iter < iters; iter++) {
+      if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
       }
       double pointLat = GeoTestUtil.nextLatitude();
@@ -196,23 +210,27 @@ public class TestNearest extends LuceneTestCase {
 
       // dumb brute force search to get the expected result:
       FieldDoc[] expectedHits = new FieldDoc[lats.length];
-      for(int id=0;id<lats.length;id++) {
+      for (int id = 0; id < lats.length; id++) {
         double distance = SloppyMath.haversinMeters(pointLat, pointLon, lats[id], lons[id]);
         FieldDoc hit = new FieldDoc(id, 0.0f, new Object[] {Double.valueOf(distance)});
         expectedHits[id] = hit;
       }
 
-      Arrays.sort(expectedHits, new Comparator<FieldDoc>() {
-          @Override
-          public int compare(FieldDoc a, FieldDoc  b) {
-            int cmp = Double.compare(((Double) a.fields[0]).doubleValue(), ((Double) b.fields[0]).doubleValue());
-            if (cmp != 0) {
-              return cmp;
+      Arrays.sort(
+          expectedHits,
+          new Comparator<FieldDoc>() {
+            @Override
+            public int compare(FieldDoc a, FieldDoc b) {
+              int cmp =
+                  Double.compare(
+                      ((Double) a.fields[0]).doubleValue(), ((Double) b.fields[0]).doubleValue());
+              if (cmp != 0) {
+                return cmp;
+              }
+              // tie break by smaller docID:
+              return a.doc - b.doc;
             }
-            // tie break by smaller docID:
-            return a.doc - b.doc;
-          }
-        });
+          });
 
       int topN = TestUtil.nextInt(random(), 1, lats.length);
 
@@ -221,10 +239,15 @@ public class TestNearest extends LuceneTestCase {
       }
 
       // Also test with MatchAllDocsQuery, sorting by distance:
-      TopFieldDocs fieldDocs = s.search(new MatchAllDocsQuery(), topN, new Sort(LatLonDocValuesField.newDistanceSort("point", pointLat, pointLon)));
+      TopFieldDocs fieldDocs =
+          s.search(
+              new MatchAllDocsQuery(),
+              topN,
+              new Sort(LatLonDocValuesField.newDistanceSort("point", pointLat, pointLon)));
 
-      ScoreDoc[] hits = LatLonPointPrototypeQueries.nearest(s, "point", pointLat, pointLon, topN).scoreDocs;
-      for(int i=0;i<topN;i++) {
+      ScoreDoc[] hits =
+          LatLonPointPrototypeQueries.nearest(s, "point", pointLat, pointLon, topN).scoreDocs;
+      for (int i = 0; i < topN; i++) {
         FieldDoc expected = expectedHits[i];
         FieldDoc expected2 = (FieldDoc) fieldDocs.scoreDocs[i];
         FieldDoc actual = (FieldDoc) hits[i];
@@ -232,16 +255,35 @@ public class TestNearest extends LuceneTestCase {
 
         if (VERBOSE) {
           System.out.println("hit " + i);
-          System.out.println("  expected id=" + expected.doc+ " lat=" + lats[expected.doc] + " lon=" + lons[expected.doc]
-              + " distance=" + ((Double) expected.fields[0]).doubleValue() + " meters");
-          System.out.println("  actual id=" + actualDoc.getField("id") + " distance=" + actual.fields[0] + " meters");
+          System.out.println(
+              "  expected id="
+                  + expected.doc
+                  + " lat="
+                  + lats[expected.doc]
+                  + " lon="
+                  + lons[expected.doc]
+                  + " distance="
+                  + ((Double) expected.fields[0]).doubleValue()
+                  + " meters");
+          System.out.println(
+              "  actual id="
+                  + actualDoc.getField("id")
+                  + " distance="
+                  + actual.fields[0]
+                  + " meters");
         }
 
         assertEquals(expected.doc, actual.doc);
-        assertEquals(((Double) expected.fields[0]).doubleValue(), ((Double) actual.fields[0]).doubleValue(), 0.0);
+        assertEquals(
+            ((Double) expected.fields[0]).doubleValue(),
+            ((Double) actual.fields[0]).doubleValue(),
+            0.0);
 
         assertEquals(expected2.doc, actual.doc);
-        assertEquals(((Double) expected2.fields[0]).doubleValue(), ((Double) actual.fields[0]).doubleValue(), 0.0);
+        assertEquals(
+            ((Double) expected2.fields[0]).doubleValue(),
+            ((Double) actual.fields[0]).doubleValue(),
+            0.0);
       }
     }
 

@@ -23,15 +23,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import org.apache.lucene.queryparser.flexible.messages.NLS;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
+import org.apache.lucene.queryparser.flexible.messages.NLS;
 
-/**
- * A {@link QueryNodeImpl} is the default implementation of the interface
- * {@link QueryNode}
- */
+/** A {@link QueryNodeImpl} is the default implementation of the interface {@link QueryNode} */
 public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   /* index default field */
@@ -52,34 +48,31 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     } else {
       this.clauses.clear();
     }
-
   }
 
   @Override
   public final void add(QueryNode child) {
 
     if (isLeaf() || this.clauses == null || child == null) {
-      throw new IllegalArgumentException(NLS
-          .getLocalizedMessage(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
+      throw new IllegalArgumentException(
+          NLS.getLocalizedMessage(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
     }
 
     this.clauses.add(child);
     ((QueryNodeImpl) child).setParent(this);
-
   }
 
   @Override
   public final void add(List<QueryNode> children) {
 
     if (isLeaf() || this.clauses == null) {
-      throw new IllegalArgumentException(NLS
-          .getLocalizedMessage(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
+      throw new IllegalArgumentException(
+          NLS.getLocalizedMessage(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
     }
 
     for (QueryNode child : children) {
       add(child);
     }
-
   }
 
   @Override
@@ -91,28 +84,27 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   public final void set(List<QueryNode> children) {
 
     if (isLeaf() || this.clauses == null) {
-      ResourceBundle bundle = ResourceBundle
-          .getBundle("org.apache.lucene.queryParser.messages.QueryParserMessages", Locale.getDefault());
-      String message = bundle.getObject("Q0008E.NODE_ACTION_NOT_SUPPORTED")
-          .toString();
+      ResourceBundle bundle =
+          ResourceBundle.getBundle(
+              "org.apache.lucene.queryParser.messages.QueryParserMessages", Locale.getDefault());
+      String message = bundle.getObject("Q0008E.NODE_ACTION_NOT_SUPPORTED").toString();
 
       throw new IllegalArgumentException(message);
-
     }
 
     // reset parent value
     for (QueryNode child : children) {
       child.removeFromParent();
     }
-    
+
     ArrayList<QueryNode> existingChildren = new ArrayList<>(getChildren());
     for (QueryNode existingChild : existingChildren) {
       existingChild.removeFromParent();
     }
-    
+
     // allocate new children list
     allocate();
-    
+
     // add new children and set parent
     add(children);
   }
@@ -147,8 +139,8 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   /**
-   * @return a List for QueryNode object. Returns null, for nodes that do not
-   *         contain children. All leaf Nodes return null.
+   * @return a List for QueryNode object. Returns null, for nodes that do not contain children. All
+   *     leaf Nodes return null.
    */
   @Override
   public final List<QueryNode> getChildren() {
@@ -197,14 +189,12 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     return getParent() == null;
   }
 
-  /**
-   * If set to true the method toQueryString will not write field names
-   */
+  /** If set to true the method toQueryString will not write field names */
   protected boolean toQueryStringIgnoreFields = false;
 
   /**
    * This method is use toQueryString to detect if fld is the default field
-   * 
+   *
    * @param fld - field name
    * @return true if fld is the default field
    */
@@ -214,20 +204,17 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   // #toQueryString(org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax)}
   // should receive the default field value directly by parameter
   protected boolean isDefaultField(CharSequence fld) {
-    if (this.toQueryStringIgnoreFields)
-      return true;
-    if (fld == null)
-      return true;
-    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(StringUtils.toString(fld)))
-      return true;
+    if (this.toQueryStringIgnoreFields) return true;
+    if (fld == null) return true;
+    if (QueryNodeImpl.PLAINTEXT_FIELD_NAME.equals(StringUtils.toString(fld))) return true;
     return false;
   }
 
   /**
    * Every implementation of this class should return pseudo xml like this:
-   * 
-   * For FieldQueryNode: &lt;field start='1' end='2' field='subject' text='foo'/&gt;
-   * 
+   *
+   * <p>For FieldQueryNode: &lt;field start='1' end='2' field='subject' text='foo'/&gt;
+   *
    * @see org.apache.lucene.queryparser.flexible.core.nodes.QueryNode#toString()
    */
   @Override
@@ -237,7 +224,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   /**
    * Returns a map containing all tags attached to this query node.
-   * 
+   *
    * @return a map containing all tags attached to this query node
    */
   @Override
@@ -247,10 +234,10 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
   }
 
   @Override
-  public void removeChildren(QueryNode childNode){
+  public void removeChildren(QueryNode childNode) {
     Iterator<QueryNode> it = this.clauses.iterator();
-    while(it.hasNext()){
-      if(it.next() == childNode){
+    while (it.hasNext()) {
+      if (it.next() == childNode) {
         it.remove();
       }
     }
@@ -265,5 +252,4 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
       parent.removeChildren(this);
     }
   }
-
 } // end class QueryNodeImpl

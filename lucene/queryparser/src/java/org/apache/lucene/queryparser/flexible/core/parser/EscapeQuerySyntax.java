@@ -19,25 +19,23 @@ package org.apache.lucene.queryparser.flexible.core.parser;
 import java.util.Locale;
 
 /**
- * A parser needs to implement {@link EscapeQuerySyntax} to allow the QueryNode
- * to escape the queries, when the toQueryString method is called.
+ * A parser needs to implement {@link EscapeQuerySyntax} to allow the QueryNode to escape the
+ * queries, when the toQueryString method is called.
  */
 public interface EscapeQuerySyntax {
   /**
-   * Type of escaping: String for escaping syntax,
-   * NORMAL for escaping reserved words (like AND) in terms
+   * Type of escaping: String for escaping syntax, NORMAL for escaping reserved words (like AND) in
+   * terms
    */
   public enum Type {
-    STRING, NORMAL;
+    STRING,
+    NORMAL;
   }
 
   /**
-   * @param text
-   *          - text to be escaped
-   * @param locale
-   *          - locale for the current query
-   * @param type
-   *          - select the type of escape operation to use
+   * @param text - text to be escaped
+   * @param locale - locale for the current query
+   * @param type - select the type of escape operation to use
    * @return escaped text
    */
   CharSequence escape(CharSequence text, Locale locale, Type type);

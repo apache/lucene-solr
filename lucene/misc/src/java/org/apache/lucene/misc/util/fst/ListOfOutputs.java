@@ -19,7 +19,6 @@ package org.apache.lucene.misc.util.fst;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IntsRef; // javadocs
@@ -28,33 +27,26 @@ import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Outputs;
 
 /**
- * Wraps another Outputs implementation and encodes one or
- * more of its output values.  You can use this when a single
- * input may need to map to more than one output,
- * maintaining order: pass the same input with a different
- * output by calling {@link FSTCompiler#add(IntsRef,Object)} multiple
- * times.  The builder will then combine the outputs using
- * the {@link Outputs#merge(Object,Object)} method.
+ * Wraps another Outputs implementation and encodes one or more of its output values. You can use
+ * this when a single input may need to map to more than one output, maintaining order: pass the
+ * same input with a different output by calling {@link FSTCompiler#add(IntsRef,Object)} multiple
+ * times. The builder will then combine the outputs using the {@link Outputs#merge(Object,Object)}
+ * method.
  *
- * <p>The resulting FST may not be minimal when an input has
- * more than one output, as this requires pushing all
- * multi-output values to a final state.
+ * <p>The resulting FST may not be minimal when an input has more than one output, as this requires
+ * pushing all multi-output values to a final state.
  *
- * <p>NOTE: the only way to create multiple outputs is to
- * add the same input to the FST multiple times in a row.  This is
- * how the FST maps a single input to multiple outputs (e.g. you
- * cannot pass a List&lt;Object&gt; to {@link FSTCompiler#add}).  If
- * your outputs are longs, and you need at most 2, then use
- * {@link UpToTwoPositiveIntOutputs} instead since it stores
- * the outputs more compactly (by stealing a bit from each
- * long value).
+ * <p>NOTE: the only way to create multiple outputs is to add the same input to the FST multiple
+ * times in a row. This is how the FST maps a single input to multiple outputs (e.g. you cannot pass
+ * a List&lt;Object&gt; to {@link FSTCompiler#add}). If your outputs are longs, and you need at most
+ * 2, then use {@link UpToTwoPositiveIntOutputs} instead since it stores the outputs more compactly
+ * (by stealing a bit from each long value).
  *
- * <p>NOTE: this cannot wrap itself (ie you cannot make an
- * FST with List&lt;List&lt;Object&gt;&gt; outputs using this).
+ * <p>NOTE: this cannot wrap itself (ie you cannot make an FST with List&lt;List&lt;Object&gt;&gt;
+ * outputs using this).
  *
  * @lucene.experimental
  */
-
 
 // NOTE: i think we could get a more compact FST if, instead
 // of adding the same input multiple times with a different
@@ -66,7 +58,7 @@ import org.apache.lucene.util.fst.Outputs;
 
 @SuppressWarnings("unchecked")
 public final class ListOfOutputs<T> extends Outputs<Object> {
-  
+
   private final Outputs<T> outputs;
 
   public ListOfOutputs(Outputs<T> outputs) {
@@ -93,7 +85,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     } else {
       List<T> outputList = (List<T>) output;
       List<T> addedList = new ArrayList<>(outputList.size());
-      for(T _output : outputList) {
+      for (T _output : outputList) {
         addedList.add(outputs.add((T) prefix, _output));
       }
       return addedList;
@@ -114,7 +106,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     } else {
       List<T> outputList = (List<T>) output;
       out.writeVInt(outputList.size());
-      for(T eachOutput : outputList) {
+      for (T eachOutput : outputList) {
         outputs.write(eachOutput, out);
       }
     }
@@ -124,7 +116,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
   public Object read(DataInput in) throws IOException {
     return outputs.read(in);
   }
-  
+
   @Override
   public void skipOutput(DataInput in) throws IOException {
     outputs.skipOutput(in);
@@ -137,17 +129,17 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
       return outputs.read(in);
     } else {
       List<T> outputList = new ArrayList<>(count);
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         outputList.add(outputs.read(in));
       }
       return outputList;
     }
   }
-  
+
   @Override
   public void skipFinalOutput(DataInput in) throws IOException {
     int count = in.readVInt();
-    for(int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       outputs.skipOutput(in);
     }
   }
@@ -166,8 +158,8 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
 
       StringBuilder b = new StringBuilder();
       b.append('[');
-      
-      for(int i=0;i<outputList.size();i++) {
+
+      for (int i = 0; i < outputList.size(); i++) {
         if (i > 0) {
           b.append(", ");
         }
@@ -191,8 +183,9 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     } else {
       outputList.addAll((List<T>) second);
     }
-    //System.out.println("MERGE: now " + outputList.size() + " first=" + outputToString(first) + " second=" + outputToString(second));
-    //System.out.println("  return " + outputToString(outputList));
+    // System.out.println("MERGE: now " + outputList.size() + " first=" + outputToString(first) + "
+    // second=" + outputToString(second));
+    // System.out.println("  return " + outputToString(outputList));
     return outputList;
   }
 
@@ -201,7 +194,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     return "OneOrMoreOutputs(" + outputs + ")";
   }
 
-  public List<T> asList(Object output) { 
+  public List<T> asList(Object output) {
     if (!(output instanceof List)) {
       List<T> result = new ArrayList<>(1);
       result.add((T) output);
@@ -211,7 +204,8 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     }
   }
 
-  private static final long BASE_LIST_NUM_BYTES = RamUsageEstimator.shallowSizeOf(new ArrayList<Object>());
+  private static final long BASE_LIST_NUM_BYTES =
+      RamUsageEstimator.shallowSizeOf(new ArrayList<Object>());
 
   @Override
   public long ramBytesUsed(Object output) {
@@ -219,7 +213,7 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
     if (output instanceof List) {
       bytes += BASE_LIST_NUM_BYTES;
       List<T> outputList = (List<T>) output;
-      for(T _output : outputList) {
+      for (T _output : outputList) {
         bytes += outputs.ramBytesUsed(_output);
       }
       // 2 * to allow for ArrayList's oversizing:

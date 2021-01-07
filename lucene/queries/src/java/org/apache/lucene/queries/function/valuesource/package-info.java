@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * A variety of functions to use with FunctionQuery.
- */
+/** A variety of functions to use with FunctionQuery. */
 package org.apache.lucene.queries.function.valuesource;

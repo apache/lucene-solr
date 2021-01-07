@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -38,16 +36,12 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
-
-/** Matches the union of its clauses.
- */
+/** Matches the union of its clauses. */
 public final class SpanOrQuery extends SpanQuery {
   private List<SpanQuery> clauses;
   private String field;
 
-  /** Construct a SpanOrQuery merging the provided clauses.
-   * All clauses must have the same field.
-   */
+  /** Construct a SpanOrQuery merging the provided clauses. All clauses must have the same field. */
   public SpanOrQuery(SpanQuery... clauses) {
     this.clauses = new ArrayList<>(clauses.length);
     for (SpanQuery seq : clauses) {
@@ -71,13 +65,15 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public String getField() { return field; }
+  public String getField() {
+    return field;
+  }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     SpanOrQuery rewritten = new SpanOrQuery();
     boolean actuallyRewritten = false;
-    for (int i = 0 ; i < clauses.size(); i++) {
+    for (int i = 0; i < clauses.size(); i++) {
       SpanQuery c = clauses.get(i);
       SpanQuery query = (SpanQuery) c.rewrite(reader);
       actuallyRewritten |= query != c;
@@ -118,8 +114,7 @@ public final class SpanOrQuery extends SpanQuery {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           clauses.equals(((SpanOrQuery) other).clauses);
+    return sameClassAs(other) && clauses.equals(((SpanOrQuery) other).clauses);
   }
 
   @Override
@@ -128,23 +123,31 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     List<SpanWeight> subWeights = new ArrayList<>(clauses.size());
     for (SpanQuery q : clauses) {
       subWeights.add(q.createWeight(searcher, scoreMode, boost));
     }
-    return new SpanOrWeight(searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, subWeights, boost);
+    return new SpanOrWeight(
+        searcher, scoreMode.needsScores() ? getTermStates(subWeights) : null, subWeights, boost);
   }
 
   /**
    * Creates SpanOrQuery scorer instances
+   *
    * @lucene.internal
    */
   public class SpanOrWeight extends SpanWeight {
 
     final List<SpanWeight> subWeights;
 
-    public SpanOrWeight(IndexSearcher searcher, Map<Term, TermStates> terms, List<SpanWeight> subWeights, float boost) throws IOException {
+    public SpanOrWeight(
+        IndexSearcher searcher,
+        Map<Term, TermStates> terms,
+        List<SpanWeight> subWeights,
+        float boost)
+        throws IOException {
       super(SpanOrQuery.this, searcher, terms, boost);
       this.subWeights = subWeights;
     }
@@ -152,8 +155,7 @@ public final class SpanOrQuery extends SpanQuery {
     @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       for (Weight w : subWeights) {
-        if (w.isCacheable(ctx) == false)
-          return false;
+        if (w.isCacheable(ctx) == false) return false;
       }
       return true;
     }
@@ -189,7 +191,8 @@ public final class SpanOrQuery extends SpanQuery {
         byDocQueue.add(new DisiWrapper(spans));
       }
 
-      SpanPositionQueue byPositionQueue = new SpanPositionQueue(subSpans.size()); // when empty use -1
+      SpanPositionQueue byPositionQueue =
+          new SpanPositionQueue(subSpans.size()); // when empty use -1
 
       return new Spans() {
         Spans topPositionSpans = null;
@@ -307,9 +310,11 @@ public final class SpanOrQuery extends SpanQuery {
           DisiWrapper listAtCurrentDoc = byDocQueue.topList();
           while (listAtCurrentDoc != null) {
             Spans spansAtDoc = listAtCurrentDoc.spans;
-            if (lastDocTwoPhaseMatched == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
+            if (lastDocTwoPhaseMatched
+                == listAtCurrentDoc.doc) { // matched by DisjunctionDisiApproximation
               if (listAtCurrentDoc.twoPhaseView != null) { // matched by approximation
-                if (listAtCurrentDoc.lastApproxNonMatchDoc == listAtCurrentDoc.doc) { // matches() returned false
+                if (listAtCurrentDoc.lastApproxNonMatchDoc
+                    == listAtCurrentDoc.doc) { // matches() returned false
                   spansAtDoc = null;
                 } else {
                   if (listAtCurrentDoc.lastApproxMatchDoc != listAtCurrentDoc.doc) {
@@ -363,13 +368,19 @@ public final class SpanOrQuery extends SpanQuery {
 
         @Override
         public void collect(SpanCollector collector) throws IOException {
-          if (topPositionSpans != null)
-            topPositionSpans.collect(collector);
+          if (topPositionSpans != null) topPositionSpans.collect(collector);
         }
 
         @Override
         public String toString() {
-          return "spanOr(" + SpanOrQuery.this + ")@" + docID() + ": " + startPosition() + " - " + endPosition();
+          return "spanOr("
+              + SpanOrQuery.this
+              + ")@"
+              + docID()
+              + ": "
+              + startPosition()
+              + " - "
+              + endPosition();
         }
 
         long cost = -1;
@@ -387,6 +398,4 @@ public final class SpanOrQuery extends SpanQuery {
       };
     }
   }
-
 }
-

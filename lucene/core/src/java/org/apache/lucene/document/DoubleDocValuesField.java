@@ -16,22 +16,21 @@
  */
 package org.apache.lucene.document;
 
-
 /**
- * Syntactic sugar for encoding doubles as NumericDocValues
- * via {@link Double#doubleToRawLongBits(double)}.
- * <p>
- * Per-document double values can be retrieved via
- * {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
- * <p>
- * <b>NOTE</b>: In most all cases this will be rather inefficient,
- * requiring eight bytes per document. Consider encoding double
- * values yourself with only as much precision as you require.
+ * Syntactic sugar for encoding doubles as NumericDocValues via {@link
+ * Double#doubleToRawLongBits(double)}.
+ *
+ * <p>Per-document double values can be retrieved via {@link
+ * org.apache.lucene.index.LeafReader#getNumericDocValues(String)}.
+ *
+ * <p><b>NOTE</b>: In most all cases this will be rather inefficient, requiring eight bytes per
+ * document. Consider encoding double values yourself with only as much precision as you require.
  */
 public class DoubleDocValuesField extends NumericDocValuesField {
 
-  /** 
-   * Creates a new DocValues field with the specified 64-bit double value 
+  /**
+   * Creates a new DocValues field with the specified 64-bit double value
+   *
    * @param name field name
    * @param value 64-bit double value
    * @throws IllegalArgumentException if the field name is null
@@ -44,7 +43,7 @@ public class DoubleDocValuesField extends NumericDocValuesField {
   public void setDoubleValue(double value) {
     super.setLongValue(Double.doubleToRawLongBits(value));
   }
-  
+
   @Override
   public void setLongValue(long value) {
     throw new IllegalArgumentException("cannot change value type from Double to Long");

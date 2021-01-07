@@ -25,34 +25,28 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * Utility class to help extract the set of sub queries that have matched from
- * a larger query.
+ * Utility class to help extract the set of sub queries that have matched from a larger query.
  *
- * Individual subqueries may be wrapped using {@link #wrapQuery(String, Query)}, and
- * the matching queries for a particular document can then be pulled from the parent
- * Query's {@link Matches} object by calling {@link #findNamedMatches(Matches)}
+ * <p>Individual subqueries may be wrapped using {@link #wrapQuery(String, Query)}, and the matching
+ * queries for a particular document can then be pulled from the parent Query's {@link Matches}
+ * object by calling {@link #findNamedMatches(Matches)}
  */
 public class NamedMatches implements Matches {
 
   private final Matches in;
   private final String name;
 
-  /**
-   * Wraps a {@link Matches} object and associates a name with it
-   */
+  /** Wraps a {@link Matches} object and associates a name with it */
   public NamedMatches(String name, Matches in) {
     this.in = Objects.requireNonNull(in);
     this.name = name;
   }
 
-  /**
-   * Returns the name of this {@link Matches}
-   */
+  /** Returns the name of this {@link Matches} */
   public String getName() {
     return name;
   }
@@ -72,16 +66,12 @@ public class NamedMatches implements Matches {
     return in.iterator();
   }
 
-  /**
-   * Wrap a Query so that it associates a name with its {@link Matches}
-   */
+  /** Wrap a Query so that it associates a name with its {@link Matches} */
   public static Query wrapQuery(String name, Query in) {
     return new NamedQuery(name, in);
   }
 
-  /**
-   * Finds all {@link NamedMatches} in a {@link Matches} tree
-   */
+  /** Finds all {@link NamedMatches} in a {@link Matches} tree */
   public static List<NamedMatches> findNamedMatches(Matches matches) {
     List<NamedMatches> nm = new ArrayList<>();
     List<Matches> toProcess = new LinkedList<>();
@@ -107,7 +97,8 @@ public class NamedMatches implements Matches {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       Weight w = in.createWeight(searcher, scoreMode, boost);
       return new FilterWeight(w) {
         @Override
@@ -146,8 +137,7 @@ public class NamedMatches implements Matches {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       NamedQuery that = (NamedQuery) o;
-      return Objects.equals(name, that.name) &&
-          Objects.equals(in, that.in);
+      return Objects.equals(name, that.name) && Objects.equals(in, that.in);
     }
 
     @Override

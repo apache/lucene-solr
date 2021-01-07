@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -32,9 +30,10 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
   public void test() throws Exception {
-    MockDirectoryWrapper dir = newMockFSDirectory(createTempDir("TestIndexWriterOutOfFileDescriptors"));
-    double rate = random().nextDouble()*0.01;
-    //System.out.println("rate=" + rate);
+    MockDirectoryWrapper dir =
+        newMockFSDirectory(createTempDir("TestIndexWriterOutOfFileDescriptors"));
+    double rate = random().nextDouble() * 0.01;
+    // System.out.println("rate=" + rate);
     dir.setRandomIOExceptionRateOnOpen(rate);
     int iters = atLeast(20);
     LineFileDocs docs = new LineFileDocs(random());
@@ -43,7 +42,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
     boolean any = false;
     MockDirectoryWrapper dirCopy = null;
     int lastNumDocs = 0;
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
 
       IndexWriter w = null;
       if (VERBOSE) {
@@ -93,9 +92,9 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         w = null;
 
         // NOTE: This is O(N^2)!  Only enable for temporary debugging:
-        //dir.setRandomIOExceptionRateOnOpen(0.0);
-        //_TestUtil.checkIndex(dir);
-        //dir.setRandomIOExceptionRateOnOpen(rate);
+        // dir.setRandomIOExceptionRateOnOpen(0.0);
+        // _TestUtil.checkIndex(dir);
+        // dir.setRandomIOExceptionRateOnOpen(rate);
 
         // Verify numDocs only increases, to catch IndexWriter
         // accidentally deleting the index:
@@ -112,7 +111,7 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         }
         assertTrue("before=" + lastNumDocs + " after=" + r2.numDocs(), r2.numDocs() >= lastNumDocs);
         lastNumDocs = r2.numDocs();
-        //System.out.println("numDocs=" + lastNumDocs);
+        // System.out.println("numDocs=" + lastNumDocs);
         dir.setRandomIOExceptionRateOnOpen(rate);
 
         any = true;
@@ -140,7 +139,8 @@ public class TestIndexWriterOutOfFileDescriptors extends LuceneTestCase {
         dirCopy = newMockFSDirectory(createTempDir("TestIndexWriterOutOfFileDescriptors.copy"));
         Set<String> files = new HashSet<>();
         for (String file : dir.listAll()) {
-          if (file.startsWith(IndexFileNames.SEGMENTS) || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
+          if (file.startsWith(IndexFileNames.SEGMENTS)
+              || IndexFileNames.CODEC_FILE_PATTERN.matcher(file).matches()) {
             dirCopy.copyFrom(dir, file, file, IOContext.DEFAULT);
             files.add(file);
           }

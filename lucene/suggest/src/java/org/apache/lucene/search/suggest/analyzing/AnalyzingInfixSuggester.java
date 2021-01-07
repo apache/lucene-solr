@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.AnalyzerWrapper;
 import org.apache.lucene.analysis.TokenFilter;
@@ -56,8 +55,8 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -88,48 +87,49 @@ import org.apache.lucene.util.RamUsageEstimator;
 //     DocumentDictionary and NRT?  so that your suggester
 //     "automatically" keeps in sync w/ your index
 
-/** Analyzes the input text and then suggests matches based
- *  on prefix matches to any tokens in the indexed text.
- *  This also highlights the tokens that match.
+/**
+ * Analyzes the input text and then suggests matches based on prefix matches to any tokens in the
+ * indexed text. This also highlights the tokens that match.
  *
- *  <p>This suggester supports payloads.  Matches are sorted only
- *  by the suggest weight; it would be nice to support
- *  blended score + weight sort in the future.  This means
- *  this suggester best applies when there is a strong
- *  a-priori ranking of all the suggestions.
+ * <p>This suggester supports payloads. Matches are sorted only by the suggest weight; it would be
+ * nice to support blended score + weight sort in the future. This means this suggester best applies
+ * when there is a strong a-priori ranking of all the suggestions.
  *
- *  <p>This suggester supports contexts, including arbitrary binary
- *  terms.
+ * <p>This suggester supports contexts, including arbitrary binary terms.
  *
- * @lucene.experimental */    
-
+ * @lucene.experimental
+ */
 public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
-  /** edgegrams for searching short prefixes without Prefix Query 
-   * that's  controlled by {@linkplain #minPrefixChars} */
-  protected final static String TEXTGRAMS_FIELD_NAME = "textgrams";
+  /**
+   * edgegrams for searching short prefixes without Prefix Query that's controlled by {@linkplain
+   * #minPrefixChars}
+   */
+  protected static final String TEXTGRAMS_FIELD_NAME = "textgrams";
 
   /** Field name used for the indexed text. */
-  protected final static String TEXT_FIELD_NAME = "text";
+  protected static final String TEXT_FIELD_NAME = "text";
 
-  /** Field name used for the indexed text, as a
-   *  StringField, for exact lookup. */
-  protected final static String EXACT_TEXT_FIELD_NAME = "exacttext";
+  /** Field name used for the indexed text, as a StringField, for exact lookup. */
+  protected static final String EXACT_TEXT_FIELD_NAME = "exacttext";
 
-  /** Field name used for the indexed context, as a
-   *  StringField and a SortedSetDVField, for filtering. */
-  protected final static String CONTEXTS_FIELD_NAME = "contexts";
+  /**
+   * Field name used for the indexed context, as a StringField and a SortedSetDVField, for
+   * filtering.
+   */
+  protected static final String CONTEXTS_FIELD_NAME = "contexts";
 
   /** Analyzer used at search time */
   protected final Analyzer queryAnalyzer;
   /** Analyzer used at index time */
   protected final Analyzer indexAnalyzer;
+
   private final Directory dir;
   final int minPrefixChars;
-  
+
   private final boolean allTermsRequired;
   private final boolean highlight;
-  
+
   private final boolean commitOnBuild;
   private final boolean closeIndexWriterOnBuild;
 
@@ -138,104 +138,131 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
   /** {@link IndexSearcher} used for lookups. */
   protected SearcherManager searcherMgr;
-  
+
   /** Used to manage concurrent access to searcherMgr */
   protected final Object searcherMgrLock = new Object();
 
-  /** Default minimum number of leading characters before
-   *  PrefixQuery is used (4). */
+  /** Default minimum number of leading characters before PrefixQuery is used (4). */
   public static final int DEFAULT_MIN_PREFIX_CHARS = 4;
-  
+
   /** Default boolean clause option for multiple terms matching (all terms required). */
   public static final boolean DEFAULT_ALL_TERMS_REQUIRED = true;
- 
+
   /** Default higlighting option. */
   public static final boolean DEFAULT_HIGHLIGHT = true;
 
   /** Default option to close the IndexWriter once the index has been built. */
-  protected final static boolean DEFAULT_CLOSE_INDEXWRITER_ON_BUILD = true;
+  protected static final boolean DEFAULT_CLOSE_INDEXWRITER_ON_BUILD = true;
 
   /** How we sort the postings and search results. */
   private static final Sort SORT = new Sort(new SortField("weight", SortField.Type.LONG, true));
 
-  /** Create a new instance, loading from a previously built
-   *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
-   *  private to the infix suggester (i.e., not an external
-   *  Lucene index).  Note that {@link #close}
-   *  will also close the provided directory. */
+  /**
+   * Create a new instance, loading from a previously built AnalyzingInfixSuggester directory, if it
+   * exists. This directory must be private to the infix suggester (i.e., not an external Lucene
+   * index). Note that {@link #close} will also close the provided directory.
+   */
   public AnalyzingInfixSuggester(Directory dir, Analyzer analyzer) throws IOException {
-    this(dir, analyzer, analyzer, DEFAULT_MIN_PREFIX_CHARS, false, DEFAULT_ALL_TERMS_REQUIRED, DEFAULT_HIGHLIGHT);
-  }
-  
-  /** Create a new instance, loading from a previously built
-   *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
-   *  private to the infix suggester (i.e., not an external
-   *  Lucene index).  Note that {@link #close}
-   *  will also close the provided directory.
-   *
-   *  @param minPrefixChars Minimum number of leading characters
-   *     before PrefixQuery is used (default 4).
-   *     Prefixes shorter than this are indexed as character
-   *     ngrams (increasing index size but making lookups
-   *     faster).
-   *
-   *  @param commitOnBuild Call commit after the index has finished building. This would persist the
-   *                       suggester index to disk and future instances of this suggester can use this pre-built dictionary.
-   */
-  public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
-                                 boolean commitOnBuild) throws IOException {
-    this(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, DEFAULT_ALL_TERMS_REQUIRED, DEFAULT_HIGHLIGHT);
-  }
-  
-  /** Create a new instance, loading from a previously built
-   *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
-   *  private to the infix suggester (i.e., not an external
-   *  Lucene index).  Note that {@link #close}
-   *  will also close the provided directory.
-   *
-   *  @param minPrefixChars Minimum number of leading characters
-   *     before PrefixQuery is used (default 4).
-   *     Prefixes shorter than this are indexed as character
-   *     ngrams (increasing index size but making lookups
-   *     faster).
-   *
-   *  @param commitOnBuild Call commit after the index has finished building. This would persist the
-   *                       suggester index to disk and future instances of this suggester can use this pre-built dictionary.
-   *
-   *  @param allTermsRequired All terms in the suggest query must be matched.
-   *  @param highlight Highlight suggest query in suggestions.
-   *
-   */
-  public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
-                                 boolean commitOnBuild,
-                                 boolean allTermsRequired, boolean highlight) throws IOException {
-    this(dir, indexAnalyzer, queryAnalyzer, minPrefixChars, commitOnBuild, allTermsRequired, highlight, 
-         DEFAULT_CLOSE_INDEXWRITER_ON_BUILD);
+    this(
+        dir,
+        analyzer,
+        analyzer,
+        DEFAULT_MIN_PREFIX_CHARS,
+        false,
+        DEFAULT_ALL_TERMS_REQUIRED,
+        DEFAULT_HIGHLIGHT);
   }
 
-    /** Create a new instance, loading from a previously built
-     *  AnalyzingInfixSuggester directory, if it exists.  This directory must be
-     *  private to the infix suggester (i.e., not an external
-     *  Lucene index).  Note that {@link #close}
-     *  will also close the provided directory.
-     *
-     *  @param minPrefixChars Minimum number of leading characters
-     *     before PrefixQuery is used (default 4).
-     *     Prefixes shorter than this are indexed as character
-     *     ngrams (increasing index size but making lookups
-     *     faster).
-     *
-     *  @param commitOnBuild Call commit after the index has finished building. This would persist the
-     *                       suggester index to disk and future instances of this suggester can use this pre-built dictionary.
-     *
-     *  @param allTermsRequired All terms in the suggest query must be matched.
-     *  @param highlight Highlight suggest query in suggestions.
-     *  @param closeIndexWriterOnBuild If true, the IndexWriter will be closed after the index has finished building.
-     */
-  public AnalyzingInfixSuggester(Directory dir, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars,
-                                 boolean commitOnBuild, boolean allTermsRequired, 
-                                 boolean highlight, boolean closeIndexWriterOnBuild) throws IOException {
-                                    
+  /**
+   * Create a new instance, loading from a previously built AnalyzingInfixSuggester directory, if it
+   * exists. This directory must be private to the infix suggester (i.e., not an external Lucene
+   * index). Note that {@link #close} will also close the provided directory.
+   *
+   * @param minPrefixChars Minimum number of leading characters before PrefixQuery is used (default
+   *     4). Prefixes shorter than this are indexed as character ngrams (increasing index size but
+   *     making lookups faster).
+   * @param commitOnBuild Call commit after the index has finished building. This would persist the
+   *     suggester index to disk and future instances of this suggester can use this pre-built
+   *     dictionary.
+   */
+  public AnalyzingInfixSuggester(
+      Directory dir,
+      Analyzer indexAnalyzer,
+      Analyzer queryAnalyzer,
+      int minPrefixChars,
+      boolean commitOnBuild)
+      throws IOException {
+    this(
+        dir,
+        indexAnalyzer,
+        queryAnalyzer,
+        minPrefixChars,
+        commitOnBuild,
+        DEFAULT_ALL_TERMS_REQUIRED,
+        DEFAULT_HIGHLIGHT);
+  }
+
+  /**
+   * Create a new instance, loading from a previously built AnalyzingInfixSuggester directory, if it
+   * exists. This directory must be private to the infix suggester (i.e., not an external Lucene
+   * index). Note that {@link #close} will also close the provided directory.
+   *
+   * @param minPrefixChars Minimum number of leading characters before PrefixQuery is used (default
+   *     4). Prefixes shorter than this are indexed as character ngrams (increasing index size but
+   *     making lookups faster).
+   * @param commitOnBuild Call commit after the index has finished building. This would persist the
+   *     suggester index to disk and future instances of this suggester can use this pre-built
+   *     dictionary.
+   * @param allTermsRequired All terms in the suggest query must be matched.
+   * @param highlight Highlight suggest query in suggestions.
+   */
+  public AnalyzingInfixSuggester(
+      Directory dir,
+      Analyzer indexAnalyzer,
+      Analyzer queryAnalyzer,
+      int minPrefixChars,
+      boolean commitOnBuild,
+      boolean allTermsRequired,
+      boolean highlight)
+      throws IOException {
+    this(
+        dir,
+        indexAnalyzer,
+        queryAnalyzer,
+        minPrefixChars,
+        commitOnBuild,
+        allTermsRequired,
+        highlight,
+        DEFAULT_CLOSE_INDEXWRITER_ON_BUILD);
+  }
+
+  /**
+   * Create a new instance, loading from a previously built AnalyzingInfixSuggester directory, if it
+   * exists. This directory must be private to the infix suggester (i.e., not an external Lucene
+   * index). Note that {@link #close} will also close the provided directory.
+   *
+   * @param minPrefixChars Minimum number of leading characters before PrefixQuery is used (default
+   *     4). Prefixes shorter than this are indexed as character ngrams (increasing index size but
+   *     making lookups faster).
+   * @param commitOnBuild Call commit after the index has finished building. This would persist the
+   *     suggester index to disk and future instances of this suggester can use this pre-built
+   *     dictionary.
+   * @param allTermsRequired All terms in the suggest query must be matched.
+   * @param highlight Highlight suggest query in suggestions.
+   * @param closeIndexWriterOnBuild If true, the IndexWriter will be closed after the index has
+   *     finished building.
+   */
+  public AnalyzingInfixSuggester(
+      Directory dir,
+      Analyzer indexAnalyzer,
+      Analyzer queryAnalyzer,
+      int minPrefixChars,
+      boolean commitOnBuild,
+      boolean allTermsRequired,
+      boolean highlight,
+      boolean closeIndexWriterOnBuild)
+      throws IOException {
+
     if (minPrefixChars < 0) {
       throw new IllegalArgumentException("minPrefixChars must be >= 0; got: " + minPrefixChars);
     }
@@ -255,9 +282,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
   }
 
-  /** Override this to customize index settings, e.g. which
-   *  codec to use. */
-  protected IndexWriterConfig getIndexWriterConfig(Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
+  /** Override this to customize index settings, e.g. which codec to use. */
+  protected IndexWriterConfig getIndexWriterConfig(
+      Analyzer indexAnalyzer, IndexWriterConfig.OpenMode openMode) {
     IndexWriterConfig iwc = new IndexWriterConfig(indexAnalyzer);
     iwc.setOpenMode(openMode);
 
@@ -269,15 +296,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return iwc;
   }
 
-  /** Subclass can override to choose a specific {@link
-   *  Directory} implementation. */
+  /** Subclass can override to choose a specific {@link Directory} implementation. */
   protected Directory getDirectory(Path path) throws IOException {
     return FSDirectory.open(path);
   }
 
   @Override
   public void build(InputIterator iter) throws IOException {
-    
+
     synchronized (searcherMgrLock) {
       if (searcherMgr != null) {
         searcherMgr.close();
@@ -293,9 +319,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       try {
         // First pass: build a temporary normal Lucene index,
         // just indexing the suggestions as they iterate:
-        writer = new IndexWriter(dir,
-            getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
-        //long t0 = System.nanoTime();
+        writer =
+            new IndexWriter(
+                dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+        // long t0 = System.nanoTime();
 
         // TODO: use threads?
         BytesRef text;
@@ -310,7 +337,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           add(text, iter.contexts(), iter.weight(), payload);
         }
 
-        //System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + " msec");
+        // System.out.println("initial indexing time: " + ((System.nanoTime()-t0)/1000000) + "
+        // msec");
         if (commitOnBuild || closeIndexWriterOnBuild) {
           commit();
         }
@@ -322,7 +350,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
             writer.close();
             writer = null;
           }
-        } else {  // failure
+        } else { // failure
           if (writer != null) {
             writer.rollback();
             writer = null;
@@ -332,15 +360,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
   }
 
-  /** Commits all pending changes made to this suggester to disk.
+  /**
+   * Commits all pending changes made to this suggester to disk.
    *
-   *  @see IndexWriter#commit */
+   * @see IndexWriter#commit
+   */
   public void commit() throws IOException {
     if (writer == null) {
       if (searcherMgr == null || closeIndexWriterOnBuild == false) {
         throw new IllegalStateException("Cannot commit on an closed writer. Add documents first");
       }
-      // else no-op: writer was committed and closed after the index was built, so commit is unnecessary
+      // else no-op: writer was committed and closed after the index was built, so commit is
+      // unnecessary
     } else {
       writer.commit();
     }
@@ -354,12 +385,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
 
       @Override
-      protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-        assert !(fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars == 0) 
-                : "no need \"textgrams\" when minPrefixChars="+minPrefixChars;
+      protected TokenStreamComponents wrapComponents(
+          String fieldName, TokenStreamComponents components) {
+        assert !(fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars == 0)
+            : "no need \"textgrams\" when minPrefixChars=" + minPrefixChars;
         if (fieldName.equals(TEXTGRAMS_FIELD_NAME) && minPrefixChars > 0) {
           // TODO: should use an EdgeNGramTokenFilterFactory here
-          TokenFilter filter = new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars, false);
+          TokenFilter filter =
+              new EdgeNGramTokenFilter(components.getTokenStream(), 1, minPrefixChars, false);
           return new TokenStreamComponents(components.getSource(), filter);
         } else {
           return components;
@@ -373,9 +406,13 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       if (writer == null) {
         if (DirectoryReader.indexExists(dir)) {
           // Already built; open it:
-          writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
+          writer =
+              new IndexWriter(
+                  dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
         } else {
-          writer = new IndexWriter(dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
+          writer =
+              new IndexWriter(
+                  dir, getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
         }
 
         SearcherManager oldSearcherMgr = searcherMgr;
@@ -387,35 +424,38 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
   }
 
-  /** Adds a new suggestion.  Be sure to use {@link #update}
-   *  instead if you want to replace a previous suggestion.
-   *  After adding or updating a batch of new suggestions,
-   *  you must call {@link #refresh} in the end in order to
-   *  see the suggestions in {@link #lookup} */
-  public void add(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  /**
+   * Adds a new suggestion. Be sure to use {@link #update} instead if you want to replace a previous
+   * suggestion. After adding or updating a batch of new suggestions, you must call {@link #refresh}
+   * in the end in order to see the suggestions in {@link #lookup}
+   */
+  public void add(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload)
+      throws IOException {
     ensureOpen();
     writer.addDocument(buildDocument(text, contexts, weight, payload));
   }
 
-  /** Updates a previous suggestion, matching the exact same
-   *  text as before.  Use this to change the weight or
-   *  payload of an already added suggestion.  If you know
-   *  this text is not already present you can use {@link
-   *  #add} instead.  After adding or updating a batch of
-   *  new suggestions, you must call {@link #refresh} in the
-   *  end in order to see the suggestions in {@link #lookup} */
-  public void update(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  /**
+   * Updates a previous suggestion, matching the exact same text as before. Use this to change the
+   * weight or payload of an already added suggestion. If you know this text is not already present
+   * you can use {@link #add} instead. After adding or updating a batch of new suggestions, you must
+   * call {@link #refresh} in the end in order to see the suggestions in {@link #lookup}
+   */
+  public void update(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload)
+      throws IOException {
     ensureOpen();
-    writer.updateDocument(new Term(EXACT_TEXT_FIELD_NAME, text.utf8ToString()),
-                          buildDocument(text, contexts, weight, payload));
+    writer.updateDocument(
+        new Term(EXACT_TEXT_FIELD_NAME, text.utf8ToString()),
+        buildDocument(text, contexts, weight, payload));
   }
 
-  private Document buildDocument(BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
+  private Document buildDocument(
+      BytesRef text, Set<BytesRef> contexts, long weight, BytesRef payload) throws IOException {
     String textString = text.utf8ToString();
     Document doc = new Document();
     FieldType ft = getTextFieldType();
     doc.add(new Field(TEXT_FIELD_NAME, textString, ft));
-    if (minPrefixChars>0) {
+    if (minPrefixChars > 0) {
       doc.add(new Field(TEXTGRAMS_FIELD_NAME, textString, ft));
     }
     doc.add(new StringField(EXACT_TEXT_FIELD_NAME, textString, Field.Store.NO));
@@ -425,7 +465,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       doc.add(new BinaryDocValuesField("payloads", payload));
     }
     if (contexts != null) {
-      for(BytesRef context : contexts) {
+      for (BytesRef context : contexts) {
         doc.add(new StringField(CONTEXTS_FIELD_NAME, context, Field.Store.NO));
         doc.add(new SortedSetDocValuesField(CONTEXTS_FIELD_NAME, context));
       }
@@ -433,9 +473,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return doc;
   }
 
-  /** Reopens the underlying searcher; it's best to "batch
-   *  up" many additions/updates, and then call refresh
-   *  once in the end. */
+  /**
+   * Reopens the underlying searcher; it's best to "batch up" many additions/updates, and then call
+   * refresh once in the end.
+   */
   public void refresh() throws IOException {
     if (searcherMgr == null) {
       throw new IllegalStateException("suggester was not built");
@@ -448,10 +489,10 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   /**
-   * Subclass can override this method to change the field type of the text field
-   * e.g. to change the index options
+   * Subclass can override this method to change the field type of the text field e.g. to change the
+   * index options
    */
-  protected FieldType getTextFieldType(){
+  protected FieldType getTextFieldType() {
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS);
     ft.setOmitNorms(true);
@@ -460,24 +501,36 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) throws IOException {
+  public List<LookupResult> lookup(
+      CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num)
+      throws IOException {
     return lookup(key, contexts, num, allTermsRequired, highlight);
   }
 
   /** Lookup, without any context. */
-  public List<LookupResult> lookup(CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-    return lookup(key, (BooleanQuery)null, num, allTermsRequired, doHighlight);
+  public List<LookupResult> lookup(
+      CharSequence key, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+    return lookup(key, (BooleanQuery) null, num, allTermsRequired, doHighlight);
   }
 
-  /** Lookup, with context but without booleans. Context booleans default to SHOULD,
-   *  so each suggestion must have at least one of the contexts. */
-  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+  /**
+   * Lookup, with context but without booleans. Context booleans default to SHOULD, so each
+   * suggestion must have at least one of the contexts.
+   */
+  public List<LookupResult> lookup(
+      CharSequence key,
+      Set<BytesRef> contexts,
+      int num,
+      boolean allTermsRequired,
+      boolean doHighlight)
+      throws IOException {
     return lookup(key, toQuery(contexts), num, allTermsRequired, doHighlight);
   }
 
-  /** This is called if the last token isn't ended
-   *  (e.g. user did not type a space after it).  Return an
-   *  appropriate Query clause to add to the BooleanQuery. */
+  /**
+   * This is called if the last token isn't ended (e.g. user did not type a space after it). Return
+   * an appropriate Query clause to add to the BooleanQuery.
+   */
   protected Query getLastTokenQuery(String token) throws IOException {
     if (token.length() < minPrefixChars) {
       // The leading ngram was directly indexed:
@@ -487,23 +540,30 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return new PrefixQuery(new Term(TEXT_FIELD_NAME, token));
   }
 
-  /** Retrieve suggestions, specifying whether all terms
-   *  must match ({@code allTermsRequired}) and whether the hits
-   *  should be highlighted ({@code doHighlight}). */
-  public List<LookupResult> lookup(CharSequence key, Map<BytesRef, BooleanClause.Occur> contextInfo, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-      return lookup(key, toQuery(contextInfo), num, allTermsRequired, doHighlight);
+  /**
+   * Retrieve suggestions, specifying whether all terms must match ({@code allTermsRequired}) and
+   * whether the hits should be highlighted ({@code doHighlight}).
+   */
+  public List<LookupResult> lookup(
+      CharSequence key,
+      Map<BytesRef, BooleanClause.Occur> contextInfo,
+      int num,
+      boolean allTermsRequired,
+      boolean doHighlight)
+      throws IOException {
+    return lookup(key, toQuery(contextInfo), num, allTermsRequired, doHighlight);
   }
 
-  private BooleanQuery toQuery(Map<BytesRef,BooleanClause.Occur> contextInfo) {
+  private BooleanQuery toQuery(Map<BytesRef, BooleanClause.Occur> contextInfo) {
     if (contextInfo == null || contextInfo.isEmpty()) {
       return null;
     }
-    
+
     BooleanQuery.Builder contextFilter = new BooleanQuery.Builder();
-    for (Map.Entry<BytesRef,BooleanClause.Occur> entry : contextInfo.entrySet()) {
+    for (Map.Entry<BytesRef, BooleanClause.Occur> entry : contextInfo.entrySet()) {
       addContextToQuery(contextFilter, entry.getKey(), entry.getValue());
     }
-    
+
     return contextFilter.build();
   }
 
@@ -511,7 +571,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     if (contextInfo == null || contextInfo.isEmpty()) {
       return null;
     }
-    
+
     BooleanQuery.Builder contextFilter = new BooleanQuery.Builder();
     for (BytesRef context : contextInfo) {
       addContextToQuery(contextFilter, context, BooleanClause.Occur.SHOULD);
@@ -519,38 +579,45 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return contextFilter.build();
   }
 
-  
   /**
-   * This method is handy as we do not need access to internal fields such as CONTEXTS_FIELD_NAME in order to build queries
-   * However, here may not be its best location.
-   * 
+   * This method is handy as we do not need access to internal fields such as CONTEXTS_FIELD_NAME in
+   * order to build queries However, here may not be its best location.
+   *
    * @param query an instance of @See {@link BooleanQuery}
    * @param context the context
    * @param clause one of {@link Occur}
    */
-  public void addContextToQuery(BooleanQuery.Builder query, BytesRef context, BooleanClause.Occur clause) {
+  public void addContextToQuery(
+      BooleanQuery.Builder query, BytesRef context, BooleanClause.Occur clause) {
     // NOTE: we "should" wrap this in
     // ConstantScoreQuery, or maybe send this as a
     // Filter instead to search.
-    
+
     // TODO: if we had a BinaryTermField we could fix
     // this "must be valid ut8f" limitation:
     query.add(new TermQuery(new Term(CONTEXTS_FIELD_NAME, context)), clause);
   }
 
   /**
-   * This is an advanced method providing the capability to send down to the suggester any 
-   * arbitrary lucene query to be used to filter the result of the suggester
-   * 
+   * This is an advanced method providing the capability to send down to the suggester any arbitrary
+   * lucene query to be used to filter the result of the suggester
+   *
    * @param key the keyword being looked for
-   * @param contextQuery an arbitrary Lucene query to be used to filter the result of the suggester. {@link #addContextToQuery} could be used to build this contextQuery.
+   * @param contextQuery an arbitrary Lucene query to be used to filter the result of the suggester.
+   *     {@link #addContextToQuery} could be used to build this contextQuery.
    * @param num number of items to return
    * @param allTermsRequired all searched terms must match or not
    * @param doHighlight if true, the matching term will be highlighted in the search result
    * @return the result of the suggester
    * @throws IOException f the is IO exception while reading data from the index
    */
-  public List<LookupResult> lookup(CharSequence key, BooleanQuery contextQuery, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+  public List<LookupResult> lookup(
+      CharSequence key,
+      BooleanQuery contextQuery,
+      int num,
+      boolean allTermsRequired,
+      boolean doHighlight)
+      throws IOException {
 
     if (searcherMgr == null) {
       throw new IllegalStateException("suggester was not built");
@@ -568,7 +635,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     String prefixToken = null;
 
     try (TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()))) {
-      //long t0 = System.currentTimeMillis();
+      // long t0 = System.currentTimeMillis();
       ts.reset();
       final CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       final OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -577,7 +644,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       int maxEndOffset = -1;
       matchedTokens = new HashSet<>();
       while (ts.incrementToken()) {
-        if (lastToken != null) {  
+        if (lastToken != null) {
           matchedTokens.add(lastToken);
           query.add(new TermQuery(new Term(TEXT_FIELD_NAME, lastToken)), occur);
         }
@@ -606,7 +673,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           matchedTokens.add(lastToken);
           lastQuery = new TermQuery(new Term(TEXT_FIELD_NAME, lastToken));
         }
-        
+
         if (lastQuery != null) {
           query.add(lastQuery, occur);
         }
@@ -620,7 +687,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
             break;
           }
         }
-        
+
         if (allMustNot) {
           // All are MUST_NOT: add the contextQuery to the main query instead (not as sub-query)
           for (BooleanClause clause : contextQuery.clauses()) {
@@ -638,14 +705,14 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         }
       }
     }
-    
+
     // TODO: we could allow blended sort here, combining
     // weight w/ score.  Now we ignore score and sort only
     // by weight:
 
     Query finalQuery = finishQuery(query, allTermsRequired);
 
-    //System.out.println("finalQuery=" + finalQuery);
+    // System.out.println("finalQuery=" + finalQuery);
 
     // Sort by weight, descending:
     TopFieldCollector c = TopFieldCollector.create(SORT, num, 1);
@@ -657,7 +724,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       searcher = mgr.acquire();
     }
     try {
-      //System.out.println("got searcher=" + searcher);
+      // System.out.println("got searcher=" + searcher);
       searcher.search(finalQuery, c);
 
       TopFieldDocs hits = c.topDocs();
@@ -669,31 +736,36 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       mgr.release(searcher);
     }
 
-    //System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
-    //System.out.println(results);
+    // System.out.println((System.currentTimeMillis() - t0) + " msec for infix suggest");
+    // System.out.println(results);
 
     return results;
   }
-  
+
   /**
-   * Create the results based on the search hits.
-   * Can be overridden by subclass to add particular behavior (e.g. weight transformation).
-   * Note that there is no prefix token (the {@code prefixToken} argument will
-   * be null) whenever the final token in the incoming request was in fact finished
-   * (had trailing characters, such as white-space).
+   * Create the results based on the search hits. Can be overridden by subclass to add particular
+   * behavior (e.g. weight transformation). Note that there is no prefix token (the {@code
+   * prefixToken} argument will be null) whenever the final token in the incoming request was in
+   * fact finished (had trailing characters, such as white-space).
    *
    * @throws IOException If there are problems reading fields from the underlying Lucene index.
    */
-  protected List<LookupResult> createResults(IndexSearcher searcher, TopFieldDocs hits, int num,
-                                             CharSequence charSequence,
-                                             boolean doHighlight, Set<String> matchedTokens, String prefixToken)
+  protected List<LookupResult> createResults(
+      IndexSearcher searcher,
+      TopFieldDocs hits,
+      int num,
+      CharSequence charSequence,
+      boolean doHighlight,
+      Set<String> matchedTokens,
+      String prefixToken)
       throws IOException {
 
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     List<LookupResult> results = new ArrayList<>();
-    for (int i=0;i<hits.scoreDocs.length;i++) {
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
-      BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
+      BinaryDocValues textDV =
+          MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
       textDV.advance(fd.doc);
       BytesRef term = textDV.binaryValue();
       String text = term.utf8ToString();
@@ -701,7 +773,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
       // This will just be null if app didn't pass payloads to build():
       // TODO: maybe just stored fields?  they compress...
-      BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
+      BinaryDocValues payloadsDV =
+          MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
 
       BytesRef payload;
       if (payloadsDV != null) {
@@ -716,7 +789,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
       // Must look up sorted-set by segment:
       int segment = ReaderUtil.subIndex(fd.doc, leaves);
-      SortedSetDocValues contextsDV = leaves.get(segment).reader().getSortedSetDocValues(CONTEXTS_FIELD_NAME);
+      SortedSetDocValues contextsDV =
+          leaves.get(segment).reader().getSortedSetDocValues(CONTEXTS_FIELD_NAME);
       Set<BytesRef> contexts;
       if (contextsDV != null) {
         contexts = new HashSet<BytesRef>();
@@ -735,7 +809,9 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       LookupResult result;
 
       if (doHighlight) {
-        result = new LookupResult(text, highlight(text, matchedTokens, prefixToken), score, payload, contexts);
+        result =
+            new LookupResult(
+                text, highlight(text, matchedTokens, prefixToken), score, payload, contexts);
       } else {
         result = new LookupResult(text, score, payload, contexts);
       }
@@ -746,17 +822,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return results;
   }
 
-  /** Subclass can override this to tweak the Query before
-   *  searching. */
+  /** Subclass can override this to tweak the Query before searching. */
   protected Query finishQuery(BooleanQuery.Builder in, boolean allTermsRequired) {
     return in.build();
   }
 
-  /** Override this method to customize the Object
-   *  representing a single highlighted suggestions; the
-   *  result is set on each {@link
-   *  org.apache.lucene.search.suggest.Lookup.LookupResult#highlightKey} member. */
-  protected Object highlight(String text, Set<String> matchedTokens, String prefixToken) throws IOException {
+  /**
+   * Override this method to customize the Object representing a single highlighted suggestions; the
+   * result is set on each {@link org.apache.lucene.search.suggest.Lookup.LookupResult#highlightKey}
+   * member.
+   */
+  protected Object highlight(String text, Set<String> matchedTokens, String prefixToken)
+      throws IOException {
     try (TokenStream ts = queryAnalyzer.tokenStream("text", new StringReader(text))) {
       CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
       OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
@@ -773,7 +850,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
         } else if (upto > startOffset) {
           continue;
         }
-        
+
         if (matchedTokens.contains(token)) {
           // Token matches.
           addWholeMatch(sb, text.substring(startOffset, endOffset), token);
@@ -792,21 +869,24 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     }
   }
 
-  /** Called while highlighting a single result, to append a
-   *  non-matching chunk of text from the suggestion to the
-   *  provided fragments list.
-   *  @param sb The {@code StringBuilder} to append to
-   *  @param text The text chunk to add
+  /**
+   * Called while highlighting a single result, to append a non-matching chunk of text from the
+   * suggestion to the provided fragments list.
+   *
+   * @param sb The {@code StringBuilder} to append to
+   * @param text The text chunk to add
    */
   protected void addNonMatch(StringBuilder sb, String text) {
     sb.append(text);
   }
 
-  /** Called while highlighting a single result, to append
-   *  the whole matched token to the provided fragments list.
-   *  @param sb The {@code StringBuilder} to append to
-   *  @param surface The surface form (original) text
-   *  @param analyzed The analyzed token corresponding to the surface form text
+  /**
+   * Called while highlighting a single result, to append the whole matched token to the provided
+   * fragments list.
+   *
+   * @param sb The {@code StringBuilder} to append to
+   * @param surface The surface form (original) text
+   * @param analyzed The analyzed token corresponding to the surface form text
    */
   protected void addWholeMatch(StringBuilder sb, String surface, String analyzed) {
     sb.append("<b>");
@@ -814,16 +894,18 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     sb.append("</b>");
   }
 
-  /** Called while highlighting a single result, to append a
-   *  matched prefix token, to the provided fragments list.
-   *  @param sb The {@code StringBuilder} to append to
-   *  @param surface The fragment of the surface form
-   *        (indexed during {@link #build}, corresponding to
-   *        this match
-   *  @param analyzed The analyzed token that matched
-   *  @param prefixToken The prefix of the token that matched
+  /**
+   * Called while highlighting a single result, to append a matched prefix token, to the provided
+   * fragments list.
+   *
+   * @param sb The {@code StringBuilder} to append to
+   * @param surface The fragment of the surface form (indexed during {@link #build}, corresponding
+   *     to this match
+   * @param analyzed The analyzed token that matched
+   * @param prefixToken The prefix of the token that matched
    */
-  protected void addPrefixMatch(StringBuilder sb, String surface, String analyzed, String prefixToken) {
+  protected void addPrefixMatch(
+      StringBuilder sb, String surface, String analyzed, String prefixToken) {
     // TODO: apps can try to invert their analysis logic
     // here, e.g. downcase the two before checking prefix:
     if (prefixToken.length() >= surface.length()) {
@@ -904,7 +986,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
           for (LeafReaderContext context : searcher.getIndexReader().leaves()) {
             LeafReader reader = FilterLeafReader.unwrap(context.reader());
             if (reader instanceof SegmentReader) {
-              resources.add(Accountables.namedAccountable("segment", (SegmentReader)reader));
+              resources.add(Accountables.namedAccountable("segment", (SegmentReader) reader));
             }
           }
         } finally {

@@ -54,7 +54,8 @@ public class DelimitedTermFrequencyTokenFilterTest extends BaseTokenStreamTestCa
     TermFrequencyAttribute tfAtt = filter.getAttribute(TermFrequencyAttribute.class);
     filter.reset();
     assertTermEquals("foo", filter, termAtt, tfAtt, 1);
-    IllegalArgumentException iae = expectThrows(IllegalArgumentException.class, filter::incrementToken);
+    IllegalArgumentException iae =
+        expectThrows(IllegalArgumentException.class, filter::incrementToken);
     assertEquals("Term frequency must be 1 or greater; got -20", iae.getMessage());
   }
 
@@ -69,7 +70,13 @@ public class DelimitedTermFrequencyTokenFilterTest extends BaseTokenStreamTestCa
     expectThrows(NumberFormatException.class, filter::incrementToken);
   }
 
-  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt, TermFrequencyAttribute tfAtt, int expectedTf) throws Exception {
+  void assertTermEquals(
+      String expected,
+      TokenStream stream,
+      CharTermAttribute termAtt,
+      TermFrequencyAttribute tfAtt,
+      int expectedTf)
+      throws Exception {
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
     assertEquals(expectedTf, tfAtt.getTermFrequency());

@@ -19,16 +19,14 @@ package org.apache.lucene.benchmark.quality;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 
-/**
- * Parse a QualityQuery into a Lucene query.
- */
+/** Parse a QualityQuery into a Lucene query. */
 public interface QualityQueryParser {
 
   /**
    * Parse a given QualityQuery into a Lucene query.
+   *
    * @param qq the quality query to be parsed.
    * @throws ParseException if parsing failed.
    */
   public Query parse(QualityQuery qq) throws ParseException;
-  
 }

@@ -19,22 +19,17 @@ package org.apache.lucene.misc;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 
 /**
- * <p>
- * A similarity with a lengthNorm that provides for a "plateau" of
- * equally good lengths, and tf helper functions.
- * </p>
- * <p>
- * For lengthNorm, A min/max can be specified to define the
- * plateau of lengths that should all have a norm of 1.0.
- * Below the min, and above the max the lengthNorm drops off in a
- * sqrt function.
- * </p>
- * <p>
- * For tf, baselineTf and hyperbolicTf functions are provided, which
- * subclasses can choose between.
- * </p>
+ * A similarity with a lengthNorm that provides for a "plateau" of equally good lengths, and tf
+ * helper functions.
  *
- * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations referenced from each function.</a> 
+ * <p>For lengthNorm, A min/max can be specified to define the plateau of lengths that should all
+ * have a norm of 1.0. Below the min, and above the max the lengthNorm drops off in a sqrt function.
+ *
+ * <p>For tf, baselineTf and hyperbolicTf functions are provided, which subclasses can choose
+ * between.
+ *
+ * @see <a href="doc-files/ss.gnuplot">A Gnuplot file used to generate some of the visualizations
+ *     referenced from each function.</a>
  */
 public class SweetSpotSimilarity extends ClassicSimilarity {
 
@@ -49,7 +44,7 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
   private float tf_hyper_max = 2.0f;
   private double tf_hyper_base = 1.3d;
   private float tf_hyper_xoffset = 10.0f;
-    
+
   public SweetSpotSimilarity() {
     super();
   }
@@ -63,27 +58,27 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
     tf_min = min;
     tf_base = base;
   }
-  
+
   /**
    * Sets the function variables for the hyperbolicTf functions
    *
    * @param min the minimum tf value to ever be returned (default: 0.0)
    * @param max the maximum tf value to ever be returned (default: 2.0)
-   * @param base the base value to be used in the exponential for the hyperbolic function (default: 1.3)
+   * @param base the base value to be used in the exponential for the hyperbolic function (default:
+   *     1.3)
    * @param xoffset the midpoint of the hyperbolic function (default: 10.0)
    * @see #hyperbolicTf
    */
-  public void setHyperbolicTfFactors(float min, float max,
-                                     double base, float xoffset) {
+  public void setHyperbolicTfFactors(float min, float max, double base, float xoffset) {
     tf_hyper_min = min;
     tf_hyper_max = max;
     tf_hyper_base = base;
     tf_hyper_xoffset = xoffset;
   }
-    
+
   /**
-   * Sets the default function variables used by lengthNorm when no field
-   * specific variables have been set.
+   * Sets the default function variables used by lengthNorm when no field specific variables have
+   * been set.
    *
    * @see #lengthNorm
    */
@@ -95,41 +90,28 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
   }
 
   /**
-   * Implemented as:
-   * <code>
+   * Implemented as: <code>
    * 1/sqrt( steepness * (abs(x-min) + abs(x-max) - (max-min)) + 1 )
    * </code>.
    *
-   * <p>
-   * This degrades to <code>1/sqrt(x)</code> when min and max are both 1 and
-   * steepness is 0.5
-   * </p>
+   * <p>This degrades to <code>1/sqrt(x)</code> when min and max are both 1 and steepness is 0.5
    *
-   * <p>
-   * :TODO: potential optimization is to just flat out return 1.0f if numTerms
-   * is between min and max.
-   * </p>
+   * <p>:TODO: potential optimization is to just flat out return 1.0f if numTerms is between min and
+   * max.
    *
    * @see #setLengthNormFactors
-   * @see <a href="doc-files/ss.computeLengthNorm.svg">An SVG visualization of this function</a> 
+   * @see <a href="doc-files/ss.computeLengthNorm.svg">An SVG visualization of this function</a>
    */
   @Override
   public float lengthNorm(int numTerms) {
     final int l = ln_min;
     final int h = ln_max;
     final float s = ln_steep;
-  
+
     return (float)
-      (1.0f /
-       Math.sqrt
-       (
-        (
-         s *
-         (float)(Math.abs(numTerms - l) + Math.abs(numTerms - h) - (h-l))
-         )
-        + 1.0f
-        )
-       );
+        (1.0f
+            / Math.sqrt(
+                (s * (float) (Math.abs(numTerms - l) + Math.abs(numTerms - h) - (h - l))) + 1.0f));
   }
 
   /**
@@ -141,43 +123,34 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
   public float tf(float freq) {
     return baselineTf(freq);
   }
-  
+
   /**
-   * Implemented as:
-   * <code>
+   * Implemented as: <code>
    *  (x &lt;= min) &#63; base : sqrt(x+(base**2)-min)
-   * </code>
-   * ...but with a special case check for 0.
-   * <p>
-   * This degrates to <code>sqrt(x)</code> when min and base are both 0
-   * </p>
+   * </code> ...but with a special case check for 0.
+   *
+   * <p>This degrates to <code>sqrt(x)</code> when min and base are both 0
    *
    * @see #setBaselineTfFactors
-   * @see <a href="doc-files/ss.baselineTf.svg">An SVG visualization of this function</a> 
+   * @see <a href="doc-files/ss.baselineTf.svg">An SVG visualization of this function</a>
    */
   public float baselineTf(float freq) {
 
     if (0.0f == freq) return 0.0f;
-  
-    return (freq <= tf_min)
-      ? tf_base
-      : (float)Math.sqrt(freq + (tf_base * tf_base) - tf_min);
+
+    return (freq <= tf_min) ? tf_base : (float) Math.sqrt(freq + (tf_base * tf_base) - tf_min);
   }
 
   /**
-   * Uses a hyperbolic tangent function that allows for a hard max...
-   *
-   * <code>
+   * Uses a hyperbolic tangent function that allows for a hard max... <code>
    * tf(x)=min+(max-min)/2*(((base**(x-xoffset)-base**-(x-xoffset))/(base**(x-xoffset)+base**-(x-xoffset)))+1)
    * </code>
    *
-   * <p>
-   * This code is provided as a convenience for subclasses that want
-   * to use a hyperbolic tf function.
-   * </p>
+   * <p>This code is provided as a convenience for subclasses that want to use a hyperbolic tf
+   * function.
    *
    * @see #setHyperbolicTfFactors
-   * @see <a href="doc-files/ss.hyperbolicTf.svg">An SVG visualization of this function</a> 
+   * @see <a href="doc-files/ss.hyperbolicTf.svg">An SVG visualization of this function</a>
    */
   public float hyperbolicTf(float freq) {
     if (0.0f == freq) return 0.0f;
@@ -186,36 +159,50 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
     final float max = tf_hyper_max;
     final double base = tf_hyper_base;
     final float xoffset = tf_hyper_xoffset;
-    final double x = (double)(freq - xoffset);
-  
-    final float result = min +
-      (float)(
-              (max-min) / 2.0f
-              *
-              (
-               ( ( Math.pow(base,x) - Math.pow(base,-x) )
-                 / ( Math.pow(base,x) + Math.pow(base,-x) )
-                 )
-               + 1.0d
-               )
-              );
+    final double x = (double) (freq - xoffset);
+
+    final float result =
+        min
+            + (float)
+                ((max - min)
+                    / 2.0f
+                    * (((Math.pow(base, x) - Math.pow(base, -x))
+                            / (Math.pow(base, x) + Math.pow(base, -x)))
+                        + 1.0d));
 
     return Float.isNaN(result) ? max : result;
-    
   }
 
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("SweetSpotSimilarity")
-        .append('(').append("ln_min=").append(ln_min).append(", ")
-        .append("ln_max=").append(ln_max).append(", ")
-        .append("ln_steep=").append(ln_steep).append(", ")
-        .append("tf_base=").append(tf_base).append(", ")
-        .append("tf_min=").append(tf_min).append(", ")
-        .append("tf_hyper_min=").append(tf_hyper_min).append(", ")
-        .append("tf_hyper_max=").append(tf_hyper_max).append(", ")
-        .append("tf_hyper_base=").append(tf_hyper_base).append(", ")
-        .append("tf_hyper_xoffset=").append(tf_hyper_xoffset)
+        .append('(')
+        .append("ln_min=")
+        .append(ln_min)
+        .append(", ")
+        .append("ln_max=")
+        .append(ln_max)
+        .append(", ")
+        .append("ln_steep=")
+        .append(ln_steep)
+        .append(", ")
+        .append("tf_base=")
+        .append(tf_base)
+        .append(", ")
+        .append("tf_min=")
+        .append(tf_min)
+        .append(", ")
+        .append("tf_hyper_min=")
+        .append(tf_hyper_min)
+        .append(", ")
+        .append("tf_hyper_max=")
+        .append(tf_hyper_max)
+        .append(", ")
+        .append("tf_hyper_base=")
+        .append(tf_hyper_base)
+        .append(", ")
+        .append("tf_hyper_xoffset=")
+        .append(tf_hyper_xoffset)
         .append(")");
     return sb.toString();
   }

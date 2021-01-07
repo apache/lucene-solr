@@ -17,9 +17,7 @@
 
 package org.apache.lucene.geo;
 
-/**
- * Cartesian Geometry object.
- **/
+/** Cartesian Geometry object. */
 public abstract class XYGeometry {
 
   /** get a Component2D from this object */

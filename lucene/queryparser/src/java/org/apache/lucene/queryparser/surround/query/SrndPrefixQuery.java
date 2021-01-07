@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
+
+import java.io.IOException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.IndexReader;
 
-import java.io.IOException;
-
-
-/**
- * Query that matches String prefixes
- */
+/** Query that matches String prefixes */
 public class SrndPrefixQuery extends SimpleTerm {
   private final BytesRef prefixRef;
+
   public SrndPrefixQuery(String prefix, boolean quoted, char truncator) {
     super(quoted);
     this.prefix = prefix;
@@ -39,27 +37,34 @@ public class SrndPrefixQuery extends SimpleTerm {
   }
 
   private final String prefix;
-  public String getPrefix() {return prefix;}
-  
+
+  public String getPrefix() {
+    return prefix;
+  }
+
   private final char truncator;
-  public char getSuffixOperator() {return truncator;}
-  
+
+  public char getSuffixOperator() {
+    return truncator;
+  }
+
   public Term getLucenePrefixTerm(String fieldName) {
     return new Term(fieldName, getPrefix());
   }
-  
+
   @Override
-  public String toStringUnquoted() {return getPrefix();}
-  
+  public String toStringUnquoted() {
+    return getPrefix();
+  }
+
   @Override
-  protected void suffixToString(StringBuilder r) {r.append(getSuffixOperator());}
-  
+  protected void suffixToString(StringBuilder r) {
+    r.append(getSuffixOperator());
+  }
+
   @Override
-  public void visitMatchingTerms(
-    IndexReader reader,
-    String fieldName,
-    MatchingTermVisitor mtv) throws IOException
-  {
+  public void visitMatchingTerms(IndexReader reader, String fieldName, MatchingTermVisitor mtv)
+      throws IOException {
     /* inspired by PrefixQuery.rewrite(): */
     Terms terms = MultiTerms.getTerms(reader, fieldName);
     if (terms != null) {
@@ -81,7 +86,7 @@ public class SrndPrefixQuery extends SimpleTerm {
       }
 
       if (!skip) {
-        while(true) {
+        while (true) {
           BytesRef text = termsEnum.next();
           if (text != null && StringHelper.startsWith(text, prefixRef)) {
             mtv.visitMatchingTerm(new Term(fieldName, text.utf8ToString()));

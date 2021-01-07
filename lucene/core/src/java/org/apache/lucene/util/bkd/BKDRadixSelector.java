@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntroSelector;
@@ -29,11 +28,10 @@ import org.apache.lucene.util.Selector;
 import org.apache.lucene.util.Sorter;
 
 /**
- *
  * Offline Radix selector for BKD tree.
  *
- *  @lucene.internal
- * */
+ * @lucene.internal
+ */
 public final class BKDRadixSelector {
   // size of the histogram
   private static final int HISTOGRAM_SIZE = 256;
@@ -58,18 +56,22 @@ public final class BKDRadixSelector {
   // BKD tree configuration
   private final BKDConfig config;
 
-  /**
-   * Sole constructor.
-   */
-  public BKDRadixSelector(BKDConfig config, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
+  /** Sole constructor. */
+  public BKDRadixSelector(
+      BKDConfig config, int maxPointsSortInHeap, Directory tempDir, String tempFileNamePrefix) {
     this.config = config;
     this.maxPointsSortInHeap = maxPointsSortInHeap;
     this.tempDir = tempDir;
     this.tempFileNamePrefix = tempFileNamePrefix;
-    // Selection and sorting is done in a given dimension. In case the value of the dimension are equal
-    // between two points we tie break first using the data-only dimensions and if those are still equal
+    // Selection and sorting is done in a given dimension. In case the value of the dimension are
+    // equal
+    // between two points we tie break first using the data-only dimensions and if those are still
+    // equal
     // we tie-break on the docID. Here we account for all bytes used in the process.
-    this.bytesSorted = config.bytesPerDim + (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
+    this.bytesSorted =
+        config.bytesPerDim
+            + (config.numDims - config.numIndexDims) * config.bytesPerDim
+            + Integer.BYTES;
     final int numberOfPointsOffline = MAX_SIZE_OFFLINE_BUFFER / config.bytesPerDoc;
     this.offlineBuffer = new byte[numberOfPointsOffline * config.bytesPerDoc];
     this.partitionBucket = new int[bytesSorted];
@@ -78,28 +80,43 @@ public final class BKDRadixSelector {
   }
 
   /**
-   *  It uses the provided {@code points} from the given {@code from} to the given {@code to}
-   *  to populate the {@code partitionSlices} array holder (length &gt; 1) with two path slices
-   *  so the path slice at position 0 contains {@code partition - from} points
-   *  where the value of the {@code dim} is lower or equal to the {@code to -from}
-   *  points on the slice at position 1.
+   * It uses the provided {@code points} from the given {@code from} to the given {@code to} to
+   * populate the {@code partitionSlices} array holder (length &gt; 1) with two path slices so the
+   * path slice at position 0 contains {@code partition - from} points where the value of the {@code
+   * dim} is lower or equal to the {@code to -from} points on the slice at position 1.
    *
-   *  The {@code dimCommonPrefix} provides a hint for the length of the common prefix length for
-   *  the {@code dim} where are partitioning the points.
+   * <p>The {@code dimCommonPrefix} provides a hint for the length of the common prefix length for
+   * the {@code dim} where are partitioning the points.
    *
-   *  It return the value of the {@code dim} at the partition point.
+   * <p>It return the value of the {@code dim} at the partition point.
    *
-   *  If the provided {@code points} is wrapping an {@link OfflinePointWriter}, the
-   *  writer is destroyed in the process to save disk space.
+   * <p>If the provided {@code points} is wrapping an {@link OfflinePointWriter}, the writer is
+   * destroyed in the process to save disk space.
    */
-  public byte[] select(PathSlice points, PathSlice[] partitionSlices, long from, long to, long partitionPoint, int dim, int dimCommonPrefix) throws IOException {
+  public byte[] select(
+      PathSlice points,
+      PathSlice[] partitionSlices,
+      long from,
+      long to,
+      long partitionPoint,
+      int dim,
+      int dimCommonPrefix)
+      throws IOException {
     checkArgs(from, to, partitionPoint);
 
-    assert partitionSlices.length > 1 : "[partition alices] must be > 1, got " + partitionSlices.length;
+    assert partitionSlices.length > 1
+        : "[partition alices] must be > 1, got " + partitionSlices.length;
 
     // If we are on heap then we just select on heap
     if (points.writer instanceof HeapPointWriter) {
-      byte[] partition = heapRadixSelect((HeapPointWriter) points.writer, dim, Math.toIntExact(from), Math.toIntExact(to),  Math.toIntExact(partitionPoint), dimCommonPrefix);
+      byte[] partition =
+          heapRadixSelect(
+              (HeapPointWriter) points.writer,
+              dim,
+              Math.toIntExact(from),
+              Math.toIntExact(to),
+              Math.toIntExact(partitionPoint),
+              dimCommonPrefix);
       partitionSlices[0] = new PathSlice(points.writer, from, partitionPoint - from);
       partitionSlices[1] = new PathSlice(points.writer, partitionPoint, to - partitionPoint);
       return partition;
@@ -108,10 +125,11 @@ public final class BKDRadixSelector {
     OfflinePointWriter offlinePointWriter = (OfflinePointWriter) points.writer;
 
     try (PointWriter left = getPointWriter(partitionPoint - from, "left" + dim);
-         PointWriter right = getPointWriter(to - partitionPoint, "right" + dim)) {
+        PointWriter right = getPointWriter(to - partitionPoint, "right" + dim)) {
       partitionSlices[0] = new PathSlice(left, 0, partitionPoint - from);
       partitionSlices[1] = new PathSlice(right, 0, to - partitionPoint);
-      return buildHistogramAndPartition(offlinePointWriter, left, right, from, to, partitionPoint, 0, dimCommonPrefix, dim);
+      return buildHistogramAndPartition(
+          offlinePointWriter, left, right, from, to, partitionPoint, 0, dimCommonPrefix, dim);
     }
   }
 
@@ -124,7 +142,9 @@ public final class BKDRadixSelector {
     }
   }
 
-  private int findCommonPrefixAndHistogram(OfflinePointWriter points, long from, long to, int dim, int dimCommonPrefix) throws IOException{
+  private int findCommonPrefixAndHistogram(
+      OfflinePointWriter points, long from, long to, int dim, int dimCommonPrefix)
+      throws IOException {
     // find common prefix
     int commonPrefixPosition = bytesSorted;
     final int offset = dim * config.bytesPerDim;
@@ -134,9 +154,15 @@ public final class BKDRadixSelector {
       PointValue pointValue = reader.pointValue();
       BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
       // copy dimension
-      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + offset, scratch, 0, config.bytesPerDim);
+      System.arraycopy(
+          packedValueDocID.bytes, packedValueDocID.offset + offset, scratch, 0, config.bytesPerDim);
       // copy data dimensions and docID
-      System.arraycopy(packedValueDocID.bytes, packedValueDocID.offset + config.packedIndexBytesLength, scratch, config.bytesPerDim, (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES);
+      System.arraycopy(
+          packedValueDocID.bytes,
+          packedValueDocID.offset + config.packedIndexBytesLength,
+          scratch,
+          config.bytesPerDim,
+          (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES);
 
       for (long i = from + 1; i < to; i++) {
         reader.next();
@@ -153,17 +179,34 @@ public final class BKDRadixSelector {
           break;
         } else {
           // Check common prefix and adjust histogram
-          final int startIndex = (dimCommonPrefix > config.bytesPerDim) ? config.bytesPerDim : dimCommonPrefix;
-          final int endIndex = (commonPrefixPosition > config.bytesPerDim) ? config.bytesPerDim : commonPrefixPosition;
+          final int startIndex =
+              (dimCommonPrefix > config.bytesPerDim) ? config.bytesPerDim : dimCommonPrefix;
+          final int endIndex =
+              (commonPrefixPosition > config.bytesPerDim)
+                  ? config.bytesPerDim
+                  : commonPrefixPosition;
           packedValueDocID = pointValue.packedValueDocIDBytes();
-          int j = Arrays.mismatch(scratch, startIndex, endIndex, packedValueDocID.bytes, packedValueDocID.offset + offset + startIndex, packedValueDocID.offset + offset + endIndex);
+          int j =
+              Arrays.mismatch(
+                  scratch,
+                  startIndex,
+                  endIndex,
+                  packedValueDocID.bytes,
+                  packedValueDocID.offset + offset + startIndex,
+                  packedValueDocID.offset + offset + endIndex);
           if (j == -1) {
             if (commonPrefixPosition > config.bytesPerDim) {
               // Tie-break on data dimensions + docID
               final int startTieBreak = config.packedIndexBytesLength;
               final int endTieBreak = startTieBreak + commonPrefixPosition - config.bytesPerDim;
-              int k = Arrays.mismatch(scratch, config.bytesPerDim, commonPrefixPosition,
-                  packedValueDocID.bytes, packedValueDocID.offset + startTieBreak, packedValueDocID.offset + endTieBreak);
+              int k =
+                  Arrays.mismatch(
+                      scratch,
+                      config.bytesPerDim,
+                      commonPrefixPosition,
+                      packedValueDocID.bytes,
+                      packedValueDocID.offset + startTieBreak,
+                      packedValueDocID.offset + endTieBreak);
               if (k != -1) {
                 commonPrefixPosition = config.bytesPerDim + k;
                 Arrays.fill(histogram, 0);
@@ -196,13 +239,29 @@ public final class BKDRadixSelector {
       bucket = packedValue.bytes[packedValue.offset + offset + commonPrefixPosition] & 0xff;
     } else {
       BytesRef packedValueDocID = pointValue.packedValueDocIDBytes();
-      bucket = packedValueDocID.bytes[packedValueDocID.offset + config.packedIndexBytesLength + commonPrefixPosition - config.bytesPerDim] & 0xff;
+      bucket =
+          packedValueDocID
+                  .bytes[
+                  packedValueDocID.offset
+                      + config.packedIndexBytesLength
+                      + commonPrefixPosition
+                      - config.bytesPerDim]
+              & 0xff;
     }
     return bucket;
   }
 
-  private byte[] buildHistogramAndPartition(OfflinePointWriter points, PointWriter left, PointWriter right,
-                                            long from, long to, long partitionPoint, int iteration,  int baseCommonPrefix, int dim) throws IOException {
+  private byte[] buildHistogramAndPartition(
+      OfflinePointWriter points,
+      PointWriter left,
+      PointWriter right,
+      long from,
+      long to,
+      long partitionPoint,
+      int iteration,
+      int baseCommonPrefix,
+      int dim)
+      throws IOException {
     // Find common prefix from baseCommonPrefix and build histogram
     int commonPrefix = findCommonPrefixAndHistogram(points, from, to, dim, baseCommonPrefix);
 
@@ -216,7 +275,7 @@ public final class BKDRadixSelector {
     long rightCount = 0;
 
     // Count left points and record the partition point
-    for(int i = 0; i < HISTOGRAM_SIZE; i++) {
+    for (int i = 0; i < HISTOGRAM_SIZE; i++) {
       long size = histogram[i];
       if (leftCount + size > partitionPoint - from) {
         partitionBucket[commonPrefix] = i;
@@ -225,17 +284,18 @@ public final class BKDRadixSelector {
       leftCount += size;
     }
     // Count right points
-    for(int i = partitionBucket[commonPrefix] + 1; i < HISTOGRAM_SIZE; i++) {
+    for (int i = partitionBucket[commonPrefix] + 1; i < HISTOGRAM_SIZE; i++) {
       rightCount += histogram[i];
     }
 
     long delta = histogram[partitionBucket[commonPrefix]];
-    assert leftCount + rightCount + delta == to - from : (leftCount + rightCount + delta) + " / " + (to - from);
+    assert leftCount + rightCount + delta == to - from
+        : (leftCount + rightCount + delta) + " / " + (to - from);
 
     // Special case when points are equal except last byte, we can just tie-break
     if (commonPrefix == bytesSorted - 1) {
-      long tieBreakCount =(partitionPoint - from - leftCount);
-      offlinePartition(points, left,  right, null, from, to, dim, commonPrefix, tieBreakCount);
+      long tieBreakCount = (partitionPoint - from - leftCount);
+      offlinePartition(points, left, right, null, from, to, dim, commonPrefix, tieBreakCount);
       return partitionPointFromCommonPrefix();
     }
 
@@ -250,16 +310,42 @@ public final class BKDRadixSelector {
     long newPartitionPoint = partitionPoint - from - leftCount;
 
     if (deltaPoints instanceof HeapPointWriter) {
-      return heapPartition((HeapPointWriter) deltaPoints, left, right, dim, 0, (int) deltaPoints.count(), Math.toIntExact(newPartitionPoint), ++commonPrefix);
+      return heapPartition(
+          (HeapPointWriter) deltaPoints,
+          left,
+          right,
+          dim,
+          0,
+          (int) deltaPoints.count(),
+          Math.toIntExact(newPartitionPoint),
+          ++commonPrefix);
     } else {
-      return buildHistogramAndPartition((OfflinePointWriter) deltaPoints, left, right, 0, deltaPoints.count(), newPartitionPoint, ++iteration, ++commonPrefix, dim);
+      return buildHistogramAndPartition(
+          (OfflinePointWriter) deltaPoints,
+          left,
+          right,
+          0,
+          deltaPoints.count(),
+          newPartitionPoint,
+          ++iteration,
+          ++commonPrefix,
+          dim);
     }
   }
 
-  private void offlinePartition(OfflinePointWriter points, PointWriter left, PointWriter right, PointWriter deltaPoints,
-                                long from, long to, int dim, int bytePosition, long numDocsTiebreak) throws IOException {
-    assert bytePosition == bytesSorted -1 || deltaPoints != null;
-    int offset =  dim * config.bytesPerDim;
+  private void offlinePartition(
+      OfflinePointWriter points,
+      PointWriter left,
+      PointWriter right,
+      PointWriter deltaPoints,
+      long from,
+      long to,
+      int dim,
+      int bytePosition,
+      long numDocsTiebreak)
+      throws IOException {
+    assert bytePosition == bytesSorted - 1 || deltaPoints != null;
+    int offset = dim * config.bytesPerDim;
     long tiebreakCounter = 0;
     try (OfflinePointReader reader = points.getReader(from, to - from, offlineBuffer)) {
       while (reader.next()) {
@@ -292,12 +378,21 @@ public final class BKDRadixSelector {
   private byte[] partitionPointFromCommonPrefix() {
     byte[] partition = new byte[config.bytesPerDim];
     for (int i = 0; i < config.bytesPerDim; i++) {
-      partition[i] = (byte)partitionBucket[i];
+      partition[i] = (byte) partitionBucket[i];
     }
     return partition;
   }
 
-  private byte[] heapPartition(HeapPointWriter points, PointWriter left, PointWriter right, int dim, int from, int to, int partitionPoint, int commonPrefix) throws IOException {
+  private byte[] heapPartition(
+      HeapPointWriter points,
+      PointWriter left,
+      PointWriter right,
+      int dim,
+      int from,
+      int to,
+      int partitionPoint,
+      int commonPrefix)
+      throws IOException {
     byte[] partition = heapRadixSelect(points, dim, from, to, partitionPoint, commonPrefix);
     for (int i = from; i < to; i++) {
       PointValue value = points.getPackedValueSlice(i);
@@ -310,7 +405,13 @@ public final class BKDRadixSelector {
     return partition;
   }
 
-  private byte[] heapRadixSelect(HeapPointWriter points, int dim, int from, int to, int partitionPoint, int commonPrefixLength) {
+  private byte[] heapRadixSelect(
+      HeapPointWriter points,
+      int dim,
+      int from,
+      int to,
+      int partitionPoint,
+      int commonPrefixLength) {
     final int dimOffset = dim * config.bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLength;
     final int dataOffset = config.packedIndexBytesLength - dimCmpBytes;
@@ -324,7 +425,7 @@ public final class BKDRadixSelector {
       @Override
       protected int byteAt(int i, int k) {
         assert k >= 0 : "negative prefix " + k;
-        if (k  < dimCmpBytes) {
+        if (k < dimCmpBytes) {
           // dim bytes
           return points.block[i * config.bytesPerDoc + dimOffset + k] & 0xff;
         } else {
@@ -337,9 +438,10 @@ public final class BKDRadixSelector {
       protected Selector getFallbackSelector(int d) {
         final int skypedBytes = d + commonPrefixLength;
         final int dimStart = dim * config.bytesPerDim + skypedBytes;
-        final int dimEnd =  dim * config.bytesPerDim + config.bytesPerDim;
+        final int dimEnd = dim * config.bytesPerDim + config.bytesPerDim;
         // data length is composed by the data dimensions plus the docID
-        final int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
+        final int dataLength =
+            (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
         return new IntroSelector() {
 
           @Override
@@ -350,9 +452,19 @@ public final class BKDRadixSelector {
           @Override
           protected void setPivot(int i) {
             if (skypedBytes < config.bytesPerDim) {
-              System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
+              System.arraycopy(
+                  points.block,
+                  i * config.bytesPerDoc + dim * config.bytesPerDim,
+                  scratch,
+                  0,
+                  config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + config.packedIndexBytesLength, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(
+                points.block,
+                i * config.bytesPerDoc + config.packedIndexBytesLength,
+                scratch,
+                config.bytesPerDim,
+                dataLength);
           }
 
           @Override
@@ -360,27 +472,53 @@ public final class BKDRadixSelector {
             if (skypedBytes < config.bytesPerDim) {
               int iOffset = i * config.bytesPerDoc;
               int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      points.block,
+                      iOffset + dimStart,
+                      iOffset + dimEnd,
+                      points.block,
+                      jOffset + dimStart,
+                      jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
             int iOffset = i * config.bytesPerDoc + config.packedIndexBytesLength;
             int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
-            return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(
+                points.block,
+                iOffset,
+                iOffset + dataLength,
+                points.block,
+                jOffset,
+                jOffset + dataLength);
           }
 
           @Override
           protected int comparePivot(int j) {
             if (skypedBytes < config.bytesPerDim) {
               int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      scratch,
+                      skypedBytes,
+                      config.bytesPerDim,
+                      points.block,
+                      jOffset + dimStart,
+                      jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
             int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
-            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(
+                scratch,
+                config.bytesPerDim,
+                config.bytesPerDim + dataLength,
+                points.block,
+                jOffset,
+                jOffset + dataLength);
           }
         };
       }
@@ -389,12 +527,18 @@ public final class BKDRadixSelector {
     byte[] partition = new byte[config.bytesPerDim];
     PointValue pointValue = points.getPackedValueSlice(partitionPoint);
     BytesRef packedValue = pointValue.packedValue();
-    System.arraycopy(packedValue.bytes, packedValue.offset + dim * config.bytesPerDim, partition, 0, config.bytesPerDim);
+    System.arraycopy(
+        packedValue.bytes,
+        packedValue.offset + dim * config.bytesPerDim,
+        partition,
+        0,
+        config.bytesPerDim);
     return partition;
   }
 
   /** Sort the heap writer by the specified dim. It is used to sort the leaves of the tree */
-  public void heapRadixSort(final HeapPointWriter points, int from, int to, int dim, int commonPrefixLength) {
+  public void heapRadixSort(
+      final HeapPointWriter points, int from, int to, int dim, int commonPrefixLength) {
     final int dimOffset = dim * config.bytesPerDim + commonPrefixLength;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLength;
     final int dataOffset = config.packedIndexBytesLength - dimCmpBytes;
@@ -403,7 +547,7 @@ public final class BKDRadixSelector {
       @Override
       protected int byteAt(int i, int k) {
         assert k >= 0 : "negative prefix " + k;
-        if (k  < dimCmpBytes) {
+        if (k < dimCmpBytes) {
           // dim bytes
           return points.block[i * config.bytesPerDoc + dimOffset + k] & 0xff;
         } else {
@@ -421,9 +565,10 @@ public final class BKDRadixSelector {
       protected Sorter getFallbackSorter(int k) {
         final int skypedBytes = k + commonPrefixLength;
         final int dimStart = dim * config.bytesPerDim + skypedBytes;
-        final int dimEnd =  dim * config.bytesPerDim + config.bytesPerDim;
+        final int dimEnd = dim * config.bytesPerDim + config.bytesPerDim;
         // data length is composed by the data dimensions plus the docID
-        final int dataLength = (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
+        final int dataLength =
+            (config.numDims - config.numIndexDims) * config.bytesPerDim + Integer.BYTES;
         return new IntroSorter() {
 
           @Override
@@ -434,9 +579,19 @@ public final class BKDRadixSelector {
           @Override
           protected void setPivot(int i) {
             if (skypedBytes < config.bytesPerDim) {
-              System.arraycopy(points.block, i * config.bytesPerDoc + dim * config.bytesPerDim, scratch, 0, config.bytesPerDim);
+              System.arraycopy(
+                  points.block,
+                  i * config.bytesPerDoc + dim * config.bytesPerDim,
+                  scratch,
+                  0,
+                  config.bytesPerDim);
             }
-            System.arraycopy(points.block, i * config.bytesPerDoc + config.packedIndexBytesLength, scratch, config.bytesPerDim, dataLength);
+            System.arraycopy(
+                points.block,
+                i * config.bytesPerDoc + config.packedIndexBytesLength,
+                scratch,
+                config.bytesPerDim,
+                dataLength);
           }
 
           @Override
@@ -444,38 +599,66 @@ public final class BKDRadixSelector {
             if (skypedBytes < config.bytesPerDim) {
               int iOffset = i * config.bytesPerDoc;
               int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(points.block, iOffset + dimStart, iOffset + dimEnd, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      points.block,
+                      iOffset + dimStart,
+                      iOffset + dimEnd,
+                      points.block,
+                      jOffset + dimStart,
+                      jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
             int iOffset = i * config.bytesPerDoc + config.packedIndexBytesLength;
             int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
-            return Arrays.compareUnsigned(points.block, iOffset, iOffset + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(
+                points.block,
+                iOffset,
+                iOffset + dataLength,
+                points.block,
+                jOffset,
+                jOffset + dataLength);
           }
 
           @Override
           protected int comparePivot(int j) {
             if (skypedBytes < config.bytesPerDim) {
               int jOffset = j * config.bytesPerDoc;
-              int cmp = Arrays.compareUnsigned(scratch, skypedBytes, config.bytesPerDim, points.block, jOffset + dimStart, jOffset + dimEnd);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      scratch,
+                      skypedBytes,
+                      config.bytesPerDim,
+                      points.block,
+                      jOffset + dimStart,
+                      jOffset + dimEnd);
               if (cmp != 0) {
                 return cmp;
               }
             }
             int jOffset = j * config.bytesPerDoc + config.packedIndexBytesLength;
-            return Arrays.compareUnsigned(scratch, config.bytesPerDim, config.bytesPerDim + dataLength, points.block, jOffset, jOffset + dataLength);
+            return Arrays.compareUnsigned(
+                scratch,
+                config.bytesPerDim,
+                config.bytesPerDim + dataLength,
+                points.block,
+                jOffset,
+                jOffset + dataLength);
           }
         };
       }
     }.sort(from, to);
   }
 
-  private PointWriter getDeltaPointWriter(PointWriter left, PointWriter right, long delta, int iteration) throws IOException {
+  private PointWriter getDeltaPointWriter(
+      PointWriter left, PointWriter right, long delta, int iteration) throws IOException {
     if (delta <= getMaxPointsSortInHeap(left, right)) {
-      return  new HeapPointWriter(config, Math.toIntExact(delta));
+      return new HeapPointWriter(config, Math.toIntExact(delta));
     } else {
-      return new OfflinePointWriter(config, tempDir, tempFileNamePrefix, "delta" + iteration, delta);
+      return new OfflinePointWriter(
+          config, tempDir, tempFileNamePrefix, "delta" + iteration, delta);
     }
   }
 

@@ -20,7 +20,6 @@ package org.apache.lucene.luke.models.overview;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
-
 import org.junit.Test;
 
 public class TermCountsTest extends OverviewTestBase {
@@ -78,5 +77,4 @@ public class TermCountsTest extends OverviewTestBase {
     assertEquals(3, (long) countsMap.get("f1"));
     assertEquals(6, (long) countsMap.get("f2"));
   }
-
 }

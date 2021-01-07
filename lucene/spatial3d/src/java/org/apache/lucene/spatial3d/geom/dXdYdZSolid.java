@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in all dimensions
@@ -38,39 +38,38 @@ class dXdYdZSolid extends BaseXYZSolid {
   protected final boolean isOnSurface;
   /** The point */
   protected final GeoPoint thePoint;
-  
-  /** These are the edge points of the shape, which are defined to be at least one point on
-   * each surface area boundary.  In the case of a solid, this includes points which represent
-   * the intersection of XYZ bounding planes and the planet, as well as points representing
-   * the intersection of single bounding planes with the planet itself.
+
+  /**
+   * These are the edge points of the shape, which are defined to be at least one point on each
+   * surface area boundary. In the case of a solid, this includes points which represent the
+   * intersection of XYZ bounding planes and the planet, as well as points representing the
+   * intersection of single bounding planes with the planet itself.
    */
   protected final GeoPoint[] edgePoints;
 
   /** Empty array of {@link GeoPoint}. */
   protected static final GeoPoint[] nullPoints = new GeoPoint[0];
-  
+
   /**
    * Sole constructor
    *
-   *@param planetModel is the planet model.
-   *@param X is the X value.
-   *@param Y is the Y value.
-   *@param Z is the Z value.
+   * @param planetModel is the planet model.
+   * @param X is the X value.
+   * @param Y is the Y value.
+   * @param Z is the Z value.
    */
-  public dXdYdZSolid(final PlanetModel planetModel,
-    final double X,
-    final double Y,
-    final double Z) {
+  public dXdYdZSolid(
+      final PlanetModel planetModel, final double X, final double Y, final double Z) {
     super(planetModel);
-      
+
     this.X = X;
     this.Y = Y;
     this.Z = Z;
 
-    isOnSurface = planetModel.pointOnSurface(X,Y,Z);
+    isOnSurface = planetModel.pointOnSurface(X, Y, Z);
     if (isOnSurface) {
-      thePoint = new GeoPoint(X,Y,Z);
-      edgePoints = new GeoPoint[]{thePoint};
+      thePoint = new GeoPoint(X, Y, Z);
+      edgePoints = new GeoPoint[] {thePoint};
     } else {
       thePoint = null;
       edgePoints = nullPoints;
@@ -79,14 +78,17 @@ class dXdYdZSolid extends BaseXYZSolid {
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public dXdYdZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, 
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream));
+  public dXdYdZSolid(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -100,13 +102,13 @@ class dXdYdZSolid extends BaseXYZSolid {
   protected GeoPoint[] getEdgePoints() {
     return edgePoints;
   }
-  
+
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     if (!isOnSurface) {
       return false;
     }
-    return thePoint.isIdentical(x,y,z);
+    return thePoint.isIdentical(x, y, z);
   }
 
   @Override
@@ -114,46 +116,46 @@ class dXdYdZSolid extends BaseXYZSolid {
     if (!isOnSurface) {
       return DISJOINT;
     }
-    
-    //System.err.println(this+" getrelationship with "+path);
+
+    // System.err.println(this+" getrelationship with "+path);
     final int insideRectangle = isShapeInsideArea(path);
     if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some shape points inside area");
+      // System.err.println(" some shape points inside area");
       return OVERLAPS;
     }
 
     // Figure out if the entire XYZArea is contained by the shape.
     final int insideShape = isAreaInsideShape(path);
     if (insideShape == SOME_INSIDE) {
-      //System.err.println(" some area points inside shape");
+      // System.err.println(" some area points inside shape");
       return OVERLAPS;
     }
 
     if (insideRectangle == ALL_INSIDE && insideShape == ALL_INSIDE) {
-      //System.err.println(" inside of each other");
+      // System.err.println(" inside of each other");
       return OVERLAPS;
     }
 
     if (insideRectangle == ALL_INSIDE) {
-      //System.err.println(" shape inside area entirely");
+      // System.err.println(" shape inside area entirely");
       return WITHIN;
     }
 
     if (insideShape == ALL_INSIDE) {
-      //System.err.println(" shape contains area entirely");
+      // System.err.println(" shape contains area entirely");
       return CONTAINS;
     }
-    //System.err.println(" disjoint");
+    // System.err.println(" disjoint");
     return DISJOINT;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof dXdYdZSolid))
+    if (!(o instanceof dXdYdZSolid)) {
       return false;
+    }
     dXdYdZSolid other = (dXdYdZSolid) o;
-    if (!super.equals(other) ||
-      other.isOnSurface != isOnSurface) {
+    if (!super.equals(other) || other.isOnSurface != isOnSurface) {
       return false;
     }
     if (isOnSurface) {
@@ -165,17 +167,21 @@ class dXdYdZSolid extends BaseXYZSolid {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (isOnSurface?1:0);
+    result = 31 * result + (isOnSurface ? 1 : 0);
     if (isOnSurface) {
-      result = 31 * result  + thePoint.hashCode();
+      result = 31 * result + thePoint.hashCode();
     }
     return result;
   }
 
   @Override
   public String toString() {
-    return "dXdYdZSolid: {planetmodel="+planetModel+", isOnSurface="+isOnSurface+", thePoint="+thePoint+"}";
+    return "dXdYdZSolid: {planetmodel="
+        + planetModel
+        + ", isOnSurface="
+        + isOnSurface
+        + ", thePoint="
+        + thePoint
+        + "}";
   }
-  
 }
-  

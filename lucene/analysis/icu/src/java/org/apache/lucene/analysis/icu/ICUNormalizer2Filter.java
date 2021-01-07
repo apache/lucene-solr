@@ -16,39 +16,37 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
+import com.ibm.icu.text.Normalizer;
+import com.ibm.icu.text.Normalizer2;
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-import com.ibm.icu.text.Normalizer;
-import com.ibm.icu.text.Normalizer2;
-
 /**
  * Normalize token text with ICU's {@link com.ibm.icu.text.Normalizer2}
- * <p>
- * With this filter, you can normalize text in the following ways:
+ *
+ * <p>With this filter, you can normalize text in the following ways:
+ *
  * <ul>
- *  <li> NFKC Normalization, Case Folding, and removing Ignorables (the default)
- *  <li> Using a standard Normalization mode (NFC, NFD, NFKC, NFKD)
- *  <li> Based on rules from a custom normalization mapping.
+ *   <li>NFKC Normalization, Case Folding, and removing Ignorables (the default)
+ *   <li>Using a standard Normalization mode (NFC, NFD, NFKC, NFKD)
+ *   <li>Based on rules from a custom normalization mapping.
  * </ul>
- * <p>
- * If you use the defaults, this filter is a simple way to standardize Unicode text
- * in a language-independent way for search:
+ *
+ * <p>If you use the defaults, this filter is a simple way to standardize Unicode text in a
+ * language-independent way for search:
+ *
  * <ul>
- *  <li> The case folding that it does can be seen as a replacement for
- *  LowerCaseFilter: For example, it handles cases such as the Greek sigma, so that
- * "Μάϊος" and "ΜΆΪΟΣ" will match correctly.
- *  <li> The normalization will standardizes different forms of the same 
- *  character in Unicode. For example, CJK full-width numbers will be standardized
- *  to their ASCII forms.
- *  <li> Ignorables such as Zero-Width Joiner and Variation Selectors are removed.
- *  These are typically modifier characters that affect display.
+ *   <li>The case folding that it does can be seen as a replacement for LowerCaseFilter: For
+ *       example, it handles cases such as the Greek sigma, so that "Μάϊος" and "ΜΆΪΟΣ" will match
+ *       correctly.
+ *   <li>The normalization will standardizes different forms of the same character in Unicode. For
+ *       example, CJK full-width numbers will be standardized to their ASCII forms.
+ *   <li>Ignorables such as Zero-Width Joiner and Variation Selectors are removed. These are
+ *       typically modifier characters that affect display.
  * </ul>
- * 
+ *
  * @see com.ibm.icu.text.Normalizer2
  * @see com.ibm.icu.text.FilteredNormalizer2
  */
@@ -58,8 +56,8 @@ public class ICUNormalizer2Filter extends TokenFilter {
   private final StringBuilder buffer = new StringBuilder();
 
   /**
-   * Create a new Normalizer2Filter that combines NFKC normalization, Case
-   * Folding, and removes Default Ignorables (NFKC_Casefold)
+   * Create a new Normalizer2Filter that combines NFKC normalization, Case Folding, and removes
+   * Default Ignorables (NFKC_Casefold)
    */
   public ICUNormalizer2Filter(TokenStream input) {
     this(input, Normalizer2.getInstance(null, "nfkc_cf", Normalizer2.Mode.COMPOSE));
@@ -67,6 +65,7 @@ public class ICUNormalizer2Filter extends TokenFilter {
 
   /**
    * Create a new Normalizer2Filter with the specified Normalizer2
+   *
    * @param input stream
    * @param normalizer normalizer to use
    */

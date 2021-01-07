@@ -23,9 +23,8 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.Query;
 
 /**
- * Builds no object, it only returns the {@link Query} object set on the
- * {@link GroupQueryNode} object using a
- * {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} tag.
+ * Builds no object, it only returns the {@link Query} object set on the {@link GroupQueryNode}
+ * object using a {@link QueryTreeBuilder#QUERY_TREE_BUILDER_TAGID} tag.
  */
 public class GroupQueryNodeBuilder implements StandardQueryBuilder {
 
@@ -37,9 +36,6 @@ public class GroupQueryNodeBuilder implements StandardQueryBuilder {
   public Query build(QueryNode queryNode) throws QueryNodeException {
     GroupQueryNode groupNode = (GroupQueryNode) queryNode;
 
-    return (Query) (groupNode).getChild().getTag(
-        QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
-
+    return (Query) (groupNode).getChild().getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
   }
-
 }

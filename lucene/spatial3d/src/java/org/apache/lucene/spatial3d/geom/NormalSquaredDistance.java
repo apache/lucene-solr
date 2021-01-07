@@ -22,33 +22,42 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class NormalSquaredDistance implements DistanceStyle {
-  
+
   /** A convenient instance */
-  public final static NormalSquaredDistance INSTANCE = new NormalSquaredDistance();
-  
-  /** Constructor.
-   */
-  public NormalSquaredDistance() {
-  }
-  
+  public static final NormalSquaredDistance INSTANCE = new NormalSquaredDistance();
+
+  /** Constructor. */
+  public NormalSquaredDistance() {}
+
   @Override
   public double computeDistance(final GeoPoint point1, final GeoPoint point2) {
     return point1.normalDistanceSquared(point2);
   }
-  
+
   @Override
-  public double computeDistance(final GeoPoint point1, final double x2, final double y2, final double z2) {
-    return point1.normalDistanceSquared(x2,y2,z2);
+  public double computeDistance(
+      final GeoPoint point1, final double x2, final double y2, final double z2) {
+    return point1.normalDistanceSquared(x2, y2, z2);
   }
 
   @Override
-  public double computeDistance(final PlanetModel planetModel, final Plane plane, final GeoPoint point, final Membership... bounds) {
+  public double computeDistance(
+      final PlanetModel planetModel,
+      final Plane plane,
+      final GeoPoint point,
+      final Membership... bounds) {
     return plane.normalDistanceSquared(point, bounds);
   }
-  
+
   @Override
-  public double computeDistance(final PlanetModel planetModel, final Plane plane, final double x, final double y, final double z, final Membership... bounds) {
-    return plane.normalDistanceSquared(x,y,z, bounds);
+  public double computeDistance(
+      final PlanetModel planetModel,
+      final Plane plane,
+      final double x,
+      final double y,
+      final double z,
+      final Membership... bounds) {
+    return plane.normalDistanceSquared(x, y, z, bounds);
   }
 
   @Override
@@ -62,20 +71,22 @@ public class NormalSquaredDistance implements DistanceStyle {
   }
 
   @Override
-  public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
+  public GeoPoint[] findDistancePoints(
+      final PlanetModel planetModel,
+      final double distanceValue,
+      final GeoPoint startPoint,
+      final Plane plane,
+      final Membership... bounds) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }
-  
+
   @Override
   public double findMinimumArcDistance(final PlanetModel planetModel, final double distanceValue) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }
-  
+
   @Override
   public double findMaximumArcDistance(final PlanetModel planetModel, final double distanceValue) {
     throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
   }
-
 }
-
-

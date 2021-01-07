@@ -23,19 +23,14 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
-/**
- * This builder creates {@link SpanTermQuery}s from a {@link FieldQueryNode}
- * object.
- */
+/** This builder creates {@link SpanTermQuery}s from a {@link FieldQueryNode} object. */
 public class SpanTermQueryNodeBuilder implements StandardQueryBuilder {
 
   @Override
   public SpanTermQuery build(QueryNode node) throws QueryNodeException {
     FieldQueryNode fieldQueryNode = (FieldQueryNode) node;
 
-    return new SpanTermQuery(new Term(fieldQueryNode.getFieldAsString(),
-        fieldQueryNode.getTextAsString()));
-
+    return new SpanTermQuery(
+        new Term(fieldQueryNode.getFieldAsString(), fieldQueryNode.getTextAsString()));
   }
-
 }

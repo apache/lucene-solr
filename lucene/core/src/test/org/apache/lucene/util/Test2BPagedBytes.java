@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Random;
-
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -32,7 +30,7 @@ public class Test2BPagedBytes extends LuceneTestCase {
   public void test() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("test2BPagedBytes"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     PagedBytes pb = new PagedBytes(15);
     IndexOutput dataOutput = dir.createOutput("foo", IOContext.DEFAULT);
@@ -40,7 +38,7 @@ public class Test2BPagedBytes extends LuceneTestCase {
     long seed = random().nextLong();
     long lastFP = 0;
     Random r2 = new Random(seed);
-    while(netBytes < 1.1*Integer.MAX_VALUE) {
+    while (netBytes < 1.1 * Integer.MAX_VALUE) {
       int numBytes = TestUtil.nextInt(r2, 1, 32768);
       byte[] bytes = new byte[numBytes];
       r2.nextBytes(bytes);
@@ -58,7 +56,7 @@ public class Test2BPagedBytes extends LuceneTestCase {
 
     r2 = new Random(seed);
     netBytes = 0;
-    while(netBytes < 1.1*Integer.MAX_VALUE) {
+    while (netBytes < 1.1 * Integer.MAX_VALUE) {
       int numBytes = TestUtil.nextInt(r2, 1, 32768);
       byte[] bytes = new byte[numBytes];
       r2.nextBytes(bytes);

@@ -18,7 +18,6 @@ package org.apache.lucene.geo;
 
 import java.util.Locale;
 import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 
@@ -32,7 +31,7 @@ public class TestGeoUtils extends LuceneTestCase {
   // We rely heavily on GeoUtils.circleToBBox so we test it here:
   public void testRandomCircleToBBox() throws Exception {
     int iters = atLeast(100);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
 
       double centerLat = GeoTestUtil.nextLatitude();
       double centerLon = GeoTestUtil.nextLongitude();
@@ -50,7 +49,7 @@ public class TestGeoUtils extends LuceneTestCase {
       Rectangle bbox = Rectangle.fromPointDistance(centerLat, centerLon, radiusMeters);
 
       int numPointsToTry = 1000;
-      for(int i=0;i<numPointsToTry;i++) {
+      for (int i = 0; i < numPointsToTry; i++) {
 
         double point[] = GeoTestUtil.nextPointNear(bbox);
         double lat = point[0];
@@ -70,19 +69,36 @@ public class TestGeoUtils extends LuceneTestCase {
             bboxSays = false;
           }
         } else {
-          bboxSays = lat >= bbox.minLat && lat <= bbox.maxLat && lon >= bbox.minLon && lon <= bbox.maxLon;
+          bboxSays =
+              lat >= bbox.minLat && lat <= bbox.maxLat && lon >= bbox.minLon && lon <= bbox.maxLon;
         }
 
         if (haversinSays) {
           if (bboxSays == false) {
-            System.out.println("centerLat=" + centerLat + " centerLon=" + centerLon + " radiusMeters=" + radiusMeters);
-            System.out.println("  bbox: lat=" + bbox.minLat + " to " + bbox.maxLat + " lon=" + bbox.minLon + " to " + bbox.maxLon);
+            System.out.println(
+                "centerLat="
+                    + centerLat
+                    + " centerLon="
+                    + centerLon
+                    + " radiusMeters="
+                    + radiusMeters);
+            System.out.println(
+                "  bbox: lat="
+                    + bbox.minLat
+                    + " to "
+                    + bbox.maxLat
+                    + " lon="
+                    + bbox.minLon
+                    + " to "
+                    + bbox.maxLon);
             System.out.println("  point: lat=" + lat + " lon=" + lon);
             System.out.println("  haversin: " + distanceMeters);
-            fail("point was within the distance according to haversin, but the bbox doesn't contain it");
+            fail(
+                "point was within the distance according to haversin, but the bbox doesn't contain it");
           }
         } else {
-          // it's fine if haversin said it was outside the radius and bbox said it was inside the box
+          // it's fine if haversin said it was outside the radius and bbox said it was inside the
+          // box
         }
       }
     }
@@ -113,7 +129,9 @@ public class TestGeoUtils extends LuceneTestCase {
         // if the point is within radius, then it should be in our bounding box
         if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
           assertTrue(lat >= box.minLat && lat <= box.maxLat);
-          assertTrue(lon >= box1.minLon && lon <= box1.maxLon || (box2 != null && lon >= box2.minLon && lon <= box2.maxLon));
+          assertTrue(
+              lon >= box1.minLon && lon <= box1.maxLon
+                  || (box2 != null && lon >= box2.minLon && lon <= box2.maxLon));
         }
       }
     }
@@ -129,8 +147,10 @@ public class TestGeoUtils extends LuceneTestCase {
       Rectangle box = Rectangle.fromPointDistance(lat, lon, radius);
 
       if (box.maxLon - lon < 90 && lon - box.minLon < 90) {
-        double minPartialDistance = Math.max(SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),
-                                             SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
+        double minPartialDistance =
+            Math.max(
+                SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),
+                SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
 
         for (int j = 0; j < 10000; j++) {
           double point[] = GeoTestUtil.nextPointNear(box);
@@ -221,12 +241,15 @@ public class TestGeoUtils extends LuceneTestCase {
         int minLonCol = random.nextInt(4);
         double lonMin = randomInRange(random, lonBounds[minLonCol], lonBounds[minLonCol + 1]);
         // now choose a lower right corner
-        int minLatMaxRow = maxLatRow == 3 ? 3 : maxLatRow + 1; // make sure it will at least cross into the bbox
+        int minLatMaxRow =
+            maxLatRow == 3 ? 3 : maxLatRow + 1; // make sure it will at least cross into the bbox
         int minLatRow = random.nextInt(minLatMaxRow);
-        double latMin = randomInRange(random, latBounds[minLatRow], Math.min(latBounds[minLatRow + 1], latMax));
+        double latMin =
+            randomInRange(random, latBounds[minLatRow], Math.min(latBounds[minLatRow + 1], latMax));
         int maxLonMinCol = Math.max(minLonCol, 1); // make sure it will at least cross into the bbox
         int maxLonCol = maxLonMinCol + random.nextInt(4 - maxLonMinCol);
-        double lonMax = randomInRange(random, Math.max(lonBounds[maxLonCol], lonMin), lonBounds[maxLonCol + 1]);
+        double lonMax =
+            randomInRange(random, Math.max(lonBounds[maxLonCol], lonMin), lonBounds[maxLonCol + 1]);
 
         assert latMax >= latMin;
         assert lonMax >= lonMin;
@@ -252,18 +275,32 @@ public class TestGeoUtils extends LuceneTestCase {
             }
             double distance = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
             try {
-            assertTrue(String.format(Locale.ROOT, "\nisDisjoint(\n" +
-                    "centerLat=%s\n" +
-                    "centerLon=%s\n" +
-                    "radius=%s\n" +
-                    "latMin=%s\n" +
-                    "latMax=%s\n" +
-                    "lonMin=%s\n" +
-                    "lonMax=%s) == false BUT\n" +
-                    "haversin(%s, %s, %s, %s) = %s\nbbox=%s",
-                centerLat, centerLon, radius, latMin, latMax, lonMin, lonMax,
-                centerLat, centerLon, lat, lon, distance, Rectangle.fromPointDistance(centerLat, centerLon, radius)),
-                distance > radius);
+              assertTrue(
+                  String.format(
+                      Locale.ROOT,
+                      "\nisDisjoint(\n"
+                          + "centerLat=%s\n"
+                          + "centerLon=%s\n"
+                          + "radius=%s\n"
+                          + "latMin=%s\n"
+                          + "latMax=%s\n"
+                          + "lonMin=%s\n"
+                          + "lonMax=%s) == false BUT\n"
+                          + "haversin(%s, %s, %s, %s) = %s\nbbox=%s",
+                      centerLat,
+                      centerLon,
+                      radius,
+                      latMin,
+                      latMax,
+                      lonMin,
+                      lonMax,
+                      centerLat,
+                      centerLon,
+                      lat,
+                      lon,
+                      distance,
+                      Rectangle.fromPointDistance(centerLat, centerLon, radius)),
+                  distance > radius);
             } catch (AssertionError e) {
               EarthDebugger ed = new EarthDebugger();
               ed.addRect(latMin, latMax, lonMin, lonMax);
@@ -281,13 +318,23 @@ public class TestGeoUtils extends LuceneTestCase {
     return min + (max - min) * random.nextDouble();
   }
 
-  static boolean isDisjoint(double centerLat, double centerLon, double radius, double axisLat, double latMin, double latMax, double lonMin, double lonMax) {
-    if ((centerLon < lonMin || centerLon > lonMax) && (axisLat+ Rectangle.AXISLAT_ERROR < latMin || axisLat- Rectangle.AXISLAT_ERROR > latMax)) {
+  static boolean isDisjoint(
+      double centerLat,
+      double centerLon,
+      double radius,
+      double axisLat,
+      double latMin,
+      double latMax,
+      double lonMin,
+      double lonMax) {
+    if ((centerLon < lonMin || centerLon > lonMax)
+        && (axisLat + Rectangle.AXISLAT_ERROR < latMin
+            || axisLat - Rectangle.AXISLAT_ERROR > latMax)) {
       // circle not fully inside / crossing axis
-      if (SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMin) > radius &&
-          SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMax) > radius &&
-          SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMin) > radius &&
-          SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMax) > radius) {
+      if (SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMin) > radius
+          && SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMax) > radius
+          && SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMin) > radius
+          && SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMax) > radius) {
         // no points inside
         return true;
       }

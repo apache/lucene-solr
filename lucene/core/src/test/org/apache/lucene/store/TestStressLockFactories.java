@@ -23,59 +23,64 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SuppressForbidden;
 
 @LuceneTestCase.SuppressFileSystems("*")
 public class TestStressLockFactories extends LuceneTestCase {
-  
+
   @SuppressForbidden(reason = "ProcessBuilder only allows to redirect to java.io.File")
   private static final ProcessBuilder applyRedirection(ProcessBuilder pb, int client, Path dir) {
     if (VERBOSE) {
       return pb.inheritIO();
     } else {
-      return pb
-        .redirectError(dir.resolve("err-" + client + ".txt").toFile())
-        .redirectOutput(dir.resolve("out-" + client + ".txt").toFile())
-        .redirectInput(Redirect.INHERIT);
+      return pb.redirectError(dir.resolve("err-" + client + ".txt").toFile())
+          .redirectOutput(dir.resolve("out-" + client + ".txt").toFile())
+          .redirectInput(Redirect.INHERIT);
     }
   }
-  
+
   private void runImpl(Class<? extends LockFactory> impl) throws Exception {
     final int clients = TEST_NIGHTLY ? 5 : 2;
     final String host = "127.0.0.1";
     final int delay = 1;
     final int rounds = (TEST_NIGHTLY ? 30000 : 500) * RANDOM_MULTIPLIER;
-    
+
     final Path dir = createTempDir(impl.getSimpleName());
-    
+
     final List<Process> processes = new ArrayList<>(clients);
 
-    LockVerifyServer.run(host, clients, addr -> {
-      // spawn clients as separate Java processes
-      for (int i = 0; i < clients; i++) {
-        try {
-          processes.add(applyRedirection(new ProcessBuilder(
-              Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
-              "-Xmx32M",
-              "-cp",
-              System.getProperty("java.class.path"),
-              LockStressTest.class.getName(),
-              Integer.toString(i),
-              addr.getHostString(),
-              Integer.toString(addr.getPort()),
-              impl.getName(),
-              dir.toString(),
-              Integer.toString(delay),
-              Integer.toString(rounds)
-            ), i, dir).start());
-        } catch (IOException ioe) {
-          throw new AssertionError("Failed to start child process.", ioe);
-        }
-      }
-    });
-     
+    LockVerifyServer.run(
+        host,
+        clients,
+        addr -> {
+          // spawn clients as separate Java processes
+          for (int i = 0; i < clients; i++) {
+            try {
+              processes.add(
+                  applyRedirection(
+                          new ProcessBuilder(
+                              Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+                              "-Xmx32M",
+                              "-cp",
+                              System.getProperty("java.class.path"),
+                              LockStressTest.class.getName(),
+                              Integer.toString(i),
+                              addr.getHostString(),
+                              Integer.toString(addr.getPort()),
+                              impl.getName(),
+                              dir.toString(),
+                              Integer.toString(delay),
+                              Integer.toString(rounds)),
+                          i,
+                          dir)
+                      .start());
+            } catch (IOException ioe) {
+              throw new AssertionError("Failed to start child process.", ioe);
+            }
+          }
+        });
+
     // wait for all processes to exit...
     try {
       for (Process p : processes) {
@@ -92,7 +97,7 @@ public class TestStressLockFactories extends LuceneTestCase {
       }
     }
   }
-  
+
   public void testNativeFSLockFactory() throws Exception {
     runImpl(NativeFSLockFactory.class);
   }
@@ -100,5 +105,4 @@ public class TestStressLockFactories extends LuceneTestCase {
   public void testSimpleFSLockFactory() throws Exception {
     runImpl(SimpleFSLockFactory.class);
   }
-
 }

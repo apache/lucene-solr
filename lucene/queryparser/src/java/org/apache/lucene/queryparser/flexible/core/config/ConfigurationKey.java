@@ -17,25 +17,22 @@
 package org.apache.lucene.queryparser.flexible.core.config;
 
 /**
- * An instance of this class represents a key that is used to retrieve a value
- * from {@link AbstractQueryConfig}. It also holds the value's type, which is
- * defined in the generic argument.
- * 
+ * An instance of this class represents a key that is used to retrieve a value from {@link
+ * AbstractQueryConfig}. It also holds the value's type, which is defined in the generic argument.
+ *
  * @see AbstractQueryConfig
  */
-final public class ConfigurationKey<T> {
-  
+public final class ConfigurationKey<T> {
+
   private ConfigurationKey() {}
-  
+
   /**
    * Creates a new instance.
-   * 
+   *
    * @param <T> the value's type
-   * 
    * @return a new instance
    */
   public static <T> ConfigurationKey<T> newInstance() {
     return new ConfigurationKey<>();
   }
-  
 }

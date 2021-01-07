@@ -22,8 +22,7 @@ public class TestHighLZ4 extends LZ4TestCase {
 
   @Override
   protected HashTable newHashTable() {
-    LZ4.HashTable hashTable =  new LZ4.HighCompressionHashTable();
+    LZ4.HashTable hashTable = new LZ4.HighCompressionHashTable();
     return new AssertingHashTable(hashTable);
   }
-
 }

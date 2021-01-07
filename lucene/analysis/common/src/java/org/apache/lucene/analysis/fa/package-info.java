@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Persian.
- */
+/** Analyzer for Persian. */
 package org.apache.lucene.analysis.fa;

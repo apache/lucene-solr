@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -33,37 +31,42 @@ import org.apache.lucene.analysis.ja.dict.UserDictionary;
 
 /**
  * Analyzer for Japanese that uses morphological analysis.
- * @see JapaneseTokenizer
  *
+ * @see JapaneseTokenizer
  * @since 3.6.0
  */
 public class JapaneseAnalyzer extends StopwordAnalyzerBase {
   private final Mode mode;
   private final Set<String> stoptags;
   private final UserDictionary userDict;
-  
+
   public JapaneseAnalyzer() {
-    this(null, JapaneseTokenizer.DEFAULT_MODE, DefaultSetHolder.DEFAULT_STOP_SET, DefaultSetHolder.DEFAULT_STOP_TAGS);
+    this(
+        null,
+        JapaneseTokenizer.DEFAULT_MODE,
+        DefaultSetHolder.DEFAULT_STOP_SET,
+        DefaultSetHolder.DEFAULT_STOP_TAGS);
   }
-  
-  public JapaneseAnalyzer(UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
+
+  public JapaneseAnalyzer(
+      UserDictionary userDict, Mode mode, CharArraySet stopwords, Set<String> stoptags) {
     super(stopwords);
     this.userDict = userDict;
     this.mode = mode;
     this.stoptags = stoptags;
   }
-  
-  public static CharArraySet getDefaultStopSet(){
+
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
-  public static Set<String> getDefaultStopTags(){
+
+  public static Set<String> getDefaultStopTags() {
     return DefaultSetHolder.DEFAULT_STOP_TAGS;
   }
-  
+
   /**
-   * Atomically loads DEFAULT_STOP_SET, DEFAULT_STOP_TAGS in a lazy fashion once the 
-   * outer class accesses the static final set the first time.
+   * Atomically loads DEFAULT_STOP_SET, DEFAULT_STOP_TAGS in a lazy fashion once the outer class
+   * accesses the static final set the first time.
    */
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
@@ -71,8 +74,10 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(true, JapaneseAnalyzer.class, "stopwords.txt", "#");  // ignore case
-        final CharArraySet tagset = loadStopwordSet(false, JapaneseAnalyzer.class, "stoptags.txt", "#");
+        DEFAULT_STOP_SET =
+            loadStopwordSet(true, JapaneseAnalyzer.class, "stopwords.txt", "#"); // ignore case
+        final CharArraySet tagset =
+            loadStopwordSet(false, JapaneseAnalyzer.class, "stoptags.txt", "#");
         DEFAULT_STOP_TAGS = new HashSet<>();
         for (Object element : tagset) {
           char chars[] = (char[]) element;
@@ -84,7 +89,7 @@ public class JapaneseAnalyzer extends StopwordAnalyzerBase {
       }
     }
   }
-  
+
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     Tokenizer tokenizer = new JapaneseTokenizer(userDict, true, true, mode);

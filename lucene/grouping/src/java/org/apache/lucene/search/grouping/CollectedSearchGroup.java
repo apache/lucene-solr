@@ -18,10 +18,12 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.search.FieldComparator; // javadocs
 
-/** 
- * Expert: representation of a group in {@link FirstPassGroupingCollector},
- * tracking the top doc and {@link FieldComparator} slot.
- * @lucene.internal */
+/**
+ * Expert: representation of a group in {@link FirstPassGroupingCollector}, tracking the top doc and
+ * {@link FieldComparator} slot.
+ *
+ * @lucene.internal
+ */
 public class CollectedSearchGroup<T> extends SearchGroup<T> {
   int topDoc;
   int comparatorSlot;

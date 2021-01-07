@@ -16,24 +16,26 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 
 /**
- * {@link Sorter} implementation based on the
- * <a href="http://svn.python.org/projects/python/trunk/Objects/listsort.txt">TimSort</a>
- * algorithm.
- * <p>This implementation is especially good at sorting partially-sorted
- * arrays and sorts small arrays with binary sort.
- * <p><b>NOTE</b>:There are a few differences with the original implementation:<ul>
- * <li><a id="maxTempSlots"></a>The extra amount of memory to perform merges is
- * configurable. This allows small merges to be very fast while large merges
- * will be performed in-place (slightly slower). You can make sure that the
- * fast merge routine will always be used by having <code>maxTempSlots</code>
- * equal to half of the length of the slice of data to sort.
- * <li>Only the fast merge routine can gallop (the one that doesn't run
- * in-place) and it only gallops on the longest slice.
+ * {@link Sorter} implementation based on the <a
+ * href="http://svn.python.org/projects/python/trunk/Objects/listsort.txt">TimSort</a> algorithm.
+ *
+ * <p>This implementation is especially good at sorting partially-sorted arrays and sorts small
+ * arrays with binary sort.
+ *
+ * <p><b>NOTE</b>:There are a few differences with the original implementation:
+ *
+ * <ul>
+ *   <li><a id="maxTempSlots"></a>The extra amount of memory to perform merges is configurable. This
+ *       allows small merges to be very fast while large merges will be performed in-place (slightly
+ *       slower). You can make sure that the fast merge routine will always be used by having <code>
+ *       maxTempSlots</code> equal to half of the length of the slice of data to sort.
+ *   <li>Only the fast merge routine can gallop (the one that doesn't run in-place) and it only
+ *       gallops on the longest slice.
  * </ul>
+ *
  * @lucene.internal
  */
 public abstract class TimSorter extends Sorter {
@@ -51,7 +53,9 @@ public abstract class TimSorter extends Sorter {
 
   /**
    * Create a new {@link TimSorter}.
-   * @param maxTempSlots the <a href="#maxTempSlots">maximum amount of extra memory to run merges</a>
+   *
+   * @param maxTempSlots the <a href="#maxTempSlots">maximum amount of extra memory to run
+   *     merges</a>
    */
   protected TimSorter(int maxTempSlots) {
     super();
@@ -95,8 +99,7 @@ public abstract class TimSorter extends Sorter {
     ++stackSize;
   }
 
-  /** Compute the length of the next run, make the run sorted and return its
-   *  length. */
+  /** Compute the length of the next run, make the run sorted and return its length. */
   int nextRun() {
     final int runBase = runEnd(0);
     assert runBase < to;
@@ -104,7 +107,7 @@ public abstract class TimSorter extends Sorter {
       return 1;
     }
     int o = runBase + 2;
-    if (compare(runBase, runBase+1) > 0) {
+    if (compare(runBase, runBase + 1) > 0) {
       // run must be strictly descending
       while (o < to && compare(o - 1, o) > 0) {
         ++o;
@@ -168,7 +171,7 @@ public abstract class TimSorter extends Sorter {
     assert stackSize >= 2;
     merge(runBase(n + 1), runBase(n), runEnd(n));
     for (int j = n + 1; j > 0; --j) {
-      setRunEnd(j, runEnd(j-1));
+      setRunEnd(j, runEnd(j - 1));
     }
     --stackSize;
   }
@@ -241,7 +244,8 @@ public abstract class TimSorter extends Sorter {
     save(lo, len1);
     copy(mid, lo);
     int i = 0, j = mid + 1, dest = lo + 1;
-    outer: for (;;) {
+    outer:
+    for (; ; ) {
       for (int count = 0; count < MIN_GALLOP; ) {
         if (i >= len1 || j >= hi) {
           break outer;
@@ -272,7 +276,8 @@ public abstract class TimSorter extends Sorter {
     save(mid, len2);
     copy(mid - 1, hi - 1);
     int i = mid - 2, j = len2 - 1, dest = hi - 2;
-    outer: for (;;) {
+    outer:
+    for (; ; ) {
       for (int count = 0; count < MIN_GALLOP; ) {
         if (i < lo || j < 0) {
           break outer;
@@ -304,7 +309,7 @@ public abstract class TimSorter extends Sorter {
       final int mid = from + half;
       if (compareSaved(val, mid) > 0) {
         from = mid + 1;
-        len = len - half -1;
+        len = len - half - 1;
       } else {
         len = half;
       }
@@ -321,7 +326,7 @@ public abstract class TimSorter extends Sorter {
         len = half;
       } else {
         from = mid + 1;
-        len = len - half -1;
+        len = len - half - 1;
       }
     }
     return from;
@@ -341,7 +346,7 @@ public abstract class TimSorter extends Sorter {
     return lowerSaved(f, to, val);
   }
 
-  //faster than upperSaved when val is at the end of [from:to[
+  // faster than upperSaved when val is at the end of [from:to[
   int upperSaved3(int from, int to, int val) {
     int f = to - 1, t = to;
     while (f > from) {
@@ -358,16 +363,18 @@ public abstract class TimSorter extends Sorter {
   /** Copy data from slot <code>src</code> to slot <code>dest</code>. */
   protected abstract void copy(int src, int dest);
 
-  /** Save all elements between slots <code>i</code> and <code>i+len</code>
-   *  into the temporary storage. */
+  /**
+   * Save all elements between slots <code>i</code> and <code>i+len</code> into the temporary
+   * storage.
+   */
   protected abstract void save(int i, int len);
 
   /** Restore element <code>j</code> from the temporary storage into slot <code>i</code>. */
   protected abstract void restore(int i, int j);
 
-  /** Compare element <code>i</code> from the temporary storage with element
-   *  <code>j</code> from the slice to sort, similarly to
-   *  {@link #compare(int, int)}. */
+  /**
+   * Compare element <code>i</code> from the temporary storage with element <code>j</code> from the
+   * slice to sort, similarly to {@link #compare(int, int)}.
+   */
   protected abstract int compareSaved(int i, int j);
-
 }

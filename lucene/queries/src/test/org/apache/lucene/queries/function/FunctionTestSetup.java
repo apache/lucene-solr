@@ -41,15 +41,13 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 
-/**
- * Setup for function tests
- */
+/** Setup for function tests */
 @Ignore
 public abstract class FunctionTestSetup extends LuceneTestCase {
 
   /**
-   * Actual score computation order is slightly different than assumptios
-   * this allows for a small amount of variation
+   * Actual score computation order is slightly different than assumptios this allows for a small
+   * amount of variation
    */
   protected static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
 
@@ -59,50 +57,54 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String TEXT_FIELD = "text";
   protected static final String INT_FIELD = "iii";
   /**
-   * This field is multiValued and should give the exact same results as
-   * {@link #INT_FIELD} when used with MIN selector
+   * This field is multiValued and should give the exact same results as {@link #INT_FIELD} when
+   * used with MIN selector
    */
   protected static final String INT_FIELD_MV_MIN = "iii_min";
   /**
-   * This field is multiValued and should give the exact same results as
-   * {@link #INT_FIELD} when used with MAX selector
+   * This field is multiValued and should give the exact same results as {@link #INT_FIELD} when
+   * used with MAX selector
    */
   protected static final String INT_FIELD_MV_MAX = "iii_max";
 
   protected static final String FLOAT_FIELD = "fff";
   /**
-   * This field is multiValued and should give the exact same results as
-   * {@link #FLOAT_FIELD} when used with MIN selector
+   * This field is multiValued and should give the exact same results as {@link #FLOAT_FIELD} when
+   * used with MIN selector
    */
   protected static final String FLOAT_FIELD_MV_MIN = "fff_min";
   /**
-   * This field is multiValued and should give the exact same results as
-   * {@link #FLOAT_FIELD} when used with MAX selector
+   * This field is multiValued and should give the exact same results as {@link #FLOAT_FIELD} when
+   * used with MAX selector
    */
   protected static final String FLOAT_FIELD_MV_MAX = "fff_max";
 
   protected ValueSource INT_VALUESOURCE = new IntFieldSource(INT_FIELD);
-  protected ValueSource INT_MV_MIN_VALUESOURCE = new MultiValuedIntFieldSource(INT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
-  protected ValueSource INT_MV_MAX_VALUESOURCE = new MultiValuedIntFieldSource(INT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
+  protected ValueSource INT_MV_MIN_VALUESOURCE =
+      new MultiValuedIntFieldSource(INT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
+  protected ValueSource INT_MV_MAX_VALUESOURCE =
+      new MultiValuedIntFieldSource(INT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
   protected ValueSource FLOAT_VALUESOURCE = new FloatFieldSource(FLOAT_FIELD);
-  protected ValueSource FLOAT_MV_MIN_VALUESOURCE = new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
-  protected ValueSource FLOAT_MV_MAX_VALUESOURCE = new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
+  protected ValueSource FLOAT_MV_MIN_VALUESOURCE =
+      new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MIN, SortedNumericSelector.Type.MIN);
+  protected ValueSource FLOAT_MV_MAX_VALUESOURCE =
+      new MultiValuedFloatFieldSource(FLOAT_FIELD_MV_MAX, SortedNumericSelector.Type.MAX);
 
   private static final String DOC_TEXT_LINES[] = {
-          "Well, this is just some plain text we use for creating the ",
-          "test documents. It used to be a text from an online collection ",
-          "devoted to first aid, but if there was there an (online) lawyers ",
-          "first aid collection with legal advices, \"it\" might have quite ",
-          "probably advised one not to include \"it\"'s text or the text of ",
-          "any other online collection in one's code, unless one has money ",
-          "that one don't need and one is happy to donate for lawyers ",
-          "charity. Anyhow at some point, rechecking the usage of this text, ",
-          "it became uncertain that this text is free to use, because ",
-          "the web site in the disclaimer of he eBook containing that text ",
-          "was not responding anymore, and at the same time, in projGut, ",
-          "searching for first aid no longer found that eBook as well. ",
-          "So here we are, with a perhaps much less interesting ",
-          "text for the test, but oh much much safer. ",
+    "Well, this is just some plain text we use for creating the ",
+    "test documents. It used to be a text from an online collection ",
+    "devoted to first aid, but if there was there an (online) lawyers ",
+    "first aid collection with legal advices, \"it\" might have quite ",
+    "probably advised one not to include \"it\"'s text or the text of ",
+    "any other online collection in one's code, unless one has money ",
+    "that one don't need and one is happy to donate for lawyers ",
+    "charity. Anyhow at some point, rechecking the usage of this text, ",
+    "it became uncertain that this text is free to use, because ",
+    "the web site in the disclaimer of he eBook containing that text ",
+    "was not responding anymore, and at the same time, in projGut, ",
+    "searching for first aid no longer found that eBook as well. ",
+    "So here we are, with a perhaps much less interesting ",
+    "text for the test, but oh much much safer. ",
   };
 
   protected static Directory dir;
@@ -134,12 +136,13 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     int i = 0;
     while (remaining > 0) {
       if (done[i]) {
-        throw new Exception("to set this test correctly N_DOCS=" + N_DOCS + " must be primary and greater than 2!");
+        throw new Exception(
+            "to set this test correctly N_DOCS=" + N_DOCS + " must be primary and greater than 2!");
       }
       addDoc(iw, i);
       done[i] = true;
       i = (i + 4) % N_DOCS;
-      remaining --;
+      remaining--;
     }
     if (!doMultiSegment) {
       if (VERBOSE) {
@@ -161,14 +164,18 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     customType.setOmitNorms(true);
-    
+
     f = newField(ID_FIELD, id2String(scoreAndID), customType); // for debug purposes
     d.add(f);
     d.add(new SortedDocValuesField(ID_FIELD, new BytesRef(id2String(scoreAndID))));
 
     FieldType customType2 = new FieldType(TextField.TYPE_NOT_STORED);
     customType2.setOmitNorms(true);
-    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
+    f =
+        newField(
+            TEXT_FIELD,
+            "text of doc" + scoreAndID + textLine(i),
+            customType2); // for regular search
     d.add(f);
 
     f = new StoredField(INT_FIELD, scoreAndID); // for function scoring
@@ -178,34 +185,42 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     f = new StoredField(FLOAT_FIELD, scoreAndID); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
-    
+
     f = new StoredField(INT_FIELD_MV_MIN, scoreAndID);
     d.add(f);
     f = new StoredField(INT_FIELD_MV_MIN, scoreAndID + 1);
     d.add(f);
     d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MIN, scoreAndID));
     d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MIN, scoreAndID + 1));
-    
+
     f = new StoredField(INT_FIELD_MV_MAX, scoreAndID);
     d.add(f);
     f = new StoredField(INT_FIELD_MV_MAX, scoreAndID - 1);
     d.add(f);
     d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MAX, scoreAndID));
     d.add(new SortedNumericDocValuesField(INT_FIELD_MV_MAX, scoreAndID - 1));
-    
+
     f = new StoredField(FLOAT_FIELD_MV_MIN, scoreAndID);
     d.add(f);
     f = new StoredField(FLOAT_FIELD_MV_MIN, scoreAndID + 1);
     d.add(f);
-    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID)));
-    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID + 1)));
-    
+    d.add(
+        new SortedNumericDocValuesField(
+            FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID)));
+    d.add(
+        new SortedNumericDocValuesField(
+            FLOAT_FIELD_MV_MIN, NumericUtils.floatToSortableInt(scoreAndID + 1)));
+
     f = new StoredField(FLOAT_FIELD_MV_MAX, scoreAndID);
     d.add(f);
     f = new StoredField(FLOAT_FIELD_MV_MAX, scoreAndID - 1);
     d.add(f);
-    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID)));
-    d.add(new SortedNumericDocValuesField(FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID - 1)));
+    d.add(
+        new SortedNumericDocValuesField(
+            FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID)));
+    d.add(
+        new SortedNumericDocValuesField(
+            FLOAT_FIELD_MV_MAX, NumericUtils.floatToSortableInt(scoreAndID - 1)));
 
     iw.addDocument(d);
     log("added: " + d);

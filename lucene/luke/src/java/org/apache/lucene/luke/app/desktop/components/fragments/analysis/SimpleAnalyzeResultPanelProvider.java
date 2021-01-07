@@ -17,19 +17,17 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
 import org.apache.lucene.luke.app.desktop.components.TableModelBase;
@@ -69,7 +67,10 @@ public class SimpleAnalyzeResultPanelProvider implements SimpleAnalyzeResultPane
     hint.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.hint.show_attributes")));
     panel.add(hint, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(tokensTable, ListSelectionModel.SINGLE_SELECTION, new TokensTableModel(),
+    TableUtils.setupTable(
+        tokensTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new TokensTableModel(),
         new MouseAdapter() {
           @Override
           public void mouseClicked(MouseEvent e) {
@@ -93,15 +94,22 @@ public class SimpleAnalyzeResultPanelProvider implements SimpleAnalyzeResultPane
     tokens = analysisModel.analyze(text);
     tokensTable.setModel(new TokensTableModel(tokens));
     tokensTable.setShowGrid(true);
-    tokensTable.getColumnModel().getColumn(TokensTableModel.Column.TERM.getIndex())
+    tokensTable
+        .getColumnModel()
+        .getColumn(TokensTableModel.Column.TERM.getIndex())
         .setPreferredWidth(TokensTableModel.Column.TERM.getColumnWidth());
-    tokensTable.getColumnModel().getColumn(TokensTableModel.Column.ATTR.getIndex())
+    tokensTable
+        .getColumnModel()
+        .getColumn(TokensTableModel.Column.ATTR.getIndex())
         .setPreferredWidth(TokensTableModel.Column.ATTR.getColumnWidth());
   }
 
   @Override
   public void clearTable() {
-    TableUtils.setupTable(tokensTable, ListSelectionModel.SINGLE_SELECTION, new TokensTableModel(),
+    TableUtils.setupTable(
+        tokensTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new TokensTableModel(),
         null,
         TokensTableModel.Column.TERM.getColumnWidth(),
         TokensTableModel.Column.ATTR.getColumnWidth());
@@ -110,11 +118,15 @@ public class SimpleAnalyzeResultPanelProvider implements SimpleAnalyzeResultPane
   private void showAttributeValues(int selectedIndex) {
     String term = tokens.get(selectedIndex).getTerm();
     List<Analysis.TokenAttribute> attributes = tokens.get(selectedIndex).getAttributes();
-    new DialogOpener<>(tokenAttrDialogFactory).open("Token Attributes", 650, 400,
-        factory -> {
-          factory.setTerm(term);
-          factory.setAttributes(attributes);
-        });
+    new DialogOpener<>(tokenAttrDialogFactory)
+        .open(
+            "Token Attributes",
+            650,
+            400,
+            factory -> {
+              factory.setTerm(term);
+              factory.setAttributes(attributes);
+            });
   }
 
   private class ListenerFunctions {
@@ -180,10 +192,13 @@ public class SimpleAnalyzeResultPanelProvider implements SimpleAnalyzeResultPane
       for (int i = 0; i < tokens.size(); i++) {
         Analysis.Token token = tokens.get(i);
         data[i][Column.TERM.getIndex()] = token.getTerm();
-        List<String> attValues = token.getAttributes().stream()
-            .flatMap(att -> att.getAttValues().entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue()))
-            .collect(Collectors.toList());
+        List<String> attValues =
+            token.getAttributes().stream()
+                .flatMap(
+                    att ->
+                        att.getAttValues().entrySet().stream()
+                            .map(e -> e.getKey() + "=" + e.getValue()))
+                .collect(Collectors.toList());
         data[i][Column.ATTR.getIndex()] = String.join(",", attValues);
       }
     }

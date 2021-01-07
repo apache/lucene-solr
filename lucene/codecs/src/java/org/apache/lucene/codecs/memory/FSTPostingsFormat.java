@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -31,10 +28,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * FST term dict + Lucene50PBF
- */
-
+/** FST term dict + Lucene50PBF */
 public final class FSTPostingsFormat extends PostingsFormat {
   public FSTPostingsFormat() {
     super("FST50");

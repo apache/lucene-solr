@@ -22,12 +22,9 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-/**
- *
- *
- **/
+/** */
 public class SrndQueryTest extends LuceneTestCase {
-  
+
   void checkEqualParsings(String s1, String s2) throws Exception {
     String fieldName = "foo";
     BasicQueryFactory qf = new BasicQueryFactory(16);
@@ -39,8 +36,8 @@ public class SrndQueryTest extends LuceneTestCase {
 
   @Test
   public void testHashEquals() throws Exception {
-    //grab some sample queries from Test02Boolean and Test03Distance and
-    //check there hashes and equals
+    // grab some sample queries from Test02Boolean and Test03Distance and
+    // check there hashes and equals
     checkEqualParsings("word1 w word2", " word1  w  word2 ");
     checkEqualParsings("2N(w1,w2,w3)", " 2N(w1, w2 , w3)");
     checkEqualParsings("abc?", " abc? ");

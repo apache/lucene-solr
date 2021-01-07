@@ -17,27 +17,17 @@
 
 package org.apache.lucene.luke.models.overview;
 
-/**
- * Sort orders for fields with their term counts
- */
+/** Sort orders for fields with their term counts */
 public enum TermCountsOrder {
-  /**
-   * Ascending order by the field name
-   */
+  /** Ascending order by the field name */
   NAME_ASC,
 
-  /**
-   * Descending order by the field name
-   */
+  /** Descending order by the field name */
   NAME_DESC,
 
-  /**
-   * Ascending order by the count of terms
-   */
+  /** Ascending order by the count of terms */
   COUNT_ASC,
 
-  /**
-   * Descending order by the count of terms
-   */
+  /** Descending order by the count of terms */
   COUNT_DESC
 }

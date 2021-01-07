@@ -17,22 +17,21 @@
 package org.apache.lucene.sandbox.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.sandbox.search.TermAutomatonQuery;
 import org.apache.lucene.util.BytesRef;
 
-/** Consumes a TokenStream and creates an {@link TermAutomatonQuery}
- *  where the transition labels are tokens from the {@link
- *  TermToBytesRefAttribute}.
+/**
+ * Consumes a TokenStream and creates an {@link TermAutomatonQuery} where the transition labels are
+ * tokens from the {@link TermToBytesRefAttribute}.
  *
- *  <p>This code is very new and likely has exciting bugs!
+ * <p>This code is very new and likely has exciting bugs!
  *
- *  @lucene.experimental */
+ * @lucene.experimental
+ */
 public class TokenStreamToTermAutomatonQuery {
 
   private boolean preservePositionIncrements;
@@ -42,16 +41,18 @@ public class TokenStreamToTermAutomatonQuery {
     this.preservePositionIncrements = true;
   }
 
-  /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
+  /**
+   * Whether to generate holes in the automaton for missing positions, <code>true</code> by default.
+   */
   public void setPreservePositionIncrements(boolean enablePositionIncrements) {
     this.preservePositionIncrements = enablePositionIncrements;
   }
 
-  /** Pulls the graph (including {@link
-   *  PositionLengthAttribute}) from the provided {@link
-   *  TokenStream}, and creates the corresponding
-   *  automaton where arcs are bytes (or Unicode code points 
-   *  if unicodeArcs = true) from each term. */
+  /**
+   * Pulls the graph (including {@link PositionLengthAttribute}) from the provided {@link
+   * TokenStream}, and creates the corresponding automaton where arcs are bytes (or Unicode code
+   * points if unicodeArcs = true) from each term.
+   */
   public TermAutomatonQuery toQuery(String field, TokenStream in) throws IOException {
 
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
@@ -90,7 +91,7 @@ public class TokenStreamToTermAutomatonQuery {
       }
 
       BytesRef term = termBytesAtt.getBytesRef();
-      //System.out.println(pos + "-" + endPos + ": " + term.utf8ToString() + ": posInc=" + posInc);
+      // System.out.println(pos + "-" + endPos + ": " + term.utf8ToString() + ": posInc=" + posInc);
       if (term.length == 1 && term.bytes[term.offset] == (byte) '*') {
         query.addAnyTransition(pos, endPos);
       } else {

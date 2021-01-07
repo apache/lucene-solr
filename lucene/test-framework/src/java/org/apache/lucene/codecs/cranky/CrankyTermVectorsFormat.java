@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
-
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -37,34 +36,38 @@ import org.apache.lucene.util.BytesRef;
 class CrankyTermVectorsFormat extends TermVectorsFormat {
   final TermVectorsFormat delegate;
   final Random random;
-  
+
   CrankyTermVectorsFormat(TermVectorsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
   }
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
+  public TermVectorsReader vectorsReader(
+      Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
+      throws IOException {
     return delegate.vectorsReader(directory, segmentInfo, fieldInfos, context);
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+  public TermVectorsWriter vectorsWriter(
+      Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from TermVectorsFormat.vectorsWriter()");
     }
-    return new CrankyTermVectorsWriter(delegate.vectorsWriter(directory, segmentInfo, context), random);
+    return new CrankyTermVectorsWriter(
+        delegate.vectorsWriter(directory, segmentInfo, context), random);
   }
-  
+
   static class CrankyTermVectorsWriter extends TermVectorsWriter {
     final TermVectorsWriter delegate;
     final Random random;
-    
+
     CrankyTermVectorsWriter(TermVectorsWriter delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
     }
-    
+
     @Override
     public int merge(MergeState mergeState) throws IOException {
       if (random.nextInt(100) == 0) {
@@ -98,7 +101,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
       }
       delegate.startDocument(numVectorFields);
     }
-    
+
     @Override
     public void finishDocument() throws IOException {
       if (random.nextInt(10000) == 0) {
@@ -106,9 +109,11 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
       }
       delegate.finishDocument();
     }
-    
+
     @Override
-    public void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException {
+    public void startField(
+        FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads)
+        throws IOException {
       if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.startField()");
       }
@@ -122,7 +127,7 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
       }
       delegate.finishField();
     }
-    
+
     @Override
     public void startTerm(BytesRef term, int freq) throws IOException {
       if (random.nextInt(10000) == 0) {
@@ -138,9 +143,10 @@ class CrankyTermVectorsFormat extends TermVectorsFormat {
       }
       delegate.finishTerm();
     }
-    
+
     @Override
-    public void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException {
+    public void addPosition(int position, int startOffset, int endOffset, BytesRef payload)
+        throws IOException {
       if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from TermVectorsWriter.addPosition()");
       }

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,19 +38,19 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
- * is contained in the specified set.
+ * Abstract query class to find all documents whose single or multi-dimensional point values,
+ * previously indexed with e.g. {@link IntPoint}, is contained in the specified set.
  *
- * <p>
- * This is for subclasses and works on the underlying binary encoding: to
- * create range queries for lucene's standard {@code Point} types, refer to factory
- * methods on those classes, e.g. {@link IntPoint#newSetQuery IntPoint.newSetQuery()} for 
- * fields indexed with {@link IntPoint}.
+ * <p>This is for subclasses and works on the underlying binary encoding: to create range queries
+ * for lucene's standard {@code Point} types, refer to factory methods on those classes, e.g. {@link
+ * IntPoint#newSetQuery IntPoint.newSetQuery()} for fields indexed with {@link IntPoint}.
+ *
  * @see PointValues
- * @lucene.experimental */
-
+ * @lucene.experimental
+ */
 public abstract class PointInSetQuery extends Query implements Accountable {
-  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInSetQuery.class);
+  protected static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(PointInSetQuery.class);
 
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
@@ -60,37 +59,50 @@ public abstract class PointInSetQuery extends Query implements Accountable {
   final int numDims;
   final int bytesPerDim;
   final long ramBytesUsed; // cache
-  
-  /** 
-   * Iterator of encoded point values.
-   */
+
+  /** Iterator of encoded point values. */
   // TODO: if we want to stream, maybe we should use jdk stream class?
-  public static abstract class Stream implements BytesRefIterator {
+  public abstract static class Stream implements BytesRefIterator {
     @Override
     public abstract BytesRef next();
-  };
+  }
+  ;
 
   /** The {@code packedPoints} iterator must be in sorted order. */
   protected PointInSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints) {
     this.field = field;
     if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
-      throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
+      throw new IllegalArgumentException(
+          "bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
     }
     this.bytesPerDim = bytesPerDim;
     if (numDims < 1 || numDims > PointValues.MAX_INDEX_DIMENSIONS) {
-      throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_INDEX_DIMENSIONS + "; got " + numDims);
+      throw new IllegalArgumentException(
+          "numDims must be > 0 and <= " + PointValues.MAX_INDEX_DIMENSIONS + "; got " + numDims);
     }
 
     this.numDims = numDims;
 
-    // In the 1D case this works well (the more points, the more common prefixes they share, typically), but in
-    // the > 1 D case, where we are only looking at the first dimension's prefix bytes, it can at worst not hurt:
+    // In the 1D case this works well (the more points, the more common prefixes they share,
+    // typically), but in
+    // the > 1 D case, where we are only looking at the first dimension's prefix bytes, it can at
+    // worst not hurt:
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     BytesRefBuilder previous = null;
     BytesRef current;
     while ((current = packedPoints.next()) != null) {
       if (current.length != numDims * bytesPerDim) {
-        throw new IllegalArgumentException("packed point length should be " + (numDims * bytesPerDim) + " but got " + current.length + "; field=\"" + field + "\" numDims=" + numDims + " bytesPerDim=" + bytesPerDim);
+        throw new IllegalArgumentException(
+            "packed point length should be "
+                + (numDims * bytesPerDim)
+                + " but got "
+                + current.length
+                + "; field=\""
+                + field
+                + "\" numDims="
+                + numDims
+                + " bytesPerDim="
+                + bytesPerDim);
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
@@ -99,7 +111,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
         if (cmp == 0) {
           continue; // deduplicate
         } else if (cmp > 0) {
-          throw new IllegalArgumentException("values are out of order: saw " + previous + " before " + current);
+          throw new IllegalArgumentException(
+              "values are out of order: saw " + previous + " before " + current);
         }
       }
       builder.add(field, current);
@@ -107,10 +120,10 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
-    ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(sortedPackedPoints);
-
+    ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(field)
+            + RamUsageEstimator.sizeOfObject(sortedPackedPoints);
   }
 
   @Override
@@ -121,7 +134,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
   }
 
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -139,22 +153,37 @@ public abstract class PointInSetQuery extends Query implements Accountable {
         }
 
         if (values.getNumIndexDimensions() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numIndexDims=" + values.getNumIndexDimensions() + " but this query has numIndexDims=" + numDims);
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with numIndexDims="
+                  + values.getNumIndexDimensions()
+                  + " but this query has numIndexDims="
+                  + numDims);
         }
         if (values.getBytesPerDimension() != bytesPerDim) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with bytesPerDim="
+                  + values.getBytesPerDimension()
+                  + " but this query has bytesPerDim="
+                  + bytesPerDim);
         }
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         if (numDims == 1) {
 
-          // We optimize this common case, effectively doing a merge sort of the indexed values vs the queried set:
+          // We optimize this common case, effectively doing a merge sort of the indexed values vs
+          // the queried set:
           values.intersect(new MergePointVisitor(sortedPackedPoints, result));
 
         } else {
-          // NOTE: this is naive implementation, where for each point we re-walk the KD tree to intersect.  We could instead do a similar
-          // optimization as the 1D case, but I think it'd mean building a query-time KD tree so we could efficiently intersect against the
+          // NOTE: this is naive implementation, where for each point we re-walk the KD tree to
+          // intersect.  We could instead do a similar
+          // optimization as the 1D case, but I think it'd mean building a query-time KD tree so we
+          // could efficiently intersect against the
           // index, which is probably tricky!
           SinglePointVisitor visitor = new SinglePointVisitor(result);
           TermIterator iterator = sortedPackedPoints.iterator();
@@ -171,12 +200,13 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 
-  /** Essentially does a merge sort, only collecting hits when the indexed point and query point are the same.  This is an optimization,
-   *  used in the 1D case. */
+  /**
+   * Essentially does a merge sort, only collecting hits when the indexed point and query point are
+   * the same. This is an optimization, used in the 1D case.
+   */
   private class MergePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
@@ -186,7 +216,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     private final PrefixCodedTerms sortedPackedPoints;
     private DocIdSetBuilder.BulkAdder adder;
 
-    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result) throws IOException {
+    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result)
+        throws IOException {
       this.result = result;
       this.sortedPackedPoints = sortedPackedPoints;
       scratch.length = bytesPerDim;
@@ -206,9 +237,9 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
     @Override
     public void visit(int docID, byte[] packedValue) {
-     if (matches(packedValue)) {
-       visit(docID);
-     }
+      if (matches(packedValue)) {
+        visit(docID);
+      }
     }
 
     @Override
@@ -256,7 +287,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
         }
 
         if (cmpMin == 0 && cmpMax == 0) {
-          // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to our point,
+          // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal
+          // to our point,
           // which can easily happen if many (> 1024) docs share this one value
           return Relation.CELL_INSIDE_QUERY;
         } else {
@@ -269,7 +301,10 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     }
   }
 
-  /** IntersectVisitor that queries against a highly degenerate shape: a single point.  This is used in the > 1D case. */
+  /**
+   * IntersectVisitor that queries against a highly degenerate shape: a single point. This is used
+   * in the > 1D case.
+   */
   private class SinglePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
@@ -323,15 +358,29 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
       boolean crosses = false;
 
-      for(int dim=0;dim<numDims;dim++) {
-        int offset = dim*bytesPerDim;
+      for (int dim = 0; dim < numDims; dim++) {
+        int offset = dim * bytesPerDim;
 
-        int cmpMin = Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMin =
+            Arrays.compareUnsigned(
+                minPackedValue,
+                offset,
+                offset + bytesPerDim,
+                pointBytes,
+                offset,
+                offset + bytesPerDim);
         if (cmpMin > 0) {
           return Relation.CELL_OUTSIDE_QUERY;
         }
 
-        int cmpMax = Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMax =
+            Arrays.compareUnsigned(
+                maxPackedValue,
+                offset,
+                offset + bytesPerDim,
+                pointBytes,
+                offset,
+                offset + bytesPerDim);
         if (cmpMax < 0) {
           return Relation.CELL_OUTSIDE_QUERY;
         }
@@ -344,7 +393,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       if (crosses) {
         return Relation.CELL_CROSSES_QUERY;
       } else {
-        // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to our point,
+        // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to
+        // our point,
         // which can easily happen if many docs share this one value
         return Relation.CELL_INSIDE_QUERY;
       }
@@ -411,16 +461,15 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
   @Override
   public final boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(PointInSetQuery other) {
-    return other.field.equals(field) &&
-           other.numDims == numDims &&
-           other.bytesPerDim == bytesPerDim &&
-           other.sortedPackedPointsHashCode == sortedPackedPointsHashCode &&
-           other.sortedPackedPoints.equals(sortedPackedPoints);
+    return other.field.equals(field)
+        && other.numDims == numDims
+        && other.bytesPerDim == bytesPerDim
+        && other.sortedPackedPointsHashCode == sortedPackedPointsHashCode
+        && other.sortedPackedPoints.equals(sortedPackedPoints);
   }
 
   @Override
@@ -449,10 +498,10 @@ public abstract class PointInSetQuery extends Query implements Accountable {
   }
 
   /**
-   * Returns a string of a single value in a human-readable format for debugging.
-   * This is used by {@link #toString()}.
+   * Returns a string of a single value in a human-readable format for debugging. This is used by
+   * {@link #toString()}.
    *
-   * The default implementation encodes the individual byte values.
+   * <p>The default implementation encodes the individual byte values.
    *
    * @param value single value, never null
    * @return human readable value for debugging

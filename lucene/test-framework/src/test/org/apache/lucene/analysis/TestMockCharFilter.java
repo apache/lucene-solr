@@ -20,38 +20,28 @@ import java.io.IOException;
 import java.io.Reader;
 
 public class TestMockCharFilter extends BaseTokenStreamTestCase {
-  
+
   public void test() throws IOException {
-    Analyzer analyzer = new Analyzer() {
+    Analyzer analyzer =
+        new Analyzer() {
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
 
-      @Override
-      protected Reader initReader(String fieldName, Reader reader) {
-        return new MockCharFilter(reader, 7);
-      }
-    };
-    
-    assertAnalyzesTo(analyzer, "ab",
-        new String[] { "aab" },
-        new int[] { 0 },
-        new int[] { 2 }
-    );
-    
-    assertAnalyzesTo(analyzer, "aba",
-        new String[] { "aabaa" },
-        new int[] { 0 },
-        new int[] { 3 }
-    );
-    
-    assertAnalyzesTo(analyzer, "abcdefga",
-        new String[] { "aabcdefgaa" },
-        new int[] { 0 },
-        new int[] { 8 }
-    );
+          @Override
+          protected Reader initReader(String fieldName, Reader reader) {
+            return new MockCharFilter(reader, 7);
+          }
+        };
+
+    assertAnalyzesTo(analyzer, "ab", new String[] {"aab"}, new int[] {0}, new int[] {2});
+
+    assertAnalyzesTo(analyzer, "aba", new String[] {"aabaa"}, new int[] {0}, new int[] {3});
+
+    assertAnalyzesTo(
+        analyzer, "abcdefga", new String[] {"aabcdefgaa"}, new int[] {0}, new int[] {8});
   }
 }

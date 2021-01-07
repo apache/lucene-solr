@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.app.desktop.dto.documents;
 
 import java.util.Objects;
-
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -62,8 +61,7 @@ public final class NewField {
     return f;
   }
 
-  private NewField() {
-  }
+  private NewField() {}
 
   public boolean isDeleted() {
     return deleted;
@@ -144,5 +142,4 @@ public final class NewField {
   public void setValue(String value) {
     this.value = Objects.requireNonNull(value);
   }
-
 }

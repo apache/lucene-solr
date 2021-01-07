@@ -16,57 +16,54 @@
  */
 package org.apache.lucene.benchmark.byTask.stats;
 
-
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 
 /**
- * Statistics for a task run. 
- * <br>The same task can run more than once, but, if that task records statistics, 
- * each run would create its own TaskStats.
+ * Statistics for a task run. <br>
+ * The same task can run more than once, but, if that task records statistics, each run would create
+ * its own TaskStats.
  */
 public class TaskStats implements Cloneable {
 
   /** task for which data was collected */
-  private PerfTask task; 
+  private PerfTask task;
 
   /** round in which task run started */
   private int round;
 
   /** task start time */
   private long start;
-  
-  /** task elapsed time.  elapsed &gt;= 0 indicates run completion! */
+
+  /** task elapsed time. elapsed &gt;= 0 indicates run completion! */
   private long elapsed = -1;
-  
+
   /** max tot mem during task */
   private long maxTotMem;
-  
+
   /** max used mem during task */
   private long maxUsedMem;
-  
+
   /** serial run number of this task run in the perf run */
   private int taskRunNum;
-  
-  /** number of other tasks that started to run while this task was still running */ 
+
+  /** number of other tasks that started to run while this task was still running */
   private int numParallelTasks;
-  
-  /** number of work items done by this task.
-   * For indexing that can be number of docs added.
-   * For warming that can be number of scanned items, etc. 
-   * For repeating tasks, this is a sum over repetitions.
+
+  /**
+   * number of work items done by this task. For indexing that can be number of docs added. For
+   * warming that can be number of scanned items, etc. For repeating tasks, this is a sum over
+   * repetitions.
    */
   private int count;
 
-  /** Number of similar tasks aggregated into this record.   
-   * Used when summing up on few runs/instances of similar tasks.
+  /**
+   * Number of similar tasks aggregated into this record. Used when summing up on few runs/instances
+   * of similar tasks.
    */
   private int numRuns = 1;
-  
-  /**
-   * Create a run data for a task that is starting now.
-   * To be called from Points.
-   */
-  TaskStats (PerfTask task, int taskRunNum, int round) {
+
+  /** Create a run data for a task that is starting now. To be called from Points. */
+  TaskStats(PerfTask task, int taskRunNum, int round) {
     this.task = task;
     this.taskRunNum = taskRunNum;
     this.round = round;
@@ -74,11 +71,9 @@ public class TaskStats implements Cloneable {
     maxUsedMem = maxTotMem - Runtime.getRuntime().freeMemory();
     start = System.currentTimeMillis();
   }
-  
-  /**
-   * mark the end of a task
-   */
-  void markEnd (int numParallelTasks, int count) {
+
+  /** mark the end of a task */
+  void markEnd(int numParallelTasks, int count) {
     elapsed = System.currentTimeMillis() - start;
     long totMem = Runtime.getRuntime().totalMemory();
     if (totMem > maxTotMem) {
@@ -91,7 +86,7 @@ public class TaskStats implements Cloneable {
     this.numParallelTasks = numParallelTasks;
     this.count = count;
   }
-  
+
   private int[] countsByTime;
   private long countsByTimeStepMSec;
 
@@ -108,9 +103,7 @@ public class TaskStats implements Cloneable {
     return countsByTimeStepMSec;
   }
 
-  /**
-   * @return the taskRunNum.
-   */
+  /** @return the taskRunNum. */
   public int getTaskRunNum() {
     return taskRunNum;
   }
@@ -128,57 +121,44 @@ public class TaskStats implements Cloneable {
     return res.toString();
   }
 
-  /**
-   * @return Returns the count.
-   */
+  /** @return Returns the count. */
   public int getCount() {
     return count;
   }
 
-  /**
-   * @return elapsed time.
-   */
+  /** @return elapsed time. */
   public long getElapsed() {
     return elapsed;
   }
 
-  /**
-   * @return Returns the maxTotMem.
-   */
+  /** @return Returns the maxTotMem. */
   public long getMaxTotMem() {
     return maxTotMem;
   }
 
-  /**
-   * @return Returns the maxUsedMem.
-   */
+  /** @return Returns the maxUsedMem. */
   public long getMaxUsedMem() {
     return maxUsedMem;
   }
 
-  /**
-   * @return Returns the numParallelTasks.
-   */
+  /** @return Returns the numParallelTasks. */
   public int getNumParallelTasks() {
     return numParallelTasks;
   }
 
-  /**
-   * @return Returns the task.
-   */
+  /** @return Returns the task. */
   public PerfTask getTask() {
     return task;
   }
 
-  /**
-   * @return Returns the numRuns.
-   */
+  /** @return Returns the numRuns. */
   public int getNumRuns() {
     return numRuns;
   }
 
   /**
    * Add data from another stat, for aggregation
+   *
    * @param stat2 the added stat data.
    */
   public void add(TaskStats stat2) {
@@ -188,7 +168,7 @@ public class TaskStats implements Cloneable {
     maxUsedMem += stat2.getMaxUsedMem();
     count += stat2.getCount();
     if (round != stat2.round) {
-      round = -1; // no meaning if aggregating tasks of different round. 
+      round = -1; // no meaning if aggregating tasks of different round.
     }
 
     if (countsByTime != null && stat2.countsByTime != null) {
@@ -198,7 +178,7 @@ public class TaskStats implements Cloneable {
       if (countsByTime.length != stat2.countsByTime.length) {
         throw new IllegalStateException("different by-time msec count");
       }
-      for(int i=0;i<stat2.countsByTime.length;i++) {
+      for (int i = 0; i < stat2.countsByTime.length; i++) {
         countsByTime[i] += stat2.countsByTime[i];
       }
     }
@@ -216,11 +196,8 @@ public class TaskStats implements Cloneable {
     return c;
   }
 
-  /**
-   * @return the round number.
-   */
+  /** @return the round number. */
   public int getRound() {
     return round;
   }
-  
 }

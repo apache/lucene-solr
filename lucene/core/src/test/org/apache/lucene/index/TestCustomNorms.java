@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,9 +33,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * 
- */
+/** */
 public class TestCustomNorms extends LuceneTestCase {
   static final String FLOAT_TEST_FIELD = "normsTestFloat";
   static final String EXCEPTION_TEST_FIELD = "normsTestExcp";
@@ -56,7 +53,10 @@ public class TestCustomNorms extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();
       int boost = TestUtil.nextInt(random(), 1, 10);
-      String value = IntStream.range(0, boost).mapToObj(k -> Integer.toString(boost)).collect(Collectors.joining(" "));
+      String value =
+          IntStream.range(0, boost)
+              .mapToObj(k -> Integer.toString(boost))
+              .collect(Collectors.joining(" "));
       Field f = new TextField(FLOAT_TEST_FIELD, value, Field.Store.YES);
 
       doc.add(f);
@@ -101,9 +101,10 @@ public class TestCustomNorms extends LuceneTestCase {
     public long computeNorm(FieldInvertState state) {
       return state.getLength();
     }
-    
+
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   }

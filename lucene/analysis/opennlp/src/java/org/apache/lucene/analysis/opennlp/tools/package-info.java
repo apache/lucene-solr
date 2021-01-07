@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Tools to supply access to OpenNLP components.
- */
+/** Tools to supply access to OpenNLP components. */
 package org.apache.lucene.analysis.opennlp.tools;

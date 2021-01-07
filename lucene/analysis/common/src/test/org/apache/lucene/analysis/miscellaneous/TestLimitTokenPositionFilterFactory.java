@@ -16,66 +16,77 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
-
 import java.io.Reader;
 import java.io.StringReader;
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.MockTokenizer;
+import org.apache.lucene.analysis.TokenStream;
 
 public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testMaxPosition1() throws Exception {
-    for (final boolean consumeAll : new boolean[]{true, false}) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       Reader reader = new StringReader("A1 B2 C3 D4 E5 F6");
       MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
       // if we are consuming all tokens, we can use the checks, otherwise we can't
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
-      stream = tokenFilterFactory("LimitTokenPosition",
-          LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1",
-          LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
-      ).create(stream);
-      assertTokenStreamContents(stream, new String[]{"A1"});
+      stream =
+          tokenFilterFactory(
+                  "LimitTokenPosition",
+                  LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY,
+                  "1",
+                  LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY,
+                  Boolean.toString(consumeAll))
+              .create(stream);
+      assertTokenStreamContents(stream, new String[] {"A1"});
     }
   }
 
   public void testMissingParam() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("LimitTokenPosition");
-    });
-    assertTrue("exception doesn't mention param: " + expected.getMessage(),
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("LimitTokenPosition");
+            });
+    assertTrue(
+        "exception doesn't mention param: " + expected.getMessage(),
         0 < expected.getMessage().indexOf(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY));
   }
 
   public void testMaxPosition1WithShingles() throws Exception {
-    for (final boolean consumeAll : new boolean[]{true, false}) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       Reader reader = new StringReader("one two three four five");
       MockTokenizer tokenizer = whitespaceMockTokenizer(reader);
       // if we are consuming all tokens, we can use the checks, otherwise we can't
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
-      stream = tokenFilterFactory("Shingle",
-          "minShingleSize", "2",
-          "maxShingleSize", "3",
-          "outputUnigrams", "true").create(stream);
-      stream = tokenFilterFactory("LimitTokenPosition",
-          LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY, "1",
-          LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY, Boolean.toString(consumeAll)
-      ).create(stream);
-      assertTokenStreamContents(stream, new String[]{"one", "one two", "one two three"});
+      stream =
+          tokenFilterFactory(
+                  "Shingle", "minShingleSize", "2", "maxShingleSize", "3", "outputUnigrams", "true")
+              .create(stream);
+      stream =
+          tokenFilterFactory(
+                  "LimitTokenPosition",
+                  LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY,
+                  "1",
+                  LimitTokenPositionFilterFactory.CONSUME_ALL_TOKENS_KEY,
+                  Boolean.toString(consumeAll))
+              .create(stream);
+      assertTokenStreamContents(stream, new String[] {"one", "one two", "one two three"});
     }
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("LimitTokenPosition",
-          "maxTokenPosition", "3",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "LimitTokenPosition", "maxTokenPosition", "3", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

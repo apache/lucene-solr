@@ -20,9 +20,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleRange;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Random testing for RangeField type.
- **/
+/** Random testing for RangeField type. */
 public class TestDoubleRangeField extends LuceneTestCase {
   private static final String FIELD_NAME = "rangeField";
 
@@ -31,12 +29,18 @@ public class TestDoubleRangeField extends LuceneTestCase {
     Document doc = new Document();
     IllegalArgumentException expected;
 
-    expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRange(FIELD_NAME, new double[] {Double.NaN}, new double[] {5})));
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                doc.add(new DoubleRange(FIELD_NAME, new double[] {Double.NaN}, new double[] {5})));
     assertTrue(expected.getMessage().contains("invalid min value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRange(FIELD_NAME, new double[] {5}, new double[] {Double.NaN})));
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                doc.add(new DoubleRange(FIELD_NAME, new double[] {5}, new double[] {Double.NaN})));
     assertTrue(expected.getMessage().contains("invalid max value"));
   }
 
@@ -44,8 +48,10 @@ public class TestDoubleRangeField extends LuceneTestCase {
   public void testUnevenArrays() {
     Document doc = new Document();
     IllegalArgumentException expected;
-    expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRange(FIELD_NAME, new double[] {5, 6}, new double[] {5})));
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> doc.add(new DoubleRange(FIELD_NAME, new double[] {5, 6}, new double[] {5})));
     assertTrue(expected.getMessage().contains("min/max ranges must agree"));
   }
 
@@ -53,8 +59,12 @@ public class TestDoubleRangeField extends LuceneTestCase {
   public void testOversizeDimensions() {
     Document doc = new Document();
     IllegalArgumentException expected;
-    expected = expectThrows(IllegalArgumentException.class, () ->
-        doc.add(new DoubleRange(FIELD_NAME, new double[] {1, 2, 3, 4, 5}, new double[] {5})));
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                doc.add(
+                    new DoubleRange(FIELD_NAME, new double[] {1, 2, 3, 4, 5}, new double[] {5})));
     assertTrue(expected.getMessage().contains("does not support greater than 4 dimensions"));
   }
 
@@ -62,8 +72,10 @@ public class TestDoubleRangeField extends LuceneTestCase {
   public void testMinGreaterThanMax() {
     Document doc = new Document();
     IllegalArgumentException expected;
-    expected = expectThrows(IllegalArgumentException.class, () ->
-      doc.add(new DoubleRange(FIELD_NAME, new double[] {3, 4}, new double[] {1, 2})));
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> doc.add(new DoubleRange(FIELD_NAME, new double[] {3, 4}, new double[] {1, 2})));
     assertTrue(expected.getMessage().contains("is greater than max value"));
   }
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.fr;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -26,13 +24,11 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
- * A {@link TokenFilter} that applies {@link FrenchMinimalStemmer} to stem French
- * words.
- * <p>
- * To prevent terms from being stemmed use an instance of
- * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
- * the {@link KeywordAttribute} before this {@link TokenStream}.
- * </p>
+ * A {@link TokenFilter} that applies {@link FrenchMinimalStemmer} to stem French words.
+ *
+ * <p>To prevent terms from being stemmed use an instance of {@link SetKeywordMarkerFilter} or a
+ * custom {@link TokenFilter} that sets the {@link KeywordAttribute} before this {@link
+ * TokenStream}.
  */
 public final class FrenchMinimalStemFilter extends TokenFilter {
   private final FrenchMinimalStemmer stemmer = new FrenchMinimalStemmer();
@@ -42,7 +38,7 @@ public final class FrenchMinimalStemFilter extends TokenFilter {
   public FrenchMinimalStemFilter(TokenStream input) {
     super(input);
   }
-  
+
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {

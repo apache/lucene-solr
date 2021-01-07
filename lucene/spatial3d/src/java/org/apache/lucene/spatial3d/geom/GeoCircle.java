@@ -21,5 +21,4 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public interface GeoCircle extends GeoDistanceShape, GeoSizeable {
-}
+public interface GeoCircle extends GeoDistanceShape, GeoSizeable {}

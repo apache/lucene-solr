@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Basque.
- */
+/** Analyzer for Basque. */
 package org.apache.lucene.analysis.eu;

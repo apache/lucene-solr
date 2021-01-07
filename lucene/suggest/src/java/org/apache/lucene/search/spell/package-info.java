@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-
 /**
- * Suggest alternate spellings for words.
- * Also see <a href="http://wiki.apache.org/jakarta-lucene/SpellChecker">the spell checker Wiki page</a>.
+ * Suggest alternate spellings for words. Also see <a
+ * href="http://wiki.apache.org/jakarta-lucene/SpellChecker">the spell checker Wiki page</a>.
  */
 package org.apache.lucene.search.spell;

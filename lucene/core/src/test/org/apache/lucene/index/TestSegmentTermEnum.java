@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,17 +26,16 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-
 public class TestSegmentTermEnum extends LuceneTestCase {
-  
+
   Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -48,7 +45,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
   public void testTermEnum() throws IOException {
     IndexWriter writer = null;
 
-    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
     // ADD 100 documents with term : aaa
     // add 100 documents with terms: aaa bbb
@@ -64,8 +61,9 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     verifyDocFreq();
 
     // merge segments
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                    .setOpenMode(OpenMode.APPEND));
+    writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     writer.forceMerge(1);
     writer.close();
 
@@ -73,10 +71,12 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     verifyDocFreq();
   }
 
-  public void testPrevTermAtEnd() throws IOException
-  {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
+  public void testPrevTermAtEnd() throws IOException {
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
     addDoc(writer, "aaa bbb");
     writer.close();
     LeafReader reader = getOnlyLeafReader(DirectoryReader.open(dir));
@@ -100,11 +100,9 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     reader.close();
   }
 
-  private void verifyDocFreq()
-      throws IOException
-  {
-      IndexReader reader = DirectoryReader.open(dir);
-      TermsEnum termEnum = MultiTerms.getTerms(reader, "content").iterator();
+  private void verifyDocFreq() throws IOException {
+    IndexReader reader = DirectoryReader.open(dir);
+    TermsEnum termEnum = MultiTerms.getTerms(reader, "content").iterator();
 
     // create enumeration of all terms
     // go to the first term (aaa)
@@ -117,7 +115,6 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     // assert that term is 'bbb'
     assertEquals("bbb", termEnum.term().utf8ToString());
     assertEquals(100, termEnum.docFreq());
-
 
     // create enumeration of terms after term 'aaa',
     // including 'aaa'
@@ -133,8 +130,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     reader.close();
   }
 
-  private void addDoc(IndexWriter writer, String value) throws IOException
-  {
+  private void addDoc(IndexWriter writer, String value) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("content", value, Field.Store.NO));
     writer.addDocument(doc);

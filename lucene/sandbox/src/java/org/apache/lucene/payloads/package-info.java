@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Experimental classes for interacting with payloads
- */
+/** Experimental classes for interacting with payloads */
 package org.apache.lucene.payloads;

@@ -18,8 +18,7 @@
 package org.apache.solr.cluster.placement;
 
 import org.apache.solr.cluster.Node;
-import org.apache.solr.cluster.placement.AttributeFetcher;
-import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.SolrCollection;
 
 import java.util.Set;
 
@@ -29,36 +28,6 @@ public class AttributeFetcherForTest implements AttributeFetcher {
 
   AttributeFetcherForTest(AttributeValues attributeValues) {
     this.attributeValues = attributeValues;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeCoreCount() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeDiskType() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeFreeDisk() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeTotalDisk() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeHeapUsage() {
-    return this;
-  }
-
-  @Override
-  public AttributeFetcher requestNodeSystemLoadAverage() {
-    return this;
   }
 
   @Override
@@ -72,18 +41,18 @@ public class AttributeFetcherForTest implements AttributeFetcher {
   }
 
   @Override
-  public AttributeFetcher requestNodeMetric(String metricName, NodeMetricRegistry registry) {
+  public AttributeFetcher requestNodeMetric(NodeMetric<?> metric) {
+    return this;
+  }
+
+  @Override
+  public AttributeFetcher requestCollectionMetrics(SolrCollection solrCollection, Set<ReplicaMetric<?>> metricNames) {
     return this;
   }
 
   @Override
   public AttributeFetcher fetchFrom(Set<Node> nodes) {
     return this;
-  }
-
-  @Override
-  public AttributeFetcher requestMetric(String scope, String metricName) {
-    throw new UnsupportedOperationException("Not yet implemented...");
   }
 
   @Override

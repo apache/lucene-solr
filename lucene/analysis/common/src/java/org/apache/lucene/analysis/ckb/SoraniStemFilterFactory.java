@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ckb;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link SoraniStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ckbstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.SoraniStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 4.7.0
  * @lucene.spi {@value #NAME}
  */
@@ -41,7 +41,7 @@ public class SoraniStemFilterFactory extends TokenFilterFactory {
   public static final String NAME = "soraniStem";
 
   /** Creates a new SoraniStemFilterFactory */
-  public SoraniStemFilterFactory(Map<String,String> args) {
+  public SoraniStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

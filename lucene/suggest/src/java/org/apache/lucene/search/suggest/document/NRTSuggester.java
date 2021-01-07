@@ -16,12 +16,13 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProcessor.parseSurfaceForm;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.search.suggest.analyzing.FSTUtil;
 import org.apache.lucene.search.suggest.document.CompletionPostingsFormat.FSTLoadMode;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -35,34 +36,34 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.OffHeapFSTStore;
-import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.PairOutputs.Pair;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProcessor.parseSurfaceForm;
-
 /**
- * <p>
  * NRTSuggester executes Top N search on a weighted FST specified by a {@link CompletionScorer}
- * <p>
- * See {@link #lookup(CompletionScorer, Bits, TopSuggestDocsCollector)} for more implementation
+ *
+ * <p>See {@link #lookup(CompletionScorer, Bits, TopSuggestDocsCollector)} for more implementation
  * details.
- * <p>
- * FST Format:
+ *
+ * <p>FST Format:
+ *
  * <ul>
- *   <li>Input: analyzed forms of input terms</li>
- *   <li>Output: Pair&lt;Long, BytesRef&gt; containing weight, surface form and docID</li>
+ *   <li>Input: analyzed forms of input terms
+ *   <li>Output: Pair&lt;Long, BytesRef&gt; containing weight, surface form and docID
  * </ul>
- * <p>
- * NOTE:
+ *
+ * <p>NOTE:
+ *
  * <ul>
- *   <li>having too many deletions or using a very restrictive filter can make the search inadmissible due to
- *     over-pruning of potential paths. See {@link CompletionScorer#accept(int, Bits)}</li>
- *   <li>when matched documents are arbitrarily filtered ({@link CompletionScorer#filtered} set to <code>true</code>,
- *     it is assumed that the filter will roughly filter out half the number of documents that match
- *     the provided automaton</li>
- *   <li>lookup performance will degrade as more accepted completions lead to filtered out documents</li>
+ *   <li>having too many deletions or using a very restrictive filter can make the search
+ *       inadmissible due to over-pruning of potential paths. See {@link
+ *       CompletionScorer#accept(int, Bits)}
+ *   <li>when matched documents are arbitrarily filtered ({@link CompletionScorer#filtered} set to
+ *       <code>true</code>, it is assumed that the filter will roughly filter out half the number of
+ *       documents that match the provided automaton
+ *   <li>lookup performance will degrade as more accepted completions lead to filtered out documents
  * </ul>
  *
  * @lucene.experimental
@@ -70,36 +71,30 @@ import static org.apache.lucene.search.suggest.document.NRTSuggester.PayLoadProc
 public final class NRTSuggester implements Accountable {
 
   /**
-   * FST<Weight,Surface>:
-   * input is the analyzed form, with a null byte between terms
-   * and a {@link NRTSuggesterBuilder#END_BYTE} to denote the
-   * end of the input
-   * weight is a long
-   * surface is the original, unanalyzed form followed by the docID
+   * FST<Weight,Surface>: input is the analyzed form, with a null byte between terms and a {@link
+   * NRTSuggesterBuilder#END_BYTE} to denote the end of the input weight is a long surface is the
+   * original, unanalyzed form followed by the docID
    */
   private final FST<Pair<Long, BytesRef>> fst;
 
   /**
-   * Highest number of analyzed paths we saw for any single
-   * input surface form. This can be > 1, when index analyzer
-   * creates graphs or if multiple surface form(s) yields the
-   * same analyzed form
+   * Highest number of analyzed paths we saw for any single input surface form. This can be > 1,
+   * when index analyzer creates graphs or if multiple surface form(s) yields the same analyzed form
    */
   private final int maxAnalyzedPathsPerOutput;
 
-  /**
-   * Separator used between surface form and its docID in the FST output
-   */
+  /** Separator used between surface form and its docID in the FST output */
   private final int payloadSep;
 
   /**
    * Maximum queue depth for TopNSearcher
    *
-   * NOTE: value should be <= Integer.MAX_VALUE
+   * <p>NOTE: value should be <= Integer.MAX_VALUE
    */
   private static final long MAX_TOP_N_QUEUE_SIZE = 5000;
 
-  private NRTSuggester(FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep) {
+  private NRTSuggester(
+      FST<Pair<Long, BytesRef>> fst, int maxAnalyzedPathsPerOutput, int payloadSep) {
     this.fst = fst;
     this.maxAnalyzedPathsPerOutput = maxAnalyzedPathsPerOutput;
     this.payloadSep = payloadSep;
@@ -116,23 +111,27 @@ public final class NRTSuggester implements Accountable {
   }
 
   /**
-   * Collects at most {@link TopSuggestDocsCollector#getCountToCollect()} completions that
-   * match the provided {@link CompletionScorer}.
-   * <p>
-   * The {@link CompletionScorer#automaton} is intersected with the {@link #fst}.
-   * {@link CompletionScorer#weight} is used to compute boosts and/or extract context
-   * for each matched partial paths. A top N search is executed on {@link #fst} seeded with
-   * the matched partial paths. Upon reaching a completed path, {@link CompletionScorer#accept(int, Bits)}
-   * and {@link CompletionScorer#score(float, float)} is used on the document id, index weight
-   * and query boost to filter and score the entry, before being collected via
-   * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}
+   * Collects at most {@link TopSuggestDocsCollector#getCountToCollect()} completions that match the
+   * provided {@link CompletionScorer}.
+   *
+   * <p>The {@link CompletionScorer#automaton} is intersected with the {@link #fst}. {@link
+   * CompletionScorer#weight} is used to compute boosts and/or extract context for each matched
+   * partial paths. A top N search is executed on {@link #fst} seeded with the matched partial
+   * paths. Upon reaching a completed path, {@link CompletionScorer#accept(int, Bits)} and {@link
+   * CompletionScorer#score(float, float)} is used on the document id, index weight and query boost
+   * to filter and score the entry, before being collected via {@link
+   * TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}
    */
-  public void lookup(final CompletionScorer scorer, Bits acceptDocs, final TopSuggestDocsCollector collector) throws IOException {
-    final double liveDocsRatio = calculateLiveDocRatio(scorer.reader.numDocs(), scorer.reader.maxDoc());
+  public void lookup(
+      final CompletionScorer scorer, Bits acceptDocs, final TopSuggestDocsCollector collector)
+      throws IOException {
+    final double liveDocsRatio =
+        calculateLiveDocRatio(scorer.reader.numDocs(), scorer.reader.maxDoc());
     if (liveDocsRatio == -1) {
       return;
     }
-    final List<FSTUtil.Path<Pair<Long, BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(scorer.automaton, fst);
+    final List<FSTUtil.Path<Pair<Long, BytesRef>>> prefixPaths =
+        FSTUtil.intersectPrefixPaths(scorer.automaton, fst);
     // The topN is increased by a factor of # of intersected path
     // to ensure search admissibility. For example, one suggestion can
     // have multiple contexts, resulting in num_context paths for the
@@ -143,99 +142,113 @@ public final class NRTSuggester implements Accountable {
     // have been collected, regardless of the set topN value. This value is the
     // maximum number of suggestions that can be collected.
     final int topN = collector.getCountToCollect() * prefixPaths.size();
-    final int queueSize = getMaxTopNSearcherQueueSize(topN, scorer.reader.numDocs(), liveDocsRatio, scorer.filtered);
+    final int queueSize =
+        getMaxTopNSearcherQueueSize(topN, scorer.reader.numDocs(), liveDocsRatio, scorer.filtered);
 
     final CharsRefBuilder spare = new CharsRefBuilder();
 
     Comparator<Pair<Long, BytesRef>> comparator = getComparator();
-    Util.TopNSearcher<Pair<Long, BytesRef>> searcher = new Util.TopNSearcher<Pair<Long, BytesRef>>(fst, topN, queueSize, comparator,
-        new ScoringPathComparator(scorer)) {
+    Util.TopNSearcher<Pair<Long, BytesRef>> searcher =
+        new Util.TopNSearcher<Pair<Long, BytesRef>>(
+            fst, topN, queueSize, comparator, new ScoringPathComparator(scorer)) {
 
-      private final ByteArrayDataInput scratchInput = new ByteArrayDataInput();
+          private final ByteArrayDataInput scratchInput = new ByteArrayDataInput();
 
-      @Override
-      protected boolean acceptPartialPath(Util.FSTPath<Pair<Long,BytesRef>> path) {
-        if (collector.doSkipDuplicates()) {
-          // We are removing dups
-          if (path.payload == -1) {
-            // This path didn't yet see the complete surface form; let's see if it just did with the arc output we just added:
-            BytesRef arcOutput = path.arc.output().output2;
-            BytesRef output = path.output.output2;
-            for(int i=0;i<arcOutput.length;i++) {
-              if (arcOutput.bytes[arcOutput.offset + i] == payloadSep) {
-                // OK this arc that the path was just extended by contains the payloadSep, so we now have a full surface form in this path
-                path.payload = output.length - arcOutput.length + i;
-                assert output.bytes[output.offset + path.payload] == payloadSep;
-                break;
+          @Override
+          protected boolean acceptPartialPath(Util.FSTPath<Pair<Long, BytesRef>> path) {
+            if (collector.doSkipDuplicates()) {
+              // We are removing dups
+              if (path.payload == -1) {
+                // This path didn't yet see the complete surface form; let's see if it just did with
+                // the arc output we just added:
+                BytesRef arcOutput = path.arc.output().output2;
+                BytesRef output = path.output.output2;
+                for (int i = 0; i < arcOutput.length; i++) {
+                  if (arcOutput.bytes[arcOutput.offset + i] == payloadSep) {
+                    // OK this arc that the path was just extended by contains the payloadSep, so we
+                    // now have a full surface form in this path
+                    path.payload = output.length - arcOutput.length + i;
+                    assert output.bytes[output.offset + path.payload] == payloadSep;
+                    break;
+                  }
+                }
+              }
+
+              if (path.payload != -1) {
+                BytesRef output = path.output.output2;
+                spare.copyUTF8Bytes(output.bytes, output.offset, path.payload);
+                if (collector.seenSurfaceForms.contains(spare.chars(), 0, spare.length())) {
+                  return false;
+                }
               }
             }
+            return true;
           }
 
-          if (path.payload != -1) {
+          @Override
+          protected boolean acceptResult(Util.FSTPath<Pair<Long, BytesRef>> path) {
             BytesRef output = path.output.output2;
-            spare.copyUTF8Bytes(output.bytes, output.offset, path.payload);
-            if (collector.seenSurfaceForms.contains(spare.chars(), 0, spare.length())) {
+            int payloadSepIndex;
+            if (path.payload != -1) {
+              payloadSepIndex = path.payload;
+              spare.copyUTF8Bytes(output.bytes, output.offset, payloadSepIndex);
+            } else {
+              assert collector.doSkipDuplicates() == false;
+              payloadSepIndex = parseSurfaceForm(output, payloadSep, spare);
+            }
+
+            scratchInput.reset(
+                output.bytes,
+                output.offset + payloadSepIndex + 1,
+                output.length - payloadSepIndex - 1);
+            int docID = scratchInput.readVInt();
+
+            if (!scorer.accept(docID, acceptDocs)) {
               return false;
             }
+            if (collector.doSkipDuplicates()) {
+              // now record that we've seen this surface form:
+              char[] key = new char[spare.length()];
+              System.arraycopy(spare.chars(), 0, key, 0, spare.length());
+              if (collector.seenSurfaceForms.contains(key)) {
+                // we already collected a higher scoring document with this key, in this segment:
+                return false;
+              }
+              collector.seenSurfaceForms.add(key);
+            }
+            try {
+              float score = scorer.score(decode(path.output.output1), path.boost);
+              collector.collect(docID, spare.toCharsRef(), path.context, score);
+              return true;
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
           }
-        }
-        return true;
-      }
-
-      @Override
-      protected boolean acceptResult(Util.FSTPath<Pair<Long, BytesRef>> path) {
-        BytesRef output = path.output.output2;
-        int payloadSepIndex;
-        if (path.payload != -1) {
-          payloadSepIndex = path.payload;
-          spare.copyUTF8Bytes(output.bytes, output.offset, payloadSepIndex);
-        } else {
-          assert collector.doSkipDuplicates() == false;
-          payloadSepIndex = parseSurfaceForm(output, payloadSep, spare);
-        }
-
-        scratchInput.reset(output.bytes, output.offset + payloadSepIndex + 1, output.length - payloadSepIndex - 1);
-        int docID = scratchInput.readVInt();
-        
-        if (!scorer.accept(docID, acceptDocs)) {
-          return false;
-        }
-        if (collector.doSkipDuplicates()) {
-          // now record that we've seen this surface form:
-          char[] key = new char[spare.length()];
-          System.arraycopy(spare.chars(), 0, key, 0, spare.length());
-          if (collector.seenSurfaceForms.contains(key)) {
-            // we already collected a higher scoring document with this key, in this segment:
-            return false;
-          }
-          collector.seenSurfaceForms.add(key);
-        }
-        try {
-          float score = scorer.score(decode(path.output.output1), path.boost);
-          collector.collect(docID, spare.toCharsRef(), path.context, score);
-          return true;
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
+        };
 
     for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
       scorer.weight.setNextMatch(path.input.get());
       BytesRef output = path.output.output2;
       int payload = -1;
       if (collector.doSkipDuplicates()) {
-        for(int j=0;j<output.length;j++) {
-          if (output.bytes[output.offset+j] == payloadSep) {
-            // Important to cache this, else we have a possibly O(N^2) cost where N is the length of suggestions
+        for (int j = 0; j < output.length; j++) {
+          if (output.bytes[output.offset + j] == payloadSep) {
+            // Important to cache this, else we have a possibly O(N^2) cost where N is the length of
+            // suggestions
             payload = j;
             break;
           }
         }
       }
-      
-      searcher.addStartPaths(path.fstNode, path.output, false, path.input, scorer.weight.boost(),
-                             scorer.weight.context(), payload);
+
+      searcher.addStartPaths(
+          path.fstNode,
+          path.output,
+          false,
+          path.input,
+          scorer.weight.boost(),
+          scorer.weight.context(),
+          payload);
     }
     // hits are also returned by search()
     // we do not use it, instead collect at acceptResult
@@ -246,10 +259,11 @@ public final class NRTSuggester implements Accountable {
   }
 
   /**
-   * Compares partial completion paths using {@link CompletionScorer#score(float, float)},
-   * breaks ties comparing path inputs
+   * Compares partial completion paths using {@link CompletionScorer#score(float, float)}, breaks
+   * ties comparing path inputs
    */
-  private static class ScoringPathComparator implements Comparator<Util.FSTPath<Pair<Long, BytesRef>>> {
+  private static class ScoringPathComparator
+      implements Comparator<Util.FSTPath<Pair<Long, BytesRef>>> {
     private final CompletionScorer scorer;
 
     public ScoringPathComparator(CompletionScorer scorer) {
@@ -257,9 +271,12 @@ public final class NRTSuggester implements Accountable {
     }
 
     @Override
-    public int compare(Util.FSTPath<Pair<Long, BytesRef>> first, Util.FSTPath<Pair<Long, BytesRef>> second) {
-      int cmp = Float.compare(scorer.score(decode(second.output.output1), second.boost),
-          scorer.score(decode(first.output.output1), first.boost));
+    public int compare(
+        Util.FSTPath<Pair<Long, BytesRef>> first, Util.FSTPath<Pair<Long, BytesRef>> second) {
+      int cmp =
+          Float.compare(
+              scorer.score(decode(second.output.output1), second.boost),
+              scorer.score(decode(first.output.output1), first.boost));
       return (cmp != 0) ? cmp : first.input.get().compareTo(second.input.get());
     }
   }
@@ -274,25 +291,25 @@ public final class NRTSuggester implements Accountable {
   }
 
   /**
-   * Simple heuristics to try to avoid over-pruning potential suggestions by the
-   * TopNSearcher. Since suggestion entries can be rejected if they belong
-   * to a deleted document, the length of the TopNSearcher queue has to
-   * be increased by some factor, to account for the filtered out suggestions.
-   * This heuristic will try to make the searcher admissible, but the search
-   * can still lead to over-pruning
-   * <p>
-   * If a <code>filter</code> is applied, the queue size is increased by
-   * half the number of live documents.
-   * <p>
-   * The maximum queue size is {@link #MAX_TOP_N_QUEUE_SIZE}
+   * Simple heuristics to try to avoid over-pruning potential suggestions by the TopNSearcher. Since
+   * suggestion entries can be rejected if they belong to a deleted document, the length of the
+   * TopNSearcher queue has to be increased by some factor, to account for the filtered out
+   * suggestions. This heuristic will try to make the searcher admissible, but the search can still
+   * lead to over-pruning
+   *
+   * <p>If a <code>filter</code> is applied, the queue size is increased by half the number of live
+   * documents.
+   *
+   * <p>The maximum queue size is {@link #MAX_TOP_N_QUEUE_SIZE}
    */
-  private int getMaxTopNSearcherQueueSize(int topN, int numDocs, double liveDocsRatio, boolean filterEnabled) {
+  private int getMaxTopNSearcherQueueSize(
+      int topN, int numDocs, double liveDocsRatio, boolean filterEnabled) {
     long maxQueueSize = topN * maxAnalyzedPathsPerOutput;
     // liveDocRatio can be at most 1.0 (if no docs were deleted)
     assert liveDocsRatio <= 1.0d;
     maxQueueSize = (long) (maxQueueSize / liveDocsRatio);
     if (filterEnabled) {
-      maxQueueSize = maxQueueSize + (numDocs/2);
+      maxQueueSize = maxQueueSize + (numDocs / 2);
     }
     return (int) Math.min(MAX_TOP_N_QUEUE_SIZE, maxQueueSize);
   }
@@ -324,12 +341,21 @@ public final class NRTSuggester implements Accountable {
       OffHeapFSTStore store = new OffHeapFSTStore();
       IndexInput clone = input.clone();
       clone.seek(input.getFilePointer());
-      fst = new FST<>(clone, clone, new PairOutputs<>(
-          PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()), store);
+      fst =
+          new FST<>(
+              clone,
+              clone,
+              new PairOutputs<>(
+                  PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()),
+              store);
       input.seek(clone.getFilePointer() + store.size());
     } else {
-      fst = new FST<>(input, input, new PairOutputs<>(
-          PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
+      fst =
+          new FST<>(
+              input,
+              input,
+              new PairOutputs<>(
+                  PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton()));
     }
 
     /* read some meta info */
@@ -351,16 +377,14 @@ public final class NRTSuggester implements Accountable {
   }
 
   static long decode(long output) {
-    assert output >= 0 && output <= Integer.MAX_VALUE :
-        "decoded output: " + output + " is not within 0 and Integer.MAX_VALUE";
+    assert output >= 0 && output <= Integer.MAX_VALUE
+        : "decoded output: " + output + " is not within 0 and Integer.MAX_VALUE";
     return Integer.MAX_VALUE - output;
   }
 
-  /**
-   * Helper to encode/decode payload (surface + PAYLOAD_SEP + docID) output
-   */
+  /** Helper to encode/decode payload (surface + PAYLOAD_SEP + docID) output */
   static final class PayLoadProcessor {
-    final static private int MAX_DOC_ID_LEN_WITH_SEP = 6; // vint takes at most 5 bytes
+    private static final int MAX_DOC_ID_LEN_WITH_SEP = 6; // vint takes at most 5 bytes
 
     static int parseSurfaceForm(final BytesRef output, int payloadSep, CharsRefBuilder spare) {
       int surfaceFormLen = -1;

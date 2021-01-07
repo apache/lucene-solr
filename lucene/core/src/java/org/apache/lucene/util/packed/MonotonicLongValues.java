@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.packed.MonotonicBlockPackedReader.expected;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -25,11 +24,19 @@ import org.apache.lucene.util.packed.PackedInts.Reader;
 
 class MonotonicLongValues extends DeltaPackedLongValues {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(MonotonicLongValues.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(MonotonicLongValues.class);
 
   final float[] averages;
 
-  MonotonicLongValues(int pageShift, int pageMask, Reader[] values, long[] mins, float[] averages, long size, long ramBytesUsed) {
+  MonotonicLongValues(
+      int pageShift,
+      int pageMask,
+      Reader[] values,
+      long[] mins,
+      float[] averages,
+      long size,
+      long ramBytesUsed) {
     super(pageShift, pageMask, values, mins, size, ramBytesUsed);
     assert values.length == averages.length;
     this.averages = averages;
@@ -52,7 +59,8 @@ class MonotonicLongValues extends DeltaPackedLongValues {
 
   static class Builder extends DeltaPackedLongValues.Builder {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Builder.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(Builder.class);
 
     float[] averages;
 
@@ -74,15 +82,19 @@ class MonotonicLongValues extends DeltaPackedLongValues {
       final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
       final long[] mins = ArrayUtil.copyOfSubArray(this.mins, 0, valuesOff);
       final float[] averages = ArrayUtil.copyOfSubArray(this.averages, 0, valuesOff);
-      final long ramBytesUsed = MonotonicLongValues.BASE_RAM_BYTES_USED
-          + RamUsageEstimator.sizeOf(values) + RamUsageEstimator.sizeOf(mins)
-          + RamUsageEstimator.sizeOf(averages);
-      return new MonotonicLongValues(pageShift, pageMask, values, mins, averages, size, ramBytesUsed);
+      final long ramBytesUsed =
+          MonotonicLongValues.BASE_RAM_BYTES_USED
+              + RamUsageEstimator.sizeOf(values)
+              + RamUsageEstimator.sizeOf(mins)
+              + RamUsageEstimator.sizeOf(averages);
+      return new MonotonicLongValues(
+          pageShift, pageMask, values, mins, averages, size, ramBytesUsed);
     }
 
     @Override
     void pack(long[] values, int numValues, int block, float acceptableOverheadRatio) {
-      final float average = numValues == 1 ? 0 : (float) (values[numValues - 1] - values[0]) / (numValues - 1);
+      final float average =
+          numValues == 1 ? 0 : (float) (values[numValues - 1] - values[0]) / (numValues - 1);
       for (int i = 0; i < numValues; ++i) {
         values[i] -= expected(0, average, i);
       }
@@ -97,7 +109,5 @@ class MonotonicLongValues extends DeltaPackedLongValues {
       averages = ArrayUtil.growExact(averages, newBlockCount);
       ramBytesUsed += RamUsageEstimator.sizeOf(averages);
     }
-
   }
-
 }

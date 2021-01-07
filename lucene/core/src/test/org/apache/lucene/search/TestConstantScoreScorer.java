@@ -16,9 +16,12 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.search.BooleanClause.Occur;
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import static org.hamcrest.CoreMatchers.equalTo;
+
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,26 +35,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.search.BooleanClause.Occur;
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-import static org.hamcrest.CoreMatchers.equalTo;
-
 public class TestConstantScoreScorer extends LuceneTestCase {
   private static final String FIELD = "f";
-  private static final String[] VALUES = new String[]{
-      "foo",
-      "bar",
-      "foo bar",
-      "bar foo",
-      "foo not bar",
-      "bar foo bar",
-      "azerty"
-  };
+  private static final String[] VALUES =
+      new String[] {"foo", "bar", "foo bar", "bar foo", "foo not bar", "bar foo bar", "azerty"};
 
-  private static final Query TERM_QUERY = new BooleanQuery.Builder()
-      .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
-      .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
-      .build();
+  private static final Query TERM_QUERY =
+      new BooleanQuery.Builder()
+          .add(new TermQuery(new Term(FIELD, "foo")), Occur.MUST)
+          .add(new TermQuery(new Term(FIELD, "bar")), Occur.MUST)
+          .build();
   private static final Query PHRASE_QUERY = new PhraseQuery(FIELD, "foo", "bar");
 
   public void testMatching_ScoreMode_COMPLETE() throws Exception {
@@ -78,7 +71,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       assertThat(scorer.docID(), equalTo(doc));
       assertThat(scorer.iterator().docID(), equalTo(doc));
       assertThat(scorer.score(), equalTo(1f));
-      
+
       // "bar foo" match
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(3));
@@ -93,7 +86,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(5));
       assertThat(scorer.score(), equalTo(1f));
-      
+
       doc = scorer.iterator().nextDoc();
       assertThat(doc, equalTo(NO_MORE_DOCS));
     }
@@ -142,7 +135,7 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       assertThat(scorer.docID(), equalTo(doc));
       assertThat(scorer.iterator().docID(), equalTo(doc));
       assertThat(scorer.score(), equalTo(1f));
-      
+
       // "foo not bar" will match the approximation but not the two phase iterator
 
       // "foo bar foo" match
@@ -158,7 +151,8 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   public void testTwoPhaseMatching_ScoreMode_TOP_SCORES() throws Exception {
     try (TestConstantScoreScorerIndex index = new TestConstantScoreScorerIndex()) {
       int doc;
-      ConstantScoreScorer scorer = index.constantScoreScorer(PHRASE_QUERY, 1f, ScoreMode.TOP_SCORES);
+      ConstantScoreScorer scorer =
+          index.constantScoreScorer(PHRASE_QUERY, 1f, ScoreMode.TOP_SCORES);
 
       // "foo bar" match
       doc = scorer.iterator().nextDoc();
@@ -183,8 +177,11 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     TestConstantScoreScorerIndex() throws IOException {
       directory = newDirectory();
 
-      writer = new RandomIndexWriter(random(), directory,
-          newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+      writer =
+          new RandomIndexWriter(
+              random(),
+              directory,
+              newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
 
       for (String VALUE : VALUES) {
         Document doc = new Document();
@@ -197,7 +194,8 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       writer.close();
     }
 
-    ConstantScoreScorer constantScoreScorer(Query query, float score, ScoreMode scoreMode) throws IOException {
+    ConstantScoreScorer constantScoreScorer(Query query, float score, ScoreMode scoreMode)
+        throws IOException {
       IndexSearcher searcher = newSearcher(reader);
       Weight weight = searcher.createWeight(new ConstantScoreQuery(query), scoreMode, 1);
       List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
@@ -210,7 +208,8 @@ public class TestConstantScoreScorer extends LuceneTestCase {
       if (scorer.twoPhaseIterator() == null) {
         return new ConstantScoreScorer(scorer.getWeight(), score, scoreMode, scorer.iterator());
       } else {
-        return new ConstantScoreScorer(scorer.getWeight(), score, scoreMode, scorer.twoPhaseIterator());
+        return new ConstantScoreScorer(
+            scorer.getWeight(), score, scoreMode, scorer.twoPhaseIterator());
       }
     }
 
@@ -224,7 +223,12 @@ public class TestConstantScoreScorer extends LuceneTestCase {
   public void testEarlyTermination() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    IndexWriter iw =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy()));
     final int numDocs = 50;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -242,10 +246,11 @@ public class TestConstantScoreScorer extends LuceneTestCase {
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);
 
     c = TopScoreDocCollector.create(10, null, 10);
-    Query query = new BooleanQuery.Builder()
-        .add(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), Occur.SHOULD)
-        .add(new ConstantScoreQuery(new TermQuery(new Term("key", "bar"))), Occur.FILTER)
-        .build();
+    Query query =
+        new BooleanQuery.Builder()
+            .add(new ConstantScoreQuery(new TermQuery(new Term("key", "foo"))), Occur.SHOULD)
+            .add(new ConstantScoreQuery(new TermQuery(new Term("key", "bar"))), Occur.FILTER)
+            .build();
     is.search(query, c);
     assertEquals(11, c.totalHits);
     assertEquals(TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO, c.totalHitsRelation);

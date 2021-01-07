@@ -18,16 +18,14 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesProducer;
 
 /** Abstract base class implementing a {@link DocValuesProducer} that has no doc values. */
 public abstract class EmptyDocValuesProducer extends DocValuesProducer {
 
   /** Sole constructor */
-  protected EmptyDocValuesProducer() {
-  }
-  
+  protected EmptyDocValuesProducer() {}
+
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException();
@@ -47,7 +45,7 @@ public abstract class EmptyDocValuesProducer extends DocValuesProducer {
   public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
   public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
     throw new UnsupportedOperationException();

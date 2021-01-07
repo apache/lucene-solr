@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.function.Supplier;
-
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -35,12 +33,11 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
-/** Subclass of TermsEnum for enumerating all terms that are similar
- * to the specified filter term.
+/**
+ * Subclass of TermsEnum for enumerating all terms that are similar to the specified filter term.
  *
- * <p>Term enumerations are always ordered by
- * {@link BytesRef#compareTo}.  Each term in the enumeration is
- * greater than all that precede it.</p>
+ * <p>Term enumerations are always ordered by {@link BytesRef#compareTo}. Each term in the
+ * enumeration is greater than all that precede it.
  */
 public final class FuzzyTermsEnum extends TermsEnum {
 
@@ -48,38 +45,42 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private TermsEnum actualEnum;
 
   private final AttributeSource atts;
-  
+
   // We use this to communicate the score (boost) of the current matched term we are on back to
-  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite that is collecting the best (default 50) matched terms:
+  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite that is collecting the best (default 50)
+  // matched terms:
   private final BoostAttribute boostAtt;
 
-  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite tells us the worst boost still in its queue using this att,
-  // which we use to know when we can reduce the automaton from ed=2 to ed=1, or ed=0 if only single top term is collected:
+  // MultiTermQuery.TopTermsBlendedFreqScoringRewrite tells us the worst boost still in its queue
+  // using this att,
+  // which we use to know when we can reduce the automaton from ed=2 to ed=1, or ed=0 if only single
+  // top term is collected:
   private final MaxNonCompetitiveBoostAttribute maxBoostAtt;
 
   private final CompiledAutomaton[] automata;
   private final Terms terms;
   private final int termLength;
   private final Term term;
-  
+
   private float bottom;
   private BytesRef bottomTerm;
 
   private BytesRef queuedBottom;
 
-
-  // Maximum number of edits we will accept.  This is either 2 or 1 (or, degenerately, 0) passed by the user originally,
-  // but as we collect terms, we can lower this (e.g. from 2 to 1) if we detect that the term queue is full, and all
+  // Maximum number of edits we will accept.  This is either 2 or 1 (or, degenerately, 0) passed by
+  // the user originally,
+  // but as we collect terms, we can lower this (e.g. from 2 to 1) if we detect that the term queue
+  // is full, and all
   // collected terms are ed=1:
   private int maxEdits;
 
-
   /**
-   * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
-   * length <code>prefixLength</code> with <code>term</code> and which have at most {@code maxEdits} edits.
-   * <p>
-   * After calling the constructor the enumeration is already pointing to the first
-   * valid term if such a term exists.
+   * Constructor for enumeration of all terms from specified <code>reader</code> which share a
+   * prefix of length <code>prefixLength</code> with <code>term</code> and which have at most {@code
+   * maxEdits} edits.
+   *
+   * <p>After calling the constructor the enumeration is already pointing to the first valid term if
+   * such a term exists.
    *
    * @param terms Delivers terms.
    * @param term Pattern term.
@@ -88,16 +89,23 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param transpositions whether transpositions should count as a single edit
    * @throws IOException if there is a low-level IO error
    */
-  public FuzzyTermsEnum(Terms terms, Term term, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
-    this(terms, new AttributeSource(), term, () -> new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions));
+  public FuzzyTermsEnum(
+      Terms terms, Term term, int maxEdits, int prefixLength, boolean transpositions)
+      throws IOException {
+    this(
+        terms,
+        new AttributeSource(),
+        term,
+        () -> new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions));
   }
 
   /**
-   * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
-   * length <code>prefixLength</code> with <code>term</code> and which have at most {@code maxEdits} edits.
-   * <p>
-   * After calling the constructor the enumeration is already pointing to the first
-   * valid term if such a term exists.
+   * Constructor for enumeration of all terms from specified <code>reader</code> which share a
+   * prefix of length <code>prefixLength</code> with <code>term</code> and which have at most {@code
+   * maxEdits} edits.
+   *
+   * <p>After calling the constructor the enumeration is already pointing to the first valid term if
+   * such a term exists.
    *
    * @param terms Delivers terms.
    * @param atts An AttributeSource used to share automata between segments
@@ -107,11 +115,27 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param transpositions whether transpositions should count as a single edit
    * @throws IOException if there is a low-level IO error
    */
-  FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
-    this(terms, atts, term, () -> new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions));
+  FuzzyTermsEnum(
+      Terms terms,
+      AttributeSource atts,
+      Term term,
+      int maxEdits,
+      int prefixLength,
+      boolean transpositions)
+      throws IOException {
+    this(
+        terms,
+        atts,
+        term,
+        () -> new FuzzyAutomatonBuilder(term.text(), maxEdits, prefixLength, transpositions));
   }
 
-  private FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, Supplier<FuzzyAutomatonBuilder> automatonBuilder) throws IOException {
+  private FuzzyTermsEnum(
+      Terms terms,
+      AttributeSource atts,
+      Term term,
+      Supplier<FuzzyAutomatonBuilder> automatonBuilder)
+      throws IOException {
 
     this.terms = terms;
     this.atts = atts;
@@ -134,24 +158,19 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
 
   /**
-   * Sets the maximum non-competitive boost, which may allow switching to a
-   * lower max-edit automaton at run time
+   * Sets the maximum non-competitive boost, which may allow switching to a lower max-edit automaton
+   * at run time
    */
   public void setMaxNonCompetitiveBoost(float boost) {
     this.maxBoostAtt.setMaxNonCompetitiveBoost(boost);
   }
 
-  /**
-   * Gets the boost of the current term
-   */
+  /** Gets the boost of the current term */
   public float getBoost() {
     return boostAtt.getBoost();
   }
-  
-  /**
-   * return an automata-based enum for matching up to editDistance from
-   * lastTerm, if possible
-   */
+
+  /** return an automata-based enum for matching up to editDistance from lastTerm, if possible */
   private TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm) throws IOException {
     assert editDistance < automata.length;
     final CompiledAutomaton compiled = automata[editDistance];
@@ -167,14 +186,16 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
 
   /**
-   * fired when the max non-competitive boost has changed. this is the hook to
-   * swap in a smarter actualEnum.
+   * fired when the max non-competitive boost has changed. this is the hook to swap in a smarter
+   * actualEnum.
    */
   private void bottomChanged(BytesRef lastTerm) throws IOException {
     int oldMaxEdits = maxEdits;
-    
-    // true if the last term encountered is lexicographically equal or after the bottom term in the PQ
-    boolean termAfter = bottomTerm == null || (lastTerm != null && lastTerm.compareTo(bottomTerm) >= 0);
+
+    // true if the last term encountered is lexicographically equal or after the bottom term in the
+    // PQ
+    boolean termAfter =
+        bottomTerm == null || (lastTerm != null && lastTerm.compareTo(bottomTerm) >= 0);
 
     // as long as the max non-competitive boost is >= the max boost
     // for some edit distance, keep dropping the max edit distance.
@@ -187,13 +208,15 @@ public final class FuzzyTermsEnum extends TermsEnum {
     }
 
     if (oldMaxEdits != maxEdits || lastTerm == null) {
-      // This is a very powerful optimization: the maximum edit distance has changed.  This happens because we collect only the top scoring
-      // N (= 50, by default) terms, and if e.g. maxEdits=2, and the queue is now full of matching terms, and we notice that the worst entry
+      // This is a very powerful optimization: the maximum edit distance has changed.  This happens
+      // because we collect only the top scoring
+      // N (= 50, by default) terms, and if e.g. maxEdits=2, and the queue is now full of matching
+      // terms, and we notice that the worst entry
       // in that queue is ed=1, then we can switch the automata here to ed=1 which is a big speedup.
       actualEnum = getAutomatonEnum(maxEdits, lastTerm);
     }
   }
-  
+
   @Override
   public BytesRef next() throws IOException {
 
@@ -201,7 +224,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
       bottomChanged(queuedBottom);
       queuedBottom = null;
     }
-    
 
     BytesRef term;
 
@@ -212,7 +234,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     }
 
     int ed = maxEdits;
-      
+
     // we know the outer DFA always matches.
     // now compute exact edit distance
     while (ed > 0) {
@@ -222,7 +244,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         break;
       }
     }
-      
+
     if (ed == 0) { // exact match
       boostAtt.setBoost(1.0F);
     } else {
@@ -232,7 +254,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       float similarity = 1.0f - (float) ed / (float) minTermLength;
       boostAtt.setBoost(similarity);
     }
-      
+
     final float bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     final BytesRef bottomTerm = maxBoostAtt.getCompetitiveTerm();
     if (bottom != this.bottom || bottomTerm != this.bottomTerm) {
@@ -241,18 +263,21 @@ public final class FuzzyTermsEnum extends TermsEnum {
       // clone the term before potentially doing something with it
       // this is a rare but wonderful occurrence anyway
 
-      // We must delay bottomChanged until the next next() call otherwise we mess up docFreq(), etc., for the current term:
+      // We must delay bottomChanged until the next next() call otherwise we mess up docFreq(),
+      // etc., for the current term:
       queuedBottom = BytesRef.deepCopyOf(term);
     }
-    
+
     return term;
   }
 
   /** returns true if term is within k edits of the query term */
   private boolean matches(BytesRef termIn, int k) {
-    return k == 0 ? termIn.equals(term.bytes()) : automata[k].runAutomaton.run(termIn.bytes, termIn.offset, termIn.length);
+    return k == 0
+        ? termIn.equals(term.bytes())
+        : automata[k].runAutomaton.run(termIn.bytes, termIn.offset, termIn.length);
   }
-  
+
   // proxy all other enum calls to the actual enum
   @Override
   public int docFreq() throws IOException {
@@ -263,27 +288,27 @@ public final class FuzzyTermsEnum extends TermsEnum {
   public long totalTermFreq() throws IOException {
     return actualEnum.totalTermFreq();
   }
-  
+
   @Override
   public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
     return actualEnum.postings(reuse, flags);
   }
-  
+
   @Override
   public ImpactsEnum impacts(int flags) throws IOException {
     return actualEnum.impacts(flags);
   }
-  
+
   @Override
   public void seekExact(BytesRef term, TermState state) throws IOException {
     actualEnum.seekExact(term, state);
   }
-  
+
   @Override
   public TermState termState() throws IOException {
     return actualEnum.termState();
   }
-  
+
   @Override
   public long ord() throws IOException {
     return actualEnum.ord();
@@ -303,21 +328,21 @@ public final class FuzzyTermsEnum extends TermsEnum {
   public SeekStatus seekCeil(BytesRef text) throws IOException {
     return actualEnum.seekCeil(text);
   }
-  
+
   @Override
   public void seekExact(long ord) throws IOException {
     actualEnum.seekExact(ord);
   }
-  
+
   @Override
   public BytesRef term() throws IOException {
     return actualEnum.term();
   }
 
   /**
-   * Thrown to indicate that there was an issue creating a fuzzy query for a given term.
-   * Typically occurs with terms longer than 220 UTF-8 characters,
-   * but also possible with shorter terms consisting of UTF-32 code points.
+   * Thrown to indicate that there was an issue creating a fuzzy query for a given term. Typically
+   * occurs with terms longer than 220 UTF-8 characters, but also possible with shorter terms
+   * consisting of UTF-32 code points.
    */
   public static class FuzzyTermsException extends RuntimeException {
     FuzzyTermsException(String term, Throwable cause) {
@@ -328,15 +353,16 @@ public final class FuzzyTermsEnum extends TermsEnum {
   /**
    * Used for sharing automata between segments
    *
-   * Levenshtein automata are large and expensive to build; we don't want to build
-   * them directly on the query because this can blow up caches that use queries
-   * as keys; we also don't want to rebuild them for every segment.  This attribute
-   * allows the FuzzyTermsEnum to build the automata once for its first segment
-   * and then share them for subsequent segment calls.
+   * <p>Levenshtein automata are large and expensive to build; we don't want to build them directly
+   * on the query because this can blow up caches that use queries as keys; we also don't want to
+   * rebuild them for every segment. This attribute allows the FuzzyTermsEnum to build the automata
+   * once for its first segment and then share them for subsequent segment calls.
    */
   private interface AutomatonAttribute extends Attribute {
     CompiledAutomaton[] getAutomata();
+
     int getTermLength();
+
     void init(Supplier<FuzzyAutomatonBuilder> builder);
   }
 
@@ -380,5 +406,4 @@ public final class FuzzyTermsEnum extends TermsEnum {
       throw new UnsupportedOperationException();
     }
   }
-
 }

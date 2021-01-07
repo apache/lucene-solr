@@ -19,8 +19,8 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 
 /**
- * A {@link NoTokenFoundQueryNode} is used if a term is convert into no tokens
- * by the tokenizer/lemmatizer/analyzer (null).
+ * A {@link NoTokenFoundQueryNode} is used if a term is convert into no tokens by the
+ * tokenizer/lemmatizer/analyzer (null).
  */
 public class NoTokenFoundQueryNode extends DeletedQueryNode {
 

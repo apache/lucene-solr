@@ -34,21 +34,30 @@ public class TestPayloadFilteredInterval extends LuceneTestCase {
 
   public void testPayloadFilteredInterval() throws Exception {
 
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tok = new MockTokenizer(MockTokenizer.SIMPLE, true);
-        return new TokenStreamComponents(tok, new SimplePayloadFilter(tok));
-      }
-    };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tok = new MockTokenizer(MockTokenizer.SIMPLE, true);
+            return new TokenStreamComponents(tok, new SimplePayloadFilter(tok));
+          }
+        };
 
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(analyzer)
-            .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
+                .setMergePolicy(newLogMergePolicy()));
 
     Document doc = new Document();
-    doc.add(newTextField("field", "a sentence with words repeated words words quite often words", Field.Store.NO));
+    doc.add(
+        newTextField(
+            "field",
+            "a sentence with words repeated words words quite often words",
+            Field.Store.NO));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -79,7 +88,5 @@ public class TestPayloadFilteredInterval extends LuceneTestCase {
 
     reader.close();
     directory.close();
-
   }
-
 }

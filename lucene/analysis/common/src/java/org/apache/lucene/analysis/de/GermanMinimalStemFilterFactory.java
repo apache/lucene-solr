@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.de;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link GermanMinimalStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_deminstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.GermanMinimalStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -39,15 +39,15 @@ public class GermanMinimalStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "germanMinimalStem";
-  
+
   /** Creates a new GermanMinimalStemFilterFactory */
-  public GermanMinimalStemFilterFactory(Map<String,String> args) {
+  public GermanMinimalStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public GermanMinimalStemFilterFactory() {
     throw defaultCtorException();

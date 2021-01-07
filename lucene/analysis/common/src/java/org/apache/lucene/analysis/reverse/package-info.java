@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Filter to reverse token text.
- */
+/** Filter to reverse token text. */
 package org.apache.lucene.analysis.reverse;

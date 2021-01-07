@@ -16,41 +16,39 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
+import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.codecs.MultiLevelSkipListReader;
 import org.apache.lucene.store.IndexInput;
 
-import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
-
 /**
- * Implements the skip list reader for block postings format
- * that stores positions and payloads.
- * 
- * Although this skipper uses MultiLevelSkipListReader as an interface, 
- * its definition of skip position will be a little different. 
+ * Implements the skip list reader for block postings format that stores positions and payloads.
  *
- * For example, when skipInterval = blockSize = 3, df = 2*skipInterval = 6, 
- * 
+ * <p>Although this skipper uses MultiLevelSkipListReader as an interface, its definition of skip
+ * position will be a little different.
+ *
+ * <p>For example, when skipInterval = blockSize = 3, df = 2*skipInterval = 6,
+ *
+ * <pre>
  * 0 1 2 3 4 5
  * d d d d d d    (posting list)
  *     ^     ^    (skip point in MultiLeveSkipWriter)
  *       ^        (skip point in Lucene50SkipWriter)
+ * </pre>
  *
- * In this case, MultiLevelSkipListReader will use the last document as a skip point, 
- * while Lucene50SkipReader should assume no skip point will comes. 
+ * In this case, MultiLevelSkipListReader will use the last document as a skip point, while
+ * Lucene50SkipReader should assume no skip point will comes.
  *
- * If we use the interface directly in Lucene50SkipReader, it may silly try to read 
- * another skip data after the only skip point is loaded. 
+ * <p>If we use the interface directly in Lucene50SkipReader, it may silly try to read another skip
+ * data after the only skip point is loaded.
  *
- * To illustrate this, we can call skipTo(d[5]), since skip point d[3] has smaller docId,
- * and numSkipped+blockSize== df, the MultiLevelSkipListReader will assume the skip list
- * isn't exhausted yet, and try to load a non-existed skip point
+ * <p>To illustrate this, we can call skipTo(d[5]), since skip point d[3] has smaller docId, and
+ * numSkipped+blockSize== df, the MultiLevelSkipListReader will assume the skip list isn't exhausted
+ * yet, and try to load a non-existed skip point
  *
- * Therefore, we'll trim df before passing it to the interface. see trim(int)
- *
+ * <p>Therefore, we'll trim df before passing it to the interface. see trim(int)
  */
 class Lucene50SkipReader extends MultiLevelSkipListReader {
   private final int version;
@@ -66,9 +64,13 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
   private long lastDocPointer;
   private int lastPosBufferUpto;
 
-  public Lucene50SkipReader(int version,
-      IndexInput skipStream, int maxSkipLevels,
-      boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
+  public Lucene50SkipReader(
+      int version,
+      IndexInput skipStream,
+      int maxSkipLevels,
+      boolean hasPos,
+      boolean hasOffsets,
+      boolean hasPayloads) {
     super(skipStream, maxSkipLevels, BLOCK_SIZE, 8);
     this.version = version;
     docPointer = new long[maxSkipLevels];
@@ -93,17 +95,17 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
   /**
    * Trim original docFreq to tell skipReader read proper number of skip points.
    *
-   * Since our definition in Lucene50Skip* is a little different from MultiLevelSkip*
-   * This trimmed docFreq will prevent skipReader from:
-   * 1. silly reading a non-existed skip point after the last block boundary
-   * 2. moving into the vInt block
-   *
+   * <p>Since our definition in Lucene50Skip* is a little different from MultiLevelSkip* This
+   * trimmed docFreq will prevent skipReader from: 1. silly reading a non-existed skip point after
+   * the last block boundary 2. moving into the vInt block
    */
   protected int trim(int df) {
-    return df % BLOCK_SIZE == 0? df - 1: df;
+    return df % BLOCK_SIZE == 0 ? df - 1 : df;
   }
 
-  public void init(long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df) throws IOException {
+  public void init(
+      long skipPointer, long docBasePointer, long posBasePointer, long payBasePointer, int df)
+      throws IOException {
     super.init(skipPointer, trim(df));
     lastDocPointer = docBasePointer;
     lastPosPointer = posBasePointer;
@@ -120,8 +122,10 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
     }
   }
 
-  /** Returns the doc pointer of the doc to which the last call of 
-   * {@link MultiLevelSkipListReader#skipTo(int)} has skipped.  */
+  /**
+   * Returns the doc pointer of the doc to which the last call of {@link
+   * MultiLevelSkipListReader#skipTo(int)} has skipped.
+   */
   public long getDocPointer() {
     return lastDocPointer;
   }
@@ -161,7 +165,7 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
       }
     }
   }
-  
+
   @Override
   protected void setLastSkipData(int level) {
     super.setLastSkipData(level);
@@ -207,5 +211,4 @@ class Lucene50SkipReader extends MultiLevelSkipListReader {
       skipStream.skipBytes(skipStream.readVInt());
     }
   }
-
 }

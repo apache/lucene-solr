@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
@@ -55,17 +54,19 @@ public abstract class GroupFacetCollector extends SimpleCollector {
   }
 
   /**
-   * Returns grouped facet results that were computed over zero or more segments.
-   * Grouped facet counts are merged from zero or more segment results.
+   * Returns grouped facet results that were computed over zero or more segments. Grouped facet
+   * counts are merged from zero or more segment results.
    *
    * @param size The total number of facets to include. This is typically offset + limit
-   * @param minCount The minimum count a facet entry should have to be included in the grouped facet result
-   * @param orderByCount Whether to sort the facet entries by facet entry count. If <code>false</code> then the facets
-   *                     are sorted lexicographically in ascending order.
+   * @param minCount The minimum count a facet entry should have to be included in the grouped facet
+   *     result
+   * @param orderByCount Whether to sort the facet entries by facet entry count. If <code>false
+   *     </code> then the facets are sorted lexicographically in ascending order.
    * @return grouped facet results
    * @throws IOException If I/O related errors occur during merging segment grouped facet counts.
    */
-  public GroupedFacetResult mergeSegmentResults(int size, int minCount, boolean orderByCount) throws IOException {
+  public GroupedFacetResult mergeSegmentResults(int size, int minCount, boolean orderByCount)
+      throws IOException {
     if (segmentFacetCounts != null) {
       segmentResults.add(createSegmentResult());
       segmentFacetCounts = null; // reset
@@ -83,7 +84,8 @@ public abstract class GroupFacetCollector extends SimpleCollector {
       segments.add(segmentResult);
     }
 
-    GroupedFacetResult facetResult = new GroupedFacetResult(size, minCount, orderByCount, totalCount, missingCount);
+    GroupedFacetResult facetResult =
+        new GroupedFacetResult(size, minCount, orderByCount, totalCount, missingCount);
     while (segments.size() > 0) {
       SegmentResult segmentResult = segments.top();
       BytesRef currentFacetValue = BytesRef.deepCopyOf(segmentResult.mergeTerm);
@@ -110,8 +112,7 @@ public abstract class GroupFacetCollector extends SimpleCollector {
   protected abstract SegmentResult createSegmentResult() throws IOException;
 
   @Override
-  public void setScorer(Scorable scorer) throws IOException {
-  }
+  public void setScorer(Scorable scorer) throws IOException {}
 
   @Override
   public ScoreMode scoreMode() {
@@ -119,31 +120,32 @@ public abstract class GroupFacetCollector extends SimpleCollector {
   }
 
   /**
-   * The grouped facet result. Containing grouped facet entries, total count and total missing count.
+   * The grouped facet result. Containing grouped facet entries, total count and total missing
+   * count.
    */
   public static class GroupedFacetResult {
 
-    private final static Comparator<FacetEntry> orderByCountAndValue = new Comparator<FacetEntry>() {
+    private static final Comparator<FacetEntry> orderByCountAndValue =
+        new Comparator<FacetEntry>() {
 
-      @Override
-      public int compare(FacetEntry a, FacetEntry b) {
-        int cmp = b.count - a.count; // Highest count first!
-        if (cmp != 0) {
-          return cmp;
-        }
-        return a.value.compareTo(b.value);
-      }
+          @Override
+          public int compare(FacetEntry a, FacetEntry b) {
+            int cmp = b.count - a.count; // Highest count first!
+            if (cmp != 0) {
+              return cmp;
+            }
+            return a.value.compareTo(b.value);
+          }
+        };
 
-    };
+    private static final Comparator<FacetEntry> orderByValue =
+        new Comparator<FacetEntry>() {
 
-    private final static Comparator<FacetEntry> orderByValue = new Comparator<FacetEntry>() {
-
-      @Override
-      public int compare(FacetEntry a, FacetEntry b) {
-        return a.value.compareTo(b.value);
-      }
-
-    };
+          @Override
+          public int compare(FacetEntry a, FacetEntry b) {
+            return a.value.compareTo(b.value);
+          }
+        };
 
     private final int maxSize;
     private final NavigableSet<FacetEntry> facetEntries;
@@ -152,7 +154,8 @@ public abstract class GroupFacetCollector extends SimpleCollector {
 
     private int currentMin;
 
-    public GroupedFacetResult(int size, int minCount, boolean orderByCount, int totalCount, int totalMissingCount) {
+    public GroupedFacetResult(
+        int size, int minCount, boolean orderByCount, int totalCount, int totalMissingCount) {
       this.facetEntries = new TreeSet<>(orderByCount ? orderByCountAndValue : orderByValue);
       this.totalMissingCount = totalMissingCount;
       this.totalCount = totalCount;
@@ -180,8 +183,8 @@ public abstract class GroupFacetCollector extends SimpleCollector {
     }
 
     /**
-     * Returns a list of facet entries to be rendered based on the specified offset and limit.
-     * The facet entries are retrieved from the facet entries collected during merging.
+     * Returns a list of facet entries to be rendered based on the specified offset and limit. The
+     * facet entries are retrieved from the facet entries collected during merging.
      *
      * @param offset The offset in the collected facet entries during merging
      * @param limit The number of facets to return starting from the offset.
@@ -224,9 +227,7 @@ public abstract class GroupFacetCollector extends SimpleCollector {
     }
   }
 
-  /**
-   * Represents a facet entry with a value and a count.
-   */
+  /** Represents a facet entry with a value and a count. */
   public static class FacetEntry {
 
     private final BytesRef value;
@@ -259,30 +260,23 @@ public abstract class GroupFacetCollector extends SimpleCollector {
 
     @Override
     public String toString() {
-      return "FacetEntry{" +
-          "value=" + value.utf8ToString() +
-          ", count=" + count +
-          '}';
+      return "FacetEntry{" + "value=" + value.utf8ToString() + ", count=" + count + '}';
     }
 
-    /**
-     * @return The value of this facet entry
-     */
+    /** @return The value of this facet entry */
     public BytesRef getValue() {
       return value;
     }
 
-    /**
-     * @return The count (number of groups) of this facet entry.
-     */
+    /** @return The count (number of groups) of this facet entry. */
     public int getCount() {
       return count;
     }
   }
 
   /**
-   * Contains the local grouped segment counts for a particular segment.
-   * Each <code>SegmentResult</code> must be added together.
+   * Contains the local grouped segment counts for a particular segment. Each <code>SegmentResult
+   * </code> must be added together.
    */
   protected abstract static class SegmentResult {
 
@@ -302,12 +296,12 @@ public abstract class GroupFacetCollector extends SimpleCollector {
     }
 
     /**
-     * Go to next term in this <code>SegmentResult</code> in order to retrieve the grouped facet counts.
+     * Go to next term in this <code>SegmentResult</code> in order to retrieve the grouped facet
+     * counts.
      *
      * @throws IOException If I/O related errors occur
      */
     protected abstract void nextTerm() throws IOException;
-
   }
 
   private static class SegmentResultPriorityQueue extends PriorityQueue<SegmentResult> {
@@ -321,5 +315,4 @@ public abstract class GroupFacetCollector extends SimpleCollector {
       return a.mergeTerm.compareTo(b.mergeTerm) < 0;
     }
   }
-
 }

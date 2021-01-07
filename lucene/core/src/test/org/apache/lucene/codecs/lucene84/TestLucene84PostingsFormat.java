@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
@@ -53,10 +52,10 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
   public void testFinalBlock() throws Exception {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
-    for(int i=0;i<25;i++) {
+    for (int i = 0; i < 25; i++) {
       Document doc = new Document();
-      doc.add(newStringField("field", Character.toString((char) (97+i)), Field.Store.NO));
-      doc.add(newStringField("field", "z" + Character.toString((char) (97+i)), Field.Store.NO));
+      doc.add(newStringField("field", Character.toString((char) (97 + i)), Field.Store.NO));
+      doc.add(newStringField("field", "z" + Character.toString((char) (97 + i)), Field.Store.NO));
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -64,7 +63,8 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
     DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.leaves().size());
     FieldReader field = (FieldReader) r.leaves().get(0).reader().terms("field");
-    // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):
+    // We should see exactly two blocks: one root block (prefix empty string) and one block for z*
+    // terms (prefix z):
     Stats stats = field.getStats();
     assertEquals(0, stats.floorBlockCount);
     assertEquals(2, stats.nonFloorBlockCount);
@@ -74,9 +74,11 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
   }
 
   private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
-    expectThrows(IllegalArgumentException.class, () -> {
-      new Lucene84PostingsFormat(minItemsInBlock, maxItemsInBlock);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new Lucene84PostingsFormat(minItemsInBlock, maxItemsInBlock);
+        });
   }
 
   public void testInvalidBlockSizes() throws Exception {
@@ -127,14 +129,15 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
     for (Impact impact : impacts) {
       acc.add(impact.freq, impact.norm);
     }
-    try(Directory dir = newDirectory()) {
+    try (Directory dir = newDirectory()) {
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
         Lucene84SkipWriter.writeImpacts(acc, out);
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         byte[] b = new byte[Math.toIntExact(in.length())];
         in.readBytes(b, 0, b.length);
-        List<Impact> impacts2 = Lucene84ScoreSkipReader.readImpacts(new ByteArrayDataInput(b), new MutableImpactList());
+        List<Impact> impacts2 =
+            Lucene84ScoreSkipReader.readImpacts(new ByteArrayDataInput(b), new MutableImpactList());
         assertEquals(impacts, impacts2);
       }
     }

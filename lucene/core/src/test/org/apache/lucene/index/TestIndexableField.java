@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
@@ -45,82 +43,85 @@ public class TestIndexableField extends LuceneTestCase {
   private static class MyField implements IndexableField {
 
     private final int counter;
-    private final IndexableFieldType fieldType = new IndexableFieldType() {
-      @Override
-      public boolean stored() {
-        return (counter & 1) == 0 || (counter % 10) == 3;
-      }
+    private final IndexableFieldType fieldType =
+        new IndexableFieldType() {
+          @Override
+          public boolean stored() {
+            return (counter & 1) == 0 || (counter % 10) == 3;
+          }
 
-      @Override
-      public boolean tokenized() {
-        return true;
-      }
+          @Override
+          public boolean tokenized() {
+            return true;
+          }
 
-      @Override
-      public boolean storeTermVectors() {
-        return indexOptions() != IndexOptions.NONE && counter % 2 == 1 && counter % 10 != 9;
-      }
+          @Override
+          public boolean storeTermVectors() {
+            return indexOptions() != IndexOptions.NONE && counter % 2 == 1 && counter % 10 != 9;
+          }
 
-      @Override
-      public boolean storeTermVectorOffsets() {
-        return storeTermVectors() && counter % 10 != 9;
-      }
+          @Override
+          public boolean storeTermVectorOffsets() {
+            return storeTermVectors() && counter % 10 != 9;
+          }
 
-      @Override
-      public boolean storeTermVectorPositions() {
-        return storeTermVectors() && counter % 10 != 9;
-      }
-      
-      @Override
-      public boolean storeTermVectorPayloads() {
-        return storeTermVectors() && counter % 10 != 9;
-      }
+          @Override
+          public boolean storeTermVectorPositions() {
+            return storeTermVectors() && counter % 10 != 9;
+          }
 
-      @Override
-      public boolean omitNorms() {
-        return false;
-      }
+          @Override
+          public boolean storeTermVectorPayloads() {
+            return storeTermVectors() && counter % 10 != 9;
+          }
 
-      @Override
-      public IndexOptions indexOptions() {
-        return counter%10 == 3 ? IndexOptions.NONE : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
-      }
+          @Override
+          public boolean omitNorms() {
+            return false;
+          }
 
-      @Override
-      public DocValuesType docValuesType() {
-        return DocValuesType.NONE;
-      }
+          @Override
+          public IndexOptions indexOptions() {
+            return counter % 10 == 3
+                ? IndexOptions.NONE
+                : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
+          }
 
-      @Override
-      public int pointDimensionCount() {
-        return 0;
-      }
+          @Override
+          public DocValuesType docValuesType() {
+            return DocValuesType.NONE;
+          }
 
-      @Override
-      public int pointIndexDimensionCount() {
-        return 0;
-      }
+          @Override
+          public int pointDimensionCount() {
+            return 0;
+          }
 
-      @Override
-      public int pointNumBytes() {
-        return 0;
-      }
+          @Override
+          public int pointIndexDimensionCount() {
+            return 0;
+          }
 
-      @Override
-      public int vectorDimension() {
-        return 0;
-      }
+          @Override
+          public int pointNumBytes() {
+            return 0;
+          }
 
-      @Override
-      public VectorValues.SearchStrategy vectorSearchStrategy() {
-        return VectorValues.SearchStrategy.NONE;
-      }
+          @Override
+          public int vectorDimension() {
+            return 0;
+          }
 
-      @Override
-      public Map<String, String> getAttributes() {
-        return null;
-      }
-    };
+          @Override
+          public VectorValues.SearchStrategy vectorSearchStrategy() {
+            return VectorValues.SearchStrategy.NONE;
+          }
+
+          @Override
+          public Map<String, String> getAttributes() {
+            return null;
+          }
+        };
 
     public MyField(int counter) {
       this.counter = counter;
@@ -133,10 +134,10 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public BytesRef binaryValue() {
-      if ((counter%10) == 3) {
+      if ((counter % 10) == 3) {
         final byte[] bytes = new byte[10];
-        for(int idx=0;idx<bytes.length;idx++) {
-          bytes[idx] = (byte) (counter+idx);
+        for (int idx = 0; idx < bytes.length; idx++) {
+          bytes[idx] = (byte) (counter + idx);
         }
         return new BytesRef(bytes, 0, bytes.length);
       } else {
@@ -146,7 +147,7 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public String stringValue() {
-      final int fieldID = counter%10;
+      final int fieldID = counter % 10;
       if (fieldID != 3 && fieldID != 7) {
         return "text " + counter;
       } else {
@@ -156,7 +157,7 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public Reader readerValue() {
-      if (counter%10 == 7) {
+      if (counter % 10 == 7) {
         return new StringReader("text " + counter);
       } else {
         return null;
@@ -175,8 +176,9 @@ public class TestIndexableField extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) {
-      return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
-        analyzer.tokenStream(name(), new StringReader(stringValue()));
+      return readerValue() != null
+          ? analyzer.tokenStream(name(), readerValue())
+          : analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
   }
 
@@ -194,9 +196,9 @@ public class TestIndexableField extends LuceneTestCase {
     final int[] fieldsPerDoc = new int[NUM_DOCS];
     int baseCount = 0;
 
-    for(int docCount=0;docCount<NUM_DOCS;docCount++) {
+    for (int docCount = 0; docCount < NUM_DOCS; docCount++) {
       final int fieldCount = TestUtil.nextInt(random(), 1, 17);
-      fieldsPerDoc[docCount] = fieldCount-1;
+      fieldsPerDoc[docCount] = fieldCount - 1;
 
       final int finalDocCount = docCount;
       if (VERBOSE) {
@@ -204,37 +206,38 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       final int finalBaseCount = baseCount;
-      baseCount += fieldCount-1;
+      baseCount += fieldCount - 1;
 
-      Iterable<IndexableField> d = new Iterable<IndexableField>() {
-        @Override
-        public Iterator<IndexableField> iterator() {
-          return new Iterator<IndexableField>() {
-            int fieldUpto;
-
+      Iterable<IndexableField> d =
+          new Iterable<IndexableField>() {
             @Override
-            public boolean hasNext() {
-              return fieldUpto < fieldCount;
-            }
+            public Iterator<IndexableField> iterator() {
+              return new Iterator<IndexableField>() {
+                int fieldUpto;
 
-            @Override
-            public IndexableField next() {
-              assert fieldUpto < fieldCount;
-              if (fieldUpto == 0) {
-                fieldUpto = 1;
-                return newStringField("id", ""+finalDocCount, Field.Store.YES);
-              } else {
-                return new MyField(finalBaseCount + (fieldUpto++-1));
-              }
-            }
+                @Override
+                public boolean hasNext() {
+                  return fieldUpto < fieldCount;
+                }
 
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
+                @Override
+                public IndexableField next() {
+                  assert fieldUpto < fieldCount;
+                  if (fieldUpto == 0) {
+                    fieldUpto = 1;
+                    return newStringField("id", "" + finalDocCount, Field.Store.YES);
+                  } else {
+                    return new MyField(finalBaseCount + (fieldUpto++ - 1));
+                  }
+                }
+
+                @Override
+                public void remove() {
+                  throw new UnsupportedOperationException();
+                }
+              };
             }
           };
-        }
-        };
       w.addDocument(d);
     }
 
@@ -243,21 +246,22 @@ public class TestIndexableField extends LuceneTestCase {
 
     final IndexSearcher s = newSearcher(r);
     int counter = 0;
-    for(int id=0;id<NUM_DOCS;id++) {
+    for (int id = 0; id < NUM_DOCS; id++) {
       if (VERBOSE) {
-        System.out.println("TEST: verify doc id=" + id + " (" + fieldsPerDoc[id] + " fields) counter=" + counter);
+        System.out.println(
+            "TEST: verify doc id=" + id + " (" + fieldsPerDoc[id] + " fields) counter=" + counter);
       }
 
-      final TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
+      final TopDocs hits = s.search(new TermQuery(new Term("id", "" + id)), 1);
       assertEquals(1, hits.totalHits.value);
       final int docID = hits.scoreDocs[0].doc;
       final Document doc = s.doc(docID);
       final int endCounter = counter + fieldsPerDoc[id];
-      while(counter < endCounter) {
+      while (counter < endCounter) {
         final String name = "f" + counter;
         final int fieldID = counter % 10;
 
-        final boolean stored = (counter&1) == 0 || fieldID == 3;
+        final boolean stored = (counter & 1) == 0 || fieldID == 3;
         final boolean binary = fieldID == 3;
         final boolean indexed = fieldID != 3;
 
@@ -277,22 +281,22 @@ public class TestIndexableField extends LuceneTestCase {
             final BytesRef b = f.binaryValue();
             assertNotNull(b);
             assertEquals(10, b.length);
-            for(int idx=0;idx<10;idx++) {
-              assertEquals((byte) (idx+counter), b.bytes[b.offset+idx]);
+            for (int idx = 0; idx < 10; idx++) {
+              assertEquals((byte) (idx + counter), b.bytes[b.offset + idx]);
             }
           } else {
             assert stringValue != null;
             assertEquals(stringValue, f.stringValue());
           }
         }
-        
+
         if (indexed) {
           final boolean tv = counter % 2 == 1 && fieldID != 9;
           if (tv) {
             final Terms tfv = r.getTermVectors(docID).terms(name);
             assertNotNull(tfv);
             TermsEnum termsEnum = tfv.iterator();
-            assertEquals(new BytesRef(""+counter), termsEnum.next());
+            assertEquals(new BytesRef("" + counter), termsEnum.next());
             assertEquals(1, termsEnum.totalTermFreq());
             PostingsEnum dpEnum = termsEnum.postings(null, PostingsEnum.ALL);
             assertTrue(dpEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
@@ -309,22 +313,22 @@ public class TestIndexableField extends LuceneTestCase {
             assertNull(termsEnum.next());
 
             // TODO: offsets
-            
+
           } else {
             Fields vectors = r.getTermVectors(docID);
             assertTrue(vectors == null || vectors.terms(name) == null);
           }
 
           BooleanQuery.Builder bq = new BooleanQuery.Builder();
-          bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term("id", "" + id)), BooleanClause.Occur.MUST);
           bq.add(new TermQuery(new Term(name, "text")), BooleanClause.Occur.MUST);
           final TopDocs hits2 = s.search(bq.build(), 1);
           assertEquals(1, hits2.totalHits.value);
           assertEquals(docID, hits2.scoreDocs[0].doc);
 
           bq = new BooleanQuery.Builder();
-          bq.add(new TermQuery(new Term("id", ""+id)), BooleanClause.Occur.MUST);
-          bq.add(new TermQuery(new Term(name, ""+counter)), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term("id", "" + id)), BooleanClause.Occur.MUST);
+          bq.add(new TermQuery(new Term(name, "" + counter)), BooleanClause.Occur.MUST);
           final TopDocs hits3 = s.search(bq.build(), 1);
           assertEquals(1, hits3.totalHits.value);
           assertEquals(docID, hits3.scoreDocs[0].doc);
@@ -382,7 +386,9 @@ public class TestIndexableField extends LuceneTestCase {
   public void testNotIndexedTermVectors() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-    expectThrows(IllegalArgumentException.class, () -> w.addDocument(Collections.singletonList(new CustomField())));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> w.addDocument(Collections.singletonList(new CustomField())));
     w.close();
     dir.close();
   }

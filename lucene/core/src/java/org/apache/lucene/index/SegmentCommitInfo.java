@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,15 +25,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import org.apache.lucene.util.StringHelper;
 
-/** Embeds a [read-only] SegmentInfo and adds per-commit
- *  fields.
+/**
+ * Embeds a [read-only] SegmentInfo and adds per-commit fields.
  *
- *  @lucene.experimental */
+ * @lucene.experimental
+ */
 public class SegmentCommitInfo {
-  
+
   /** The {@link SegmentInfo} that we wrap. */
   public final SegmentInfo info;
 
@@ -57,26 +56,26 @@ public class SegmentCommitInfo {
 
   // Generation number of the FieldInfos (-1 if there are no updates)
   private long fieldInfosGen;
-  
+
   // Normally 1+fieldInfosGen, unless an exception was hit on last attempt to
   // write
   private long nextWriteFieldInfosGen;
-  
+
   // Generation number of the DocValues (-1 if there are no updates)
   private long docValuesGen;
-  
+
   // Normally 1+dvGen, unless an exception was hit on last attempt to
   // write
   private long nextWriteDocValuesGen;
 
   // Track the per-field DocValues update files
-  private final Map<Integer,Set<String>> dvUpdatesFiles = new HashMap<>();
-  
+  private final Map<Integer, Set<String>> dvUpdatesFiles = new HashMap<>();
+
   // TODO should we add .files() to FieldInfosFormat, like we have on
   // LiveDocsFormat?
   // track the fieldInfos update files
   private final Set<String> fieldInfosFiles = new HashSet<>();
-  
+
   private volatile long sizeInBytes = -1;
 
   // NOTE: only used in-RAM by IW to track buffered deletes;
@@ -85,19 +84,23 @@ public class SegmentCommitInfo {
 
   /**
    * Sole constructor.
-   * @param info
-   *          {@link SegmentInfo} that we wrap
-   * @param delCount
-   *          number of deleted documents in this segment
-   * @param delGen
-   *          deletion generation number (used to name deletion files)
-   * @param fieldInfosGen
-   *          FieldInfos generation number (used to name field-infos files)
-   * @param docValuesGen
-   *          DocValues generation number (used to name doc-values updates files)
-   * @param id Id that uniquely identifies this segment commit. This id must be 16 bytes long. See {@link StringHelper#randomId()}
+   *
+   * @param info {@link SegmentInfo} that we wrap
+   * @param delCount number of deleted documents in this segment
+   * @param delGen deletion generation number (used to name deletion files)
+   * @param fieldInfosGen FieldInfos generation number (used to name field-infos files)
+   * @param docValuesGen DocValues generation number (used to name doc-values updates files)
+   * @param id Id that uniquely identifies this segment commit. This id must be 16 bytes long. See
+   *     {@link StringHelper#randomId()}
    */
-  public SegmentCommitInfo(SegmentInfo info, int delCount, int softDelCount, long delGen, long fieldInfosGen, long docValuesGen, byte[] id) {
+  public SegmentCommitInfo(
+      SegmentInfo info,
+      int delCount,
+      int softDelCount,
+      long delGen,
+      long fieldInfosGen,
+      long docValuesGen,
+      byte[] id) {
     this.info = info;
     this.delCount = delCount;
     this.softDelCount = softDelCount;
@@ -112,16 +115,16 @@ public class SegmentCommitInfo {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
   }
-  
+
   /** Returns the per-field DocValues updates files. */
-  public Map<Integer,Set<String>> getDocValuesUpdatesFiles() {
+  public Map<Integer, Set<String>> getDocValuesUpdatesFiles() {
     return Collections.unmodifiableMap(dvUpdatesFiles);
   }
-  
+
   /** Sets the DocValues updates file names, per field number. Does not deep clone the map. */
-  public void setDocValuesUpdatesFiles(Map<Integer,Set<String>> dvUpdatesFiles) {
+  public void setDocValuesUpdatesFiles(Map<Integer, Set<String>> dvUpdatesFiles) {
     this.dvUpdatesFiles.clear();
-    for (Map.Entry<Integer,Set<String>> kv : dvUpdatesFiles.entrySet()) {
+    for (Map.Entry<Integer, Set<String>> kv : dvUpdatesFiles.entrySet()) {
       // rename the set
       Set<String> set = new HashSet<>();
       for (String file : kv.getValue()) {
@@ -130,12 +133,12 @@ public class SegmentCommitInfo {
       this.dvUpdatesFiles.put(kv.getKey(), set);
     }
   }
-  
+
   /** Returns the FieldInfos file names. */
   public Set<String> getFieldInfosFiles() {
     return Collections.unmodifiableSet(fieldInfosFiles);
   }
-  
+
   /** Sets the FieldInfos file names. */
   public void setFieldInfosFiles(Set<String> fieldInfosFiles) {
     this.fieldInfosFiles.clear();
@@ -147,47 +150,48 @@ public class SegmentCommitInfo {
   /** Called when we succeed in writing deletes */
   void advanceDelGen() {
     delGen = nextWriteDelGen;
-    nextWriteDelGen = delGen+1;
+    nextWriteDelGen = delGen + 1;
     generationAdvanced();
   }
 
-  /** Called if there was an exception while writing
-   *  deletes, so that we don't try to write to the same
-   *  file more than once. */
+  /**
+   * Called if there was an exception while writing deletes, so that we don't try to write to the
+   * same file more than once.
+   */
   void advanceNextWriteDelGen() {
     nextWriteDelGen++;
   }
-  
+
   /** Gets the nextWriteDelGen. */
   long getNextWriteDelGen() {
     return nextWriteDelGen;
   }
-  
+
   /** Sets the nextWriteDelGen. */
   void setNextWriteDelGen(long v) {
     nextWriteDelGen = v;
   }
-  
+
   /** Called when we succeed in writing a new FieldInfos generation. */
   void advanceFieldInfosGen() {
     fieldInfosGen = nextWriteFieldInfosGen;
     nextWriteFieldInfosGen = fieldInfosGen + 1;
     generationAdvanced();
   }
-  
+
   /**
-   * Called if there was an exception while writing a new generation of
-   * FieldInfos, so that we don't try to write to the same file more than once.
+   * Called if there was an exception while writing a new generation of FieldInfos, so that we don't
+   * try to write to the same file more than once.
    */
   void advanceNextWriteFieldInfosGen() {
     nextWriteFieldInfosGen++;
   }
-  
+
   /** Gets the nextWriteFieldInfosGen. */
   long getNextWriteFieldInfosGen() {
     return nextWriteFieldInfosGen;
   }
-  
+
   /** Sets the nextWriteFieldInfosGen. */
   void setNextWriteFieldInfosGen(long v) {
     nextWriteFieldInfosGen = v;
@@ -199,10 +203,10 @@ public class SegmentCommitInfo {
     nextWriteDocValuesGen = docValuesGen + 1;
     generationAdvanced();
   }
-  
+
   /**
-   * Called if there was an exception while writing a new generation of
-   * DocValues, so that we don't try to write to the same file more than once.
+   * Called if there was an exception while writing a new generation of DocValues, so that we don't
+   * try to write to the same file more than once.
    */
   void advanceNextWriteDocValuesGen() {
     nextWriteDocValuesGen++;
@@ -212,14 +216,13 @@ public class SegmentCommitInfo {
   long getNextWriteDocValuesGen() {
     return nextWriteDocValuesGen;
   }
-  
+
   /** Sets the nextWriteDocValuesGen. */
   void setNextWriteDocValuesGen(long v) {
     nextWriteDocValuesGen = v;
   }
-  
-  /** Returns total size in bytes of all files for this
-   *  segment. */
+
+  /** Returns total size in bytes of all files for this segment. */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       long sum = 0;
@@ -239,18 +242,18 @@ public class SegmentCommitInfo {
 
     // TODO we could rely on TrackingDir.getCreatedFiles() (like we do for
     // updates) and then maybe even be able to remove LiveDocsFormat.files().
-    
+
     // Must separately add any live docs files:
     info.getCodec().liveDocsFormat().files(this, files);
-    
+
     // must separately add any field updates files
     for (Set<String> updatefiles : dvUpdatesFiles.values()) {
       files.addAll(updatefiles);
     }
-    
+
     // must separately add fieldInfos files
     files.addAll(fieldInfosFiles);
-    
+
     return files;
   }
 
@@ -266,9 +269,8 @@ public class SegmentCommitInfo {
       throw new IllegalStateException("buffered deletes gen should only be set once");
     }
   }
-  
-  /** Returns true if there are any deletions for the 
-   * segment at this commit. */
+
+  /** Returns true if there are any deletions for the segment at this commit. */
   public boolean hasDeletions() {
     return delGen != -1;
   }
@@ -277,76 +279,69 @@ public class SegmentCommitInfo {
   public boolean hasFieldUpdates() {
     return fieldInfosGen != -1;
   }
-  
+
   /** Returns the next available generation number of the FieldInfos files. */
   public long getNextFieldInfosGen() {
     return nextWriteFieldInfosGen;
   }
-  
+
   /**
-   * Returns the generation number of the field infos file or -1 if there are no
-   * field updates yet.
+   * Returns the generation number of the field infos file or -1 if there are no field updates yet.
    */
   public long getFieldInfosGen() {
     return fieldInfosGen;
   }
-  
+
   /** Returns the next available generation number of the DocValues files. */
   public long getNextDocValuesGen() {
     return nextWriteDocValuesGen;
   }
-  
+
   /**
-   * Returns the generation number of the DocValues file or -1 if there are no
-   * doc-values updates yet.
+   * Returns the generation number of the DocValues file or -1 if there are no doc-values updates
+   * yet.
    */
   public long getDocValuesGen() {
     return docValuesGen;
   }
-  
-  /**
-   * Returns the next available generation number
-   * of the live docs file.
-   */
+
+  /** Returns the next available generation number of the live docs file. */
   public long getNextDelGen() {
     return nextWriteDelGen;
   }
 
-  /**
-   * Returns generation number of the live docs file 
-   * or -1 if there are no deletes yet.
-   */
+  /** Returns generation number of the live docs file or -1 if there are no deletes yet. */
   public long getDelGen() {
     return delGen;
   }
-  
-  /**
-   * Returns the number of deleted docs in the segment.
-   */
+
+  /** Returns the number of deleted docs in the segment. */
   public int getDelCount() {
     return delCount;
   }
 
-  /**
-   * Returns the number of only soft-deleted docs.
-   */
+  /** Returns the number of only soft-deleted docs. */
   public int getSoftDelCount() {
     return softDelCount;
   }
 
   void setDelCount(int delCount) {
     if (delCount < 0 || delCount > info.maxDoc()) {
-      throw new IllegalArgumentException("invalid delCount=" + delCount + " (maxDoc=" + info.maxDoc() + ")");
+      throw new IllegalArgumentException(
+          "invalid delCount=" + delCount + " (maxDoc=" + info.maxDoc() + ")");
     }
-    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
+    assert softDelCount + delCount <= info.maxDoc()
+        : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
     this.delCount = delCount;
   }
 
   void setSoftDelCount(int softDelCount) {
     if (softDelCount < 0 || softDelCount > info.maxDoc()) {
-      throw new IllegalArgumentException("invalid softDelCount=" + softDelCount + " (maxDoc=" + info.maxDoc() + ")");
+      throw new IllegalArgumentException(
+          "invalid softDelCount=" + softDelCount + " (maxDoc=" + info.maxDoc() + ")");
     }
-    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
+    assert softDelCount + delCount <= info.maxDoc()
+        : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
     this.softDelCount = softDelCount;
   }
 
@@ -379,7 +374,9 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen, getId());
+    SegmentCommitInfo other =
+        new SegmentCommitInfo(
+            info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen, getId());
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to
@@ -387,14 +384,14 @@ public class SegmentCommitInfo {
     other.nextWriteDelGen = nextWriteDelGen;
     other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
     other.nextWriteDocValuesGen = nextWriteDocValuesGen;
-    
+
     // deep clone
-    for (Entry<Integer,Set<String>> e : dvUpdatesFiles.entrySet()) {
+    for (Entry<Integer, Set<String>> e : dvUpdatesFiles.entrySet()) {
       other.dvUpdatesFiles.put(e.getKey(), new HashSet<>(e.getValue()));
     }
-    
+
     other.fieldInfosFiles.addAll(fieldInfosFiles);
-    
+
     return other;
   }
 
@@ -408,8 +405,9 @@ public class SegmentCommitInfo {
   }
 
   /**
-   * Returns and Id that uniquely identifies this segment commit or <code>null</code> if there is no ID assigned.
-   * This ID changes each time the the segment changes due to a delete, doc-value or field update.
+   * Returns and Id that uniquely identifies this segment commit or <code>null</code> if there is no
+   * ID assigned. This ID changes each time the the segment changes due to a delete, doc-value or
+   * field update.
    */
   public byte[] getId() {
     return id == null ? null : id.clone();

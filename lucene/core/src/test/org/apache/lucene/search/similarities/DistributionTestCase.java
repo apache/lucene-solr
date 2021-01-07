@@ -93,7 +93,7 @@ public abstract class DistributionTestCase extends BaseSimilarityTestCase {
         break;
     }
     final Normalization normalization;
-    switch(random.nextInt(5)) {
+    switch (random.nextInt(5)) {
       case 0:
         normalization = new Normalization.NoNormalization();
         break;
@@ -112,8 +112,7 @@ public abstract class DistributionTestCase extends BaseSimilarityTestCase {
     }
     return new IBSimilarity(getDistribution(), lambda, normalization);
   }
-  
+
   /** return BasicModel under test */
   protected abstract Distribution getDistribution();
-
 }

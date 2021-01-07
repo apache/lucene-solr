@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
 
 /**
- * Runs forceMerge on the index.
- * <br>Other side effects: none.
+ * Runs forceMerge on the index. <br>
+ * Other side effects: none.
  */
 public class ForceMergeTask extends PerfTask {
 
@@ -39,14 +38,14 @@ public class ForceMergeTask extends PerfTask {
     }
     IndexWriter iw = getRunData().getIndexWriter();
     iw.forceMerge(maxNumSegments);
-    //System.out.println("forceMerge called");
+    // System.out.println("forceMerge called");
     return 1;
   }
 
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    maxNumSegments = (int)Double.parseDouble(params);
+    maxNumSegments = (int) Double.parseDouble(params);
   }
 
   @Override

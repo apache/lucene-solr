@@ -16,74 +16,102 @@
  */
 package org.apache.lucene.geo;
 
-
 import java.util.Arrays;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestXYPolygon extends LuceneTestCase {
 
   /** null x not allowed */
   public void testPolygonNullPolyLats() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(null, new float[] { -66, -65, -65, -66, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(null, new float[] {-66, -65, -65, -66, -66});
+            });
     assertTrue(expected.getMessage().contains("x must not be null"));
   }
 
   /** null y not allowed */
   public void testPolygonNullPolyLons() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] {18, 18, 19, 19, 18 }, null);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(new float[] {18, 18, 19, 19, 18}, null);
+            });
     assertTrue(expected.getMessage().contains("y must not be null"));
   }
 
   /** polygon needs at least 3 vertices */
   public void testPolygonLine() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 18 }, new float[] { -66, -65, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(new float[] {18, 18, 18}, new float[] {-66, -65, -66});
+            });
     assertTrue(expected.getMessage().contains("at least 4 polygon points required"));
   }
 
   /** polygon needs same number of latitudes as longitudes */
   public void testPolygonBogus() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 19, 19 }, new float[] { -66, -65, -65, -66, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(new float[] {18, 18, 19, 19}, new float[] {-66, -65, -65, -66, -66});
+            });
     assertTrue(expected.getMessage().contains("must be equal length"));
   }
 
   /** polygon must be closed */
   public void testPolygonNotClosed() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 19, 19, 19 }, new float[] { -66, -65, -65, -66, -67 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(
+                  new float[] {18, 18, 19, 19, 19}, new float[] {-66, -65, -65, -66, -67});
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("it must close itself"));
   }
 
   /** polygon values cannot be NaN */
   public void testPolygonNaN() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 19, Float.NaN, 18 }, new float[] { -66, -65, -65, -66, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(
+                  new float[] {18, 18, 19, Float.NaN, 18}, new float[] {-66, -65, -65, -66, -66});
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value NaN"));
   }
 
   /** polygon values cannot be finite */
   public void testPolygonPositiveInfinite() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 19, 19, 18 }, new float[] { -66, Float.POSITIVE_INFINITY, -65, -66, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(
+                  new float[] {18, 18, 19, 19, 18},
+                  new float[] {-66, Float.POSITIVE_INFINITY, -65, -66, -66});
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value Inf"));
   }
 
   /** polygon values cannot be finite */
   public void testPolygonNegativeInfinite() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPolygon(new float[] { 18, 18, 19, 19, 18 }, new float[] { -66, -65, -65, Float.NEGATIVE_INFINITY, -66 });
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPolygon(
+                  new float[] {18, 18, 19, 19, 18},
+                  new float[] {-66, -65, -65, Float.NEGATIVE_INFINITY, -66});
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value -Inf"));
   }
 
@@ -94,9 +122,9 @@ public class TestXYPolygon extends LuceneTestCase {
     assertEquals(polygon, copy);
     assertEquals(polygon.hashCode(), copy.hashCode());
     XYPolygon otherPolygon = ShapeTestUtil.nextPolygon();
-    if (Arrays.equals(polygon.getPolyX(), otherPolygon.getPolyX()) == false ||
-        Arrays.equals(polygon.getPolyY(), otherPolygon.getPolyY()) == false ||
-        Arrays.equals(polygon.getHoles(), otherPolygon.getHoles()) == false) {
+    if (Arrays.equals(polygon.getPolyX(), otherPolygon.getPolyX()) == false
+        || Arrays.equals(polygon.getPolyY(), otherPolygon.getPolyY()) == false
+        || Arrays.equals(polygon.getHoles(), otherPolygon.getHoles()) == false) {
       assertNotEquals(polygon, otherPolygon);
       assertNotEquals(polygon.hashCode(), otherPolygon.hashCode());
     } else {

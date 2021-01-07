@@ -16,32 +16,28 @@
  */
 package org.apache.lucene.spatial.spatial4j;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.locationtech.spatial4j.context.SpatialContext;
 
-import org.apache.lucene.util.LuceneTestCase;
-
-/**
- * A base test class with utility methods to help test shapes.
- * Extends from RandomizedTest.
- */
+/** A base test class with utility methods to help test shapes. Extends from RandomizedTest. */
 public abstract class RandomizedShapeTestCase extends LuceneTestCase {
 
-  protected SpatialContext ctx;//needs to be set ASAP
+  protected SpatialContext ctx; // needs to be set ASAP
 
   public RandomizedShapeTestCase(SpatialContext ctx) {
     this.ctx = ctx;
   }
 
   @SuppressWarnings("unchecked")
-  public static void checkShapesImplementEquals( Class<?>[] classes ) {
-    for( Class<?> clazz : classes ) {
+  public static void checkShapesImplementEquals(Class<?>[] classes) {
+    for (Class<?> clazz : classes) {
       try {
-        clazz.getDeclaredMethod( "equals", Object.class );
+        clazz.getDeclaredMethod("equals", Object.class);
       } catch (Exception e) {
         fail("Shape needs to define 'equals' : " + clazz.getName());
       }
       try {
-        clazz.getDeclaredMethod( "hashCode" );
+        clazz.getDeclaredMethod("hashCode");
       } catch (Exception e) {
         fail("Shape needs to define 'hashCode' : " + clazz.getName());
       }
@@ -51,5 +47,4 @@ public abstract class RandomizedShapeTestCase extends LuceneTestCase {
   public static double divisible(double v, double divisible) {
     return (int) (Math.round(v / divisible) * divisible);
   }
-
 }

@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.uniformsplit;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.BLOCK_SIZE;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
@@ -34,20 +33,22 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * {@link TermState} serializer which encodes each file pointer as a delta relative
- * to a base file pointer. It differs from {@link Lucene84PostingsWriter#encodeTerm}
- * which encodes each file pointer as a delta relative to the previous file pointer.
- * <p>
- * It automatically sets the base file pointer to the first valid file pointer for
- * doc start FP, pos start FP, pay start FP. These base file pointers have to be
- * {@link #resetBaseStartFP() reset} by the caller before starting to write a new block.
+ * {@link TermState} serializer which encodes each file pointer as a delta relative to a base file
+ * pointer. It differs from {@link Lucene84PostingsWriter#encodeTerm} which encodes each file
+ * pointer as a delta relative to the previous file pointer.
+ *
+ * <p>It automatically sets the base file pointer to the first valid file pointer for doc start FP,
+ * pos start FP, pay start FP. These base file pointers have to be {@link #resetBaseStartFP() reset}
+ * by the caller before starting to write a new block.
  *
  * @lucene.experimental
  */
 public class DeltaBaseTermStateSerializer implements Accountable {
 
-  private static final long RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(DeltaBaseTermStateSerializer.class);
-  private static final long INT_BLOCK_TERM_STATE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(IntBlockTermState.class);
+  private static final long RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(DeltaBaseTermStateSerializer.class);
+  private static final long INT_BLOCK_TERM_STATE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(IntBlockTermState.class);
 
   protected long baseDocStartFP;
   protected long basePosStartFP;
@@ -58,8 +59,8 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   }
 
   /**
-   * Resets the base file pointers to 0.
-   * This method has to be called before starting to write a new block.
+   * Resets the base file pointers to 0. This method has to be called before starting to write a new
+   * block.
    */
   public void resetBaseStartFP() {
     this.baseDocStartFP = 0;
@@ -68,24 +69,24 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   }
 
   /**
-   * @return The base doc start file pointer. It is the file pointer of the first
-   * {@link TermState} written after {@link #resetBaseStartFP()} is called.
+   * @return The base doc start file pointer. It is the file pointer of the first {@link TermState}
+   *     written after {@link #resetBaseStartFP()} is called.
    */
   public long getBaseDocStartFP() {
     return baseDocStartFP;
   }
 
   /**
-   * @return The base position start file pointer. It is the file pointer of the first
-   * {@link TermState} written after {@link #resetBaseStartFP()} is called.
+   * @return The base position start file pointer. It is the file pointer of the first {@link
+   *     TermState} written after {@link #resetBaseStartFP()} is called.
    */
   public long getBasePosStartFP() {
     return basePosStartFP;
   }
 
   /**
-   * @return The base payload start file pointer. It is the file pointer of the first
-   * {@link TermState} written after {@link #resetBaseStartFP()} is called.
+   * @return The base payload start file pointer. It is the file pointer of the first {@link
+   *     TermState} written after {@link #resetBaseStartFP()} is called.
    */
   public long getBasePayStartFP() {
     return basePayStartFP;
@@ -93,14 +94,18 @@ public class DeltaBaseTermStateSerializer implements Accountable {
 
   /**
    * Writes a {@link BlockTermState} to the provided {@link DataOutput}.
-   * <p>
-   * Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(DataOutput, FieldInfo, BlockTermState, boolean)}.
+   *
+   * <p>Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(DataOutput, FieldInfo,
+   * BlockTermState, boolean)}.
    */
-  public void writeTermState(DataOutput termStatesOutput, FieldInfo fieldInfo, BlockTermState termState) throws IOException {
+  public void writeTermState(
+      DataOutput termStatesOutput, FieldInfo fieldInfo, BlockTermState termState)
+      throws IOException {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     boolean hasFreqs = indexOptions != IndexOptions.DOCS;
     boolean hasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    boolean hasOffsets =
+        indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean hasPayloads = fieldInfo.hasPayloads();
 
     IntBlockTermState intTermState = (IntBlockTermState) termState;
@@ -142,22 +147,30 @@ public class DeltaBaseTermStateSerializer implements Accountable {
 
   /**
    * Reads a {@link BlockTermState} from the provided {@link DataInput}.
-   * <p>
-   * Simpler variant of {@link Lucene84PostingsReader#decodeTerm(DataInput, FieldInfo, BlockTermState, boolean)}.
+   *
+   * <p>Simpler variant of {@link Lucene84PostingsReader#decodeTerm(DataInput, FieldInfo,
+   * BlockTermState, boolean)}.
    *
    * @param reuse {@link BlockTermState} to reuse; or null to create a new one.
    */
-  public BlockTermState readTermState(long baseDocStartFP, long basePosStartFP, long basePayStartFP,
-                                      DataInput termStatesInput, FieldInfo fieldInfo, BlockTermState reuse) throws IOException {
+  public BlockTermState readTermState(
+      long baseDocStartFP,
+      long basePosStartFP,
+      long basePayStartFP,
+      DataInput termStatesInput,
+      FieldInfo fieldInfo,
+      BlockTermState reuse)
+      throws IOException {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
     boolean hasFreqs = indexOptions != IndexOptions.DOCS;
     boolean hasPositions = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
 
-    IntBlockTermState intTermState = reuse != null ? reset((IntBlockTermState) reuse) : new IntBlockTermState();
+    IntBlockTermState intTermState =
+        reuse != null ? reset((IntBlockTermState) reuse) : new IntBlockTermState();
 
     intTermState.docFreq = termStatesInput.readVInt();
-    intTermState.totalTermFreq = hasFreqs ?
-        intTermState.docFreq + termStatesInput.readVLong() : intTermState.docFreq;
+    intTermState.totalTermFreq =
+        hasFreqs ? intTermState.docFreq + termStatesInput.readVLong() : intTermState.docFreq;
     assert intTermState.totalTermFreq >= intTermState.docFreq;
 
     if (intTermState.docFreq == 1) {
@@ -168,7 +181,8 @@ public class DeltaBaseTermStateSerializer implements Accountable {
 
     if (hasPositions) {
       intTermState.posStartFP = basePosStartFP + termStatesInput.readVLong();
-      boolean hasOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      boolean hasOffsets =
+          indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (hasOffsets || fieldInfo.hasPayloads()) {
         intTermState.payStartFP = basePayStartFP + termStatesInput.readVLong();
       }
@@ -208,12 +222,10 @@ public class DeltaBaseTermStateSerializer implements Accountable {
     return RAM_USAGE;
   }
 
-  /**
-   * @return The estimated RAM usage of the given {@link TermState}.
-   */
+  /** @return The estimated RAM usage of the given {@link TermState}. */
   public static long ramBytesUsed(TermState termState) {
-    return termState instanceof IntBlockTermState ?
-        INT_BLOCK_TERM_STATE_RAM_USAGE
+    return termState instanceof IntBlockTermState
+        ? INT_BLOCK_TERM_STATE_RAM_USAGE
         : RamUsageEstimator.shallowSizeOf(termState);
   }
 }

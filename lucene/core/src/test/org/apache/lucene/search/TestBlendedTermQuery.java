@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -33,46 +31,32 @@ public class TestBlendedTermQuery extends LuceneTestCase {
   public void testEquals() {
     Term t1 = new Term("foo", "bar");
 
-    BlendedTermQuery bt1 = new BlendedTermQuery.Builder()
-        .add(t1)
-        .build();
-    BlendedTermQuery bt2 = new BlendedTermQuery.Builder()
-        .add(t1)
-        .build();
+    BlendedTermQuery bt1 = new BlendedTermQuery.Builder().add(t1).build();
+    BlendedTermQuery bt2 = new BlendedTermQuery.Builder().add(t1).build();
     QueryUtils.checkEqual(bt1, bt2);
 
-    bt1 = new BlendedTermQuery.Builder()
-        .setRewriteMethod(BlendedTermQuery.BOOLEAN_REWRITE)
-        .add(t1)
-        .build();
-    bt2 = new BlendedTermQuery.Builder()
-        .setRewriteMethod(BlendedTermQuery.DISJUNCTION_MAX_REWRITE)
-        .add(t1)
-        .build();
+    bt1 =
+        new BlendedTermQuery.Builder()
+            .setRewriteMethod(BlendedTermQuery.BOOLEAN_REWRITE)
+            .add(t1)
+            .build();
+    bt2 =
+        new BlendedTermQuery.Builder()
+            .setRewriteMethod(BlendedTermQuery.DISJUNCTION_MAX_REWRITE)
+            .add(t1)
+            .build();
     QueryUtils.checkUnequal(bt1, bt2);
 
     Term t2 = new Term("foo", "baz");
 
-    bt1 = new BlendedTermQuery.Builder()
-        .add(t1)
-        .add(t2)
-        .build();
-    bt2 = new BlendedTermQuery.Builder()
-        .add(t2)
-        .add(t1)
-        .build();
+    bt1 = new BlendedTermQuery.Builder().add(t1).add(t2).build();
+    bt2 = new BlendedTermQuery.Builder().add(t2).add(t1).build();
     QueryUtils.checkEqual(bt1, bt2);
 
     float boost1 = random().nextFloat();
     float boost2 = random().nextFloat();
-    bt1 = new BlendedTermQuery.Builder()
-        .add(t1, boost1)
-        .add(t2, boost2)
-        .build();
-    bt2 = new BlendedTermQuery.Builder()
-        .add(t2, boost2)
-        .add(t1, boost1)
-        .build();
+    bt1 = new BlendedTermQuery.Builder().add(t1, boost1).add(t2, boost2).build();
+    bt2 = new BlendedTermQuery.Builder().add(t2, boost2).add(t1, boost1).build();
     QueryUtils.checkEqual(bt1, bt2);
   }
 
@@ -81,8 +65,12 @@ public class TestBlendedTermQuery extends LuceneTestCase {
     Term t1 = new Term("foo", "bar");
     assertEquals("Blended(foo:bar)", new BlendedTermQuery.Builder().add(t1).build().toString());
     Term t2 = new Term("foo", "baz");
-    assertEquals("Blended(foo:bar foo:baz)", new BlendedTermQuery.Builder().add(t1).add(t2).build().toString());
-    assertEquals("Blended((foo:bar)^4.0 (foo:baz)^3.0)", new BlendedTermQuery.Builder().add(t1, 4).add(t2, 3).build().toString());
+    assertEquals(
+        "Blended(foo:bar foo:baz)",
+        new BlendedTermQuery.Builder().add(t1).add(t2).build().toString());
+    assertEquals(
+        "Blended((foo:bar)^4.0 (foo:baz)^3.0)",
+        new BlendedTermQuery.Builder().add(t1, 4).add(t2, 3).build().toString());
   }
 
   public void testBlendedScores() throws IOException {
@@ -101,11 +89,12 @@ public class TestBlendedTermQuery extends LuceneTestCase {
 
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    BlendedTermQuery query = new BlendedTermQuery.Builder()
-        .setRewriteMethod(new BlendedTermQuery.DisjunctionMaxRewrite(0f))
-        .add(new Term("f", "a"))
-        .add(new Term("f", "b"))
-        .build();
+    BlendedTermQuery query =
+        new BlendedTermQuery.Builder()
+            .setRewriteMethod(new BlendedTermQuery.DisjunctionMaxRewrite(0f))
+            .add(new Term("f", "a"))
+            .add(new Term("f", "b"))
+            .build();
 
     TopDocs topDocs = searcher.search(query, 20);
     assertEquals(11, topDocs.totalHits.value);
@@ -118,5 +107,4 @@ public class TestBlendedTermQuery extends LuceneTestCase {
     w.close();
     dir.close();
   }
-
 }

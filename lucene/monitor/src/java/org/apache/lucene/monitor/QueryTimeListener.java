@@ -19,30 +19,28 @@ package org.apache.lucene.monitor;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.search.Query;
 
-/**
- * Notified of the time it takes to run individual queries against a set of documents
- */
+/** Notified of the time it takes to run individual queries against a set of documents */
 public interface QueryTimeListener {
 
-  /**
-   * How long it took to run a particular query
-   */
+  /** How long it took to run a particular query */
   void logQueryTime(String queryId, long timeInNanos);
 
   /**
    * A wrapping matcher factory to log query times to a QueryTimeListener
-   * @param factory   a matcher factory to use for the actual matching
-   * @param listener  the QueryTimeListener
+   *
+   * @param factory a matcher factory to use for the actual matching
+   * @param listener the QueryTimeListener
    */
-  static <T extends QueryMatch> MatcherFactory<T> timingMatcher(MatcherFactory<T> factory, QueryTimeListener listener) {
+  static <T extends QueryMatch> MatcherFactory<T> timingMatcher(
+      MatcherFactory<T> factory, QueryTimeListener listener) {
     return searcher -> {
       CandidateMatcher<T> matcher = factory.createMatcher(searcher);
       return new CandidateMatcher<T>(searcher) {
         @Override
-        protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+        protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
+            throws IOException {
           long t = System.nanoTime();
           matcher.matchQuery(queryId, matchQuery, metadata);
           t = System.nanoTime() - t;

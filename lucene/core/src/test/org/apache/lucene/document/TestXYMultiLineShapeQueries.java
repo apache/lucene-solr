@@ -18,12 +18,14 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYLine;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYLine} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed arrays of
+ * cartesian {@link XYLine} types
+ */
 public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
   @Override
   protected ShapeType getShapeType() {
@@ -34,7 +36,7 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
   protected XYLine[] nextShape() {
     int n = random().nextInt(4) + 1;
     XYLine[] lines = new XYLine[n];
-    for (int i =0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       lines[i] = nextLine();
     }
     return lines;
@@ -60,6 +62,7 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
 
   protected class MultiLineValidator extends Validator {
     TestXYLineShapeQueries.LineValidator LINEVALIDATOR;
+
     MultiLineValidator(Encoder encoder) {
       super(encoder);
       LINEVALIDATOR = new TestXYLineShapeQueries.LineValidator(encoder);
@@ -74,7 +77,7 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      XYLine[] lines = (XYLine[])shape;
+      XYLine[] lines = (XYLine[]) shape;
       for (XYLine l : lines) {
         boolean b = LINEVALIDATOR.testComponentQuery(query, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
@@ -87,7 +90,8 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
           return false;
         }
       }
-      return queryRelation != ShapeField.QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
+      return queryRelation != ShapeField.QueryRelation.INTERSECTS
+          && queryRelation != QueryRelation.CONTAINS;
     }
   }
 

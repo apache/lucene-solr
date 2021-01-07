@@ -19,14 +19,9 @@ package org.apache.lucene.analysis.ko.dict;
 import org.apache.lucene.analysis.ko.POS.Tag;
 import org.apache.lucene.analysis.ko.POS.Type;
 
-/**
- * Dictionary interface for retrieving morphological data
- * by id.
- */
+/** Dictionary interface for retrieving morphological data by id. */
 public interface Dictionary {
-  /**
-   * A morpheme extracted from a compound token.
-   */
+  /** A morpheme extracted from a compound token. */
   class Morpheme {
     public final Tag posTag;
     public final String surfaceForm;
@@ -37,47 +32,35 @@ public interface Dictionary {
     }
   }
 
-  /**
-   * Get left id of specified word
-   */
+  /** Get left id of specified word */
   int getLeftId(int wordId);
-  
-  /**
-   * Get right id of specified word
-   */
+
+  /** Get right id of specified word */
   int getRightId(int wordId);
-  
-  /**
-   * Get word cost of specified word
-   */
+
+  /** Get word cost of specified word */
   int getWordCost(int wordId);
 
-  /**
-   * Get the {@link Type} of specified word (morpheme, compound, inflect or pre-analysis)
-   */
+  /** Get the {@link Type} of specified word (morpheme, compound, inflect or pre-analysis) */
   Type getPOSType(int wordId);
 
   /**
    * Get the left {@link Tag} of specfied word.
    *
-   * For {@link Type#MORPHEME} and {@link Type#COMPOUND} the left and right POS are the same.
+   * <p>For {@link Type#MORPHEME} and {@link Type#COMPOUND} the left and right POS are the same.
    */
   Tag getLeftPOS(int wordId);
 
   /**
    * Get the right {@link Tag} of specfied word.
    *
-   * For {@link Type#MORPHEME} and {@link Type#COMPOUND} the left and right POS are the same.
+   * <p>For {@link Type#MORPHEME} and {@link Type#COMPOUND} the left and right POS are the same.
    */
   Tag getRightPOS(int wordId);
 
-  /**
-   * Get the reading of specified word (mainly used for Hanja to Hangul conversion).
-   */
+  /** Get the reading of specified word (mainly used for Hanja to Hangul conversion). */
   String getReading(int wordId);
 
-  /**
-   * Get the morphemes of specified word (e.g. 가깝으나: 가깝 + 으나).
-   */
+  /** Get the morphemes of specified word (e.g. 가깝으나: 가깝 + 으나). */
   Morpheme[] getMorphemes(int wordId, char[] surfaceForm, int off, int len);
 }

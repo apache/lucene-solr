@@ -29,7 +29,8 @@ public class TestTermStates extends LuceneTestCase {
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     w.addDocument(new Document());
     IndexReader r = w.getReader();
-    TermStates states = TermStates.build(r.getContext(), new Term("foo", "bar"), random().nextBoolean());
+    TermStates states =
+        TermStates.build(r.getContext(), new Term("foo", "bar"), random().nextBoolean());
     assertEquals("TermStates\n  state=null\n", states.toString());
     IOUtils.close(r, w, dir);
   }
