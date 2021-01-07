@@ -720,12 +720,12 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    'class':'solr.TextField',\n" +
         "    'analyzer' : {\n" +
         "        'charFilters' : [{\n" +
-        "                'name':'patternReplace',\n" +
+        "                'class':'solr.PatternReplaceCharFilterFactory',\n" +
         "                'replacement':'$1$1',\n" +
         "                'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
         "            }],\n" +
-        "        'tokenizer' : { 'name':'whitespace' },\n" +
-        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "        'tokenizer' : { 'class':'solr.WhitespaceTokenizerFactory' },\n" +
+        "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n" +
         "    }\n"+
         "}}";
 
@@ -779,8 +779,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
         "    'name' : 'myNewTextField',\n" +
         "    'class':'solr.TextField',\n" +
         "    'analyzer' : {\n" +
-        "        'tokenizer' : { 'name':'whitespace' },\n" +
-        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "        'tokenizer' : { 'class':'solr.WhitespaceTokenizerFactory' },\n" +
+        "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n" +
         "    }\n"+
         "}}";
 
