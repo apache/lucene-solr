@@ -224,12 +224,12 @@ public final class GeoEncodingUtils {
   }
 
   private static Grid createSubBoxes(
-      double shapeMinlat,
+      double shapeMinLat,
       double shapeMaxLat,
       double shapeMinLon,
       double shapeMaxLon,
       Function<Rectangle, Relation> boxToRelation) {
-    final int minLat = encodeLatitudeCeil(shapeMinlat);
+    final int minLat = encodeLatitudeCeil(shapeMinLat);
     final int maxLat = encodeLatitude(shapeMaxLat);
     final int minLon = encodeLongitudeCeil(shapeMinLon);
     final int maxLon = encodeLongitude(shapeMaxLon);
