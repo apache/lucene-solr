@@ -16,7 +16,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 Streaming Expressions has support for reading, parsing, transforming, visualizing
 and loading CSV and TSV formatted data. These functions are designed to cut down the
 time spent on data preparation and allow users to begin data exploration before the data is
@@ -25,21 +24,21 @@ loaded into Solr.
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
-$SOLR_HOME. The `cat` function takes two parameters. The first parameter is a comma
-delimited list of paths. If the path list contains directories, `cat` will crawl
-all the files in the directory and sub-directories. If the path list contains only
-files `cat` will read just the specific files.
+$SOLR_HOME. The `cat` function takes two parameters.
 
-The second parameter, *maxLines*, tells `cat` how many lines to read in total. If
-*maxLines* is not provided, `cat` will read all lines from each file it crawls.
+The first parameter is a comma-delimited list of paths.
+If the path list contains directories, `cat` will crawl all the files in the directory and sub-directories.
+If the path list contains only files `cat` will read just the specific files.
 
-The `cat` function reads each line (up to maxLines) in the crawled files and for each line
-emits a tuple with two fields:
+The second parameter, `maxLines`, tells `cat` how many lines to read in total.
+If `maxLines` is not provided, `cat` will read all lines from each file it crawls.
 
-* line: The text in the line.
-* file: The relative path of the file under $SOLR_HOME.
+The `cat` function reads each line (up to `maxLines`) in the crawled files and for each line emits a tuple with two fields:
 
-Below is an example of `cat` on the iris.csv file with a maxLines of 5:
+* `line`: The text in the line.
+* `file`: The relative path of the file under $SOLR_HOME.
+
+Below is an example of `cat` on the iris.csv file with a `maxLines` of `5`:
 
 [source,text]
 ----
@@ -154,9 +153,9 @@ The example below shows the output of the `parseCSV` function visualized as a ta
 
 image::images/math-expressions/csvtable.png[]
 
-Columns from the table can then be visualized using one of Apache Zeppelins
-visualizations. The example below shows a scatter plot of the petal_length and petal_width
-grouped by species.
+Columns from the table can then be visualized using one of Apache Zeppelin's
+visualizations. The example below shows a scatter plot of the `petal_length` and `petal_width`
+grouped by `species`.
 
 image::images/math-expressions/csv.png[]
 
@@ -178,12 +177,11 @@ image::images/math-expressions/csvselect.png[]
 == Loading
 
 When the data is ready to load, the `update` function can be used to send the
-data to a Solr Cloud collection for indexing. The `update` function adds documents to Solr in batches
-and returns a tuple for each batch with summary information about the batch and load.
+data to a SolrCloud collection for indexing.
+The `update` function adds documents to Solr in batches and returns a tuple for each batch with summary information about the batch and load.
 
-In the example below the update expression is run using Zeppelin-Solr because the
-data set is small. For larger loads its best to run the load from a curl command
-where the output of the `update` function can be spooled to disk.
+In the example below the update expression is run using Zeppelin-Solr because the data set is small.
+For larger loads its best to run the load from a curl command where the output of the `update` function can be spooled to disk.
 
 image::images/math-expressions/update.png[]
 
@@ -191,7 +189,7 @@ image::images/math-expressions/update.png[]
 
 Streaming Expressions and Math Expression provide a powerful set of functions
 for transforming data. The section below shows some useful transformations that
-can be applied while analyzing, visualizing and loading CSV and TSV files.
+can be applied while analyzing, visualizing, and loading CSV and TSV files.
 
 === Unique IDs
 
@@ -220,7 +218,7 @@ image::images/math-expressions/selectuuid.png[]
 The `recNum` function can be used inside of a `select` function to add a record number
 to each tuple. The record number is useful for tracking location in the result set
 and can be used for filtering strategies such as skipping, paging and striding described in
-the *filtering* section below.
+the <<Filtering Results>> section below.
 
 The example below shows the syntax of the `recNum` function:
 
@@ -229,8 +227,8 @@ image::images/math-expressions/recNum.png[]
 
 === Parsing Dates
 
-The `dateTime` function can be used to parse dates into ISO 8601 format
-needed for loading into a Solr date time field.
+The `dateTime` function can be used to parse dates into the ISO-8601 format
+needed for loading into a Solr date field.
 
 We can first inspect the format of the data time field in the CSV file:
 
@@ -261,11 +259,11 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Then we can use the dateTime function to format the datetime and
-map it to a Solr datetime field.
+Then we can use the `dateTime` function to format the datetime and
+map it to a Solr date field.
 
 The `dateTime` function takes three parameters. The field in the data
-with the date string, a template to parse the date using a Java SimpleDateFormat template,
+with the date string, a template to parse the date using a Java https://docs.oracle.com/javase/9/docs/api/java/text/SimpleDateFormat.html[`SimpleDateFormat` template],
 and an optional time zone.
 
 If the time zone is not present the time zone defaults to GMT time unless
@@ -303,7 +301,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === String Manipulation
 
-The `upper`, `lower`, `split`, `valueAt`, `trim` and `concat` functions can be used to manipulate
+The `upper`, `lower`, `split`, `valueAt`, `trim`, and `concat` functions can be used to manipulate
 strings inside of the `select` function.
 
 The example below shows the `upper` function used to upper case the *species*
@@ -316,7 +314,7 @@ a delimiter. This can be used to create multi-value fields from fields
 with an internal delimiter.
 
 The example below demonstrates this with a direct call to
-the /stream handler:
+the `/stream` handler:
 
 [source,text]
 ----
@@ -371,10 +369,10 @@ image::images/math-expressions/valueat.png[]
 
 === Filtering Results
 
-The `having` function can be used to filter records. Filtering can be used to systematically
-explore specific record sets before indexing or to filter records that are sent for indexing.
-The `having` function wraps another stream and applies
-a boolean function to each tuple. If the boolean logic function returns true the tuple is returned.
+The `having` function can be used to filter records.
+Filtering can be used to systematically explore specific record sets before indexing or to filter records that are sent for indexing.
+The `having` function wraps another stream and applies a boolean function to each tuple.
+If the boolean logic function returns true the tuple is returned.
 
 The following boolean functions are supported: `eq`, `gt`, `gteq`, `lt`, `lteq`, `matches`, `and`, `or`,
 `not`, `notNull`, `isNull`.
@@ -422,15 +420,14 @@ image::images/math-expressions/matches.png[]
 In most cases nulls do not need to be handled directly unless there is specific logic needed
 to handle nulls during the load.
 
-The `select` function does not output fields that contain a null value. This means
-as nulls are encountered in the data the fields are not included in the tuples.
+The `select` function does not output fields that contain a null value.
+This means as nulls are encountered in the data the fields are not included in the tuples.
 
-The string manipulation functions all return null if they encounter a null. This means
-the null will be passed through to the `select` function and the fields with nulls
-will simply be left off the record.
+The string manipulation functions all return null if they encounter a null.
+This means the null will be passed through to the `select` function and the fields with nulls will simply be left off the record.
 
-In certain scenarios it can be important to directly filter or replace nulls. The sections below cover these
-scenarios.
+In certain scenarios it can be important to directly filter or replace nulls.
+The sections below cover these scenarios.
 
 ==== Filtering Nulls
 
@@ -454,17 +451,17 @@ The `if` function and `isNull`, `notNull` functions can be combined to replace n
 In the example below the `if` function applies the `isNull` boolean expression to two different fields.
 
 In the first example it replaces null *petal_width* values with 0, and returns the *petal_width* if present.
-In the second example it replace null *field1* values with the string literal "NA" and returns *field1* if present.
+In the second example it replaces null *field1* values with the string literal "NA" and returns *field1* if present.
 
 image::images/math-expressions/ifIsNull.png[]
 
 === Text Analysis
 
 The `analyze` function can be used from inside a `select` function to analyze
-a text field with a Lucene/Solr analyzer. The output of `analyze` is a
-list of analyzed tokens which can be added to each tuple as a multi-valued field.
+a text field with a Lucene/Solr analyzer.
+The output of `analyze` is a list of analyzed tokens which can be added to each tuple as a multi-valued field.
 
-The multi-value field can then be sent to Solr for indexing or the `cartesianProduct`
+The multi-valued field can then be sent to Solr for indexing or the `cartesianProduct`
 function can be used to expand the list of tokens to a stream of tuples.
 
 There are a number of interesting use cases for the `analyze` function:

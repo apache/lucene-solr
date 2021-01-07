@@ -1,5 +1,6 @@
 = Streaming Expressions and Math Expressions
 :page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry, logs
+:page-show-toc: false
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file

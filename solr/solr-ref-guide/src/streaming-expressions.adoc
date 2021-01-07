@@ -17,8 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Streaming Expressions exposes the capabilities of Solr Cloud as composable functions. These functions provide a system for
-searching, transforming, analyzing and visualizing data stored in Solr Cloud collections.
+Streaming Expressions exposes the capabilities of SolrCloud as composable functions. These functions provide a system for
+searching, transforming, analyzing and visualizing data stored in SolrCloud collections.
 
 At a high level there a four main capabilities that will be explored in the documentation:
 
