@@ -456,6 +456,9 @@ public class TestLatLonShape extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document document = new Document();
     Point p = GeoTestUtil.nextPoint();
+    double qLat = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(p.getLat()));
+    double qLon = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(p.getLon()));
+    p = new Point(qLat, qLon);
     Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.getLat(), p.getLon());
     for (Field f : fields) {
       document.add(f);

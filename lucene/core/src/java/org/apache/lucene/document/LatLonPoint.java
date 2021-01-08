@@ -25,6 +25,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
@@ -292,21 +293,25 @@ public class LatLonPoint extends Field {
    * @see Polygon
    */
   public static Query newPolygonQuery(String field, Polygon... polygons) {
-    return newGeometryQuery(field, polygons);
+    return newGeometryQuery(field, ShapeField.QueryRelation.INTERSECTS, polygons);
   }
 
   /**
-   * Create a query for matching one or more geometries. Line geometries are not supported.
+   * Create a query for matching one or more geometries against the provided {@link
+   * ShapeField.QueryRelation}. Line geometries are not supported for WITHIN relationship.
    *
    * @param field field name. must not be null.
+   * @param queryRelation The relation the points needs to satisfy with the provided geometries,
+   *     must not be null.
    * @param latLonGeometries array of LatLonGeometries. must not be null or empty.
    * @return query matching points within at least one geometry.
-   * @throws IllegalArgumentException if {@code field} is null, {@code latLonGeometries} is null,
-   *     empty or contain a null or line geometry.
+   * @throws IllegalArgumentException if {@code field} is null, {@code queryRelation} is null,
+   *     {@code latLonGeometries} is null, empty or contain a null.
    * @see LatLonGeometry
    */
-  public static Query newGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
-    if (latLonGeometries.length == 1) {
+  public static Query newGeometryQuery(
+      String field, ShapeField.QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
+    if (queryRelation == ShapeField.QueryRelation.INTERSECTS && latLonGeometries.length == 1) {
       if (latLonGeometries[0] instanceof Rectangle) {
         final Rectangle rect = (Rectangle) latLonGeometries[0];
         return newBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
@@ -316,7 +321,24 @@ public class LatLonPoint extends Field {
         return newDistanceQuery(field, circle.getLat(), circle.getLon(), circle.getRadius());
       }
     }
-    return new LatLonPointInGeometryQuery(field, latLonGeometries);
+    if (queryRelation == ShapeField.QueryRelation.CONTAINS) {
+      return makeContainsGeometryQuery(field, latLonGeometries);
+    }
+    return new LatLonPointQuery(field, queryRelation, latLonGeometries);
+  }
+
+  private static Query makeContainsGeometryQuery(String field, LatLonGeometry... latLonGeometries) {
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    for (LatLonGeometry geometry : latLonGeometries) {
+      if ((geometry instanceof Point) == false) {
+        return new MatchNoDocsQuery(
+            "Contains LatLonPoint.newGeometryQuery with non-point geometries");
+      }
+      builder.add(
+          new LatLonPointQuery(field, ShapeField.QueryRelation.CONTAINS, geometry),
+          BooleanClause.Occur.MUST);
+    }
+    return new ConstantScoreQuery(builder.build());
   }
 
   /**
