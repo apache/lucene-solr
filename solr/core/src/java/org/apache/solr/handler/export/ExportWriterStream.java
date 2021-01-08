@@ -148,7 +148,9 @@ public class ExportWriterStream extends TupleStream implements Expressible {
             long startExchangeBuffers = System.nanoTime();
             exportBuffers.exchangeBuffers();
             long endExchangeBuffers = System.nanoTime();
-            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000)));
+            if(log.isDebugEnabled()) {
+              log.debug("Waited for reader thread:{}",  Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
+            }
             exchanged = true;
           } catch (TimeoutException e) {
             log.debug("--- ews timeout loop");

@@ -74,7 +74,6 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
-import org.eclipse.jetty.util.IO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -419,7 +418,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
             long endExchangeBuffers = System.nanoTime();
-            log.debug("Waited for reader thread:"+Long.toString(((endExchangeBuffers-startExchangeBuffers)/1000000)));
+            if(log.isDebugEnabled()) {
+              log.debug("Waited for reader thread {}:", Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
+            }
           } finally {
           }
           buffer = buffers.getOutputBuffer();
