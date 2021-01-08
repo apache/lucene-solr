@@ -1,9 +1,6 @@
-ARG SOLR_PACKAGE_IMAGE
 ARG BASE_IMAGE=openjdk:11-jre-slim
 
-FROM $SOLR_PACKAGE_IMAGE as solr_package
-
-FROM $BASE_IMAGE as runtime
+FROM $BASE_IMAGE
 
 LABEL maintainer="The Apache Lucene/Solr Project"
 LABEL repository="https://github.com/apache/lucene-solr"
@@ -42,7 +39,7 @@ ARG SOLR_VERSION
 # Used by solr-fg
 ENV SOLR_VERSION $SOLR_VERSION
 
-COPY --from=solr_package "/opt/solr-$SOLR_VERSION.tgz" "/opt/solr-$SOLR_VERSION.tgz"
+COPY releases/ /opt/
 
 RUN set -ex; \
   tar -C /opt --extract --file "/opt/solr-$SOLR_VERSION.tgz" && \

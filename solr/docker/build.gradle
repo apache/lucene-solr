@@ -29,7 +29,7 @@ def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCK
 def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
 configurations {
-  packageDockerImage {
+  packaging {
     canBeResolved = true
   }
   dockerImage {
@@ -38,7 +38,7 @@ configurations {
 }
 
 dependencies {
-  packageDockerImage project(path: ":solr:docker:package", configuration: 'packageDockerImage')
+  packaging project(path: ":solr:packaging", configuration: 'archives')
 
   dockerImage files("$buildDir/image-id") {
     builtBy 'dockerBuild'
@@ -49,9 +49,14 @@ task dockerTar(type: Tar) {
   group = 'Docker'
   description = 'Package docker context to prepare for docker build'
 
+  dependsOn configurations.packaging
   into('scripts') {
     from file('scripts')
     fileMode 755
+  }
+  into('releases') {
+    from configurations.packaging
+    include '*.tgz'
   }
   from file('Dockerfile')
   destinationDirectory = file('build/distributions')
@@ -59,7 +64,7 @@ task dockerTar(type: Tar) {
   compression = Compression.GZIP
 }
 
-task dockerBuild(dependsOn: [tasks.dockerTar, configurations.packageDockerImage]) {
+task dockerBuild(dependsOn: [tasks.dockerTar]) {
   group = 'Docker'
   description = 'Build Solr docker image'
 
@@ -71,7 +76,7 @@ task dockerBuild(dependsOn: [tasks.dockerTar, configurations.packageDockerImage]
       commandLine "docker", "build",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${baseDockerImage}",
-              "--build-arg", "SOLR_PACKAGE_IMAGE=${configurations.packageDockerImage.singleFile.text}",
+              //"--build-arg", "SOLR_PACKAGE_IMAGE=${configurations.packageDockerImage.singleFile.text}",
               "--build-arg", "SOLR_VERSION=${version}",
               "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
               "-"
@@ -79,12 +84,6 @@ task dockerBuild(dependsOn: [tasks.dockerTar, configurations.packageDockerImage]
   }
 
   outputs.files(imageIdFile)
-}
-
-artifacts {
-  dockerImage(tasks.dockerBuild.outputs.files.singleFile) {
-    builtBy(tasks.dockerBuild)
-  }
 }
 
 task dockerTag(dependsOn: tasks.dockerBuild) {
@@ -121,49 +120,11 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   }
 }
 
-abstract class DockerTestSuite extends DefaultTask {
-  private String solrImageName = null;
-  private List<String> tests = new ArrayList<>();
-  private List<String> ignore = new ArrayList<>();
-
-  @OutputDirectory
-  abstract DirectoryProperty getOutputDir()
-
-  public void setSolrImageName(String solrImageName) {
-    this.solrImageName = solrImageName
-  }
-
-  public String getSolrImageName() {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(solrImageName), "solrImageName is a required dockerTests configuration item.")
-    return solrImageName
-  }
-
-  @Option(option = "tests", description = "Only run these specified tests, comma separated.")
-  public void setTests(List<String> tests) {
-    this.tests = tests;
-  }
-
-  @Input
-  public List<String> getTests() {
-    return tests;
-  }
-
-  @Option(option = "ignore", description = "Ignore these tests, comma separated.")
-  public void setIgnore(List<String> ignore) {
-    this.ignore = ignore;
-  }
-
-  @Input
-  public List<String> getIgnore() {
-    return ignore;
-  }
-
-  @TaskAction
-  void execute() {
-  }
-}
 
 task testDocker(dependsOn: tasks.dockerBuild) {
+  group = 'Docker'
+  description = 'Test Solr docker image'
+
   doLast {
     def solrImageName = tasks.dockerBuild.outputs.files.singleFile.text
 
@@ -190,5 +151,11 @@ task testDocker(dependsOn: tasks.dockerBuild) {
         }
       }
     }
+  }
+}
+
+artifacts {
+  dockerImage(tasks.dockerBuild.outputs.files.singleFile) {
+    builtBy(tasks.dockerBuild)
   }
 }
