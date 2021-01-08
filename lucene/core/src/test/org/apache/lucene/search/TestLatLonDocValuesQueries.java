@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonDocValuesField;
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -47,7 +48,8 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, geometry);
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, ShapeField.QueryRelation.INTERSECTS, geometry);
   }
 
   @Override
