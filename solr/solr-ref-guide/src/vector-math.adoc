@@ -54,16 +54,16 @@ When this expression is sent to the `/stream` handler it responds with a JSON ar
 
 == Visualization
 
-The *zplot* function can be used to visualize vectors using Zeppelin-Solr.
+The `zplot` function can be used to visualize vectors using Zeppelin-Solr.
 
 Let's first see what happens when we visualize the array function as a table.
 
 image::images/math-expressions/array.png[]
 
-It appears as one row with a comma delimited list of values. You'll find that you can't visualize this output
+It appears as one row with a comma-delimited list of values. You'll find that you can't visualize this output
 using any of the plotting tools.
 
-To plot the array you need the *zplot* function. Let's first look at how zplot output looks like in json format.
+To plot the array you need the `zplot` function. Let's first look at how `zplot` output looks like in JSON format.
 
 [source,text]
 ----
@@ -95,7 +95,7 @@ When this expression is sent to the `/stream` handler it responds with a JSON ar
 }
 ----
 
-zplot has turned the array into three tuples with the field *x*.
+`zplot` has turned the array into three tuples with the field `x`.
 
 Let's add another array:
 
@@ -132,13 +132,13 @@ When this expression is sent to the `/stream` handler it responds with a JSON ar
 }
 ----
 
-Now we have three tuples with *x* and *y* fields.
+Now we have three tuples with `x` and `y` fields.
 
 Let's see how Zeppelin-Solr handles this output in table format:
 
 image::images/math-expressions/xy.png[]
 
-Now that we have *x* and *y* columns defined we can simply switch to one of the line charts
+Now that we have `x` and `y` columns defined we can simply switch to one of the line charts
 and plugin the fields to plot using the chart settings:
 
 image::images/math-expressions/line1.png[]
@@ -279,7 +279,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Getting Values By Index
 
-Values from a vector can be retrieved by index with the *valueAt* function.
+Values from a vector can be retrieved by index with the `valueAt` function.
 
 [source,text]
 ----
@@ -307,7 +307,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Sequences
 
-The *sequence* function can be used to generate a sequence of numbers as an array.
+The `sequence` function can be used to generate a sequence of numbers as an array.
 The example below returns a sequence of 10 numbers, starting from 0, with a stride of 2.
 
 [source,text]
@@ -345,7 +345,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The *natural* function can be used to create a sequence of *natural* numbers starting from zero.
+The `natural` function can be used to create a sequence of *natural* numbers starting from zero.
 Natural numbers are positive integers.
 
 The example below creates a sequence starting at zero with all natural numbers up to, but not including
@@ -486,8 +486,8 @@ When this expression is sent to the `/stream` handler it responds with:
 
 == Scalar Vector Math
 
-Scalar vector math functions add, subtract, multiply or divide a scalar value with every value in a vector.
-The following functions perform these operations: `scalarAdd`, `scalarSubtract`, `scalarMultiply`
+Scalar vector math functions add, subtract, multiply, or divide a scalar value with every value in a vector.
+The following functions perform these operations: `scalarAdd`, `scalarSubtract`, `scalarMultiply`,
 and `scalarDivide`.
 
 Below is an example of the `scalarMultiply` function, which multiplies the scalar value `3` with

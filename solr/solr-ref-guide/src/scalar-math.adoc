@@ -94,13 +94,13 @@ The `select` function can also use math expressions to compute
 new values and add them to the outgoing tuples.
 
 In the example below the `select` expression is wrapping a search
-expression. The `select` function is selecting the *response_d* field
-and computing a new field called *new_response* using the `mult` math
+expression. The `select` function is selecting the `response_d` field
+and computing a new field called `new_response` using the `mult` math
 expression.
 
 The first parameter of the `mult` expression is the *response_d* field.
 The second parameter is the scalar value 10. This multiplies the value
-of the *response_d* field in each tuple by 10.
+of the `response_d` field in each tuple by 10.
 
 [source,text]
 ----
