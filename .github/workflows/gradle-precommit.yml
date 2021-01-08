@@ -32,6 +32,9 @@ jobs:
           ${{ runner.os }}-gradle-precommit-
           ${{ runner.os }}-gradle-
 
+    - name: Initialize gradle settings
+      run: ./gradlew localSettings
+
     - name: Build with Gradle
       run: ./gradlew check -x test
 
