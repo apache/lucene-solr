@@ -22,18 +22,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
@@ -57,18 +53,11 @@ import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.ShardParams.SHARDS_PREFERENCE;
-import static org.apache.solr.common.params.ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION;
 
 /**
  * The FacetStream abstracts the output from the JSON facet API as a Stream of Tuples. This provides an alternative to the
@@ -897,41 +886,17 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public TupleStream[] parallelize(List<String> partitions) throws IOException {
-    final int numPartitions = partitions.size();
 
-    // prefer a different node for each collection if possible as we don't want the same remote node
-    // being the coordinator if possible, otherwise, our plist isn't distributing the load as well
-    final Set<String> preferredNodes = new HashSet<>(Math.max((int) (numPartitions / .75f) + 1, 16));
+    // TODO: As a future improvement, we may want to ensure each item in the plist is sent to a different node
+    // in the cluster, however, this approach is mainly for large clusters, so the chance of a single node receiving
+    // multiple plist requests is low assuming our LB logic works as expected
 
-    // collect the replicas for each partition in parallel as looking up cluster state for each partition can be slow
-    // if state is not cached ...
-    final ExecutorService runInParallel =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("FacetStream"));
-
-    List<Future<FacetStream>> facetStreamFutures = partitions.stream().sorted().map(collectionName -> runInParallel.submit(() -> {
-      SolrParams params = this.params;
-
-      // if there's a preference already set, we don't look for a preferred server
-      if (params.get(SHARDS_PREFERENCE) == null) {
-        // careful, getReplicas is slow if not cached ...
-        for (Replica r : getReplicas(this.zkHost, collectionName, this.context, this.params)) {
-          if (!preferredNodes.contains(r.node)) {
-            // we haven't preferred this node yet, so choose it for this collection,
-            // other collections in the list will have to prefer another
-            preferredNodes.add(r.node);
-            // need to make a copy of the params so that we can vary the preferred server per collection
-            String preferredServerUrl = ZkCoreNodeProps.getCoreUrl(r.getBaseUrl(), collectionName);
-            params = new ModifiableSolrParams(params)
-                .set(SHARDS_PREFERENCE, SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + preferredServerUrl);
-            break;
-          }
-        }
-      }
-
-      // need to call init with all of this' initialized fields, just changing the collectionName
+    TupleStream[] streams = new TupleStream[partitions.size()];
+    for (int p = 0; p < partitions.size(); p++) {
       FacetStream cloned = new FacetStream();
-      cloned.init(collectionName,
-          params,
+      // need to call init with all of this' initialized fields, just changing the collectionName
+      cloned.init(partitions.get(p),
+          this.params,
           this.buckets,
           this.bucketSorts,
           this.metrics,
@@ -943,50 +908,15 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
           this.serializeBucketSizeLimit,
           this.overfetch,
           zkHost);
-      return cloned;
-    })).collect(Collectors.toList());
-
-    // collect all the results from the parallel operation
-    final List<TupleStream> parallelStreams = new ArrayList<>(numPartitions);
-    try {
-      for (Future<FacetStream> f : facetStreamFutures) {
-        FacetStream fs = f.get();
-        if (fs != null) {
-          parallelStreams.add(fs);
-        }
-      }
-    } catch (Exception e) {
-      Throwable rootCause = ExceptionUtils.getRootCause(e);
-      if (rootCause instanceof IOException) {
-        throw (IOException)rootCause;
-      } else {
-        throw new IOException(e);
-      }
-    } finally {
-      runInParallel.shutdown();
+      streams[p] = cloned;
     }
-
-    return parallelStreams.toArray(new TupleStream[0]);
+    return streams;
   }
 
   @Override
-  public StreamComparator getRollupSorter() throws IOException {
-    String sortParam = params.get("sort");
-    FieldComparator[] comps;
-    if (sortParam != null) {
-      comps = parseBucketSorts(sortParam, this.buckets);
-    } else {
-      comps = new FieldComparator[buckets.length];
-      for (int c = 0; c < comps.length; c++) {
-        comps[c] = new FieldComparator(buckets[c].toString(), ComparatorOrder.ASCENDING);
-      }
-    }
-    return (comps.length > 1) ? new MultipleFieldComparator(comps) : comps[0];
-  }
-
-  @Override
-  public RollupStream getRollupStream(SortStream sortStream, Metric[] rollupMetrics) {
-    return new RollupStream(sortStream, this.buckets, rollupMetrics);
+  public RollupStream getRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
+    // the tuples from each plist need to be sorted using the same order to do a rollup
+    return new RollupStream(new SortStream(plist, getRollupSorter()), this.buckets, rollupMetrics);
   }
 
   @Override
@@ -1002,6 +932,21 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       map.put(m.getIdentifier(), col);
     }
     return map;
+  }
+
+  // Get a comparator for sorting the parallel streams needed for doing a rollup.
+  private StreamComparator getRollupSorter() throws IOException {
+    String sortParam = params.get("sort");
+    FieldComparator[] comps;
+    if (sortParam != null) {
+      comps = parseBucketSorts(sortParam, this.buckets);
+    } else {
+      comps = new FieldComparator[buckets.length];
+      for (int c = 0; c < comps.length; c++) {
+        comps[c] = new FieldComparator(buckets[c].toString(), ComparatorOrder.ASCENDING);
+      }
+    }
+    return (comps.length > 1) ? new MultipleFieldComparator(comps) : comps[0];
   }
 
   @Override

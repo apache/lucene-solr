@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
@@ -46,20 +45,13 @@ public interface ParallelMetricsRollup {
   TupleStream[] parallelize(List<String> partitions) throws IOException;
 
   /**
-   * Get a Tuple sorter needed for rolling up over the parallelized streams.
-   * @return A comparator for sorting the parallel streams needed for doing a rollup.
-   * @throws IOException if a parsing error occurs
-   */
-  StreamComparator getRollupSorter() throws IOException;
-
-  /**
    * Get the rollup for the parallelized streams.
-   * @param sortStream A sorted stream to perform the rollup on
+   * @param plistStream A parallel list stream to fetch metrics from each partition concurrently
    * @param rollupMetrics An array of metrics to rollup
    * @return A rollup over parallelized streams that provide metrics
    * @throws IOException if an error occurs while reading from the sorted stream
    */
-  RollupStream getRollupStream(SortStream sortStream, Metric[] rollupMetrics) throws IOException;
+  RollupStream getRollupStream(ParallelListStream plistStream, Metric[] rollupMetrics) throws IOException;
 
   /**
    * The projection of dimensions and metrics from the rollup stream.
@@ -84,15 +76,11 @@ public interface ParallelMetricsRollup {
       return Optional.empty(); // some metric is incompatible with doing a rollup over the plist results
 
     TupleStream[] parallelStreams = parallelize(partitions);
-    // the tuples from each plist need to be sorted using the same order to do a rollup
     Metric[] rollupMetrics = maybeRollupMetrics.get();
-    StreamComparator comparator = getRollupSorter();
-    SortStream sortStream = new SortStream(new ParallelListStream(parallelStreams), comparator);
-    RollupStream rollup = getRollupStream(sortStream, rollupMetrics);
+    RollupStream rollup = getRollupStream(new ParallelListStream(parallelStreams), rollupMetrics);
     SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
     select.setStreamContext(context);
     select.open();
-
     return Optional.of(select);
   }
 

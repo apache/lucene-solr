@@ -58,10 +58,10 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   private static final String ALIAS_NAME = "SOME_ALIAS_WITH_MANY_COLLS";
 
   private static final String id = "id";
-  private static final int NUM_COLLECTIONS = 2;
+  private static final int NUM_COLLECTIONS = 2; // this test requires at least 2 collections, each with multiple shards
   private static final int NUM_DOCS_PER_COLLECTION = 40;
   private static final int NUM_SHARDS_PER_COLLECTION = 4;
-  private static final int CARD = 10;
+  private static final int CARDINALITY = 10;
   private static final RandomGenerator rand = new JDKRandomGenerator(5150);
   private static List<String> listOfCollections;
 
@@ -81,13 +81,13 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
    */
   public static void setupCollectionsAndAlias() throws Exception {
 
-    final NormalDistribution[] dists = new NormalDistribution[CARD];
+    final NormalDistribution[] dists = new NormalDistribution[CARDINALITY];
     for (int i = 0; i < dists.length; i++) {
       dists[i] = new NormalDistribution(rand, i + 1, 1d);
     }
 
     List<String> collections = new ArrayList<>(NUM_COLLECTIONS);
-    List<Exception> errors = new LinkedList<>();
+    final List<Exception> errors = new LinkedList<>();
     Stream.iterate(1, n -> n + 1).limit(NUM_COLLECTIONS).forEach(colIdx -> {
       final String collectionName = "coll" + colIdx;
       collections.add(collectionName);
@@ -101,7 +101,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         UpdateRequest ur = new UpdateRequest();
         Stream.iterate(0, n -> n + 1).limit(limit)
             .forEach(docId -> ur.add(id, UUID.randomUUID().toString(),
-                "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARD), "a_d", String.valueOf(dists[docId % dists.length].sample())));
+                "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARDINALITY), "a_d", String.valueOf(dists[docId % dists.length].sample())));
         ur.commit(cluster.getSolrClient(), collectionName);
       } catch (SolrServerException | IOException e) {
         errors.add(e);
@@ -111,6 +111,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     if (!errors.isEmpty()) {
       throw errors.get(0);
     }
+
     listOfCollections = collections;
     String aliasedCollectionString = String.join(",", collections);
     CollectionAdminRequest.createAlias(ALIAS_NAME, aliasedCollectionString).process(cluster.getSolrClient());
@@ -121,13 +122,17 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
       // cleanup the alias and the collections behind it
       CollectionAdminRequest.deleteAlias(ALIAS_NAME).process(cluster.getSolrClient());
       if (listOfCollections != null) {
+        final List<Exception> errors = new LinkedList<>();
         listOfCollections.stream().map(CollectionAdminRequest::deleteCollection).forEach(c -> {
           try {
             c.process(cluster.getSolrClient());
           } catch (SolrServerException | IOException e) {
-            e.printStackTrace();
+            errors.add(e);
           }
         });
+        if (!errors.isEmpty()) {
+          throw errors.get(0);
+        }
       }
     }
   }
@@ -135,58 +140,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @AfterClass
   public static void after() throws Exception {
     cleanup();
-  }
-
-  //@Ignore
-  @Test
-  public void testDrillOverAlias() throws Exception {
-
-    /*
-    for (int c = 0; c < CARD; c++) {
-      SolrQuery query = new SolrQuery("a_i:" + c);
-      query.setRows(1000);
-      query.setFields("a_i", "a_d");
-      query.addGetFieldStatistics("a_d");
-      QueryResponse resp = cluster.getSolrClient().query(ALIAS_NAME, query);
-      SolrDocumentList results = resp.getResults();
-      System.out.println("For query " + query + ", found: " + results.getNumFound() + "; stats: " + resp.getFieldStatsInfo().get("a_d"));
-    }
-     */
-
-    StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
-    streamContext.setSolrClientCache(solrClientCache);
-
-    String zkhost = cluster.getZkServer().getZkAddress();
-    StreamFactory factory = new SolrDefaultStreamFactory().withCollectionZkHost(ALIAS_NAME, zkhost);
-
-    String drillExpr = "" +
-        "rollup(\n" +
-        "  drill(\n" +
-        "    SOME_ALIAS_WITH_MANY_COLLS,\n" +
-        "    q=\"*:*\", \n" +
-        "    fl=\"a_i,a_d\", \n" +
-        "    sort=\"a_i asc\", \n" +
-        "    rollup(\n" +
-        "      input(), \n" +
-        "      over=\"a_i\", \n" +
-        "      sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)" +
-        "    )\n" +
-        "  ),\n" +
-        "  over=\"a_i\",\n" +
-        "  sum(sum(a_d)), wsum(avg(a_d)), min(min(a_d)), max(max(a_d)), sum(count(*)),\n" +
-        ")";
-
-    TupleStream stream = factory.constructStream(drillExpr);
-    stream.setStreamContext(streamContext);
-    List<Tuple> tuples = getTuples(stream);
-    /*
-    for (Tuple t : tuples) {
-      System.out.println(t.getFields());
-    }
-     */
-
-    solrClientCache.close();
   }
 
   /**
@@ -201,7 +154,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     String facetExprTmpl = "" +
         "facet(\n" +
-        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" +
+        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" + /* placeholder is for the plist=true|false arg */
         "  q=\"*:*\", \n" +
         "  fl=\"a_i\", \n" +
         "  sort=\"a_i asc\", \n" +
@@ -220,18 +173,14 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     stream.setStreamContext(streamContext);
     List<Tuple> plistTuples = getTuples(stream);
 
-    assertEquals(CARD, plistTuples.size());
-
-    //for (Tuple t : plistTuples) {
-    //  System.out.println(t.getFields());
-    //}
+    assertEquals(CARDINALITY, plistTuples.size());
 
     // now re-execute the same expression w/o plist
     facetExpr = String.format(Locale.US, facetExprTmpl, "plist=false,");
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
-    assertEquals(CARD, tuples.size());
+    assertEquals(CARDINALITY, tuples.size());
 
     // results should be identical regardless of plist=true|false
     assertListOfTuplesEquals(plistTuples, tuples);
