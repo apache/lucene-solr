@@ -40,6 +40,7 @@ public class NestPathField extends SortableTextField {
   @Override
   public void setArgs(IndexSchema schema, Map<String, String> args) {
     args.putIfAbsent("stored", "false");
+    args.putIfAbsent("multiValued", "false");
     args.putIfAbsent("omitTermFreqAndPositions", "true");
     args.putIfAbsent("omitNorms", "true");
     args.putIfAbsent("maxCharsForDocValues", "-1");

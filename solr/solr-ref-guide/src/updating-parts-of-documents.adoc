@@ -105,19 +105,20 @@ The resulting document in our collection will be:
 
 === Updating Child Documents
 
-Solr supports modifying, adding and removing child documents as part of atomic updates.  Syntactically, updates changing the children of a document are very similar to a regular atomic updates of simle fields, as demonstrated by the examples below.
+Solr supports modifying, adding and removing child documents as part of atomic updates.
+Syntactically, updates changing the children of a document are very similar to regular atomic updates of simple fields, as demonstrated by the examples below.
 
-Schema and configuration requirements for updating child documents the same <<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above, combined with the <<indexing-nested-documents#schema-configuration,schema configuration rules for Indexing Nested Documents>> -- notably:
-* The `\_root_` field must configured with `stored="true"` or `docValues="true"`
-* The `\_nest_path_` field must exist (it is implicitly `docValues="true"`)
+Schema and configuration requirements for updating child documents use the same
+<<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above.
 
-Under the hood, When Solr processes atomic updates on nested documents, it retrieves the entire block structure (up to and including the common "Root" document), reindexes the structure after applying the atomic update, and deletes the old documents.
+Under the hood, Solr conceptually behaves similarly for nested documents as for non-nested documents, it's just that it applies to entire trees (from the root) of nested documents instead of stand-alone documents.  You can expect more overhead because of this.  In-place updates avoid that.
 
 [IMPORTANT]
 ====
 .Routing Updates using child document Ids in SolrCloud
 
-When SolrCloud recieves document updates, the <<shards-and-indexing-data-in-solrcloud#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
+When SolrCloud receives document updates, the
+<<shards-and-indexing-data-in-solrcloud#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
 
 When sending an update that specifies the `id` of a _child document_ this will not work by default: the correct shard to send the document to is based on the `id` of the "Root" document for the block the child document is in, *not* the `id` of the child document being updated.
 
@@ -126,7 +127,12 @@ Solr offers two solutions to address this:
 * Clients may specify a <<shards-and-indexing-data-in-solrcloud#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
 * Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.  This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
 
-All of the examples below use `id` prefixes, so no `\_route_` param will be neccessary for these examples.
+Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
+field of this partial update.  This is how Solr understands that you are updating a child
+document, and not a Root document.  Without it, Solr only guesses that the `\_route_` param is
+equivalent, but it may be absent or not equivalent (e.g. when using the `implicit` router).
+
+All of the examples below use `id` prefixes, so no `\_route_` param will be necessary for these examples.
 ====
 
 For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
@@ -142,6 +148,7 @@ All of the <<#atomic-updates,Atomic Update operations>> mentioned above are supp
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S31",
+  "_root_": "P11!prod",
   "price_i": { "inc": 73 },
   "color_s": { "set": "GREY" }
 } ]'
@@ -156,6 +163,7 @@ As with normal (multiValued) fields, the `set` keyword can be used to replace al
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P22!S22",
+  "_root_": "P22!prod",
   "manuals": { "set": [ { "id": "P22!D77",
                           "name_s": "Why Red Pens Are the Best",
                           "content_t": "... correcting papers ...",
@@ -177,6 +185,7 @@ As with normal (multiValued) fields, the `add` keyword can be used to add additi
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
+  "_root_": "P11!prod",
   "manuals": { "add": { "id": "P11!D99",
                         "name_s": "Why Red Staplers Are the Best",
                         "content_t": "Once upon a time, Mike Judge ...",
@@ -194,6 +203,7 @@ As with normal (multiValued) fields, the `remove` keyword can be used to remove 
 curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
   "id": "P11!S21",
+  "_root_": "P11!prod",
   "manuals": { "remove": { "id": "P11!D41" } }
 } ]'
 ----
