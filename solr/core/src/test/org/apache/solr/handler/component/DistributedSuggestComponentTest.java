@@ -105,10 +105,10 @@ public class DistributedSuggestComponentTest extends BaseDistributedSearchTestCa
     }
     
     //Test Basic Functionality
-    //query(buildRequest("exampel", false, requestHandlerName, dictionaryName, docDictName, count, "2"));
-    //query(buildRequest("Yet", false, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
-    //query(buildRequest("blah", true, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
-    //query(buildRequest("blah", true, requestHandlerName, dictionaryName, docDictName, count, "2"));
+    query(buildRequest("exampel", false, requestHandlerName, dictionaryName, docDictName, count, "2"));
+    query(buildRequest("Yet", false, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
+    query(buildRequest("blah", true, requestHandlerName, dictionaryName, docExprDictName, count, "2"));
+    query(buildRequest("blah", true, requestHandlerName, dictionaryName, docDictName, count, "2"));
     
     //Test multiSuggester
     query(buildRequest("exampel", false, requestHandlerName, dictionaryName, docDictName, dictionaryName, docExprDictName, count, "2"));
