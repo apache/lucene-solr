@@ -278,6 +278,33 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
   }
 
+  /** Beta API; may change at will. */
+  // TODO SOLR-15063 reconcile SolrDocumentBase/SolrDocument/SolrInputDocument debacle
+  public void visitSelfAndNestedDocs(BiConsumer<String, SolrInputDocument> consumer) {
+    consumer.accept(null, this);
+    for (SolrInputField field : values()) {
+      final Object value = field.getValue();
+      if (value instanceof SolrInputDocument) {
+        consumer.accept(field.name, (SolrInputDocument) value);
+      } else if (value instanceof Collection) {
+        Collection<?> cVal = (Collection<?>) value;
+        for (Object v : cVal) {
+          if (v instanceof SolrInputDocument) {
+            consumer.accept(field.name, (SolrInputDocument) v);
+          } else {
+            break; // either they are all solr docs, or none are
+          }
+        }
+      }
+    }
+
+    if (_childDocuments != null) {
+      for (SolrInputDocument childDocument : _childDocuments) {
+        consumer.accept(null, childDocument);
+      }
+    }
+  }
+
   /** Returns the list of child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
