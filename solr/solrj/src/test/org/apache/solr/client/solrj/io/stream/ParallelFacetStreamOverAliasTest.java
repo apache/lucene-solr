@@ -47,6 +47,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.apache.solr.client.solrj.io.stream.FacetStream.TIERED_PARAM;
+
 /**
  * Verify auto-plist with rollup over a facet expression when using collection alias over multiple collections.
  */
@@ -153,7 +155,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     String facetExprTmpl = "" +
         "facet(\n" +
-        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" + /* placeholder is for the plist=true|false arg */
+        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" + /* placeholder is for the tiered=true|false arg */
         "  q=\"*:*\", \n" +
         "  fl=\"a_i\", \n" +
         "  sort=\"a_i asc\", \n" +
@@ -163,7 +165,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
-    String facetExpr = String.format(Locale.US, facetExprTmpl, "");
+    String facetExpr = String.format(Locale.US, facetExprTmpl, TIERED_PARAM + "=true,");
 
     String zkhost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(zkhost);
@@ -174,7 +176,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     assertEquals(CARDINALITY, plistTuples.size());
 
     // now re-execute the same expression w/o plist
-    facetExpr = String.format(Locale.US, facetExprTmpl, "plist=false,");
+    facetExpr = String.format(Locale.US, facetExprTmpl, TIERED_PARAM + "=false,");
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
