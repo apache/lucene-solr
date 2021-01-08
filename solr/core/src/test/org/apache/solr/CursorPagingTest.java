@@ -57,6 +57,7 @@ import static org.apache.solr.common.util.Utils.fromJSONString;
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
+
   public final static String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
   /** schema.xml file name, shared with other cursor related tests */
   public final static String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
@@ -139,7 +140,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     assertEquals(CURSOR_MARK_START, cursorMark);
 
 
-    // don't add in order of any field to ensure we aren't inadvertantly 
+    // don't add in order of any field to ensure we aren't inadvertently
     // counting on internal docid ordering
     assertU(adoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
     assertU(adoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
@@ -521,6 +522,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
         "fl", "id",
         "sort", "id asc",
         "rows", "50",
+        "qt", "/delayed",
         "sleep", "10");
 
     List<String> foundDocIds = new ArrayList<>();
@@ -533,15 +535,12 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
         // execute the query
         String json = assertJQ(req(params, CURSOR_MARK_PARAM, cursorMark, TIME_ALLOWED, timeAllowed));
 
-        @SuppressWarnings({"unchecked"})
-        Map<Object, Object> response = (Map<Object, Object>) fromJSONString(json);
-        @SuppressWarnings({"unchecked"})
-        Map<Object, Object> responseHeader = (Map<Object, Object>) response.get("responseHeader");
-        @SuppressWarnings({"unchecked"})
-        Map<Object, Object> responseBody = (Map<Object, Object>) response.get("response");
+        Map<?, ?> response = (Map<?, ?>) fromJSONString(json);
+        Map<?, ?> responseHeader = (Map<?, ?>) response.get("responseHeader");
+        Map<?, ?> responseBody = (Map<?, ?>) response.get("response");
         nextCursorMark = (String) response.get(CURSOR_MARK_NEXT);
 
-        // count occurance of partialResults (confirm at the end at least one)
+        // count occurrence of partialResults (confirm at the end at least one)
         if (responseHeader.containsKey("partialResults")) {
           partialCount++;
         }
@@ -560,11 +559,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       }
     } while (!cursorMark.equals(nextCursorMark));
 
-    List<String> sortedFoundDocIds = new ArrayList<>();
-    sortedFoundDocIds.addAll(foundDocIds);
-    Collections.sort(sortedFoundDocIds);
+    ArrayList<String> sortedFoundDocIds = new ArrayList<>(foundDocIds);
+    sortedFoundDocIds.sort(null);
     // Note: it is not guaranteed that all docs will be found, because a query may time out
-    // before reaching all segments, this causes documents in the skipped segements to be skipped
+    // before reaching all segments, this causes documents in the skipped segments to be skipped
     // in the overall result set as the cursor pages through.
     assertEquals("Should have found last doc id eventually", ids.get(ids.size() -1), foundDocIds.get(foundDocIds.size() -1));
     assertEquals("Documents arrived in sorted order within and between pages", sortedFoundDocIds, foundDocIds);
@@ -576,10 +574,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * test that our assumptions about how caches are affected hold true
    */
   public void testCacheImpacts() throws Exception {
-    // cursor queryies can't live in the queryResultCache, but independent filters
+    // cursor queries can't live in the queryResultCache, but independent filters
     // should still be cached & reused
 
-    // don't add in order of any field to ensure we aren't inadvertantly 
+    // don't add in order of any field to ensure we aren't inadvertently
     // counting on internal docid ordering
     assertU(adoc("id", "9", "str", "c", "float", "-3.2", "int", "42"));
     assertU(adoc("id", "7", "str", "c", "float", "-3.2", "int", "-1976"));
@@ -621,7 +619,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final long postFcHits = (Long) filterCacheStats.getValue().get("hits");
     
     assertEquals("query cache inserts changed", preQcIn, postQcIn);
-    // NOTE: use of pure negative filters causees "*:* to be tracked in filterCache
+    // NOTE: use of pure negative filters clauses "*:* to be tracked in filterCache
     assertEquals("filter cache did not grow correctly", 3, postFcIn-preFcIn);
     assertTrue("filter cache did not have any new cache hits", 0 < postFcHits-preFcHits);
 
