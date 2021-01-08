@@ -29,21 +29,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class WeightedSumMetric extends Metric {
 
   public static final String FUNC = "wsum";
-
-  private static final class Part {
-    private final double value;
-    private final long count;
-
-    Part(long count, double value) {
-      this.count = count;
-      this.value = value;
-    }
-
-    double weighted(final long total) {
-      return ((double) count / total) * value;
-    }
-  }
-
   private String valueCol;
   private String countCol;
   private List<Part> parts;
@@ -84,7 +69,7 @@ public class WeightedSumMetric extends Metric {
     this.countCol = countCol != null ? countCol : "count(*)";
     this.outputLong = outputLong;
     setFunctionName(FUNC);
-    setIdentifier(FUNC, "(", valueCol, ", " + countCol + ")");
+    setIdentifier(FUNC, "(", valueCol, ", " + countCol + ", " + outputLong + ")");
   }
 
   public void update(Tuple tuple) {
@@ -111,16 +96,20 @@ public class WeightedSumMetric extends Metric {
   public Number getValue() {
     long total = sumCounts();
     double wavg = 0d;
-    for (Part next : parts) {
-      wavg += next.weighted(total);
+    if (total > 0L) {
+      for (Part next : parts) {
+        wavg += next.weighted(total);
+      }
     }
     return outputLong ? Math.round(wavg) : wavg;
   }
 
   private long sumCounts() {
     long total = 0L;
-    for (Part next : parts) {
-      total += next.count;
+    if (parts != null) {
+      for (Part next : parts) {
+        total += next.count;
+      }
     }
     return total;
   }
@@ -128,5 +117,19 @@ public class WeightedSumMetric extends Metric {
   @Override
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     return new StreamExpression(getFunctionName()).withParameter(valueCol).withParameter(countCol).withParameter(Boolean.toString(outputLong));
+  }
+
+  private static final class Part {
+    private final double value;
+    private final long count;
+
+    Part(long count, double value) {
+      this.count = count;
+      this.value = value;
+    }
+
+    private double weighted(final long total) {
+      return ((double) count / total) * value;
+    }
   }
 }

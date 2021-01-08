@@ -70,6 +70,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   private static final long serialVersionUID = 1;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // allow client apps to disable the auto-plist via system property if they want to turn it off globally
+  private static final boolean defaultPlistEnabled = Boolean.parseBoolean(System.getProperty("solr.facet.stream.plist.enabled", "true"));
+
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
   protected transient TupleStream parallelizedStream;
@@ -563,7 +567,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
 
     // Parallelize the facet expression across multiple collections for an alias using plist if possible
-    if (params.getBool("plist", true)) {
+    if (params.getBool("plist", defaultPlistEnabled)) {
       params.remove("plist");
 
       ClusterStateProvider clusterStateProvider = cloudSolrClient.getClusterStateProvider();

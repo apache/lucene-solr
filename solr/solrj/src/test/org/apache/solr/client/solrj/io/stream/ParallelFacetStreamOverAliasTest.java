@@ -43,7 +43,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
-import org.apache.solr.util.RTimer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -68,7 +67,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.tests.numeric.dv", "true");
-    final RTimer timer = new RTimer();
+
     configureCluster(NUM_COLLECTIONS).withMetrics(false)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
@@ -168,7 +167,6 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     String zkhost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(zkhost);
-    final RTimer timer = new RTimer();
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> plistTuples = getTuples(stream);
