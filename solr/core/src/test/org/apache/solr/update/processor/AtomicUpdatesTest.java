@@ -18,7 +18,6 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -1329,36 +1328,6 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abcupdate'",
         "/response/docs/[0]/single_i_dvn==5");
-  }
-
-  /**
-   * Test what happens if we try to update the parent of a doc with children.
-   * This fails because _root_ is not stored which is currently required for doing this.
-   */
-  @Test
-  public void testUpdateNestedDocUnsupported() throws Exception {
-    assertU(adoc(sdoc(
-        "id", "1",
-        "children", Arrays.asList(sdoc(
-            "id", "100",
-            "cat", "childCat1")
-        )
-    )));
-
-    assertU(commit());
-
-    // update the parent doc to have a category
-    try {
-      assertU(adoc(sdoc(
-          "id", "1",
-          "cat", Collections.singletonMap("add", Arrays.asList("parentCat"))
-      )));
-      fail("expected a failure");
-    } catch (Exception e) {
-      assertEquals("org.apache.solr.common.SolrException: " +
-          "This schema does not support partial updates to nested docs. See ref guide.", e.toString());
-    }
-
   }
 
   @Test

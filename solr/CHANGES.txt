@@ -239,6 +239,11 @@ Improvements
 * SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
   (David Smiley)
 
+* SOLR-14923: The use case of atomic/partial updates to child documents no longer requires that
+  _root_ be stored or have docValues, and no longer requires the _nest_path_ field.  However it
+  now requires that the client pass a _root_ field on these updates to point to the root ID.
+  (David Smiley)
+
 * SOLR-15059: Add panels to the default Grafana dashboard for query performance monitoring, includes updates
   to the Prometheus exporter to export query performance metrics, such as QPS and p95. (Timothy Potter)
 
@@ -249,6 +254,10 @@ Optimizations
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
 
 * SOLR-15049: Optimize same-core, same-field joins in TopLevelJoinQuery (Jason Gerlowski)
+
+* SOLR-14923: Indexing nested documents is faster, especially under concurrent indexing load.  In addition,
+  Partial updates to nested documents and Realtime Get of child documents is now more reliable.
+  (David Smiley, Thomas Wöckinger)
 
 Bug Fixes
 ---------------------

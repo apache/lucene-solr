@@ -40,6 +40,20 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 
 === Solr 8.8
 
+*Nested Documents*
+
+** When doing atomic/partial updates to a child document:
+*** Supply the `\_root_` field (the ID of the root document) so that Solr understands you are manipulating a child document and not a root document.
+In its absence, Solr looks at the `\_route_` parameter but that may go away because it's not an ideal substitute.
+If neither are present, Solr assumes you are updating a root document.
+If this assumption is false, Solr will do a cheap check that usually detects the problem and will
+throw an exception to alert you of the need to specify the Root ID.
+This backwards incompatible change was done to increase performance and robustness.
+*** This feature no longer requires stored=true or docValues=true on the `\_root_` field.  You might
+have it for other purposes though (e.g. for `uniqueBlock(...)`)
+*** This feature no longer requires the `\_nest_path_` field, although you probably ought to
+continue to define it as it's useful for other things.
+
 *Removed Contribs*
 
 * The search results clustering contrib has been removed from 8.x Solr line due to lack
