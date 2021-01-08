@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.classification.utils;
 
-
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,9 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter}
- */
+/** Testcase for {@link org.apache.lucene.classification.utils.DatasetSplitter} */
 @LuceneTestCase.SuppressCodecs("SimpleText")
 public class DataSplitterTest extends LuceneTestCase {
 
@@ -103,7 +99,9 @@ public class DataSplitterTest extends LuceneTestCase {
     assertSplit(originalIndex, 0.2, 0.35, idFieldName, textFieldName);
   }
 
-  public static void assertSplit(LeafReader originalIndex, double testRatio, double crossValidationRatio, String... fieldNames) throws Exception {
+  public static void assertSplit(
+      LeafReader originalIndex, double testRatio, double crossValidationRatio, String... fieldNames)
+      throws Exception {
 
     BaseDirectoryWrapper trainingIndex = newDirectory();
     BaseDirectoryWrapper testIndex = newDirectory();
@@ -111,14 +109,25 @@ public class DataSplitterTest extends LuceneTestCase {
 
     try {
       DatasetSplitter datasetSplitter = new DatasetSplitter(testRatio, crossValidationRatio);
-      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(random()), true, classFieldName, fieldNames);
+      datasetSplitter.split(
+          originalIndex,
+          trainingIndex,
+          testIndex,
+          crossValidationIndex,
+          new MockAnalyzer(random()),
+          true,
+          classFieldName,
+          fieldNames);
 
       assertNotNull(trainingIndex);
       assertNotNull(testIndex);
       assertNotNull(crossValidationIndex);
 
       DirectoryReader trainingReader = DirectoryReader.open(trainingIndex);
-      assertEquals((int) (originalIndex.maxDoc() * (1d - testRatio - crossValidationRatio)), trainingReader.maxDoc(), 20);
+      assertEquals(
+          (int) (originalIndex.maxDoc() * (1d - testRatio - crossValidationRatio)),
+          trainingReader.maxDoc(),
+          20);
       DirectoryReader testReader = DirectoryReader.open(testIndex);
       assertEquals((int) (originalIndex.maxDoc() * testRatio), testReader.maxDoc(), 20);
       DirectoryReader cvReader = DirectoryReader.open(crossValidationIndex);
@@ -145,8 +154,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
   private static void closeQuietly(IndexReader reader) throws IOException {
     try {
-      if (reader != null)
-        reader.close();
+      if (reader != null) reader.close();
     } catch (Exception e) {
       // do nothing
     }

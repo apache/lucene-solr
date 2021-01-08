@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -31,17 +30,18 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * {@link Terms} based on the Uniform Split technique.
- * <p>
- * The {@link IndexDictionary index dictionary} is lazy loaded only when
- * {@link TermsEnum#seekCeil} or {@link TermsEnum#seekExact} are called
- * (it is not loaded for a direct terms enumeration).
+ *
+ * <p>The {@link IndexDictionary index dictionary} is lazy loaded only when {@link
+ * TermsEnum#seekCeil} or {@link TermsEnum#seekExact} are called (it is not loaded for a direct
+ * terms enumeration).
  *
  * @see UniformSplitTermsWriter
  * @lucene.experimental
  */
 public class UniformSplitTerms extends Terms implements Accountable {
 
-  private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(UniformSplitTerms.class);
+  private static final long BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(UniformSplitTerms.class);
 
   protected final IndexInput blockInput;
   protected final FieldMetadata fieldMetadata;
@@ -50,11 +50,15 @@ public class UniformSplitTerms extends Terms implements Accountable {
   protected final IndexDictionary.BrowserSupplier dictionaryBrowserSupplier;
 
   /**
-   * @param blockDecoder Optional block decoder, may be null if none. It can be used for decompression or decryption.
+   * @param blockDecoder Optional block decoder, may be null if none. It can be used for
+   *     decompression or decryption.
    */
-  protected UniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
-                              PostingsReaderBase postingsReader, BlockDecoder blockDecoder,
-                              IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
+  protected UniformSplitTerms(
+      IndexInput blockInput,
+      FieldMetadata fieldMetadata,
+      PostingsReaderBase postingsReader,
+      BlockDecoder blockDecoder,
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
     assert fieldMetadata != null;
     assert fieldMetadata.getFieldInfo() != null;
     assert fieldMetadata.getLastTerm() != null;
@@ -68,13 +72,21 @@ public class UniformSplitTerms extends Terms implements Accountable {
 
   @Override
   public TermsEnum iterator() throws IOException {
-    return new BlockReader(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
+    return new BlockReader(
+        dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
   }
 
   @Override
   public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
     checkIntersectAutomatonType(compiled);
-    return new IntersectBlockReader(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
+    return new IntersectBlockReader(
+        compiled,
+        startTerm,
+        dictionaryBrowserSupplier,
+        blockInput,
+        postingsReader,
+        fieldMetadata,
+        blockDecoder);
   }
 
   protected void checkIntersectAutomatonType(CompiledAutomaton automaton) {
@@ -111,17 +123,26 @@ public class UniformSplitTerms extends Terms implements Accountable {
 
   @Override
   public boolean hasFreqs() {
-    return fieldMetadata.getFieldInfo().getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    return fieldMetadata.getFieldInfo().getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS)
+        >= 0;
   }
 
   @Override
   public boolean hasOffsets() {
-    return fieldMetadata.getFieldInfo().getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    return fieldMetadata
+            .getFieldInfo()
+            .getIndexOptions()
+            .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+        >= 0;
   }
 
   @Override
   public boolean hasPositions() {
-    return fieldMetadata.getFieldInfo().getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    return fieldMetadata
+            .getFieldInfo()
+            .getIndexOptions()
+            .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
+        >= 0;
   }
 
   @Override

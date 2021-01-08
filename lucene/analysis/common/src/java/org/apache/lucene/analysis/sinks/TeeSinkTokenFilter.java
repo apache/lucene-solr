@@ -16,24 +16,21 @@
  */
 package org.apache.lucene.analysis.sinks;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.AttributeSource;
 
 /**
- * This TokenFilter provides the ability to set aside attribute states that have already been analyzed. This is useful
- * in situations where multiple fields share many common analysis steps and then go their separate ways.
- * 
- * <p>
- * It is also useful for doing things like entity extraction or proper noun analysis as part of the analysis workflow
- * and saving off those tokens for use in another field.
- * </p>
+ * This TokenFilter provides the ability to set aside attribute states that have already been
+ * analyzed. This is useful in situations where multiple fields share many common analysis steps and
+ * then go their separate ways.
+ *
+ * <p>It is also useful for doing things like entity extraction or proper noun analysis as part of
+ * the analysis workflow and saving off those tokens for use in another field.
  *
  * <pre class="prettyprint">
  * TeeSinkTokenFilter source1 = new TeeSinkTokenFilter(new WhitespaceTokenizer());
@@ -48,17 +45,16 @@ import org.apache.lucene.util.AttributeSource;
  * d.add(new TextField("f2", final2));
  * d.add(new TextField("f3", final3));
  * </pre>
- * 
- * <p>
- * In this example, {@code sink1} and {@code sink2} will both get tokens from {@code source1} after whitespace
- * tokenization, and will further do additional token filtering, e.g. detect entities and URLs.
- * </p>
- * 
- * <p>
- * <b>NOTE</b>: it is important, that tees are consumed before sinks, therefore you should add them to the document
- * before the sinks. In the above example, <i>f1</i> is added before the other fields, and so by the time they are
- * processed, it has already been consumed, which is the correct way to index the three streams. If for some reason you
- * cannot ensure that, you should call {@link #consumeAllTokens()} before adding the sinks to document fields.
+ *
+ * <p>In this example, {@code sink1} and {@code sink2} will both get tokens from {@code source1}
+ * after whitespace tokenization, and will further do additional token filtering, e.g. detect
+ * entities and URLs.
+ *
+ * <p><b>NOTE</b>: it is important, that tees are consumed before sinks, therefore you should add
+ * them to the document before the sinks. In the above example, <i>f1</i> is added before the other
+ * fields, and so by the time they are processed, it has already been consumed, which is the correct
+ * way to index the three streams. If for some reason you cannot ensure that, you should call {@link
+ * #consumeAllTokens()} before adding the sinks to document fields.
  */
 public final class TeeSinkTokenFilter extends TokenFilter {
 
@@ -74,9 +70,10 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   }
 
   /**
-   * <code>TeeSinkTokenFilter</code> passes all tokens to the added sinks when itself is consumed. To be sure that all
-   * tokens from the input stream are passed to the sinks, you can call this methods. This instance is exhausted after
-   * this method returns, but all sinks are instant available.
+   * <code>TeeSinkTokenFilter</code> passes all tokens to the added sinks when itself is consumed.
+   * To be sure that all tokens from the input stream are passed to the sinks, you can call this
+   * methods. This instance is exhausted after this method returns, but all sinks are instant
+   * available.
    */
   public void consumeAllTokens() throws IOException {
     while (incrementToken()) {}
@@ -168,5 +165,4 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       states.clear();
     }
   }
-
 }

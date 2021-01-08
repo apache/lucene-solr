@@ -16,23 +16,23 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-/** For debugging, curiosity, transparency only!!  Do not use this codec in production.
+/**
+ * For debugging, curiosity, transparency only!! Do not use this codec in production.
  *
- *  <p>This codec stores all data in a single human-readable text file (_N.vec).  You can view this in
- *  any text editor, and even edit it to alter your index.
+ * <p>This codec stores all data in a single human-readable text file (_N.vec). You can view this in
+ * any text editor, and even edit it to alter your index.
  *
- *  @lucene.experimental */
+ * @lucene.experimental
+ */
 public final class SimpleTextVectorFormat extends VectorFormat {
-  
+
   @Override
   public VectorWriter fieldsWriter(SegmentWriteState state) throws IOException {
     return new SimpleTextVectorWriter(state);

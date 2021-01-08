@@ -18,23 +18,26 @@ package org.apache.lucene.geo;
 
 import java.text.ParseException;
 import java.util.Arrays;
-
 import org.apache.lucene.geo.GeoUtils.WindingOrder;
 
 /**
- * Represents a closed polygon on the earth's surface.  You can either construct the Polygon directly yourself with {@code double[]}
- * coordinates, or use {@link Polygon#fromGeoJSON} if you have a polygon already encoded as a
- * <a href="http://geojson.org/geojson-spec.html">GeoJSON</a> string.
- * <p>
- * NOTES:
+ * Represents a closed polygon on the earth's surface. You can either construct the Polygon directly
+ * yourself with {@code double[]} coordinates, or use {@link Polygon#fromGeoJSON} if you have a
+ * polygon already encoded as a <a href="http://geojson.org/geojson-spec.html">GeoJSON</a> string.
+ *
+ * <p>NOTES:
+ *
  * <ol>
- *   <li>Coordinates must be in clockwise order, except for holes. Holes must be in counter-clockwise order.
+ *   <li>Coordinates must be in clockwise order, except for holes. Holes must be in
+ *       counter-clockwise order.
  *   <li>The polygon must be closed: the first and last coordinates need to have the same values.
  *   <li>The polygon must not be self-crossing, otherwise may result in unexpected behavior.
  *   <li>All latitude/longitude values must be in decimal degrees.
  *   <li>Polygons cannot cross the 180th meridian. Instead, use two polygons: one on each side.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras}
+ *       module
  * </ol>
+ *
  * @lucene.experimental
  */
 public final class Polygon extends LatLonGeometry {
@@ -53,9 +56,7 @@ public final class Polygon extends LatLonGeometry {
   /** winding order of the vertices */
   private final WindingOrder windingOrder;
 
-  /**
-   * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
-   */
+  /** Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes. */
   public Polygon(double[] polyLats, double[] polyLons, Polygon... holes) {
     if (polyLats == null) {
       throw new IllegalArgumentException("polyLats must not be null");
@@ -75,11 +76,23 @@ public final class Polygon extends LatLonGeometry {
     if (polyLats.length < 4) {
       throw new IllegalArgumentException("at least 4 polygon points required");
     }
-    if (polyLats[0] != polyLats[polyLats.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLats[0]=" + polyLats[0] + " polyLats[" + (polyLats.length-1) + "]=" + polyLats[polyLats.length-1]);
+    if (polyLats[0] != polyLats[polyLats.length - 1]) {
+      throw new IllegalArgumentException(
+          "first and last points of the polygon must be the same (it must close itself): polyLats[0]="
+              + polyLats[0]
+              + " polyLats["
+              + (polyLats.length - 1)
+              + "]="
+              + polyLats[polyLats.length - 1]);
     }
-    if (polyLons[0] != polyLons[polyLons.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
+    if (polyLons[0] != polyLons[polyLons.length - 1]) {
+      throw new IllegalArgumentException(
+          "first and last points of the polygon must be the same (it must close itself): polyLons[0]="
+              + polyLons[0]
+              + " polyLons["
+              + (polyLons.length - 1)
+              + "]="
+              + polyLons[polyLons.length - 1]);
     }
     for (int i = 0; i < polyLats.length; i++) {
       GeoUtils.checkLatitude(polyLats[i]);
@@ -109,8 +122,9 @@ public final class Polygon extends LatLonGeometry {
       minLon = Math.min(polyLons[i], minLon);
       maxLon = Math.max(polyLons[i], maxLon);
       // compute signed area
-      windingSum += (polyLons[j] - polyLons[numPts])*(polyLats[i] - polyLats[numPts])
-          - (polyLats[j] - polyLats[numPts])*(polyLons[i] - polyLons[numPts]);
+      windingSum +=
+          (polyLons[j] - polyLons[numPts]) * (polyLats[i] - polyLats[numPts])
+              - (polyLats[j] - polyLats[numPts]) * (polyLons[i] - polyLons[numPts]);
     }
     this.minLat = minLat;
     this.maxLat = maxLat;
@@ -194,11 +208,7 @@ public final class Polygon extends LatLonGeometry {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < polyLats.length; i++) {
-      sb.append("[")
-      .append(polyLats[i])
-      .append(", ")
-      .append(polyLons[i])
-      .append("] ");
+      sb.append("[").append(polyLats[i]).append(", ").append(polyLons[i]).append("] ");
     }
     if (holes.length > 0) {
       sb.append(", holes=");
@@ -211,11 +221,7 @@ public final class Polygon extends LatLonGeometry {
     StringBuilder sb = new StringBuilder();
     sb.append('[');
     for (int i = 0; i < lats.length; i++) {
-      sb.append("[")
-          .append(lons[i])
-          .append(", ")
-          .append(lats[i])
-          .append("]");
+      sb.append("[").append(lons[i]).append(", ").append(lats[i]).append("]");
       if (i != lats.length - 1) {
         sb.append(", ");
       }
@@ -237,10 +243,13 @@ public final class Polygon extends LatLonGeometry {
     return sb.toString();
   }
 
-  /** Parses a standard GeoJSON polygon string.  The type of the incoming GeoJSON object must be a Polygon or MultiPolygon, optionally
-   *  embedded under a "type: Feature".  A Polygon will return as a length 1 array, while a MultiPolygon will be 1 or more in length.
+  /**
+   * Parses a standard GeoJSON polygon string. The type of the incoming GeoJSON object must be a
+   * Polygon or MultiPolygon, optionally embedded under a "type: Feature". A Polygon will return as
+   * a length 1 array, while a MultiPolygon will be 1 or more in length.
    *
-   *  <p>See <a href="http://geojson.org/geojson-spec.html">the GeoJSON specification</a>. */
+   * <p>See <a href="http://geojson.org/geojson-spec.html">the GeoJSON specification</a>.
+   */
   public static Polygon[] fromGeoJSON(String geojson) throws ParseException {
     return new SimpleGeoJSONPolygonParser(geojson).parse();
   }

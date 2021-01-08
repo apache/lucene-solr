@@ -20,7 +20,6 @@ package org.apache.lucene.queries.intervals;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
@@ -31,11 +30,12 @@ class MinimizingConjunctionMatchesIterator implements IntervalMatchesIterator {
   private final List<CachingMatchesIterator> subs = new ArrayList<>();
   private boolean cached = true;
 
-  MinimizingConjunctionMatchesIterator(IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
+  MinimizingConjunctionMatchesIterator(
+      IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
     this.iterator = iterator;
     for (MatchesIterator mi : subs) {
       assert mi instanceof CachingMatchesIterator;
-      this.subs.add((CachingMatchesIterator)mi);
+      this.subs.add((CachingMatchesIterator) mi);
     }
   }
 

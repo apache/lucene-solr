@@ -17,7 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
-import javax.swing.JLabel;
 import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.event.MouseAdapter;
@@ -26,7 +25,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-
+import javax.swing.JLabel;
 import org.apache.lucene.luke.models.LukeException;
 
 /** JLabel extension for representing urls */
@@ -45,12 +44,13 @@ public final class URLLabel extends JLabel {
 
     setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        openUrl(link);
-      }
-    });
+    addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            openUrl(link);
+          }
+        });
   }
 
   private void openUrl(URL link) {

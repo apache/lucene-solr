@@ -22,13 +22,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 /**
- * A second pass grouping collector that keeps track of distinct values for a specified field for the top N group.
+ * A second pass grouping collector that keeps track of distinct values for a specified field for
+ * the top N group.
  *
  * @lucene.experimental
  */
@@ -36,12 +36,15 @@ public class DistinctValuesCollector<T, R> extends SecondPassGroupingCollector<T
 
   /**
    * Create a DistinctValuesCollector
+   *
    * @param groupSelector the group selector to determine the top-level groups
-   * @param groups        the top-level groups to collect for
+   * @param groups the top-level groups to collect for
    * @param valueSelector a group selector to determine which values to collect per-group
    */
-  public DistinctValuesCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups,
-                                       GroupSelector<R> valueSelector) {
+  public DistinctValuesCollector(
+      GroupSelector<T> groupSelector,
+      Collection<SearchGroup<T>> groups,
+      GroupSelector<R> valueSelector) {
     super(groupSelector, groups, new DistinctValuesReducer<>(valueSelector));
   }
 
@@ -58,12 +61,9 @@ public class DistinctValuesCollector<T, R> extends SecondPassGroupingCollector<T
     public void collect(int doc) throws IOException {
       if (valueSelector.advanceTo(doc) == GroupSelector.State.ACCEPT) {
         R value = valueSelector.currentValue();
-        if (values.contains(value) == false)
-          values.add(valueSelector.copyValue());
-      }
-      else {
-        if (values.contains(null) == false)
-          values.add(null);
+        if (values.contains(value) == false) values.add(valueSelector.copyValue());
+      } else {
+        if (values.contains(null) == false) values.add(null);
       }
     }
 
@@ -113,8 +113,8 @@ public class DistinctValuesCollector<T, R> extends SecondPassGroupingCollector<T
   }
 
   /**
-   * Returned by {@link DistinctValuesCollector#getGroups()},
-   * representing the value and set of distinct values for the group.
+   * Returned by {@link DistinctValuesCollector#getGroups()}, representing the value and set of
+   * distinct values for the group.
    */
   public static class GroupCount<T, R> {
 
@@ -126,5 +126,4 @@ public class DistinctValuesCollector<T, R> extends SecondPassGroupingCollector<T
       this.uniqueValues = values;
     }
   }
-
 }

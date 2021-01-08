@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -38,32 +36,32 @@ import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.FSTCompiler;
 
 /**
- * Provides the ability to override any {@link KeywordAttribute} aware stemmer
- * with custom dictionary-based stemming.
+ * Provides the ability to override any {@link KeywordAttribute} aware stemmer with custom
+ * dictionary-based stemming.
  */
 public final class StemmerOverrideFilter extends TokenFilter {
   private final StemmerOverrideMap stemmerOverrideMap;
-  
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final BytesReader fstReader;
   private final Arc<BytesRef> scratchArc = new FST.Arc<>();
   private char[] spare = new char[0];
-  
+
   /**
-   * Create a new StemmerOverrideFilter, performing dictionary-based stemming
-   * with the provided <code>dictionary</code>.
-   * <p>
-   * Any dictionary-stemmed terms will be marked with {@link KeywordAttribute}
-   * so that they will not be stemmed with stemmers down the chain.
-   * </p>
+   * Create a new StemmerOverrideFilter, performing dictionary-based stemming with the provided
+   * <code>dictionary</code>.
+   *
+   * <p>Any dictionary-stemmed terms will be marked with {@link KeywordAttribute} so that they will
+   * not be stemmed with stemmers down the chain.
    */
-  public StemmerOverrideFilter(final TokenStream input, final StemmerOverrideMap stemmerOverrideMap) {
+  public StemmerOverrideFilter(
+      final TokenStream input, final StemmerOverrideMap stemmerOverrideMap) {
     super(input);
     this.stemmerOverrideMap = stemmerOverrideMap;
     fstReader = stemmerOverrideMap.getBytesReader();
   }
-  
+
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
@@ -72,7 +70,8 @@ public final class StemmerOverrideFilter extends TokenFilter {
         return true;
       }
       if (!keywordAtt.isKeyword()) { // don't muck with already-keyworded terms
-        final BytesRef stem = stemmerOverrideMap.get(termAtt.buffer(), termAtt.length(), scratchArc, fstReader);
+        final BytesRef stem =
+            stemmerOverrideMap.get(termAtt.buffer(), termAtt.length(), scratchArc, fstReader);
         if (stem != null) {
           spare = ArrayUtil.grow(termAtt.buffer(), stem.length);
           final int length = UnicodeUtil.UTF8toUTF16(stem, spare);
@@ -89,18 +88,19 @@ public final class StemmerOverrideFilter extends TokenFilter {
       return false;
     }
   }
-  
+
   /**
-   * A read-only 4-byte FST backed map that allows fast case-insensitive key
-   * value lookups for {@link StemmerOverrideFilter}
+   * A read-only 4-byte FST backed map that allows fast case-insensitive key value lookups for
+   * {@link StemmerOverrideFilter}
    */
   // TODO maybe we can generalize this and reuse this map somehow?
-  public final static class StemmerOverrideMap {
+  public static final class StemmerOverrideMap {
     private final FST<BytesRef> fst;
     private final boolean ignoreCase;
-    
+
     /**
-     * Creates a new {@link StemmerOverrideMap} 
+     * Creates a new {@link StemmerOverrideMap}
+     *
      * @param fst the fst to lookup the overrides
      * @param ignoreCase if the keys case should be ingored
      */
@@ -108,9 +108,10 @@ public final class StemmerOverrideFilter extends TokenFilter {
       this.fst = fst;
       this.ignoreCase = ignoreCase;
     }
-    
+
     /**
-     * Returns a {@link BytesReader} to pass to the {@link #get(char[], int, FST.Arc, FST.BytesReader)} method.
+     * Returns a {@link BytesReader} to pass to the {@link #get(char[], int, FST.Arc,
+     * FST.BytesReader)} method.
      */
     public BytesReader getBytesReader() {
       if (fst == null) {
@@ -121,16 +122,24 @@ public final class StemmerOverrideFilter extends TokenFilter {
     }
 
     /**
-     * Returns the value mapped to the given key or <code>null</code> if the key is not in the FST dictionary.
+     * Returns the value mapped to the given key or <code>null</code> if the key is not in the FST
+     * dictionary.
      */
-    public BytesRef get(char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader) throws IOException {
+    public BytesRef get(
+        char[] buffer, int bufferLen, Arc<BytesRef> scratchArc, BytesReader fstReader)
+        throws IOException {
       BytesRef pendingOutput = fst.outputs.getNoOutput();
       BytesRef matchOutput = null;
       int bufUpto = 0;
       fst.getFirstArc(scratchArc);
       while (bufUpto < bufferLen) {
         final int codePoint = Character.codePointAt(buffer, bufUpto, bufferLen);
-        if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
+        if (fst.findTargetArc(
+                ignoreCase ? Character.toLowerCase(codePoint) : codePoint,
+                scratchArc,
+                scratchArc,
+                fstReader)
+            == null) {
           return null;
         }
         pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
@@ -141,39 +150,36 @@ public final class StemmerOverrideFilter extends TokenFilter {
       }
       return matchOutput;
     }
-    
   }
-  /**
-   * This builder builds an {@link FST} for the {@link StemmerOverrideFilter}
-   */
+  /** This builder builds an {@link FST} for the {@link StemmerOverrideFilter} */
   public static class Builder {
     private final BytesRefHash hash = new BytesRefHash();
     private final BytesRefBuilder spare = new BytesRefBuilder();
     private final ArrayList<CharSequence> outputValues = new ArrayList<>();
     private final boolean ignoreCase;
     private final CharsRefBuilder charsSpare = new CharsRefBuilder();
-    
-    /**
-     * Creates a new {@link Builder} with ignoreCase set to <code>false</code> 
-     */
+
+    /** Creates a new {@link Builder} with ignoreCase set to <code>false</code> */
     public Builder() {
       this(false);
     }
-    
+
     /**
      * Creates a new {@link Builder}
+     *
      * @param ignoreCase if the input case should be ignored.
      */
     public Builder(boolean ignoreCase) {
       this.ignoreCase = ignoreCase;
     }
-    
+
     /**
      * Adds an input string and its stemmer override output to this builder.
-     * 
-     * @param input the input char sequence 
+     *
+     * @param input the input char sequence
      * @param output the stemmer override output char sequence
-     * @return <code>false</code> iff the input has already been added to this builder otherwise <code>true</code>.
+     * @return <code>false</code> iff the input has already been added to this builder otherwise
+     *     <code>true</code>.
      */
     public boolean add(CharSequence input, CharSequence output) {
       final int length = input.length();
@@ -182,9 +188,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
         charsSpare.grow(length);
         final char[] buffer = charsSpare.chars();
         for (int i = 0; i < length; ) {
-          i += Character.toChars(
-                  Character.toLowerCase(
-                      Character.codePointAt(input, i)), buffer, i);
+          i += Character.toChars(Character.toLowerCase(Character.codePointAt(input, i)), buffer, i);
         }
         spare.copyChars(buffer, 0, length);
       } else {
@@ -196,16 +200,16 @@ public final class StemmerOverrideFilter extends TokenFilter {
       }
       return false;
     }
-    
+
     /**
      * Returns an {@link StemmerOverrideMap} to be used with the {@link StemmerOverrideFilter}
+     *
      * @return an {@link StemmerOverrideMap} to be used with the {@link StemmerOverrideFilter}
      * @throws IOException if an {@link IOException} occurs;
      */
     public StemmerOverrideMap build() throws IOException {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-      FSTCompiler<BytesRef> fstCompiler = new FSTCompiler<>(
-          FST.INPUT_TYPE.BYTE4, outputs);
+      FSTCompiler<BytesRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, outputs);
       final int[] sort = hash.sort();
       IntsRefBuilder intsSpare = new IntsRefBuilder();
       final int size = hash.size();
@@ -218,6 +222,5 @@ public final class StemmerOverrideFilter extends TokenFilter {
       }
       return new StemmerOverrideMap(fstCompiler.compile(), ignoreCase);
     }
-    
   }
 }

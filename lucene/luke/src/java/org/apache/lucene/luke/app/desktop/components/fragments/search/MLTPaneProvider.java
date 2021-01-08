@@ -17,6 +17,16 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.search;
 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -28,17 +38,6 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.TableModelEvent;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
@@ -141,12 +140,13 @@ public final class MLTPaneProvider implements MLTTabOperator {
     panel.add(analyzerLbl);
 
     JLabel changeLbl = new JLabel(MessageUtils.getLocalizedMessage("search_mlt.hyperlink.change"));
-    changeLbl.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
-      }
-    });
+    changeLbl.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            tabSwitcher.switchTab(TabbedPaneProvider.Tab.ANALYZER);
+          }
+        });
     panel.add(FontUtils.toLinkText(changeLbl));
 
     return panel;
@@ -169,7 +169,12 @@ public final class MLTPaneProvider implements MLTTabOperator {
     header.add(loadAllCB);
     panel.add(header, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(fieldsTable, ListSelectionModel.SINGLE_SELECTION, new MLTFieldsTableModel(), null, MLTFieldsTableModel.Column.SELECT.getColumnWidth());
+    TableUtils.setupTable(
+        fieldsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new MLTFieldsTableModel(),
+        null,
+        MLTFieldsTableModel.Column.SELECT.getColumnWidth());
     fieldsTable.setPreferredScrollableViewportSize(fieldsTable.getPreferredSize());
     panel.add(new JScrollPane(fieldsTable), BorderLayout.CENTER);
 
@@ -184,8 +189,14 @@ public final class MLTPaneProvider implements MLTTabOperator {
   @Override
   public void setFields(Collection<String> fields) {
     fieldsTable.setModel(new MLTFieldsTableModel(fields));
-    fieldsTable.getColumnModel().getColumn(MLTFieldsTableModel.Column.SELECT.getIndex()).setMinWidth(MLTFieldsTableModel.Column.SELECT.getColumnWidth());
-    fieldsTable.getColumnModel().getColumn(MLTFieldsTableModel.Column.SELECT.getIndex()).setMaxWidth(MLTFieldsTableModel.Column.SELECT.getColumnWidth());
+    fieldsTable
+        .getColumnModel()
+        .getColumn(MLTFieldsTableModel.Column.SELECT.getIndex())
+        .setMinWidth(MLTFieldsTableModel.Column.SELECT.getColumnWidth());
+    fieldsTable
+        .getColumnModel()
+        .getColumn(MLTFieldsTableModel.Column.SELECT.getIndex())
+        .setMaxWidth(MLTFieldsTableModel.Column.SELECT.getColumnWidth());
     fieldsTable.getModel().addTableModelListener(listeners::tableDataChenged);
   }
 
@@ -193,9 +204,11 @@ public final class MLTPaneProvider implements MLTTabOperator {
   public MLTConfig getConfig() {
     List<String> fields = new ArrayList<>();
     for (int row = 0; row < fieldsTable.getRowCount(); row++) {
-      boolean selected = (boolean) fieldsTable.getValueAt(row, MLTFieldsTableModel.Column.SELECT.getIndex());
+      boolean selected =
+          (boolean) fieldsTable.getValueAt(row, MLTFieldsTableModel.Column.SELECT.getIndex());
       if (selected) {
-        fields.add((String) fieldsTable.getValueAt(row, MLTFieldsTableModel.Column.FIELD.getIndex()));
+        fields.add(
+            (String) fieldsTable.getValueAt(row, MLTFieldsTableModel.Column.FIELD.getIndex()));
       }
     }
 

@@ -17,13 +17,13 @@
 package org.apache.lucene.classification.utils;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * utility class for converting Lucene {@link org.apache.lucene.document.Document}s to <code>Double</code> vectors.
+ * utility class for converting Lucene {@link org.apache.lucene.document.Document}s to <code>Double
+ * </code> vectors.
  */
 public class DocToDoubleVectorUtils {
 
@@ -32,14 +32,16 @@ public class DocToDoubleVectorUtils {
   }
 
   /**
-   * create a sparse <code>Double</code> vector given doc and field term vectors using local frequency of the terms in the doc
+   * create a sparse <code>Double</code> vector given doc and field term vectors using local
+   * frequency of the terms in the doc
    *
-   * @param docTerms   term vectors for a given document
+   * @param docTerms term vectors for a given document
    * @param fieldTerms field term vectors
    * @return a sparse vector of <code>Double</code>s as an array
    * @throws IOException in case accessing the underlying index fails
    */
-  public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms) throws IOException {
+  public static Double[] toSparseLocalFreqDoubleArray(Terms docTerms, Terms fieldTerms)
+      throws IOException {
     TermsEnum fieldTermsEnum = fieldTerms.iterator();
     Double[] freqVector = null;
     if (docTerms != null && fieldTerms.size() > -1) {
@@ -53,7 +55,10 @@ public class DocToDoubleVectorUtils {
           docTermsEnum = docTerms.iterator();
         }
         if (seekStatus.equals(TermsEnum.SeekStatus.FOUND)) {
-          long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document
+          long termFreqLocal =
+              docTermsEnum
+                  .totalTermFreq(); // the total number of occurrences of this term in the given
+          // document
           freqVector[i] = Long.valueOf(termFreqLocal).doubleValue();
         } else {
           freqVector[i] = 0d;
@@ -65,7 +70,8 @@ public class DocToDoubleVectorUtils {
   }
 
   /**
-   * create a dense <code>Double</code> vector given doc and field term vectors using local frequency of the terms in the doc
+   * create a dense <code>Double</code> vector given doc and field term vectors using local
+   * frequency of the terms in the doc
    *
    * @param docTerms term vectors for a given document
    * @return a dense vector of <code>Double</code>s as an array
@@ -79,7 +85,10 @@ public class DocToDoubleVectorUtils {
       TermsEnum docTermsEnum = docTerms.iterator();
 
       while (docTermsEnum.next() != null) {
-        long termFreqLocal = docTermsEnum.totalTermFreq(); // the total number of occurrences of this term in the given document
+        long termFreqLocal =
+            docTermsEnum
+                .totalTermFreq(); // the total number of occurrences of this term in the given
+        // document
         freqVector[i] = Long.valueOf(termFreqLocal).doubleValue();
         i++;
       }

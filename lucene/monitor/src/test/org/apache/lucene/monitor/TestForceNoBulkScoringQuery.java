@@ -18,7 +18,6 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -47,13 +46,14 @@ public class TestForceNoBulkScoringQuery extends LuceneTestCase {
     assertNotEquals(new ForceNoBulkScoringQuery(tq1), new ForceNoBulkScoringQuery(tq2));
     assertEquals(new ForceNoBulkScoringQuery(tq2), new ForceNoBulkScoringQuery(tq3));
 
-    assertEquals(new ForceNoBulkScoringQuery(tq2).hashCode(), new ForceNoBulkScoringQuery(tq3).hashCode());
+    assertEquals(
+        new ForceNoBulkScoringQuery(tq2).hashCode(), new ForceNoBulkScoringQuery(tq3).hashCode());
   }
 
   public void testRewrite() throws IOException {
 
     try (Directory dir = new ByteBuffersDirectory();
-         IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()))) {
+        IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()))) {
 
       Document doc = new Document();
       doc.add(new TextField("field", "term1 term2 term3 term4", Field.Store.NO));
@@ -72,11 +72,6 @@ public class TestForceNoBulkScoringQuery extends LuceneTestCase {
 
       Query inner = ((ForceNoBulkScoringQuery) rewritten).getWrappedQuery();
       assertNotEquals(inner, pq);
-
-
     }
-
-
   }
-
 }

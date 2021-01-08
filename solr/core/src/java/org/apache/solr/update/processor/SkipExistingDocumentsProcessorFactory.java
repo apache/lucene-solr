@@ -16,6 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -31,10 +35,6 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -186,8 +186,13 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       assert null != indexedDocId;
 
       // we don't need any fields populated, we just need to know if the doc is in the tlog...
-      SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId, null,
-                                                                               Collections.<String>emptySet(), false);
+      SolrInputDocument oldDoc =
+          RealTimeGetComponent.getInputDocumentFromTlog(
+              core,
+              indexedDocId,
+              null,
+              Collections.emptySet(),
+              RealTimeGetComponent.Resolution.PARTIAL);
       if (oldDoc == RealTimeGetComponent.DELETED) {
         return false;
       }

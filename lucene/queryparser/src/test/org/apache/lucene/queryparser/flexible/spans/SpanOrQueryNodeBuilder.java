@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.spans;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
@@ -29,7 +28,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 /**
  * This builder creates {@link SpanOrQuery}s from a {@link BooleanQueryNode}.<br>
  * <br>
- * 
  * It assumes that the {@link BooleanQueryNode} instance has at least one child.
  */
 public class SpanOrQueryNodeBuilder implements StandardQueryBuilder {
@@ -45,12 +43,9 @@ public class SpanOrQueryNodeBuilder implements StandardQueryBuilder {
 
     int i = 0;
     for (QueryNode child : children) {
-      spanQueries[i++] = (SpanQuery) child
-          .getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
+      spanQueries[i++] = (SpanQuery) child.getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
     }
 
     return new SpanOrQuery(spanQueries);
-
   }
-
 }

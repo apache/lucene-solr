@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,13 +24,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -68,7 +66,7 @@ final class ReadersAndUpdates {
 
   // Indicates whether this segment is currently being merged. While a segment
   // is merging, all field updates are also registered in the
-  // mergingNumericUpdates map. Also, calls to writeFieldUpdates merge the 
+  // mergingNumericUpdates map. Also, calls to writeFieldUpdates merge the
   // updates with mergingNumericUpdates.
   // That way, when the segment is done merging, IndexWriter can apply the
   // updates on the merged segment too.
@@ -76,28 +74,33 @@ final class ReadersAndUpdates {
 
   // Holds resolved (to docIDs) doc values updates that have not yet been
   // written to the index
-  private final Map<String,List<DocValuesFieldUpdates>> pendingDVUpdates = new HashMap<>();
+  private final Map<String, List<DocValuesFieldUpdates>> pendingDVUpdates = new HashMap<>();
 
   // Holds resolved (to docIDs) doc values updates that were resolved while
   // this segment was being merged; at the end of the merge we carry over
   // these updates (remapping their docIDs) to the newly merged segment
-  private final Map<String,List<DocValuesFieldUpdates>> mergingDVUpdates = new HashMap<>();
+  private final Map<String, List<DocValuesFieldUpdates>> mergingDVUpdates = new HashMap<>();
 
   // Only set if there are doc values updates against this segment, and the index is sorted:
   Sorter.DocMap sortMap;
 
   final AtomicLong ramBytesUsed = new AtomicLong();
 
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentCommitInfo info, PendingDeletes pendingDeletes) {
+  ReadersAndUpdates(
+      int indexCreatedVersionMajor, SegmentCommitInfo info, PendingDeletes pendingDeletes) {
     this.info = info;
     this.pendingDeletes = pendingDeletes;
     this.indexCreatedVersionMajor = indexCreatedVersionMajor;
   }
 
-  /** Init from a previously opened SegmentReader.
+  /**
+   * Init from a previously opened SegmentReader.
    *
-   * <p>NOTE: steals incoming ref from reader. */
-  ReadersAndUpdates(int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes) throws IOException {
+   * <p>NOTE: steals incoming ref from reader.
+   */
+  ReadersAndUpdates(
+      int indexCreatedVersionMajor, SegmentReader reader, PendingDeletes pendingDeletes)
+      throws IOException {
     this(indexCreatedVersionMajor, reader.getOriginalSegmentInfo(), pendingDeletes);
     this.reader = reader;
     pendingDeletes.onNewReader(reader, info);
@@ -105,12 +108,12 @@ final class ReadersAndUpdates {
 
   public void incRef() {
     final int rc = refCount.incrementAndGet();
-    assert rc > 1: "seg=" + info;
+    assert rc > 1 : "seg=" + info;
   }
 
   public void decRef() {
     final int rc = refCount.decrementAndGet();
-    assert rc >= 0: "seg=" + info;
+    assert rc >= 0 : "seg=" + info;
   }
 
   public int refCount() {
@@ -122,8 +125,10 @@ final class ReadersAndUpdates {
   public synchronized int getDelCount() {
     return pendingDeletes.getDelCount();
   }
-  private synchronized boolean assertNoDupGen(List<DocValuesFieldUpdates> fieldUpdates, DocValuesFieldUpdates update) {
-    for (int i=0;i<fieldUpdates.size();i++) {
+
+  private synchronized boolean assertNoDupGen(
+      List<DocValuesFieldUpdates> fieldUpdates, DocValuesFieldUpdates update) {
+    for (int i = 0; i < fieldUpdates.size(); i++) {
       DocValuesFieldUpdates oldUpdate = fieldUpdates.get(i);
       if (oldUpdate.delGen == update.delGen) {
         throw new AssertionError("duplicate delGen=" + update.delGen + " for seg=" + info);
@@ -132,13 +137,17 @@ final class ReadersAndUpdates {
     return true;
   }
 
-  /** Adds a new resolved (meaning it maps docIDs to new values) doc values packet.  We buffer these in RAM and write to disk when too much
-   *  RAM is used or when a merge needs to kick off, or a commit/refresh. */
+  /**
+   * Adds a new resolved (meaning it maps docIDs to new values) doc values packet. We buffer these
+   * in RAM and write to disk when too much RAM is used or when a merge needs to kick off, or a
+   * commit/refresh.
+   */
   public synchronized void addDVUpdate(DocValuesFieldUpdates update) throws IOException {
     if (update.getFinished() == false) {
       throw new IllegalArgumentException("call finish first");
     }
-    List<DocValuesFieldUpdates> fieldUpdates = pendingDVUpdates.computeIfAbsent(update.field, key -> new ArrayList<>());
+    List<DocValuesFieldUpdates> fieldUpdates =
+        pendingDVUpdates.computeIfAbsent(update.field, key -> new ArrayList<>());
     assert assertNoDupGen(fieldUpdates, update);
 
     ramBytesUsed.addAndGet(update.ramBytesUsed());
@@ -162,7 +171,6 @@ final class ReadersAndUpdates {
     }
     return count;
   }
-  
 
   /** Returns a {@link SegmentReader}. */
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
@@ -205,8 +213,8 @@ final class ReadersAndUpdates {
   }
 
   /**
-   * Returns a ref to a clone. NOTE: you should decRef() the reader when you're
-   * done (ie do not call close()).
+   * Returns a ref to a clone. NOTE: you should decRef() the reader when you're done (ie do not call
+   * close()).
    */
   public synchronized SegmentReader getReadOnlyClone(IOContext context) throws IOException {
     if (reader == null) {
@@ -216,7 +224,8 @@ final class ReadersAndUpdates {
     // force new liveDocs
     Bits liveDocs = pendingDeletes.getLiveDocs();
     if (liveDocs != null) {
-      return new SegmentReader(info, reader, liveDocs, pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
+      return new SegmentReader(
+          info, reader, liveDocs, pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
     } else {
       // liveDocs == null and reader != null. That can only be if there are no deletes
       assert reader.getLiveDocs() == null;
@@ -235,22 +244,19 @@ final class ReadersAndUpdates {
       getReader(IOContext.READ).decRef();
     }
     if (pendingDeletes.needsRefresh(reader)) {
-      // we have a reader but its live-docs are out of sync. let's create a temporary one that we never share
+      // we have a reader but its live-docs are out of sync. let's create a temporary one that we
+      // never share
       swapNewReaderWithLatestLiveDocs();
     }
     return reader;
   }
 
-  /**
-   * Returns a snapshot of the live docs.
-   */
+  /** Returns a snapshot of the live docs. */
   public synchronized Bits getLiveDocs() {
     return pendingDeletes.getLiveDocs();
   }
 
-  /**
-   * Returns the live-docs bits excluding documents that are not live due to soft-deletes
-   */
+  /** Returns the live-docs bits excluding documents that are not live due to soft-deletes */
   public synchronized Bits getHardLiveDocs() {
     return pendingDeletes.getHardLiveDocs();
   }
@@ -273,18 +279,25 @@ final class ReadersAndUpdates {
   public synchronized boolean writeLiveDocs(Directory dir) throws IOException {
     return pendingDeletes.writeLiveDocs(dir);
   }
-  
-  private synchronized void handleDVUpdates(FieldInfos infos,
-                                            Directory dir, DocValuesFormat dvFormat, final SegmentReader reader,
-                                            Map<Integer,Set<String>> fieldFiles, long maxDelGen, InfoStream infoStream) throws IOException {
-    for (Entry<String,List<DocValuesFieldUpdates>> ent : pendingDVUpdates.entrySet()) {
+
+  private synchronized void handleDVUpdates(
+      FieldInfos infos,
+      Directory dir,
+      DocValuesFormat dvFormat,
+      final SegmentReader reader,
+      Map<Integer, Set<String>> fieldFiles,
+      long maxDelGen,
+      InfoStream infoStream)
+      throws IOException {
+    for (Entry<String, List<DocValuesFieldUpdates>> ent : pendingDVUpdates.entrySet()) {
       final String field = ent.getKey();
       final List<DocValuesFieldUpdates> updates = ent.getValue();
       DocValuesType type = updates.get(0).type;
-      assert type == DocValuesType.NUMERIC || type == DocValuesType.BINARY : "unsupported type: " + type;
+      assert type == DocValuesType.NUMERIC || type == DocValuesType.BINARY
+          : "unsupported type: " + type;
       final List<DocValuesFieldUpdates> updatesToApply = new ArrayList<>();
       long bytes = 0;
-      for(DocValuesFieldUpdates update : updates) {
+      for (DocValuesFieldUpdates update : updates) {
         if (update.delGen <= maxDelGen) {
           // safe to apply this one
           bytes += update.ramBytesUsed();
@@ -296,12 +309,15 @@ final class ReadersAndUpdates {
         continue;
       }
       if (infoStream.isEnabled("BD")) {
-        infoStream.message("BD", String.format(Locale.ROOT,
-                                               "now write %d pending numeric DV updates for field=%s, seg=%s, bytes=%.3f MB",
-                                               updatesToApply.size(),
-                                               field,
-                                               info,
-                                               bytes/1024./1024.));
+        infoStream.message(
+            "BD",
+            String.format(
+                Locale.ROOT,
+                "now write %d pending numeric DV updates for field=%s, seg=%s, bytes=%.3f MB",
+                updatesToApply.size(),
+                field,
+                info,
+                bytes / 1024. / 1024.));
       }
       final long nextDocValuesGen = info.getNextDocValuesGen();
       final String segmentSuffix = Long.toString(nextDocValuesGen, Character.MAX_RADIX);
@@ -309,97 +325,120 @@ final class ReadersAndUpdates {
       final FieldInfo fieldInfo = infos.fieldInfo(field);
       assert fieldInfo != null;
       fieldInfo.setDocValuesGen(nextDocValuesGen);
-      final FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] { fieldInfo });
+      final FieldInfos fieldInfos = new FieldInfos(new FieldInfo[] {fieldInfo});
       // separately also track which files were created for this gen
       final TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-      final SegmentWriteState state = new SegmentWriteState(null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
+      final SegmentWriteState state =
+          new SegmentWriteState(
+              null, trackingDir, info.info, fieldInfos, null, updatesContext, segmentSuffix);
       try (final DocValuesConsumer fieldsConsumer = dvFormat.fieldsConsumer(state)) {
-        Function<FieldInfo, DocValuesFieldUpdates.Iterator> updateSupplier = (info) -> {
-          if (info != fieldInfo) {
-            throw new IllegalArgumentException("expected field info for field: " + fieldInfo.name + " but got: " + info.name);
-          }
-          DocValuesFieldUpdates.Iterator[] subs = new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
-          for(int i=0;i<subs.length;i++) {
-            subs[i] = updatesToApply.get(i).iterator();
-          }
-          return  DocValuesFieldUpdates.mergedIterator(subs);
-        };
+        Function<FieldInfo, DocValuesFieldUpdates.Iterator> updateSupplier =
+            (info) -> {
+              if (info != fieldInfo) {
+                throw new IllegalArgumentException(
+                    "expected field info for field: " + fieldInfo.name + " but got: " + info.name);
+              }
+              DocValuesFieldUpdates.Iterator[] subs =
+                  new DocValuesFieldUpdates.Iterator[updatesToApply.size()];
+              for (int i = 0; i < subs.length; i++) {
+                subs[i] = updatesToApply.get(i).iterator();
+              }
+              return DocValuesFieldUpdates.mergedIterator(subs);
+            };
         pendingDeletes.onDocValuesUpdate(fieldInfo, updateSupplier.apply(fieldInfo));
         if (type == DocValuesType.BINARY) {
-          fieldsConsumer.addBinaryField(fieldInfo, new EmptyDocValuesProducer() {
-            @Override
-            public BinaryDocValues getBinary(FieldInfo fieldInfoIn) throws IOException {
-              DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
-              final MergedDocValues<BinaryDocValues> mergedDocValues = new MergedDocValues<>(
-                  reader.getBinaryDocValues(field),
-                  DocValuesFieldUpdates.Iterator.asBinaryDocValues(iterator), iterator);
-              // Merge sort of the original doc values with updated doc values:
-              return new BinaryDocValues() {
+          fieldsConsumer.addBinaryField(
+              fieldInfo,
+              new EmptyDocValuesProducer() {
                 @Override
-                public BytesRef binaryValue() throws IOException {
-                  return mergedDocValues.currentValuesSupplier.binaryValue();
+                public BinaryDocValues getBinary(FieldInfo fieldInfoIn) throws IOException {
+                  DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
+                  final MergedDocValues<BinaryDocValues> mergedDocValues =
+                      new MergedDocValues<>(
+                          reader.getBinaryDocValues(field),
+                          DocValuesFieldUpdates.Iterator.asBinaryDocValues(iterator),
+                          iterator);
+                  // Merge sort of the original doc values with updated doc values:
+                  return new BinaryDocValues() {
+                    @Override
+                    public BytesRef binaryValue() throws IOException {
+                      return mergedDocValues.currentValuesSupplier.binaryValue();
+                    }
+
+                    @Override
+                    public boolean advanceExact(int target) {
+                      return mergedDocValues.advanceExact(target);
+                    }
+
+                    @Override
+                    public int docID() {
+                      return mergedDocValues.docID();
+                    }
+
+                    @Override
+                    public int nextDoc() throws IOException {
+                      return mergedDocValues.nextDoc();
+                    }
+
+                    @Override
+                    public int advance(int target) {
+                      return mergedDocValues.advance(target);
+                    }
+
+                    @Override
+                    public long cost() {
+                      return mergedDocValues.cost();
+                    }
+                  };
                 }
-                @Override
-                public boolean advanceExact(int target) {
-                  return mergedDocValues.advanceExact(target);
-                }
-                @Override
-                public int docID() {
-                  return mergedDocValues.docID();
-                }
-                @Override
-                public int nextDoc() throws IOException {
-                  return mergedDocValues.nextDoc();
-                }
-                @Override
-                public int advance(int target) {
-                  return mergedDocValues.advance(target);
-                }
-                @Override
-                public long cost() {
-                  return mergedDocValues.cost();
-                }
-              };
-            }
-          });
+              });
         } else {
           // write the numeric updates to a new gen'd docvalues file
-          fieldsConsumer.addNumericField(fieldInfo, new EmptyDocValuesProducer() {
-            @Override
-            public NumericDocValues getNumeric(FieldInfo fieldInfoIn) throws IOException {
-              DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
-              final MergedDocValues<NumericDocValues> mergedDocValues = new MergedDocValues<>(
-                  reader.getNumericDocValues(field),
-                  DocValuesFieldUpdates.Iterator.asNumericDocValues(iterator), iterator);
-              // Merge sort of the original doc values with updated doc values:
-              return new NumericDocValues() {
+          fieldsConsumer.addNumericField(
+              fieldInfo,
+              new EmptyDocValuesProducer() {
                 @Override
-                public long longValue() throws IOException {
-                  return mergedDocValues.currentValuesSupplier.longValue();
+                public NumericDocValues getNumeric(FieldInfo fieldInfoIn) throws IOException {
+                  DocValuesFieldUpdates.Iterator iterator = updateSupplier.apply(fieldInfo);
+                  final MergedDocValues<NumericDocValues> mergedDocValues =
+                      new MergedDocValues<>(
+                          reader.getNumericDocValues(field),
+                          DocValuesFieldUpdates.Iterator.asNumericDocValues(iterator),
+                          iterator);
+                  // Merge sort of the original doc values with updated doc values:
+                  return new NumericDocValues() {
+                    @Override
+                    public long longValue() throws IOException {
+                      return mergedDocValues.currentValuesSupplier.longValue();
+                    }
+
+                    @Override
+                    public boolean advanceExact(int target) {
+                      return mergedDocValues.advanceExact(target);
+                    }
+
+                    @Override
+                    public int docID() {
+                      return mergedDocValues.docID();
+                    }
+
+                    @Override
+                    public int nextDoc() throws IOException {
+                      return mergedDocValues.nextDoc();
+                    }
+
+                    @Override
+                    public int advance(int target) {
+                      return mergedDocValues.advance(target);
+                    }
+
+                    @Override
+                    public long cost() {
+                      return mergedDocValues.cost();
+                    }
+                  };
                 }
-                @Override
-                public boolean advanceExact(int target) {
-                  return mergedDocValues.advanceExact(target);
-                }
-                @Override
-                public int docID() {
-                  return mergedDocValues.docID();
-                }
-                @Override
-                public int nextDoc() throws IOException {
-                  return mergedDocValues.nextDoc();
-                }
-                @Override
-                public int advance(int target) {
-                  return mergedDocValues.advance(target);
-                }
-                @Override
-                public long cost() {
-                  return mergedDocValues.cost();
-                }
-              };
-            }
-          });
+              });
         }
       }
       info.advanceDocValuesGen();
@@ -409,11 +448,12 @@ final class ReadersAndUpdates {
   }
 
   /**
-   * This class merges the current on-disk DV with an incoming update DV instance and merges the two instances
-   * giving the incoming update precedence in terms of values, in other words the values of the update always
-   * wins over the on-disk version.
+   * This class merges the current on-disk DV with an incoming update DV instance and merges the two
+   * instances giving the incoming update precedence in terms of values, in other words the values
+   * of the update always wins over the on-disk version.
    */
-  static final class MergedDocValues<DocValuesInstance extends DocValuesIterator> extends DocValuesIterator {
+  static final class MergedDocValues<DocValuesInstance extends DocValuesIterator>
+      extends DocValuesIterator {
     private final DocValuesFieldUpdates.Iterator updateIterator;
     // merged docID
     private int docIDOut = -1;
@@ -426,7 +466,10 @@ final class ReadersAndUpdates {
     private final DocValuesInstance updateDocValues;
     DocValuesInstance currentValuesSupplier;
 
-    protected MergedDocValues(DocValuesInstance onDiskDocValues, DocValuesInstance updateDocValues, DocValuesFieldUpdates.Iterator updateIterator) {
+    protected MergedDocValues(
+        DocValuesInstance onDiskDocValues,
+        DocValuesInstance updateDocValues,
+        DocValuesFieldUpdates.Iterator updateIterator) {
       this.onDiskDocValues = onDiskDocValues;
       this.updateDocValues = updateDocValues;
       this.updateIterator = updateIterator;
@@ -483,10 +526,11 @@ final class ReadersAndUpdates {
       } while (hasValue == false);
       return docIDOut;
     }
-  };
+  }
+  ;
 
-  private synchronized Set<String> writeFieldInfosGen(FieldInfos fieldInfos, Directory dir,
-                                                      FieldInfosFormat infosFormat) throws IOException {
+  private synchronized Set<String> writeFieldInfosGen(
+      FieldInfos fieldInfos, Directory dir, FieldInfosFormat infosFormat) throws IOException {
     final long nextFieldInfosGen = info.getNextFieldInfosGen();
     final String segmentSuffix = Long.toString(nextFieldInfosGen, Character.MAX_RADIX);
     // we write approximately that many bytes (based on Lucene46DVF):
@@ -501,9 +545,11 @@ final class ReadersAndUpdates {
     return trackingDir.getCreatedFiles();
   }
 
-  public synchronized boolean writeFieldUpdates(Directory dir, FieldInfos.FieldNumbers fieldNumbers, long maxDelGen, InfoStream infoStream) throws IOException {
+  public synchronized boolean writeFieldUpdates(
+      Directory dir, FieldInfos.FieldNumbers fieldNumbers, long maxDelGen, InfoStream infoStream)
+      throws IOException {
     long startTimeNS = System.nanoTime();
-    final Map<Integer,Set<String>> newDVFiles = new HashMap<>();
+    final Map<Integer, Set<String>> newDVFiles = new HashMap<>();
     Set<String> fieldInfosFiles = null;
     FieldInfos fieldInfos = null;
     boolean any = false;
@@ -526,7 +572,7 @@ final class ReadersAndUpdates {
     // Do this so we can delete any created files on
     // exception; this saves all codecs from having to do it:
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
-    
+
     boolean success = false;
     try {
       final Codec codec = info.info.getCodec();
@@ -540,7 +586,7 @@ final class ReadersAndUpdates {
       } else {
         reader = this.reader;
       }
-      
+
       try {
         // clone FieldInfos so that we can update their dvGen separately from
         // the reader's infos and write them to a new fieldInfos_gen file.
@@ -575,8 +621,9 @@ final class ReadersAndUpdates {
         }
         fieldInfos = new FieldInfos(byName.values().toArray(new FieldInfo[0]));
         final DocValuesFormat docValuesFormat = codec.docValuesFormat();
-        
-        handleDVUpdates(fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);
+
+        handleDVUpdates(
+            fieldInfos, trackingDir, docValuesFormat, reader, newDVFiles, maxDelGen, infoStream);
 
         fieldInfosFiles = writeFieldInfosGen(fieldInfos, trackingDir, codec.fieldInfosFormat());
       } finally {
@@ -584,7 +631,7 @@ final class ReadersAndUpdates {
           reader.close();
         }
       }
-    
+
       success = true;
     } finally {
       if (success == false) {
@@ -592,7 +639,7 @@ final class ReadersAndUpdates {
         // that a 2nd attempt to write will write to a new file
         info.advanceNextWriteFieldInfosGen();
         info.advanceNextWriteDocValuesGen();
-        
+
         // Delete any partially created file(s):
         for (String fileName : trackingDir.getCreatedFiles()) {
           IOUtils.deleteFilesIgnoringExceptions(dir, fileName);
@@ -602,9 +649,10 @@ final class ReadersAndUpdates {
 
     // Prune the now-written DV updates:
     long bytesFreed = 0;
-    Iterator<Map.Entry<String,List<DocValuesFieldUpdates>>> it = pendingDVUpdates.entrySet().iterator();
+    Iterator<Map.Entry<String, List<DocValuesFieldUpdates>>> it =
+        pendingDVUpdates.entrySet().iterator();
     while (it.hasNext()) {
-      Map.Entry<String,List<DocValuesFieldUpdates>> ent = it.next();
+      Map.Entry<String, List<DocValuesFieldUpdates>> ent = it.next();
       int upto = 0;
       List<DocValuesFieldUpdates> updates = ent.getValue();
       for (DocValuesFieldUpdates update : updates) {
@@ -634,13 +682,13 @@ final class ReadersAndUpdates {
     // writing field updates succeeded
     assert fieldInfosFiles != null;
     info.setFieldInfosFiles(fieldInfosFiles);
-    
+
     // update the doc-values updates files. the files map each field to its set
     // of files, hence we copy from the existing map all fields w/ updates that
     // were not updated in this session, and add new mappings for fields that
     // were updated now.
     assert newDVFiles.isEmpty() == false;
-    for (Entry<Integer,Set<String>> e : info.getDocValuesUpdatesFiles().entrySet()) {
+    for (Entry<Integer, Set<String>> e : info.getDocValuesUpdatesFiles().entrySet()) {
       if (newDVFiles.containsKey(e.getKey()) == false) {
         newDVFiles.put(e.getKey(), e.getValue());
       }
@@ -648,24 +696,48 @@ final class ReadersAndUpdates {
     info.setDocValuesUpdatesFiles(newDVFiles);
 
     if (infoStream.isEnabled("BD")) {
-      infoStream.message("BD", String.format(Locale.ROOT, "done write field updates for seg=%s; took %.3fs; new files: %s",
-                                             info, (System.nanoTime() - startTimeNS)/1000000000.0, newDVFiles));
+      infoStream.message(
+          "BD",
+          String.format(
+              Locale.ROOT,
+              "done write field updates for seg=%s; took %.3fs; new files: %s",
+              info,
+              (System.nanoTime() - startTimeNS) / 1000000000.0,
+              newDVFiles));
     }
     return true;
   }
 
   private FieldInfo cloneFieldInfo(FieldInfo fi, int fieldNumber) {
-    return new FieldInfo(fi.name, fieldNumber, fi.hasVectors(), fi.omitsNorms(), fi.hasPayloads(),
-        fi.getIndexOptions(), fi.getDocValuesType(), fi.getDocValuesGen(), new HashMap<>(fi.attributes()),
-        fi.getPointDimensionCount(), fi.getPointIndexDimensionCount(), fi.getPointNumBytes(),
-        fi.getVectorDimension(), fi.getVectorSearchStrategy(), fi.isSoftDeletesField());
+    return new FieldInfo(
+        fi.name,
+        fieldNumber,
+        fi.hasVectors(),
+        fi.omitsNorms(),
+        fi.hasPayloads(),
+        fi.getIndexOptions(),
+        fi.getDocValuesType(),
+        fi.getDocValuesGen(),
+        new HashMap<>(fi.attributes()),
+        fi.getPointDimensionCount(),
+        fi.getPointIndexDimensionCount(),
+        fi.getPointNumBytes(),
+        fi.getVectorDimension(),
+        fi.getVectorSearchStrategy(),
+        fi.isSoftDeletesField());
   }
 
   private SegmentReader createNewReaderWithLatestLiveDocs(SegmentReader reader) throws IOException {
     assert reader != null;
     assert Thread.holdsLock(this) : Thread.currentThread().getName();
-    SegmentReader newReader = new SegmentReader(info, reader, pendingDeletes.getLiveDocs(),
-        pendingDeletes.getHardLiveDocs(), pendingDeletes.numDocs(), true);
+    SegmentReader newReader =
+        new SegmentReader(
+            info,
+            reader,
+            pendingDeletes.getLiveDocs(),
+            pendingDeletes.getHardLiveDocs(),
+            pendingDeletes.numDocs(),
+            true);
     boolean success2 = false;
     try {
       pendingDeletes.onNewReader(newReader, info);
@@ -711,7 +783,7 @@ final class ReadersAndUpdates {
       }
       mergingUpdates.addAll(ent.getValue());
     }
-    
+
     SegmentReader reader = getReader(context);
     if (pendingDeletes.needsRefresh(reader)) {
       // beware of zombies:
@@ -721,18 +793,19 @@ final class ReadersAndUpdates {
     assert pendingDeletes.verifyDocCounts(reader);
     return new MergePolicy.MergeReader(reader, pendingDeletes.getHardLiveDocs());
   }
-  
+
   /**
-   * Drops all merging updates. Called from IndexWriter after this segment
-   * finished merging (whether successfully or not).
+   * Drops all merging updates. Called from IndexWriter after this segment finished merging (whether
+   * successfully or not).
    */
   public synchronized void dropMergingUpdates() {
     mergingDVUpdates.clear();
     isMerging = false;
   }
 
-  public synchronized Map<String,List<DocValuesFieldUpdates>> getMergingDVUpdates() {
-    // We must atomically (in single sync'd block) clear isMerging when we return the DV updates otherwise we can lose updates:
+  public synchronized Map<String, List<DocValuesFieldUpdates>> getMergingDVUpdates() {
+    // We must atomically (in single sync'd block) clear isMerging when we return the DV updates
+    // otherwise we can lose updates:
     isMerging = false;
     return mergingDVUpdates;
   }

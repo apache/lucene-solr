@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.store;
 
-
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBufferedChecksum extends LuceneTestCase {
@@ -31,13 +29,13 @@ public class TestBufferedChecksum extends LuceneTestCase {
     c.update(3);
     assertEquals(1438416925L, c.getValue());
   }
-  
+
   public void testRandom() {
     Checksum c1 = new CRC32();
     Checksum c2 = new BufferedChecksum(new CRC32());
     int iterations = atLeast(10000);
     for (int i = 0; i < iterations; i++) {
-      switch(random().nextInt(4)) {
+      switch (random().nextInt(4)) {
         case 0:
           // update(byte[], int, int)
           int length = random().nextInt(1024);

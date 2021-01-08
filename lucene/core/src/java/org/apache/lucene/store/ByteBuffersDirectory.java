@@ -34,99 +34,116 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.zip.CRC32;
-
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.BitUtil;
 
 /**
- * A {@link ByteBuffer}-based {@link Directory} implementation that
- * can be used to store index files on the heap.
+ * A {@link ByteBuffer}-based {@link Directory} implementation that can be used to store index files
+ * on the heap.
  *
- * <p>Important: Note that {@link MMapDirectory} is nearly always a better choice as
- * it uses OS caches more effectively (through memory-mapped buffers).
- * A heap-based directory like this one can have the advantage in case of ephemeral, small,
- * short-lived indexes when disk syncs provide an additional overhead.</p>
+ * <p>Important: Note that {@link MMapDirectory} is nearly always a better choice as it uses OS
+ * caches more effectively (through memory-mapped buffers). A heap-based directory like this one can
+ * have the advantage in case of ephemeral, small, short-lived indexes when disk syncs provide an
+ * additional overhead.
  *
  * @lucene.experimental
  */
 public final class ByteBuffersDirectory extends BaseDirectory {
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS = 
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS =
       (fileName, output) -> {
         ByteBuffersDataInput dataInput = output.toDataInput();
-        String inputName = String.format(Locale.ROOT, "%s (file=%s, buffers=%s)",
-            ByteBuffersIndexInput.class.getSimpleName(),
-            fileName,
-            dataInput.toString());
+        String inputName =
+            String.format(
+                Locale.ROOT,
+                "%s (file=%s, buffers=%s)",
+                ByteBuffersIndexInput.class.getSimpleName(),
+                fileName,
+                dataInput.toString());
         return new ByteBuffersIndexInput(dataInput, inputName);
       };
 
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_ONE_BUFFER = 
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_ONE_BUFFER =
       (fileName, output) -> {
-        ByteBuffersDataInput dataInput = new ByteBuffersDataInput(Arrays.asList(ByteBuffer.wrap(output.toArrayCopy())));
-        String inputName = String.format(Locale.ROOT, "%s (file=%s, buffers=%s)",
-            ByteBuffersIndexInput.class.getSimpleName(),
-            fileName,
-            dataInput.toString());
+        ByteBuffersDataInput dataInput =
+            new ByteBuffersDataInput(Arrays.asList(ByteBuffer.wrap(output.toArrayCopy())));
+        String inputName =
+            String.format(
+                Locale.ROOT,
+                "%s (file=%s, buffers=%s)",
+                ByteBuffersIndexInput.class.getSimpleName(),
+                fileName,
+                dataInput.toString());
         return new ByteBuffersIndexInput(dataInput, inputName);
       };
 
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY = OUTPUT_AS_ONE_BUFFER;
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_BYTE_ARRAY =
+      OUTPUT_AS_ONE_BUFFER;
 
-  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput> OUTPUT_AS_MANY_BUFFERS_LUCENE = 
-      (fileName, output) -> {
-        List<ByteBuffer> bufferList = output.toBufferList();
-        bufferList.add(ByteBuffer.allocate(0));
+  public static final BiFunction<String, ByteBuffersDataOutput, IndexInput>
+      OUTPUT_AS_MANY_BUFFERS_LUCENE =
+          (fileName, output) -> {
+            List<ByteBuffer> bufferList = output.toBufferList();
+            bufferList.add(ByteBuffer.allocate(0));
 
-        int chunkSizePower;
-        int blockSize = ByteBuffersDataInput.determineBlockPage(bufferList);
-        if (blockSize == 0) {
-          chunkSizePower = 30;
-        } else {
-          chunkSizePower = Integer.numberOfTrailingZeros(BitUtil.nextHighestPowerOfTwo(blockSize));
+            int chunkSizePower;
+            int blockSize = ByteBuffersDataInput.determineBlockPage(bufferList);
+            if (blockSize == 0) {
+              chunkSizePower = 30;
+            } else {
+              chunkSizePower =
+                  Integer.numberOfTrailingZeros(BitUtil.nextHighestPowerOfTwo(blockSize));
+            }
+
+            String inputName =
+                String.format(
+                    Locale.ROOT,
+                    "%s (file=%s)",
+                    ByteBuffersDirectory.class.getSimpleName(),
+                    fileName);
+
+            ByteBufferGuard guard =
+                new ByteBufferGuard("none", (String resourceDescription, ByteBuffer b) -> {});
+            return ByteBufferIndexInput.newInstance(
+                inputName,
+                bufferList.toArray(new ByteBuffer[bufferList.size()]),
+                output.size(),
+                chunkSizePower,
+                guard);
+          };
+
+  private final Function<String, String> tempFileName =
+      new Function<String, String>() {
+        private final AtomicLong counter = new AtomicLong();
+
+        @Override
+        public String apply(String suffix) {
+          return suffix + "_" + Long.toString(counter.getAndIncrement(), Character.MAX_RADIX);
         }
-
-        String inputName = String.format(Locale.ROOT, "%s (file=%s)",
-            ByteBuffersDirectory.class.getSimpleName(),
-            fileName);
-
-        ByteBufferGuard guard = new ByteBufferGuard("none", (String resourceDescription, ByteBuffer b) -> {});
-        return ByteBufferIndexInput.newInstance(inputName,
-            bufferList.toArray(new ByteBuffer [bufferList.size()]),
-            output.size(), chunkSizePower, guard);
       };
-
-  private final Function<String, String> tempFileName = new Function<String, String>() {
-    private final AtomicLong counter = new AtomicLong();
-
-    @Override
-    public String apply(String suffix) {
-      return suffix + "_" + Long.toString(counter.getAndIncrement(), Character.MAX_RADIX);
-    }
-  };
 
   private final ConcurrentHashMap<String, FileEntry> files = new ConcurrentHashMap<>();
 
   /**
-   * Conversion between a buffered index output and the corresponding index input
-   * for a given file.   
+   * Conversion between a buffered index output and the corresponding index input for a given file.
    */
   private final BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput;
 
   /**
-   * A supplier of {@link ByteBuffersDataOutput} instances used to buffer up 
-   * the content of written files.
+   * A supplier of {@link ByteBuffersDataOutput} instances used to buffer up the content of written
+   * files.
    */
   private final Supplier<ByteBuffersDataOutput> bbOutputSupplier;
 
   public ByteBuffersDirectory() {
     this(new SingleInstanceLockFactory());
   }
-  
+
   public ByteBuffersDirectory(LockFactory lockFactory) {
     this(lockFactory, ByteBuffersDataOutput::new, OUTPUT_AS_MANY_BUFFERS);
   }
 
-  public ByteBuffersDirectory(LockFactory factory, 
+  public ByteBuffersDirectory(
+      LockFactory factory,
       Supplier<ByteBuffersDataOutput> bbOutputSupplier,
       BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) {
     super(factory);
@@ -168,7 +185,7 @@ public final class ByteBuffersDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    FileEntry e = new FileEntry(name); 
+    FileEntry e = new FileEntry(name);
     if (files.putIfAbsent(name, e) != null) {
       throw new FileAlreadyExistsException("File already exists: " + name);
     }
@@ -176,11 +193,12 @@ public final class ByteBuffersDirectory extends BaseDirectory {
   }
 
   @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
     ensureOpen();
     while (true) {
       String name = IndexFileNames.segmentFileName(prefix, tempFileName.apply(suffix), "tmp");
-      FileEntry e = new FileEntry(name); 
+      FileEntry e = new FileEntry(name);
       if (files.putIfAbsent(name, e) == null) {
         return e.createOutput(outputToInput);
       }
@@ -260,7 +278,8 @@ public final class ByteBuffersDirectory extends BaseDirectory {
       return local.clone();
     }
 
-    final IndexOutput createOutput(BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) throws IOException {
+    final IndexOutput createOutput(
+        BiFunction<String, ByteBuffersDataOutput, IndexInput> outputToInput) throws IOException {
       if (content != null) {
         throw new IOException("Can only write to a file once: " + fileName);
       }
@@ -269,7 +288,9 @@ public final class ByteBuffersDirectory extends BaseDirectory {
       String outputName = String.format(Locale.ROOT, "%s output (file=%s)", clazzName, fileName);
 
       return new ByteBuffersIndexOutput(
-          bbOutputSupplier.get(), outputName, fileName,
+          bbOutputSupplier.get(),
+          outputName,
+          fileName,
           new CRC32(),
           (output) -> {
             content = outputToInput.apply(fileName, output);

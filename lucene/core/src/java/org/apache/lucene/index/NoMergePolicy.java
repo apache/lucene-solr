@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.util.IOSupplier;
 
 /**
- * A {@link MergePolicy} which never returns merges to execute. Use it if you
- * want to prevent segment merges.
+ * A {@link MergePolicy} which never returns merges to execute. Use it if you want to prevent
+ * segment merges.
  */
 public final class NoMergePolicy extends MergePolicy {
 
@@ -36,20 +34,35 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
+  public MergeSpecification findMerges(
+      MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+    return null;
+  }
 
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                             int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) { return null; }
+  public MergeSpecification findForcedMerges(
+      SegmentInfos segmentInfos,
+      int maxSegmentCount,
+      Map<SegmentCommitInfo, Boolean> segmentsToMerge,
+      MergeContext mergeContext) {
+    return null;
+  }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
+  public MergeSpecification findForcedDeletesMerges(
+      SegmentInfos segmentInfos, MergeContext mergeContext) {
+    return null;
+  }
 
   @Override
-  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) { return null; }
+  public MergeSpecification findFullFlushMerges(
+      MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) {
+    return null;
+  }
 
   @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
+  public boolean useCompoundFile(
+      SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext) {
     return newSegment.info.getUseCompoundFile();
   }
 
@@ -79,13 +92,16 @@ public final class NoMergePolicy extends MergePolicy {
   }
 
   @Override
-  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) throws IOException {
+  public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier)
+      throws IOException {
     return super.keepFullyDeletedSegment(readerIOSupplier);
   }
 
   @Override
-  public int numDeletesToMerge(SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier) throws IOException {
-    return  super.numDeletesToMerge(info, delCount, readerSupplier);
+  public int numDeletesToMerge(
+      SegmentCommitInfo info, int delCount, IOSupplier<CodecReader> readerSupplier)
+      throws IOException {
+    return super.numDeletesToMerge(info, delCount, readerSupplier);
   }
 
   @Override

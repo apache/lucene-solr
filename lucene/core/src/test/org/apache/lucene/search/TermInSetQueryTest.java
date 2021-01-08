@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,8 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -84,7 +83,8 @@ public class TermInSetQueryTest extends LuceneTestCase {
 
       for (int i = 0; i < 100; ++i) {
         final float boost = random().nextFloat() * 10;
-        final int numQueryTerms = TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
+        final int numQueryTerms =
+            TestUtil.nextInt(random(), 1, 1 << TestUtil.nextInt(random(), 1, 8));
         List<BytesRef> queryTerms = new ArrayList<>();
         for (int j = 0; j < numQueryTerms; ++j) {
           queryTerms.add(allTerms.get(random().nextInt(allTerms.size())));
@@ -103,7 +103,8 @@ public class TermInSetQueryTest extends LuceneTestCase {
     }
   }
 
-  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores)
+      throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
@@ -157,8 +158,8 @@ public class TermInSetQueryTest extends LuceneTestCase {
   }
 
   public void testToString() {
-    TermInSetQuery termsQuery = new TermInSetQuery("field1",
-        new BytesRef("a"), new BytesRef("b"), new BytesRef("c"));
+    TermInSetQuery termsQuery =
+        new TermInSetQuery("field1", new BytesRef("a"), new BytesRef("b"), new BytesRef("c"));
     assertEquals("field1:(a b c)", termsQuery.toString());
   }
 
@@ -191,8 +192,9 @@ public class TermInSetQueryTest extends LuceneTestCase {
   private static class TermsCountingDirectoryReaderWrapper extends FilterDirectoryReader {
 
     private final AtomicInteger counter;
-    
-    public TermsCountingDirectoryReaderWrapper(DirectoryReader in, AtomicInteger counter) throws IOException {
+
+    public TermsCountingDirectoryReaderWrapper(DirectoryReader in, AtomicInteger counter)
+        throws IOException {
       super(in, new TermsCountingSubReaderWrapper(counter));
       this.counter = counter;
     }
@@ -243,7 +245,6 @@ public class TermInSetQueryTest extends LuceneTestCase {
       public CacheHelper getReaderCacheHelper() {
         return null;
       }
-
     }
 
     @Override
@@ -255,7 +256,6 @@ public class TermInSetQueryTest extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return null;
     }
-
   }
 
   public void testPullOneTermsEnum() throws Exception {
@@ -271,9 +271,11 @@ public class TermInSetQueryTest extends LuceneTestCase {
 
     final List<BytesRef> terms = new ArrayList<>();
     // enough terms to avoid the rewrite
-    final int numTerms = TestUtil.nextInt(random(), TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD + 1, 100);
+    final int numTerms =
+        TestUtil.nextInt(random(), TermInSetQuery.BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD + 1, 100);
     for (int i = 0; i < numTerms; ++i) {
-      final BytesRef term = new BytesRef(RandomStrings.randomUnicodeOfCodepointLength(random(), 10));
+      final BytesRef term =
+          new BytesRef(RandomStrings.randomUnicodeOfCodepointLength(random(), 10));
       terms.add(term);
     }
 
@@ -284,9 +286,10 @@ public class TermInSetQueryTest extends LuceneTestCase {
     wrapped.close();
     dir.close();
   }
-  
+
   public void testBinaryToString() {
-    TermInSetQuery query = new TermInSetQuery("field", new BytesRef(new byte[] { (byte) 0xff, (byte) 0xfe }));
+    TermInSetQuery query =
+        new TermInSetQuery("field", new BytesRef(new byte[] {(byte) 0xff, (byte) 0xfe}));
     assertEquals("field:([ff fe])", query.toString());
   }
 
@@ -303,18 +306,20 @@ public class TermInSetQueryTest extends LuceneTestCase {
   public void testVisitor() {
     // singleton reports back to consumeTerms()
     TermInSetQuery singleton = new TermInSetQuery("field", new BytesRef("term1"));
-    singleton.visit(new QueryVisitor() {
-      @Override
-      public void consumeTerms(Query query, Term... terms) {
-        assertEquals(1, terms.length);
-        assertEquals(new Term("field", new BytesRef("term1")), terms[0]);
-      }
+    singleton.visit(
+        new QueryVisitor() {
+          @Override
+          public void consumeTerms(Query query, Term... terms) {
+            assertEquals(1, terms.length);
+            assertEquals(new Term("field", new BytesRef("term1")), terms[0]);
+          }
 
-      @Override
-      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
-        fail("Singleton TermInSetQuery should not try to build ByteRunAutomaton");
-      }
-    });
+          @Override
+          public void consumeTermsMatching(
+              Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+            fail("Singleton TermInSetQuery should not try to build ByteRunAutomaton");
+          }
+        });
 
     // multiple values built into automaton
     List<BytesRef> terms = new ArrayList<>();
@@ -322,21 +327,23 @@ public class TermInSetQueryTest extends LuceneTestCase {
       terms.add(new BytesRef("term" + i));
     }
     TermInSetQuery t = new TermInSetQuery("field", terms);
-    t.visit(new QueryVisitor() {
-      @Override
-      public void consumeTerms(Query query, Term... terms) {
-        fail("TermInSetQuery with multiple terms should build automaton");
-      }
+    t.visit(
+        new QueryVisitor() {
+          @Override
+          public void consumeTerms(Query query, Term... terms) {
+            fail("TermInSetQuery with multiple terms should build automaton");
+          }
 
-      @Override
-      public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
-        ByteRunAutomaton a = automaton.get();
-        BytesRef test = new BytesRef("nonmatching");
-        assertFalse(a.run(test.bytes, test.offset, test.length));
-        for (BytesRef term : terms) {
-          assertTrue(a.run(term.bytes, term.offset, term.length));
-        }
-      }
-    });
+          @Override
+          public void consumeTermsMatching(
+              Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+            ByteRunAutomaton a = automaton.get();
+            BytesRef test = new BytesRef("nonmatching");
+            assertFalse(a.run(test.bytes, test.offset, test.length));
+            for (BytesRef term : terms) {
+              assertTrue(a.run(term.bytes, term.offset, term.length));
+            }
+          }
+        });
   }
 }

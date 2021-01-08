@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.lv;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new LatvianAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new LatvianAnalyzer();
@@ -40,17 +37,16 @@ public class TestLatvianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "un", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("tirgiem"), false);
-    Analyzer a = new LatvianAnalyzer( 
-        LatvianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("tirgiem"), false);
+    Analyzer a = new LatvianAnalyzer(LatvianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "tirgiem", "tirgiem");
     checkOneTerm(a, "tirgus", "tirg");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new LatvianAnalyzer();

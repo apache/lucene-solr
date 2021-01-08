@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Lithuanian.
- */
+/** Analyzer for Lithuanian. */
 package org.apache.lucene.analysis.lt;

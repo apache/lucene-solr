@@ -21,14 +21,11 @@ import org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Bounded priority queue for {@link SuggestScoreDoc}s.
- * Priority is based on {@link SuggestScoreDoc#score} and tie
- * is broken by {@link SuggestScoreDoc#doc}
+ * Bounded priority queue for {@link SuggestScoreDoc}s. Priority is based on {@link
+ * SuggestScoreDoc#score} and tie is broken by {@link SuggestScoreDoc#doc}
  */
 final class SuggestScoreDocPriorityQueue extends PriorityQueue<SuggestScoreDoc> {
-  /**
-   * Creates a new priority queue of the specified size.
-   */
+  /** Creates a new priority queue of the specified size. */
   public SuggestScoreDocPriorityQueue(int size) {
     super(size);
   }
@@ -44,9 +41,7 @@ final class SuggestScoreDocPriorityQueue extends PriorityQueue<SuggestScoreDoc> 
     return a.score < b.score;
   }
 
-  /**
-   * Returns the top N results in descending order.
-   */
+  /** Returns the top N results in descending order. */
   public SuggestScoreDoc[] getResults() {
     int size = size();
     SuggestScoreDoc[] res = new SuggestScoreDoc[size];

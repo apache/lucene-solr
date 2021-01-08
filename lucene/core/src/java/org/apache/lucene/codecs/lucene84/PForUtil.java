@@ -18,14 +18,11 @@ package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
-/**
- * Utility class to encode sequences of 128 small positive integers.
- */
+/** Utility class to encode sequences of 128 small positive integers. */
 final class PForUtil {
 
   static boolean allEqual(long[] l) {
@@ -43,9 +40,7 @@ final class PForUtil {
     this.forUtil = forUtil;
   }
 
-  /**
-   * Encode 128 integers from {@code longs} into {@code out}.
-   */
+  /** Encode 128 integers from {@code longs} into {@code out}. */
   void encode(long[] longs, DataOutput out) throws IOException {
     // At most 3 exceptions
     final long[] top4 = new long[4];
@@ -53,13 +48,14 @@ final class PForUtil {
     for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
       if (longs[i] > top4[0]) {
         top4[0] = longs[i];
-        Arrays.sort(top4); // For only 4 entries we just sort on every iteration instead of maintaining a PQ
+        Arrays.sort(
+            top4); // For only 4 entries we just sort on every iteration instead of maintaining a PQ
       }
     }
 
     final int maxBitsRequired = PackedInts.bitsRequired(top4[3]);
     // We store the patch on a byte, so we can't decrease the number of bits required by more than 8
-    final int patchedBitsRequired =  Math.max(PackedInts.bitsRequired(top4[0]), maxBitsRequired - 8);
+    final int patchedBitsRequired = Math.max(PackedInts.bitsRequired(top4[0]), maxBitsRequired - 8);
     int numExceptions = 0;
     final long maxUnpatchedValue = (1L << patchedBitsRequired) - 1;
     for (int i = 1; i < 4; ++i) {
@@ -67,13 +63,13 @@ final class PForUtil {
         numExceptions++;
       }
     }
-    final byte[] exceptions = new byte[numExceptions*2];
+    final byte[] exceptions = new byte[numExceptions * 2];
     if (numExceptions > 0) {
       int exceptionCount = 0;
       for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
-        if (longs[i] > (1L << patchedBitsRequired) - 1) {
-          exceptions[exceptionCount*2] = (byte) i;
-          exceptions[exceptionCount*2+1] = (byte) (longs[i] >>> patchedBitsRequired);
+        if (longs[i] > maxUnpatchedValue) {
+          exceptions[exceptionCount * 2] = (byte) i;
+          exceptions[exceptionCount * 2 + 1] = (byte) (longs[i] >>> patchedBitsRequired);
           longs[i] &= maxUnpatchedValue;
           exceptionCount++;
         }
@@ -83,7 +79,8 @@ final class PForUtil {
 
     if (allEqual(longs) && maxBitsRequired <= 8) {
       for (int i = 0; i < numExceptions; ++i) {
-        exceptions[2*i + 1] = (byte) (Byte.toUnsignedLong(exceptions[2*i + 1]) << patchedBitsRequired);
+        exceptions[2 * i + 1] =
+            (byte) (Byte.toUnsignedLong(exceptions[2 * i + 1]) << patchedBitsRequired);
       }
       out.writeByte((byte) (numExceptions << 5));
       out.writeVLong(longs[0]);
@@ -95,9 +92,7 @@ final class PForUtil {
     out.writeBytes(exceptions, exceptions.length);
   }
 
-  /**
-   * Decode 128 integers into {@code ints}.
-   */
+  /** Decode 128 integers into {@code ints}. */
   void decode(DataInput in, long[] longs) throws IOException {
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
@@ -108,13 +103,12 @@ final class PForUtil {
       forUtil.decode(bitsPerValue, in, longs);
     }
     for (int i = 0; i < numExceptions; ++i) {
-      longs[Byte.toUnsignedInt(in.readByte())] |= Byte.toUnsignedLong(in.readByte()) << bitsPerValue;
+      longs[Byte.toUnsignedInt(in.readByte())] |=
+          Byte.toUnsignedLong(in.readByte()) << bitsPerValue;
     }
   }
 
-  /**
-   * Skip 128 integers.
-   */
+  /** Skip 128 integers. */
   void skip(DataInput in) throws IOException {
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
@@ -126,5 +120,4 @@ final class PForUtil {
       in.skipBytes(forUtil.numBytes(bitsPerValue) + (numExceptions << 1));
     }
   }
-
 }

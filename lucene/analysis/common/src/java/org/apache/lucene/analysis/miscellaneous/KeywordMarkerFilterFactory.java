@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link KeywordMarkerFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_keyword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -36,6 +35,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.KeywordMarkerFilterFactory" protected="protectedkeyword.txt" pattern="^.+er$" ignoreCase="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -51,9 +51,9 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
   private final boolean ignoreCase;
   private Pattern pattern;
   private CharArraySet protectedWords;
-  
+
   /** Creates a new KeywordMarkerFilterFactory */
-  public KeywordMarkerFilterFactory(Map<String,String> args) {
+  public KeywordMarkerFilterFactory(Map<String, String> args) {
     super(args);
     wordFiles = get(args, PROTECTED_TOKENS);
     stringPattern = get(args, PATTERN);
@@ -62,7 +62,7 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public KeywordMarkerFilterFactory() {
     throw defaultCtorException();
@@ -70,14 +70,17 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {
-    if (wordFiles != null) {  
+    if (wordFiles != null) {
       protectedWords = getWordSet(loader, wordFiles, ignoreCase);
     }
     if (stringPattern != null) {
-      pattern = ignoreCase ? Pattern.compile(stringPattern, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE) : Pattern.compile(stringPattern);
+      pattern =
+          ignoreCase
+              ? Pattern.compile(stringPattern, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE)
+              : Pattern.compile(stringPattern);
     }
   }
-  
+
   public boolean isIgnoreCase() {
     return ignoreCase;
   }

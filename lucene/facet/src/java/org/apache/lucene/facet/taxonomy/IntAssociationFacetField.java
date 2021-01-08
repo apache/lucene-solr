@@ -17,26 +17,23 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.BytesRef;
 
-/** Add an instance of this to your {@link Document} to add
- *  a facet label associated with an int.  Use {@link
- *  TaxonomyFacetSumIntAssociations} to aggregate int values
- *  per facet label at search time.
- * 
- *  @lucene.experimental */
+/**
+ * Add an instance of this to your {@link Document} to add a facet label associated with an int. Use
+ * {@link TaxonomyFacetSumIntAssociations} to aggregate int values per facet label at search time.
+ *
+ * @lucene.experimental
+ */
 public class IntAssociationFacetField extends AssociationFacetField {
 
-  /** Creates this from {@code dim} and {@code path} and an
-   *  int association */
+  /** Creates this from {@code dim} and {@code path} and an int association */
   public IntAssociationFacetField(int assoc, String dim, String... path) {
     super(intToBytesRef(assoc), dim, path);
   }
 
-  /** Encodes an {@code int} as a 4-byte {@link BytesRef},
-   *  big-endian. */
+  /** Encodes an {@code int} as a 4-byte {@link BytesRef}, big-endian. */
   public static BytesRef intToBytesRef(int v) {
     byte[] bytes = new byte[4];
     // big-endian:
@@ -49,14 +46,20 @@ public class IntAssociationFacetField extends AssociationFacetField {
 
   /** Decodes a previously encoded {@code int}. */
   public static int bytesRefToInt(BytesRef b) {
-    return ((b.bytes[b.offset]&0xFF) << 24) |
-      ((b.bytes[b.offset+1]&0xFF) << 16) |
-      ((b.bytes[b.offset+2]&0xFF) << 8) |
-      (b.bytes[b.offset+3]&0xFF);
+    return ((b.bytes[b.offset] & 0xFF) << 24)
+        | ((b.bytes[b.offset + 1] & 0xFF) << 16)
+        | ((b.bytes[b.offset + 2] & 0xFF) << 8)
+        | (b.bytes[b.offset + 3] & 0xFF);
   }
 
   @Override
   public String toString() {
-    return "IntAssociationFacetField(dim=" + dim + " path=" + Arrays.toString(path) + " value=" + bytesRefToInt(assoc) + ")";
+    return "IntAssociationFacetField(dim="
+        + dim
+        + " path="
+        + Arrays.toString(path)
+        + " value="
+        + bytesRefToInt(assoc)
+        + ")";
   }
 }

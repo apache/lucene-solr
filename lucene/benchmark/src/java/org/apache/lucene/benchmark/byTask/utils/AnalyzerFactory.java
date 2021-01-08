@@ -16,32 +16,31 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.CharFilterFactory;
-import org.apache.lucene.analysis.TokenFilterFactory;
-import org.apache.lucene.analysis.TokenizerFactory;
-
 import java.io.Reader;
 import java.util.List;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.TokenizerFactory;
 
 /**
- * A factory to create an analyzer.
- * See {@link org.apache.lucene.benchmark.byTask.tasks.AnalyzerFactoryTask}
+ * A factory to create an analyzer. See {@link
+ * org.apache.lucene.benchmark.byTask.tasks.AnalyzerFactoryTask}
  */
 public final class AnalyzerFactory {
-  final private List<CharFilterFactory> charFilterFactories;
-  final private TokenizerFactory tokenizerFactory;
-  final private List<TokenFilterFactory> tokenFilterFactories;
+  private final List<CharFilterFactory> charFilterFactories;
+  private final TokenizerFactory tokenizerFactory;
+  private final List<TokenFilterFactory> tokenFilterFactories;
   private String name = null;
   private Integer positionIncrementGap = null;
   private Integer offsetGap = null;
 
-  public AnalyzerFactory(List<CharFilterFactory> charFilterFactories,
-                         TokenizerFactory tokenizerFactory,
-                         List<TokenFilterFactory> tokenFilterFactories) {
+  public AnalyzerFactory(
+      List<CharFilterFactory> charFilterFactories,
+      TokenizerFactory tokenizerFactory,
+      List<TokenFilterFactory> tokenFilterFactories) {
     this.charFilterFactories = charFilterFactories;
     assert null != tokenizerFactory;
     this.tokenizerFactory = tokenizerFactory;
@@ -89,7 +88,9 @@ public final class AnalyzerFactory {
 
       @Override
       public int getPositionIncrementGap(String fieldName) {
-        return null == positionIncrementGap ? super.getPositionIncrementGap(fieldName) : positionIncrementGap;
+        return null == positionIncrementGap
+            ? super.getPositionIncrementGap(fieldName)
+            : positionIncrementGap;
       }
 
       @Override
@@ -117,7 +118,7 @@ public final class AnalyzerFactory {
       sb.append(offsetGap);
       sb.append(", ");
     }
-    for (CharFilterFactory charFilterFactory: charFilterFactories) {
+    for (CharFilterFactory charFilterFactory : charFilterFactories) {
       sb.append(charFilterFactory);
       sb.append(", ");
     }

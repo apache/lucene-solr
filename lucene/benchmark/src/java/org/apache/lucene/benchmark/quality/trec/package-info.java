@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utilities for Trec related quality benchmarking, feeding from Trec Topics and QRels inputs.
- */
+/** Utilities for Trec related quality benchmarking, feeding from Trec Topics and QRels inputs. */
 package org.apache.lucene.benchmark.quality.trec;

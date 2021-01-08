@@ -18,11 +18,11 @@
 package org.apache.solr.cluster;
 
 import org.apache.solr.cluster.placement.AttributeFetcher;
-import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementRequest;
 
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Represents a Collection in SolrCloud (unrelated to {@link java.util.Collection} that uses the nicer name).
@@ -55,20 +55,25 @@ public interface SolrCollection {
   Iterable<Shard> shards();
 
   /**
-   * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
-   * property was set. Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
-   *
-   * <p><b>{@link PlacementPlugin} related note:</b></p>
-   * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows customizing placement
-   * decisions per collection.
-   *
-   * <p>For example if a collection is to be placed only on nodes using SSD storage and not rotating disks, it can be
-   * identified as such using some custom property (collection property could for example be called "driveType" and have
-   * value "ssd" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then
-   * {@link AttributeFetcher#requestNodeSystemProperty(String)} for that property from all nodes and only place replicas
-   * of this collection on {@link Node}'s for which
-   * {@link AttributeValues#getDiskType(Node)} is non empty and equal to {@link org.apache.solr.cluster.placement.AttributeFetcher.DiskHardwareType#SSD}.
+   * @return a set of the names of the shards defined for this collection. This set is backed by an internal map so should
+   * not be modified.
    */
+  Set<String> getShardNames();
+
+    /**
+     * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
+     * property was set. Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
+     *
+     * <p><b>{@link PlacementPlugin} related note:</b></p>
+     * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows customizing placement
+     * decisions per collection.
+     *
+     * <p>For example if a collection is to be placed only on nodes using located in a specific availability zone, it can be
+     * identified as such using some custom property (collection property could for example be called "availabilityZone" and have
+     * value "az1" in that case), and the placement plugin (implementing {@link PlacementPlugin}) would then
+     * {@link AttributeFetcher#requestNodeSystemProperty(String)} for that property from all nodes and only place replicas
+     * of this collection on {@link Node}'s for which this attribute is non empty and equal.
+     */
   String getCustomProperty(String customPropertyName);
 
   /*

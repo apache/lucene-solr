@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Arrays;
-
 import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
 
+import java.util.Arrays;
+
 /**
- * Represents a line in cartesian space. You can construct the Line directly with {@code float[]}, {@code float[]} x, y arrays
- * coordinates.
+ * Represents a line in cartesian space. You can construct the Line directly with {@code float[]},
+ * {@code float[]} x, y arrays coordinates.
  */
 public class XYLine extends XYGeometry {
   /** array of x coordinates */
@@ -39,9 +39,7 @@ public class XYLine extends XYGeometry {
   /** maximum y of this line's bounding box */
   public final float maxY;
 
-  /**
-   * Creates a new Line from the supplied X/Y array.
-   */
+  /** Creates a new Line from the supplied X/Y array. */
   public XYLine(float[] x, float[] y) {
     if (x == null) {
       throw new IllegalArgumentException("x must not be null");
@@ -126,11 +124,7 @@ public class XYLine extends XYGeometry {
     StringBuilder sb = new StringBuilder();
     sb.append("XYLINE(");
     for (int i = 0; i < x.length; i++) {
-      sb.append("[")
-          .append(x[i])
-          .append(", ")
-          .append(y[i])
-          .append("]");
+      sb.append("[").append(x[i]).append(", ").append(y[i]).append("]");
     }
     sb.append(')');
     return sb.toString();

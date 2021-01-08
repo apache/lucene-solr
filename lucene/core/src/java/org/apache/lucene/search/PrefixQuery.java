@@ -16,23 +16,22 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 
-/** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
- * is built by QueryParser for input like <code>app*</code>.
+/**
+ * A Query that matches documents containing terms with a specified prefix. A PrefixQuery is built
+ * by QueryParser for input like <code>app*</code>.
  *
- * <p>This query uses the {@link
- * MultiTermQuery#CONSTANT_SCORE_REWRITE}
- * rewrite method. */
-
+ * <p>This query uses the {@link MultiTermQuery#CONSTANT_SCORE_REWRITE} rewrite method.
+ */
 public class PrefixQuery extends AutomatonQuery {
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
-    // It's OK to pass unlimited maxDeterminizedStates: the automaton is born small and determinized:
+    // It's OK to pass unlimited maxDeterminizedStates: the automaton is born small and
+    // determinized:
     super(prefix, toAutomaton(prefix.bytes()), Integer.MAX_VALUE, true);
     if (prefix == null) {
       throw new NullPointerException("prefix must not be null");
@@ -41,12 +40,12 @@ public class PrefixQuery extends AutomatonQuery {
 
   /** Build an automaton accepting all terms with the specified prefix. */
   public static Automaton toAutomaton(BytesRef prefix) {
-    final int numStatesAndTransitions = prefix.length+1;
+    final int numStatesAndTransitions = prefix.length + 1;
     final Automaton automaton = new Automaton(numStatesAndTransitions, numStatesAndTransitions);
     int lastState = automaton.createState();
-    for(int i=0;i<prefix.length;i++) {
+    for (int i = 0; i < prefix.length; i++) {
       int state = automaton.createState();
-      automaton.addTransition(lastState, state, prefix.bytes[prefix.offset+i]&0xff);
+      automaton.addTransition(lastState, state, prefix.bytes[prefix.offset + i] & 0xff);
       lastState = state;
     }
     automaton.setAccept(lastState, true);
@@ -60,7 +59,7 @@ public class PrefixQuery extends AutomatonQuery {
   public Term getPrefix() {
     return term;
   }
-  
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

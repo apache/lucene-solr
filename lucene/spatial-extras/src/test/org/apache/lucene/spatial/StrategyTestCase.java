@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.spatial;
 
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -54,7 +52,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   public static final String DATA_COUNTRIES_BBOX = "countries-bbox.txt";
   public static final String DATA_WORLD_CITIES_POINTS = "world-cities-points.txt";
 
-  public static final String QTEST_States_IsWithin_BBox   = "states-IsWithin-BBox.txt";
+  public static final String QTEST_States_IsWithin_BBox = "states-IsWithin-BBox.txt";
   public static final String QTEST_States_Intersects_BBox = "states-Intersects-BBox.txt";
   public static final String QTEST_Cities_Intersects_BBox = "cities-Intersects-BBox.txt";
   public static final String QTEST_Simple_Queries_BBox = "simple-Queries-BBox.txt";
@@ -66,9 +64,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   protected SpatialStrategy strategy;
   protected boolean storeShape = true;
 
-  protected void executeQueries(SpatialMatchConcern concern, String... testQueryFile) throws IOException {
-    log.info("testing queried for strategy "+strategy); // nowarn
-    for( String path : testQueryFile ) {
+  protected void executeQueries(SpatialMatchConcern concern, String... testQueryFile)
+      throws IOException {
+    log.info("testing queried for strategy " + strategy); // nowarn
+    for (String path : testQueryFile) {
       Iterator<SpatialTestQuery> testQueryIterator = getTestQueries(path, ctx);
       runTestQueries(testQueryIterator, concern);
     }
@@ -97,8 +96,8 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         for (Field f : strategy.createIndexableFields(shape)) {
           document.add(f);
         }
-        if (storeShape)//just for diagnostics
-          document.add(new StoredField(strategy.getFieldName(), shape.toString()));
+        if (storeShape) // just for diagnostics
+        document.add(new StoredField(strategy.getFieldName(), shape.toString()));
       }
 
       documents.add(document);
@@ -114,20 +113,18 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   protected Iterator<SpatialTestData> getSampleData(String testDataFile) throws IOException {
     String path = "data/" + testDataFile;
     InputStream stream = getClass().getClassLoader().getResourceAsStream(path);
-    if (stream == null)
-      throw new FileNotFoundException("classpath resource not found: "+path);
-    return SpatialTestData.getTestData(stream, ctx);//closes the InputStream
+    if (stream == null) throw new FileNotFoundException("classpath resource not found: " + path);
+    return SpatialTestData.getTestData(stream, ctx); // closes the InputStream
   }
 
-  protected Iterator<SpatialTestQuery> getTestQueries(String testQueryFile, SpatialContext ctx) throws IOException {
+  protected Iterator<SpatialTestQuery> getTestQueries(String testQueryFile, SpatialContext ctx)
+      throws IOException {
     InputStream in = getClass().getClassLoader().getResourceAsStream(testQueryFile);
     return SpatialTestQuery.getTestQueries(
-        argsParser, ctx, testQueryFile, in );//closes the InputStream
+        argsParser, ctx, testQueryFile, in); // closes the InputStream
   }
 
-  public void runTestQueries(
-      Iterator<SpatialTestQuery> queries,
-      SpatialMatchConcern concern) {
+  public void runTestQueries(Iterator<SpatialTestQuery> queries, SpatialMatchConcern concern) {
     while (queries.hasNext()) {
       SpatialTestQuery q = queries.next();
       runTestQuery(concern, q);
@@ -135,10 +132,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   public void runTestQuery(SpatialMatchConcern concern, SpatialTestQuery q) {
-    String msg = q.toString(); //"Query: " + q.args.toString(ctx);
-    SearchResults got = executeQuery(makeQuery(q), Math.max(100, q.ids.size()+1));
+    String msg = q.toString(); // "Query: " + q.args.toString(ctx);
+    SearchResults got = executeQuery(makeQuery(q), Math.max(100, q.ids.size() + 1));
     if (storeShape && got.numFound > 0) {
-      //check stored value is there
+      // check stored value is there
       assertNotNull(got.results.get(0).document.get(strategy.getFieldName()));
     }
     if (concern.orderIsImportant) {
@@ -146,7 +143,12 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       for (SearchResult r : got.results) {
         String id = r.document.get("id");
         if (!ids.hasNext()) {
-          fail(msg + " :: Did not get enough results.  Expect" + q.ids + ", got: " + got.toDebugString());
+          fail(
+              msg
+                  + " :: Did not get enough results.  Expect"
+                  + q.ids
+                  + ", got: "
+                  + got.toDebugString());
         }
         assertEquals("out of order: " + msg, ids.next(), id);
       }
@@ -185,9 +187,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected void adoc(String id, String shapeStr) throws IOException, ParseException {
-    Shape shape = shapeStr==null ? null : ctx.readShapeFromWkt(shapeStr);
+    Shape shape = shapeStr == null ? null : ctx.readShapeFromWkt(shapeStr);
     addDocument(newDoc(id, shape));
   }
+
   protected void adoc(String id, Shape shape) throws IOException {
     addDocument(newDoc(id, shape));
   }
@@ -200,7 +203,9 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         doc.add(f);
       }
       if (storeShape)
-        doc.add(new StoredField(strategy.getFieldName(), shape.toString()));//not to be parsed; just for debug
+        doc.add(
+            new StoredField(
+                strategy.getFieldName(), shape.toString())); // not to be parsed; just for debug
     }
     return doc;
   }
@@ -210,7 +215,8 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   /** scores[] are in docId order */
-  protected void checkValueSource(DoubleValuesSource vs, float scores[], float delta) throws IOException {
+  protected void checkValueSource(DoubleValuesSource vs, float scores[], float delta)
+      throws IOException {
 
     for (LeafReaderContext ctx : indexSearcher.getTopReaderContext().leaves()) {
       DoubleValues v = vs.getValues(ctx, null);
@@ -221,23 +227,23 @@ public abstract class StrategyTestCase extends SpatialTestCase {
         assertEquals("Not equal for doc " + doc, v.doubleValue(), (double) scores[doc], delta);
       }
     }
-
   }
 
-  protected void testOperation(Shape indexedShape, SpatialOperation operation,
-                               Shape queryShape, boolean match) throws IOException {
-    assertTrue("Faulty test",
-        operation.evaluate(indexedShape, queryShape) == match ||
-            indexedShape.equals(queryShape) &&
-              (operation == SpatialOperation.Contains || operation == SpatialOperation.IsWithin));
+  protected void testOperation(
+      Shape indexedShape, SpatialOperation operation, Shape queryShape, boolean match)
+      throws IOException {
+    assertTrue(
+        "Faulty test",
+        operation.evaluate(indexedShape, queryShape) == match
+            || indexedShape.equals(queryShape)
+                && (operation == SpatialOperation.Contains
+                    || operation == SpatialOperation.IsWithin));
     adoc("0", indexedShape);
     commit();
     Query query = strategy.makeQuery(new SpatialArgs(operation, queryShape));
     SearchResults got = executeQuery(query, 1);
     assert got.numFound <= 1 : "unclean test env";
-    if ((got.numFound == 1) != match)
-      fail(operation+" I:" + indexedShape + " Q:" + queryShape);
-    deleteAll();//clean up after ourselves
+    if ((got.numFound == 1) != match) fail(operation + " I:" + indexedShape + " Q:" + queryShape);
+    deleteAll(); // clean up after ourselves
   }
-
 }

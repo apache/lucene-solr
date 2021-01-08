@@ -16,14 +16,14 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link org.apache.lucene.analysis.miscellaneous.TruncateTokenFilter}. The following type is recommended for "<i>diacritics-insensitive search</i>" for Turkish.
+ * Factory for {@link org.apache.lucene.analysis.miscellaneous.TruncateTokenFilter}. The following
+ * type is recommended for "<i>diacritics-insensitive search</i>" for Turkish.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_tr_ascii_f5" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -36,6 +36,7 @@ import java.util.Map;
  *     &lt;filter class="solr.RemoveDuplicatesTokenFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 4.8.0
  * @lucene.spi {@value #NAME}
  */
@@ -51,7 +52,8 @@ public class TruncateTokenFilterFactory extends TokenFilterFactory {
     super(args);
     prefixLength = Byte.parseByte(get(args, PREFIX_LENGTH_KEY, "5"));
     if (prefixLength < 1)
-      throw new IllegalArgumentException(PREFIX_LENGTH_KEY + " parameter must be a positive number: " + prefixLength);
+      throw new IllegalArgumentException(
+          PREFIX_LENGTH_KEY + " parameter must be a positive number: " + prefixLength);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameter(s): " + args);
     }

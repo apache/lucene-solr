@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
@@ -32,14 +31,13 @@ import org.apache.lucene.util.fst.Util;
 // TODO: save/load?
 
 /**
- * Holds a map of String input to String output, to be used
- * with {@link MappingCharFilter}.  Use the {@link Builder}
- * to create this.
+ * Holds a map of String input to String output, to be used with {@link MappingCharFilter}. Use the
+ * {@link Builder} to create this.
  */
 public class NormalizeCharMap {
 
   final FST<CharsRef> map;
-  final Map<Character,FST.Arc<CharsRef>> cachedRootArcs = new HashMap<>();
+  final Map<Character, FST.Arc<CharsRef>> cachedRootArcs = new HashMap<>();
 
   // Use the builder to create:
   private NormalizeCharMap(FST<CharsRef> map) {
@@ -52,16 +50,18 @@ public class NormalizeCharMap {
         map.getFirstArc(scratchArc);
         if (FST.targetHasArcs(scratchArc)) {
           map.readFirstRealTargetArc(scratchArc.target(), scratchArc, fstReader);
-          while(true) {
+          while (true) {
             assert scratchArc.label() != FST.END_LABEL;
-            cachedRootArcs.put(Character.valueOf((char) scratchArc.label()), new FST.Arc<CharsRef>().copyFrom(scratchArc));
+            cachedRootArcs.put(
+                Character.valueOf((char) scratchArc.label()),
+                new FST.Arc<CharsRef>().copyFrom(scratchArc));
             if (scratchArc.isLast()) {
               break;
             }
             map.readNextRealArc(scratchArc, fstReader);
           }
         }
-        //System.out.println("cached " + cachedRootArcs.size() + " root arcs");
+        // System.out.println("cached " + cachedRootArcs.size() + " root arcs");
       } catch (IOException ioe) {
         // Bogus FST IOExceptions!!  (will never happen)
         throw new RuntimeException(ioe);
@@ -71,27 +71,27 @@ public class NormalizeCharMap {
 
   /**
    * Builds an NormalizeCharMap.
-   * <p>
-   * Call add() until you have added all the mappings, then call build() to get a NormalizeCharMap
+   *
+   * <p>Call add() until you have added all the mappings, then call build() to get a
+   * NormalizeCharMap
+   *
    * @lucene.experimental
    */
   public static class Builder {
 
-    private final Map<String,String> pendingPairs = new TreeMap<>();
+    private final Map<String, String> pendingPairs = new TreeMap<>();
 
-    /** Records a replacement to be applied to the input
-     *  stream.  Whenever <code>singleMatch</code> occurs in
-     *  the input, it will be replaced with
-     *  <code>replacement</code>.
+    /**
+     * Records a replacement to be applied to the input stream. Whenever <code>singleMatch</code>
+     * occurs in the input, it will be replaced with <code>replacement</code>.
      *
      * @param match input String to be replaced
      * @param replacement output String
-     * @throws IllegalArgumentException if
-     * <code>match</code> is the empty string, or was
-     * already previously added
+     * @throws IllegalArgumentException if <code>match</code> is the empty string, or was already
+     *     previously added
      */
     public void add(String match, String replacement) {
-      if (match.length() == 0 ){
+      if (match.length() == 0) {
         throw new IllegalArgumentException("cannot match the empty string");
       }
       if (pendingPairs.containsKey(match)) {
@@ -100,8 +100,7 @@ public class NormalizeCharMap {
       pendingPairs.put(match, replacement);
     }
 
-    /** Builds the NormalizeCharMap; call this once you
-     *  are done calling {@link #add}. */
+    /** Builds the NormalizeCharMap; call this once you are done calling {@link #add}. */
     public NormalizeCharMap build() {
 
       final FST<CharsRef> map;
@@ -109,9 +108,8 @@ public class NormalizeCharMap {
         final Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
         final FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
         final IntsRefBuilder scratch = new IntsRefBuilder();
-        for(Map.Entry<String,String> ent : pendingPairs.entrySet()) {
-          fstCompiler.add(Util.toUTF16(ent.getKey(), scratch),
-                      new CharsRef(ent.getValue()));
+        for (Map.Entry<String, String> ent : pendingPairs.entrySet()) {
+          fstCompiler.add(Util.toUTF16(ent.getKey(), scratch), new CharsRef(ent.getValue()));
         }
         map = fstCompiler.compile();
         pendingPairs.clear();

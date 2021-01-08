@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 
-/**
- * Basic equivalence tests for approximations.
- */
+/** Basic equivalence tests for approximations. */
 public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBase {
-  
+
   public void testConjunction() throws Exception {
     Term t1 = randomTerm();
     Term t2 = randomTerm();
@@ -60,7 +57,7 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
-    
+
     BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.MUST);
@@ -284,7 +281,7 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
     BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
     bq2.add(bq1.build(), Occur.MUST);
     bq2.add(q3, Occur.MUST);
-    
+
     BooleanQuery.Builder bq3 = new BooleanQuery.Builder();
     bq3.add(new RandomApproximationQuery(q1, random()), Occur.MUST);
     bq3.add(new RandomApproximationQuery(q2, random()), Occur.SHOULD);
@@ -295,5 +292,4 @@ public class TestApproximationSearchEquivalence extends SearchEquivalenceTestBas
 
     assertSameScores(bq2.build(), bq4.build());
   }
-
 }

@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.util.mutable;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Simple test of the basic contract of the various {@link MutableValue} implementaitons.
- */
+/** Simple test of the basic contract of the various {@link MutableValue} implementaitons. */
 public class TestMutableValues extends LuceneTestCase {
 
   public void testStr() {
     MutableValueStr xxx = new MutableValueStr();
-    assert xxx.value.get().equals(new BytesRef()) : "defaults have changed, test utility may not longer be as high";
+    assert xxx.value.get().equals(new BytesRef())
+        : "defaults have changed, test utility may not longer be as high";
     assert xxx.exists : "defaults have changed, test utility may not longer be as high";
     assertSanity(xxx);
     MutableValueStr yyy = new MutableValueStr();
@@ -37,7 +36,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -47,14 +46,14 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value.clear();
     yyy.value.copyChars("aaa");
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -66,12 +65,11 @@ public class TestMutableValues extends LuceneTestCase {
 
     xxx.exists = false;
     xxx.value.clear(); // but leave bytes alone
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     yyy.value.clear(); // but leave bytes alone
     assertEquality(xxx, yyy);
-
   }
 
   public void testDouble() {
@@ -87,7 +85,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -96,13 +94,13 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value = -99.0D;
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -124,7 +122,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -133,13 +131,13 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value = -99;
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -161,7 +159,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -170,13 +168,13 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value = -99.0F;
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -198,7 +196,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -207,13 +205,13 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value = -99L;
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -221,7 +219,7 @@ public class TestMutableValues extends LuceneTestCase {
     assertSanity(xxx);
     assertEquality(xxx, yyy);
   }
-  
+
   public void testBool() {
     MutableValueBool xxx = new MutableValueBool();
     assert xxx.value == false : "defaults have changed, test utility may not longer be as high";
@@ -235,7 +233,7 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = false;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.exists = false;
     assertEquality(xxx, yyy);
@@ -244,13 +242,13 @@ public class TestMutableValues extends LuceneTestCase {
     xxx.exists = true;
     assertSanity(xxx);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
 
     yyy.value = false;
     yyy.exists = true;
     assertSanity(yyy);
 
-    assertInEquality(xxx,yyy);
+    assertInEquality(xxx, yyy);
     assertTrue(0 < xxx.compareTo(yyy));
     assertTrue(yyy.compareTo(xxx) < 0);
 
@@ -258,18 +256,17 @@ public class TestMutableValues extends LuceneTestCase {
     assertSanity(xxx);
     assertEquality(xxx, yyy);
   }
-  
 
   private void assertSanity(MutableValue x) {
     assertEquality(x, x);
     MutableValue y = x.duplicate();
     assertEquality(x, y);
-  }   
-   
+  }
+
   private void assertEquality(MutableValue x, MutableValue y) {
     assertEquals(x.hashCode(), y.hashCode());
 
-    assertEquals(x, y); 
+    assertEquals(x, y);
     assertEquals(y, x);
 
     assertTrue(x.equalsSameType(y));
@@ -280,8 +277,8 @@ public class TestMutableValues extends LuceneTestCase {
 
     assertEquals(0, x.compareSameType(y));
     assertEquals(0, y.compareSameType(x));
-  } 
-     
+  }
+
   private void assertInEquality(MutableValue x, MutableValue y) {
     assertFalse(x.equals(y));
     assertFalse(y.equals(x));
@@ -291,6 +288,5 @@ public class TestMutableValues extends LuceneTestCase {
 
     assertFalse(0 == x.compareTo(y));
     assertFalse(0 == y.compareTo(x));
-  }      
-
+  }
 }

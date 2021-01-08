@@ -48,23 +48,24 @@ public class TestTerms extends LuceneTestCase {
     int numDocs = atLeast(100);
     BytesRef minTerm = null;
     BytesRef maxTerm = null;
-    for(int i=0;i<numDocs;i++ ){
+    for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field field = new TextField("field", "", Field.Store.NO);
       doc.add(field);
-      //System.out.println("  doc " + i);
-      CannedBinaryTokenStream.BinaryToken[] tokens = new CannedBinaryTokenStream.BinaryToken[atLeast(10)];
-      for(int j=0;j<tokens.length;j++) {
+      // System.out.println("  doc " + i);
+      CannedBinaryTokenStream.BinaryToken[] tokens =
+          new CannedBinaryTokenStream.BinaryToken[atLeast(10)];
+      for (int j = 0; j < tokens.length; j++) {
         byte[] bytes = new byte[TestUtil.nextInt(random(), 1, 20)];
         random().nextBytes(bytes);
         BytesRef tokenBytes = new BytesRef(bytes);
-        //System.out.println("    token " + tokenBytes);
+        // System.out.println("    token " + tokenBytes);
         if (minTerm == null || tokenBytes.compareTo(minTerm) < 0) {
-          //System.out.println("      ** new min");
+          // System.out.println("      ** new min");
           minTerm = tokenBytes;
         }
         if (maxTerm == null || tokenBytes.compareTo(maxTerm) > 0) {
-          //System.out.println("      ** new max");
+          // System.out.println("      ** new max");
           maxTerm = tokenBytes;
         }
         tokens[j] = new CannedBinaryTokenStream.BinaryToken(tokenBytes);
@@ -77,7 +78,7 @@ public class TestTerms extends LuceneTestCase {
     Terms terms = MultiTerms.getTerms(r, "field");
     assertEquals(minTerm, terms.getMin());
     assertEquals(maxTerm, terms.getMax());
-    
+
     r.close();
     w.close();
     dir.close();

@@ -16,25 +16,27 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * A bit set that only stores longs that have at least one bit which is set.
- * The way it works is that the space of bits is divided into blocks of
- * 4096 bits, which is 64 longs. Then for each block, we have:<ul>
- * <li>a long[] which stores the non-zero longs for that block</li>
- * <li>a long so that bit <code>i</code> being set means that the <code>i-th</code>
- *     long of the block is non-null, and its offset in the array of longs is
- *     the number of one bits on the right of the <code>i-th</code> bit.</li></ul>
+ * A bit set that only stores longs that have at least one bit which is set. The way it works is
+ * that the space of bits is divided into blocks of 4096 bits, which is 64 longs. Then for each
+ * block, we have:
+ *
+ * <ul>
+ *   <li>a long[] which stores the non-zero longs for that block
+ *   <li>a long so that bit <code>i</code> being set means that the <code>i-th</code> long of the
+ *       block is non-null, and its offset in the array of longs is the number of one bits on the
+ *       right of the <code>i-th</code> bit.
+ * </ul>
  *
  * @lucene.internal
  */
 public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SparseFixedBitSet.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(SparseFixedBitSet.class);
   private static final long SINGLE_ELEMENT_ARRAY_BYTES_USED = RamUsageEstimator.sizeOf(new long[1]);
   private static final int MASK_4096 = (1 << 12) - 1;
 
@@ -53,8 +55,10 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
   int nonZeroLongCount;
   long ramBytesUsed;
 
-  /** Create a {@link SparseFixedBitSet} that can contain bits between
-   *  <code>0</code> included and <code>length</code> excluded. */
+  /**
+   * Create a {@link SparseFixedBitSet} that can contain bits between <code>0</code> included and
+   * <code>length</code> excluded.
+   */
   public SparseFixedBitSet(int length) {
     if (length < 1) {
       throw new IllegalArgumentException("length needs to be >= 1");
@@ -63,9 +67,10 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     final int blockCount = blockCount(length);
     indices = new long[blockCount];
     bits = new long[blockCount][];
-    ramBytesUsed = BASE_RAM_BYTES_USED
-        + RamUsageEstimator.shallowSizeOf(indices)
-        + RamUsageEstimator.shallowSizeOf(bits);
+    ramBytesUsed =
+        BASE_RAM_BYTES_USED
+            + RamUsageEstimator.shallowSizeOf(indices)
+            + RamUsageEstimator.shallowSizeOf(bits);
   }
 
   @Override
@@ -99,7 +104,8 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     final int totalLongs = (length + 63) >>> 6; // total number of longs in the space
     assert totalLongs >= nonZeroLongCount;
     final int zeroLongs = totalLongs - nonZeroLongCount; // number of longs that are zeros
-    // No need to guard against division by zero, it will return +Infinity and things will work as expected
+    // No need to guard against division by zero, it will return +Infinity and things will work as
+    // expected
     final long estimate = Math.round(totalLongs * Math.log((double) totalLongs / zeroLongs));
     return (int) Math.min(length, estimate);
   }
@@ -131,9 +137,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     return newSize;
   }
 
-  /**
-   * Set the bit at index <code>i</code>.
-   */
+  /** Set the bit at index <code>i</code>. */
   public void set(int i) {
     assert consistent(i);
     final int i4096 = i >>> 12;
@@ -159,7 +163,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
   private void insertBlock(int i4096, int i64, int i) {
     indices[i4096] = 1L << i64; // shifts are mod 64 in java
     assert bits[i4096] == null;
-    bits[i4096] = new long[] { 1L << i }; // shifts are mod 64 in java
+    bits[i4096] = new long[] {1L << i}; // shifts are mod 64 in java
     ++nonZeroLongCount;
     ramBytesUsed += SINGLE_ELEMENT_ARRAY_BYTES_USED;
   }
@@ -188,9 +192,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     ++nonZeroLongCount;
   }
 
-  /**
-   * Clear the bit at index <code>i</code>.
-   */
+  /** Clear the bit at index <code>i</code>. */
   public void clear(int i) {
     assert consistent(i);
     final int i4096 = i >>> 12;
@@ -389,10 +391,12 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     for (int i = Long.numberOfLeadingZeros(newIndex), newO = Long.bitCount(newIndex) - 1;
         i < 64;
         i += 1 + Long.numberOfLeadingZeros(newIndex << (i + 1)), newO -= 1) {
-      // bitIndex is the index of a bit which is set in newIndex and newO is the number of 1 bits on its right
+      // bitIndex is the index of a bit which is set in newIndex and newO is the number of 1 bits on
+      // its right
       final int bitIndex = 63 - i;
       assert newO == Long.bitCount(newIndex & ((1L << bitIndex) - 1));
-      newBits[newO] = longBits(currentIndex, currentBits, bitIndex) | longBits(index, bits, bitIndex);
+      newBits[newO] =
+          longBits(currentIndex, currentBits, bitIndex) | longBits(index, bits, bitIndex);
     }
     indices[i4096] = newIndex;
     this.bits[i4096] = newBits;
@@ -408,9 +412,7 @@ public class SparseFixedBitSet extends BitSet implements Bits, Accountable {
     }
   }
 
-  /**
-   * {@link #or(DocIdSetIterator)} impl that works best when <code>it</code> is dense
-   */
+  /** {@link #or(DocIdSetIterator)} impl that works best when <code>it</code> is dense */
   private void orDense(DocIdSetIterator it) throws IOException {
     checkUnpositioned(it);
     // The goal here is to try to take advantage of the ordering of documents

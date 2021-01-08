@@ -16,31 +16,30 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.Tokenizer;
 
 /** Simple Tests to ensure this factory is working */
 public class TestPatternTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   public void testFactory() throws Exception {
     final Reader reader = new StringReader("Günther Günther is here");
     // create PatternTokenizer
-    Tokenizer stream = tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create(newAttributeFactory());
+    Tokenizer stream =
+        tokenizerFactory("Pattern", "pattern", "[,;/\\s]+").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream,
-        new String[] { "Günther", "Günther", "is", "here" });
+    assertTokenStreamContents(stream, new String[] {"Günther", "Günther", "is", "here"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Pattern",
-          "pattern", "something",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Pattern", "pattern", "something", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

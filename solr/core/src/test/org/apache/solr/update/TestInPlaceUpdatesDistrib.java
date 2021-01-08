@@ -47,6 +47,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -56,17 +57,20 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Tests the in-place updates (docValues updates) for a one shard, three replica cluster.
@@ -681,6 +685,18 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     currentVersion = addDocAndGetVersion("id", 100, "inplace_updatable_float", map("inc", 1));
     assertTrue(currentVersion > version);
     version = currentVersion;
+
+    // set operation with invalid value for field
+    SolrException e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_float", map("set", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // inc operation with invalid inc value
+    e = expectThrows(SolrException.class,
+        () -> addDocAndGetVersion( "id", 100, "inplace_updatable_int", map("inc", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // RTG from tlog(s)
     for (SolrClient client : clients) {

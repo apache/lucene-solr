@@ -16,19 +16,15 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Exposes {@link PostingsEnum}, merged from {@link PostingsEnum}
- * API of sub-segments.
+ * Exposes {@link PostingsEnum}, merged from {@link PostingsEnum} API of sub-segments.
  *
  * @lucene.experimental
  */
-
 public final class MultiPostingsEnum extends PostingsEnum {
   private final MultiTermsEnum parent;
   final PostingsEnum[] subPostingsEnums;
@@ -39,9 +35,12 @@ public final class MultiPostingsEnum extends PostingsEnum {
   int currentBase;
   int doc = -1;
 
-  /** Sole constructor.
+  /**
+   * Sole constructor.
+   *
    * @param parent The {@link MultiTermsEnum} that created us.
-   * @param subReaderCount How many sub-readers are being merged. */
+   * @param subReaderCount How many sub-readers are being merged.
+   */
   public MultiPostingsEnum(MultiTermsEnum parent, int subReaderCount) {
     this.parent = parent;
     subPostingsEnums = new PostingsEnum[subReaderCount];
@@ -51,8 +50,7 @@ public final class MultiPostingsEnum extends PostingsEnum {
     }
   }
 
-  /** Returns {@code true} if this instance can be reused by
-   *  the provided {@link MultiTermsEnum}. */
+  /** Returns {@code true} if this instance can be reused by the provided {@link MultiTermsEnum}. */
   public boolean canReuse(MultiTermsEnum parent) {
     return this.parent == parent;
   }
@@ -60,7 +58,7 @@ public final class MultiPostingsEnum extends PostingsEnum {
   /** Re-use and reset this instance on the provided slices. */
   public MultiPostingsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
-    for(int i=0;i<numSubs;i++) {
+    for (int i = 0; i < numSubs; i++) {
       this.subs[i].postingsEnum = subs[i].postingsEnum;
       this.subs[i].slice = subs[i].slice;
     }
@@ -70,8 +68,11 @@ public final class MultiPostingsEnum extends PostingsEnum {
     return this;
   }
 
-  /** How many sub-readers we are merging.
-   *  @see #getSubs */
+  /**
+   * How many sub-readers we are merging.
+   *
+   * @see #getSubs
+   */
   public int getNumSubs() {
     return numSubs;
   }
@@ -95,21 +96,21 @@ public final class MultiPostingsEnum extends PostingsEnum {
   @Override
   public int advance(int target) throws IOException {
     assert target > doc;
-    while(true) {
+    while (true) {
       if (current != null) {
         final int doc;
         if (target < currentBase) {
           // target was in the previous slice but there was no matching doc after it
           doc = current.nextDoc();
         } else {
-          doc = current.advance(target-currentBase);
+          doc = current.advance(target - currentBase);
         }
         if (doc == NO_MORE_DOCS) {
           current = null;
         } else {
           return this.doc = doc + currentBase;
         }
-      } else if (upto == numSubs-1) {
+      } else if (upto == numSubs - 1) {
         return this.doc = NO_MORE_DOCS;
       } else {
         upto++;
@@ -121,9 +122,9 @@ public final class MultiPostingsEnum extends PostingsEnum {
 
   @Override
   public int nextDoc() throws IOException {
-    while(true) {
+    while (true) {
       if (current == null) {
-        if (upto == numSubs-1) {
+        if (upto == numSubs - 1) {
           return this.doc = NO_MORE_DOCS;
         } else {
           upto++;
@@ -162,25 +163,22 @@ public final class MultiPostingsEnum extends PostingsEnum {
   }
 
   // TODO: implement bulk read more efficiently than super
-  /** Holds a {@link PostingsEnum} along with the
-   *  corresponding {@link ReaderSlice}. */
-  public final static class EnumWithSlice {
+  /** Holds a {@link PostingsEnum} along with the corresponding {@link ReaderSlice}. */
+  public static final class EnumWithSlice {
     /** {@link PostingsEnum} for this sub-reader. */
     public PostingsEnum postingsEnum;
 
-    /** {@link ReaderSlice} describing how this sub-reader
-     *  fits into the composite reader. */
+    /** {@link ReaderSlice} describing how this sub-reader fits into the composite reader. */
     public ReaderSlice slice;
 
-    EnumWithSlice() {
-    }
-    
+    EnumWithSlice() {}
+
     @Override
     public String toString() {
-      return slice.toString()+":"+ postingsEnum;
+      return slice.toString() + ":" + postingsEnum;
     }
   }
-  
+
   @Override
   public long cost() {
     long cost = 0;
@@ -189,10 +187,9 @@ public final class MultiPostingsEnum extends PostingsEnum {
     }
     return cost;
   }
-  
+
   @Override
   public String toString() {
     return "MultiDocsAndPositionsEnum(" + Arrays.toString(getSubs()) + ")";
   }
 }
-

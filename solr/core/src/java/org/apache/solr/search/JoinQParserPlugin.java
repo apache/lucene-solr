@@ -90,7 +90,7 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
-        final JoinQuery q = new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        final JoinQuery q = createTopLevelJoin(jParams);
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
       }
@@ -98,6 +98,18 @@ public class JoinQParserPlugin extends QParserPlugin {
       @Override
       Query makeJoinDirectFromParams(JoinParams jParams) {
         return new TopLevelJoinQuery(jParams.fromField, jParams.toField, null, jParams.fromQuery);
+      }
+
+      private JoinQuery createTopLevelJoin(JoinParams jParams) {
+        if (isSelfJoin(jParams)) {
+          return new TopLevelJoinQuery.SelfJoin(jParams.fromField, jParams.fromQuery);
+        }
+        return new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+      }
+
+      private boolean isSelfJoin(JoinParams jparams) {
+        return jparams.fromCore == null &&
+                (jparams.fromField != null && jparams.fromField.equals(jparams.toField));
       }
     },
     crossCollection {

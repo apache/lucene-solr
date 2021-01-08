@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Standard Lucene Query Nodes.
  *
  * <h2>Standard Lucene Query Nodes</h2>
- * <p>
- * The package org.apache.lucene.queryparser.flexible.standard.nodes contains QueryNode classes
- * that are used specifically for Lucene query node tree. Any other generic QueryNode is
- * defined under org.apache.lucene.queryParser.nodes.
+ *
+ * <p>The package org.apache.lucene.queryparser.flexible.standard.nodes contains QueryNode classes
+ * that are used specifically for Lucene query node tree. Any other generic QueryNode is defined
+ * under org.apache.lucene.queryParser.nodes.
  */
 package org.apache.lucene.queryparser.flexible.standard.nodes;
-

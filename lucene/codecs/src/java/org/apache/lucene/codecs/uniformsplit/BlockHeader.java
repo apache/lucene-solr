@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -27,16 +26,15 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Block header containing block metadata.
- * <p>
- * Holds the number of lines in the block.
- * <p>
- * Holds the base file pointers to apply delta base encoding to all the file
- * pointers in the block with {@link DeltaBaseTermStateSerializer}.
- * <p>
- * Holds the offset to the details region of the block (the term states).
- * <p>
- * Holds the offset to the middle term of the block to divide the number
- * of terms to scan by 2.
+ *
+ * <p>Holds the number of lines in the block.
+ *
+ * <p>Holds the base file pointers to apply delta base encoding to all the file pointers in the
+ * block with {@link DeltaBaseTermStateSerializer}.
+ *
+ * <p>Holds the offset to the details region of the block (the term states).
+ *
+ * <p>Holds the offset to the middle term of the block to divide the number of terms to scan by 2.
  *
  * @lucene.experimental
  */
@@ -55,26 +53,42 @@ public class BlockHeader implements Accountable {
   protected int middleLineOffset;
 
   /**
-   * @param linesCount           Number of lines in the block.
-   * @param baseDocsFP           File pointer to the docs of the first term with docs in the block.
-   * @param basePositionsFP      File pointer to the positions of the first term with positions in the block.
-   * @param basePayloadsFP       File pointer to the payloads of the first term with payloads in the block.
-   * @param termStatesBaseOffset Offset to the details region of the block (the term states), relative to the block start.
-   * @param middleLineOffset     Offset to the middle term of the block, relative to the block start.
+   * @param linesCount Number of lines in the block.
+   * @param baseDocsFP File pointer to the docs of the first term with docs in the block.
+   * @param basePositionsFP File pointer to the positions of the first term with positions in the
+   *     block.
+   * @param basePayloadsFP File pointer to the payloads of the first term with payloads in the
+   *     block.
+   * @param termStatesBaseOffset Offset to the details region of the block (the term states),
+   *     relative to the block start.
+   * @param middleLineOffset Offset to the middle term of the block, relative to the block start.
    */
-  protected BlockHeader(int linesCount, long baseDocsFP, long basePositionsFP, long basePayloadsFP,
-                        int termStatesBaseOffset, int middleLineOffset) {
-    reset(linesCount, baseDocsFP, basePositionsFP, basePayloadsFP, termStatesBaseOffset, middleLineOffset);
+  protected BlockHeader(
+      int linesCount,
+      long baseDocsFP,
+      long basePositionsFP,
+      long basePayloadsFP,
+      int termStatesBaseOffset,
+      int middleLineOffset) {
+    reset(
+        linesCount,
+        baseDocsFP,
+        basePositionsFP,
+        basePayloadsFP,
+        termStatesBaseOffset,
+        middleLineOffset);
   }
 
-  /**
-   * Empty constructor. {@link #reset} must be called before writing.
-   */
-  protected BlockHeader() {
-  }
+  /** Empty constructor. {@link #reset} must be called before writing. */
+  protected BlockHeader() {}
 
-  protected BlockHeader reset(int linesCount, long baseDocsFP, long basePositionsFP,
-                              long basePayloadsFP, int termStatesBaseOffset, int middleTermOffset) {
+  protected BlockHeader reset(
+      int linesCount,
+      long baseDocsFP,
+      long basePositionsFP,
+      long basePayloadsFP,
+      int termStatesBaseOffset,
+      int middleTermOffset) {
     this.baseDocsFP = baseDocsFP;
     this.basePositionsFP = basePositionsFP;
     this.basePayloadsFP = basePayloadsFP;
@@ -85,51 +99,40 @@ public class BlockHeader implements Accountable {
     return this;
   }
 
-  /**
-   * @return The number of lines in the block.
-   */
+  /** @return The number of lines in the block. */
   public int getLinesCount() {
     return linesCount;
   }
 
-  /**
-   * @return The index of the middle line of the block.
-   */
+  /** @return The index of the middle line of the block. */
   public int getMiddleLineIndex() {
     return middleLineIndex;
   }
 
-  /**
-   * @return The offset to the middle line of the block, relative to the block start.
-   */
+  /** @return The offset to the middle line of the block, relative to the block start. */
   public int getMiddleLineOffset() {
     return middleLineOffset;
   }
 
   /**
-   * @return The offset to the details region of the block (the term states), relative to the block start.
+   * @return The offset to the details region of the block (the term states), relative to the block
+   *     start.
    */
   public int getTermStatesBaseOffset() {
     return termStatesBaseOffset;
   }
 
-  /**
-   * @return The file pointer to the docs of the first term with docs in the block.
-   */
+  /** @return The file pointer to the docs of the first term with docs in the block. */
   public long getBaseDocsFP() {
     return baseDocsFP;
   }
 
-  /**
-   * @return The file pointer to the positions of the first term with positions in the block.
-   */
+  /** @return The file pointer to the positions of the first term with positions in the block. */
   public long getBasePositionsFP() {
     return basePositionsFP;
   }
 
-  /**
-   * @return The file pointer to the payloads of the first term with payloads in the block.
-   */
+  /** @return The file pointer to the payloads of the first term with payloads in the block. */
   public long getBasePayloadsFP() {
     return basePayloadsFP;
   }
@@ -139,9 +142,7 @@ public class BlockHeader implements Accountable {
     return RAM_USAGE;
   }
 
-  /**
-   * Reads/writes block header.
-   */
+  /** Reads/writes block header. */
   public static class Serializer {
 
     public void write(DataOutput output, BlockHeader blockHeader) throws IOException {
@@ -168,7 +169,8 @@ public class BlockHeader implements Accountable {
 
       int termStatesBaseOffset = input.readVInt();
       if (termStatesBaseOffset < 0) {
-        throw new CorruptIndexException("Illegal termStatesBaseOffset= " + termStatesBaseOffset, input);
+        throw new CorruptIndexException(
+            "Illegal termStatesBaseOffset= " + termStatesBaseOffset, input);
       }
       int middleTermOffset = input.readVInt();
       if (middleTermOffset < 0) {
@@ -176,7 +178,13 @@ public class BlockHeader implements Accountable {
       }
 
       BlockHeader blockHeader = reuse == null ? new BlockHeader() : reuse;
-      return blockHeader.reset(linesCount, baseDocsFP, basePositionsFP, basePayloadsFP, termStatesBaseOffset, middleTermOffset);
+      return blockHeader.reset(
+          linesCount,
+          baseDocsFP,
+          basePositionsFP,
+          basePayloadsFP,
+          termStatesBaseOffset,
+          middleTermOffset);
     }
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessDeniedException;
@@ -26,7 +25,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
-
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.util.IOUtils;
@@ -39,47 +37,53 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
   protected Directory getDirectory(Path path) throws IOException {
     return newFSDirectory(path, NativeFSLockFactory.INSTANCE);
   }
-  
+
   /** Verify NativeFSLockFactory works correctly if the lock file exists */
   public void testLockFileExists() throws IOException {
     Path tempDir = createTempDir();
     Path lockFile = tempDir.resolve("test.lock");
     Files.createFile(lockFile);
-    
+
     Directory dir = getDirectory(tempDir);
     Lock l = dir.obtainLock("test.lock");
     l.close();
     dir.close();
   }
-  
+
   /** release the lock and test ensureValid fails */
   public void testInvalidateLock() throws IOException {
     Directory dir = getDirectory(createTempDir());
-    NativeFSLockFactory.NativeFSLock lock =  (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
+    NativeFSLockFactory.NativeFSLock lock =
+        (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
     lock.ensureValid();
     lock.lock.release();
-    expectThrows(AlreadyClosedException.class, () -> {
-      lock.ensureValid();
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          lock.ensureValid();
+        });
 
     IOUtils.closeWhileHandlingException(lock);
     dir.close();
   }
-  
+
   /** close the channel and test ensureValid fails */
   public void testInvalidateChannel() throws IOException {
     Directory dir = getDirectory(createTempDir());
-    NativeFSLockFactory.NativeFSLock lock =  (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
+    NativeFSLockFactory.NativeFSLock lock =
+        (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
     lock.ensureValid();
     lock.channel.close();
-    expectThrows(AlreadyClosedException.class, () -> {
-      lock.ensureValid();
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          lock.ensureValid();
+        });
 
     IOUtils.closeWhileHandlingException(lock);
     dir.close();
   }
-  
+
   /** delete the lockfile and test ensureValid fails */
   public void testDeleteLockFile() throws IOException {
     try (Directory dir = getDirectory(createTempDir())) {
@@ -90,10 +94,12 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
 
       dir.deleteFile("test.lock");
 
-      expectThrows(IOException.class, () -> {
-        lock.ensureValid();
-      });
-      
+      expectThrows(
+          IOException.class,
+          () -> {
+            lock.ensureValid();
+          });
+
       IOUtils.closeWhileHandlingException(lock);
     }
   }
@@ -105,7 +111,9 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
     }
 
     @Override
-    public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+    public SeekableByteChannel newByteChannel(
+        Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+        throws IOException {
       if (path.getFileName().toString().equals("test.lock")) {
         throw new AccessDeniedException(path.toString(), null, "fake access denied");
       }
@@ -123,9 +131,12 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
     // we should get an IOException (typically NoSuchFileException but no guarantee) with
     // our fake AccessDenied added as suppressed.
     Directory dir = getDirectory(mockPath.resolve("indexDir"));
-    IOException expected = expectThrows(IOException.class, () -> {
-      dir.obtainLock("test.lock");
-    });
+    IOException expected =
+        expectThrows(
+            IOException.class,
+            () -> {
+              dir.obtainLock("test.lock");
+            });
     AccessDeniedException suppressed = (AccessDeniedException) expected.getSuppressed()[0];
     assertTrue(suppressed.getMessage().contains("fake access denied"));
 

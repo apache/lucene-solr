@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
-
 import java.io.IOException;
-
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -28,46 +25,32 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /**
- * Expert: a FieldComparator compares hits so as to determine their
- * sort order when collecting the top results with {@link
- * TopFieldCollector}.  The concrete public FieldComparator
- * classes here correspond to the SortField types.
+ * Expert: a FieldComparator compares hits so as to determine their sort order when collecting the
+ * top results with {@link TopFieldCollector}. The concrete public FieldComparator classes here
+ * correspond to the SortField types.
  *
- * <p>The document IDs passed to these methods must only
- * move forwards, since they are using doc values iterators
- * to retrieve sort values.</p>
+ * <p>The document IDs passed to these methods must only move forwards, since they are using doc
+ * values iterators to retrieve sort values.
  *
- * <p>This API is designed to achieve high performance
- * sorting, by exposing a tight interaction with {@link
- * FieldValueHitQueue} as it visits hits.  Whenever a hit is
- * competitive, it's enrolled into a virtual slot, which is
- * an int ranging from 0 to numHits-1. Segment transitions are
- * handled by creating a dedicated per-segment
- * {@link LeafFieldComparator} which also needs to interact
- * with the {@link FieldValueHitQueue} but can optimize based
- * on the segment to collect.</p>
- * 
- * <p>The following functions need to be implemented</p>
+ * <p>This API is designed to achieve high performance sorting, by exposing a tight interaction with
+ * {@link FieldValueHitQueue} as it visits hits. Whenever a hit is competitive, it's enrolled into a
+ * virtual slot, which is an int ranging from 0 to numHits-1. Segment transitions are handled by
+ * creating a dedicated per-segment {@link LeafFieldComparator} which also needs to interact with
+ * the {@link FieldValueHitQueue} but can optimize based on the segment to collect.
+ *
+ * <p>The following functions need to be implemented
+ *
  * <ul>
- *  <li> {@link #compare} Compare a hit at 'slot a'
- *       with hit 'slot b'.
- * 
- *  <li> {@link #setTopValue} This method is called by
- *       {@link TopFieldCollector} to notify the
- *       FieldComparator of the top most value, which is
- *       used by future calls to
- *       {@link LeafFieldComparator#compareTop}.
- * 
- *  <li> {@link #getLeafComparator(org.apache.lucene.index.LeafReaderContext)} Invoked
- *       when the search is switching to the next segment.
- *       You may need to update internal state of the
- *       comparator, for example retrieving new values from
- *       DocValues.
- *
- *  <li> {@link #value} Return the sort value stored in
- *       the specified slot.  This is only called at the end
- *       of the search, in order to populate {@link
- *       FieldDoc#fields} when returning the top results.
+ *   <li>{@link #compare} Compare a hit at 'slot a' with hit 'slot b'.
+ *   <li>{@link #setTopValue} This method is called by {@link TopFieldCollector} to notify the
+ *       FieldComparator of the top most value, which is used by future calls to {@link
+ *       LeafFieldComparator#compareTop}.
+ *   <li>{@link #getLeafComparator(org.apache.lucene.index.LeafReaderContext)} Invoked when the
+ *       search is switching to the next segment. You may need to update internal state of the
+ *       comparator, for example retrieving new values from DocValues.
+ *   <li>{@link #value} Return the sort value stored in the specified slot. This is only called at
+ *       the end of the search, in order to populate {@link FieldDoc#fields} when returning the top
+ *       results.
  * </ul>
  *
  * @see LeafFieldComparator
@@ -77,20 +60,18 @@ public abstract class FieldComparator<T> {
 
   /**
    * Compare hit at slot1 with hit at slot2.
-   * 
+   *
    * @param slot1 first slot to compare
    * @param slot2 second slot to compare
-   * @return any {@code N < 0} if slot2's value is sorted after
-   * slot1, any {@code N > 0} if the slot2's value is sorted before
-   * slot1 and {@code 0} if they are equal
+   * @return any {@code N < 0} if slot2's value is sorted after slot1, any {@code N > 0} if the
+   *     slot2's value is sorted before slot1 and {@code 0} if they are equal
    */
   public abstract int compare(int slot1, int slot2);
 
   /**
-   * Record the top value, for future calls to {@link
-   * LeafFieldComparator#compareTop}.  This is only called for searches that
-   * use searchAfter (deep paging), and is called before any
-   * calls to {@link #getLeafComparator(LeafReaderContext)}.
+   * Record the top value, for future calls to {@link LeafFieldComparator#compareTop}. This is only
+   * called for searches that use searchAfter (deep paging), and is called before any calls to
+   * {@link #getLeafComparator(LeafReaderContext)}.
    */
   public abstract void setTopValue(T value);
 
@@ -103,23 +84,24 @@ public abstract class FieldComparator<T> {
   public abstract T value(int slot);
 
   /**
-   * Get a per-segment {@link LeafFieldComparator} to collect the given
-   * {@link org.apache.lucene.index.LeafReaderContext}. All docIDs supplied to
-   * this {@link LeafFieldComparator} are relative to the current reader (you
-   * must add docBase if you need to map it to a top-level docID).
-   * 
+   * Get a per-segment {@link LeafFieldComparator} to collect the given {@link
+   * org.apache.lucene.index.LeafReaderContext}. All docIDs supplied to this {@link
+   * LeafFieldComparator} are relative to the current reader (you must add docBase if you need to
+   * map it to a top-level docID).
+   *
    * @param context current reader context
    * @return the comparator to use for this segment
    * @throws IOException if there is a low-level IO error
    */
-  public abstract LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException;
+  public abstract LeafFieldComparator getLeafComparator(LeafReaderContext context)
+      throws IOException;
 
-  /** Returns a negative integer if first is less than second,
-   *  0 if they are equal and a positive integer otherwise. Default
-   *  impl to assume the type implements Comparable and
-   *  invoke .compareTo; be sure to override this method if
-   *  your FieldComparator's type isn't a Comparable or
-   *  if your values may sometimes be null */
+  /**
+   * Returns a negative integer if first is less than second, 0 if they are equal and a positive
+   * integer otherwise. Default impl to assume the type implements Comparable and invoke .compareTo;
+   * be sure to override this method if your FieldComparator's type isn't a Comparable or if your
+   * values may sometimes be null
+   */
   @SuppressWarnings("unchecked")
   public int compareValues(T first, T second) {
     if (first == null) {
@@ -136,19 +118,27 @@ public abstract class FieldComparator<T> {
   }
 
   /**
-   * Informs the comparator that sort is done on this single field.
-   * This is useful to enable some optimizations for skipping non-competitive documents.
+   * Informs the comparator that sort is done on this single field. This is useful to enable some
+   * optimizations for skipping non-competitive documents.
    */
-  public void setSingleSort() {
-  }
+  public void setSingleSort() {}
 
-  /** Sorts by descending relevance.  NOTE: if you are
-   *  sorting only by descending relevance and then
-   *  secondarily by ascending docID, performance is faster
-   *  using {@link TopScoreDocCollector} directly (which {@link
-   *  IndexSearcher#search} uses when no {@link Sort} is
-   *  specified). */
-  public static final class RelevanceComparator extends FieldComparator<Float> implements LeafFieldComparator {
+  /**
+   * Informs the comparator that the skipping of documents should be disabled. This function is
+   * called by TopFieldCollector in cases when the skipping functionality should not be applied or
+   * not necessary. An example could be when search sort is a part of the index sort, and can be
+   * already efficiently handled by TopFieldCollector, and doing extra work for skipping in the
+   * comparator is redundant.
+   */
+  public void disableSkipping() {}
+
+  /**
+   * Sorts by descending relevance. NOTE: if you are sorting only by descending relevance and then
+   * secondarily by ascending docID, performance is faster using {@link TopScoreDocCollector}
+   * directly (which {@link IndexSearcher#search} uses when no {@link Sort} is specified).
+   */
+  public static final class RelevanceComparator extends FieldComparator<Float>
+      implements LeafFieldComparator {
     private final float[] scores;
     private float bottom;
     private Scorable scorer;
@@ -181,7 +171,7 @@ public abstract class FieldComparator<T> {
     public LeafFieldComparator getLeafComparator(LeafReaderContext context) {
       return this;
     }
-    
+
     @Override
     public void setBottom(final int bottom) {
       this.bottom = scores[bottom];
@@ -203,7 +193,7 @@ public abstract class FieldComparator<T> {
         this.scorer = scorer;
       }
     }
-    
+
     @Override
     public Float value(int slot) {
       return Float.valueOf(scores[slot]);
@@ -224,71 +214,72 @@ public abstract class FieldComparator<T> {
       return Float.compare(docValue, topValue);
     }
   }
-  
-  /** Sorts by field's natural Term sort order, using
-   *  ordinals.  This is functionally equivalent to {@link
-   *  org.apache.lucene.search.FieldComparator.TermValComparator}, but it first resolves the string
-   *  to their relative ordinal positions (using the index
-   *  returned by {@link org.apache.lucene.index.LeafReader#getSortedDocValues(String)}), and
-   *  does most comparisons using the ordinals.  For medium
-   *  to large results, this comparator will be much faster
-   *  than {@link org.apache.lucene.search.FieldComparator.TermValComparator}.  For very small
-   *  result sets it may be slower. */
-  public static class TermOrdValComparator extends FieldComparator<BytesRef> implements LeafFieldComparator {
+
+  /**
+   * Sorts by field's natural Term sort order, using ordinals. This is functionally equivalent to
+   * {@link org.apache.lucene.search.FieldComparator.TermValComparator}, but it first resolves the
+   * string to their relative ordinal positions (using the index returned by {@link
+   * org.apache.lucene.index.LeafReader#getSortedDocValues(String)}), and does most comparisons
+   * using the ordinals. For medium to large results, this comparator will be much faster than
+   * {@link org.apache.lucene.search.FieldComparator.TermValComparator}. For very small result sets
+   * it may be slower.
+   */
+  public static class TermOrdValComparator extends FieldComparator<BytesRef>
+      implements LeafFieldComparator {
     /* Ords for each slot.
-       @lucene.internal */
+    @lucene.internal */
     final int[] ords;
 
     /* Values for each slot.
-       @lucene.internal */
+    @lucene.internal */
     final BytesRef[] values;
     private final BytesRefBuilder[] tempBRs;
 
     /* Which reader last copied a value into the slot. When
-       we compare two slots, we just compare-by-ord if the
-       readerGen is the same; else we must compare the
-       values (slower).
-       @lucene.internal */
+    we compare two slots, we just compare-by-ord if the
+    readerGen is the same; else we must compare the
+    values (slower).
+    @lucene.internal */
     final int[] readerGen;
 
     /* Gen of current reader we are on.
-       @lucene.internal */
+    @lucene.internal */
     int currentReaderGen = -1;
 
     /* Current reader's doc ord/values.
-       @lucene.internal */
+    @lucene.internal */
     SortedDocValues termsIndex;
 
     private final String field;
 
     /* Bottom slot, or -1 if queue isn't full yet
-       @lucene.internal */
+    @lucene.internal */
     int bottomSlot = -1;
 
     /* Bottom ord (same as ords[bottomSlot] once bottomSlot
-       is set).  Cached for faster compares.
-       @lucene.internal */
+    is set).  Cached for faster compares.
+    @lucene.internal */
     int bottomOrd;
 
     /* True if current bottom slot matches the current
-       reader.
-       @lucene.internal */
+    reader.
+    @lucene.internal */
     boolean bottomSameReader;
 
     /* Bottom value (same as values[bottomSlot] once
-       bottomSlot is set).  Cached for faster compares.
-      @lucene.internal */
+     bottomSlot is set).  Cached for faster compares.
+    @lucene.internal */
     BytesRef bottomValue;
 
     /** Set by setTopValue. */
     BytesRef topValue;
+
     boolean topSameReader;
     int topOrd;
 
-    /** -1 if missing values are sorted first, 1 if they are
-     *  sorted last */
+    /** -1 if missing values are sorted first, 1 if they are sorted last */
     final int missingSortCmp;
-    
+
     /** Which ordinal to use for a missing value. */
     final int missingOrd;
 
@@ -297,9 +288,10 @@ public abstract class FieldComparator<T> {
       this(numHits, field, false);
     }
 
-    /** Creates this, with control over how missing values
-     *  are sorted.  Pass sortMissingLast=true to put
-     *  missing values at the end. */
+    /**
+     * Creates this, with control over how missing values are sorted. Pass sortMissingLast=true to
+     * put missing values at the end.
+     */
     public TermOrdValComparator(int numHits, String field, boolean sortMissingLast) {
       ords = new int[numHits];
       values = new BytesRef[numHits];
@@ -379,12 +371,13 @@ public abstract class FieldComparator<T> {
       ords[slot] = ord;
       readerGen[slot] = currentReaderGen;
     }
-    
+
     /** Retrieves the SortedDocValues for the field in this segment */
-    protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+    protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field)
+        throws IOException {
       return DocValues.getSorted(context.reader(), field);
     }
-    
+
     @Override
     public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
       termsIndex = getSortedDocValues(context, field);
@@ -398,13 +391,14 @@ public abstract class FieldComparator<T> {
           topOrd = ord;
         } else {
           topSameReader = false;
-          topOrd = -ord-2;
+          topOrd = -ord - 2;
         }
       } else {
         topOrd = missingOrd;
         topSameReader = true;
       }
-      //System.out.println("  getLeafComparator topOrd=" + topOrd + " topSameReader=" + topSameReader);
+      // System.out.println("  getLeafComparator topOrd=" + topOrd + " topSameReader=" +
+      // topSameReader);
 
       if (bottomSlot != -1) {
         // Recompute bottomOrd/SameReader
@@ -413,7 +407,7 @@ public abstract class FieldComparator<T> {
 
       return this;
     }
-    
+
     @Override
     public void setBottom(final int bottom) throws IOException {
       bottomSlot = bottom;
@@ -438,7 +432,7 @@ public abstract class FieldComparator<T> {
             bottomOrd = ord;
             // exact value match
             bottomSameReader = true;
-            readerGen[bottomSlot] = currentReaderGen;            
+            readerGen[bottomSlot] = currentReaderGen;
             ords[bottomSlot] = bottomOrd;
           }
         }
@@ -450,7 +444,7 @@ public abstract class FieldComparator<T> {
       // null is fine: it means the last doc of the prior
       // search was missing this value
       topValue = value;
-      //System.out.println("setTopValue " + topValue);
+      // System.out.println("setTopValue " + topValue);
     }
 
     @Override
@@ -469,7 +463,7 @@ public abstract class FieldComparator<T> {
       if (topSameReader) {
         // ord is precisely comparable, even in the equal
         // case
-        //System.out.println("compareTop doc=" + doc + " ord=" + ord + " ret=" + (topOrd-ord));
+        // System.out.println("compareTop doc=" + doc + " ord=" + ord + " ret=" + (topOrd-ord));
         return topOrd - ord;
       } else if (ord <= topOrd) {
         // the equals case always means doc is < value
@@ -496,13 +490,15 @@ public abstract class FieldComparator<T> {
     @Override
     public void setScorer(Scorable scorer) {}
   }
-  
-  /** Sorts by field's natural Term sort order.  All
-   *  comparisons are done using BytesRef.compareTo, which is
-   *  slow for medium to large result sets but possibly
-   *  very fast for very small results sets. */
-  public static class TermValComparator extends FieldComparator<BytesRef> implements LeafFieldComparator {
-    
+
+  /**
+   * Sorts by field's natural Term sort order. All comparisons are done using BytesRef.compareTo,
+   * which is slow for medium to large result sets but possibly very fast for very small results
+   * sets.
+   */
+  public static class TermValComparator extends FieldComparator<BytesRef>
+      implements LeafFieldComparator {
+
     private final BytesRef[] values;
     private final BytesRefBuilder[] tempBRs;
     private BinaryDocValues docTerms;
@@ -555,7 +551,8 @@ public abstract class FieldComparator<T> {
     }
 
     /** Retrieves the BinaryDocValues for the field in this segment */
-    protected BinaryDocValues getBinaryDocValues(LeafReaderContext context, String field) throws IOException {
+    protected BinaryDocValues getBinaryDocValues(LeafReaderContext context, String field)
+        throws IOException {
       return DocValues.getBinary(context.reader(), field);
     }
 
@@ -564,7 +561,7 @@ public abstract class FieldComparator<T> {
       docTerms = getBinaryDocValues(context, field);
       return this;
     }
-    
+
     @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];

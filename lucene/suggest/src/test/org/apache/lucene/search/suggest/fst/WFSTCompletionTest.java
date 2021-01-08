@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.fst;
 
 import java.util.*;
-
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
@@ -27,22 +26,24 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class WFSTCompletionTest extends LuceneTestCase {
-  
+
   public void testBasic() throws Exception {
-    Input keys[] = new Input[] {
-        new Input("foo", 50),
-        new Input("bar", 10),
-        new Input("barbar", 12),
-        new Input("barbara", 6)
-    };
-    
+    Input keys[] =
+        new Input[] {
+          new Input("foo", 50),
+          new Input("bar", 10),
+          new Input("barbar", 12),
+          new Input("barbara", 6)
+        };
+
     Random random = new Random(random().nextLong());
     Directory tempDir = getDirectory();
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst");
     suggester.build(new InputArrayIterator(keys));
-    
+
     // top N of 2, but only foo is available
-    List<LookupResult> results = suggester.lookup(TestUtil.stringToCharSequence("f", random), false, 2);
+    List<LookupResult> results =
+        suggester.lookup(TestUtil.stringToCharSequence("f", random), false, 2);
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
@@ -58,7 +59,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(1, results.size());
     assertEquals("bar", results.get(0).key.toString());
     assertEquals(10, results.get(0).value, 0.01F);
-    
+
     // top N Of 2 for 'b'
     results = suggester.lookup(TestUtil.stringToCharSequence("b", random), false, 2);
     assertEquals(2, results.size());
@@ -66,7 +67,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(12, results.get(0).value, 0.01F);
     assertEquals("bar", results.get(1).key.toString());
     assertEquals(10, results.get(1).value, 0.01F);
-    
+
     // top N of 3 for 'ba'
     results = suggester.lookup(TestUtil.stringToCharSequence("ba", random), false, 3);
     assertEquals(3, results.size());
@@ -84,12 +85,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
     Directory tempDir = getDirectory();
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", true);
 
-    suggester.build(new InputArrayIterator(new Input[] {
-          new Input("x y", 20),
-          new Input("x", 2),
-        }));
+    suggester.build(
+        new InputArrayIterator(
+            new Input[] {
+              new Input("x y", 20), new Input("x", 2),
+            }));
 
-    for(int topN=1;topN<4;topN++) {
+    for (int topN = 1; topN < 4; topN++) {
       List<LookupResult> results = suggester.lookup("x", false, topN);
 
       assertEquals(Math.min(topN, 2), results.size());
@@ -110,12 +112,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
     Directory tempDir = getDirectory();
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
-    suggester.build(new InputArrayIterator(new Input[] {
-          new Input("x y", 20),
-          new Input("x", 2),
-        }));
+    suggester.build(
+        new InputArrayIterator(
+            new Input[] {
+              new Input("x y", 20), new Input("x", 2),
+            }));
 
-    for(int topN=1;topN<4;topN++) {
+    for (int topN = 1; topN < 4; topN++) {
       List<LookupResult> results = suggester.lookup("x", false, topN);
 
       assertEquals(Math.min(topN, 2), results.size());
@@ -130,15 +133,15 @@ public class WFSTCompletionTest extends LuceneTestCase {
     }
     tempDir.close();
   }
-  
+
   public void testRandom() throws Exception {
     int numWords = atLeast(1000);
-    
-    final TreeMap<String,Long> slowCompletor = new TreeMap<>();
+
+    final TreeMap<String, Long> slowCompletor = new TreeMap<>();
     final TreeSet<String> allPrefixes = new TreeSet<>();
-    
+
     Input[] keys = new Input[numWords];
-    
+
     for (int i = 0; i < numWords; i++) {
       String s;
       while (true) {
@@ -149,13 +152,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
           break;
         }
       }
-      
+
       for (int j = 1; j < s.length(); j++) {
         allPrefixes.add(s.substring(0, j));
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
-      int weight = random().nextInt(1<<24);
-      slowCompletor.put(s, (long)weight);
+      int weight = random().nextInt(1 << 24);
+      slowCompletor.put(s, (long) weight);
       keys[i] = new Input(s, weight);
     }
 
@@ -167,38 +170,41 @@ public class WFSTCompletionTest extends LuceneTestCase {
     Random random = new Random(random().nextLong());
     for (String prefix : allPrefixes) {
       final int topN = TestUtil.nextInt(random, 1, 10);
-      List<LookupResult> r = suggester.lookup(TestUtil.stringToCharSequence(prefix, random), false, topN);
+      List<LookupResult> r =
+          suggester.lookup(TestUtil.stringToCharSequence(prefix, random), false, topN);
 
       // 2. go thru whole treemap (slowCompletor) and check it's actually the best suggestion
       final List<LookupResult> matches = new ArrayList<>();
 
       // TODO: could be faster... but it's slowCompletor for a reason
-      for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
+      for (Map.Entry<String, Long> e : slowCompletor.entrySet()) {
         if (e.getKey().startsWith(prefix)) {
           matches.add(new LookupResult(e.getKey(), e.getValue().longValue()));
         }
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches, new Comparator<LookupResult>() {
-        @Override
-        public int compare(LookupResult left, LookupResult right) {
-          int cmp = Float.compare(right.value, left.value);
-          if (cmp == 0) {
-            return left.compareTo(right);
-          } else {
-            return cmp;
-          }
-        }
-      });
+      Collections.sort(
+          matches,
+          new Comparator<LookupResult>() {
+            @Override
+            public int compare(LookupResult left, LookupResult right) {
+              int cmp = Float.compare(right.value, left.value);
+              if (cmp == 0) {
+                return left.compareTo(right);
+              } else {
+                return cmp;
+              }
+            }
+          });
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
 
       assertEquals(matches.size(), r.size());
 
-      for(int hit=0;hit<r.size();hit++) {
-        //System.out.println("  check hit " + hit);
+      for (int hit = 0; hit < r.size(); hit++) {
+        // System.out.println("  check hit " + hit);
         assertEquals(matches.get(hit).key.toString(), r.get(hit).key.toString());
         assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
       }
@@ -215,10 +221,11 @@ public class WFSTCompletionTest extends LuceneTestCase {
     Directory tempDir = getDirectory();
     WFSTCompletionLookup suggester = new WFSTCompletionLookup(tempDir, "wfst", false);
 
-    suggester.build(new InputArrayIterator(new Input[] {
-          new Input(key1, 50),
-          new Input(key2, 50),
-        }));
+    suggester.build(
+        new InputArrayIterator(
+            new Input[] {
+              new Input(key1, 50), new Input(key2, 50),
+            }));
     tempDir.close();
   }
 
@@ -233,7 +240,7 @@ public class WFSTCompletionTest extends LuceneTestCase {
     tempDir.close();
   }
 
-  private Directory getDirectory() {     
+  private Directory getDirectory() {
     return newDirectory();
   }
 }

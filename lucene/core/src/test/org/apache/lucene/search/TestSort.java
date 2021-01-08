@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -34,10 +32,10 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /*
  * Very simple tests of sorting.
- * 
+ *
  * THE RULES:
  * 1. keywords like 'abstract' and 'static' should not appear in this file.
- * 2. each test method should be self-contained and understandable. 
+ * 2. each test method should be self-contained and understandable.
  * 3. no test methods should share code with other test methods.
  * 4. no testing of things unrelated to sorting.
  * 5. no tracers.
@@ -97,7 +95,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING));
 
@@ -106,11 +104,11 @@ public class TestSort extends LuceneTestCase {
     // 'bar' comes before 'foo'
     assertEquals("bar", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("foo", searcher.doc(td.scoreDocs[1].doc).get("value"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   /** Tests reverse sorting on type string */
   public void testStringReverse() throws IOException {
     Directory dir = newDirectory();
@@ -125,7 +123,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING, true));
 
@@ -138,7 +136,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type string_val */
   public void testStringVal() throws IOException {
     Directory dir = newDirectory();
@@ -153,7 +151,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
 
@@ -166,7 +164,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests reverse sorting on type string_val */
   public void testStringValReverse() throws IOException {
     Directory dir = newDirectory();
@@ -181,7 +179,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
 
@@ -194,7 +192,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type string_val, but with a SortedDocValuesField */
   public void testStringValSorted() throws IOException {
     Directory dir = newDirectory();
@@ -209,7 +207,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL));
 
@@ -222,7 +220,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests reverse sorting on type string_val, but with a SortedDocValuesField */
   public void testStringValReverseSorted() throws IOException {
     Directory dir = newDirectory();
@@ -237,7 +235,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.STRING_VAL, true));
 
@@ -250,7 +248,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type int */
   public void testInt() throws IOException {
     Directory dir = newDirectory();
@@ -269,7 +267,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
@@ -283,7 +281,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type int in reverse */
   public void testIntReverse() throws IOException {
     Directory dir = newDirectory();
@@ -302,7 +300,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
 
@@ -316,7 +314,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type int with a missing value */
   public void testIntMissing() throws IOException {
     Directory dir = newDirectory();
@@ -333,7 +331,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
@@ -347,8 +345,10 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** Tests sorting on type int, specifying the missing value should be treated as Integer.MAX_VALUE */
+
+  /**
+   * Tests sorting on type int, specifying the missing value should be treated as Integer.MAX_VALUE
+   */
   public void testIntMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -364,7 +364,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.INT);
     sortField.setMissingValue(Integer.MAX_VALUE);
@@ -380,7 +380,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type long */
   public void testLong() throws IOException {
     Directory dir = newDirectory();
@@ -399,7 +399,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
@@ -413,7 +413,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type long in reverse */
   public void testLongReverse() throws IOException {
     Directory dir = newDirectory();
@@ -432,7 +432,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
 
@@ -446,7 +446,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type long with a missing value */
   public void testLongMissing() throws IOException {
     Directory dir = newDirectory();
@@ -463,7 +463,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
@@ -477,8 +477,10 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** Tests sorting on type long, specifying the missing value should be treated as Long.MAX_VALUE */
+
+  /**
+   * Tests sorting on type long, specifying the missing value should be treated as Long.MAX_VALUE
+   */
   public void testLongMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -494,7 +496,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.LONG);
     sortField.setMissingValue(Long.MAX_VALUE);
@@ -510,7 +512,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type float */
   public void testFloat() throws IOException {
     Directory dir = newDirectory();
@@ -529,7 +531,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
@@ -543,7 +545,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type float in reverse */
   public void testFloatReverse() throws IOException {
     Directory dir = newDirectory();
@@ -562,7 +564,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
 
@@ -576,7 +578,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type float with a missing value */
   public void testFloatMissing() throws IOException {
     Directory dir = newDirectory();
@@ -593,7 +595,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
@@ -607,8 +609,10 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE */
+
+  /**
+   * Tests sorting on type float, specifying the missing value should be treated as Float.MAX_VALUE
+   */
   public void testFloatMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -624,7 +628,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.FLOAT);
     sortField.setMissingValue(Float.MAX_VALUE);
@@ -640,7 +644,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type double */
   public void testDouble() throws IOException {
     Directory dir = newDirectory();
@@ -663,7 +667,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
@@ -678,7 +682,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type double with +/- zero */
   public void testDoubleSignedZero() throws IOException {
     Directory dir = newDirectory();
@@ -694,7 +698,7 @@ public class TestSort extends LuceneTestCase {
     doc = new Document();
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
@@ -707,7 +711,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type double in reverse */
   public void testDoubleReverse() throws IOException {
     Directory dir = newDirectory();
@@ -730,7 +734,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
 
@@ -745,7 +749,7 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** Tests sorting on type double with a missing value */
   public void testDoubleMissing() throws IOException {
     Directory dir = newDirectory();
@@ -766,7 +770,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
@@ -781,8 +785,11 @@ public class TestSort extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** Tests sorting on type double, specifying the missing value should be treated as Double.MAX_VALUE */
+
+  /**
+   * Tests sorting on type double, specifying the missing value should be treated as
+   * Double.MAX_VALUE
+   */
   public void testDoubleMissingLast() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -802,7 +809,7 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortField("value", SortField.Type.DOUBLE);
     sortField.setMissingValue(Double.MAX_VALUE);
@@ -850,11 +857,12 @@ public class TestSort extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
-    Sort sort = new Sort(
-        new SortField("value1", SortField.Type.STRING),
-        new SortField("value2", SortField.Type.LONG));
+    Sort sort =
+        new Sort(
+            new SortField("value1", SortField.Type.STRING),
+            new SortField("value2", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(4, td.totalHits.value);

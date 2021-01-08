@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -69,8 +68,7 @@ class IntRangeSlowRangeQuery extends BinaryRangeFieldRangeQuery {
     if (this.field.equals(field) == false) {
       b.append(this.field).append(":");
     }
-    return b
-        .append("[")
+    return b.append("[")
         .append(Arrays.toString(min))
         .append(" TO ")
         .append(Arrays.toString(max))

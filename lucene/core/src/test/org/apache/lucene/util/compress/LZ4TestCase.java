@@ -16,17 +16,15 @@
  */
 package org.apache.lucene.util.compress;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
-
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public abstract class LZ4TestCase extends LuceneTestCase {
 
@@ -66,26 +64,27 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     boolean assertReset() {
       throw new UnsupportedOperationException();
     }
-
   }
 
   private void doTest(byte[] data, LZ4.HashTable hashTable) throws IOException {
-    int offset = data.length >= (1 << 16) || random().nextBoolean()
-        ? random().nextInt(10)
-        : (1<<16) - data.length / 2; // this triggers special reset logic for high compression
+    int offset =
+        data.length >= (1 << 16) || random().nextBoolean()
+            ? random().nextInt(10)
+            : (1 << 16) - data.length / 2; // this triggers special reset logic for high compression
     byte[] copy = new byte[data.length + offset + random().nextInt(10)];
     System.arraycopy(data, 0, copy, offset, data.length);
     doTest(copy, offset, data.length, hashTable);
   }
 
-  private void doTest(byte[] data, int offset, int length, LZ4.HashTable hashTable) throws IOException {
+  private void doTest(byte[] data, int offset, int length, LZ4.HashTable hashTable)
+      throws IOException {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
     LZ4.compress(data, offset, length, out, hashTable);
     byte[] compressed = out.toArrayCopy();
 
     int off = 0;
     int decompressedOff = 0;
-    for (;;) {
+    for (; ; ) {
       final int token = compressed[off++] & 0xFF;
       int literalLen = token >>> 4;
       if (literalLen == 0x0F) {
@@ -103,7 +102,8 @@ public abstract class LZ4TestCase extends LuceneTestCase {
       // 5 of them
       if (off == compressed.length) {
         assertEquals(length, decompressedOff);
-        assertTrue("lastLiterals=" + literalLen + ", bytes=" + length,
+        assertTrue(
+            "lastLiterals=" + literalLen + ", bytes=" + length,
             literalLen >= LZ4.LAST_LITERALS || literalLen == length);
         break;
       }
@@ -125,10 +125,12 @@ public abstract class LZ4TestCase extends LuceneTestCase {
       // if the match ends prematurely, the next sequence should not have
       // literals or this means we are wasting space
       if (decompressedOff + matchLen < length - LZ4.LAST_LITERALS) {
-        final boolean moreCommonBytes = data[offset + decompressedOff + matchLen] == data[offset + decompressedOff - matchDec + matchLen];
+        final boolean moreCommonBytes =
+            data[offset + decompressedOff + matchLen]
+                == data[offset + decompressedOff - matchDec + matchLen];
         final boolean nextSequenceHasLiterals = ((compressed[off] & 0xFF) >>> 4) != 0;
         assertTrue(moreCommonBytes == false || nextSequenceHasLiterals == false);
-      }      
+      }
 
       decompressedOff += matchLen;
     }
@@ -142,13 +144,17 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     // Now restore and compare bytes
     byte[] restored = new byte[length + random().nextInt(10)];
     LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, 0);
-    assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, 0, length));
+    assertArrayEquals(
+        ArrayUtil.copyOfSubArray(data, offset, offset + length),
+        ArrayUtil.copyOfSubArray(restored, 0, length));
 
     // Now restore with an offset
     int restoreOffset = TestUtil.nextInt(random(), 1, 10);
     restored = new byte[restoreOffset + length + random().nextInt(10)];
     LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, restoreOffset);
-    assertArrayEquals(ArrayUtil.copyOfSubArray(data, offset, offset+length), ArrayUtil.copyOfSubArray(restored, restoreOffset, restoreOffset+length));
+    assertArrayEquals(
+        ArrayUtil.copyOfSubArray(data, offset, offset + length),
+        ArrayUtil.copyOfSubArray(restored, restoreOffset, restoreOffset + length));
   }
 
   private void doTestWithDictionary(byte[] data, LZ4.HashTable hashTable) throws IOException {
@@ -158,7 +164,8 @@ public abstract class LZ4TestCase extends LuceneTestCase {
 
     // Create a dictionary from substrings of the input to compress
     int dictLen = 0;
-    for (int i = TestUtil.nextInt(random(), 0, data.length); i < data.length && dictLen < LZ4.MAX_DISTANCE; ) {
+    for (int i = TestUtil.nextInt(random(), 0, data.length);
+        i < data.length && dictLen < LZ4.MAX_DISTANCE; ) {
       int l = Math.min(data.length - i, TestUtil.nextInt(random(), 1, 32));
       l = Math.min(l, LZ4.MAX_DISTANCE - dictLen);
       copy.writeBytes(data, i, l);
@@ -174,7 +181,9 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     doTestWithDictionary(copyBytes, dictOff, dictLen, data.length, hashTable);
   }
 
-  private void doTestWithDictionary(byte[] data, int dictOff, int dictLen, int length, LZ4.HashTable hashTable) throws IOException {
+  private void doTestWithDictionary(
+      byte[] data, int dictOff, int dictLen, int length, LZ4.HashTable hashTable)
+      throws IOException {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
     LZ4.compressWithDictionary(data, dictOff, dictLen, length, out, hashTable);
     byte[] compressed = out.toArrayCopy();
@@ -190,8 +199,9 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     System.arraycopy(data, dictOff, restored, restoreOffset, dictLen);
     LZ4.decompress(new ByteArrayDataInput(compressed), length, restored, dictLen + restoreOffset);
     assertArrayEquals(
-        ArrayUtil.copyOfSubArray(data, dictOff+dictLen, dictOff+dictLen+length),
-        ArrayUtil.copyOfSubArray(restored, restoreOffset+dictLen, restoreOffset+dictLen+length));
+        ArrayUtil.copyOfSubArray(data, dictOff + dictLen, dictOff + dictLen + length),
+        ArrayUtil.copyOfSubArray(
+            restored, restoreOffset + dictLen, restoreOffset + dictLen + length));
   }
 
   public void testEmpty() throws IOException {
@@ -221,14 +231,15 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     final byte[] data = new byte[RandomNumbers.randomIntBetween(random(), 400, 1024)];
     random().nextBytes(data);
     final int matchRef = random().nextInt(30);
-    final int matchOff = RandomNumbers.randomIntBetween(random(), data.length - 40, data.length - 20);
+    final int matchOff =
+        RandomNumbers.randomIntBetween(random(), data.length - 40, data.length - 20);
     final int matchLength = RandomNumbers.randomIntBetween(random(), 4, 10);
     System.arraycopy(data, matchRef, data, matchOff, matchLength);
     doTest(data, newHashTable());
   }
 
   public void testMatchRightBeforeLastLiterals() throws IOException {
-    doTest(new byte[] {1,2,3,4, 1,2,3,4, 1,2,3,4,5}, newHashTable());
+    doTest(new byte[] {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 5}, newHashTable());
   }
 
   public void testIncompressibleRandom() throws IOException {
@@ -251,64 +262,113 @@ public abstract class LZ4TestCase extends LuceneTestCase {
   }
 
   public void testLUCENE5201() throws IOException {
-    byte[] data = new byte[]{
-        14, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 72, 14, 72, 14, 85, 3, 72, 14, 72, 14, 72, 14, 72, 14, 72, 14, 72, 14, 85, 3, 72,
-        14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 50, 64, 0, 46, -1, 0, 0, 0, 29, 3, 85,
-        8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3,
-        0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113,
-        0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113,
-        0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 50, 64, 0, 47, -105, 0, 0, 0, 30, 3, -97, 6, 0, 68, -113,
-        0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85,
-        8, -113, 0, 68, -97, 3, 0, 2, -97, 6, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97,
-        6, 0, 68, -113, 0, 120, 64, 0, 48, 4, 0, 0, 0, 31, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72,
-        33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72,
-        43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72,
-        28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72,
-        35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72,
-        41, 72, 32, 72, 18, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 39, 24, 32, 34, 124, 0, 120, 64, 0, 48, 80, 0, 0, 0, 31, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72,
-        35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72,
-        41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72,
-        40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72,
-        31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72,
-        26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72,
-        37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72,
-        36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72,
-        20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72,
-        22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72,
-        38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72,
-        29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72,
-        27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 50, 64, 0, 49, 20, 0, 0, 0, 32, 3, -97, 6, 0,
-        68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97,
-        6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2,
-        3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2,
-        3, -97, 6, 0, 50, 64, 0, 50, 53, 0, 0, 0, 34, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -113, 0, 2, 3, -97,
-        6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3,
-        -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97,
-        3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3,
-        85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0,
-        2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3,
-        -97, 6, 0, 50, 64, 0, 51, 85, 0, 0, 0, 36, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97,
-        6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, -97, 5, 0, 2, 3, 85, 8, -113, 0, 68,
-        -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0,
-        68, -113, 0, 2, 3, -97, 6, 0, 50, -64, 0, 51, -45, 0, 0, 0, 37, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6,
-        0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -113, 0, 2, 3, -97,
-        6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 120, 64, 0, 52, -88, 0, 0,
-        0, 39, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72,
-        13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85,
-        5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85,
-        5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85,
-        5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, 72,
-        13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, -19, -24, -101, -35
-      };
+    byte[] data =
+        new byte[] {
+          14, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 72, 14, 72, 14, 85, 3, 72, 14, 72, 14, 72, 14,
+              72, 14, 72, 14, 72, 14, 85, 3, 72,
+          14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 85, 3, 72, 14, 50, 64, 0,
+              46, -1, 0, 0, 0, 29, 3, 85,
+          8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2,
+              3, 85, 8, -113, 0, 68, -97, 3,
+          0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113,
+              0, 2, 3, -97, 6, 0, 68, -113,
+          0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113,
+              0, 2, 3, -97, 6, 0, 68, -113,
+          0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 50, 64, 0, 47, -105, 0, 0,
+              0, 30, 3, -97, 6, 0, 68, -113,
+          0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113,
+              0, 68, -97, 3, 0, 2, 3, 85,
+          8, -113, 0, 68, -97, 3, 0, 2, -97, 6, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97,
+              6, 0, 68, -113, 0, 2, 3, -97,
+          6, 0, 68, -113, 0, 120, 64, 0, 48, 4, 0, 0, 0, 31, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72,
+              23, 72, 46, 72, 20, 72, 40, 72,
+          33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72,
+              32, 72, 18, 72, 30, 72, 22, 72, 31, 72,
+          43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72,
+              33, 72, 25, 72, 39, 72, 38, 72, 26, 72,
+          28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72,
+              43, 72, 19, 72, 34, 72, 29, 72, 37, 72,
+          35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72,
+              28, 72, 42, 72, 24, 72, 27, 72, 36, 72,
+          41, 72, 32, 72, 18, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0,
+          0, 39, 24, 32, 34, 124, 0, 120, 64, 0, 48, 80, 0, 0, 0, 31, 30, 72, 22, 72, 31, 72, 43,
+              72, 19, 72, 34, 72, 29, 72, 37, 72,
+          35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72,
+              28, 72, 42, 72, 24, 72, 27, 72, 36, 72,
+          41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72,
+              35, 72, 45, 72, 23, 72, 46, 72, 20, 72,
+          40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72,
+              41, 72, 32, 72, 18, 72, 30, 72, 22, 72,
+          31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72,
+              40, 72, 33, 72, 25, 72, 39, 72, 38, 72,
+          26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72,
+              31, 72, 43, 72, 19, 72, 34, 72, 29, 72,
+          37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72,
+              26, 72, 28, 72, 42, 72, 24, 72, 27, 72,
+          36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72,
+              37, 72, 35, 72, 45, 72, 23, 72, 46, 72,
+          20, 72, 40, 72, 33, 72, 25, 72, 39, 72, 38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72,
+              36, 72, 41, 72, 32, 72, 18, 72, 30, 72,
+          22, 72, 31, 72, 43, 72, 19, 72, 34, 72, 29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72,
+              20, 72, 40, 72, 33, 72, 25, 72, 39, 72,
+          38, 72, 26, 72, 28, 72, 42, 72, 24, 72, 27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72,
+              22, 72, 31, 72, 43, 72, 19, 72, 34, 72,
+          29, 72, 37, 72, 35, 72, 45, 72, 23, 72, 46, 72, 20, 72, 40, 72, 33, 72, 25, 72, 39, 72,
+              38, 72, 26, 72, 28, 72, 42, 72, 24, 72,
+          27, 72, 36, 72, 41, 72, 32, 72, 18, 72, 30, 72, 22, 72, 31, 72, 43, 72, 19, 50, 64, 0, 49,
+              20, 0, 0, 0, 32, 3, -97, 6, 0,
+          68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97,
+              6, 0, 68, -113, 0, 2, 3, -97,
+          6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2,
+              3, -97, 6, 0, 68, -113, 0, 2,
+          3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2,
+              3, -97, 6, 0, 68, -113, 0, 2,
+          3, -97, 6, 0, 50, 64, 0, 50, 53, 0, 0, 0, 34, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8,
+              -113, 0, 68, -113, 0, 2, 3, -97,
+          6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3,
+              -97, 6, 0, 68, -113, 0, 2, 3,
+          -97, 6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0,
+              2, 3, 85, 8, -113, 0, 68, -97,
+          3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8,
+              -113, 0, 68, -97, 3, 0, 2, 3,
+          85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0,
+              2, 3, -97, 6, 0, 68, -113, 0,
+          2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8,
+              -113, 0, 68, -97, 3, 0, 2, 3,
+          -97, 6, 0, 50, 64, 0, 51, 85, 0, 0, 0, 36, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, -97, 6,
+              0, 68, -113, 0, 2, 3, -97,
+          6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, -97, 5,
+              0, 2, 3, 85, 8, -113, 0, 68,
+          -97, 3, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0,
+              68, -113, 0, 2, 3, -97, 6, 0,
+          68, -113, 0, 2, 3, -97, 6, 0, 50, -64, 0, 51, -45, 0, 0, 0, 37, 68, -113, 0, 2, 3, -97, 6,
+              0, 68, -113, 0, 2, 3, -97, 6,
+          0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, -97, 6, 0, 68, -113, 0, 2, 3, 85, 8,
+              -113, 0, 68, -113, 0, 2, 3, -97,
+          6, 0, 68, -113, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3, 0, 2, 3, 85, 8, -113, 0, 68, -97, 3,
+              0, 120, 64, 0, 52, -88, 0, 0,
+          0, 39, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72,
+              13, 85, 5, 72, 13, 85, 5, 72,
+          13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13,
+              85, 5, 72, 13, 85, 5, 72, 13, 85,
+          5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 72, 13,
+              85, 5, 72, 13, 85, 5, 72, 13, 85,
+          5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85,
+              5, 72, 13, 85, 5, 72, 13, 85,
+          5, 72, 13, 85, 5, 72, 13, 72, 13, 72, 13, 72, 13, 85, 5, 72, 13, 85, 5, 72, 13, 85, 5, 72,
+              13, 72, 13, 85, 5, 72, 13, 72,
+          13, 85, 5, 72, 13, 72, 13, 85, 5, 72, 13, -19, -24, -101, -35
+        };
     doTest(data, 9, data.length - 9, newHashTable());
   }
 
   public void testUseDictionary() throws IOException {
-    byte[] b = new byte[] {
-        1, 2, 3, 4, 5, 6, // dictionary
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-    };
+    byte[] b =
+        new byte[] {
+          1, 2, 3, 4, 5, 6, // dictionary
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+        };
     int dictOff = 0;
     int dictLen = 6;
     int len = b.length - dictLen;
@@ -317,7 +377,8 @@ public abstract class LZ4TestCase extends LuceneTestCase {
     ByteBuffersDataOutput out = new ByteBuffersDataOutput();
     LZ4.compressWithDictionary(b, dictOff, dictLen, len, out, newHashTable());
 
-    // The compressed output is smaller than the original input despite being incompressible on its own
+    // The compressed output is smaller than the original input despite being incompressible on its
+    // own
     assertTrue(out.size() < len);
   }
 }

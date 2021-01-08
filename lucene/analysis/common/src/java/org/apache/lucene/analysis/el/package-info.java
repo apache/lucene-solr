@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Greek.
- */
+/** Analyzer for Greek. */
 package org.apache.lucene.analysis.el;

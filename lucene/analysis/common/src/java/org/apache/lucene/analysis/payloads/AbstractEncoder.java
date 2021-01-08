@@ -18,13 +18,7 @@ package org.apache.lucene.analysis.payloads;
 
 import org.apache.lucene.util.BytesRef;
 
-
-
-
-/**
- * Base class for payload encoders.
- *
- **/
+/** Base class for payload encoders. */
 public abstract class AbstractEncoder implements PayloadEncoder {
   @Override
   public BytesRef encode(char[] buffer) {

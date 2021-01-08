@@ -24,13 +24,11 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class GeoS2ShapeFactory {
 
-  private GeoS2ShapeFactory() {
-  }
+  private GeoS2ShapeFactory() {}
 
   /**
-   * Creates a convex polygon with 4 planes by providing 4 points in CCW.
-   * This is a very fast shape and there are no checks that the points currently define
-   * a convex shape.
+   * Creates a convex polygon with 4 planes by providing 4 points in CCW. This is a very fast shape
+   * and there are no checks that the points currently define a convex shape.
    *
    * @param planetModel The planet model
    * @param point1 the first point.
@@ -39,12 +37,12 @@ public class GeoS2ShapeFactory {
    * @param point4 the four point.
    * @return the generated shape.
    */
-  public static GeoPolygon makeGeoS2Shape(final PlanetModel planetModel,
-                                          final GeoPoint point1,
-                                          final GeoPoint point2,
-                                          final GeoPoint point3,
-                                          final GeoPoint point4) {
+  public static GeoPolygon makeGeoS2Shape(
+      final PlanetModel planetModel,
+      final GeoPoint point1,
+      final GeoPoint point2,
+      final GeoPoint point3,
+      final GeoPoint point4) {
     return new GeoS2Shape(planetModel, point1, point2, point3, point4);
   }
 }
-

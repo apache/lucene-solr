@@ -17,6 +17,8 @@
 
 package org.apache.lucene.util.graph;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +26,6 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -38,12 +39,10 @@ import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 /**
- * Consumes a TokenStream and creates an {@link Automaton} where the transition labels are terms from
- * the {@link TermToBytesRefAttribute}.
- * This class also provides helpers to explore the different paths of the {@link Automaton}.
+ * Consumes a TokenStream and creates an {@link Automaton} where the transition labels are terms
+ * from the {@link TermToBytesRefAttribute}. This class also provides helpers to explore the
+ * different paths of the {@link Automaton}.
  */
 public final class GraphTokenStreamFiniteStrings {
 
@@ -80,11 +79,13 @@ public final class GraphTokenStreamFiniteStrings {
 
   public GraphTokenStreamFiniteStrings(TokenStream in) throws IOException {
     Automaton aut = build(in);
-    this.det = Operations.removeDeadStates(Operations.determinize(aut, DEFAULT_MAX_DETERMINIZED_STATES));
+    this.det =
+        Operations.removeDeadStates(Operations.determinize(aut, DEFAULT_MAX_DETERMINIZED_STATES));
   }
 
   /**
-   * Returns whether the provided state is the start of multiple side paths of different length (eg: new york, ny)
+   * Returns whether the provided state is the start of multiple side paths of different length (eg:
+   * new york, ny)
    */
   public boolean hasSidePath(int state) {
     int numT = det.initTransition(state, transition);
@@ -102,12 +103,10 @@ public final class GraphTokenStreamFiniteStrings {
     return false;
   }
 
-  /**
-   * Returns the list of tokens that start at the provided state
-   */
+  /** Returns the list of tokens that start at the provided state */
   public List<AttributeSource> getTerms(int state) {
     int numT = det.initTransition(state, transition);
-    List<AttributeSource> tokens = new ArrayList<> ();
+    List<AttributeSource> tokens = new ArrayList<>();
     for (int i = 0; i < numT; i++) {
       det.getNextTransition(transition);
       tokens.addAll(Arrays.asList(this.tokens).subList(transition.min, transition.max + 1));
@@ -115,29 +114,22 @@ public final class GraphTokenStreamFiniteStrings {
     return tokens;
   }
 
-  /**
-   * Returns the list of terms that start at the provided state
-   */
+  /** Returns the list of terms that start at the provided state */
   public Term[] getTerms(String field, int state) {
     return getTerms(state).stream()
         .map(s -> new Term(field, s.addAttribute(TermToBytesRefAttribute.class).getBytesRef()))
         .toArray(Term[]::new);
   }
 
-  /**
-   * Get all finite strings from the automaton.
-   */
+  /** Get all finite strings from the automaton. */
   public Iterator<TokenStream> getFiniteStrings() throws IOException {
     return getFiniteStrings(0, -1);
   }
 
-
-  /**
-   * Get all finite strings that start at {@code startState} and end at {@code endState}.
-   */
+  /** Get all finite strings that start at {@code startState} and end at {@code endState}. */
   public Iterator<TokenStream> getFiniteStrings(int startState, int endState) {
     final FiniteStringsIterator it = new FiniteStringsIterator(det, startState, endState);
-    return new Iterator<> () {
+    return new Iterator<>() {
       IntsRef current;
       boolean finished = false;
 
@@ -157,7 +149,7 @@ public final class GraphTokenStreamFiniteStrings {
         if (current == null) {
           hasNext();
         }
-        TokenStream next =  new FiniteStringsTokenStream(current);
+        TokenStream next = new FiniteStringsTokenStream(current);
         current = null;
         return next;
       }
@@ -194,9 +186,7 @@ public final class GraphTokenStreamFiniteStrings {
     return points.stream().mapToInt(p -> p).toArray();
   }
 
-  /**
-   * Build an automaton from the provided {@link TokenStream}.
-   */
+  /** Build an automaton from the provided {@link TokenStream}. */
   private Automaton build(final TokenStream in) throws IOException {
     Automaton.Builder builder = new Automaton.Builder();
 
@@ -213,15 +203,15 @@ public final class GraphTokenStreamFiniteStrings {
     while (in.incrementToken()) {
       int currentIncr = posIncAtt.getPositionIncrement();
       if (pos == -1 && currentIncr < 1) {
-        throw new IllegalStateException("Malformed TokenStream, start token can't have increment less than 1");
+        throw new IllegalStateException(
+            "Malformed TokenStream, start token can't have increment less than 1");
       }
 
       if (currentIncr == 0) {
         if (gap > 0) {
           pos -= gap;
         }
-      }
-      else {
+      } else {
         pos++;
         gap = currentIncr - 1;
       }
@@ -261,8 +251,15 @@ public final class GraphTokenStreamFiniteStrings {
     return builder.finish();
   }
 
-  private static void articulationPointsRecurse(Automaton a, int state, int d, int[] depth, int[] low, int[] parent,
-                                                BitSet visited, List<Integer> points) {
+  private static void articulationPointsRecurse(
+      Automaton a,
+      int state,
+      int d,
+      int[] depth,
+      int[] low,
+      int[] parent,
+      BitSet visited,
+      List<Integer> points) {
     visited.set(state);
     depth[state] = d;
     low[state] = d;

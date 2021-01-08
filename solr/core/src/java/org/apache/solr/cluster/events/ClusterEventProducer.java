@@ -26,7 +26,7 @@ import java.io.Closeable;
 public interface ClusterEventProducer extends ClusterSingleton, Closeable {
 
   /** Unique name for the registration of a plugin-based implementation. */
-  String PLUGIN_NAME = "cluster-event-producer";
+  String PLUGIN_NAME = ".cluster-event-producer";
 
   @Override
   default String getName() {

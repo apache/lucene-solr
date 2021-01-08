@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -36,13 +35,13 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
+import org.apache.lucene.analysis.classic.ClassicTokenizer;
 import org.apache.lucene.analysis.core.TypeTokenFilter;
 import org.apache.lucene.analysis.de.GermanStemFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
 import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.shingle.FixedShingleFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
-import org.apache.lucene.analysis.classic.ClassicTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.synonym.SolrSynonymParser;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
@@ -70,8 +69,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
       if (input.incrementToken()) {
         CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
         return true;
-      } else
-        return false;
+      } else return false;
     }
 
     @Override
@@ -96,7 +94,9 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   private class SkipMatchingFilter extends ConditionalTokenFilter {
     private final Pattern pattern;
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-    SkipMatchingFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory, String termRegex) {
+
+    SkipMatchingFilter(
+        TokenStream input, Function<TokenStream, TokenStream> inputFactory, String termRegex) {
       super(input, inputFactory);
       pattern = Pattern.compile(termRegex);
     }
@@ -110,7 +110,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   public void testSimple() throws IOException {
     TokenStream stream = whitespaceMockTokenizer("Alice Bob Clara David");
     TokenStream t = new SkipMatchingFilter(stream, AssertingLowerCaseFilter::new, ".*o.*");
-    assertTokenStreamContents(t, new String[]{ "alice", "Bob", "clara", "david" });
+    assertTokenStreamContents(t, new String[] {"alice", "Bob", "clara", "david"});
     assertTrue(closed);
     assertTrue(reset);
     assertTrue(ended);
@@ -147,9 +147,8 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
   public void testMultitokenWrapping() throws IOException {
     TokenStream stream = whitespaceMockTokenizer("tokenpos1 tokenpos2 tokenpos3 tokenpos4");
     TokenStream ts = new SkipMatchingFilter(stream, TokenSplitter::new, ".*2.*");
-    assertTokenStreamContents(ts, new String[]{
-        "toke", "npos1", "tokenpos2", "toke", "npos3", "toke", "npos4"
-    });
+    assertTokenStreamContents(
+        ts, new String[] {"toke", "npos1", "tokenpos2", "toke", "npos3", "toke", "npos4"});
   }
 
   private final class EndTrimmingFilter extends FilteringTokenFilter {
@@ -174,30 +173,27 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
   public void testEndPropagation() throws IOException {
 
-    CannedTokenStream cts2 = new CannedTokenStream(0, 20,
-        new Token("alice", 0, 5), new Token("bob", 6, 8)
-    );
-    TokenStream ts2 = new ConditionalTokenFilter(cts2, EndTrimmingFilter::new) {
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return true;
-      }
-    };
-    assertTokenStreamContents(ts2, new String[]{ "alice", "bob" },
-        null, null, null, null, null, 18);
+    CannedTokenStream cts2 =
+        new CannedTokenStream(0, 20, new Token("alice", 0, 5), new Token("bob", 6, 8));
+    TokenStream ts2 =
+        new ConditionalTokenFilter(cts2, EndTrimmingFilter::new) {
+          @Override
+          protected boolean shouldFilter() throws IOException {
+            return true;
+          }
+        };
+    assertTokenStreamContents(ts2, new String[] {"alice", "bob"}, null, null, null, null, null, 18);
 
-    CannedTokenStream cts1 = new CannedTokenStream(0, 20,
-        new Token("alice", 0, 5), new Token("bob", 6, 8)
-    );
-    TokenStream ts1 = new ConditionalTokenFilter(cts1, EndTrimmingFilter::new) {
-      @Override
-      protected boolean shouldFilter() throws IOException {
-        return false;
-      }
-    };
-    assertTokenStreamContents(ts1, new String[]{ "alice", "bob" },
-        null, null, null, null, null, 20);
-
+    CannedTokenStream cts1 =
+        new CannedTokenStream(0, 20, new Token("alice", 0, 5), new Token("bob", 6, 8));
+    TokenStream ts1 =
+        new ConditionalTokenFilter(cts1, EndTrimmingFilter::new) {
+          @Override
+          protected boolean shouldFilter() throws IOException {
+            return false;
+          }
+        };
+    assertTokenStreamContents(ts1, new String[] {"alice", "bob"}, null, null, null, null, null, 20);
   }
 
   public void testWrapGraphs() throws Exception {
@@ -211,45 +207,47 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
       sm = parser.build();
     }
 
-    TokenStream ts = new SkipMatchingFilter(stream, in -> new SynonymGraphFilter(in, sm, true), "c");
+    TokenStream ts =
+        new SkipMatchingFilter(stream, in -> new SynonymGraphFilter(in, sm, true), "c");
 
-    assertTokenStreamContents(ts, new String[]{
-        "f", "a", "b", "c", "d", "e"
-        },
-        null, null, null,
-        new int[]{
-        1, 0, 1, 1, 1, 1
-        },
-        new int[]{
-        2, 1, 1, 1, 1, 1
-        });
-
+    assertTokenStreamContents(
+        ts,
+        new String[] {"f", "a", "b", "c", "d", "e"},
+        null,
+        null,
+        null,
+        new int[] {1, 0, 1, 1, 1, 1},
+        new int[] {2, 1, 1, 1, 1, 1});
   }
 
   public void testReadaheadWithNoFiltering() throws IOException {
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new ClassicTokenizer();
-        TokenStream sink = new ConditionalTokenFilter(source, in -> new ShingleFilter(in, 2)) {
+    Analyzer analyzer =
+        new Analyzer() {
           @Override
-          protected boolean shouldFilter() throws IOException {
-            return true;
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new ClassicTokenizer();
+            TokenStream sink =
+                new ConditionalTokenFilter(source, in -> new ShingleFilter(in, 2)) {
+                  @Override
+                  protected boolean shouldFilter() throws IOException {
+                    return true;
+                  }
+                };
+            return new TokenStreamComponents(source, sink);
           }
         };
-        return new TokenStreamComponents(source, sink);
-      }
-    };
 
     String input = "one two three four";
 
     try (TokenStream ts = analyzer.tokenStream("", input)) {
-      assertTokenStreamContents(ts, new String[]{
-          "one", "one two",
-          "two", "two three",
-          "three", "three four",
-          "four"
-      });
+      assertTokenStreamContents(
+          ts,
+          new String[] {
+            "one", "one two",
+            "two", "two three",
+            "three", "three four",
+            "four"
+          });
     }
   }
 
@@ -258,30 +256,29 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     CharArraySet protectedTerms = new CharArraySet(2, true);
     protectedTerms.add("three");
 
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new ClassicTokenizer();
-        TokenStream sink = new ProtectedTermFilter(protectedTerms, source, in -> new ShingleFilter(in, 2));
-        sink = new ValidatingTokenFilter(sink, "1");
-        return new TokenStreamComponents(source, sink);
-      }
-    };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new ClassicTokenizer();
+            TokenStream sink =
+                new ProtectedTermFilter(protectedTerms, source, in -> new ShingleFilter(in, 2));
+            sink = new ValidatingTokenFilter(sink, "1");
+            return new TokenStreamComponents(source, sink);
+          }
+        };
 
     String input = "one two three four";
 
     try (TokenStream ts = analyzer.tokenStream("", input)) {
-      assertTokenStreamContents(ts, new String[]{
-          "one", "one two", "two", "three", "four"
-      }, new int[]{
-           0,     0,         4,     8,       14
-      }, new int[]{
-           3,     7,         7,     13,      18
-      }, new int[]{
-           1,     0,         1,     1,       1
-      }, new int[]{
-           1,     2,         1,     1,       1
-      }, 18);
+      assertTokenStreamContents(
+          ts,
+          new String[] {"one", "one two", "two", "three", "four"},
+          new int[] {0, 0, 4, 8, 14},
+          new int[] {3, 7, 7, 13, 18},
+          new int[] {1, 0, 1, 1, 1},
+          new int[] {1, 2, 1, 1, 1},
+          18);
     }
   }
 
@@ -291,42 +288,47 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     protectedTerms.add("two");
     protectedTerms.add("two three");
 
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new StandardTokenizer();
-        TokenStream sink = new ShingleFilter(source, 3);
-        sink = new ProtectedTermFilter(protectedTerms, sink, in -> new TypeTokenFilter(in, Collections.singleton("ALL"), true));
-        return new TokenStreamComponents(source, sink);
-      }
-    };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new StandardTokenizer();
+            TokenStream sink = new ShingleFilter(source, 3);
+            sink =
+                new ProtectedTermFilter(
+                    protectedTerms,
+                    sink,
+                    in -> new TypeTokenFilter(in, Collections.singleton("ALL"), true));
+            return new TokenStreamComponents(source, sink);
+          }
+        };
 
     String input = "one two three four";
 
     try (TokenStream ts = analyzer.tokenStream("", input)) {
-      assertTokenStreamContents(ts, new String[]{
-          "two", "two three"
-      }, new int[]{
-           4,     4
-      }, new int[]{
-           7,     13
-      }, new int[]{
-           2,     0
-      }, new int[]{
-           1,     2
-      }, 18);
+      assertTokenStreamContents(
+          ts,
+          new String[] {"two", "two three"},
+          new int[] {4, 4},
+          new int[] {7, 13},
+          new int[] {2, 0},
+          new int[] {1, 2},
+          18);
     }
-
   }
 
   public void testMultipleConditionalFilters() throws IOException {
     TokenStream stream = whitespaceMockTokenizer("Alice Bob Clara David");
-    TokenStream t = new SkipMatchingFilter(stream, in -> {
-      TruncateTokenFilter truncateFilter = new TruncateTokenFilter(in, 2);
-      return new AssertingLowerCaseFilter(truncateFilter);
-    }, ".*o.*");
+    TokenStream t =
+        new SkipMatchingFilter(
+            stream,
+            in -> {
+              TruncateTokenFilter truncateFilter = new TruncateTokenFilter(in, 2);
+              return new AssertingLowerCaseFilter(truncateFilter);
+            },
+            ".*o.*");
 
-    assertTokenStreamContents(t, new String[]{"al", "Bob", "cl", "da"});
+    assertTokenStreamContents(t, new String[] {"al", "Bob", "cl", "da"});
     assertTrue(closed);
     assertTrue(reset);
     assertTrue(ended);
@@ -339,31 +341,33 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
 
     TokenStream ts = whitespaceMockTokenizer("wuthering foobar abc");
     ts = new ProtectedTermFilter(protectedTerms, ts, in -> new LengthFilter(in, 1, 4));
-    assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
+    assertTokenStreamContents(ts, new String[] {"foobar", "abc"});
 
     ts = whitespaceMockTokenizer("foobar abc");
     ts = new ProtectedTermFilter(protectedTerms, ts, in -> new LengthFilter(in, 1, 4));
-    assertTokenStreamContents(ts, new String[]{ "foobar", "abc" });
-
+    assertTokenStreamContents(ts, new String[] {"foobar", "abc"});
   }
 
   public void testConsistentOffsets() throws IOException {
 
     long seed = random().nextLong();
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new NGramTokenizer();
-        TokenStream sink = new ValidatingTokenFilter(new KeywordRepeatFilter(source), "stage 0");
-        sink = new ValidatingTokenFilter(sink, "stage 1");
-        sink = new RandomSkippingFilter(sink, seed, in -> new TypeTokenFilter(in, Collections.singleton("word")));
-        sink = new ValidatingTokenFilter(sink, "last stage");
-        return new TokenStreamComponents(source, sink);
-      }
-    };
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new NGramTokenizer();
+            TokenStream sink =
+                new ValidatingTokenFilter(new KeywordRepeatFilter(source), "stage 0");
+            sink = new ValidatingTokenFilter(sink, "stage 1");
+            sink =
+                new RandomSkippingFilter(
+                    sink, seed, in -> new TypeTokenFilter(in, Collections.singleton("word")));
+            sink = new ValidatingTokenFilter(sink, "last stage");
+            return new TokenStreamComponents(source, sink);
+          }
+        };
 
     checkRandomData(random(), analyzer, 1);
-
   }
 
   public void testEndWithShingles() throws IOException {
@@ -372,7 +376,7 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     ts = new NonRandomSkippingFilter(ts, in -> new FixedShingleFilter(in, 2), true, false, true);
     ts = new NonRandomSkippingFilter(ts, IndicNormalizationFilter::new, true);
 
-    assertTokenStreamContents(ts, new String[]{"jvboq"});
+    assertTokenStreamContents(ts, new String[] {"jvboq"});
   }
 
   public void testInternalPositionAdjustment() throws IOException {
@@ -381,11 +385,14 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     // has the correct posInc afterwards
     TokenStream ts = whitespaceMockTokenizer("one two three");
     ts = new KeywordRepeatFilter(ts);
-    ts = new NonRandomSkippingFilter(ts, PositionAssertingTokenFilter::new, false, true, true, true, true, false);
+    ts =
+        new NonRandomSkippingFilter(
+            ts, PositionAssertingTokenFilter::new, false, true, true, true, true, false);
 
-    assertTokenStreamContents(ts,
-        new String[]{ "one", "one", "two", "two", "three", "three" },
-        new int[]{    1,      0,    1,      0,    1,        0});
+    assertTokenStreamContents(
+        ts,
+        new String[] {"one", "one", "two", "two", "three", "three"},
+        new int[] {1, 0, 1, 0, 1, 0});
   }
 
   private static final class PositionAssertingTokenFilter extends TokenFilter {
@@ -419,7 +426,8 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     Random random;
     final long seed;
 
-    protected RandomSkippingFilter(TokenStream input, long seed, Function<TokenStream, TokenStream> inputFactory) {
+    protected RandomSkippingFilter(
+        TokenStream input, long seed, Function<TokenStream, TokenStream> inputFactory) {
       super(input, inputFactory);
       this.seed = seed;
       this.random = new Random(seed);
@@ -445,10 +453,13 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
     /**
      * Create a new BypassingTokenFilter
      *
-     * @param input        the input TokenStream
+     * @param input the input TokenStream
      * @param inputFactory a factory function to create a new instance of the TokenFilter to wrap
      */
-    protected NonRandomSkippingFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory, boolean... shouldFilters) {
+    protected NonRandomSkippingFilter(
+        TokenStream input,
+        Function<TokenStream, TokenStream> inputFactory,
+        boolean... shouldFilters) {
       super(input, inputFactory);
       this.shouldFilters = shouldFilters;
     }
@@ -464,5 +475,4 @@ public class TestConditionalTokenFilter extends BaseTokenStreamTestCase {
       pos = 0;
     }
   }
-
 }

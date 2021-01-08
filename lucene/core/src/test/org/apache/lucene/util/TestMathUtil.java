@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.util;
 
-
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.math.BigInteger;
 import java.util.Arrays;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestMathUtil extends LuceneTestCase {
 
@@ -42,7 +40,8 @@ public class TestMathUtil extends LuceneTestCase {
     } else if (random().nextBoolean()) {
       return random().nextLong();
     } else {
-      return RandomPicks.randomFrom(random(), Arrays.asList(Long.MIN_VALUE, Long.MAX_VALUE, 0L, -1L, 1L));
+      return RandomPicks.randomFrom(
+          random(), Arrays.asList(Long.MIN_VALUE, Long.MAX_VALUE, 0L, -1L, 1L));
     }
   }
 
@@ -67,36 +66,36 @@ public class TestMathUtil extends LuceneTestCase {
       }
     }
   }
-  
+
   // ported test from commons-math
   public void testGCD2() {
     long a = 30;
     long b = 50;
     long c = 77;
-    
+
     assertEquals(0, MathUtil.gcd(0, 0));
     assertEquals(b, MathUtil.gcd(0, b));
     assertEquals(a, MathUtil.gcd(a, 0));
     assertEquals(b, MathUtil.gcd(0, -b));
     assertEquals(a, MathUtil.gcd(-a, 0));
-    
+
     assertEquals(10, MathUtil.gcd(a, b));
     assertEquals(10, MathUtil.gcd(-a, b));
     assertEquals(10, MathUtil.gcd(a, -b));
     assertEquals(10, MathUtil.gcd(-a, -b));
-    
+
     assertEquals(1, MathUtil.gcd(a, c));
     assertEquals(1, MathUtil.gcd(-a, c));
     assertEquals(1, MathUtil.gcd(a, -c));
     assertEquals(1, MathUtil.gcd(-a, -c));
-    
-    assertEquals(3L * (1L<<45), MathUtil.gcd(3L * (1L<<50), 9L * (1L<<45)));
-    assertEquals(1L<<45, MathUtil.gcd(1L<<45, Long.MIN_VALUE));
-    
+
+    assertEquals(3L * (1L << 45), MathUtil.gcd(3L * (1L << 50), 9L * (1L << 45)));
+    assertEquals(1L << 45, MathUtil.gcd(1L << 45, Long.MIN_VALUE));
+
     assertEquals(Long.MAX_VALUE, MathUtil.gcd(Long.MAX_VALUE, 0L));
     assertEquals(Long.MAX_VALUE, MathUtil.gcd(-Long.MAX_VALUE, 0L));
     assertEquals(1, MathUtil.gcd(60247241209L, 153092023L));
-    
+
     assertEquals(Long.MIN_VALUE, MathUtil.gcd(Long.MIN_VALUE, 0));
     assertEquals(Long.MIN_VALUE, MathUtil.gcd(0, Long.MIN_VALUE));
     assertEquals(Long.MIN_VALUE, MathUtil.gcd(Long.MIN_VALUE, Long.MIN_VALUE));
@@ -108,16 +107,17 @@ public class TestMathUtil extends LuceneTestCase {
     // acosh(1) == +0
     assertEquals(0, Double.doubleToLongBits(MathUtil.acosh(1D)));
     // acosh(POSITIVE_INFINITY) == POSITIVE_INFINITY
-    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+    assertEquals(
+        Double.doubleToLongBits(Double.POSITIVE_INFINITY),
         Double.doubleToLongBits(MathUtil.acosh(Double.POSITIVE_INFINITY)));
     // acosh(x) : x < 1 == NaN
-    assertTrue(Double.isNaN(MathUtil.acosh(0.9D)));                      // x < 1
-    assertTrue(Double.isNaN(MathUtil.acosh(0D)));                        // x == 0
-    assertTrue(Double.isNaN(MathUtil.acosh(-0D)));                       // x == -0
-    assertTrue(Double.isNaN(MathUtil.acosh(-0.9D)));                     // x < 0
-    assertTrue(Double.isNaN(MathUtil.acosh(-1D)));                       // x == -1
-    assertTrue(Double.isNaN(MathUtil.acosh(-10D)));                      // x < -1
-    assertTrue(Double.isNaN(MathUtil.acosh(Double.NEGATIVE_INFINITY)));  // x == -Inf
+    assertTrue(Double.isNaN(MathUtil.acosh(0.9D))); // x < 1
+    assertTrue(Double.isNaN(MathUtil.acosh(0D))); // x == 0
+    assertTrue(Double.isNaN(MathUtil.acosh(-0D))); // x == -0
+    assertTrue(Double.isNaN(MathUtil.acosh(-0.9D))); // x < 0
+    assertTrue(Double.isNaN(MathUtil.acosh(-1D))); // x == -1
+    assertTrue(Double.isNaN(MathUtil.acosh(-10D))); // x < -1
+    assertTrue(Double.isNaN(MathUtil.acosh(Double.NEGATIVE_INFINITY))); // x == -Inf
 
     double epsilon = 0.000001;
     assertEquals(0, MathUtil.acosh(1), epsilon);
@@ -134,10 +134,12 @@ public class TestMathUtil extends LuceneTestCase {
     // asinh(-0) == -0
     assertEquals(Double.doubleToLongBits(-0D), Double.doubleToLongBits(MathUtil.asinh(-0D)));
     // asinh(POSITIVE_INFINITY) == POSITIVE_INFINITY
-    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+    assertEquals(
+        Double.doubleToLongBits(Double.POSITIVE_INFINITY),
         Double.doubleToLongBits(MathUtil.asinh(Double.POSITIVE_INFINITY)));
     // asinh(NEGATIVE_INFINITY) == NEGATIVE_INFINITY
-    assertEquals(Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
+    assertEquals(
+        Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
         Double.doubleToLongBits(MathUtil.asinh(Double.NEGATIVE_INFINITY)));
 
     double epsilon = 0.000001;
@@ -147,7 +149,7 @@ public class TestMathUtil extends LuceneTestCase {
     assertEquals(0, MathUtil.asinh(0), 0);
     assertEquals(0.8813735870195429, MathUtil.asinh(1), epsilon);
     assertEquals(1.6472311463710958, MathUtil.asinh(2.5), epsilon);
-    assertEquals(14.719378760740035, MathUtil.asinh(1234567.89), epsilon  );
+    assertEquals(14.719378760740035, MathUtil.asinh(1234567.89), epsilon);
   }
 
   public void testAtanhMethod() {
@@ -156,19 +158,20 @@ public class TestMathUtil extends LuceneTestCase {
     // atanh(+0) == +0
     assertEquals(0, Double.doubleToLongBits(MathUtil.atanh(0D)));
     // atanh(-0) == -0
-    assertEquals(Double.doubleToLongBits(-0D),
-        Double.doubleToLongBits(MathUtil.atanh(-0D)));
+    assertEquals(Double.doubleToLongBits(-0D), Double.doubleToLongBits(MathUtil.atanh(-0D)));
     // atanh(1) == POSITIVE_INFINITY
-    assertEquals(Double.doubleToLongBits(Double.POSITIVE_INFINITY),
+    assertEquals(
+        Double.doubleToLongBits(Double.POSITIVE_INFINITY),
         Double.doubleToLongBits(MathUtil.atanh(1D)));
     // atanh(-1) == NEGATIVE_INFINITY
-    assertEquals(Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
+    assertEquals(
+        Double.doubleToLongBits(Double.NEGATIVE_INFINITY),
         Double.doubleToLongBits(MathUtil.atanh(-1D)));
     // atanh(x) : Math.abs(x) > 1 == NaN
-    assertTrue(Double.isNaN(MathUtil.atanh(1.1D)));                      // x > 1
-    assertTrue(Double.isNaN(MathUtil.atanh(Double.POSITIVE_INFINITY)));  // x == Inf
-    assertTrue(Double.isNaN(MathUtil.atanh(-1.1D)));                     // x < -1
-    assertTrue(Double.isNaN(MathUtil.atanh(Double.NEGATIVE_INFINITY)));  // x == -Inf
+    assertTrue(Double.isNaN(MathUtil.atanh(1.1D))); // x > 1
+    assertTrue(Double.isNaN(MathUtil.atanh(Double.POSITIVE_INFINITY))); // x == Inf
+    assertTrue(Double.isNaN(MathUtil.atanh(-1.1D))); // x < -1
+    assertTrue(Double.isNaN(MathUtil.atanh(Double.NEGATIVE_INFINITY))); // x == -Inf
 
     double epsilon = 0.000001;
     assertEquals(Double.NEGATIVE_INFINITY, MathUtil.atanh(-1), 0);
@@ -177,5 +180,4 @@ public class TestMathUtil extends LuceneTestCase {
     assertEquals(0.5493061443340549, MathUtil.atanh(0.5), epsilon);
     assertEquals(Double.POSITIVE_INFINITY, MathUtil.atanh(1), 0);
   }
-
 }

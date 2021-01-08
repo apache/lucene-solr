@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -146,15 +145,13 @@ public class TestPriorityQueue extends LuceneTestCase {
         }
       }
       Integer newLeast = pq.top();
-      if ((lastLeast != null) && (newLeast != newEntry)
-          && (newLeast != lastLeast)) {
+      if ((lastLeast != null) && (newLeast != newEntry) && (newLeast != lastLeast)) {
         // If there has been a change of least entry and it wasn't our new
         // addition we expect the scores to increase
         assertTrue(newLeast <= newEntry);
         assertTrue(newLeast >= lastLeast);
       }
       lastLeast = newLeast;
-
     }
 
     // Try many random additions to existing entries - we should always see
@@ -170,8 +167,7 @@ public class TestPriorityQueue extends LuceneTestCase {
       assertNull(pq.insertWithOverflow(newEntry));
       pq.checkValidity();
       Integer newLeast = pq.top();
-      if ((objectToRemove != lastLeast) && (lastLeast != null)
-          && (newLeast != newEntry)) {
+      if ((objectToRemove != lastLeast) && (lastLeast != null) && (newLeast != newEntry)) {
         // If there has been a change of least entry and it wasn't our new
         // addition or the loss of our randomly removed entry we expect the
         // scores to increase
@@ -187,9 +183,11 @@ public class TestPriorityQueue extends LuceneTestCase {
 
     Iterator<Integer> it = queue.iterator();
     assertFalse(it.hasNext());
-    expectThrows(NoSuchElementException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        NoSuchElementException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorOne() {
@@ -200,9 +198,11 @@ public class TestPriorityQueue extends LuceneTestCase {
     assertTrue(it.hasNext());
     assertEquals(Integer.valueOf(1), it.next());
     assertFalse(it.hasNext());
-    expectThrows(NoSuchElementException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        NoSuchElementException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorTwo() {
@@ -216,9 +216,11 @@ public class TestPriorityQueue extends LuceneTestCase {
     assertTrue(it.hasNext());
     assertEquals(Integer.valueOf(2), it.next());
     assertFalse(it.hasNext());
-    expectThrows(NoSuchElementException.class, () -> {
-      it.next();
-    });
+    expectThrows(
+        NoSuchElementException.class,
+        () -> {
+          it.next();
+        });
   }
 
   public void testIteratorRandom() {
@@ -245,14 +247,16 @@ public class TestPriorityQueue extends LuceneTestCase {
   }
 
   public void testMaxIntSize() {
-    expectThrows(IllegalArgumentException.class, () -> {
-      new PriorityQueue<Boolean>(Integer.MAX_VALUE) {
-        @Override
-        public boolean lessThan(Boolean a, Boolean b) {
-          // uncalled
-          return true;
-        }
-      };
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new PriorityQueue<Boolean>(Integer.MAX_VALUE) {
+            @Override
+            public boolean lessThan(Boolean a, Boolean b) {
+              // uncalled
+              return true;
+            }
+          };
+        });
   }
 }

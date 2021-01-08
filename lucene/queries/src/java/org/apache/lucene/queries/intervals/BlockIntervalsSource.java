@@ -38,9 +38,8 @@ class BlockIntervalsSource extends ConjunctionIntervalsSource {
     List<IntervalsSource> flattened = new ArrayList<>();
     for (IntervalsSource s : sources) {
       if (s instanceof BlockIntervalsSource) {
-        flattened.addAll(((BlockIntervalsSource)s).subSources);
-      }
-      else {
+        flattened.addAll(((BlockIntervalsSource) s).subSources);
+      } else {
         flattened.add(s);
       }
     }
@@ -67,7 +66,7 @@ class BlockIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public Collection<IntervalsSource> pullUpDisjunctions() {
-    return Collections.singletonList(this);   // Disjunctions already pulled up in build()
+    return Collections.singletonList(this); // Disjunctions already pulled up in build()
   }
 
   @Override
@@ -84,7 +83,9 @@ class BlockIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public String toString() {
-    return "BLOCK(" + subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(",")) + ")";
+    return "BLOCK("
+        + subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(","))
+        + ")";
   }
 
   private static class BlockIntervalIterator extends ConjunctionIntervalIterator {
@@ -122,8 +123,7 @@ class BlockIntervalsSource extends ConjunctionIntervalsSource {
         }
         if (subIterators.get(i).start() == subIterators.get(i - 1).end() + 1) {
           i = i + 1;
-        }
-        else {
+        } else {
           if (subIterators.get(0).nextInterval() == IntervalIterator.NO_MORE_INTERVALS)
             return start = end = IntervalIterator.NO_MORE_INTERVALS;
           i = 1;

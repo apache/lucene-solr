@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.InfoStream;
 
-/**
- * Rollback the index writer.
- */
+/** Rollback the index writer. */
 public class RollbackIndexTask extends PerfTask {
 
   public RollbackIndexTask(PerfRunData runData) {

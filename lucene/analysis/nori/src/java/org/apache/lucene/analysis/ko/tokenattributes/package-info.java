@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Additional Korean-specific Attributes for text analysis.
- */
+/** Additional Korean-specific Attributes for text analysis. */
 package org.apache.lucene.analysis.ko.tokenattributes;

@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.util.Objects;
-
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -25,20 +24,25 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * An indexed Long Range field.
- * <p>
- * This field indexes dimensional ranges defined as min/max pairs. It supports
- * up to a maximum of 4 dimensions (indexed as 8 numeric values). With 1 dimension representing a single long range,
- * 2 dimensions representing a bounding box, 3 dimensions a bounding cube, and 4 dimensions a tesseract.
- * <p>
- * Multiple values for the same field in one document is supported, and open ended ranges can be defined using
- * {@code Long.MIN_VALUE} and {@code Long.MAX_VALUE}.
  *
- * <p>
- * This field defines the following static factory methods for common search operations over long ranges:
+ * <p>This field indexes dimensional ranges defined as min/max pairs. It supports up to a maximum of
+ * 4 dimensions (indexed as 8 numeric values). With 1 dimension representing a single long range, 2
+ * dimensions representing a bounding box, 3 dimensions a bounding cube, and 4 dimensions a
+ * tesseract.
+ *
+ * <p>Multiple values for the same field in one document is supported, and open ended ranges can be
+ * defined using {@code Long.MIN_VALUE} and {@code Long.MAX_VALUE}.
+ *
+ * <p>This field defines the following static factory methods for common search operations over long
+ * ranges:
+ *
  * <ul>
- *   <li>{@link #newIntersectsQuery newIntersectsQuery()} matches ranges that intersect the defined search range.
- *   <li>{@link #newWithinQuery newWithinQuery()} matches ranges that are within the defined search range.
- *   <li>{@link #newContainsQuery newContainsQuery()} matches ranges that contain the defined search range.
+ *   <li>{@link #newIntersectsQuery newIntersectsQuery()} matches ranges that intersect the defined
+ *       search range.
+ *   <li>{@link #newWithinQuery newWithinQuery()} matches ranges that are within the defined search
+ *       range.
+ *   <li>{@link #newContainsQuery newContainsQuery()} matches ranges that contain the defined search
+ *       range.
  * </ul>
  */
 public class LongRange extends Field {
@@ -65,30 +69,38 @@ public class LongRange extends Field {
 
     FieldType ft = new FieldType();
     // dimensions is set as 2*dimension size (min/max per dimension)
-    ft.setDimensions(dimensions*2, BYTES);
+    ft.setDimensions(dimensions * 2, BYTES);
     ft.freeze();
     return ft;
   }
 
   /**
    * Changes the values of the field.
+   *
    * @param min array of min values. (accepts {@code Long.MIN_VALUE})
    * @param max array of max values. (accepts {@code Long.MAX_VALUE})
    * @throws IllegalArgumentException if {@code min} or {@code max} is invalid
    */
   public void setRangeValues(long[] min, long[] max) {
     checkArgs(min, max);
-    if (min.length*2 != type.pointDimensionCount() || max.length*2 != type.pointDimensionCount()) {
-      throw new IllegalArgumentException("field (name=" + name + ") uses " + type.pointDimensionCount()/2
-          + " dimensions; cannot change to (incoming) " + min.length + " dimensions");
+    if (min.length * 2 != type.pointDimensionCount()
+        || max.length * 2 != type.pointDimensionCount()) {
+      throw new IllegalArgumentException(
+          "field (name="
+              + name
+              + ") uses "
+              + type.pointDimensionCount() / 2
+              + " dimensions; cannot change to (incoming) "
+              + min.length
+              + " dimensions");
     }
 
     final byte[] bytes;
     if (fieldsData == null) {
-      bytes = new byte[BYTES*2*min.length];
+      bytes = new byte[BYTES * 2 * min.length];
       fieldsData = new BytesRef(bytes);
     } else {
-      bytes = ((BytesRef)fieldsData).bytes;
+      bytes = ((BytesRef) fieldsData).bytes;
     }
     verifyAndEncode(min, max, bytes);
   }
@@ -109,27 +121,29 @@ public class LongRange extends Field {
   /** Encodes the min, max ranges into a byte array */
   static byte[] encode(long[] min, long[] max) {
     checkArgs(min, max);
-    byte[] b = new byte[BYTES*2*min.length];
+    byte[] b = new byte[BYTES * 2 * min.length];
     verifyAndEncode(min, max, b);
     return b;
   }
 
   /**
    * encode the ranges into a sortable byte array ({@code Double.NaN} not allowed)
-   * <p>
-   * example for 4 dimensions (8 bytes per dimension value):
-   * minD1 ... minD4 | maxD1 ... maxD4
+   *
+   * <p>example for 4 dimensions (8 bytes per dimension value): minD1 ... minD4 | maxD1 ... maxD4
    */
   static void verifyAndEncode(long[] min, long[] max, byte[] bytes) {
-    for (int d=0,i=0,j=min.length*BYTES; d<min.length; ++d, i+=BYTES, j+=BYTES) {
+    for (int d = 0, i = 0, j = min.length * BYTES; d < min.length; ++d, i += BYTES, j += BYTES) {
       if (Double.isNaN(min[d])) {
-        throw new IllegalArgumentException("invalid min value (" + Double.NaN + ")" + " in LongRange");
+        throw new IllegalArgumentException(
+            "invalid min value (" + Double.NaN + ")" + " in LongRange");
       }
       if (Double.isNaN(max[d])) {
-        throw new IllegalArgumentException("invalid max value (" + Double.NaN + ")" + " in LongRange");
+        throw new IllegalArgumentException(
+            "invalid max value (" + Double.NaN + ")" + " in LongRange");
       }
       if (min[d] > max[d]) {
-        throw new IllegalArgumentException("min value (" + min[d] + ") is greater than max value (" + max[d] + ")");
+        throw new IllegalArgumentException(
+            "min value (" + min[d] + ") is greater than max value (" + max[d] + ")");
       }
       encode(min[d], bytes, i);
       encode(max[d], bytes, j);
@@ -143,43 +157,47 @@ public class LongRange extends Field {
 
   /**
    * Get the min value for the given dimension
+   *
    * @param dimension the dimension, always positive
    * @return the decoded min value
    */
   public long getMin(int dimension) {
-    Objects.checkIndex(dimension, type.pointDimensionCount()/2);
-    return decodeMin(((BytesRef)fieldsData).bytes, dimension);
+    Objects.checkIndex(dimension, type.pointDimensionCount() / 2);
+    return decodeMin(((BytesRef) fieldsData).bytes, dimension);
   }
 
   /**
    * Get the max value for the given dimension
+   *
    * @param dimension the dimension, always positive
    * @return the decoded max value
    */
   public long getMax(int dimension) {
-    Objects.checkIndex(dimension, type.pointDimensionCount()/2);
-    return decodeMax(((BytesRef)fieldsData).bytes, dimension);
+    Objects.checkIndex(dimension, type.pointDimensionCount() / 2);
+    return decodeMax(((BytesRef) fieldsData).bytes, dimension);
   }
 
   /** decodes the min value (for the defined dimension) from the encoded input byte array */
   static long decodeMin(byte[] b, int dimension) {
-    int offset = dimension*BYTES;
+    int offset = dimension * BYTES;
     return NumericUtils.sortableBytesToLong(b, offset);
   }
 
   /** decodes the max value (for the defined dimension) from the encoded input byte array */
   static long decodeMax(byte[] b, int dimension) {
-    int offset = b.length/2 + dimension*BYTES;
+    int offset = b.length / 2 + dimension * BYTES;
     return NumericUtils.sortableBytesToLong(b, offset);
   }
 
   /**
    * Create a query for matching indexed ranges that intersect the defined range.
+   *
    * @param field field name. must not be null.
    * @param min array of min values. (accepts {@code Long.MIN_VALUE})
    * @param max array of max values. (accepts {@code Long.MAX_VALUE})
    * @return query for matching intersecting ranges (overlap, within, or contains)
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newIntersectsQuery(String field, final long[] min, final long[] max) {
     return newRelationQuery(field, min, max, QueryType.INTERSECTS);
@@ -187,11 +205,13 @@ public class LongRange extends Field {
 
   /**
    * Create a query for matching indexed ranges that contain the defined range.
+   *
    * @param field field name. must not be null.
    * @param min array of min values. (accepts {@code Long.MIN_VALUE})
    * @param max array of max values. (accepts {@code Long.MAX_VALUE})
    * @return query for matching ranges that contain the defined range
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newContainsQuery(String field, final long[] min, final long[] max) {
     return newRelationQuery(field, min, max, QueryType.CONTAINS);
@@ -199,32 +219,37 @@ public class LongRange extends Field {
 
   /**
    * Create a query for matching indexed ranges that are within the defined range.
+   *
    * @param field field name. must not be null.
    * @param min array of min values. (accepts {@code Long.MIN_VALUE})
    * @param max array of max values. (accepts {@code Long.MAX_VALUE})
    * @return query for matching ranges within the defined range
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newWithinQuery(String field, final long[] min, final long[] max) {
     return newRelationQuery(field, min, max, QueryType.WITHIN);
   }
 
   /**
-   * Create a query for matching indexed ranges that cross the defined range.
-   * A CROSSES is defined as any set of ranges that are not disjoint and not wholly contained by
-   * the query. Effectively, its the complement of union(WITHIN, DISJOINT).
+   * Create a query for matching indexed ranges that cross the defined range. A CROSSES is defined
+   * as any set of ranges that are not disjoint and not wholly contained by the query. Effectively,
+   * its the complement of union(WITHIN, DISJOINT).
+   *
    * @param field field name. must not be null.
    * @param min array of min values. (accepts {@code Long.MIN_VALUE})
    * @param max array of max values. (accepts {@code Long.MAX_VALUE})
    * @return query for matching ranges within the defined range
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newCrossesQuery(String field, final long[] min, final long[] max) {
     return newRelationQuery(field, min, max, QueryType.CROSSES);
   }
 
   /** helper method for creating the desired relational query */
-  private static Query newRelationQuery(String field, final long[] min, final long[] max, QueryType relation) {
+  private static Query newRelationQuery(
+      String field, final long[] min, final long[] max, QueryType relation) {
     checkArgs(min, max);
     return new RangeFieldQuery(field, encode(min, max), min.length, relation) {
       @Override
@@ -241,7 +266,7 @@ public class LongRange extends Field {
     sb.append(" <");
     sb.append(name);
     sb.append(':');
-    byte[] b = ((BytesRef)fieldsData).bytes;
+    byte[] b = ((BytesRef) fieldsData).bytes;
     toString(b, 0);
     for (int d = 0; d < type.pointDimensionCount() / 2; ++d) {
       sb.append(' ');
@@ -254,12 +279,16 @@ public class LongRange extends Field {
 
   /**
    * Returns the String representation for the range at the given dimension
+   *
    * @param ranges the encoded ranges, never null
    * @param dimension the dimension of interest
    * @return The string representation for the range at the provided dimension
    */
   private static String toString(byte[] ranges, int dimension) {
-    return "[" + Long.toString(decodeMin(ranges, dimension)) + " : "
-        + Long.toString(decodeMax(ranges, dimension)) + "]";
+    return "["
+        + Long.toString(decodeMin(ranges, dimension))
+        + " : "
+        + Long.toString(decodeMax(ranges, dimension))
+        + "]";
   }
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
@@ -36,17 +34,17 @@ public class TestCheckIndex extends BaseTestCheckIndex {
     directory.close();
     super.tearDown();
   }
-  
+
   @Test
   public void testDeletedDocs() throws IOException {
     testDeletedDocs(directory);
   }
-  
+
   @Test
   public void testChecksumsOnly() throws IOException {
     testChecksumsOnly(directory);
   }
-  
+
   @Test
   public void testChecksumsOnlyVerbose() throws IOException {
     testChecksumsOnlyVerbose(directory);

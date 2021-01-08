@@ -16,27 +16,23 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.StringTokenizer;
 
-
-/**
- * Some useful constants.
- **/
-
+/** Some useful constants. */
 public final class Constants {
-  private Constants() {}  // can't construct
+  private Constants() {} // can't construct
 
   /** JVM vendor info. */
   public static final String JVM_VENDOR = System.getProperty("java.vm.vendor");
+
   public static final String JVM_VERSION = System.getProperty("java.vm.version");
   public static final String JVM_NAME = System.getProperty("java.vm.name");
   public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
 
-  /** The value of <code>System.getProperty("java.version")</code>. **/
+  /** The value of <code>System.getProperty("java.version")</code>. * */
   public static final String JAVA_VERSION = System.getProperty("java.version");
- 
-  /** The value of <code>System.getProperty("os.name")</code>. **/
+
+  /** The value of <code>System.getProperty("os.name")</code>. * */
   public static final String OS_NAME = System.getProperty("os.name");
   /** True iff running on Linux. */
   public static final boolean LINUX = OS_NAME.startsWith("Linux");
@@ -52,13 +48,13 @@ public final class Constants {
   public static final String OS_ARCH = System.getProperty("os.arch");
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
-  
+
   private static final int JVM_MAJOR_VERSION;
   private static final int JVM_MINOR_VERSION;
- 
+
   /** True iff running on a 64bit JVM */
   public static final boolean JRE_IS_64BIT;
-  
+
   static {
     final StringTokenizer st = new StringTokenizer(JVM_SPEC_VERSION, ".");
     JVM_MAJOR_VERSION = Integer.parseInt(st.nextToken());
@@ -74,7 +70,8 @@ public final class Constants {
       if (datamodel != null) {
         is64Bit = datamodel.contains("64");
       }
-    } catch (SecurityException ex) {}
+    } catch (SecurityException ex) {
+    }
     if (datamodel == null) {
       if (OS_ARCH != null && OS_ARCH.contains("64")) {
         is64Bit = true;
@@ -85,22 +82,24 @@ public final class Constants {
     JRE_IS_64BIT = is64Bit;
   }
 
-  public static final boolean JRE_IS_MINIMUM_JAVA8 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 8);
-  public static final boolean JRE_IS_MINIMUM_JAVA9 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
-  public static final boolean JRE_IS_MINIMUM_JAVA11 = JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 11);
+  public static final boolean JRE_IS_MINIMUM_JAVA8 =
+      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 8);
+  public static final boolean JRE_IS_MINIMUM_JAVA9 =
+      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
+  public static final boolean JRE_IS_MINIMUM_JAVA11 =
+      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 11);
 
   /**
    * This is the internal Lucene version, including bugfix versions, recorded into each segment.
+   *
    * @deprecated Use {@link Version#LATEST}
    */
-  @Deprecated
-  public static final String LUCENE_MAIN_VERSION = Version.LATEST.toString();
-  
+  @Deprecated public static final String LUCENE_MAIN_VERSION = Version.LATEST.toString();
+
   /**
    * Don't use this constant because the name is not self-describing!
+   *
    * @deprecated Use {@link Version#LATEST}
    */
-  @Deprecated
-  public static final String LUCENE_VERSION = Version.LATEST.toString();
-  
+  @Deprecated public static final String LUCENE_VERSION = Version.LATEST.toString();
 }

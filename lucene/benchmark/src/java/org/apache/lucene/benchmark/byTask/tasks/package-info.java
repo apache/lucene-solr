@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Extendable benchmark tasks.
- */
+/** Extendable benchmark tasks. */
 package org.apache.lucene.benchmark.byTask.tasks;

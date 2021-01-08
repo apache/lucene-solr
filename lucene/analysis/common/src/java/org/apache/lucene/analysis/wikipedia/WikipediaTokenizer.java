@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.analysis.wikipedia;
 
+import java.io.IOException;
+import java.util.*;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -25,19 +27,17 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeSource;
 
-import java.io.IOException;
-import java.util.*;
-
-
 /**
- * Extension of StandardTokenizer that is aware of Wikipedia syntax.  It is based off of the
- * Wikipedia tutorial available at http://en.wikipedia.org/wiki/Wikipedia:Tutorial, but it may not be complete.
+ * Extension of StandardTokenizer that is aware of Wikipedia syntax. It is based off of the
+ * Wikipedia tutorial available at http://en.wikipedia.org/wiki/Wikipedia:Tutorial, but it may not
+ * be complete.
+ *
  * @lucene.experimental
  */
 public final class WikipediaTokenizer extends Tokenizer {
   public static final String INTERNAL_LINK = "il";
   public static final String EXTERNAL_LINK = "el";
-  //The URL part of the link, i.e. the first token
+  // The URL part of the link, i.e. the first token
   public static final String EXTERNAL_LINK_URL = "elu";
   public static final String CITATION = "ci";
   public static final String CATEGORY = "c";
@@ -47,91 +47,89 @@ public final class WikipediaTokenizer extends Tokenizer {
   public static final String HEADING = "h";
   public static final String SUB_HEADING = "sh";
 
-  public static final int ALPHANUM_ID          = 0;
-  public static final int APOSTROPHE_ID        = 1;
-  public static final int ACRONYM_ID           = 2;
-  public static final int COMPANY_ID           = 3;
-  public static final int EMAIL_ID             = 4;
-  public static final int HOST_ID              = 5;
-  public static final int NUM_ID               = 6;
-  public static final int CJ_ID                = 7;
-  public static final int INTERNAL_LINK_ID     = 8;
-  public static final int EXTERNAL_LINK_ID     = 9;
-  public static final int CITATION_ID          = 10;
-  public static final int CATEGORY_ID          = 11;
-  public static final int BOLD_ID              = 12;
-  public static final int ITALICS_ID           = 13;
-  public static final int BOLD_ITALICS_ID      = 14;
-  public static final int HEADING_ID           = 15;
-  public static final int SUB_HEADING_ID       = 16;
+  public static final int ALPHANUM_ID = 0;
+  public static final int APOSTROPHE_ID = 1;
+  public static final int ACRONYM_ID = 2;
+  public static final int COMPANY_ID = 3;
+  public static final int EMAIL_ID = 4;
+  public static final int HOST_ID = 5;
+  public static final int NUM_ID = 6;
+  public static final int CJ_ID = 7;
+  public static final int INTERNAL_LINK_ID = 8;
+  public static final int EXTERNAL_LINK_ID = 9;
+  public static final int CITATION_ID = 10;
+  public static final int CATEGORY_ID = 11;
+  public static final int BOLD_ID = 12;
+  public static final int ITALICS_ID = 13;
+  public static final int BOLD_ITALICS_ID = 14;
+  public static final int HEADING_ID = 15;
+  public static final int SUB_HEADING_ID = 16;
   public static final int EXTERNAL_LINK_URL_ID = 17;
 
   /** String token types that correspond to token type int constants */
-  public static final String [] TOKEN_TYPES = new String [] {
-    "<ALPHANUM>",
-    "<APOSTROPHE>",
-    "<ACRONYM>",
-    "<COMPANY>",
-    "<EMAIL>",
-    "<HOST>",
-    "<NUM>",
-    "<CJ>",
-    INTERNAL_LINK,
-    EXTERNAL_LINK,
-    CITATION,
-    CATEGORY,
-    BOLD,
-    ITALICS,
-    BOLD_ITALICS,
-    HEADING,
-    SUB_HEADING,
-    EXTERNAL_LINK_URL
-  };
+  public static final String[] TOKEN_TYPES =
+      new String[] {
+        "<ALPHANUM>",
+        "<APOSTROPHE>",
+        "<ACRONYM>",
+        "<COMPANY>",
+        "<EMAIL>",
+        "<HOST>",
+        "<NUM>",
+        "<CJ>",
+        INTERNAL_LINK,
+        EXTERNAL_LINK,
+        CITATION,
+        CATEGORY,
+        BOLD,
+        ITALICS,
+        BOLD_ITALICS,
+        HEADING,
+        SUB_HEADING,
+        EXTERNAL_LINK_URL
+      };
 
-  /**
-   * Only output tokens
-   */
+  /** Only output tokens */
   public static final int TOKENS_ONLY = 0;
   /**
-   * Only output untokenized tokens, which are tokens that would normally be split into several tokens
+   * Only output untokenized tokens, which are tokens that would normally be split into several
+   * tokens
    */
   public static final int UNTOKENIZED_ONLY = 1;
-  /**
-   * Output the both the untokenized token and the splits
-   */
+  /** Output the both the untokenized token and the splits */
   public static final int BOTH = 2;
   /**
-   * This flag is used to indicate that the produced "Token" would, if {@link #TOKENS_ONLY} was used, produce multiple tokens.
+   * This flag is used to indicate that the produced "Token" would, if {@link #TOKENS_ONLY} was
+   * used, produce multiple tokens.
    */
   public static final int UNTOKENIZED_TOKEN_FLAG = 1;
-  /**
-   * A private instance of the JFlex-constructed scanner
-   */
+  /** A private instance of the JFlex-constructed scanner */
   private final WikipediaTokenizerImpl scanner;
 
   private int tokenOutput = TOKENS_ONLY;
   private Set<String> untokenizedTypes = Collections.emptySet();
   private Iterator<AttributeSource.State> tokens = null;
-  
+
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
-  
+
   private boolean first;
 
   /**
-   * Creates a new instance of the {@link WikipediaTokenizer}. Attaches the
-   * <code>input</code> to a newly created JFlex scanner.
+   * Creates a new instance of the {@link WikipediaTokenizer}. Attaches the <code>input</code> to a
+   * newly created JFlex scanner.
    */
   public WikipediaTokenizer() {
     this(TOKENS_ONLY, Collections.<String>emptySet());
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
-   * <code>input</code> to the newly created JFlex scanner.
+   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.
+   * Attaches the <code>input</code> to the newly created JFlex scanner.
    *
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
    */
@@ -141,36 +139,37 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
-   * <code>input</code> to the newly created JFlex scanner. Uses the given {@link org.apache.lucene.util.AttributeFactory}.
+   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.
+   * Attaches the <code>input</code> to the newly created JFlex scanner. Uses the given {@link
+   * org.apache.lucene.util.AttributeFactory}.
    *
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
    */
-  public WikipediaTokenizer(AttributeFactory factory, int tokenOutput, Set<String> untokenizedTypes) {
+  public WikipediaTokenizer(
+      AttributeFactory factory, int tokenOutput, Set<String> untokenizedTypes) {
     super(factory);
     this.scanner = new WikipediaTokenizerImpl(this.input);
     init(tokenOutput, untokenizedTypes);
   }
-  
+
   private void init(int tokenOutput, Set<String> untokenizedTypes) {
     // TODO: cutover to enum
-    if (tokenOutput != TOKENS_ONLY &&
-        tokenOutput != UNTOKENIZED_ONLY &&
-        tokenOutput != BOTH) {
-      throw new IllegalArgumentException("tokenOutput must be TOKENS_ONLY, UNTOKENIZED_ONLY or BOTH");
+    if (tokenOutput != TOKENS_ONLY && tokenOutput != UNTOKENIZED_ONLY && tokenOutput != BOTH) {
+      throw new IllegalArgumentException(
+          "tokenOutput must be TOKENS_ONLY, UNTOKENIZED_ONLY or BOTH");
     }
     this.tokenOutput = tokenOutput;
-    this.untokenizedTypes = untokenizedTypes;    
+    this.untokenizedTypes = untokenizedTypes;
   }
-  
+
   /*
-  * (non-Javadoc)
-  *
-  * @see org.apache.lucene.analysis.TokenStream#next()
-  */
+   * (non-Javadoc)
+   *
+   * @see org.apache.lucene.analysis.TokenStream#next()
+   */
   @Override
   public final boolean incrementToken() throws IOException {
-    if (tokens != null && tokens.hasNext()){
+    if (tokens != null && tokens.hasNext()) {
       AttributeSource.State state = tokens.next();
       restoreState(state);
       return true;
@@ -182,15 +181,14 @@ public final class WikipediaTokenizer extends Tokenizer {
       return false;
     }
     String type = WikipediaTokenizerImpl.TOKEN_TYPES[tokenType];
-    if (tokenOutput == TOKENS_ONLY || untokenizedTypes.contains(type) == false){
+    if (tokenOutput == TOKENS_ONLY || untokenizedTypes.contains(type) == false) {
       setupToken();
-    } else if (tokenOutput == UNTOKENIZED_ONLY && untokenizedTypes.contains(type) == true){
+    } else if (tokenOutput == UNTOKENIZED_ONLY && untokenizedTypes.contains(type) == true) {
       collapseTokens(tokenType);
 
-    }
-    else if (tokenOutput == BOTH){
-      //collapse into a single token, add it to tokens AND output the individual tokens
-      //output the untokenized Token first
+    } else if (tokenOutput == BOTH) {
+      // collapse into a single token, add it to tokens AND output the individual tokens
+      // output the untokenized Token first
       collapseAndSaveTokens(tokenType, type);
     }
     int posinc = scanner.getPositionIncrement();
@@ -204,10 +202,10 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   private void collapseAndSaveTokens(int tokenType, String type) throws IOException {
-    //collapse
+    // collapse
     StringBuilder buffer = new StringBuilder(32);
     int numAdded = scanner.setText(buffer);
-    //TODO: how to know how much whitespace to add
+    // TODO: how to know how much whitespace to add
     int theStart = scanner.yychar();
     int lastPos = theStart + numAdded;
     int tmpTokType;
@@ -215,11 +213,14 @@ public final class WikipediaTokenizer extends Tokenizer {
     List<AttributeSource.State> tmp = new ArrayList<>();
     setupSavedToken(0, type);
     tmp.add(captureState());
-    //while we can get a token and that token is the same type and we have not transitioned to a new wiki-item of the same type
-    while ((tmpTokType = scanner.getNextToken()) != WikipediaTokenizerImpl.YYEOF && tmpTokType == tokenType && scanner.getNumWikiTokensSeen() > numSeen){
+    // while we can get a token and that token is the same type and we have not transitioned to a
+    // new wiki-item of the same type
+    while ((tmpTokType = scanner.getNextToken()) != WikipediaTokenizerImpl.YYEOF
+        && tmpTokType == tokenType
+        && scanner.getNumWikiTokensSeen() > numSeen) {
       int currPos = scanner.yychar();
-      //append whitespace
-      for (int i = 0; i < (currPos - lastPos); i++){
+      // append whitespace
+      for (int i = 0; i < (currPos - lastPos); i++) {
         buffer.append(' ');
       }
       numAdded = scanner.setText(buffer);
@@ -228,53 +229,58 @@ public final class WikipediaTokenizer extends Tokenizer {
       numSeen++;
       lastPos = currPos + numAdded;
     }
-    //trim the buffer
+    // trim the buffer
     // TODO: this is inefficient
     String s = buffer.toString().trim();
     termAtt.setEmpty().append(s);
     offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
-    //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
-    if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
+    // The way the loop is written, we will have proceeded to the next token.  We need to pushback
+    // the scanner to lastPos
+    if (tmpTokType != WikipediaTokenizerImpl.YYEOF) {
       scanner.yypushback(scanner.yylength());
     }
     tokens = tmp.iterator();
   }
 
-  private void setupSavedToken(int positionInc, String type){
+  private void setupSavedToken(int positionInc, String type) {
     setupToken();
     posIncrAtt.setPositionIncrement(positionInc);
     typeAtt.setType(type);
   }
 
   private void collapseTokens(int tokenType) throws IOException {
-    //collapse
+    // collapse
     StringBuilder buffer = new StringBuilder(32);
     int numAdded = scanner.setText(buffer);
-    //TODO: how to know how much whitespace to add
+    // TODO: how to know how much whitespace to add
     int theStart = scanner.yychar();
     int lastPos = theStart + numAdded;
     int tmpTokType;
     int numSeen = 0;
-    //while we can get a token and that token is the same type and we have not transitioned to a new wiki-item of the same type
-    while ((tmpTokType = scanner.getNextToken()) != WikipediaTokenizerImpl.YYEOF && tmpTokType == tokenType && scanner.getNumWikiTokensSeen() > numSeen){
+    // while we can get a token and that token is the same type and we have not transitioned to a
+    // new wiki-item of the same type
+    while ((tmpTokType = scanner.getNextToken()) != WikipediaTokenizerImpl.YYEOF
+        && tmpTokType == tokenType
+        && scanner.getNumWikiTokensSeen() > numSeen) {
       int currPos = scanner.yychar();
-      //append whitespace
-      for (int i = 0; i < (currPos - lastPos); i++){
+      // append whitespace
+      for (int i = 0; i < (currPos - lastPos); i++) {
         buffer.append(' ');
       }
       numAdded = scanner.setText(buffer);
       numSeen++;
       lastPos = currPos + numAdded;
     }
-    //trim the buffer
+    // trim the buffer
     // TODO: this is inefficient
     String s = buffer.toString().trim();
     termAtt.setEmpty().append(s);
     offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
-    //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
-    if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
+    // The way the loop is written, we will have proceeded to the next token.  We need to pushback
+    // the scanner to lastPos
+    if (tmpTokType != WikipediaTokenizerImpl.YYEOF) {
       scanner.yypushback(scanner.yylength());
     } else {
       tokens = null;
@@ -294,10 +300,10 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   /*
-  * (non-Javadoc)
-  *
-  * @see org.apache.lucene.analysis.TokenStream#reset()
-  */
+   * (non-Javadoc)
+   *
+   * @see org.apache.lucene.analysis.TokenStream#reset()
+   */
   @Override
   public void reset() throws IOException {
     super.reset();

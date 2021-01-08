@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.index.LeafReader;
@@ -49,10 +48,14 @@ class TermIntervalsSource extends IntervalsSource {
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     Terms terms = ctx.reader().terms(field);
-    if (terms == null)
+    if (terms == null) {
       return null;
+    }
     if (terms.hasPositions() == false) {
-      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+      throw new IllegalArgumentException(
+          "Cannot create an IntervalIterator over field "
+              + field
+              + " because it has no indexed positions");
     }
     TermsEnum te = terms.iterator();
     if (te.seekExact(term) == false) {
@@ -109,8 +112,9 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public int nextInterval() throws IOException {
-        if (upto <= 0)
+        if (upto <= 0) {
           return pos = NO_MORE_INTERVALS;
+        }
         upto--;
         return pos = pe.nextPosition();
       }
@@ -124,8 +128,7 @@ class TermIntervalsSource extends IntervalsSource {
         if (pe.docID() == NO_MORE_DOCS) {
           upto = -1;
           pos = NO_MORE_INTERVALS;
-        }
-        else {
+        } else {
           upto = pe.freq();
           pos = -1;
         }
@@ -139,12 +142,17 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     Terms terms = ctx.reader().terms(field);
-    if (terms == null)
+    if (terms == null) {
       return null;
+    }
     if (terms.hasPositions() == false) {
-      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+      throw new IllegalArgumentException(
+          "Cannot create an IntervalIterator over field "
+              + field
+              + " because it has no indexed positions");
     }
     TermsEnum te = terms.iterator();
     if (te.seekExact(term) == false) {
@@ -250,31 +258,31 @@ class TermIntervalsSource extends IntervalsSource {
     visitor.consumeTerms(new IntervalQuery(field, this), new Term(field, term));
   }
 
-  /** A guess of
-   * the average number of simple operations for the initial seek and buffer refill
-   * per document for the positions of a term.
-   * See also {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}.
-   * <p>
-   * Aside: Instead of being constant this could depend among others on
-   * {@link Lucene84PostingsFormat#BLOCK_SIZE},
-   * {@link TermsEnum#docFreq()},
-   * {@link TermsEnum#totalTermFreq()},
-   * {@link DocIdSetIterator#cost()} (expected number of matching docs),
-   * {@link LeafReader#maxDoc()} (total number of docs in the segment),
-   * and the seek time and block size of the device storing the index.
+  /**
+   * A guess of the average number of simple operations for the initial seek and buffer refill per
+   * document for the positions of a term. See also {@link
+   * Lucene84PostingsReader.EverythingEnum#nextPosition()}.
+   *
+   * <p>Aside: Instead of being constant this could depend among others on {@link
+   * Lucene84PostingsFormat#BLOCK_SIZE}, {@link TermsEnum#docFreq()}, {@link
+   * TermsEnum#totalTermFreq()}, {@link DocIdSetIterator#cost()} (expected number of matching docs),
+   * {@link LeafReader#maxDoc()} (total number of docs in the segment), and the seek time and block
+   * size of the device storing the index.
    */
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
-  /** Number of simple operations in {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}
-   *  when no seek or buffer refill is done.
+  /**
+   * Number of simple operations in {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}
+   * when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
 
-  /** Returns an expected cost in simple operations
-   *  of processing the occurrences of a term
-   *  in a document that contains the term.
-   *  This is for use by {@link TwoPhaseIterator#matchCost} implementations.
-   *  @param termsEnum The term is the term at which this TermsEnum is positioned.
+  /**
+   * Returns an expected cost in simple operations of processing the occurrences of a term in a
+   * document that contains the term. This is for use by {@link TwoPhaseIterator#matchCost}
+   * implementations.
+   *
+   * @param termsEnum The term is the term at which this TermsEnum is positioned.
    */
   static float termPositionsCost(TermsEnum termsEnum) throws IOException {
     // TODO: When intervals move to core, refactor to use the copy of this in PhraseQuery

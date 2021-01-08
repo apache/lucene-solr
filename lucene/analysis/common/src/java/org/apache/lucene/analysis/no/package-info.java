@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Norwegian.
- */
+/** Analyzer for Norwegian. */
 package org.apache.lucene.analysis.no;

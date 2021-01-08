@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analysis components based on ICU
- */
+/** Analysis components based on ICU */
 package org.apache.lucene.analysis.icu;

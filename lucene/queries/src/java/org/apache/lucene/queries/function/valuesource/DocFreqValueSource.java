@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -25,13 +27,9 @@ import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.Map;
-
-
-
 /**
  * <code>DocFreqValueSource</code> returns the number of documents containing the term.
+ *
  * @lucene.internal
  */
 public class DocFreqValueSource extends ValueSource {
@@ -57,8 +55,9 @@ public class DocFreqValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    IndexSearcher searcher = (IndexSearcher) context.get("searcher");
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     return new ConstIntDocValues(docfreq, this);
   }
@@ -70,15 +69,17 @@ public class DocFreqValueSource extends ValueSource {
 
   @Override
   public int hashCode() {
-    return getClass().hashCode() + indexedField.hashCode()*29 + indexedBytes.hashCode();
+    return getClass().hashCode() + indexedField.hashCode() * 29 + indexedBytes.hashCode();
   }
 
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    DocFreqValueSource other = (DocFreqValueSource)o;
-    return this.indexedField.equals(other.indexedField) && this.indexedBytes.equals(other.indexedBytes);
+    DocFreqValueSource other = (DocFreqValueSource) o;
+    return this.indexedField.equals(other.indexedField)
+        && this.indexedBytes.equals(other.indexedBytes);
   }
+
   static class ConstIntDocValues extends IntDocValues {
     final int ival;
     final float fval;
@@ -101,22 +102,27 @@ public class DocFreqValueSource extends ValueSource {
     public float floatVal(int doc) {
       return fval;
     }
+
     @Override
     public int intVal(int doc) {
       return ival;
     }
+
     @Override
     public long longVal(int doc) {
       return lval;
     }
+
     @Override
     public double doubleVal(int doc) {
       return dval;
     }
+
     @Override
     public String strVal(int doc) {
       return sval;
     }
+
     @Override
     public String toString(int doc) {
       return parent.description() + '=' + sval;
@@ -133,10 +139,10 @@ public class DocFreqValueSource extends ValueSource {
 
     ConstDoubleDocValues(double val, ValueSource parent) {
       super(parent);
-      ival = (int)val;
-      fval = (float)val;
+      ival = (int) val;
+      fval = (float) val;
       dval = val;
-      lval = (long)val;
+      lval = (long) val;
       sval = Double.toString(val);
       this.parent = parent;
     }
@@ -145,26 +151,30 @@ public class DocFreqValueSource extends ValueSource {
     public float floatVal(int doc) {
       return fval;
     }
+
     @Override
     public int intVal(int doc) {
       return ival;
     }
+
     @Override
     public long longVal(int doc) {
       return lval;
     }
+
     @Override
     public double doubleVal(int doc) {
       return dval;
     }
+
     @Override
     public String strVal(int doc) {
       return sval;
     }
+
     @Override
     public String toString(int doc) {
       return parent.description() + '=' + sval;
     }
   }
 }
-

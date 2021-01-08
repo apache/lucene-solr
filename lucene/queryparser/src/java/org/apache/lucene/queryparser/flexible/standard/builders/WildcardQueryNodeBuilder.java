@@ -24,10 +24,7 @@ import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewri
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.WildcardQuery;
 
-/**
- * Builds a {@link WildcardQuery} object from a {@link WildcardQueryNode}
- * object.
- */
+/** Builds a {@link WildcardQuery} object from a {@link WildcardQueryNode} object. */
 public class WildcardQueryNodeBuilder implements StandardQueryBuilder {
 
   public WildcardQueryNodeBuilder() {
@@ -38,15 +35,16 @@ public class WildcardQueryNodeBuilder implements StandardQueryBuilder {
   public WildcardQuery build(QueryNode queryNode) throws QueryNodeException {
     WildcardQueryNode wildcardNode = (WildcardQueryNode) queryNode;
 
-    WildcardQuery q = new WildcardQuery(new Term(wildcardNode.getFieldAsString(),
-                                                 wildcardNode.getTextAsString()));
-    
-    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod)queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
+    WildcardQuery q =
+        new WildcardQuery(
+            new Term(wildcardNode.getFieldAsString(), wildcardNode.getTextAsString()));
+
+    MultiTermQuery.RewriteMethod method =
+        (MultiTermQuery.RewriteMethod) queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       q.setRewriteMethod(method);
     }
-    
+
     return q;
   }
-
 }

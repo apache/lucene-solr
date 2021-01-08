@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -26,16 +25,16 @@ import org.apache.lucene.analysis.Tokenizer;
 
 public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
 
-  String synonymsFile = 
-    "s(100000001,1,'woods',n,1,0).\n" +
-    "s(100000001,2,'wood',n,1,0).\n" +
-    "s(100000001,3,'forest',n,1,0).\n" +
-    "s(100000002,1,'wolfish',n,1,0).\n" +
-    "s(100000002,2,'ravenous',n,1,0).\n" +
-    "s(100000003,1,'king',n,1,1).\n" +
-    "s(100000003,2,'baron',n,1,1).\n" +
-    "s(100000004,1,'king''s evil',n,1,1).\n" +
-    "s(100000004,2,'king''s meany',n,1,1).\n";
+  String synonymsFile =
+      "s(100000001,1,'woods',n,1,0).\n"
+          + "s(100000001,2,'wood',n,1,0).\n"
+          + "s(100000001,3,'forest',n,1,0).\n"
+          + "s(100000002,1,'wolfish',n,1,0).\n"
+          + "s(100000002,2,'ravenous',n,1,0).\n"
+          + "s(100000003,1,'king',n,1,1).\n"
+          + "s(100000003,2,'baron',n,1,1).\n"
+          + "s(100000004,1,'king''s evil',n,1,1).\n"
+          + "s(100000004,2,'king''s meany',n,1,1).\n";
 
   @SuppressWarnings("deprecation")
   public void testSynonyms() throws Exception {
@@ -44,34 +43,37 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     parser.parse(new StringReader(synonymsFile));
     final SynonymMap map = parser.build();
     analyzer.close();
-    
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
-      }
-    };
-    
+
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
+          }
+        };
+
     /* all expansions */
-    assertAnalyzesTo(analyzer, "Lost in the woods",
-        new String[] { "Lost", "in", "the", "woods", "wood", "forest" },
-        new int[] { 0, 5, 8, 12, 12, 12 },
-        new int[] { 4, 7, 11, 17, 17, 17 },
-        new int[] { 1, 1, 1, 1, 0, 0 });
-    
+    assertAnalyzesTo(
+        analyzer,
+        "Lost in the woods",
+        new String[] {"Lost", "in", "the", "woods", "wood", "forest"},
+        new int[] {0, 5, 8, 12, 12, 12},
+        new int[] {4, 7, 11, 17, 17, 17},
+        new int[] {1, 1, 1, 1, 0, 0});
+
     /* single quote */
-    assertAnalyzesTo(analyzer, "king",
-        new String[] { "king", "baron" });
-    
+    assertAnalyzesTo(analyzer, "king", new String[] {"king", "baron"});
+
     /* multi words */
-    assertAnalyzesTo(analyzer, "king's evil",
-        new String[] { "king's", "king's", "evil", "meany" });
+    assertAnalyzesTo(analyzer, "king's evil", new String[] {"king's", "king's", "evil", "meany"});
 
     /* all expansions, test types */
-    assertAnalyzesTo(analyzer, "Lost in the forest",
-        new String[] { "Lost", "in", "the", "forest", "woods", "wood"},
-        new String[] { "word", "word", "word", "word", "SYNONYM", "SYNONYM" });
+    assertAnalyzesTo(
+        analyzer,
+        "Lost in the forest",
+        new String[] {"Lost", "in", "the", "forest", "woods", "wood"},
+        new String[] {"word", "word", "word", "word", "SYNONYM", "SYNONYM"});
     analyzer.close();
   }
 }

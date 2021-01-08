@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
-import java.util.List;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause;
 
-/**
- * Factory for conjunctions
- */
-public class AndQuery extends ComposedQuery { 
-  public AndQuery(List<SrndQuery> queries, boolean inf, String opName) { 
+import java.util.List;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
+
+/** Factory for conjunctions */
+public class AndQuery extends ComposedQuery {
+  public AndQuery(List<SrndQuery> queries, boolean inf, String opName) {
     super(queries, inf, opName);
   }
-  
+
   @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
-    return SrndBooleanQuery.makeBooleanQuery( /* subqueries can be individually boosted */
-      makeLuceneSubQueriesField(fieldName, qf), BooleanClause.Occur.MUST);
+    return SrndBooleanQuery.makeBooleanQuery(
+        /* subqueries can be individually boosted */
+        makeLuceneSubQueriesField(fieldName, qf), BooleanClause.Occur.MUST);
   }
 }

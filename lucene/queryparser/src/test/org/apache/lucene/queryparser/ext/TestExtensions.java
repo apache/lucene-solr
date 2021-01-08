@@ -18,9 +18,7 @@ package org.apache.lucene.queryparser.ext;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Testcase for the {@link Extensions} class
- */
+/** Testcase for the {@link Extensions} class */
 public class TestExtensions extends LuceneTestCase {
 
   private Extensions ext;
@@ -59,18 +57,21 @@ public class TestExtensions extends LuceneTestCase {
   }
 
   public void testGetExtDelimiter() {
-    assertEquals(Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, this.ext
-        .getExtensionFieldDelimiter());
+    assertEquals(
+        Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, this.ext.getExtensionFieldDelimiter());
     ext = new Extensions('?');
     assertEquals('?', this.ext.getExtensionFieldDelimiter());
   }
 
   public void testEscapeExtension() {
-    assertEquals("abc\\:\\?\\{\\}\\[\\]\\\\\\(\\)\\+\\-\\!\\~", ext
-        .escapeExtensionField("abc:?{}[]\\()+-!~"));
+    assertEquals(
+        "abc\\:\\?\\{\\}\\[\\]\\\\\\(\\)\\+\\-\\!\\~",
+        ext.escapeExtensionField("abc:?{}[]\\()+-!~"));
     // should throw NPE - escape string is null
-    expectThrows(NullPointerException.class, () -> {
-      ext.escapeExtensionField(null);
-    });
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          ext.escapeExtensionField(null);
+        });
   }
 }

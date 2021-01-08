@@ -16,46 +16,44 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
+import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
+
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.Decoder;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
-import org.apache.lucene.util.packed.PackedInts;
-
-import static org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
 
 /**
- * Encode all values in normal area with fixed bit width, 
- * which is determined by the max value in this block.
+ * Encode all values in normal area with fixed bit width, which is determined by the max value in
+ * this block.
  */
 final class ForUtil {
 
-  /**
-   * Special number of bits per value used whenever all values to encode are equal.
-   */
+  /** Special number of bits per value used whenever all values to encode are equal. */
   private static final int ALL_VALUES_EQUAL = 0;
 
   /**
-   * Upper limit of the number of bytes that might be required to stored
-   * <code>BLOCK_SIZE</code> encoded values.
+   * Upper limit of the number of bytes that might be required to stored <code>BLOCK_SIZE</code>
+   * encoded values.
    */
   static final int MAX_ENCODED_SIZE = BLOCK_SIZE * 4;
 
   /**
-   * Upper limit of the number of values that might be decoded in a single call to
-   * {@link #readBlock(IndexInput, byte[], int[])}. Although values after
-   * <code>BLOCK_SIZE</code> are garbage, it is necessary to allocate value buffers
-   * whose size is {@code >= MAX_DATA_SIZE} to avoid {@link ArrayIndexOutOfBoundsException}s.
+   * Upper limit of the number of values that might be decoded in a single call to {@link
+   * #readBlock(IndexInput, byte[], int[])}. Although values after <code>BLOCK_SIZE</code> are
+   * garbage, it is necessary to allocate value buffers whose size is {@code >= MAX_DATA_SIZE} to
+   * avoid {@link ArrayIndexOutOfBoundsException}s.
    */
   static final int MAX_DATA_SIZE;
+
   static {
     int maxDataSize = 0;
-    for(int version=PackedInts.VERSION_START;version<=PackedInts.VERSION_CURRENT;version++) {
+    for (int version = PackedInts.VERSION_START; version <= PackedInts.VERSION_CURRENT; version++) {
       for (PackedInts.Format format : PackedInts.Format.values()) {
         for (int bpv = 1; bpv <= 32; ++bpv) {
           if (!format.isSupported(bpv)) {
@@ -71,18 +69,19 @@ final class ForUtil {
   }
 
   /**
-   * Compute the number of iterations required to decode <code>BLOCK_SIZE</code>
-   * values with the provided {@link Decoder}.
+   * Compute the number of iterations required to decode <code>BLOCK_SIZE</code> values with the
+   * provided {@link Decoder}.
    */
   private static int computeIterations(PackedInts.Decoder decoder) {
     return (int) Math.ceil((float) BLOCK_SIZE / decoder.byteValueCount());
   }
 
   /**
-   * Compute the number of bytes required to encode a block of values that require
-   * <code>bitsPerValue</code> bits per value with format <code>format</code>.
+   * Compute the number of bytes required to encode a block of values that require <code>
+   * bitsPerValue</code> bits per value with format <code>format</code>.
    */
-  private static int encodedSize(PackedInts.Format format, int packedIntsVersion, int bitsPerValue) {
+  private static int encodedSize(
+      PackedInts.Format format, int packedIntsVersion, int bitsPerValue) {
     final long byteCount = format.byteCount(packedIntsVersion, BLOCK_SIZE, bitsPerValue);
     assert byteCount >= 0 && byteCount <= Integer.MAX_VALUE : byteCount;
     return (int) byteCount;
@@ -93,9 +92,7 @@ final class ForUtil {
   private final PackedInts.Decoder[] decoders;
   private final int[] iterations;
 
-  /**
-   * Create a new {@link ForUtil} instance and save state into <code>out</code>.
-   */
+  /** Create a new {@link ForUtil} instance and save state into <code>out</code>. */
   ForUtil(float acceptableOverheadRatio, DataOutput out) throws IOException {
     out.writeVInt(PackedInts.VERSION_CURRENT);
     encodedSizes = new int[33];
@@ -104,24 +101,25 @@ final class ForUtil {
     iterations = new int[33];
 
     for (int bpv = 1; bpv <= 32; ++bpv) {
-      final FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(
-          BLOCK_SIZE, bpv, acceptableOverheadRatio);
+      final FormatAndBits formatAndBits =
+          PackedInts.fastestFormatAndBits(BLOCK_SIZE, bpv, acceptableOverheadRatio);
       assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue);
       assert formatAndBits.bitsPerValue <= 32;
-      encodedSizes[bpv] = encodedSize(formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
-      encoders[bpv] = PackedInts.getEncoder(
-          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
-      decoders[bpv] = PackedInts.getDecoder(
-          formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+      encodedSizes[bpv] =
+          encodedSize(formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+      encoders[bpv] =
+          PackedInts.getEncoder(
+              formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
+      decoders[bpv] =
+          PackedInts.getDecoder(
+              formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
 
       out.writeVInt(formatAndBits.format.getId() << 5 | (formatAndBits.bitsPerValue - 1));
     }
   }
 
-  /**
-   * Restore a {@link ForUtil} from a {@link DataInput}.
-   */
+  /** Restore a {@link ForUtil} from a {@link DataInput}. */
   ForUtil(DataInput in) throws IOException {
     int packedIntsVersion = in.readVInt();
     PackedInts.checkVersion(packedIntsVersion);
@@ -138,10 +136,8 @@ final class ForUtil {
       final PackedInts.Format format = PackedInts.Format.byId(formatId);
       assert format.isSupported(bitsPerValue);
       encodedSizes[bpv] = encodedSize(format, packedIntsVersion, bitsPerValue);
-      encoders[bpv] = PackedInts.getEncoder(
-          format, packedIntsVersion, bitsPerValue);
-      decoders[bpv] = PackedInts.getDecoder(
-          format, packedIntsVersion, bitsPerValue);
+      encoders[bpv] = PackedInts.getEncoder(format, packedIntsVersion, bitsPerValue);
+      decoders[bpv] = PackedInts.getDecoder(format, packedIntsVersion, bitsPerValue);
       iterations[bpv] = computeIterations(decoders[bpv]);
     }
   }
@@ -149,9 +145,9 @@ final class ForUtil {
   /**
    * Write a block of data (<code>For</code> format).
    *
-   * @param data     the data to write
-   * @param encoded  a buffer to use to encode data
-   * @param out      the destination output
+   * @param data the data to write
+   * @param encoded a buffer to use to encode data
+   * @param out the destination output
    * @throws IOException If there is a low-level I/O error
    */
   void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
@@ -178,9 +174,9 @@ final class ForUtil {
   /**
    * Read the next block of data (<code>For</code> format).
    *
-   * @param in        the input to use to read data
-   * @param encoded   a buffer that can be used to store encoded data
-   * @param decoded   where to write decoded data
+   * @param in the input to use to read data
+   * @param encoded a buffer that can be used to store encoded data
+   * @param decoded where to write decoded data
    * @throws IOException If there is a low-level I/O error
    */
   void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
@@ -206,7 +202,7 @@ final class ForUtil {
   /**
    * Skip the next block of data.
    *
-   * @param in      the input where to read data
+   * @param in the input where to read data
    * @throws IOException If there is a low-level I/O error
    */
   void skipBlock(IndexInput in) throws IOException {
@@ -230,10 +226,7 @@ final class ForUtil {
     return true;
   }
 
-  /**
-   * Compute the number of bits required to serialize any of the longs in
-   * <code>data</code>.
-   */
+  /** Compute the number of bits required to serialize any of the longs in <code>data</code>. */
   private static int bitsRequired(final int[] data) {
     long or = 0;
     for (int i = 0; i < BLOCK_SIZE; ++i) {
@@ -242,5 +235,4 @@ final class ForUtil {
     }
     return PackedInts.bitsRequired(or);
   }
-
 }

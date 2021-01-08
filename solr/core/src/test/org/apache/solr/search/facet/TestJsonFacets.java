@@ -488,21 +488,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
 
     // relatedness shouldn't be computed for allBuckets, but it also shouldn't cause any problems
-    //
-    // NOTE: we can't test this with 'index asc' because STREAM processor
-    // (which test may randomize as default) doesn't support allBuckets
-    // see: https://issues.apache.org/jira/browse/SOLR-14514
-    //
     for (String sort : Arrays.asList("sort:'y desc'",
                                      "sort:'z desc'",
                                      "sort:'skg desc'",
+                                     "sort:'index asc'",
                                      "prelim_sort:'count desc', sort:'skg desc'")) {
-      // the relatedness score of each of our cat_s values is (conviniently) also alphabetical order,
+      // the relatedness score of each of our cat_s values is (conveniently) also alphabetical order,
       // (and the same order as 'sum(num_i) desc' & 'min(num_i) desc')
       //
       // So all of these re/sort options should produce identical output (since the num buckets is < limit)
       // - Testing "index" sort allows the randomized use of "stream" processor as default to be tested.
-      // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "defered" Agg
+      // - Testing (re)sorts on other stats sanity checks code paths where relatedness() is a "deferred" Agg
       for (String limit : Arrays.asList(", ", ", limit:5, ", ", limit:-1, ")) {
         // results shouldn't change regardless of our limit param"
         assertJQ(req("q", "cat_s:[* TO *]", "rows", "0",
@@ -524,7 +520,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                  + "             background_popularity: 0.33333, },"
                  + "   }, "
                  + "   { val:'B', count:3, y:-3.0, z:-5, "
-                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrolated
+                 + "     skg : { relatedness: 0.0, " // perfectly average and uncorrelated
                  //+ "             foreground_count: 1, "
                  //+ "             foreground_size: 2, "
                  //+ "             background_count: 3, "
@@ -1003,11 +999,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // test streaming
     assertJQ(req("q", "*:*", "rows", "0"
             , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream }}" + // won't stream; need sort:index asc
-                              ", cat2:{terms:{field:'cat_s', method:stream, sort:'index asc' }}" +
-                              ", cat3:{terms:{field:'cat_s', method:stream, sort:'index asc', mincount:3 }}" + // mincount
-                              ", cat4:{terms:{field:'cat_s', method:stream, sort:'index asc', prefix:B }}" + // prefix
-                              ", cat5:{terms:{field:'cat_s', method:stream, sort:'index asc', offset:1 }}" + // offset
-                " }"
+            ", cat2:{terms:{field:'cat_s', method:stream, sort:'index asc' }}" +
+            ", cat3:{terms:{field:'cat_s', method:stream, sort:'index asc', mincount:3 }}" + // mincount
+            ", cat4:{terms:{field:'cat_s', method:stream, sort:'index asc', prefix:B }}" + // prefix
+            ", cat5:{terms:{field:'cat_s', method:stream, sort:'index asc', offset:1 }}" + // offset
+            ", cat6:{terms:{field:'cat_s', method:stream, sort:'index asc', missing:true }}" + // missing
+            ", cat7:{terms:{field:'cat_s', method:stream, sort:'index asc', numBuckets:true }}" + // numBuckets
+            ", cat8:{terms:{field:'cat_s', method:stream, sort:'index asc', allBuckets:true }}" + // allBuckets
+            " }"
         )
         , "facets=={count:6 " +
             ", cat :{buckets:[{val:B, count:3},{val:A, count:2}]}" +
@@ -1015,6 +1014,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", cat3:{buckets:[{val:B, count:3}]}" +
             ", cat4:{buckets:[{val:B, count:3}]}" +
             ", cat5:{buckets:[{val:B, count:3}]}" +
+            ", cat6:{missing:{count:1}, buckets:[{val:A, count:2},{val:B, count:3}]}" +
+            ", cat7:{numBuckets:2, buckets:[{val:A, count:2},{val:B, count:3}]}" +
+            ", cat8:{allBuckets:{count:5}, buckets:[{val:A, count:2},{val:B, count:3}]}" +
             " }"
     );
 
@@ -2203,7 +2205,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             , "json.facet", "{ processEmpty:true," +
                 " f1:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +
                 ",f2:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:abc }}" +
-                ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz,abc,qaz' }}" +
+                ",f3:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:'xyz ,abc ,qaz' }}" +
                 ",f4:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz , abc , qaz] }}" +
                 ",f5:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} , excludeTags:[xyz,qaz]}}" +    // this is repeated, but it did fail when a single context was shared among sub-facets
                 ",f6:{query:{q:'${cat_s}:B', facet:{processEmpty:true, nj:{query:'${where_s}:NJ'}, ny:{ type:query, q:'${where_s}:NY', excludeTags:abc}}  }}" +  // exclude in a sub-facet

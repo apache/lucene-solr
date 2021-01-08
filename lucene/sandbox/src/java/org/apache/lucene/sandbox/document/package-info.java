@@ -17,9 +17,12 @@
 
 /**
  * This package contains several point types:
+ *
  * <ul>
- *    <li>{@link org.apache.lucene.sandbox.document.BigIntegerPoint BigIntegerPoint} for 128-bit integers</li>
- *    <li>{@link org.apache.lucene.document.LatLonPoint LatLonPoint} for latitude/longitude geospatial points</li>
+ *   <li>{@link org.apache.lucene.sandbox.document.BigIntegerPoint BigIntegerPoint} for 128-bit
+ *       integers
+ *   <li>{@link org.apache.lucene.document.LatLonPoint LatLonPoint} for latitude/longitude
+ *       geospatial points
  * </ul>
  */
 package org.apache.lucene.sandbox.document;

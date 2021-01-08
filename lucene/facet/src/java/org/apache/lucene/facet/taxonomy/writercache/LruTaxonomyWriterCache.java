@@ -20,27 +20,25 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
  * LRU {@link TaxonomyWriterCache} - good choice for huge taxonomies.
- * 
+ *
  * @lucene.experimental
  */
 public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
 
   /**
-   * Determines cache type.
-   * For guaranteed correctness - not relying on no-collisions in the hash
+   * Determines cache type. For guaranteed correctness - not relying on no-collisions in the hash
    * function, LRU_STRING should be used.
    */
   public enum LRUType {
-    /** Use only the label's 64 bit longHashCode as the hash key. Do not
-     *  check equals, unlike most hash maps.
-     *  Note that while these hashes are very likely to be unique, the chance
-     *  of a collision is still greater than zero. If such an unlikely event
-     *  occurs, your document will get an incorrect facet.
+    /**
+     * Use only the label's 64 bit longHashCode as the hash key. Do not check equals, unlike most
+     * hash maps. Note that while these hashes are very likely to be unique, the chance of a
+     * collision is still greater than zero. If such an unlikely event occurs, your document will
+     * get an incorrect facet.
      */
     LRU_HASHED,
 
-    /** Use the label as the hash key; this is always
-     *  correct but will usually use more RAM. */
+    /** Use the label as the hash key; this is always correct but will usually use more RAM. */
     LRU_STRING
   }
 
@@ -81,7 +79,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   public synchronized void clear() {
     cache.clear();
   }
-  
+
   @Override
   public synchronized void close() {
     cache.clear();
@@ -92,7 +90,7 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   public int size() {
     return cache.getSize();
   }
-  
+
   @Override
   public synchronized int get(FacetLabel categoryPath) {
     Integer res = cache.get(categoryPath);
@@ -118,5 +116,4 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     }
     return ret;
   }
-
 }

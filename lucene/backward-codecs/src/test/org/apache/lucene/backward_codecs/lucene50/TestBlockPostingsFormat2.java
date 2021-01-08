@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -24,22 +23,19 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/** 
- * Tests special cases of BlockPostingsFormat 
- */
-
+/** Tests special cases of BlockPostingsFormat */
 public class TestBlockPostingsFormat2 extends LuceneTestCase {
   Directory dir;
   RandomIndexWriter iw;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -49,7 +45,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     iw = new RandomIndexWriter(random(), dir, iwc);
     iw.setDoRandomForceMerge(false); // we will ourselves
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     iw.close();
@@ -63,7 +59,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     dir.close(); // just force a checkindex for now
     super.tearDown();
   }
-  
+
   private Document newDocument() {
     Document doc = new Document();
     for (IndexOptions option : IndexOptions.values()) {
@@ -103,25 +99,27 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
       iw.addDocument(doc);
     }
   }
-  
+
   /** tests terms with ttf = blocksize */
   public void testTTFBlockSize() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
+    for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE / 2; i++) {
       for (IndexableField f : doc.getFields()) {
-        ((Field) f).setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
+        ((Field) f)
+            .setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
       }
       iw.addDocument(doc);
     }
   }
-  
+
   /** tests terms with ttf % blocksize = 0 */
   public void testTTFBlockSizeMultiple() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE/2; i++) {
+    for (int i = 0; i < Lucene50PostingsFormat.BLOCK_SIZE / 2; i++) {
       for (IndexableField f : doc.getFields()) {
-        String proto = (f.name() + " " + f.name() + " " + f.name() + " " + f.name() + " " 
-                       + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2");
+        String proto =
+            (f.name() + " " + f.name() + " " + f.name() + " " + f.name() + " " + f.name() + "_2 "
+                + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2");
         StringBuilder val = new StringBuilder();
         for (int j = 0; j < 16; j++) {
           val.append(proto);

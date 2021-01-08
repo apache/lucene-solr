@@ -16,43 +16,38 @@
  */
 package org.apache.lucene.analysis.en;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
-/** Transforms the token stream as per the Porter stemming algorithm.
-    Note: the input to the stemming filter must already be in lower case,
-    so you will need to use LowerCaseFilter or LowerCaseTokenizer farther
-    down the Tokenizer chain in order for this to work properly!
-    <P>
-    To use this filter with other analyzers, you'll want to write an
-    Analyzer class that sets up the TokenStream chain as you want it.
-    To use this with LowerCaseTokenizer, for example, you'd write an
-    analyzer like this:
-    <br>
-    <PRE class="prettyprint">
-    class MyAnalyzer extends Analyzer {
-      {@literal @Override}
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new LowerCaseTokenizer(version, reader);
-        return new TokenStreamComponents(source, new PorterStemFilter(source));
-      }
-    }
-    </PRE>
-    <p>
-    Note: This filter is aware of the {@link KeywordAttribute}. To prevent
-    certain terms from being passed to the stemmer
-    {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
-    in a previous {@link TokenStream}.
-
-    Note: For including the original term as well as the stemmed version, see
-   {@link org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
-    </p>
-*/
+/**
+ * Transforms the token stream as per the Porter stemming algorithm. Note: the input to the stemming
+ * filter must already be in lower case, so you will need to use LowerCaseFilter or
+ * LowerCaseTokenizer farther down the Tokenizer chain in order for this to work properly!
+ *
+ * <p>To use this filter with other analyzers, you'll want to write an Analyzer class that sets up
+ * the TokenStream chain as you want it. To use this with LowerCaseTokenizer, for example, you'd
+ * write an analyzer like this: <br>
+ *
+ * <pre class="prettyprint">
+ * class MyAnalyzer extends Analyzer {
+ *   {@literal @Override}
+ *   protected TokenStreamComponents createComponents(String fieldName) {
+ *     Tokenizer source = new LowerCaseTokenizer(version, reader);
+ *     return new TokenStreamComponents(source, new PorterStemFilter(source));
+ *   }
+ * }
+ * </pre>
+ *
+ * <p>Note: This filter is aware of the {@link KeywordAttribute}. To prevent certain terms from
+ * being passed to the stemmer {@link KeywordAttribute#isKeyword()} should be set to <code>true
+ * </code> in a previous {@link TokenStream}.
+ *
+ * <p>Note: For including the original term as well as the stemmed version, see {@link
+ * org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilterFactory}
+ */
 public final class PorterStemFilter extends TokenFilter {
   private final PorterStemmer stemmer = new PorterStemmer();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -64,8 +59,7 @@ public final class PorterStemFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if (!input.incrementToken())
-      return false;
+    if (!input.incrementToken()) return false;
 
     if ((!keywordAttr.isKeyword()) && stemmer.stem(termAtt.buffer(), 0, termAtt.length()))
       termAtt.copyBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());

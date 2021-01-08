@@ -18,15 +18,18 @@ package org.apache.solr.update;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,6 +41,9 @@ import org.apache.solr.schema.SchemaField;
  * may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
+
+  /** In some limited circumstances of child docs, this holds the _route_ param. */
+  final String useRouteAsRoot; // lets hope this goes away in SOLR-15064
 
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
@@ -64,15 +70,35 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public boolean isLastDocInBatch = false;
 
-  /** Is this a nested update, null means not yet calculated. */
-  public Boolean isNested = null;
-
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
   private BytesRef indexedId;
+  private String indexedIdStr;
+  private String childDocIdStr;
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);
+
+    // Populate useRouteParamAsIndexedId.
+    // This ought to be deprecated functionality that we remove in 9.0. SOLR-15064
+    String route = null;
+    if (req != null) { // some tests use no req
+      route = req.getParams().get(ShardParams._ROUTE_);
+      if (route == null || !req.getSchema().isUsableForChildDocs()) {
+        route = null;
+      } else {
+        // use route but there's one last exclusion: It's incompatible with SolrCloud implicit router.
+        String collectionName = req.getCore().getCoreDescriptor().getCollectionName();
+        if (collectionName != null) {
+          DocRouter router = req.getCore().getCoreContainer().getZkController().getClusterState()
+              .getCollection(collectionName).getRouter();
+          if (router instanceof ImplicitDocRouter) {
+            route = null;
+          }
+        }
+      }
+    }
+    useRouteAsRoot = route;
   }
 
   @Override
@@ -84,6 +110,8 @@ public class AddUpdateCommand extends UpdateCommand {
    public void clear() {
      solrDoc = null;
      indexedId = null;
+     indexedIdStr = null;
+     childDocIdStr = null;
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
@@ -95,121 +123,130 @@ public class AddUpdateCommand extends UpdateCommand {
    }
 
   /**
-   * Creates and returns a lucene Document to index.
-   * Nested documents, if found, will cause an exception to be thrown.  Call {@link #getLuceneDocsIfNested()} for that.
+   * Creates and returns a lucene Document for in-place update.
+   * The SolrInputDocument itself may be modified, which will be reflected in the update log.
    * Any changes made to the returned Document will not be reflected in the SolrInputDocument, or future calls to this
    * method.
-   * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.*/
-   public Document getLuceneDocument() {
+   */
+   Document makeLuceneDocForInPlaceUpdate() {
+     // perhaps this should move to UpdateHandler or DocumentBuilder?
+     assert isInPlaceUpdate();
+     if (req.getSchema().isUsableForChildDocs() && solrDoc.getField(IndexSchema.ROOT_FIELD_NAME) == null) {
+       solrDoc.setField(IndexSchema.ROOT_FIELD_NAME, getIndexedIdStr());
+     }
+     final boolean forInPlaceUpdate = true;
      final boolean ignoreNestedDocs = false; // throw an exception if found
-     SolrInputDocument solrInputDocument = getSolrInputDocument();
-     if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
-       addRootField(solrInputDocument, getRootIdUsingRouteParam());
-     }
-     return DocumentBuilder.toDocument(solrInputDocument, req.getSchema(), isInPlaceUpdate(), ignoreNestedDocs);
-   }
-
-  /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
-   public BytesRef getIndexedId() {
-     if (indexedId == null) {
-       IndexSchema schema = req.getSchema();
-       SchemaField sf = schema.getUniqueKeyField();
-       if (sf != null) {
-         if (solrDoc != null) {
-           SolrInputField field = solrDoc.getField(sf.getName());
-
-           int count = field==null ? 0 : field.getValueCount();
-           if (count == 0) {
-             if (overwrite) {
-               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
-             }
-           } else if (count  > 1) {
-             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
-           } else {
-             BytesRefBuilder b = new BytesRefBuilder();
-             sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
-             indexedId = b.get();
-           }
-         }
-       }
-     }
-     return indexedId;
-   }
-
-   public void setIndexedId(BytesRef indexedId) {
-     this.indexedId = indexedId;
-   }
-
-   public String getPrintableId() {
-    if (req != null) {
-      IndexSchema schema = req.getSchema();
-      SchemaField sf = schema.getUniqueKeyField();
-      if (solrDoc != null && sf != null) {
-        SolrInputField field = solrDoc.getField(sf.getName());
-        if (field != null) {
-          return field.getFirstValue().toString();
-        }
-      }
-    }
-     return "(null)";
+     return DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
    }
 
   /**
+   * Returns the indexed ID for this document, or the root ID for nested documents.
    *
-   * @return value of _route_ param({@link ShardParams#_ROUTE_}), otherwise doc id.
+   * @return possibly null if there's no uniqueKey field
    */
-  public String getRootIdUsingRouteParam() {
-     return req.getParams().get(ShardParams._ROUTE_, getHashableId());
-   }
+  public String getIndexedIdStr() {
+    extractIdsIfNeeded();
+    return indexedIdStr;
+  }
 
   /**
-   * @return String id to hash
+   * Returns the indexed ID for this document, or the root ID for nested documents. The returned
+   * BytesRef should be treated as immutable. It will not be re-used/modified for additional docs.
+   *
+   * @return possibly null if there's no uniqueKey field
    */
-  public String getHashableId() {
+  public BytesRef getIndexedId() {
+    extractIdsIfNeeded();
+    return indexedId;
+  }
+
+  /**
+   * Returns the ID of the doc itself, possibly different from {@link #getIndexedIdStr()} which
+   * points to the root doc.
+   *
+   * @return possibly null if there's no uniqueKey field
+   */
+  public String getChildDocIdStr() {
+    extractIdsIfNeeded();
+    return childDocIdStr;
+  }
+
+  /** The ID for logging purposes. */
+  public String getPrintableId() {
+    if (req == null) {
+      return "(uninitialized)"; // in tests?
+    }
+    extractIdsIfNeeded();
+    if (indexedIdStr == null) {
+      return "(null)";
+    } else if (indexedIdStr.equals(childDocIdStr)) {
+      return indexedIdStr;
+    } else {
+      return childDocIdStr + " (root=" + indexedIdStr + ")";
+    }
+  }
+
+  private void extractIdsIfNeeded() {
+    if (indexedId != null) {
+      return;
+    }
     IndexSchema schema = req.getSchema();
     SchemaField sf = schema.getUniqueKeyField();
     if (sf != null) {
       if (solrDoc != null) {
         SolrInputField field = solrDoc.getField(sf.getName());
-
-        int count = field == null ? 0 : field.getValueCount();
+        // check some uniqueKey constraints
+        int count = field==null ? 0 : field.getValueCount();
         if (count == 0) {
           if (overwrite) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Document is missing mandatory uniqueKey field: "
-                    + sf.getName());
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
           }
-        } else if (count > 1) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Document contains multiple values for uniqueKey field: " + field);
+        } else if (count  > 1) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
         } else {
-          return field.getFirstValue().toString();
+          this.childDocIdStr = field.getFirstValue().toString();
+          // the root might be in _root_ field or _route_ param.  If neither, then uniqueKeyField.
+          this.indexedIdStr = (String) solrDoc.getFieldValue(IndexSchema.ROOT_FIELD_NAME); // or here
+          if (this.indexedIdStr == null) {
+            this.indexedIdStr = useRouteAsRoot;
+            if (this.indexedIdStr == null) {
+              this.indexedIdStr = childDocIdStr;
+            }
+          }
+          indexedId = schema.indexableUniqueKey(indexedIdStr);
         }
       }
     }
-    return null;
+  }
+
+  @VisibleForTesting
+  public void setIndexedId(BytesRef indexedId) {
+    this.indexedId = indexedId;
+    this.indexedIdStr = indexedId.utf8ToString();
+    this.childDocIdStr = indexedIdStr;
   }
 
   /**
-   * Computes the final flattened Solr docs that are ready to be converted to Lucene docs.  If no flattening is
-   * performed then we return null, and the caller ought to use {@link #getLuceneDocument()} instead.
+   * Computes the final flattened Lucene docs, possibly generating them on-demand (on iteration).
+   * The SolrInputDocument itself may be modified, which will be reflected in the update log.
    * This should only be called once.
    * Any changes made to the returned Document(s) will not be reflected in the SolrInputDocument,
    * or future calls to this method.
    */
-  public Iterable<Document> getLuceneDocsIfNested() {
+  Iterable<Document> makeLuceneDocs() {
+    // perhaps this should move to UpdateHandler or DocumentBuilder?
     assert ! isInPlaceUpdate() : "We don't expect this to happen."; // but should "work"?
     if (!req.getSchema().isUsableForChildDocs()) {
       // note if the doc is nested despite this, we'll throw an exception elsewhere
-      return null;
+      final boolean forInPlaceUpdate = false;
+      final boolean ignoreNestedDocs = false; // throw an exception if found
+      Document doc = DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
+      return Collections.singleton(doc);
     }
 
     List<SolrInputDocument> all = flatten(solrDoc);
-    if (all.size() <= 1) {
-      return null; // caller should call getLuceneDocument() instead
-    }
 
-    final String rootId = getRootIdUsingRouteParam();
+    final String rootId = getIndexedIdStr();
     final SolrInputField versionSif = solrDoc.get(CommonParams.VERSION_FIELD);
 
     for (SolrInputDocument sdoc : all) {

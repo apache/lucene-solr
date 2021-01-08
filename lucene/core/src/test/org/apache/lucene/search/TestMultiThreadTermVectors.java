@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
@@ -36,7 +34,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   private int numDocs;
   private int numThreads;
   private int numIterations;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -44,7 +42,10 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     numThreads = TEST_NIGHTLY ? 3 : 2;
     numIterations = TEST_NIGHTLY ? 100 : 50;
     directory = newDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer =
+        new IndexWriter(
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setTokenized(false);
     customType.setStoreTermVectors(true);
@@ -56,19 +57,19 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     }
     writer.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     directory.close();
     super.tearDown();
   }
-  
-  public void test() throws Exception {    
+
+  public void test() throws Exception {
     try (IndexReader reader = DirectoryReader.open(directory)) {
       testTermPositionVectors(reader, numThreads);
     }
   }
-  
+
   public void testTermPositionVectors(final IndexReader reader, int threadCount) throws Exception {
     MultiThreadTermVectorsReader[] mtr = new MultiThreadTermVectorsReader[threadCount];
     for (int i = 0; i < threadCount; i++) {
@@ -84,7 +85,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
       vectorReader.join();
     }
   }
-  
+
   static void verifyVectors(Fields vectors, int num) throws IOException {
     for (String field : vectors) {
       Terms terms = vectors.terms(field);
@@ -95,14 +96,14 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
 
   static void verifyVector(TermsEnum vector, int num) throws IOException {
     StringBuilder temp = new StringBuilder();
-    while(vector.next() != null) {
+    while (vector.next() != null) {
       temp.append(vector.term().utf8ToString());
     }
     assertEquals(English.intToEnglish(num).trim(), temp.toString().trim());
   }
 
   class MultiThreadTermVectorsReader extends Thread {
-    private IndexReader reader = null;  
+    private IndexReader reader = null;
 
     public void init(IndexReader reader) {
       this.reader = reader;
@@ -123,7 +124,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
       // check:
       int numDocs = reader.numDocs();
       for (int docId = 0; docId < numDocs; docId++) {
-        Fields vectors = reader.getTermVectors(docId);      
+        Fields vectors = reader.getTermVectors(docId);
         // verify vectors result
         verifyVectors(vectors, docId);
         Terms vector = reader.getTermVectors(docId).terms("field");

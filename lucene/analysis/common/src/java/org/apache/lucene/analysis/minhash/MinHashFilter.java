@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -31,18 +30,18 @@ import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
- * Generate min hash tokens from an incoming stream of tokens. The incoming tokens would typically be 5 word shingles.
- * 
- * The number of hashes used and the number of minimum values for each hash can be set. You could have 1 hash and keep
- * the 100 lowest values or 100 hashes and keep the lowest one for each. Hashes can also be bucketed in ranges over the
- * 128-bit hash space,
- * 
- * A 128-bit hash is used internally. 5 word shingles from 10e5 words generate 10e25 combinations So a 64 bit hash would
- * have collisions (1.8e19)
- * 
- * When using different hashes 32 bits are used for the hash position leaving scope for 8e28 unique hashes. A single
- * hash will use all 128 bits.
+ * Generate min hash tokens from an incoming stream of tokens. The incoming tokens would typically
+ * be 5 word shingles.
  *
+ * <p>The number of hashes used and the number of minimum values for each hash can be set. You could
+ * have 1 hash and keep the 100 lowest values or 100 hashes and keep the lowest one for each. Hashes
+ * can also be bucketed in ranges over the 128-bit hash space,
+ *
+ * <p>A 128-bit hash is used internally. 5 word shingles from 10e5 words generate 10e25 combinations
+ * So a 64 bit hash would have collisions (1.8e19)
+ *
+ * <p>When using different hashes 32 bits are used for the hash position leaving scope for 8e28
+ * unique hashes. A single hash will use all 128 bits.
  */
 public class MinHashFilter extends TokenFilter {
   private static final int HASH_CACHE_SIZE = 512;
@@ -74,18 +73,20 @@ public class MinHashFilter extends TokenFilter {
   private int bucketPosition = -1;
 
   private long bucketSize;
-  
+
   private final boolean withRotation;
-  
+
   private int endOffset;
-  
+
   private boolean exhausted = false;
 
   private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLenAttribute = addAttribute(PositionLengthAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute =
+      addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLenAttribute =
+      addAttribute(PositionLengthAttribute.class);
 
   static {
     for (int i = 0; i < HASH_CACHE_SIZE; i++) {
@@ -112,7 +113,8 @@ public class MinHashFilter extends TokenFilter {
    * @param hashSetSize the no. of min hashes to keep
    * @param withRotation whether rotate or not hashes while incrementing tokens
    */
-  public MinHashFilter(TokenStream input, int hashCount, int bucketCount, int hashSetSize, boolean withRotation) {
+  public MinHashFilter(
+      TokenStream input, int hashCount, int bucketCount, int hashSetSize, boolean withRotation) {
     super(input);
     if (hashCount <= 0) {
       throw new IllegalArgumentException("hashCount must be greater than zero");
@@ -128,8 +130,7 @@ public class MinHashFilter extends TokenFilter {
     this.hashSetSize = hashSetSize;
     this.withRotation = withRotation;
     this.bucketSize = (1L << 32) / bucketCount;
-    if((1L << 32) % bucketCount != 0)
-    {
+    if ((1L << 32) % bucketCount != 0) {
       bucketSize++;
     }
     minHashSets = new ArrayList<>(this.hashCount);
@@ -171,12 +172,13 @@ public class MinHashFilter extends TokenFilter {
       }
       exhausted = true;
       input.end();
-      // We need the end state so an underlying shingle filter can have its state restored correctly.
+      // We need the end state so an underlying shingle filter can have its state restored
+      // correctly.
       endState = captureState();
       if (!found) {
         return false;
       }
-      
+
       positionIncrement = 1;
       // fix up any wrap around bucket values. ...
       if (withRotation && (hashSetSize == 1)) {
@@ -184,9 +186,13 @@ public class MinHashFilter extends TokenFilter {
           for (int bucketLoop = 0; bucketLoop < bucketCount; bucketLoop++) {
             if (minHashSets.get(hashLoop).get(bucketLoop).size() == 0) {
               for (int bucketOffset = 1; bucketOffset < bucketCount; bucketOffset++) {
-                if (minHashSets.get(hashLoop).get((bucketLoop + bucketOffset) % bucketCount).size() > 0) {
-                  LongPair replacementHash = minHashSets.get(hashLoop).get((bucketLoop + bucketOffset) % bucketCount)
-                      .first();
+                if (minHashSets.get(hashLoop).get((bucketLoop + bucketOffset) % bucketCount).size()
+                    > 0) {
+                  LongPair replacementHash =
+                      minHashSets
+                          .get(hashLoop)
+                          .get((bucketLoop + bucketOffset) % bucketCount)
+                          .first();
                   minHashSets.get(hashLoop).get(bucketLoop).add(replacementHash);
                   break;
                 }
@@ -195,9 +201,8 @@ public class MinHashFilter extends TokenFilter {
           }
         }
       }
-
     }
-   
+
     clearAttributes();
 
     while (hashPosition < hashCount) {
@@ -236,7 +241,6 @@ public class MinHashFilter extends TokenFilter {
               bucketPosition++;
             }
           }
-
         }
         bucketPosition = -1;
         hashPosition++;
@@ -257,10 +261,10 @@ public class MinHashFilter extends TokenFilter {
 
   @Override
   public void end() throws IOException {
-    if(!exhausted) {
+    if (!exhausted) {
       input.end();
     }
-      
+
     restoreState(endState);
   }
 
@@ -313,10 +317,9 @@ public class MinHashFilter extends TokenFilter {
 
   static class FixedSizeTreeSet<E extends Comparable<E>> extends TreeSet<E> {
 
-    /**
-     * 
-     */
+    /** */
     private static final long serialVersionUID = -8237117170340299630L;
+
     private final int capacity;
 
     FixedSizeTreeSet() {
@@ -347,7 +350,6 @@ public class MinHashFilter extends TokenFilter {
     for (LongPair hashCode : hashCodes) {
       result.val1 = result.val1 * 37 + hashCode.val1;
       result.val2 = result.val2 * 37 + hashCode.val2;
-
     }
     return result;
   }
@@ -359,7 +361,7 @@ public class MinHashFilter extends TokenFilter {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
     @Override
@@ -387,7 +389,6 @@ public class MinHashFilter extends TokenFilter {
       LongPair longPair = (LongPair) o;
 
       return val1 == longPair.val1 && val2 == longPair.val2;
-
     }
 
     @Override

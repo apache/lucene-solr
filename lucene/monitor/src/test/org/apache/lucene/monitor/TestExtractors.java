@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -53,7 +52,6 @@ public class TestExtractors extends LuceneTestCase {
     Query csqWithQuery = new ConstantScoreQuery(bq.build());
     Set<Term> expected = Collections.singleton(new Term("f", "q1"));
     assertEquals(expected, collectTerms(csqWithQuery));
-
   }
 
   public void testPhraseQueryExtractor() {
@@ -64,7 +62,6 @@ public class TestExtractors extends LuceneTestCase {
 
     Set<Term> expected = Collections.singleton(new Term("f", "encyclopedia"));
     assertEquals(expected, collectTerms(pq.build()));
-
   }
 
   public void testBoostQueryExtractor() {
@@ -80,24 +77,21 @@ public class TestExtractors extends LuceneTestCase {
 
   public void testDisjunctionMaxExtractor() {
 
-    Query query = new DisjunctionMaxQuery(
-        Arrays.asList(new TermQuery(new Term("f", "t1")), new TermQuery(new Term("f", "t2"))), 0.1f
-    );
-    Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("f", "t1"),
-        new Term("f", "t2")
-    ));
+    Query query =
+        new DisjunctionMaxQuery(
+            Arrays.asList(new TermQuery(new Term("f", "t1")), new TermQuery(new Term("f", "t2"))),
+            0.1f);
+    Set<Term> expected = new HashSet<>(Arrays.asList(new Term("f", "t1"), new Term("f", "t2")));
     assertEquals(expected, collectTerms(query));
   }
 
   public void testBooleanExtractsFilter() {
-    Query q = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f", "must")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term("f", "filter")), BooleanClause.Occur.FILTER)
-        .build();
+    Query q =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f", "must")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("f", "filter")), BooleanClause.Occur.FILTER)
+            .build();
     Set<Term> expected = Collections.singleton(new Term("f", "filter")); // it's longer, so it wins
     assertEquals(expected, collectTerms(q));
   }
-
-
 }

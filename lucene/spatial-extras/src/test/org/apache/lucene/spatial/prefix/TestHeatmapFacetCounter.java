@@ -16,11 +16,13 @@
  */
 package org.apache.lucene.spatial.prefix;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.atMost;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -40,9 +42,6 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.locationtech.spatial4j.shape.impl.RectangleImpl;
-
-import static com.carrotsearch.randomizedtesting.RandomizedTest.atMost;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
 public class TestHeatmapFacetCounter extends StrategyTestCase {
 
@@ -67,21 +66,23 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
 
   @After
   public void after() {
-    log.info("Validated " + cellsValidated + " cells, " + cellValidatedNonZero + " non-zero"); // nowarn
+    log.info(
+        "Validated " + cellsValidated + " cells, " + cellValidatedNonZero + " non-zero"); // nowarn
   }
 
   @Test
   public void testStatic() throws IOException {
-    //Some specific tests (static, not random).
-    adoc("0", shapeFactory.rect(179.8, -170, -90, -80));//barely crosses equator
-    adoc("1", shapeFactory.pointXY(-180, -85));//a pt within the above rect
-    adoc("2", shapeFactory.pointXY(172, -85));//a pt to left of rect
+    // Some specific tests (static, not random).
+    adoc("0", shapeFactory.rect(179.8, -170, -90, -80)); // barely crosses equator
+    adoc("1", shapeFactory.pointXY(-180, -85)); // a pt within the above rect
+    adoc("2", shapeFactory.pointXY(172, -85)); // a pt to left of rect
     commit();
 
     validateHeatmapResultLoop(shapeFactory.rect(+170, +180, -90, -85), 1, 100);
     validateHeatmapResultLoop(shapeFactory.rect(-180, -160, -89, -50), 1, 100);
-    validateHeatmapResultLoop(shapeFactory.rect(179, 179, -89, -50), 1, 100);//line
-    // We could test anything and everything at this point... I prefer we leave that to random testing and then
+    validateHeatmapResultLoop(shapeFactory.rect(179, 179, -89, -50), 1, 100); // line
+    // We could test anything and everything at this point... I prefer we leave that to random
+    // testing and then
     // add specific tests if we find a bug.
   }
 
@@ -91,12 +92,13 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
     strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
     adoc("0", shapeFactory.rect(-102, -83, 43, 52));
     commit();
-    validateHeatmapResultLoop(shapeFactory.rect(179, -179, 62, 63), 2, 100);// HM crosses dateline
+    validateHeatmapResultLoop(shapeFactory.rect(179, -179, 62, 63), 2, 100); // HM crosses dateline
   }
 
   @Test
   public void testQueryCircle() throws IOException {
-    //overwrite setUp; non-geo bounds is more straight-forward; otherwise 88,88 would actually be practically north,
+    // overwrite setUp; non-geo bounds is more straight-forward; otherwise 88,88 would actually be
+    // practically north,
     final SpatialContextFactory spatialContextFactory = new SpatialContextFactory();
     spatialContextFactory.geo = false;
     spatialContextFactory.worldBounds = new RectangleImpl(-90, 90, -90, 90, null);
@@ -106,19 +108,25 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
     grid = new QuadPrefixTree(ctx, LEVEL);
     strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
     Circle circle = shapeFactory.circle(0, 0, 89);
-    adoc("0", shapeFactory.pointXY(88, 88));//top-right, inside bbox of circle but not the circle
-    adoc("1", shapeFactory.pointXY(0, 0));//clearly inside; dead center in fact
+    adoc("0", shapeFactory.pointXY(88, 88)); // top-right, inside bbox of circle but not the circle
+    adoc("1", shapeFactory.pointXY(0, 0)); // clearly inside; dead center in fact
     commit();
-    final HeatmapFacetCounter.Heatmap heatmap = HeatmapFacetCounter.calcFacets(
-        (PrefixTreeStrategy) strategy, indexSearcher.getTopReaderContext(), null,
-        circle, LEVEL, 1000);
-    //assert that only one point is found, not 2
+    final HeatmapFacetCounter.Heatmap heatmap =
+        HeatmapFacetCounter.calcFacets(
+            (PrefixTreeStrategy) strategy,
+            indexSearcher.getTopReaderContext(),
+            null,
+            circle,
+            LEVEL,
+            1000);
+    // assert that only one point is found, not 2
     boolean foundOne = false;
     for (int count : heatmap.counts) {
       switch (count) {
-        case 0: break;
+        case 0:
+          break;
         case 1:
-          assertFalse(foundOne);//this is the first
+          assertFalse(foundOne); // this is the first
           foundOne = true;
           break;
         default:
@@ -128,19 +136,27 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
     assertTrue(foundOne);
   }
 
-  /** Recursively facet & validate at higher resolutions until we've seen enough. We assume there are
-   * some non-zero cells. */
-  private void validateHeatmapResultLoop(Rectangle inputRange, int facetLevel, int cellCountRecursThreshold)
-      throws IOException {
+  /**
+   * Recursively facet & validate at higher resolutions until we've seen enough. We assume there are
+   * some non-zero cells.
+   */
+  private void validateHeatmapResultLoop(
+      Rectangle inputRange, int facetLevel, int cellCountRecursThreshold) throws IOException {
     if (facetLevel > grid.getMaxLevels()) {
       return;
     }
     final int maxCells = 10_000;
-    final HeatmapFacetCounter.Heatmap heatmap = HeatmapFacetCounter.calcFacets(
-        (PrefixTreeStrategy) strategy, indexSearcher.getTopReaderContext(), null, inputRange, facetLevel, maxCells);
+    final HeatmapFacetCounter.Heatmap heatmap =
+        HeatmapFacetCounter.calcFacets(
+            (PrefixTreeStrategy) strategy,
+            indexSearcher.getTopReaderContext(),
+            null,
+            inputRange,
+            facetLevel,
+            maxCells);
     int preNonZero = cellValidatedNonZero;
     validateHeatmapResult(inputRange, facetLevel, heatmap);
-    assert cellValidatedNonZero - preNonZero > 0;//we validated more non-zero cells
+    assert cellValidatedNonZero - preNonZero > 0; // we validated more non-zero cells
     if (heatmap.counts.length < cellCountRecursThreshold) {
       validateHeatmapResultLoop(inputRange, facetLevel + 1, cellCountRecursThreshold);
     }
@@ -149,7 +165,8 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
   @Test
   @Repeat(iterations = 20)
   public void testRandom() throws IOException {
-    // Tests using random index shapes & query shapes. This has found all sorts of edge case bugs (e.g. dateline,
+    // Tests using random index shapes & query shapes. This has found all sorts of edge case bugs
+    // (e.g. dateline,
     // cell border, overflow(?)).
 
     final int numIndexedShapes = 1 + atMost(9);
@@ -158,15 +175,16 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
       indexedShapes.add(randomIndexedShape());
     }
 
-    //Main index loop:
+    // Main index loop:
     for (int i = 0; i < indexedShapes.size(); i++) {
       Shape shape = indexedShapes.get(i);
       adoc("" + i, shape);
 
-      if (random().nextInt(10) == 0)
-        commit();//intermediate commit, produces extra segments
+      if (random().nextInt(10) == 0) {
+        commit(); // intermediate commit, produces extra segments
+      }
     }
-    //delete some documents randomly
+    // delete some documents randomly
     for (int id = 0; id < indexedShapes.size(); id++) {
       if (random().nextInt(10) == 0) {
         deleteDoc("" + id);
@@ -182,10 +200,12 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
     // and once with dateline wrap
     if (rect.getWidth() > 0) {
       double shift = random().nextDouble() % rect.getWidth();
-      queryHeatmapRecursive(shapeFactory.rect(
+      queryHeatmapRecursive(
+          shapeFactory.rect(
               DistanceUtils.normLonDEG(rect.getMinX() - shift),
               DistanceUtils.normLonDEG(rect.getMaxX() - shift),
-              rect.getMinY(), rect.getMaxY()),
+              rect.getMinY(),
+              rect.getMaxY()),
           1);
     }
   }
@@ -193,15 +213,24 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
   /** Build heatmap, validate results, then descend recursively to another facet level. */
   private boolean queryHeatmapRecursive(Rectangle inputRange, int facetLevel) throws IOException {
     if (!inputRange.hasArea()) {
-      // Don't test line inputs. It's not that we don't support it but it is more challenging to test if per-chance it
-      // coincides with a grid line due due to edge overlap issue for some grid implementations (geo & quad).
+      // Don't test line inputs. It's not that we don't support it but it is more challenging to
+      // test if per-chance it
+      // coincides with a grid line due due to edge overlap issue for some grid implementations (geo
+      // & quad).
       return false;
     }
-    Bits filter = null; //FYI testing filtering of underlying PrefixTreeFacetCounter is done in another test
-    //Calculate facets
+    Bits filter =
+        null; // FYI testing filtering of underlying PrefixTreeFacetCounter is done in another test
+    // Calculate facets
     final int maxCells = 10_000;
-    final HeatmapFacetCounter.Heatmap heatmap = HeatmapFacetCounter.calcFacets(
-        (PrefixTreeStrategy) strategy, indexSearcher.getTopReaderContext(), filter, inputRange, facetLevel, maxCells);
+    final HeatmapFacetCounter.Heatmap heatmap =
+        HeatmapFacetCounter.calcFacets(
+            (PrefixTreeStrategy) strategy,
+            indexSearcher.getTopReaderContext(),
+            filter,
+            inputRange,
+            facetLevel,
+            maxCells);
 
     validateHeatmapResult(inputRange, facetLevel, heatmap);
 
@@ -213,21 +242,26 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
       }
     }
 
-    //Test again recursively to higher facetLevel (more detailed cells)
-    if (foundNonZeroCount && cellsValidated <= 500 && facetLevel != grid.getMaxLevels() && inputRange.hasArea()) {
-      for (int i = 0; i < 5; i++) {//try multiple times until we find non-zero counts
+    // Test again recursively to higher facetLevel (more detailed cells)
+    if (foundNonZeroCount
+        && cellsValidated <= 500
+        && facetLevel != grid.getMaxLevels()
+        && inputRange.hasArea()) {
+      for (int i = 0; i < 5; i++) { // try multiple times until we find non-zero counts
         if (queryHeatmapRecursive(randomRectangle(inputRange), facetLevel + 1)) {
-          break;//we found data here so we needn't try again
+          break; // we found data here so we needn't try again
         }
       }
     }
     return foundNonZeroCount;
   }
 
-  private void validateHeatmapResult(Rectangle inputRange, int facetLevel, HeatmapFacetCounter.Heatmap heatmap)
+  private void validateHeatmapResult(
+      Rectangle inputRange, int facetLevel, HeatmapFacetCounter.Heatmap heatmap)
       throws IOException {
     final Rectangle heatRect = heatmap.region;
-    assertTrue(heatRect.relate(inputRange) == SpatialRelation.CONTAINS || heatRect.equals(inputRange));
+    assertTrue(
+        heatRect.relate(inputRange) == SpatialRelation.CONTAINS || heatRect.equals(inputRange));
     final double cellWidth = heatRect.getWidth() / heatmap.columns;
     final double cellHeight = heatRect.getHeight() / heatmap.rows;
     for (int c = 0; c < heatmap.columns; c++) {
@@ -235,7 +269,7 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
         final int facetCount = heatmap.getCount(c, r);
         double x = DistanceUtils.normLonDEG(heatRect.getMinX() + c * cellWidth + cellWidth / 2);
         double y = DistanceUtils.normLatDEG(heatRect.getMinY() + r * cellHeight + cellHeight / 2);
-        Point pt =  shapeFactory.pointXY(x, y);
+        Point pt = shapeFactory.pointXY(x, y);
         assertEquals(countMatchingDocsAtLevel(pt, facetLevel), facetCount);
       }
     }
@@ -244,8 +278,9 @@ public class TestHeatmapFacetCounter extends StrategyTestCase {
   private int countMatchingDocsAtLevel(Point pt, int facetLevel) throws IOException {
     // we use IntersectsPrefixTreeFilter directly so that we can specify the level to go to exactly.
     RecursivePrefixTreeStrategy strategy = (RecursivePrefixTreeStrategy) this.strategy;
-    Query filter = new IntersectsPrefixTreeQuery(
-        pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels());
+    Query filter =
+        new IntersectsPrefixTreeQuery(
+            pt, strategy.getFieldName(), grid, facetLevel, grid.getMaxLevels());
     final TotalHitCountCollector collector = new TotalHitCountCollector();
     indexSearcher.search(filter, collector);
     cellsValidated++;

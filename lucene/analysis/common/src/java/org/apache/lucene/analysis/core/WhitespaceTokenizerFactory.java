@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.analysis.core;
 
+import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.util.AttributeFactory;
 
-import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
-
 /**
- * Factory for {@link WhitespaceTokenizer}. 
+ * Factory for {@link WhitespaceTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ws" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -38,12 +37,13 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  * &lt;/fieldType&gt;</pre>
  *
  * Options:
+ *
  * <ul>
- *   <li>rule: either "java" for {@link WhitespaceTokenizer}
- *      or "unicode" for {@link UnicodeWhitespaceTokenizer}</li>
- *   <li>maxTokenLen: max token length, should be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024).
- *       It is rare to need to change this
- *      else {@link CharTokenizer}::DEFAULT_MAX_TOKEN_LEN</li>
+ *   <li>rule: either "java" for {@link WhitespaceTokenizer} or "unicode" for {@link
+ *       UnicodeWhitespaceTokenizer}
+ *   <li>maxTokenLen: max token length, should be greater than 0 and less than
+ *       MAX_TOKEN_LENGTH_LIMIT (1024*1024). It is rare to need to change this else {@link
+ *       CharTokenizer}::DEFAULT_MAX_TOKEN_LEN
  * </ul>
  *
  * @since 3.1
@@ -62,13 +62,17 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
   private final int maxTokenLen;
 
   /** Creates a new WhitespaceTokenizerFactory */
-  public WhitespaceTokenizerFactory(Map<String,String> args) {
+  public WhitespaceTokenizerFactory(Map<String, String> args) {
     super(args);
 
     rule = get(args, "rule", RULE_NAMES, RULE_JAVA);
     maxTokenLen = getInt(args, "maxTokenLen", CharTokenizer.DEFAULT_MAX_WORD_LEN);
     if (maxTokenLen > MAX_TOKEN_LENGTH_LIMIT || maxTokenLen <= 0) {
-      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + maxTokenLen);
+      throw new IllegalArgumentException(
+          "maxTokenLen must be greater than 0 and less than "
+              + MAX_TOKEN_LENGTH_LIMIT
+              + " passed: "
+              + maxTokenLen);
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

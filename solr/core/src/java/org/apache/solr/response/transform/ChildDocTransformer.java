@@ -28,14 +28,22 @@ import java.util.Map;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.join.BitSetProducer;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -52,20 +60,23 @@ class ChildDocTransformer extends DocTransformer {
   private static final String ANON_CHILD_KEY = "_childDocuments_";
 
   private final String name;
-  private final BitSetProducer parentsFilter;
+  private final BitSetProducer parentsFilter; // if null; resolve parent via uniqueKey instead
   private final DocSet childDocSet;
   private final int limit;
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
+  private String[] extraRequestedFields;
 
   ChildDocTransformer(String name, BitSetProducer parentsFilter, DocSet childDocSet,
-                      SolrReturnFields returnFields, boolean isNestedSchema, int limit) {
+                      SolrReturnFields returnFields, boolean isNestedSchema, int limit,
+                      String uniqueKeyField) {
     this.name = name;
     this.parentsFilter = parentsFilter;
     this.childDocSet = childDocSet;
     this.limit = limit;
     this.isNestedSchema = isNestedSchema;
     this.childReturnFields = returnFields!=null? returnFields: new SolrReturnFields();
+    this.extraRequestedFields = parentsFilter == null ? new String[]{uniqueKeyField} : null;
   }
 
   @Override
@@ -75,6 +86,37 @@ class ChildDocTransformer extends DocTransformer {
 
   @Override
   public boolean needsSolrIndexSearcher() { return true; }
+
+  @Override
+  public String[] getExtraRequestFields() {
+    return extraRequestedFields;
+  }
+
+  private int getPrevRootGivenFilter(LeafReaderContext leafReaderContext, int segRootId) throws IOException {
+    final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
+    if (segParentsBitSet != null) {
+      return segRootId == 0 ? -1 : segParentsBitSet.prevSetBit(segRootId - 1);
+    }
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "Parent filter '" + parentsFilter + "' doesn't match any parent documents");
+  }
+
+  private int getPrevRootGivenId(LeafReaderContext leafReaderContext, int segRootId,
+                                 BytesRef idBytes) throws IOException {
+    final LeafReader reader = leafReaderContext.reader();
+    final Terms terms = reader.terms(IndexSchema.ROOT_FIELD_NAME); // never returns null here
+    final TermsEnum iterator = terms.iterator();
+    if (iterator.seekExact(idBytes)) {
+      PostingsEnum docs = iterator.postings(null, PostingsEnum.NONE);
+      docs = BitsFilteredPostingsEnum.wrap(docs, reader.getLiveDocs());
+      int id = docs.nextDoc();
+      if (id != DocIdSetIterator.NO_MORE_DOCS) {
+        assert id <= segRootId : "integrity violation";
+        return id - 1;
+      }
+    }
+    return segRootId - 1; // thus no child docs
+  }
 
   @Override
   public void transform(SolrDocument rootDoc, int rootDocId) {
@@ -87,17 +129,24 @@ class ChildDocTransformer extends DocTransformer {
       final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
       final int seg = ReaderUtil.subIndex(rootDocId, leaves);
       final LeafReaderContext leafReaderContext = leaves.get(seg);
+      final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
-      final BitSet segParentsBitSet = parentsFilter.getBitSet(leafReaderContext);
-      final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
 
-      if (segParentsBitSet == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Parent filter '" + parentsFilter + "' doesn't match any parent documents");
+      // can return be -1 and that's okay  (happens for very first block)
+      final int segPrevRootId;
+      if (parentsFilter != null) {
+        segPrevRootId = getPrevRootGivenFilter(leafReaderContext, segRootId);
+      } else {
+        final IndexSchema schema = searcher.getSchema();
+        final String idStr = schema.printableUniqueKey(rootDoc);
+        if (idStr == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "[child] requires fl to include the ID");
+        }
+        final BytesRef idBytes = schema.indexableUniqueKey(idStr);
+        segPrevRootId = getPrevRootGivenId(leafReaderContext, rootDocId, idBytes);
       }
-
-      final int segPrevRootId = segRootId==0? -1: segParentsBitSet.prevSetBit(segRootId - 1); // can return -1 and that's okay
 
       if (segPrevRootId == (segRootId - 1)) {
         // doc has no children, return fast

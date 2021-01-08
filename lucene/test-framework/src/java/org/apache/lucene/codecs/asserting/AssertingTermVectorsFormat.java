@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.asserting;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
@@ -34,19 +33,21 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Just like the default vectors format but with additional asserts.
- */
+/** Just like the default vectors format but with additional asserts. */
 public class AssertingTermVectorsFormat extends TermVectorsFormat {
   private final TermVectorsFormat in = TestUtil.getDefaultCodec().termVectorsFormat();
 
   @Override
-  public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
-    return new AssertingTermVectorsReader(in.vectorsReader(directory, segmentInfo, fieldInfos, context));
+  public TermVectorsReader vectorsReader(
+      Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
+      throws IOException {
+    return new AssertingTermVectorsReader(
+        in.vectorsReader(directory, segmentInfo, fieldInfos, context));
   }
 
   @Override
-  public TermVectorsWriter vectorsWriter(Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
+  public TermVectorsWriter vectorsWriter(
+      Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
     return new AssertingTermVectorsWriter(in.vectorsWriter(directory, segmentInfo, context));
   }
 
@@ -84,7 +85,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
       assert v >= 0;
       return v;
     }
-    
+
     @Override
     public Collection<Accountable> getChildResources() {
       Collection<Accountable> res = in.getChildResources();
@@ -96,7 +97,7 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
     }
-    
+
     @Override
     public TermVectorsReader getMergeInstance() {
       return new AssertingTermVectorsReader(in.getMergeInstance());
@@ -109,7 +110,9 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
   }
 
   enum Status {
-    UNDEFINED, STARTED, FINISHED;
+    UNDEFINED,
+    STARTED,
+    FINISHED;
   }
 
   static class AssertingTermVectorsWriter extends TermVectorsWriter {
@@ -145,8 +148,9 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
 
     @Override
-    public void startField(FieldInfo info, int numTerms, boolean positions,
-        boolean offsets, boolean payloads) throws IOException {
+    public void startField(
+        FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads)
+        throws IOException {
       assert termCount == 0;
       assert docStatus == Status.STARTED;
       assert fieldStatus != Status.STARTED;
@@ -187,8 +191,8 @@ public class AssertingTermVectorsFormat extends TermVectorsFormat {
     }
 
     @Override
-    public void addPosition(int position, int startOffset, int endOffset,
-        BytesRef payload) throws IOException {
+    public void addPosition(int position, int startOffset, int endOffset, BytesRef payload)
+        throws IOException {
       assert docStatus == Status.STARTED;
       assert fieldStatus == Status.STARTED;
       assert termStatus == Status.STARTED;

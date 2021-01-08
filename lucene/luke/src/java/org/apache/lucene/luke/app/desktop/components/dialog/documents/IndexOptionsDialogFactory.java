@@ -17,6 +17,13 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
+import java.awt.Dialog;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Insets;
+import java.awt.Window;
+import java.io.IOException;
+import java.util.Arrays;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -27,14 +34,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Insets;
-import java.awt.Window;
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
@@ -80,7 +79,7 @@ public final class IndexOptionsDialogFactory implements DialogOpener.DialogFacto
 
   private NewField nf;
 
-  public synchronized static IndexOptionsDialogFactory getInstance() throws IOException {
+  public static synchronized IndexOptionsDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new IndexOptionsDialogFactory();
     }
@@ -155,7 +154,8 @@ public final class IndexOptionsDialogFactory implements DialogOpener.DialogFacto
 
     JPanel inner2 = new JPanel(new FlowLayout(FlowLayout.LEADING, 10, 1));
     inner2.setOpaque(false);
-    JLabel idxOptLbl = new JLabel(MessageUtils.getLocalizedMessage("idx_options.label.index_options"));
+    JLabel idxOptLbl =
+        new JLabel(MessageUtils.getLocalizedMessage("idx_options.label.index_options"));
     inner2.add(idxOptLbl);
     inner2.add(idxOptCombo);
     panel.add(inner2);
@@ -249,9 +249,9 @@ public final class IndexOptionsDialogFactory implements DialogOpener.DialogFacto
     dimCountTF.setText(String.valueOf(fieldType.pointDimensionCount()));
     dimNumBytesTF.setText(String.valueOf(fieldType.pointNumBytes()));
 
-    if (nf.getType().equals(org.apache.lucene.document.TextField.class) ||
-        nf.getType().equals(StringField.class) ||
-        nf.getType().equals(Field.class)) {
+    if (nf.getType().equals(org.apache.lucene.document.TextField.class)
+        || nf.getType().equals(StringField.class)
+        || nf.getType().equals(Field.class)) {
       storedCB.setEnabled(true);
     } else {
       storedCB.setEnabled(false);
@@ -304,5 +304,4 @@ public final class IndexOptionsDialogFactory implements DialogOpener.DialogFacto
   private static String[] availableDocValuesType() {
     return Arrays.stream(DocValuesType.values()).map(DocValuesType::name).toArray(String[]::new);
   }
-
 }

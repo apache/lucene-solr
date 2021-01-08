@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -68,14 +67,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests Lucene80DocValuesFormat
- */
-public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressingDocValuesFormatTestCase {
-  
+/** Tests Lucene80DocValuesFormat */
+public abstract class BaseLucene80DocValuesFormatTestCase
+    extends BaseCompressingDocValuesFormatTestCase {
+
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
   // for now just keep them here, as we want to test this for this format.
-  
+
   public void testSortedSetVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -83,7 +81,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       doTestSortedSetVsStoredFields(numDocs, 1, 32766, 16, 100);
     }
   }
-  
+
   @Nightly
   public void testSortedSetVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
@@ -91,7 +89,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       doTestSortedSetVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1, 500, 16, 100);
     }
   }
-  
+
   @Slow
   public void testSortedVariableLengthBigVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
@@ -99,7 +97,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       doTestSortedVsStoredFields(atLeast(100), 1d, 1, 32766);
     }
   }
-  
+
   @Nightly
   public void testSortedVariableLengthManyVsStoredFields() throws Exception {
     int numIterations = atLeast(1);
@@ -107,28 +105,34 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       doTestSortedVsStoredFields(TestUtil.nextInt(random(), 1024, 2049), 1d, 1, 500);
     }
   }
-  
+
   @Nightly
   public void testTermsEnumFixedWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> TestUtil.randomSimpleString(random(), 10, 10));
+      doTestTermsEnumRandom(
+          TestUtil.nextInt(random(), 1025, 5121),
+          () -> TestUtil.randomSimpleString(random(), 10, 10));
     }
   }
-  
+
   @Nightly
   public void testTermsEnumVariableWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> TestUtil.randomSimpleString(random(), 1, 500));
+      doTestTermsEnumRandom(
+          TestUtil.nextInt(random(), 1025, 5121),
+          () -> TestUtil.randomSimpleString(random(), 1, 500));
     }
   }
-  
+
   @Nightly
   public void testTermsEnumRandomMany() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 8121), () -> TestUtil.randomSimpleString(random(), 1, 500));
+      doTestTermsEnumRandom(
+          TestUtil.nextInt(random(), 1025, 8121),
+          () -> TestUtil.randomSimpleString(random(), 1, 500));
     }
   }
 
@@ -136,14 +140,16 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
   public void testTermsEnumLongSharedPrefixes() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
-      doTestTermsEnumRandom(TestUtil.nextInt(random(), 1025, 5121), () -> {
-        char[] chars = new char[random().nextInt(500)];
-        Arrays.fill(chars, 'a');
-        if (chars.length > 0) {
-          chars[random().nextInt(chars.length)] = 'b';
-        }
-        return new String(chars);
-      });
+      doTestTermsEnumRandom(
+          TestUtil.nextInt(random(), 1025, 5121),
+          () -> {
+            char[] chars = new char[random().nextInt(500)];
+            Arrays.fill(chars, 'a');
+            if (chars.length > 0) {
+              chars[random().nextInt(chars.length)] = 'b';
+            }
+            return new String(chars);
+          });
     }
   }
 
@@ -216,7 +222,8 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
 
       final BinaryDocValues binary = DocValues.getBinary(reader, "binary");
 
-      final SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(reader, "sorted_numeric");
+      final SortedNumericDocValues sortedNumeric =
+          DocValues.getSortedNumeric(reader, "sorted_numeric");
 
       final SortedSetDocValues sortedSet = DocValues.getSortedSet(reader, "sorted_set");
 
@@ -273,26 +280,30 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
   // TODO: try to refactor this and some termsenum tests into the base class.
   // to do this we need to fix the test class to get a DVF not a Codec so we can setup
   // the postings format correctly.
-  private void doTestTermsEnumRandom(int numDocs, Supplier<String> valuesProducer) throws Exception {
+  private void doTestTermsEnumRandom(int numDocs, Supplier<String> valuesProducer)
+      throws Exception {
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMergeScheduler(new SerialMergeScheduler());
     // set to duel against a codec which has ordinals:
     final PostingsFormat pf = TestUtil.getPostingsFormatWithOrds(random());
-    final DocValuesFormat dv = ((PerFieldDocValuesFormat) getCodec().docValuesFormat()).getDocValuesFormatForField("random_field_name");
-    conf.setCodec(new AssertingCodec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        return pf;
-      }
+    final DocValuesFormat dv =
+        ((PerFieldDocValuesFormat) getCodec().docValuesFormat())
+            .getDocValuesFormatForField("random_field_name");
+    conf.setCodec(
+        new AssertingCodec() {
+          @Override
+          public PostingsFormat getPostingsFormatForField(String field) {
+            return pf;
+          }
 
-      @Override
-      public DocValuesFormat getDocValuesFormatForField(String field) {
-        return dv;
-      }
-    });
+          @Override
+          public DocValuesFormat getDocValuesFormatForField(String field) {
+            return dv;
+          }
+        });
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    
+
     // index some docs
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -304,7 +315,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       for (int v = 0; v < numValues; v++) {
         values.add(valuesProducer.get());
       }
-      
+
       // add in any order to the indexed field
       ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
@@ -324,14 +335,14 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
         writer.commit();
       }
     }
-    
+
     // delete some docs
-    int numDeletions = random().nextInt(numDocs/10);
+    int numDeletions = random().nextInt(numDocs / 10);
     for (int i = 0; i < numDeletions; i++) {
       int id = random().nextInt(numDocs);
       writer.deleteDocuments(new Term("id", Integer.toString(id)));
     }
-    
+
     // compare per-segment
     DirectoryReader ir = writer.getReader();
     for (LeafReaderContext context : ir.leaves()) {
@@ -348,9 +359,9 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       }
     }
     ir.close();
-    
+
     writer.forceMerge(1);
-    
+
     // now compare again after the merge
     ir = writer.getReader();
     LeafReader ar = getOnlyLeafReader(ir);
@@ -362,14 +373,14 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(terms.size(), expected, actual);
     }
     ir.close();
-    
+
     writer.close();
     dir.close();
   }
-  
+
   private void assertEquals(long numOrds, TermsEnum expected, TermsEnum actual) throws Exception {
     BytesRef ref;
-    
+
     // sequential next() through all terms
     while ((ref = expected.next()) != null) {
       assertEquals(ref, actual.next());
@@ -377,7 +388,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.term(), actual.term());
     }
     assertNull(actual.next());
-    
+
     // sequential seekExact(ord) through all terms
     for (long i = 0; i < numOrds; i++) {
       expected.seekExact(i);
@@ -385,7 +396,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
-    
+
     // sequential seekExact(BytesRef) through all terms
     for (long i = 0; i < numOrds; i++) {
       expected.seekExact(i);
@@ -393,7 +404,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
-    
+
     // sequential seekCeil(BytesRef) through all terms
     for (long i = 0; i < numOrds; i++) {
       expected.seekExact(i);
@@ -401,7 +412,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
-    
+
     // random seekExact(ord)
     for (long i = 0; i < numOrds; i++) {
       long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
@@ -410,7 +421,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
-    
+
     // random seekExact(BytesRef)
     for (long i = 0; i < numOrds; i++) {
       long randomOrd = TestUtil.nextLong(random(), 0, numOrds - 1);
@@ -419,7 +430,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
       assertEquals(expected.ord(), actual.ord());
       assertEquals(expected.term(), actual.term());
     }
-    
+
     // random seekCeil(BytesRef)
     for (long i = 0; i < numOrds; i++) {
       BytesRef target = new BytesRef(TestUtil.randomUnicodeString(random()));
@@ -437,7 +448,8 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+      IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
       ByteBuffersDataOutput out = new ByteBuffersDataOutput();
       Document doc = new Document();
       SortedSetDocValuesField field1 = new SortedSetDocValuesField("sset", new BytesRef());
@@ -490,7 +502,8 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
-      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+      IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
       ByteBuffersDataOutput buffer = new ByteBuffersDataOutput();
 
       Document doc = new Document();
@@ -551,9 +564,10 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
   // and numeric multi blocks. This test focuses on testing these jumps.
   @Nightly
   public void testNumericFieldJumpTables() throws Exception {
-    // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5 blocks to
+    // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5
+    // blocks to
     // trigger consecutive block skips
-    final int maxDoc = atLeast(5*65536);
+    final int maxDoc = atLeast(5 * 65536);
 
     Directory dir = newDirectory();
     IndexWriter iw = createFastIndexWriter(dir, maxDoc);
@@ -562,7 +576,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     Field storedField = newStringField("stored", "", Field.Store.YES);
     Field dvField = new NumericDocValuesField("dv", 0);
 
-    for (int i = 0 ; i < maxDoc ; i++) {
+    for (int i = 0; i < maxDoc; i++) {
       Document doc = new Document();
       idField.setStringValue(Integer.toBinaryString(i));
       doc.add(idField);
@@ -581,7 +595,8 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     iw.close();
 
     assertDVIterate(dir);
-    assertDVAdvance(dir, rarely() ? 1 : 7); // 1 is heavy (~20 s), so we do it rarely. 7 is a lot faster (8 s)
+    assertDVAdvance(
+        dir, rarely() ? 1 : 7); // 1 is heavy (~20 s), so we do it rarely. 7 is a lot faster (8 s)
 
     dir.close();
   }
@@ -600,6 +615,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     return new LongSupplier() {
       int i = Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE;
       int maxDelta;
+
       @Override
       public long getAsLong() {
         if (i == Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE) {
@@ -612,19 +628,20 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     };
   }
 
-  private void doTestSortedNumericBlocksOfVariousBitsPerValue(LongSupplier counts) throws Exception {
+  private void doTestSortedNumericBlocksOfVariousBitsPerValue(LongSupplier counts)
+      throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    
-    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+
+    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
     final LongSupplier values = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      
+
       int valueCount = (int) counts.getAsLong();
       long valueArray[] = new long[valueCount];
       for (int j = 0; j < valueCount; j++) {
@@ -644,7 +661,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     writer.forceMerge(1);
 
     writer.close();
-    
+
     // compare
     DirectoryReader ir = DirectoryReader.open(dir);
     TestUtil.checkReader(ir);
@@ -684,7 +701,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     doc.add(storedField);
     doc.add(dvField);
 
-    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE*3);
+    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
     final LongSupplier longs = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       if (random().nextDouble() > density) {
@@ -700,10 +717,11 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     writer.forceMerge(1);
 
     writer.close();
-    
+
     // compare
     assertDVIterate(dir);
-    assertDVAdvance(dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
+    assertDVAdvance(
+        dir, 1); // Tests all jump-lengths from 1 to maxDoc (quite slow ~= 1 minute for 200K docs)
 
     dir.close();
   }
@@ -715,26 +733,32 @@ public abstract class BaseLucene80DocValuesFormatTestCase extends BaseCompressin
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
 
-
       for (int jump = jumpStep; jump < r.maxDoc(); jump += jumpStep) {
         // Create a new instance each time to ensure jumps from the beginning
         NumericDocValues docValues = DocValues.getNumeric(r, "dv");
         for (int docID = 0; docID < r.maxDoc(); docID += jump) {
-          String base = "document #" + docID + "/" + r.maxDoc() + ", jumping " + jump + " from #" + (docID-jump);
+          String base =
+              "document #"
+                  + docID
+                  + "/"
+                  + r.maxDoc()
+                  + ", jumping "
+                  + jump
+                  + " from #"
+                  + (docID - jump);
           String storedValue = r.document(docID).get("stored");
           if (storedValue == null) {
-            assertFalse("There should be no DocValue for " + base,
-                docValues.advanceExact(docID));
+            assertFalse("There should be no DocValue for " + base, docValues.advanceExact(docID));
           } else {
-            assertTrue("There should be a DocValue for " + base,
-                docValues.advanceExact(docID));
-            assertEquals("The doc value should be correct for " + base,
-                Long.parseLong(storedValue), docValues.longValue());
+            assertTrue("There should be a DocValue for " + base, docValues.advanceExact(docID));
+            assertEquals(
+                "The doc value should be correct for " + base,
+                Long.parseLong(storedValue),
+                docValues.longValue());
           }
         }
       }
     }
     ir.close();
   }
-
 }

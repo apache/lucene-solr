@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.fa;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link PersianNormalizationFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_fanormal" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -40,15 +39,15 @@ public class PersianNormalizationFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "persianNormalization";
-  
+
   /** Creates a new PersianNormalizationFilterFactory */
-  public PersianNormalizationFilterFactory(Map<String,String> args) {
+  public PersianNormalizationFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public PersianNormalizationFilterFactory() {
     throw defaultCtorException();
@@ -64,4 +63,3 @@ public class PersianNormalizationFilterFactory extends TokenFilterFactory {
     return create(input);
   }
 }
-

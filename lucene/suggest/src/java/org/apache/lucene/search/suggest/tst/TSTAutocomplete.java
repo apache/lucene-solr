@@ -20,29 +20,23 @@ import java.util.*;
 
 /**
  * Ternary Search Trie implementation.
- * 
+ *
  * @see TernaryTreeNode
  */
 public class TSTAutocomplete {
-  
+
   TSTAutocomplete() {}
 
   /**
-   * Inserting keys in TST in the order middle,small,big (lexicographic measure)
-   * recursively creates a balanced tree which reduces insertion and search
-   * times significantly.
-   * 
-   * @param tokens
-   *          Sorted list of keys to be inserted in TST.
-   * @param lo
-   *          stores the lower index of current list.
-   * @param hi
-   *          stores the higher index of current list.
-   * @param root
-   *          a reference object to root of TST.
+   * Inserting keys in TST in the order middle,small,big (lexicographic measure) recursively creates
+   * a balanced tree which reduces insertion and search times significantly.
+   *
+   * @param tokens Sorted list of keys to be inserted in TST.
+   * @param lo stores the lower index of current list.
+   * @param hi stores the higher index of current list.
+   * @param root a reference object to root of TST.
    */
-  public void balancedTree(Object[] tokens, Object[] vals, int lo, int hi,
-          TernaryTreeNode root) {
+  public void balancedTree(Object[] tokens, Object[] vals, int lo, int hi, TernaryTreeNode root) {
     if (lo > hi) return;
     int mid = (lo + hi) / 2;
     root = insert(root, (String) tokens[mid], vals[mid], 0);
@@ -51,20 +45,15 @@ public class TSTAutocomplete {
   }
 
   /**
-   * Inserts a key in TST creating a series of Binary Search Trees at each node.
-   * The key is actually stored across the eqKid of each node in a successive
-   * manner.
-   * 
-   * @param currentNode
-   *          a reference node where the insertion will take currently.
-   * @param s
-   *          key to be inserted in TST.
-   * @param x
-   *          index of character in key to be inserted currently.
+   * Inserts a key in TST creating a series of Binary Search Trees at each node. The key is actually
+   * stored across the eqKid of each node in a successive manner.
+   *
+   * @param currentNode a reference node where the insertion will take currently.
+   * @param s key to be inserted in TST.
+   * @param x index of character in key to be inserted currently.
    * @return currentNode The new reference to root node of TST
    */
-  public TernaryTreeNode insert(TernaryTreeNode currentNode, CharSequence s,
-          Object val, int x) {
+  public TernaryTreeNode insert(TernaryTreeNode currentNode, CharSequence s, Object val, int x) {
     if (s == null || s.length() <= x) {
       return currentNode;
     }
@@ -96,21 +85,15 @@ public class TSTAutocomplete {
   }
 
   /**
-   * Auto-completes a given prefix query using Depth-First Search with the end
-   * of prefix as source node each time finding a new leaf to get a complete key
-   * to be added in the suggest list.
-   * 
-   * @param root
-   *          a reference to root node of TST.
-   * @param s
-   *          prefix query to be auto-completed.
-   * @param x
-   *          index of current character to be searched while traversing through
-   *          the prefix in TST.
+   * Auto-completes a given prefix query using Depth-First Search with the end of prefix as source
+   * node each time finding a new leaf to get a complete key to be added in the suggest list.
+   *
+   * @param root a reference to root node of TST.
+   * @param s prefix query to be auto-completed.
+   * @param x index of current character to be searched while traversing through the prefix in TST.
    * @return suggest list of auto-completed keys for the given prefix query.
    */
-  public ArrayList<TernaryTreeNode> prefixCompletion(TernaryTreeNode root,
-          CharSequence s, int x) {
+  public ArrayList<TernaryTreeNode> prefixCompletion(TernaryTreeNode root, CharSequence s, int x) {
 
     TernaryTreeNode p = root;
     ArrayList<TernaryTreeNode> suggest = new ArrayList<>();

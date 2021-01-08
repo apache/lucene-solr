@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -33,10 +32,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
- * Test QueryParser's ability to deal with Analyzers that return more
- * than one token per position or that return tokens with a position
- * increment &gt; 1.
- *
+ * Test QueryParser's ability to deal with Analyzers that return more than one token per position or
+ * that return tokens with a position increment &gt; 1.
  */
 public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
@@ -57,24 +54,30 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     assertEquals("Synonym(multi multi2) foo", qp.parse("multi foo").toString());
     assertEquals("foo Synonym(multi multi2)", qp.parse("foo multi").toString());
     assertEquals("Synonym(multi multi2) Synonym(multi multi2)", qp.parse("multi multi").toString());
-    assertEquals("+(foo Synonym(multi multi2)) +(bar Synonym(multi multi2))",
+    assertEquals(
+        "+(foo Synonym(multi multi2)) +(bar Synonym(multi multi2))",
         qp.parse("+(foo multi) +(bar multi)").toString());
-    assertEquals("+(foo Synonym(multi multi2)) field:\"bar (multi multi2)\"",
+    assertEquals(
+        "+(foo Synonym(multi multi2)) field:\"bar (multi multi2)\"",
         qp.parse("+(foo multi) field:\"bar multi\"").toString());
 
     // phrases:
     assertEquals("\"(multi multi2) foo\"", qp.parse("\"multi foo\"").toString());
     assertEquals("\"foo (multi multi2)\"", qp.parse("\"foo multi\"").toString());
-    assertEquals("\"foo (multi multi2) foobar (multi multi2)\"",
+    assertEquals(
+        "\"foo (multi multi2) foobar (multi multi2)\"",
         qp.parse("\"foo multi foobar multi\"").toString());
 
     // fields:
-    assertEquals("Synonym(field:multi field:multi2) field:foo", qp.parse("field:multi field:foo").toString());
+    assertEquals(
+        "Synonym(field:multi field:multi2) field:foo",
+        qp.parse("field:multi field:foo").toString());
     assertEquals("field:\"(multi multi2) foo\"", qp.parse("field:\"multi foo\"").toString());
 
     // three tokens at one position:
     assertEquals("Synonym(multi2 multi3 triplemulti)", qp.parse("triplemulti").toString());
-    assertEquals("foo Synonym(multi2 multi3 triplemulti) foobar",
+    assertEquals(
+        "foo Synonym(multi2 multi3 triplemulti) foobar",
         qp.parse("foo triplemulti foobar").toString());
 
     // phrase with non-default slop:
@@ -85,16 +88,15 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     // phrase after changing default slop
     qp.setPhraseSlop(99);
-    assertEquals("\"(multi multi2) foo\"~99 bar",
-                 qp.parse("\"multi foo\" bar").toString());
-    assertEquals("\"(multi multi2) foo\"~99 \"foo bar\"~2",
-                 qp.parse("\"multi foo\" \"foo bar\"~2").toString());
+    assertEquals("\"(multi multi2) foo\"~99 bar", qp.parse("\"multi foo\" bar").toString());
+    assertEquals(
+        "\"(multi multi2) foo\"~99 \"foo bar\"~2",
+        qp.parse("\"multi foo\" \"foo bar\"~2").toString());
     qp.setPhraseSlop(0);
 
     // non-default operator:
     qp.setDefaultOperator(QueryParserBase.AND_OPERATOR);
     assertEquals("+Synonym(multi multi2) +foo", qp.parse("multi foo").toString());
-
   }
 
   public void testMultiAnalyzerWithSubclassOfQueryParser() throws ParseException {
@@ -104,16 +106,12 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     // direct call to (super's) getFieldQuery to demonstrate differnce
     // between phrase and multiphrase with modified default slop
-    assertEquals("\"foo bar\"~99",
-                 qp.getSuperFieldQuery("","foo bar", true).toString());
-    assertEquals("\"(multi multi2) bar\"~99",
-                 qp.getSuperFieldQuery("","multi bar", true).toString());
-
+    assertEquals("\"foo bar\"~99", qp.getSuperFieldQuery("", "foo bar", true).toString());
+    assertEquals(
+        "\"(multi multi2) bar\"~99", qp.getSuperFieldQuery("", "multi bar", true).toString());
 
     // ask sublcass to parse phrase with modified default slop
-    assertEquals("\"(multi multi2) foo\"~99 bar",
-                 qp.parse("\"multi foo\" bar").toString());
-
+    assertEquals("\"(multi multi2) foo\"~99 bar", qp.parse("\"multi foo\" bar").toString());
   }
 
   public void testPosIncrementAnalyzer() throws ParseException {
@@ -123,8 +121,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   /**
-   * Expands "multi" to "multi" and "multi2", both at the same position,
-   * and expands "triplemulti" to "triplemulti", "multi3", and "multi2".
+   * Expands "multi" to "multi" and "multi2", both at the same position, and expands "triplemulti"
+   * to "triplemulti", "multi3", and "multi2".
    */
   private static class MultiAnalyzer extends Analyzer {
 
@@ -157,7 +155,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     @Override
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
-        termAtt.setEmpty().append("multi"+(multiToken+1));
+        termAtt.setEmpty().append("multi" + (multiToken + 1));
         offsetAtt.setOffset(prevStartOffset, prevEndOffset);
         typeAtt.setType(prevType);
         posIncrAtt.setPositionIncrement(0);
@@ -194,8 +192,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
 
   /**
-   * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1).
-   * Does not work correctly for input other than "the quick brown ...".
+   * Analyzes "the quick brown" as: quick(incr=2) brown(incr=1). Does not work correctly for input
+   * other than "the quick brown ...".
    */
   private static class PosIncrementAnalyzer extends Analyzer {
 
@@ -218,8 +216,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public final boolean incrementToken () throws java.io.IOException {
-      while(input.incrementToken()) {
+    public final boolean incrementToken() throws java.io.IOException {
+      while (input.incrementToken()) {
         if (termAtt.toString().equals("the")) {
           // stopword, do nothing
         } else if (termAtt.toString().equals("quick")) {
@@ -234,56 +232,52 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     }
   }
 
-    /** a very simple subclass of QueryParser */
-    private final static class DumbQueryParser extends QueryParser {
+  /** a very simple subclass of QueryParser */
+  private static final class DumbQueryParser extends QueryParser {
 
-        public DumbQueryParser(String f, Analyzer a) {
-            super(f, a);
-        }
-
-        /** expose super's version */
-        public Query getSuperFieldQuery(String f, String t, boolean quoted)
-            throws ParseException {
-            return super.getFieldQuery(f,t,quoted);
-        }
-        /** wrap super's version */
-        @Override
-        protected Query getFieldQuery(String f, String t, boolean quoted)
-            throws ParseException {
-            return new DumbQueryWrapper(getSuperFieldQuery(f,t,quoted));
-        }
+    public DumbQueryParser(String f, Analyzer a) {
+      super(f, a);
     }
 
-    /**
-     * A very simple wrapper to prevent instanceof checks but uses
-     * the toString of the query it wraps.
-     */
-    private final static class DumbQueryWrapper extends Query {
-        private Query q;
+    /** expose super's version */
+    public Query getSuperFieldQuery(String f, String t, boolean quoted) throws ParseException {
+      return super.getFieldQuery(f, t, quoted);
+    }
+    /** wrap super's version */
+    @Override
+    protected Query getFieldQuery(String f, String t, boolean quoted) throws ParseException {
+      return new DumbQueryWrapper(getSuperFieldQuery(f, t, quoted));
+    }
+  }
 
-        public DumbQueryWrapper(Query q) {
-            this.q = Objects.requireNonNull(q);
-        }
-        @Override
-        public String toString(String f) {
-            return q.toString(f);
-        }
+  /**
+   * A very simple wrapper to prevent instanceof checks but uses the toString of the query it wraps.
+   */
+  private static final class DumbQueryWrapper extends Query {
+    private Query q;
 
-      @Override
-      public void visit(QueryVisitor visitor) {
-        q.visit(visitor);
-      }
-
-      @Override
-        public boolean equals(Object other) {
-            return sameClassAs(other) &&
-                   Objects.equals(q, ((DumbQueryWrapper) other).q);
-        }
-
-        @Override
-        public int hashCode() {
-            return classHash() & q.hashCode();
-        }
+    public DumbQueryWrapper(Query q) {
+      this.q = Objects.requireNonNull(q);
     }
 
+    @Override
+    public String toString(String f) {
+      return q.toString(f);
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      q.visit(visitor);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return sameClassAs(other) && Objects.equals(q, ((DumbQueryWrapper) other).q);
+    }
+
+    @Override
+    public int hashCode() {
+      return classHash() & q.hashCode();
+    }
+  }
 }

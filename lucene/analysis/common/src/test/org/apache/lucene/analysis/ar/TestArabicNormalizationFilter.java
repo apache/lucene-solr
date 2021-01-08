@@ -16,33 +16,29 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test the Arabic Normalization Filter
- */
+/** Test the Arabic Normalization Filter */
 public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
 
   public void testAlifMadda() throws IOException {
     check("آجن", "اجن");
   }
-  
+
   public void testAlifHamzaAbove() throws IOException {
     check("أحمد", "احمد");
   }
-  
+
   public void testAlifHamzaBelow() throws IOException {
     check("إعاذ", "اعاذ");
   }
-  
+
   public void testAlifMaksura() throws IOException {
     check("بنى", "بني");
   }
@@ -50,60 +46,60 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
   public void testTehMarbuta() throws IOException {
     check("فاطمة", "فاطمه");
   }
-  
+
   public void testTatweel() throws IOException {
     check("روبرـــــت", "روبرت");
   }
-  
+
   public void testFatha() throws IOException {
     check("مَبنا", "مبنا");
   }
-  
+
   public void testKasra() throws IOException {
     check("علِي", "علي");
   }
-  
+
   public void testDamma() throws IOException {
     check("بُوات", "بوات");
   }
-  
+
   public void testFathatan() throws IOException {
     check("ولداً", "ولدا");
   }
-  
+
   public void testKasratan() throws IOException {
     check("ولدٍ", "ولد");
   }
-  
+
   public void testDammatan() throws IOException {
     check("ولدٌ", "ولد");
-  }  
-  
+  }
+
   public void testSukun() throws IOException {
     check("نلْسون", "نلسون");
   }
-  
+
   public void testShaddah() throws IOException {
     check("هتميّ", "هتمي");
-  }  
-  
+  }
+
   private void check(final String input, final String expected) throws IOException {
     MockTokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     tokenStream.setReader(new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
-    assertTokenStreamContents(filter, new String[]{expected});
+    assertTokenStreamContents(filter, new String[] {expected});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new ArabicNormalizationFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new ArabicNormalizationFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
-
 }

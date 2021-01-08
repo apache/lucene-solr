@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,8 +32,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
 
   private static final Analyzer ANALYZER = new StandardAnalyzer();
 
-  protected abstract <T extends QueryMatch> MatcherFactory<T> matcherFactory(ExecutorService executor,
-                                                                             MatcherFactory<T> factory, int threads);
+  protected abstract <T extends QueryMatch> MatcherFactory<T> matcherFactory(
+      ExecutorService executor, MatcherFactory<T> factory, int threads);
 
   public void testAllMatchesAreCollected() throws Exception {
 
@@ -49,12 +48,11 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("field", "test", Field.Store.NO));
 
-      MatchingQueries<QueryMatch> matches
-          = monitor.match(doc, matcherFactory(executor, QueryMatch.SIMPLE_MATCHER, 10));
+      MatchingQueries<QueryMatch> matches =
+          monitor.match(doc, matcherFactory(executor, QueryMatch.SIMPLE_MATCHER, 10));
 
       assertEquals(1000, matches.getMatchCount());
-    }
-    finally {
+    } finally {
       executor.shutdown();
     }
   }
@@ -66,7 +64,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
     try (Monitor monitor = new Monitor(ANALYZER)) {
       List<MonitorQuery> queries = new ArrayList<>();
       for (int i = 0; i < 10; i++) {
-        queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test^10 doc " + i)));
+        queries.add(
+            new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test^10 doc " + i)));
       }
       monitor.register(queries);
       assertEquals(30, monitor.getDisjunctCount());
@@ -74,8 +73,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("field", "test doc doc", Field.Store.NO));
 
-      MatchingQueries<ScoringMatch> matches
-          = monitor.match(doc, matcherFactory(executor, ScoringMatch.DEFAULT_MATCHER, 10));
+      MatchingQueries<ScoringMatch> matches =
+          monitor.match(doc, matcherFactory(executor, ScoringMatch.DEFAULT_MATCHER, 10));
 
       assertEquals(20, matches.getQueriesRun());
       assertEquals(10, matches.getMatchCount());
@@ -87,10 +86,8 @@ public abstract class ConcurrentMatcherTestBase extends LuceneTestCase {
         // up with the sum of the scores for the 'test' and 'doc' parts
         assertEquals(1.4874471f, match.getScore(), 0);
       }
-    }
-    finally {
+    } finally {
       executor.shutdown();
     }
   }
-
 }

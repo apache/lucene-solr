@@ -17,7 +17,6 @@
 package org.apache.lucene.search.spell;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -32,9 +31,8 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Test case for LuceneDictionary.
- * It first creates a simple index and then a couple of instances of LuceneDictionary
- * on different fields and checks if all the right text comes back.
+ * Test case for LuceneDictionary. It first creates a simple index and then a couple of instances of
+ * LuceneDictionary on different fields and checks if all the right text comes back.
  */
 public class TestLuceneDictionary extends LuceneTestCase {
 
@@ -54,19 +52,19 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
     Document doc;
 
-    doc = new  Document();
+    doc = new Document();
     doc.add(newTextField("aaa", "foo", Field.Store.YES));
     writer.addDocument(doc);
 
-    doc = new  Document();
+    doc = new Document();
     doc.add(newTextField("aaa", "foo", Field.Store.YES));
     writer.addDocument(doc);
 
-    doc = new  Document();
+    doc = new Document();
     doc.add(newTextField("contents", "Tom", Field.Store.YES));
     writer.addDocument(doc);
 
-    doc = new  Document();
+    doc = new Document();
     doc.add(newTextField("contents", "Jerry", Field.Store.YES));
     writer.addDocument(doc);
 
@@ -80,13 +78,14 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    if (indexReader != null)
+    if (indexReader != null) {
       indexReader.close();
+    }
     store.close();
     analyzer.close();
     super.tearDown();
   }
-  
+
   public void testFieldNonExistent() throws IOException {
     try {
       indexReader = DirectoryReader.open(store);
@@ -96,7 +95,9 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
       assertNull("More elements than expected", spare = it.next());
     } finally {
-      if  (indexReader != null) { indexReader.close(); }
+      if (indexReader != null) {
+        indexReader.close();
+      }
     }
   }
 
@@ -110,7 +111,9 @@ public class TestLuceneDictionary extends LuceneTestCase {
       assertTrue("First element isn't correct", spare.utf8ToString().equals("foo"));
       assertNull("More elements than expected", it.next());
     } finally {
-      if  (indexReader != null) { indexReader.close(); }
+      if (indexReader != null) {
+        indexReader.close();
+      }
     }
   }
 
@@ -136,9 +139,10 @@ public class TestLuceneDictionary extends LuceneTestCase {
       }
 
       assertTrue("Number of words incorrect", counter == 0);
-    }
-    finally {
-      if  (indexReader != null) { indexReader.close(); }
+    } finally {
+      if (indexReader != null) {
+        indexReader.close();
+      }
     }
   }
 
@@ -151,11 +155,12 @@ public class TestLuceneDictionary extends LuceneTestCase {
 
       // just iterate through words
       assertEquals("First element isn't correct", "Jerry", it.next().utf8ToString());
-      assertEquals("Second element isn't correct",  "Tom", it.next().utf8ToString());
+      assertEquals("Second element isn't correct", "Tom", it.next().utf8ToString());
       assertNull("Nonexistent element is really null", it.next());
-    }
-    finally {
-      if  (indexReader != null) { indexReader.close(); }
+    } finally {
+      if (indexReader != null) {
+        indexReader.close();
+      }
     }
   }
 
@@ -169,17 +174,19 @@ public class TestLuceneDictionary extends LuceneTestCase {
       assertNotNull("First element doesn't exist.", spare = it.next());
       assertEquals("First element isn't correct", "bar", spare.utf8ToString());
       assertNull("More elements than expected", it.next());
-    }
-    finally {
-      if  (indexReader != null) { indexReader.close(); }
+    } finally {
+      if (indexReader != null) {
+        indexReader.close();
+      }
     }
   }
-  
+
   public void testSpellchecker() throws IOException {
     Directory dir = newDirectory();
     SpellChecker sc = new SpellChecker(dir);
     indexReader = DirectoryReader.open(store);
-    sc.indexDictionary(new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(null), false);
+    sc.indexDictionary(
+        new LuceneDictionary(indexReader, "contents"), newIndexWriterConfig(null), false);
     String[] suggestions = sc.suggestSimilar("Tam", 1);
     assertEquals(1, suggestions.length);
     assertEquals("Tom", suggestions[0]);
@@ -190,5 +197,4 @@ public class TestLuceneDictionary extends LuceneTestCase {
     sc.close();
     dir.close();
   }
-  
 }

@@ -30,5 +30,4 @@ public class TestCorePlusQueriesParser extends TestCoreParser {
     Query q = parse("LikeThisQuery.xml");
     dumpResults("like this", q, 5);
   }
-
 }

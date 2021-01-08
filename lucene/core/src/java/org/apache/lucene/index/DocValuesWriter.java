@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 
 abstract class DocValuesWriter<T extends DocIdSetIterator> {
-  abstract void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer consumer) throws IOException;
+  abstract void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer consumer)
+      throws IOException;
+
   abstract T getDocValues();
 }

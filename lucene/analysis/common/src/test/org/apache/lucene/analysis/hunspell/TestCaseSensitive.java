@@ -16,51 +16,50 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestCaseSensitive extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("casesensitive.aff", "casesensitive.dic");
   }
-  
+
   public void testAllPossibilities() {
-    assertStemsTo("drink",      "drink");
-    assertStemsTo("drinks",     "drink");
-    assertStemsTo("drinkS",     "drink");
+    assertStemsTo("drink", "drink");
+    assertStemsTo("drinks", "drink");
+    assertStemsTo("drinkS", "drink");
     assertStemsTo("gooddrinks", "drink");
     assertStemsTo("Gooddrinks", "drink", "drink");
     assertStemsTo("GOODdrinks", "drink");
     assertStemsTo("gooddrinkS", "drink");
     assertStemsTo("GooddrinkS", "drink");
-    assertStemsTo("gooddrink",  "drink");
-    assertStemsTo("Gooddrink",  "drink", "drink");
-    assertStemsTo("GOODdrink",  "drink");
-    assertStemsTo("Drink",      "drink", "Drink");
-    assertStemsTo("Drinks",     "drink", "Drink");
-    assertStemsTo("DrinkS",     "Drink");
+    assertStemsTo("gooddrink", "drink");
+    assertStemsTo("Gooddrink", "drink", "drink");
+    assertStemsTo("GOODdrink", "drink");
+    assertStemsTo("Drink", "drink", "Drink");
+    assertStemsTo("Drinks", "drink", "Drink");
+    assertStemsTo("DrinkS", "Drink");
     assertStemsTo("goodDrinks", "Drink");
     assertStemsTo("GoodDrinks", "Drink");
     assertStemsTo("GOODDrinks", "Drink");
     assertStemsTo("goodDrinkS", "Drink");
     assertStemsTo("GoodDrinkS", "Drink");
     assertStemsTo("GOODDrinkS", "Drink");
-    assertStemsTo("goodDrink",  "Drink");
-    assertStemsTo("GoodDrink",  "Drink");
-    assertStemsTo("GOODDrink",  "Drink");
-    assertStemsTo("DRINK",      "DRINK", "drink", "Drink");
-    assertStemsTo("DRINKs",     "DRINK");
-    assertStemsTo("DRINKS",     "DRINK", "drink", "Drink");
+    assertStemsTo("goodDrink", "Drink");
+    assertStemsTo("GoodDrink", "Drink");
+    assertStemsTo("GOODDrink", "Drink");
+    assertStemsTo("DRINK", "DRINK", "drink", "Drink");
+    assertStemsTo("DRINKs", "DRINK");
+    assertStemsTo("DRINKS", "DRINK", "drink", "Drink");
     assertStemsTo("goodDRINKs", "DRINK");
     assertStemsTo("GoodDRINKs", "DRINK");
     assertStemsTo("GOODDRINKs", "DRINK");
     assertStemsTo("goodDRINKS", "DRINK");
     assertStemsTo("GoodDRINKS", "DRINK");
     assertStemsTo("GOODDRINKS", "DRINK", "drink", "drink");
-    assertStemsTo("goodDRINK",  "DRINK");
-    assertStemsTo("GoodDRINK",  "DRINK");
-    assertStemsTo("GOODDRINK",  "DRINK", "drink", "drink");
+    assertStemsTo("goodDRINK", "DRINK");
+    assertStemsTo("GoodDRINK", "DRINK");
+    assertStemsTo("GOODDRINK", "DRINK", "drink", "drink");
   }
 }

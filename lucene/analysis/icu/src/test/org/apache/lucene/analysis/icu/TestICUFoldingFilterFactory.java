@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
@@ -30,36 +28,42 @@ public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {
   /** basic tests to ensure the folding is working */
   public void test() throws Exception {
     Reader reader = new StringReader("Résumé");
-    ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(new HashMap<String,String>());
+    ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(new HashMap<String, String>());
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "resume" });
+    assertTokenStreamContents(stream, new String[] {"resume"});
   }
 
   /** test to ensure the filter parameter is working */
   public void testFilter() throws Exception {
-    HashMap<String,String> args = new HashMap<String,String>();
+    HashMap<String, String> args = new HashMap<String, String>();
     args.put("filter", "[^ö]");
     ICUFoldingFilterFactory factory = new ICUFoldingFilterFactory(args);
 
     Reader reader = new StringReader("Résumé");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "resume" });
+    assertTokenStreamContents(stream, new String[] {"resume"});
 
     reader = new StringReader("Fönster");
     stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "fönster" });
+    assertTokenStreamContents(stream, new String[] {"fönster"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new ICUFoldingFilterFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new ICUFoldingFilterFactory(
+                  new HashMap<String, String>() {
+                    {
+                      put("bogusArg", "bogusValue");
+                    }
+                  });
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -16,35 +16,30 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Attribute;
 
 /**
- * This attribute can be used to mark a token as a keyword. Keyword aware
- * {@link TokenStream}s can decide to modify a token based on the return value
- * of {@link #isKeyword()} if the token is modified. Stemming filters for
- * instance can use this attribute to conditionally skip a term if
+ * This attribute can be used to mark a token as a keyword. Keyword aware {@link TokenStream}s can
+ * decide to modify a token based on the return value of {@link #isKeyword()} if the token is
+ * modified. Stemming filters for instance can use this attribute to conditionally skip a term if
  * {@link #isKeyword()} returns <code>true</code>.
  */
 public interface KeywordAttribute extends Attribute {
 
   /**
-   * Returns <code>true</code> if the current token is a keyword, otherwise
-   * <code>false</code>
-   * 
-   * @return <code>true</code> if the current token is a keyword, otherwise
-   *         <code>false</code>
+   * Returns <code>true</code> if the current token is a keyword, otherwise <code>false</code>
+   *
+   * @return <code>true</code> if the current token is a keyword, otherwise <code>false</code>
    * @see #setKeyword(boolean)
    */
   public boolean isKeyword();
 
   /**
    * Marks the current token as keyword if set to <code>true</code>.
-   * 
-   * @param isKeyword
-   *          <code>true</code> if the current token is a keyword, otherwise
-   *          <code>false</code>.
+   *
+   * @param isKeyword <code>true</code> if the current token is a keyword, otherwise <code>false
+   *     </code>.
    * @see #isKeyword()
    */
   public void setKeyword(boolean isKeyword);

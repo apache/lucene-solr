@@ -16,17 +16,14 @@
  */
 package org.apache.lucene.analysis.ja.util;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 
-/**
- * Utility class for english translations of morphological data,
- * used only for debugging.
- */
+/** Utility class for english translations of morphological data, used only for debugging. */
 public class ToStringUtil {
   // a translation map for parts of speech, only used for reflectWith
-  private static final HashMap<String,String> posTranslations = new HashMap<>();
+  private static final HashMap<String, String> posTranslations = new HashMap<>();
+
   static {
     posTranslations.put("名詞", "noun");
     posTranslations.put("名詞-一般", "noun-common");
@@ -118,21 +115,20 @@ public class ToStringUtil {
     posTranslations.put("語断片", "fragment");
     posTranslations.put("未知語", "unknown");
   }
-  
-  /**
-   * Get the english form of a POS tag
-   */
+
+  /** Get the english form of a POS tag */
   public static String getPOSTranslation(String s) {
     return posTranslations.get(s);
   }
-  
+
   // a translation map for inflection types, only used for reflectWith
-  private static final HashMap<String,String> inflTypeTranslations = new HashMap<>();
+  private static final HashMap<String, String> inflTypeTranslations = new HashMap<>();
+
   static {
     inflTypeTranslations.put("*", "*");
     inflTypeTranslations.put("形容詞・アウオ段", "adj-group-a-o-u");
     inflTypeTranslations.put("形容詞・イ段", "adj-group-i");
-    inflTypeTranslations.put("形容詞・イイ",  "adj-group-ii");
+    inflTypeTranslations.put("形容詞・イイ", "adj-group-ii");
     inflTypeTranslations.put("不変化型", "non-inflectional");
     inflTypeTranslations.put("特殊・タ", "special-da");
     inflTypeTranslations.put("特殊・ダ", "special-ta");
@@ -188,16 +184,15 @@ public class ToStringUtil {
     inflTypeTranslations.put("ラ変", "irregular-cons-r");
     inflTypeTranslations.put("下二・カ行", "2-row-lower-cons-k");
   }
-  
-  /**
-   * Get the english form of inflection type
-   */
+
+  /** Get the english form of inflection type */
   public static String getInflectionTypeTranslation(String s) {
     return inflTypeTranslations.get(s);
   }
 
   // a translation map for inflection forms, only used for reflectWith
-  private static final HashMap<String,String> inflFormTranslations = new HashMap<>();
+  private static final HashMap<String, String> inflFormTranslations = new HashMap<>();
+
   static {
     inflFormTranslations.put("*", "*");
     inflFormTranslations.put("基本形", "base");
@@ -228,17 +223,13 @@ public class ToStringUtil {
     inflFormTranslations.put("現代基本形", "modern-base");
     inflFormTranslations.put("基本形-促音便", "base-onbin"); // not sure about this
   }
-  
-  /**
-   * Get the english form of inflected form
-   */
+
+  /** Get the english form of inflected form */
   public static String getInflectedFormTranslation(String s) {
     return inflFormTranslations.get(s);
   }
-  
-  /**
-   * Romanize katakana with modified hepburn
-   */
+
+  /** Romanize katakana with modified hepburn */
   public static String getRomanization(String s) {
     StringBuilder out = new StringBuilder();
     try {
@@ -248,10 +239,8 @@ public class ToStringUtil {
     }
     return out.toString();
   }
-  
-  /**
-   * Romanize katakana with modified hepburn
-   */
+
+  /** Romanize katakana with modified hepburn */
   // TODO: now that this is used by readingsfilter and not just for
   // debugging, fix this to really be a scheme that works best with IMEs
   public static void getRomanization(Appendable builder, CharSequence s) throws IOException {
@@ -261,8 +250,9 @@ public class ToStringUtil {
       char ch = s.charAt(i);
       char ch2 = (i < len - 1) ? s.charAt(i + 1) : 0;
       char ch3 = (i < len - 2) ? s.charAt(i + 2) : 0;
-      
-      main: switch (ch) {
+
+      main:
+      switch (ch) {
         case 'ッ':
           switch (ch2) {
             case 'カ':
@@ -310,7 +300,7 @@ public class ToStringUtil {
           }
           break;
         case 'ウ':
-          switch(ch2) {
+          switch (ch2) {
             case 'ァ':
               builder.append("wa");
               i++;
@@ -378,7 +368,7 @@ public class ToStringUtil {
           }
           break;
         case 'ク':
-          switch(ch2) {
+          switch (ch2) {
             case 'ァ':
               builder.append("kwa");
               i++;
@@ -606,7 +596,7 @@ public class ToStringUtil {
             i++;
           } else if (ch2 == 'ィ' && ch3 == 'ェ') {
             builder.append("fye");
-            i+=2;
+            i += 2;
           } else if (ch2 == 'ョ') {
             builder.append("fyo");
             i++;
@@ -827,7 +817,7 @@ public class ToStringUtil {
           }
           break;
         case 'グ':
-          switch(ch2) {
+          switch (ch2) {
             case 'ァ':
               builder.append("gwa");
               i++;
@@ -1056,7 +1046,7 @@ public class ToStringUtil {
         case 'ヴ':
           if (ch2 == 'ィ' && ch3 == 'ェ') {
             builder.append("vye");
-            i+= 2;
+            i += 2;
           } else {
             builder.append('v');
           }

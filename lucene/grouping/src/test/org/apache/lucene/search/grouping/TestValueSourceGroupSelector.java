@@ -18,7 +18,6 @@
 package org.apache.lucene.search.grouping;
 
 import java.util.HashMap;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;

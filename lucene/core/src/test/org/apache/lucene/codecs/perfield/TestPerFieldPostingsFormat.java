@@ -16,17 +16,13 @@
  */
 package org.apache.lucene.codecs.perfield;
 
-
 import java.util.Collections;
 import java.util.Random;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.index.RandomCodec;
 
-/**
- * Basic tests of PerFieldPostingsFormat
- */
+/** Basic tests of PerFieldPostingsFormat */
 public class TestPerFieldPostingsFormat extends BasePostingsFormatTestCase {
 
   @Override

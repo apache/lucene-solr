@@ -16,14 +16,13 @@
  */
 
 /**
- * Fast, general-purpose grammar-based tokenizers.
- * {@link org.apache.lucene.analysis.classic.ClassicTokenizer ClassicTokenizer}:
- *          this class was formerly (prior to Lucene 3.1) named
- *          <code>StandardTokenizer</code>.  (Its tokenization rules are not
- *          based on the Unicode Text Segmentation algorithm.)
- *          {@link org.apache.lucene.analysis.classic.ClassicAnalyzer ClassicAnalyzer} includes
- *          {@link org.apache.lucene.analysis.classic.ClassicTokenizer ClassicTokenizer},
- *          {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
- *          and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
+ * Fast, general-purpose grammar-based tokenizers. {@link
+ * org.apache.lucene.analysis.classic.ClassicTokenizer ClassicTokenizer}: this class was formerly
+ * (prior to Lucene 3.1) named <code>StandardTokenizer</code>. (Its tokenization rules are not based
+ * on the Unicode Text Segmentation algorithm.) {@link
+ * org.apache.lucene.analysis.classic.ClassicAnalyzer ClassicAnalyzer} includes {@link
+ * org.apache.lucene.analysis.classic.ClassicTokenizer ClassicTokenizer}, {@link
+ * org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter} and {@link
+ * org.apache.lucene.analysis.StopFilter StopFilter}.
  */
 package org.apache.lucene.analysis.classic;

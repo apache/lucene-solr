@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
@@ -32,18 +31,14 @@ import org.apache.lucene.util.BytesRef;
 /**
  * Serializes and deserializes MonitorQuery objects into byte streams
  *
- * Use this for persistent query indexes
+ * <p>Use this for persistent query indexes
  */
 public interface MonitorQuerySerializer {
 
-  /**
-   * Builds a MonitorQuery from a byte representation
-   */
+  /** Builds a MonitorQuery from a byte representation */
   MonitorQuery deserialize(BytesRef binaryValue);
 
-  /**
-   * Converts a MonitorQuery into a byte representation
-   */
+  /** Converts a MonitorQuery into a byte representation */
   BytesRef serialize(MonitorQuery query);
 
   /**
@@ -55,7 +50,8 @@ public interface MonitorQuerySerializer {
     return new MonitorQuerySerializer() {
       @Override
       public MonitorQuery deserialize(BytesRef binaryValue) {
-        ByteArrayInputStream is = new ByteArrayInputStream(binaryValue.bytes, binaryValue.offset, binaryValue.length);
+        ByteArrayInputStream is =
+            new ByteArrayInputStream(binaryValue.bytes, binaryValue.offset, binaryValue.length);
         try (InputStreamDataInput data = new InputStreamDataInput(is)) {
           String id = data.readString();
           String query = data.readString();
@@ -65,7 +61,7 @@ public interface MonitorQuerySerializer {
           }
           return new MonitorQuery(id, parser.apply(query), query, metadata);
         } catch (IOException e) {
-          throw new RuntimeException(e);  // shouldn't happen, we're reading from a bytearray!
+          throw new RuntimeException(e); // shouldn't happen, we're reading from a bytearray!
         }
       }
 
@@ -81,12 +77,10 @@ public interface MonitorQuerySerializer {
             data.writeString(entry.getValue());
           }
           return new BytesRef(os.toByteArray());
-        }
-        catch (IOException e) {
-          throw new RuntimeException(e);  // All in memory, so no IOException should be thrown
+        } catch (IOException e) {
+          throw new RuntimeException(e); // All in memory, so no IOException should be thrown
         }
       }
     };
   }
-
 }

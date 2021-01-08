@@ -16,30 +16,22 @@
  */
 package org.apache.lucene.analysis.hi;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Hindi filter Factories are working.
- */
+/** Simple tests to ensure the Hindi filter Factories are working. */
 public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Test IndicNormalizationFilterFactory
-   */
+  /** Test IndicNormalizationFilterFactory */
   public void testIndicNormalizer() throws Exception {
     Reader reader = new StringReader("ত্‍ अाैर");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("IndicNormalization").create(stream);
-    assertTokenStreamContents(stream, new String[] { "ৎ", "और" });
+    assertTokenStreamContents(stream, new String[] {"ৎ", "और"});
   }
-  
-  /**
-   * Test HindiNormalizationFilterFactory
-   */
+
+  /** Test HindiNormalizationFilterFactory */
   public void testHindiNormalizer() throws Exception {
     Reader reader = new StringReader("क़िताब");
     TokenStream stream = whitespaceMockTokenizer(reader);
@@ -47,10 +39,8 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
     stream = tokenFilterFactory("HindiNormalization").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
   }
-  
-  /**
-   * Test HindiStemFilterFactory
-   */
+
+  /** Test HindiStemFilterFactory */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("किताबें");
     TokenStream stream = whitespaceMockTokenizer(reader);
@@ -59,22 +49,31 @@ public class TestHindiFilters extends BaseTokenStreamFactoryTestCase {
     stream = tokenFilterFactory("HindiStem").create(stream);
     assertTokenStreamContents(stream, new String[] {"किताब"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("IndicNormalization", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("IndicNormalization", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("HindiNormalization", "bogusArg", "bogusValue");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("HindiNormalization", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("HindiStem", "bogusArg", "bogusValue");
-    });
+
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("HindiStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -41,7 +41,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntToLongFunction;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -99,7 +98,7 @@ public class RandomPostingsTester {
   private long totalPayloadBytes;
 
   // Holds all postings:
-  private Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
+  private Map<String, SortedMap<BytesRef, SeedAndOrd>> fields;
 
   private FieldInfos fieldInfos;
 
@@ -127,13 +126,26 @@ public class RandomPostingsTester {
         continue;
       }
 
-      fieldInfoArray[fieldUpto] = new FieldInfo(field, fieldUpto, false, false, true,
-                                                IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
-                                                DocValuesType.NONE, -1, new HashMap<>(),
-                                                0, 0, 0, 0, VectorValues.SearchStrategy.NONE, false);
+      fieldInfoArray[fieldUpto] =
+          new FieldInfo(
+              field,
+              fieldUpto,
+              false,
+              false,
+              true,
+              IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
+              DocValuesType.NONE,
+              -1,
+              new HashMap<>(),
+              0,
+              0,
+              0,
+              0,
+              VectorValues.SearchStrategy.NONE,
+              false);
       fieldUpto++;
 
-      SortedMap<BytesRef,SeedAndOrd> postings = new TreeMap<>();
+      SortedMap<BytesRef, SeedAndOrd> postings = new TreeMap<>();
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<>();
 
@@ -146,7 +158,8 @@ public class RandomPostingsTester {
 
       while (postings.size() < numTerms) {
         int termUpto = postings.size();
-        // Cannot contain surrogates else default Java string sort order (by UTF16 code unit) is different from Lucene:
+        // Cannot contain surrogates else default Java string sort order (by UTF16 code unit) is
+        // different from Lucene:
         String term = TestUtil.randomSimpleString(random);
         if (seenTerms.contains(term)) {
           continue;
@@ -175,7 +188,7 @@ public class RandomPostingsTester {
         PostingsEnum postingsEnum = getSeedPostings(term, termSeed, IndexOptions.DOCS, true);
         int doc;
         int lastDoc = 0;
-        while((doc = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
+        while ((doc = postingsEnum.nextDoc()) != PostingsEnum.NO_MORE_DOCS) {
           lastDoc = doc;
         }
         maxDoc = Math.max(lastDoc, maxDoc);
@@ -183,7 +196,7 @@ public class RandomPostingsTester {
 
       // assign ords
       long ord = 0;
-      for(SeedAndOrd ent : postings.values()) {
+      for (SeedAndOrd ent : postings.values()) {
         ent.ord = ord++;
       }
     }
@@ -194,20 +207,26 @@ public class RandomPostingsTester {
     maxDoc++;
 
     allTerms = new ArrayList<>();
-    for(Map.Entry<String,SortedMap<BytesRef,SeedAndOrd>> fieldEnt : fields.entrySet()) {
+    for (Map.Entry<String, SortedMap<BytesRef, SeedAndOrd>> fieldEnt : fields.entrySet()) {
       String field = fieldEnt.getKey();
       long ord = 0;
-      for(Map.Entry<BytesRef,SeedAndOrd> termEnt : fieldEnt.getValue().entrySet()) {
+      for (Map.Entry<BytesRef, SeedAndOrd> termEnt : fieldEnt.getValue().entrySet()) {
         allTerms.add(new FieldAndTerm(field, termEnt.getKey(), ord++));
       }
     }
 
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("TEST: done init postings; " + allTerms.size() + " total terms, across " + fieldInfos.size() + " fields");
+      System.out.println(
+          "TEST: done init postings; "
+              + allTerms.size()
+              + " total terms, across "
+              + fieldInfos.size()
+              + " fields");
     }
   }
 
-  public static SeedPostings getSeedPostings(String term, long seed, IndexOptions options, boolean allowPayloads) {
+  public static SeedPostings getSeedPostings(
+      String term, long seed, IndexOptions options, boolean allowPayloads) {
     int minDocFreq, maxDocFreq;
     if (term.startsWith("big_")) {
       minDocFreq = LuceneTestCase.RANDOM_MULTIPLIER * 50000;
@@ -226,8 +245,7 @@ public class RandomPostingsTester {
     return new SeedPostings(seed, minDocFreq, maxDocFreq, options, allowPayloads);
   }
 
-  /** Given the same random seed this always enumerates the
-   *  same random postings */
+  /** Given the same random seed this always enumerates the same random postings */
   public static class SeedPostings extends PostingsEnum {
     // Used only to generate docIDs; this way if you pull w/
     // or w/o positions you get the same docID sequence:
@@ -252,7 +270,8 @@ public class RandomPostingsTester {
     private int posSpacing;
     private int posUpto;
 
-    public SeedPostings(long seed, int minDocFreq, int maxDocFreq, IndexOptions options, boolean allowPayloads) {
+    public SeedPostings(
+        long seed, int minDocFreq, int maxDocFreq, IndexOptions options, boolean allowPayloads) {
       random = new Random(seed);
       docRandom = new Random(random.nextLong());
       docFreq = TestUtil.nextInt(random, minDocFreq, maxDocFreq);
@@ -276,7 +295,7 @@ public class RandomPostingsTester {
 
     @Override
     public int nextDoc() {
-      while(true) {
+      while (true) {
         _nextDoc();
         return docID;
       }
@@ -287,7 +306,7 @@ public class RandomPostingsTester {
         docID = 0;
       }
       // Must consume random:
-      while(posUpto < freq) {
+      while (posUpto < freq) {
         nextPosition();
       }
 
@@ -338,7 +357,7 @@ public class RandomPostingsTester {
         return -1;
       }
       assert posUpto < freq;
-      
+
       if (posUpto == 0 && random.nextBoolean()) {
         // Sometimes index pos = 0
       } else if (posSpacing == 1) {
@@ -350,16 +369,16 @@ public class RandomPostingsTester {
       if (payloadSize != 0) {
         if (fixedPayloads) {
           payload.length = payloadSize;
-          random.nextBytes(payload.bytes); 
+          random.nextBytes(payload.bytes);
         } else {
           int thisPayloadSize = random.nextInt(payloadSize);
           if (thisPayloadSize != 0) {
             payload.length = payloadSize;
-            random.nextBytes(payload.bytes); 
+            random.nextBytes(payload.bytes);
           } else {
             payload.length = 0;
           }
-        } 
+        }
       } else {
         payload.length = 0;
       }
@@ -394,11 +413,11 @@ public class RandomPostingsTester {
     public int advance(int target) throws IOException {
       return slowAdvance(target);
     }
-    
+
     @Override
     public long cost() {
       return docFreq;
-    } 
+    }
   }
 
   /** Holds one field, term and ord. */
@@ -424,12 +443,16 @@ public class RandomPostingsTester {
   }
 
   private static class SeedFields extends Fields {
-    final Map<String,SortedMap<BytesRef,SeedAndOrd>> fields;
+    final Map<String, SortedMap<BytesRef, SeedAndOrd>> fields;
     final FieldInfos fieldInfos;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    public SeedFields(Map<String,SortedMap<BytesRef,SeedAndOrd>> fields, FieldInfos fieldInfos, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedFields(
+        Map<String, SortedMap<BytesRef, SeedAndOrd>> fields,
+        FieldInfos fieldInfos,
+        IndexOptions maxAllowed,
+        boolean allowPayloads) {
       this.fields = fields;
       this.fieldInfos = fieldInfos;
       this.maxAllowed = maxAllowed;
@@ -443,7 +466,7 @@ public class RandomPostingsTester {
 
     @Override
     public Terms terms(String field) {
-      SortedMap<BytesRef,SeedAndOrd> terms = fields.get(field);
+      SortedMap<BytesRef, SeedAndOrd> terms = fields.get(field);
       if (terms == null) {
         return null;
       } else {
@@ -458,12 +481,16 @@ public class RandomPostingsTester {
   }
 
   private static class SeedTerms extends Terms {
-    final SortedMap<BytesRef,SeedAndOrd> terms;
+    final SortedMap<BytesRef, SeedAndOrd> terms;
     final FieldInfo fieldInfo;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    public SeedTerms(SortedMap<BytesRef,SeedAndOrd> terms, FieldInfo fieldInfo, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedTerms(
+        SortedMap<BytesRef, SeedAndOrd> terms,
+        FieldInfo fieldInfo,
+        IndexOptions maxAllowed,
+        boolean allowPayloads) {
       this.terms = terms;
       this.fieldInfo = fieldInfo;
       this.maxAllowed = maxAllowed;
@@ -505,14 +532,17 @@ public class RandomPostingsTester {
 
     @Override
     public boolean hasOffsets() {
-      return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+      return fieldInfo
+              .getIndexOptions()
+              .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+          >= 0;
     }
-  
+
     @Override
     public boolean hasPositions() {
       return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     }
-  
+
     @Override
     public boolean hasPayloads() {
       return allowPayloads && fieldInfo.hasPayloads();
@@ -520,15 +550,16 @@ public class RandomPostingsTester {
   }
 
   private static class SeedTermsEnum extends BaseTermsEnum {
-    final SortedMap<BytesRef,SeedAndOrd> terms;
+    final SortedMap<BytesRef, SeedAndOrd> terms;
     final IndexOptions maxAllowed;
     final boolean allowPayloads;
 
-    private Iterator<Map.Entry<BytesRef,SeedAndOrd>> iterator;
+    private Iterator<Map.Entry<BytesRef, SeedAndOrd>> iterator;
 
-    private Map.Entry<BytesRef,SeedAndOrd> current;
+    private Map.Entry<BytesRef, SeedAndOrd> current;
 
-    public SeedTermsEnum(SortedMap<BytesRef,SeedAndOrd> terms, IndexOptions maxAllowed, boolean allowPayloads) {
+    public SeedTermsEnum(
+        SortedMap<BytesRef, SeedAndOrd> terms, IndexOptions maxAllowed, boolean allowPayloads) {
       this.terms = terms;
       this.maxAllowed = maxAllowed;
       this.allowPayloads = allowPayloads;
@@ -540,7 +571,7 @@ public class RandomPostingsTester {
 
     @Override
     public SeekStatus seekCeil(BytesRef text) {
-      SortedMap<BytesRef,SeedAndOrd> tailMap = terms.tailMap(text);
+      SortedMap<BytesRef, SeedAndOrd> tailMap = terms.tailMap(text);
       if (tailMap.isEmpty()) {
         return SeekStatus.END;
       } else {
@@ -595,17 +626,20 @@ public class RandomPostingsTester {
         if (maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
           return null;
         }
-        if (PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS) && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+        if (PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS)
+            && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
           return null;
         }
         if (PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS) && allowPayloads == false) {
           return null;
         }
       }
-      if (PostingsEnum.featureRequested(flags, PostingsEnum.FREQS) && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
+      if (PostingsEnum.featureRequested(flags, PostingsEnum.FREQS)
+          && maxAllowed.compareTo(IndexOptions.DOCS_AND_FREQS) < 0) {
         return null;
       }
-      return getSeedPostings(current.getKey().utf8ToString(), current.getValue().seed, maxAllowed, allowPayloads);
+      return getSeedPostings(
+          current.getKey().utf8ToString(), current.getValue().seed, maxAllowed, allowPayloads);
     }
 
     @Override
@@ -623,8 +657,26 @@ public class RandomPostingsTester {
 
   // maxAllowed = the "highest" we can index, but we will still
   // randomly index at lower IndexOption
-  public FieldsProducer buildIndex(Codec codec, Directory dir, IndexOptions maxAllowed, boolean allowPayloads, boolean alwaysTestMax) throws IOException {
-    SegmentInfo segmentInfo = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "_0", maxDoc, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
+  public FieldsProducer buildIndex(
+      Codec codec,
+      Directory dir,
+      IndexOptions maxAllowed,
+      boolean allowPayloads,
+      boolean alwaysTestMax)
+      throws IOException {
+    SegmentInfo segmentInfo =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "_0",
+            maxDoc,
+            false,
+            codec,
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            new HashMap<>(),
+            null);
 
     int maxIndexOption = Arrays.asList(IndexOptions.values()).indexOf(maxAllowed);
     if (LuceneTestCase.VERBOSE) {
@@ -634,98 +686,114 @@ public class RandomPostingsTester {
     // TODO use allowPayloads
 
     FieldInfo[] newFieldInfoArray = new FieldInfo[fields.size()];
-    for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
+    for (int fieldUpto = 0; fieldUpto < fields.size(); fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
-    
+
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? maxIndexOption : TestUtil.nextInt(random, 1, maxIndexOption)];
-      boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
+      IndexOptions indexOptions =
+          IndexOptions.values()[
+              alwaysTestMax ? maxIndexOption : TestUtil.nextInt(random, 1, maxIndexOption)];
+      boolean doPayloads =
+          indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
-      newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
-                                                   fieldUpto,
-                                                   false,
-                                                   false,
-                                                   doPayloads,
-                                                   indexOptions,
-                                                   DocValuesType.NONE,
-                                                   -1,
-                                                   new HashMap<>(),
-                                                   0, 0, 0, 0, VectorValues.SearchStrategy.NONE, false);
+      newFieldInfoArray[fieldUpto] =
+          new FieldInfo(
+              oldFieldInfo.name,
+              fieldUpto,
+              false,
+              false,
+              doPayloads,
+              indexOptions,
+              DocValuesType.NONE,
+              -1,
+              new HashMap<>(),
+              0,
+              0,
+              0,
+              0,
+              VectorValues.SearchStrategy.NONE,
+              false);
     }
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);
 
     // Estimate that flushed segment size will be 25% of
     // what we use in RAM:
-    long bytes =  totalPostings * 8 + totalPayloadBytes;
+    long bytes = totalPostings * 8 + totalPayloadBytes;
 
-    SegmentWriteState writeState = new SegmentWriteState(null, dir,
-                                                         segmentInfo, newFieldInfos,
-                                                         null, new IOContext(new FlushInfo(maxDoc, bytes)));
+    SegmentWriteState writeState =
+        new SegmentWriteState(
+            null,
+            dir,
+            segmentInfo,
+            newFieldInfos,
+            null,
+            new IOContext(new FlushInfo(maxDoc, bytes)));
 
     Fields seedFields = new SeedFields(fields, newFieldInfos, maxAllowed, allowPayloads);
 
-    NormsProducer fakeNorms = new NormsProducer() {
+    NormsProducer fakeNorms =
+        new NormsProducer() {
 
-      @Override
-      public void close() throws IOException {}
+          @Override
+          public void close() throws IOException {}
 
-      @Override
-      public long ramBytesUsed() {
-        return 0;
-      }
+          @Override
+          public long ramBytesUsed() {
+            return 0;
+          }
 
-      @Override
-      public NumericDocValues getNorms(FieldInfo field) throws IOException {
-        if (newFieldInfos.fieldInfo(field.number).hasNorms()) {
-          return new NumericDocValues() {
-            
-            int doc = -1;
-            
-            @Override
-            public int nextDoc() throws IOException {
-              if (++doc == segmentInfo.maxDoc()) {
-                return doc = NO_MORE_DOCS;
-              }
-              return doc;
-            }
-            
-            @Override
-            public int docID() {
-              return doc;
-            }
-            
-            @Override
-            public long cost() {
-              return segmentInfo.maxDoc();
-            }
-            
-            @Override
-            public int advance(int target) throws IOException {
-              return doc = target >= segmentInfo.maxDoc() ? DocIdSetIterator.NO_MORE_DOCS : target;
-            }
-            
-            @Override
-            public boolean advanceExact(int target) throws IOException {
-              doc = target;
-              return true;
-            }
-            
-            @Override
-            public long longValue() throws IOException {
-              return DOC_TO_NORM.applyAsLong(doc);
-            }
-          };
-        } else {
-          return null;
-        }
-      }
+          @Override
+          public NumericDocValues getNorms(FieldInfo field) throws IOException {
+            if (newFieldInfos.fieldInfo(field.number).hasNorms()) {
+              return new NumericDocValues() {
 
-      @Override
-      public void checkIntegrity() throws IOException {}
-      
-    };
+                int doc = -1;
+
+                @Override
+                public int nextDoc() throws IOException {
+                  if (++doc == segmentInfo.maxDoc()) {
+                    return doc = NO_MORE_DOCS;
+                  }
+                  return doc;
+                }
+
+                @Override
+                public int docID() {
+                  return doc;
+                }
+
+                @Override
+                public long cost() {
+                  return segmentInfo.maxDoc();
+                }
+
+                @Override
+                public int advance(int target) throws IOException {
+                  return doc =
+                      target >= segmentInfo.maxDoc() ? DocIdSetIterator.NO_MORE_DOCS : target;
+                }
+
+                @Override
+                public boolean advanceExact(int target) throws IOException {
+                  doc = target;
+                  return true;
+                }
+
+                @Override
+                public long longValue() throws IOException {
+                  return DOC_TO_NORM.applyAsLong(doc);
+                }
+              };
+            } else {
+              return null;
+            }
+          }
+
+          @Override
+          public void checkIntegrity() throws IOException {}
+        };
     FieldsConsumer consumer = codec.postingsFormat().fieldsConsumer(writeState);
     boolean success = false;
     try {
@@ -741,32 +809,33 @@ public class RandomPostingsTester {
 
     if (LuceneTestCase.VERBOSE) {
       System.out.println("TEST: after indexing: files=");
-      for(String file : dir.listAll()) {
+      for (String file : dir.listAll()) {
         System.out.println("  " + file + ": " + dir.fileLength(file) + " bytes");
       }
     }
 
     currentFieldInfos = newFieldInfos;
 
-    SegmentReadState readState = new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
+    SegmentReadState readState =
+        new SegmentReadState(dir, segmentInfo, newFieldInfos, IOContext.READ);
 
     return codec.postingsFormat().fieldsProducer(readState);
   }
 
-  private void verifyEnum(Random random,
-                          ThreadState threadState,
-                          String field,
-                          BytesRef term,
-                          TermsEnum termsEnum,
+  private void verifyEnum(
+      Random random,
+      ThreadState threadState,
+      String field,
+      BytesRef term,
+      TermsEnum termsEnum,
 
-                          // Maximum options (docs/freqs/positions/offsets) to test:
-                          IndexOptions maxTestOptions,
+      // Maximum options (docs/freqs/positions/offsets) to test:
+      IndexOptions maxTestOptions,
+      IndexOptions maxIndexOptions,
+      EnumSet<Option> options,
+      boolean alwaysTestMax)
+      throws IOException {
 
-                          IndexOptions maxIndexOptions,
-
-                          EnumSet<Option> options,
-                          boolean alwaysTestMax) throws IOException {
-        
     if (LuceneTestCase.VERBOSE) {
       System.out.println("  verifyEnum: options=" + options + " maxTestOptions=" + maxTestOptions);
     }
@@ -778,25 +847,32 @@ public class RandomPostingsTester {
     FieldInfo fieldInfo = currentFieldInfos.fieldInfo(field);
 
     // NOTE: can be empty list if we are using liveDocs:
-    SeedPostings expected = getSeedPostings(term.utf8ToString(), 
-                                            fields.get(field).get(term).seed,
-                                            maxIndexOptions,
-                                            true);
+    SeedPostings expected =
+        getSeedPostings(
+            term.utf8ToString(), fields.get(field).get(term).seed, maxIndexOptions, true);
     assertEquals(expected.docFreq, termsEnum.docFreq());
 
-    boolean allowFreqs = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0 &&
-      maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
+    boolean allowFreqs =
+        fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0
+            && maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
     boolean doCheckFreqs = allowFreqs && (alwaysTestMax || random.nextInt(3) <= 2);
 
-    boolean allowPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 &&
-      maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
+    boolean allowPositions =
+        fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0
+            && maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
     boolean doCheckPositions = allowPositions && (alwaysTestMax || random.nextInt(3) <= 2);
 
-    boolean allowOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0 &&
-      maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    boolean allowOffsets =
+        fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+                >= 0
+            && maxTestOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
     boolean doCheckOffsets = allowOffsets && (alwaysTestMax || random.nextInt(3) <= 2);
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && (alwaysTestMax || random.nextInt(3) <= 2);
+    boolean doCheckPayloads =
+        options.contains(Option.PAYLOADS)
+            && allowPositions
+            && fieldInfo.hasPayloads()
+            && (alwaysTestMax || random.nextInt(3) <= 2);
 
     PostingsEnum prevPostingsEnum = null;
 
@@ -805,7 +881,7 @@ public class RandomPostingsTester {
     if (!doCheckPositions) {
       if (allowPositions && random.nextInt(10) == 7) {
         // 10% of the time, even though we will not check positions, pull a DocsAndPositions enum
-        
+
         if (options.contains(Option.REUSE_ENUMS) && random.nextInt(10) < 9) {
           prevPostingsEnum = threadState.reusePostingsEnum;
         }
@@ -831,7 +907,9 @@ public class RandomPostingsTester {
         if (options.contains(Option.REUSE_ENUMS) && random.nextInt(10) < 9) {
           prevPostingsEnum = threadState.reusePostingsEnum;
         }
-        threadState.reusePostingsEnum = termsEnum.postings(prevPostingsEnum, doCheckFreqs ? PostingsEnum.FREQS : PostingsEnum.NONE);
+        threadState.reusePostingsEnum =
+            termsEnum.postings(
+                prevPostingsEnum, doCheckFreqs ? PostingsEnum.FREQS : PostingsEnum.NONE);
         postingsEnum = threadState.reusePostingsEnum;
       }
     } else {
@@ -843,7 +921,7 @@ public class RandomPostingsTester {
       if (alwaysTestMax || doCheckOffsets || random.nextInt(3) == 1) {
         flags |= PostingsEnum.OFFSETS;
       }
-      if (alwaysTestMax || doCheckPayloads|| random.nextInt(3) == 1) {
+      if (alwaysTestMax || doCheckPayloads || random.nextInt(3) == 1) {
         flags |= PostingsEnum.PAYLOADS;
       }
 
@@ -865,16 +943,21 @@ public class RandomPostingsTester {
       } else if (prevPostingsEnum == postingsEnum) {
         System.out.println("  got reuse enum=" + postingsEnum);
       } else {
-        System.out.println("  got enum=" + postingsEnum + " (reuse of " + prevPostingsEnum + " failed)");
+        System.out.println(
+            "  got enum=" + postingsEnum + " (reuse of " + prevPostingsEnum + " failed)");
       }
     }
 
     // 10% of the time don't consume all docs:
     int stopAt;
-    if (!alwaysTestMax && options.contains(Option.PARTIAL_DOC_CONSUME) && expected.docFreq > 1 && random.nextInt(10) == 7) {
-      stopAt = random.nextInt(expected.docFreq-1);
+    if (!alwaysTestMax
+        && options.contains(Option.PARTIAL_DOC_CONSUME)
+        && expected.docFreq > 1
+        && random.nextInt(10) == 7) {
+      stopAt = random.nextInt(expected.docFreq - 1);
       if (LuceneTestCase.VERBOSE) {
-        System.out.println("  will not consume all docs (" + stopAt + " vs " + expected.docFreq + ")");
+        System.out.println(
+            "  will not consume all docs (" + stopAt + " vs " + expected.docFreq + ")");
       }
     } else {
       stopAt = expected.docFreq;
@@ -884,9 +967,10 @@ public class RandomPostingsTester {
     }
 
     double skipChance = alwaysTestMax ? 0.5 : random.nextDouble();
-    int numSkips = expected.docFreq < 3 ? 1 : TestUtil.nextInt(random, 1, Math.min(20, expected.docFreq / 3));
-    int skipInc = expected.docFreq/numSkips;
-    int skipDocInc = maxDoc/numSkips;
+    int numSkips =
+        expected.docFreq < 3 ? 1 : TestUtil.nextInt(random, 1, Math.min(20, expected.docFreq / 3));
+    int skipInc = expected.docFreq / numSkips;
+    int skipDocInc = maxDoc / numSkips;
 
     // Sometimes do 100% skipping:
     boolean doAllSkipping = options.contains(Option.SKIPPING) && random.nextInt(7) == 1;
@@ -915,20 +999,27 @@ public class RandomPostingsTester {
     while (expected.upto <= stopAt) {
       if (expected.upto == stopAt) {
         if (stopAt == expected.docFreq) {
-          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.nextDoc());
+          assertEquals(
+              "DocsEnum should have ended but didn't",
+              PostingsEnum.NO_MORE_DOCS,
+              postingsEnum.nextDoc());
 
           // Common bug is to forget to set this.doc=NO_MORE_DOCS in the enum!:
-          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.docID());
+          assertEquals(
+              "DocsEnum should have ended but didn't",
+              PostingsEnum.NO_MORE_DOCS,
+              postingsEnum.docID());
         }
         break;
       }
 
-      if (options.contains(Option.SKIPPING) && (doAllSkipping || random.nextDouble() <= skipChance)) {
+      if (options.contains(Option.SKIPPING)
+          && (doAllSkipping || random.nextDouble() <= skipChance)) {
         int targetDocID = -1;
         if (expected.upto < stopAt && random.nextBoolean()) {
           // Pick target we know exists:
           final int skipCount = TestUtil.nextInt(random, 1, skipInc);
-          for(int skip=0;skip<skipCount;skip++) {
+          for (int skip = 0; skip < skipCount; skip++) {
             if (expected.nextDoc() == PostingsEnum.NO_MORE_DOCS) {
               break;
             }
@@ -947,14 +1038,33 @@ public class RandomPostingsTester {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("  now advance to end (target=" + target + ")");
           }
-          assertEquals("DocsEnum should have ended but didn't", PostingsEnum.NO_MORE_DOCS, postingsEnum.advance(target));
+          assertEquals(
+              "DocsEnum should have ended but didn't",
+              PostingsEnum.NO_MORE_DOCS,
+              postingsEnum.advance(target));
           break;
         } else {
           if (LuceneTestCase.VERBOSE) {
             if (targetDocID != -1) {
-              System.out.println("  now advance to random target=" + targetDocID + " (" + expected.upto + " of " + stopAt + ") current=" + postingsEnum.docID());
+              System.out.println(
+                  "  now advance to random target="
+                      + targetDocID
+                      + " ("
+                      + expected.upto
+                      + " of "
+                      + stopAt
+                      + ") current="
+                      + postingsEnum.docID());
             } else {
-              System.out.println("  now advance to known-exists target=" + expected.docID() + " (" + expected.upto + " of " + stopAt + ") current=" + postingsEnum.docID());
+              System.out.println(
+                  "  now advance to known-exists target="
+                      + expected.docID()
+                      + " ("
+                      + expected.upto
+                      + " of "
+                      + stopAt
+                      + ") current="
+                      + postingsEnum.docID());
             }
           }
           int docID = postingsEnum.advance(targetDocID != -1 ? targetDocID : expected.docID());
@@ -963,7 +1073,14 @@ public class RandomPostingsTester {
       } else {
         expected.nextDoc();
         if (LuceneTestCase.VERBOSE) {
-          System.out.println("  now nextDoc to " + expected.docID() + " (" + expected.upto + " of " + stopAt + ")");
+          System.out.println(
+              "  now nextDoc to "
+                  + expected.docID()
+                  + " ("
+                  + expected.upto
+                  + " of "
+                  + stopAt
+                  + ")");
         }
         int docID = postingsEnum.nextDoc();
         assertEquals("docID is wrong", expected.docID(), docID);
@@ -983,13 +1100,15 @@ public class RandomPostingsTester {
       if (doCheckPositions) {
         int freq = postingsEnum.freq();
         int numPosToConsume;
-        if (!alwaysTestMax && options.contains(Option.PARTIAL_POS_CONSUME) && random.nextInt(5) == 1) {
+        if (!alwaysTestMax
+            && options.contains(Option.PARTIAL_POS_CONSUME)
+            && random.nextInt(5) == 1) {
           numPosToConsume = random.nextInt(freq);
         } else {
           numPosToConsume = freq;
         }
 
-        for(int i=0;i<numPosToConsume;i++) {
+        for (int i = 0; i < numPosToConsume; i++) {
           int pos = expected.nextPosition();
           if (LuceneTestCase.VERBOSE) {
             System.out.println("    now nextPosition to " + pos);
@@ -1000,7 +1119,9 @@ public class RandomPostingsTester {
             BytesRef expectedPayload = expected.getPayload();
             if (random.nextDouble() <= payloadCheckChance) {
               if (LuceneTestCase.VERBOSE) {
-                System.out.println("      now check expectedPayload length=" + (expectedPayload == null ? 0 : expectedPayload.length));
+                System.out.println(
+                    "      now check expectedPayload length="
+                        + (expectedPayload == null ? 0 : expectedPayload.length));
               }
               if (expectedPayload == null || expectedPayload.length == 0) {
                 assertNull("should not have payload", postingsEnum.getPayload());
@@ -1009,19 +1130,25 @@ public class RandomPostingsTester {
                 assertNotNull("should have payload but doesn't", payload);
 
                 assertEquals("payload length is wrong", expectedPayload.length, payload.length);
-                for(int byteUpto=0;byteUpto<expectedPayload.length;byteUpto++) {
-                  assertEquals("payload bytes are wrong",
-                               expectedPayload.bytes[expectedPayload.offset + byteUpto],
-                               payload.bytes[payload.offset+byteUpto]);
+                for (int byteUpto = 0; byteUpto < expectedPayload.length; byteUpto++) {
+                  assertEquals(
+                      "payload bytes are wrong",
+                      expectedPayload.bytes[expectedPayload.offset + byteUpto],
+                      payload.bytes[payload.offset + byteUpto]);
                 }
-                
+
                 // make a deep copy
                 payload = BytesRef.deepCopyOf(payload);
-                assertEquals("2nd call to getPayload returns something different!", payload, postingsEnum.getPayload());
+                assertEquals(
+                    "2nd call to getPayload returns something different!",
+                    payload,
+                    postingsEnum.getPayload());
               }
             } else {
               if (LuceneTestCase.VERBOSE) {
-                System.out.println("      skip check payload length=" + (expectedPayload == null ? 0 : expectedPayload.length));
+                System.out.println(
+                    "      skip check payload length="
+                        + (expectedPayload == null ? 0 : expectedPayload.length));
               }
             }
           }
@@ -1029,16 +1156,24 @@ public class RandomPostingsTester {
           if (doCheckOffsets) {
             if (random.nextDouble() <= offsetCheckChance) {
               if (LuceneTestCase.VERBOSE) {
-                System.out.println("      now check offsets: startOff=" + expected.startOffset() + " endOffset=" + expected.endOffset());
+                System.out.println(
+                    "      now check offsets: startOff="
+                        + expected.startOffset()
+                        + " endOffset="
+                        + expected.endOffset());
               }
-              assertEquals("startOffset is wrong", expected.startOffset(), postingsEnum.startOffset());
+              assertEquals(
+                  "startOffset is wrong", expected.startOffset(), postingsEnum.startOffset());
               assertEquals("endOffset is wrong", expected.endOffset(), postingsEnum.endOffset());
             } else {
               if (LuceneTestCase.VERBOSE) {
                 System.out.println("      skip check offsets");
               }
             }
-          } else if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
+          } else if (fieldInfo
+                  .getIndexOptions()
+                  .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+              < 0) {
             if (LuceneTestCase.VERBOSE) {
               System.out.println("      now check offsets are -1");
             }
@@ -1095,18 +1230,24 @@ public class RandomPostingsTester {
           impactsEnum.advanceShallow(doc);
           Impacts impacts = impactsEnum.getImpacts();
           CheckIndex.checkImpacts(impacts, doc);
-          impactsCopy = impacts.getImpacts(0)
-              .stream()
-              .map(i -> new Impact(i.freq, i.norm))
-              .collect(Collectors.toList());
+          impactsCopy =
+              impacts.getImpacts(0).stream()
+                  .map(i -> new Impact(i.freq, i.norm))
+                  .collect(Collectors.toList());
         }
         freq = impactsEnum.freq();
         long norm = docToNorm.applyAsLong(doc);
-        int idx = Collections.binarySearch(impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
+        int idx =
+            Collections.binarySearch(
+                impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
         if (idx < 0) {
           idx = -1 - idx;
         }
-        assertTrue("Got " + new Impact(freq, norm) + " in postings, but no impact triggers equal or better scores in " + impactsCopy,
+        assertTrue(
+            "Got "
+                + new Impact(freq, norm)
+                + " in postings, but no impact triggers equal or better scores in "
+                + impactsCopy,
             idx <= impactsCopy.size() && impactsCopy.get(idx).norm <= norm);
       }
 
@@ -1131,17 +1272,17 @@ public class RandomPostingsTester {
         if (target > max && random.nextBoolean()) {
           int delta = Math.min(random.nextInt(512), DocIdSetIterator.NO_MORE_DOCS - target);
           max = target + delta;
-          
+
           impactsEnum.advanceShallow(target);
           Impacts impacts = impactsEnum.getImpacts();
           CheckIndex.checkImpacts(impacts, target);
           impactsCopy = Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
           for (int level = 0; level < impacts.numLevels(); ++level) {
             if (impacts.getDocIdUpTo(level) >= max) {
-              impactsCopy = impacts.getImpacts(level)
-                  .stream()
-                  .map(i -> new Impact(i.freq, i.norm))
-                  .collect(Collectors.toList());
+              impactsCopy =
+                  impacts.getImpacts(level).stream()
+                      .map(i -> new Impact(i.freq, i.norm))
+                      .collect(Collectors.toList());
               break;
             }
           }
@@ -1179,10 +1320,10 @@ public class RandomPostingsTester {
           impactsCopy = Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
           for (int level = 0; level < impacts.numLevels(); ++level) {
             if (impacts.getDocIdUpTo(level) >= max) {
-              impactsCopy = impacts.getImpacts(level)
-                  .stream()
-                  .map(i -> new Impact(i.freq, i.norm))
-                  .collect(Collectors.toList());
+              impactsCopy =
+                  impacts.getImpacts(level).stream()
+                      .map(i -> new Impact(i.freq, i.norm))
+                      .collect(Collectors.toList());
               break;
             }
           }
@@ -1190,11 +1331,17 @@ public class RandomPostingsTester {
 
         freq = impactsEnum.freq();
         long norm = docToNorm.applyAsLong(doc);
-        int idx = Collections.binarySearch(impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
+        int idx =
+            Collections.binarySearch(
+                impactsCopy, new Impact(freq, norm), Comparator.comparing(i -> i.freq));
         if (idx < 0) {
           idx = -1 - idx;
         }
-        assertTrue("Got " + new Impact(freq, norm) + " in postings, but no impact triggers equal or better scores in " + impactsCopy,
+        assertTrue(
+            "Got "
+                + new Impact(freq, norm)
+                + " in postings, but no impact triggers equal or better scores in "
+                + impactsCopy,
             idx <= impactsCopy.size() && impactsCopy.get(idx).norm <= norm);
       }
     }
@@ -1209,8 +1356,14 @@ public class RandomPostingsTester {
     private RandomPostingsTester postingsTester;
     private Random random;
 
-    public TestThread(Random random, RandomPostingsTester postingsTester, Fields fieldsSource, EnumSet<Option> options, IndexOptions maxTestOptions,
-                      IndexOptions maxIndexOptions, boolean alwaysTestMax) {
+    public TestThread(
+        Random random,
+        RandomPostingsTester postingsTester,
+        Fields fieldsSource,
+        EnumSet<Option> options,
+        IndexOptions maxTestOptions,
+        IndexOptions maxIndexOptions,
+        boolean alwaysTestMax) {
       this.random = random;
       this.fieldsSource = fieldsSource;
       this.options = options;
@@ -1224,7 +1377,8 @@ public class RandomPostingsTester {
     public void run() {
       try {
         try {
-          postingsTester.testTermsOneThread(random, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
+          postingsTester.testTermsOneThread(
+              random, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
         } catch (Throwable t) {
           throw new RuntimeException(t);
         }
@@ -1235,29 +1389,46 @@ public class RandomPostingsTester {
     }
   }
 
-  public void testTerms(final Fields fieldsSource, final EnumSet<Option> options,
-                        final IndexOptions maxTestOptions,
-                        final IndexOptions maxIndexOptions,
-                        final boolean alwaysTestMax) throws Exception {
+  public void testTerms(
+      final Fields fieldsSource,
+      final EnumSet<Option> options,
+      final IndexOptions maxTestOptions,
+      final IndexOptions maxIndexOptions,
+      final boolean alwaysTestMax)
+      throws Exception {
 
     if (options.contains(Option.THREADS)) {
       int numThreads = LuceneTestCase.TEST_NIGHTLY ? TestUtil.nextInt(random, 2, 5) : 2;
       Thread[] threads = new Thread[numThreads];
-      for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
-        threads[threadUpto] = new TestThread(new Random(random.nextLong()), this, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
+      for (int threadUpto = 0; threadUpto < numThreads; threadUpto++) {
+        threads[threadUpto] =
+            new TestThread(
+                new Random(random.nextLong()),
+                this,
+                fieldsSource,
+                options,
+                maxTestOptions,
+                maxIndexOptions,
+                alwaysTestMax);
         threads[threadUpto].start();
       }
-      for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
+      for (int threadUpto = 0; threadUpto < numThreads; threadUpto++) {
         threads[threadUpto].join();
       }
     } else {
-      testTermsOneThread(random, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
+      testTermsOneThread(
+          random, fieldsSource, options, maxTestOptions, maxIndexOptions, alwaysTestMax);
     }
   }
 
-  private void testTermsOneThread(Random random, Fields fieldsSource, EnumSet<Option> options,
-                                  IndexOptions maxTestOptions,
-                                  IndexOptions maxIndexOptions, boolean alwaysTestMax) throws IOException {
+  private void testTermsOneThread(
+      Random random,
+      Fields fieldsSource,
+      EnumSet<Option> options,
+      IndexOptions maxTestOptions,
+      IndexOptions maxIndexOptions,
+      boolean alwaysTestMax)
+      throws IOException {
 
     ThreadState threadState = new ThreadState();
 
@@ -1266,7 +1437,7 @@ public class RandomPostingsTester {
     List<FieldAndTerm> termStateTerms = new ArrayList<>();
 
     boolean supportsOrds = true;
-    
+
     Collections.shuffle(allTerms, random);
     int upto = 0;
     while (upto < allTerms.size()) {
@@ -1284,9 +1455,19 @@ public class RandomPostingsTester {
         fieldAndTerm = allTerms.get(upto++);
         if (LuceneTestCase.VERBOSE) {
           if (useTermOrd) {
-            System.out.println("\nTEST: seek to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString() + " using ord=" + fieldAndTerm.ord);
+            System.out.println(
+                "\nTEST: seek to term="
+                    + fieldAndTerm.field
+                    + ":"
+                    + fieldAndTerm.term.utf8ToString()
+                    + " using ord="
+                    + fieldAndTerm.ord);
           } else {
-            System.out.println("\nTEST: seek to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString() );
+            System.out.println(
+                "\nTEST: seek to term="
+                    + fieldAndTerm.field
+                    + ":"
+                    + fieldAndTerm.term.utf8ToString());
           }
         }
       } else {
@@ -1294,7 +1475,11 @@ public class RandomPostingsTester {
         int idx = random.nextInt(termStates.size());
         fieldAndTerm = termStateTerms.get(idx);
         if (LuceneTestCase.VERBOSE) {
-          System.out.println("\nTEST: seek using TermState to term=" + fieldAndTerm.field + ":" + fieldAndTerm.term.utf8ToString());
+          System.out.println(
+              "\nTEST: seek using TermState to term="
+                  + fieldAndTerm.field
+                  + ":"
+                  + fieldAndTerm.term.utf8ToString());
         }
         termState = termStates.get(idx);
       }
@@ -1318,7 +1503,7 @@ public class RandomPostingsTester {
       } else {
         termsEnum.seekExact(fieldAndTerm.term, termState);
       }
-      
+
       // check we really seeked to the right place
       assertEquals(fieldAndTerm.term, termsEnum.term());
 
@@ -1348,17 +1533,22 @@ public class RandomPostingsTester {
         savedTermState = true;
       }
 
-      verifyEnum(random, threadState,
-                 fieldAndTerm.field,
-                 fieldAndTerm.term,
-                 termsEnum,
-                 maxTestOptions,
-                 maxIndexOptions,
-                 options,
-                 alwaysTestMax);
+      verifyEnum(
+          random,
+          threadState,
+          fieldAndTerm.field,
+          fieldAndTerm.term,
+          termsEnum,
+          maxTestOptions,
+          maxIndexOptions,
+          options,
+          alwaysTestMax);
 
       // Sometimes save term state after pulling the enum:
-      if (options.contains(Option.TERM_STATE) && !useTermState && !savedTermState && random.nextInt(5) == 1) {
+      if (options.contains(Option.TERM_STATE)
+          && !useTermState
+          && !savedTermState
+          && random.nextInt(5) == 1) {
         // Save away this TermState:
         termStates.add(termsEnum.termState());
         termStateTerms.add(fieldAndTerm);
@@ -1373,19 +1563,21 @@ public class RandomPostingsTester {
           System.out.println("TEST: try enum again on same term");
         }
 
-        verifyEnum(random, threadState,
-                   fieldAndTerm.field,
-                   fieldAndTerm.term,
-                   termsEnum,
-                   maxTestOptions,
-                   maxIndexOptions,
-                   options,
-                   alwaysTestMax);
+        verifyEnum(
+            random,
+            threadState,
+            fieldAndTerm.field,
+            fieldAndTerm.term,
+            termsEnum,
+            maxTestOptions,
+            maxIndexOptions,
+            options,
+            alwaysTestMax);
       }
     }
 
     // Test Terms.intersect:
-    for(String field : fields.keySet()) {
+    for (String field : fields.keySet()) {
       while (true) {
         Automaton a = AutomatonTestUtil.randomAutomaton(random);
         CompiledAutomaton ca = new CompiledAutomaton(a, null, true, Integer.MAX_VALUE, false);
@@ -1398,7 +1590,7 @@ public class RandomPostingsTester {
         BytesRef startTerm = null;
         if (random.nextBoolean()) {
           RandomAcceptedStrings ras = new RandomAcceptedStrings(a);
-          for (int iter=0;iter<100;iter++) {
+          for (int iter = 0; iter < 100; iter++) {
             int[] codePoints = ras.getRandomAcceptedString(random);
             if (codePoints.length == 0) {
               continue;
@@ -1420,21 +1612,23 @@ public class RandomPostingsTester {
             // NOTE: not <=
             assertTrue(startTerm.compareTo(term) < 0);
           }
-          intersectedTerms.add(BytesRef.deepCopyOf(term));     
-          verifyEnum(random, threadState,
-                     field,
-                     term,
-                     intersected,
-                     maxTestOptions,
-                     maxIndexOptions,
-                     options,
-                     alwaysTestMax);
+          intersectedTerms.add(BytesRef.deepCopyOf(term));
+          verifyEnum(
+              random,
+              threadState,
+              field,
+              term,
+              intersected,
+              maxTestOptions,
+              maxIndexOptions,
+              options,
+              alwaysTestMax);
         }
 
         if (ca.runAutomaton == null) {
           assertTrue(intersectedTerms.isEmpty());
         } else {
-          for(BytesRef term2 : fields.get(field).keySet()) {
+          for (BytesRef term2 : fields.get(field).keySet()) {
             boolean expected;
             if (startTerm != null && startTerm.compareTo(term2) >= 0) {
               expected = false;
@@ -1449,7 +1643,7 @@ public class RandomPostingsTester {
       }
     }
   }
-  
+
   public void testFields(Fields fields) throws Exception {
     Iterator<String> iterator = fields.iterator();
     while (iterator.hasNext()) {
@@ -1462,14 +1656,18 @@ public class RandomPostingsTester {
       }
     }
     assertFalse(iterator.hasNext());
-    LuceneTestCase.expectThrows(NoSuchElementException.class, () -> {
-      iterator.next();
-    });
+    LuceneTestCase.expectThrows(
+        NoSuchElementException.class,
+        () -> {
+          iterator.next();
+        });
   }
 
-  /** Indexes all fields/terms at the specified
-   *  IndexOptions, and fully tests at that IndexOptions. */
-  public void testFull(Codec codec, Path path, IndexOptions options, boolean withPayloads) throws Exception {
+  /**
+   * Indexes all fields/terms at the specified IndexOptions, and fully tests at that IndexOptions.
+   */
+  public void testFull(Codec codec, Path path, IndexOptions options, boolean withPayloads)
+      throws Exception {
     Directory dir = LuceneTestCase.newFSDirectory(path);
 
     // TODO test thread safety of buildIndex too
@@ -1480,11 +1678,16 @@ public class RandomPostingsTester {
     IndexOptions[] allOptions = IndexOptions.values();
     int maxIndexOption = Arrays.asList(allOptions).indexOf(options);
 
-    for(int i=0;i<=maxIndexOption;i++) {
+    for (int i = 0; i <= maxIndexOption; i++) {
       testTerms(fieldsProducer, EnumSet.allOf(Option.class), allOptions[i], options, true);
       if (withPayloads) {
         // If we indexed w/ payloads, also test enums w/o accessing payloads:
-        testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.PAYLOADS)), allOptions[i], options, true);
+        testTerms(
+            fieldsProducer,
+            EnumSet.complementOf(EnumSet.of(Option.PAYLOADS)),
+            allOptions[i],
+            options,
+            true);
       }
     }
 

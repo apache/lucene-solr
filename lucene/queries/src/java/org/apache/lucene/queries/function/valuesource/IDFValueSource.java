@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.search.IndexSearcher;
@@ -24,16 +26,14 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 
-import java.io.IOException;
-import java.util.Map;
-
-/** 
- * Function that returns {@link TFIDFSimilarity #idf(long, long)}
- * for every document.
- * <p>
- * Note that the configured Similarity for the field must be
- * a subclass of {@link TFIDFSimilarity}
- * @lucene.internal */
+/**
+ * Function that returns {@link TFIDFSimilarity #idf(long, long)} for every document.
+ *
+ * <p>Note that the configured Similarity for the field must be a subclass of {@link
+ * TFIDFSimilarity}
+ *
+ * @lucene.internal
+ */
 public class IDFValueSource extends DocFreqValueSource {
   public IDFValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);
@@ -45,27 +45,28 @@ public class IDFValueSource extends DocFreqValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    IndexSearcher searcher = (IndexSearcher) context.get("searcher");
     TFIDFSimilarity sim = asTFIDF(searcher.getSimilarity(), field);
     if (sim == null) {
-      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as ClassicSimilarity)");
+      throw new UnsupportedOperationException(
+          "requires a TFIDFSimilarity (such as ClassicSimilarity)");
     }
     int docfreq = searcher.getIndexReader().docFreq(new Term(indexedField, indexedBytes));
     float idf = sim.idf(docfreq, searcher.getIndexReader().maxDoc());
     return new DocFreqValueSource.ConstDoubleDocValues(idf, this);
   }
-  
+
   // tries extra hard to cast the sim to TFIDFSimilarity
   static TFIDFSimilarity asTFIDF(Similarity sim, String field) {
     while (sim instanceof PerFieldSimilarityWrapper) {
-      sim = ((PerFieldSimilarityWrapper)sim).get(field);
+      sim = ((PerFieldSimilarityWrapper) sim).get(field);
     }
     if (sim instanceof TFIDFSimilarity) {
-      return (TFIDFSimilarity)sim;
+      return (TFIDFSimilarity) sim;
     } else {
       return null;
     }
   }
 }
-

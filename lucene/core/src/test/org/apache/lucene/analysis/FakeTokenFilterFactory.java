@@ -18,9 +18,7 @@ package org.apache.lucene.analysis;
 
 import java.util.Map;
 
-/**
- * Fake token filter factory for testing
- */
+/** Fake token filter factory for testing */
 public class FakeTokenFilterFactory extends TokenFilterFactory {
 
   public static final String NAME = "fake";

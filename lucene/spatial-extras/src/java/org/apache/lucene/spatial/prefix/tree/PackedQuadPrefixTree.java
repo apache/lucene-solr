@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.locationtech.spatial4j.context.SpatialContext;
@@ -33,7 +32,8 @@ import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 /**
  * Uses a compact binary representation of 8 bytes to encode a spatial quad trie.
  *
- * The binary representation is as follows:
+ * <p>The binary representation is as follows:
+ *
  * <pre>
  * CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCDDDDDL
  *
@@ -42,10 +42,10 @@ import org.locationtech.spatial4j.shape.impl.RectangleImpl;
  *       L = isLeaf bit
  * </pre>
  *
- * It includes a built-in "pruneLeafyBranches" setting (true by default) similar to
- * {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)} although
- * this one only prunes at the target detail level (where it has the most effect).  Usually you should disable RPT's
- * prune, since it is very memory in-efficient.
+ * It includes a built-in "pruneLeafyBranches" setting (true by default) similar to {@link
+ * org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)}
+ * although this one only prunes at the target detail level (where it has the most effect). Usually
+ * you should disable RPT's prune, since it is very memory in-efficient.
  *
  * @lucene.experimental
  */
@@ -55,13 +55,12 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
   protected boolean leafyPrune = true;
 
-  /**
-   * Factory for creating {@link PackedQuadPrefixTree} instances with useful defaults.
-   */
+  /** Factory for creating {@link PackedQuadPrefixTree} instances with useful defaults. */
   public static class Factory extends QuadPrefixTree.Factory {
     @Override
     protected SpatialPrefixTree newSPT() {
-      PackedQuadPrefixTree tree = new PackedQuadPrefixTree(ctx, maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
+      PackedQuadPrefixTree tree =
+          new PackedQuadPrefixTree(ctx, maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
       @SuppressWarnings("deprecation")
       Version lucene830 = Version.LUCENE_8_3_0;
       tree.robust = getVersion().onOrAfter(lucene830);
@@ -72,13 +71,21 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
   public PackedQuadPrefixTree(SpatialContext ctx, int maxLevels) {
     super(ctx, maxLevels);
     if (maxLevels > MAX_LEVELS_POSSIBLE) {
-      throw new IllegalArgumentException("maxLevels of " + maxLevels + " exceeds limit of " + MAX_LEVELS_POSSIBLE);
+      throw new IllegalArgumentException(
+          "maxLevels of " + maxLevels + " exceeds limit of " + MAX_LEVELS_POSSIBLE);
     }
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(maxLevels:" + maxLevels + ",ctx:" + ctx + ",prune:" + leafyPrune + ")";
+    return getClass().getSimpleName()
+        + "(maxLevels:"
+        + maxLevels
+        + ",ctx:"
+        + ctx
+        + ",prune:"
+        + leafyPrune
+        + ")";
   }
 
   @Override
@@ -90,9 +97,10 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
   public Cell getCell(Point p, int level) {
     if (!robust) { // old method
       List<Cell> cells = new ArrayList<>(1);
-      buildNotRobustly(xmid, ymid, 0, cells, 0x0L, ctx.getShapeFactory().pointXY(p.getX(), p.getY()), level);
+      buildNotRobustly(
+          xmid, ymid, 0, cells, 0x0L, ctx.getShapeFactory().pointXY(p.getX(), p.getY()), level);
       if (!cells.isEmpty()) {
-        return cells.get(0);//note cells could be longer if p on edge
+        return cells.get(0); // note cells could be longer if p on edge
       }
     }
 
@@ -100,14 +108,14 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     double currentYmid = ymid;
     double xp = p.getX();
     double yp = p.getY();
-    long  term = 0L;
+    long term = 0L;
     int levelLimit = level > maxLevels ? maxLevels : level;
     SpatialRelation rel = SpatialRelation.CONTAINS;
-    for (int lvl = 0; lvl < levelLimit; lvl++){
+    for (int lvl = 0; lvl < levelLimit; lvl++) {
       int quad = battenberg(currentXmid, currentYmid, xp, yp);
       double halfWidth = levelW[lvl + 1];
       double halfHeight = levelH[lvl + 1];
-      switch(quad){
+      switch (quad) {
         case 0:
           currentXmid -= halfWidth;
           currentYmid += halfHeight;
@@ -127,14 +135,15 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
         default:
       }
       // set bits for next level
-      term |= (((long)(quad))<<(64-((lvl + 1)<<1)));
+      term |= (((long) (quad)) << (64 - ((lvl + 1) << 1)));
       // increment level
-      term = ((term>>>1)+1)<<1;
+      term = ((term >>> 1) + 1) << 1;
     }
     return new PackedQuadCell(term, rel);
   }
 
-  protected void buildNotRobustly(double x, double y, int level, List<Cell> matches, long term, Shape shape, int maxLevel) {
+  protected void buildNotRobustly(
+      double x, double y, int level, List<Cell> matches, long term, Shape shape, int maxLevel) {
     double w = levelW[level] / 2;
     double h = levelH[level] / 2;
 
@@ -146,11 +155,17 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     checkBattenbergNotRobustly(QUAD[3], x + w, y - h, level, matches, term, shape, maxLevel);
   }
 
-  protected void checkBattenbergNotRobustly(byte quad, double cx, double cy, int level, List<Cell> matches,
-                                 long term, Shape shape, int maxLevel) {
+  protected void checkBattenbergNotRobustly(
+      byte quad,
+      double cx,
+      double cy,
+      int level,
+      List<Cell> matches,
+      long term,
+      Shape shape,
+      int maxLevel) {
     // short-circuit if we find a match for the point (no need to continue recursion)
-    if (shape instanceof Point && !matches.isEmpty())
-      return;
+    if (shape instanceof Point && !matches.isEmpty()) return;
     double w = levelW[level] / 2;
     double h = levelH[level] / 2;
 
@@ -161,13 +176,13 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     }
 
     // set bits for next level
-    term |= (((long)(quad))<<(64-(++level<<1)));
+    term |= (((long) (quad)) << (64 - (++level << 1)));
     // increment level
-    term = ((term>>>1)+1)<<1;
+    term = ((term >>> 1) + 1) << 1;
 
     if (SpatialRelation.CONTAINS == v || (level >= maxLevel)) {
       matches.add(new PackedQuadCell(term, v.transpose()));
-    } else {// SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
+    } else { // SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
       buildNotRobustly(cx, cy, level, matches, term, shape, maxLevel);
     }
   }
@@ -175,8 +190,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
   @Override
   public Cell readCell(BytesRef term, Cell scratch) {
     PackedQuadCell cell = (PackedQuadCell) scratch;
-    if (cell == null)
-      cell = (PackedQuadCell) getWorldCell();
+    if (cell == null) cell = (PackedQuadCell) getWorldCell();
     cell.readCell(term);
     return cell;
   }
@@ -184,7 +198,8 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
   @Override
   public CellIterator getTreeCellIterator(Shape shape, int detailLevel) {
     if (detailLevel > maxLevels) {
-      throw new IllegalArgumentException("detailLevel:" + detailLevel +" exceed max: " + maxLevels);
+      throw new IllegalArgumentException(
+          "detailLevel:" + detailLevel + " exceed max: " + maxLevels);
     }
     return new PrefixTreeIterator(shape, (short) detailLevel);
   }
@@ -193,9 +208,12 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     return leafyPrune;
   }
 
-  /** Like {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)}
-   * but more memory efficient and only applies to the detailLevel, where it has the most effect. */
-  public void setPruneLeafyBranches( boolean pruneLeafyBranches ) {
+  /**
+   * Like {@link
+   * org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setPruneLeafyBranches(boolean)}
+   * but more memory efficient and only applies to the detailLevel, where it has the most effect.
+   */
+  public void setPruneLeafyBranches(boolean pruneLeafyBranches) {
     this.leafyPrune = pruneLeafyBranches;
   }
 
@@ -229,37 +247,38 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     }
 
     private final int getShiftForLevel(final int level) {
-      return 64 - (level<<1);
+      return 64 - (level << 1);
     }
 
     public boolean isEnd(final int level, final int shift) {
-      return (term != 0x0L && ((((0x1L<<(level<<1))-1)-(term>>>shift)) == 0x0L));
+      return (term != 0x0L && ((((0x1L << (level << 1)) - 1) - (term >>> shift)) == 0x0L));
     }
 
     /**
-     * Get the next cell in the tree without using recursion. descend parameter requests traversal to the child nodes,
-     * setting this to false will step to the next sibling.
-     * Note: This complies with lexicographical ordering, once you've moved to the next sibling there is no backtracking.
+     * Get the next cell in the tree without using recursion. descend parameter requests traversal
+     * to the child nodes, setting this to false will step to the next sibling. Note: This complies
+     * with lexicographical ordering, once you've moved to the next sibling there is no
+     * backtracking.
      */
     public PackedQuadCell nextCell(boolean descend) {
       final int level = getLevel();
       final int shift = getShiftForLevel(level);
       // base case: can't go further
-      if ( (!descend && isEnd(level, shift)) || isEnd(maxLevels, getShiftForLevel(maxLevels))) {
+      if ((!descend && isEnd(level, shift)) || isEnd(maxLevels, getShiftForLevel(maxLevels))) {
         return null;
       }
       long newTerm;
-      final boolean isLeaf = (term&0x1L)==0x1L;
+      final boolean isLeaf = (term & 0x1L) == 0x1L;
       // if descend requested && we're not at the maxLevel
       if ((descend && !isLeaf && (level != maxLevels)) || level == 0) {
         // simple case: increment level bits (next level)
-        newTerm = ((term>>>1)+0x1L)<<1;
-      } else {  // we're not descending or we can't descend
-        newTerm = term + (0x1L<<shift);
+        newTerm = ((term >>> 1) + 0x1L) << 1;
+      } else { // we're not descending or we can't descend
+        newTerm = term + (0x1L << shift);
         // we're at the last sibling...force descend
-        if (((term>>>shift)&0x3L) == 0x3L) {
+        if (((term >>> shift) & 0x3L) == 0x3L) {
           // adjust level for number popping up
-          newTerm = ((newTerm>>>1) - (Long.numberOfTrailingZeros(newTerm>>>shift)>>>1))<<1;
+          newTerm = ((newTerm >>> 1) - (Long.numberOfTrailingZeros(newTerm >>> shift) >>> 1)) << 1;
         }
       }
       return new PackedQuadCell(newTerm);
@@ -267,7 +286,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     @Override
     protected void readLeafAdjust() {
-      isLeaf = ((0x1L)&term) == 0x1L;
+      isLeaf = ((0x1L) & term) == 0x1L;
       if (getLevel() == getMaxLevels()) {
         isLeaf = true;
       }
@@ -300,26 +319,33 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     @Override
     public int compareToNoLeaf(Cell fromCell) {
       PackedQuadCell b = (PackedQuadCell) fromCell;
-      //TODO clear last bit without the condition
-      final long thisTerm = (((0x1L)&term) == 0x1L) ? term-1 : term;
-      final long fromTerm = (((0x1L)&b.term) == 0x1L) ? b.term-1 : b.term;
+      // TODO clear last bit without the condition
+      final long thisTerm = (((0x1L) & term) == 0x1L) ? term - 1 : term;
+      final long fromTerm = (((0x1L) & b.term) == 0x1L) ? b.term - 1 : b.term;
       final int result = Long.compareUnsigned(thisTerm, fromTerm);
       assert Math.signum(result)
-          == Math.signum(compare(longToByteArray(thisTerm, new byte[8]), 0, 8, longToByteArray(fromTerm, new byte[8]), 0, 8)); // TODO remove
+          == Math.signum(
+              compare(
+                  longToByteArray(thisTerm, new byte[8]),
+                  0,
+                  8,
+                  longToByteArray(fromTerm, new byte[8]),
+                  0,
+                  8)); // TODO remove
       return result;
     }
 
     @Override
     public int getLevel() {
-      int l = (int)((term >>> 1)&0x1FL);
+      int l = (int) ((term >>> 1) & 0x1FL);
       return l;
     }
 
     @Override
     protected Collection<Cell> getSubCells() {
       List<Cell> cells = new ArrayList<>(4);
-      PackedQuadCell pqc = (new PackedQuadCell(((term&0x1)==0x1) ? this.term-1 : this.term))
-          .nextCell(true);
+      PackedQuadCell pqc =
+          (new PackedQuadCell(((term & 0x1) == 0x1) ? this.term - 1 : this.term)).nextCell(true);
       cells.add(pqc);
       cells.add((pqc = pqc.nextCell(false)));
       cells.add((pqc = pqc.nextCell(false)));
@@ -329,28 +355,27 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     @Override
     protected QuadCell getSubCell(Point p) {
-      return (PackedQuadCell) PackedQuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
+      return (PackedQuadCell)
+          PackedQuadPrefixTree.this.getCell(p, getLevel() + 1); // not performant!
     }
 
     @Override
     public boolean isPrefixOf(Cell c) {
-      PackedQuadCell cell = (PackedQuadCell)c;
+      PackedQuadCell cell = (PackedQuadCell) c;
       return (this.term == 0x0L) || isInternalPrefix(cell);
     }
 
     protected boolean isInternalPrefix(PackedQuadCell c) {
-      final int shift = 64 - (getLevel()<<1);
-      return ((term>>>shift)-(c.term>>>shift)) == 0x0L;
+      final int shift = 64 - (getLevel() << 1);
+      return ((term >>> shift) - (c.term >>> shift)) == 0x0L;
     }
 
     protected long concat(byte postfix) {
       // extra leaf bit
-      return this.term | (((long)(postfix))<<((getMaxLevels()-getLevel()<<1)+6));
+      return this.term | (((long) (postfix)) << ((getMaxLevels() - getLevel() << 1) + 6));
     }
 
-    /**
-     * Constructs a bounding box shape out of the encoded cell
-     */
+    /** Constructs a bounding box shape out of the encoded cell */
     @Override
     protected Rectangle makeShape() {
       double xmin = PackedQuadPrefixTree.this.xmin;
@@ -358,8 +383,8 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
       int level = getLevel();
 
       byte b;
-      for (short l=0, i=1; l<level; ++l, ++i) {
-        b = (byte) ((term>>>(64-(i<<1))) & 0x3L);
+      for (short l = 0, i = 1; l < level; ++l, ++i) {
+        b = (byte) ((term >>> (64 - (i << 1))) & 0x3L);
 
         switch (b) {
           case 0x00:
@@ -370,7 +395,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
             ymin += levelH[l];
             break;
           case 0x02:
-            break;//nothing really
+            break; // nothing really
           case 0x03:
             xmin += levelW[l];
             break;
@@ -391,14 +416,19 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     }
 
     private long fromBytes(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8) {
-      return ((long)b1 & 255L) << 56 | ((long)b2 & 255L) << 48 | ((long)b3 & 255L) << 40
-          | ((long)b4 & 255L) << 32 | ((long)b5 & 255L) << 24 | ((long)b6 & 255L) << 16
-          | ((long)b7 & 255L) << 8 | (long)b8 & 255L;
+      return ((long) b1 & 255L) << 56
+          | ((long) b2 & 255L) << 48
+          | ((long) b3 & 255L) << 40
+          | ((long) b4 & 255L) << 32
+          | ((long) b5 & 255L) << 24
+          | ((long) b6 & 255L) << 16
+          | ((long) b7 & 255L) << 8
+          | (long) b8 & 255L;
     }
 
     private byte[] longToByteArray(long value, byte[] result) {
-      for(int i = 7; i >= 0; --i) {
-        result[i] = (byte)((int)(value & 255L));
+      for (int i = 7; i >= 0; --i) {
+        result[i] = (byte) ((int) (value & 255L));
         value >>= 8;
       }
       return result;
@@ -406,13 +436,18 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     private long longFromByteArray(byte[] bytes, int ofs) {
       assert bytes.length >= 8;
-      return fromBytes(bytes[0+ofs], bytes[1+ofs], bytes[2+ofs], bytes[3+ofs],
-          bytes[4+ofs], bytes[5+ofs], bytes[6+ofs], bytes[7+ofs]);
+      return fromBytes(
+          bytes[0 + ofs],
+          bytes[1 + ofs],
+          bytes[2 + ofs],
+          bytes[3 + ofs],
+          bytes[4 + ofs],
+          bytes[5 + ofs],
+          bytes[6 + ofs],
+          bytes[7 + ofs]);
     }
 
-    /**
-     * Used for debugging, this will print the bits of the cell
-     */
+    /** Used for debugging, this will print the bits of the cell */
     @Override
     public String toString() {
       StringBuilder s = new StringBuilder(64);
@@ -420,14 +455,15 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
       for (int i = 0; i < numberOfLeadingZeros; i++) {
         s.append('0');
       }
-      if (term != 0)
-        s.append(Long.toBinaryString(term));
+      if (term != 0) s.append(Long.toBinaryString(term));
       return s.toString();
     }
   } // PackedQuadCell
 
-  /** This is a streamlined version of TreeCellIterator, with built-in support to prune at detailLevel
-   * (but not recursively upwards). */
+  /**
+   * This is a streamlined version of TreeCellIterator, with built-in support to prune at
+   * detailLevel (but not recursively upwards).
+   */
   protected class PrefixTreeIterator extends CellIterator {
     private Shape shape;
     private PackedQuadCell thisCell;
@@ -439,7 +475,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     PrefixTreeIterator(Shape shape, short detailLevel) {
       this.shape = shape;
-      this.thisCell = ((PackedQuadCell)(getWorldCell())).nextCell(true);
+      this.thisCell = ((PackedQuadCell) (getWorldCell())).nextCell(true);
       this.detailLevel = detailLevel;
       this.nextCell = null;
     }
@@ -461,7 +497,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
           if (rel == SpatialRelation.WITHIN) {
             thisCell.setLeaf();
             thisCell = thisCell.nextCell(false);
-          } else {  // intersects || contains
+          } else { // intersects || contains
             level = (short) (thisCell.getLevel());
             if (level == detailLevel || pruned(rel)) {
               thisCell.setLeaf();
@@ -484,7 +520,10 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     private boolean pruned(SpatialRelation rel) {
       int leaves;
       if (rel == SpatialRelation.INTERSECTS && leafyPrune && level == detailLevel - 1) {
-        for (leaves=0, pruneIter=thisCell.getNextLevelCells(shape); pruneIter.hasNext(); pruneIter.next(), ++leaves);
+        for (leaves = 0, pruneIter = thisCell.getNextLevelCells(shape);
+            pruneIter.hasNext();
+            pruneIter.next(), ++leaves)
+          ;
         return leaves == 4;
       }
       return false;
@@ -505,7 +544,7 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
 
     @Override
     public void remove() {
-      //no-op
+      // no-op
     }
   }
 }

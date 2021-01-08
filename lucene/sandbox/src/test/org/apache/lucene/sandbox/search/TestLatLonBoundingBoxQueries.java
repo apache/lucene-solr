@@ -16,21 +16,21 @@
  */
 package org.apache.lucene.sandbox.search;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.sandbox.document.LatLonBoundingBox;
-import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BaseRangeFieldQueryTestCase;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.sandbox.document.LatLonBoundingBox;
+import org.apache.lucene.search.BaseRangeFieldQueryTestCase;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
 
 /** Random testing for GeoBoundingBoxField type. */
 public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
@@ -44,7 +44,7 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
   @Override
   protected void addRange(Document doc, Range r) {
-    GeoBBox b = (GeoBBox)r;
+    GeoBBox b = (GeoBBox) r;
     doc.add(new LatLonBoundingBox(FIELD_NAME, b.minLat, b.minLon, b.maxLat, b.maxLon));
   }
 
@@ -65,7 +65,8 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
     // intersects (contains, crosses)
     document = new Document();
-    document.add(new LatLonBoundingBox(FIELD_NAME, -10.282592503353953d, -1d, 1d, 14.096488952636719d));
+    document.add(
+        new LatLonBoundingBox(FIELD_NAME, -10.282592503353953d, -1d, 1d, 14.096488952636719d));
     writer.addDocument(document);
 
     // intersects (crosses)
@@ -86,14 +87,26 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
     // search
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(5, searcher.count(LatLonBoundingBox.newIntersectsQuery(FIELD_NAME,
-        -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
-    assertEquals(1, searcher.count(LatLonBoundingBox.newWithinQuery(FIELD_NAME,
-        -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
-    assertEquals(1, searcher.count(LatLonBoundingBox.newContainsQuery(FIELD_NAME,
-        -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
-    assertEquals(4, searcher.count(LatLonBoundingBox.newCrossesQuery(FIELD_NAME,
-        -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
+    assertEquals(
+        5,
+        searcher.count(
+            LatLonBoundingBox.newIntersectsQuery(
+                FIELD_NAME, -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
+    assertEquals(
+        1,
+        searcher.count(
+            LatLonBoundingBox.newWithinQuery(
+                FIELD_NAME, -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
+    assertEquals(
+        1,
+        searcher.count(
+            LatLonBoundingBox.newContainsQuery(
+                FIELD_NAME, -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
+    assertEquals(
+        4,
+        searcher.count(
+            LatLonBoundingBox.newCrossesQuery(
+                FIELD_NAME, -10.282592503353953d, 0.0d, 0.0d, 14.096488952636719d)));
 
     reader.close();
     writer.close();
@@ -102,7 +115,8 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
   public void testToString() {
     LatLonBoundingBox field = new LatLonBoundingBox(FIELD_NAME, -20d, -180d, 20d, -100d);
-    String expected = "LatLonBoundingBox <geoBoundingBoxField:[-20.000000023283064,-180.0,19.99999998137355,-100.0000000745058]>";
+    String expected =
+        "LatLonBoundingBox <geoBoundingBoxField:[-20.000000023283064,-180.0,19.99999998137355,-100.0000000745058]>";
     assertEquals(expected, field.toString());
   }
 
@@ -119,25 +133,25 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
   @Override
   protected Query newIntersectsQuery(Range r) {
-    GeoBBox b = (GeoBBox)r;
+    GeoBBox b = (GeoBBox) r;
     return LatLonBoundingBox.newIntersectsQuery(FIELD_NAME, b.minLat, b.minLon, b.maxLat, b.maxLon);
   }
 
   @Override
   protected Query newContainsQuery(Range r) {
-    GeoBBox b = (GeoBBox)r;
+    GeoBBox b = (GeoBBox) r;
     return LatLonBoundingBox.newContainsQuery(FIELD_NAME, b.minLat, b.minLon, b.maxLat, b.maxLon);
   }
 
   @Override
   protected Query newWithinQuery(Range r) {
-    GeoBBox b = (GeoBBox)r;
+    GeoBBox b = (GeoBBox) r;
     return LatLonBoundingBox.newWithinQuery(FIELD_NAME, b.minLat, b.minLon, b.maxLat, b.maxLon);
   }
 
   @Override
   protected Query newCrossesQuery(Range r) {
-    GeoBBox b = (GeoBBox)r;
+    GeoBBox b = (GeoBBox) r;
     return LatLonBoundingBox.newCrossesQuery(FIELD_NAME, b.minLat, b.minLon, b.maxLat, b.maxLon);
   }
 
@@ -153,16 +167,16 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
       maxLat = quantizeLat(box.maxLat);
       maxLon = quantizeLon(box.maxLon);
 
-//      minLat = quantizeLat(Math.min(box.minLat, box.maxLat));
-//      minLon = quantizeLon(Math.max(box.minLat, box.maxLat));
-//      maxLat = quantizeLat(box.maxLat);
-//      maxLon = quantizeLon(box.maxLon);
+      //      minLat = quantizeLat(Math.min(box.minLat, box.maxLat));
+      //      minLon = quantizeLon(Math.max(box.minLat, box.maxLat));
+      //      maxLat = quantizeLat(box.maxLat);
+      //      maxLon = quantizeLon(box.maxLon);
 
-//      if (maxLon == -180d) {
-//        // index and search handle this fine, but the test validator
-//        // struggles when maxLon == -180; so lets correct
-//        maxLon = 180d;
-//      }
+      //      if (maxLon == -180d) {
+      //        // index and search handle this fine, but the test validator
+      //        // struggles when maxLon == -180; so lets correct
+      //        maxLon = 180d;
+      //      }
     }
 
     protected static double quantizeLat(double lat) {
@@ -191,9 +205,9 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected void setMin(int dim, Object val) {
       if (dim == 0) {
-        setMinLat((Double)val);
+        setMinLat((Double) val);
       } else if (dim == 1) {
-        setMinLon((Double)val);
+        setMinLon((Double) val);
       } else {
         throw new IndexOutOfBoundsException("dimension " + dim + " is greater than " + dimension);
       }
@@ -248,9 +262,9 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
     @Override
     protected void setMax(int dim, Object val) {
       if (dim == 0) {
-        setMaxLat((Double)val);
+        setMaxLat((Double) val);
       } else if (dim == 1) {
-        setMaxLon((Double)val);
+        setMaxLon((Double) val);
       } else {
         throw new IndexOutOfBoundsException("dimension " + dim + " is greater than " + dimension);
       }
@@ -258,7 +272,7 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range other) {
-      GeoBBox o = (GeoBBox)other;
+      GeoBBox o = (GeoBBox) other;
       if (this.dimension != o.dimension) return false;
       if (this.minLat != o.minLat) return false;
       if (this.minLon != o.minLon) return false;
@@ -269,7 +283,7 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isDisjoint(Range other) {
-      GeoBBox o = (GeoBBox)other;
+      GeoBBox o = (GeoBBox) other;
       if (minLat > o.maxLat || maxLat < o.minLat) return true;
       if (minLon > o.maxLon || maxLon < o.minLon) return true;
       return false;
@@ -277,13 +291,13 @@ public class TestLatLonBoundingBoxQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isWithin(Range other) {
-      GeoBBox o = (GeoBBox)other;
+      GeoBBox o = (GeoBBox) other;
       return o.contains(this);
     }
 
     @Override
     protected boolean contains(Range other) {
-      GeoBBox o = (GeoBBox)other;
+      GeoBBox o = (GeoBBox) other;
       if (minLat > o.minLat || maxLat < o.maxLat) return false;
       if (minLon > o.minLon || maxLon < o.maxLon) return false;
       return true;

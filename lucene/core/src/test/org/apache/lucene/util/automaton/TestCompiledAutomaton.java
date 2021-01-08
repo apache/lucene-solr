@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.util.automaton;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,7 +31,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
 
   private CompiledAutomaton build(int maxDeterminizedStates, String... strings) {
     final List<BytesRef> terms = new ArrayList<>();
-    for(String s : strings) {
+    for (String s : strings) {
       terms.add(new BytesRef(s));
     }
     Collections.sort(terms);
@@ -48,29 +46,32 @@ public class TestCompiledAutomaton extends LuceneTestCase {
       assertNull(result);
     } else {
       assertNotNull(result);
-      assertEquals("actual=" + result.utf8ToString() + " vs expected=" + expected + " (input=" + input + ")",
-                   result, new BytesRef(expected));
+      assertEquals(
+          "actual=" + result.utf8ToString() + " vs expected=" + expected + " (input=" + input + ")",
+          result,
+          new BytesRef(expected));
     }
   }
 
   private void testTerms(int maxDeterminizedStates, String[] terms) throws Exception {
     final CompiledAutomaton c = build(maxDeterminizedStates, terms);
     final BytesRef[] termBytes = new BytesRef[terms.length];
-    for(int idx=0;idx<terms.length;idx++) {
+    for (int idx = 0; idx < terms.length; idx++) {
       termBytes[idx] = new BytesRef(terms[idx]);
     }
     Arrays.sort(termBytes);
 
     if (VERBOSE) {
       System.out.println("\nTEST: terms in unicode order");
-      for(BytesRef t : termBytes) {
+      for (BytesRef t : termBytes) {
         System.out.println("  " + t.utf8ToString());
       }
-      //System.out.println(c.utf8.toDot());
+      // System.out.println(c.utf8.toDot());
     }
 
-    for(int iter=0;iter<100*RANDOM_MULTIPLIER;iter++) {
-      final String s = random().nextInt(10) == 1 ? terms[random().nextInt(terms.length)] : randomString();
+    for (int iter = 0; iter < 100 * RANDOM_MULTIPLIER; iter++) {
+      final String s =
+          random().nextInt(10) == 1 ? terms[random().nextInt(terms.length)] : randomString();
       if (VERBOSE) {
         System.out.println("\nTEST: floor(" + s + ")");
       }
@@ -80,11 +81,11 @@ public class TestCompiledAutomaton extends LuceneTestCase {
         expected = s;
       } else {
         // term doesn't exist
-        loc = -(loc+1);
+        loc = -(loc + 1);
         if (loc == 0) {
           expected = null;
         } else {
-          expected = termBytes[loc-1].utf8ToString();
+          expected = termBytes[loc - 1].utf8ToString();
         }
       }
       if (VERBOSE) {
@@ -97,7 +98,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   public void testRandom() throws Exception {
     final int numTerms = atLeast(400);
     final Set<String> terms = new HashSet<>();
-    while(terms.size() != numTerms) {
+    while (terms.size() != numTerms) {
       terms.add(randomString());
     }
     testTerms(numTerms * 100, terms.toArray(new String[terms.size()]));
@@ -109,8 +110,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    CompiledAutomaton c = build(Operations.DEFAULT_MAX_DETERMINIZED_STATES,
-      "fob", "foo", "goo");
+    CompiledAutomaton c = build(Operations.DEFAULT_MAX_DETERMINIZED_STATES, "fob", "foo", "goo");
     testFloor(c, "goo", "goo");
     testFloor(c, "ga", "foo");
     testFloor(c, "g", "foo");
@@ -121,7 +121,7 @@ public class TestCompiledAutomaton extends LuceneTestCase {
     testFloor(c, "aa", null);
     testFloor(c, "zzz", "goo");
   }
-  
+
   // LUCENE-6367
   public void testBinaryAll() throws Exception {
     Automaton a = new Automaton();

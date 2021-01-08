@@ -18,17 +18,14 @@ package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.io.Reader;
-
 import org.apache.lucene.util.ArrayUtil;
 
-/** Acts like a forever growing char[] as you read
- *  characters into it from the provided reader, but
- *  internally it uses a circular buffer to only hold the
- *  characters that haven't been freed yet.  This is like a
- *  PushbackReader, except you don't have to specify
- *  up-front the max size of the buffer, but you do have to
- *  periodically call {@link #freeBefore}. */
-
+/**
+ * Acts like a forever growing char[] as you read characters into it from the provided reader, but
+ * internally it uses a circular buffer to only hold the characters that haven't been freed yet.
+ * This is like a PushbackReader, except you don't have to specify up-front the max size of the
+ * buffer, but you do have to periodically call {@link #freeBefore}.
+ */
 public final class RollingCharBuffer {
 
   private Reader reader;
@@ -46,7 +43,7 @@ public final class RollingCharBuffer {
 
   // True if we hit EOF
   private boolean end;
-    
+
   /** Clear array and switch to new reader. */
   public void reset(Reader reader) {
     this.reader = reader;
@@ -62,15 +59,15 @@ public final class RollingCharBuffer {
    * #freeBefore}), but NOT ok to read arbitrarily far
    * ahead.  Returns -1 if you hit EOF. */
   public int get(int pos) throws IOException {
-    //System.out.println("    get pos=" + pos + " nextPos=" + nextPos + " count=" + count);
+    // System.out.println("    get pos=" + pos + " nextPos=" + nextPos + " count=" + count);
     if (pos == nextPos) {
       if (end) {
         return -1;
       }
       if (count == buffer.length) {
         // Grow
-        final char[] newBuffer = new char[ArrayUtil.oversize(1+count, Character.BYTES)];
-        //System.out.println(Thread.currentThread().getName() + ": cb grow " + newBuffer.length);
+        final char[] newBuffer = new char[ArrayUtil.oversize(1 + count, Character.BYTES)];
+        // System.out.println(Thread.currentThread().getName() + ": cb grow " + newBuffer.length);
         System.arraycopy(buffer, nextWrite, newBuffer, 0, buffer.length - nextWrite);
         System.arraycopy(buffer, 0, newBuffer, buffer.length - nextWrite, nextWrite);
         nextWrite = buffer.length;
@@ -96,7 +93,7 @@ public final class RollingCharBuffer {
       assert pos < nextPos;
 
       // Cannot read from already freed past:
-      assert nextPos - pos <= count: "nextPos=" + nextPos + " pos=" + pos + " count=" + count;
+      assert nextPos - pos <= count : "nextPos=" + nextPos + " pos=" + pos + " count=" + count;
 
       return buffer[getIndex(pos)];
     }
@@ -119,33 +116,32 @@ public final class RollingCharBuffer {
 
   public char[] get(int posStart, int length) {
     assert length > 0;
-    assert inBounds(posStart): "posStart=" + posStart + " length=" + length;
-    //System.out.println("    buffer.get posStart=" + posStart + " len=" + length);
-      
+    assert inBounds(posStart) : "posStart=" + posStart + " length=" + length;
+    // System.out.println("    buffer.get posStart=" + posStart + " len=" + length);
+
     final int startIndex = getIndex(posStart);
     final int endIndex = getIndex(posStart + length);
-    //System.out.println("      startIndex=" + startIndex + " endIndex=" + endIndex);
+    // System.out.println("      startIndex=" + startIndex + " endIndex=" + endIndex);
 
     final char[] result = new char[length];
     if (endIndex >= startIndex && length < buffer.length) {
-      System.arraycopy(buffer, startIndex, result, 0, endIndex-startIndex);
+      System.arraycopy(buffer, startIndex, result, 0, endIndex - startIndex);
     } else {
       // Wrapped:
-      final int part1 = buffer.length-startIndex;
+      final int part1 = buffer.length - startIndex;
       System.arraycopy(buffer, startIndex, result, 0, part1);
-      System.arraycopy(buffer, 0, result, buffer.length-startIndex, length-part1);
+      System.arraycopy(buffer, 0, result, buffer.length - startIndex, length - part1);
     }
     return result;
   }
 
-  /** Call this to notify us that no chars before this
-   *  absolute position are needed anymore. */
+  /** Call this to notify us that no chars before this absolute position are needed anymore. */
   public void freeBefore(int pos) {
     assert pos >= 0;
     assert pos <= nextPos;
     final int newCount = nextPos - pos;
-    assert newCount <= count: "newCount=" + newCount + " count=" + count;
-    assert newCount <= buffer.length: "newCount=" + newCount + " buf.length=" + buffer.length;
+    assert newCount <= count : "newCount=" + newCount + " count=" + count;
+    assert newCount <= buffer.length : "newCount=" + newCount + " buf.length=" + buffer.length;
     count = newCount;
   }
 }

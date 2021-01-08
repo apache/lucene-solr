@@ -17,13 +17,14 @@
 
 package org.apache.lucene.codecs.lucene90;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.index.CorruptIndexException;
@@ -45,13 +46,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.hnsw.HnswGraph;
-import org.apache.lucene.util.hnsw.Neighbor;
-import org.apache.lucene.util.hnsw.Neighbors;
-
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+import org.apache.lucene.util.hnsw.NeighborQueue;
 
 /**
  * Reads vectors from the index segments along with index data structures supporting KNN search.
+ *
  * @lucene.experimental
  */
 public final class Lucene90VectorReader extends VectorReader {
@@ -67,23 +66,38 @@ public final class Lucene90VectorReader extends VectorReader {
 
     int versionMeta = readMetadata(state, Lucene90VectorFormat.META_EXTENSION);
     long[] checksumRef = new long[1];
-    vectorData = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_DATA_EXTENSION, Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME, checksumRef);
-    vectorIndex = openDataInput(state, versionMeta, Lucene90VectorFormat.VECTOR_INDEX_EXTENSION, Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME, checksumRef);
+    vectorData =
+        openDataInput(
+            state,
+            versionMeta,
+            Lucene90VectorFormat.VECTOR_DATA_EXTENSION,
+            Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
+            checksumRef);
+    vectorIndex =
+        openDataInput(
+            state,
+            versionMeta,
+            Lucene90VectorFormat.VECTOR_INDEX_EXTENSION,
+            Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
+            checksumRef);
     checksumSeed = checksumRef[0];
   }
 
   private int readMetadata(SegmentReadState state, String fileExtension) throws IOException {
-    String metaFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
+    String metaFileName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     int versionMeta = -1;
     try (ChecksumIndexInput meta = state.directory.openChecksumInput(metaFileName, state.context)) {
       Throwable priorE = null;
       try {
-        versionMeta = CodecUtil.checkIndexHeader(meta,
-            Lucene90VectorFormat.META_CODEC_NAME,
-            Lucene90VectorFormat.VERSION_START,
-            Lucene90VectorFormat.VERSION_CURRENT,
-            state.segmentInfo.getId(),
-            state.segmentSuffix);
+        versionMeta =
+            CodecUtil.checkIndexHeader(
+                meta,
+                Lucene90VectorFormat.META_CODEC_NAME,
+                Lucene90VectorFormat.VERSION_START,
+                Lucene90VectorFormat.VERSION_CURRENT,
+                state.segmentInfo.getId(),
+                state.segmentSuffix);
         readFields(meta, state.fieldInfos);
       } catch (Throwable exception) {
         priorE = exception;
@@ -94,20 +108,36 @@ public final class Lucene90VectorReader extends VectorReader {
     return versionMeta;
   }
 
-  private static IndexInput openDataInput(SegmentReadState state, int versionMeta, String fileExtension, String codecName, long[] checksumRef) throws IOException {
+  private static IndexInput openDataInput(
+      SegmentReadState state,
+      int versionMeta,
+      String fileExtension,
+      String codecName,
+      long[] checksumRef)
+      throws IOException {
     boolean success = false;
 
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
+    String fileName =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     IndexInput in = state.directory.openInput(fileName, state.context);
     try {
-      int versionVectorData = CodecUtil.checkIndexHeader(in,
-          codecName,
-          Lucene90VectorFormat.VERSION_START,
-          Lucene90VectorFormat.VERSION_CURRENT,
-          state.segmentInfo.getId(),
-          state.segmentSuffix);
+      int versionVectorData =
+          CodecUtil.checkIndexHeader(
+              in,
+              codecName,
+              Lucene90VectorFormat.VERSION_START,
+              Lucene90VectorFormat.VERSION_CURRENT,
+              state.segmentInfo.getId(),
+              state.segmentSuffix);
       if (versionMeta != versionVectorData) {
-        throw new CorruptIndexException("Format versions mismatch: meta=" + versionMeta + ", " + codecName + "=" + versionVectorData, in);
+        throw new CorruptIndexException(
+            "Format versions mismatch: meta="
+                + versionMeta
+                + ", "
+                + codecName
+                + "="
+                + versionVectorData,
+            in);
       }
       checksumRef[0] = CodecUtil.retrieveChecksum(in);
       success = true;
@@ -139,7 +169,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
   private FieldEntry readField(DataInput input) throws IOException {
     VectorValues.SearchStrategy searchStrategy = readSearchStrategy(input);
-    switch(searchStrategy) {
+    switch (searchStrategy) {
       case NONE:
         return new FieldEntry(input, searchStrategy);
       case DOT_PRODUCT_HNSW:
@@ -153,7 +183,9 @@ public final class Lucene90VectorReader extends VectorReader {
   @Override
   public long ramBytesUsed() {
     long totalBytes = RamUsageEstimator.shallowSizeOfInstance(Lucene90VectorReader.class);
-    totalBytes += RamUsageEstimator.sizeOfMap(fields, RamUsageEstimator.shallowSizeOfInstance(FieldEntry.class));
+    totalBytes +=
+        RamUsageEstimator.sizeOfMap(
+            fields, RamUsageEstimator.shallowSizeOfInstance(FieldEntry.class));
     for (FieldEntry entry : fields.values()) {
       totalBytes += RamUsageEstimator.sizeOf(entry.ordToDoc);
     }
@@ -182,15 +214,28 @@ public final class Lucene90VectorReader extends VectorReader {
       return null;
     }
     if (dimension != fieldEntry.dimension) {
-      throw new IllegalStateException("Inconsistent vector dimension for field=\"" + field + "\"; " + dimension + " != " + fieldEntry.dimension);
+      throw new IllegalStateException(
+          "Inconsistent vector dimension for field=\""
+              + field
+              + "\"; "
+              + dimension
+              + " != "
+              + fieldEntry.dimension);
     }
     long numBytes = (long) fieldEntry.size() * dimension * Float.BYTES;
     if (numBytes != fieldEntry.vectorDataLength) {
-      throw new IllegalStateException("Vector data length " + fieldEntry.vectorDataLength +
-          " not matching size=" + fieldEntry.size() + " * dim=" + dimension + " * 4 = " +
-          numBytes);
+      throw new IllegalStateException(
+          "Vector data length "
+              + fieldEntry.vectorDataLength
+              + " not matching size="
+              + fieldEntry.size()
+              + " * dim="
+              + dimension
+              + " * 4 = "
+              + numBytes);
     }
-    IndexInput bytesSlice = vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
+    IndexInput bytesSlice =
+        vectorData.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
     return new OffHeapVectorValues(fieldEntry, bytesSlice);
   }
 
@@ -210,7 +255,8 @@ public final class Lucene90VectorReader extends VectorReader {
   private KnnGraphValues getGraphValues(FieldEntry entry) throws IOException {
     if (entry.searchStrategy.isHnsw()) {
       HnswGraphFieldEntry graphEntry = (HnswGraphFieldEntry) entry;
-      IndexInput bytesSlice = vectorIndex.slice("graph-data", entry.indexDataOffset, entry.indexDataLength);
+      IndexInput bytesSlice =
+          vectorIndex.slice("graph-data", entry.indexDataOffset, entry.indexDataLength);
       return new IndexedKnnGraphReader(graphEntry, bytesSlice);
     } else {
       return KnnGraphValues.EMPTY;
@@ -257,7 +303,8 @@ public final class Lucene90VectorReader extends VectorReader {
 
     final long[] ordOffsets;
 
-    HnswGraphFieldEntry(DataInput input, VectorValues.SearchStrategy searchStrategy) throws IOException {
+    HnswGraphFieldEntry(DataInput input, VectorValues.SearchStrategy searchStrategy)
+        throws IOException {
       super(input, searchStrategy);
       ordOffsets = new long[size()];
       long offset = 0;
@@ -269,7 +316,8 @@ public final class Lucene90VectorReader extends VectorReader {
   }
 
   /** Read the vector values from the index input. This supports both iterated and random access. */
-  private final class OffHeapVectorValues extends VectorValues implements RandomAccessVectorValuesProducer {
+  private class OffHeapVectorValues extends VectorValues
+      implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final FieldEntry fieldEntry;
     final IndexInput dataIn;
@@ -310,16 +358,15 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      binaryValue();
-      floatBuffer.position(0);
-      floatBuffer.get(value, 0, fieldEntry.dimension);
+      dataIn.seek(ord * byteSize);
+      dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 
     @Override
     public BytesRef binaryValue() throws IOException {
       dataIn.seek(ord * byteSize);
-      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize, false);
       return binaryValue;
     }
 
@@ -351,90 +398,57 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public RandomAccessVectorValues randomAccess() {
-      return new OffHeapRandomAccess(dataIn.clone());
+      return new OffHeapVectorValues(fieldEntry, dataIn.clone());
     }
 
     @Override
     public TopDocs search(float[] vector, int topK, int fanout) throws IOException {
       // use a seed that is fixed for the index so we get reproducible results for the same query
       final Random random = new Random(checksumSeed);
-      Neighbors results = HnswGraph.search(vector, topK + fanout, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
-      while (results.size() > topK) {
-        results.pop();
-      }
+      NeighborQueue results =
+          HnswGraph.search(
+              vector, topK, topK + fanout, randomAccess(), getGraphValues(fieldEntry), random);
       int i = 0;
       ScoreDoc[] scoreDocs = new ScoreDoc[Math.min(results.size(), topK)];
       boolean reversed = searchStrategy().reversed;
       while (results.size() > 0) {
-        Neighbor n = results.pop();
-        float score;
+        int node = results.topNode();
+        float score = results.topScore();
+        results.pop();
         if (reversed) {
-          score = (float) Math.exp(- n.score() / vector.length);
-        } else {
-          score = n.score();
+          score = (float) Math.exp(-score / vector.length);
         }
-        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[n.node()], score);
+        scoreDocs[scoreDocs.length - ++i] = new ScoreDoc(fieldEntry.ordToDoc[node], score);
       }
-      // always return >= the case where we can assert == is only when there are fewer than topK vectors in the index
-      return new TopDocs(new TotalHits(results.visitedCount(), TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), scoreDocs);
+      // always return >= the case where we can assert == is only when there are fewer than topK
+      // vectors in the index
+      return new TopDocs(
+          new TotalHits(results.visitedCount(), TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO),
+          scoreDocs);
     }
 
-    class OffHeapRandomAccess implements RandomAccessVectorValues {
+    @Override
+    public float[] vectorValue(int targetOrd) throws IOException {
+      dataIn.seek(targetOrd * byteSize);
+      dataIn.readLEFloats(value, 0, value.length);
+      return value;
+    }
 
-      final IndexInput dataIn;
+    @Override
+    public BytesRef binaryValue(int targetOrd) throws IOException {
+      readValue(targetOrd);
+      return binaryValue;
+    }
 
-      final BytesRef binaryValue;
-      final ByteBuffer byteBuffer;
-      final FloatBuffer floatBuffer;
-      final float[] value;
-
-      OffHeapRandomAccess(IndexInput dataIn) {
-        this.dataIn = dataIn;
-        byteBuffer = ByteBuffer.allocate(byteSize);
-        floatBuffer = byteBuffer.asFloatBuffer();
-        value = new float[dimension()];
-        binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      }
-
-      @Override
-      public int size() {
-        return fieldEntry.size();
-      }
-
-      @Override
-      public int dimension() {
-        return fieldEntry.dimension;
-      }
-
-      @Override
-      public SearchStrategy searchStrategy() {
-        return fieldEntry.searchStrategy;
-      }
-
-      @Override
-      public float[] vectorValue(int targetOrd) throws IOException {
-        readValue(targetOrd);
-        floatBuffer.position(0);
-        floatBuffer.get(value);
-        return value;
-      }
-
-      @Override
-      public BytesRef binaryValue(int targetOrd) throws IOException {
-        readValue(targetOrd);
-        return binaryValue;
-      }
-
-      private void readValue(int targetOrd) throws IOException {
-        long offset = targetOrd * byteSize;
-        dataIn.seek(offset);
-        dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
-      }
+    private void readValue(int targetOrd) throws IOException {
+      long offset = targetOrd * byteSize;
+      dataIn.seek(offset);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
   }
 
   /** Read the nearest-neighbors graph from the index input */
-  private final class IndexedKnnGraphReader extends KnnGraphValues {
+  private static final class IndexedKnnGraphReader extends KnnGraphValues {
 
     final HnswGraphFieldEntry entry;
     final IndexInput dataIn;
@@ -455,6 +469,11 @@ public final class Lucene90VectorReader extends VectorReader {
       arcCount = dataIn.readInt();
       arc = -1;
       arcUpTo = 0;
+    }
+
+    @Override
+    public int size() {
+      return entry.size();
     }
 
     @Override

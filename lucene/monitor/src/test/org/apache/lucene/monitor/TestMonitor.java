@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -59,7 +58,8 @@ public class TestMonitor extends MonitorTestBase {
     doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
+      monitor.register(
+          new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "test"))));
 
       MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getQueriesRun());
@@ -74,8 +74,10 @@ public class TestMonitor extends MonitorTestBase {
     doc.add(newTextField(FIELD, "that", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
-      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
+      monitor.register(
+          new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
+      monitor.register(
+          new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))));
 
       MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertNotNull(matches.matches("query1"));
@@ -89,7 +91,8 @@ public class TestMonitor extends MonitorTestBase {
     doc.add(newTextField(FIELD, "other things", Field.Store.NO));
 
     try (Monitor monitor = newMonitor()) {
-      monitor.register(new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
+      monitor.register(
+          new MonitorQuery("query1", new TermQuery(new Term(MonitorTestBase.FIELD, "this"))));
       monitor.register(
           new MonitorQuery("query2", new TermQuery(new Term(MonitorTestBase.FIELD, "that"))),
           new MonitorQuery("query3", new TermQuery(new Term(MonitorTestBase.FIELD, "other"))));
@@ -102,7 +105,6 @@ public class TestMonitor extends MonitorTestBase {
       assertEquals(1, matches.getQueriesRun());
       assertNotNull(matches.matches("query3"));
     }
-
   }
 
   public void testCanClearTheMonitor() throws IOException {
@@ -127,7 +129,6 @@ public class TestMonitor extends MonitorTestBase {
       MatchingQueries<QueryMatch> matches = monitor.match(doc, QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getQueriesRun());
     }
-
   }
 
   // takes huge amounts of ram. TODO: what is this test doing?
@@ -139,19 +140,20 @@ public class TestMonitor extends MonitorTestBase {
       queries.add(new MonitorQuery(Integer.toString(i), MonitorTestBase.parse("test")));
     }
 
-    final int[] expectedSizes = new int[]{5001, 5001, 353};
+    final int[] expectedSizes = new int[] {5001, 5001, 353};
     final AtomicInteger callCount = new AtomicInteger();
     final AtomicInteger updateCount = new AtomicInteger();
 
-    MonitorUpdateListener listener = new MonitorUpdateListener() {
+    MonitorUpdateListener listener =
+        new MonitorUpdateListener() {
 
-      @Override
-      public void afterUpdate(List<MonitorQuery> updates) {
-        int calls = callCount.getAndIncrement();
-        updateCount.addAndGet(updates.size());
-        assertEquals(expectedSizes[calls], updates.size());
-      }
-    };
+          @Override
+          public void afterUpdate(List<MonitorQuery> updates) {
+            int calls = callCount.getAndIncrement();
+            updateCount.addAndGet(updates.size());
+            assertEquals(expectedSizes[calls], updates.size());
+          }
+        };
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.addQueryIndexUpdateListener(listener);
@@ -165,22 +167,27 @@ public class TestMonitor extends MonitorTestBase {
       HashMap<String, String> metadataMap = new HashMap<>();
       metadataMap.put("key", "value");
 
-      monitor.register(new MonitorQuery(Integer.toString(1), MonitorTestBase.parse("+test " + 1), null, metadataMap));
+      monitor.register(
+          new MonitorQuery(
+              Integer.toString(1), MonitorTestBase.parse("+test " + 1), null, metadataMap));
 
       Document doc = new Document();
       doc.add(newTextField(FIELD, "This is a test document", Field.Store.NO));
 
-      MatcherFactory<QueryMatch> testMatcherFactory = docs -> new CandidateMatcher<QueryMatch>(docs) {
-        @Override
-        protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
-          assertEquals("value", metadata.get("key"));
-        }
+      MatcherFactory<QueryMatch> testMatcherFactory =
+          docs ->
+              new CandidateMatcher<QueryMatch>(docs) {
+                @Override
+                protected void matchQuery(
+                    String queryId, Query matchQuery, Map<String, String> metadata) {
+                  assertEquals("value", metadata.get("key"));
+                }
 
-        @Override
-        public QueryMatch resolve(QueryMatch match1, QueryMatch match2) {
-          return null;
-        }
-      };
+                @Override
+                public QueryMatch resolve(QueryMatch match1, QueryMatch match2) {
+                  return null;
+                }
+              };
 
       monitor.match(doc, testMatcherFactory);
     }
@@ -193,35 +200,39 @@ public class TestMonitor extends MonitorTestBase {
     Document doc2 = new Document();
     doc2.add(newTextField(FIELD, "This is a kangaroo document", Field.Store.NO));
 
-
     try (Monitor monitor = new Monitor(ANALYZER)) {
-      monitor.register(new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
+      monitor.register(
+          new MonitorQuery("1", new TermQuery(new Term(MonitorTestBase.FIELD, "kangaroo"))));
 
-      MultiMatchingQueries<QueryMatch> response = monitor.match(new Document[]{ doc1, doc2 }, QueryMatch.SIMPLE_MATCHER);
+      MultiMatchingQueries<QueryMatch> response =
+          monitor.match(new Document[] {doc1, doc2}, QueryMatch.SIMPLE_MATCHER);
       assertEquals(2, response.getBatchSize());
     }
   }
 
   public void testMutliValuedFieldWithNonDefaultGaps() throws IOException {
 
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public int getPositionIncrementGap(String fieldName) {
-        return 1000;
-      }
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          public int getPositionIncrementGap(String fieldName) {
+            return 1000;
+          }
 
-      @Override
-      public int getOffsetGap(String fieldName) {
-        return 2000;
-      }
+          @Override
+          public int getOffsetGap(String fieldName) {
+            return 2000;
+          }
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new WhitespaceTokenizer());
-      }
-    };
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new WhitespaceTokenizer());
+          }
+        };
 
-    MonitorQuery mq = new MonitorQuery("query", MonitorTestBase.parse(MonitorTestBase.FIELD + ":\"hello world\"~5"));
+    MonitorQuery mq =
+        new MonitorQuery(
+            "query", MonitorTestBase.parse(MonitorTestBase.FIELD + ":\"hello world\"~5"));
 
     try (Monitor monitor = new Monitor(analyzer)) {
       monitor.register(mq);
@@ -241,7 +252,5 @@ public class TestMonitor extends MonitorTestBase {
       matches = monitor.match(doc2, QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
     }
-
   }
-
 }

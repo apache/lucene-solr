@@ -24,7 +24,11 @@ class AssertingMatchesIterator implements MatchesIterator {
   private final MatchesIterator in;
   private State state = State.UNPOSITIONED;
 
-  private enum State { UNPOSITIONED, ITERATING, EXHAUSTED }
+  private enum State {
+    UNPOSITIONED,
+    ITERATING,
+    EXHAUSTED
+  }
 
   AssertingMatchesIterator(MatchesIterator in) {
     this.in = in;
@@ -36,8 +40,7 @@ class AssertingMatchesIterator implements MatchesIterator {
     boolean more = in.next();
     if (more == false) {
       state = State.EXHAUSTED;
-    }
-    else {
+    } else {
       state = State.ITERATING;
     }
     return more;

@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
@@ -27,10 +26,9 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.MultiTermQuery;
 
 /**
- * This processor instates the default
- * {@link org.apache.lucene.search.MultiTermQuery.RewriteMethod},
- * {@link MultiTermQuery#CONSTANT_SCORE_REWRITE}, for multi-term
- * query nodes.
+ * This processor instates the default {@link
+ * org.apache.lucene.search.MultiTermQuery.RewriteMethod}, {@link
+ * MultiTermQuery#CONSTANT_SCORE_REWRITE}, for multi-term query nodes.
  */
 public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
 
@@ -42,9 +40,11 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
     // set setMultiTermRewriteMethod for WildcardQueryNode and
     // PrefixWildcardQueryNode
     if (node instanceof WildcardQueryNode
-        || node instanceof AbstractRangeQueryNode || node instanceof RegexpQueryNode) {
-      
-      MultiTermQuery.RewriteMethod rewriteMethod = getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
+        || node instanceof AbstractRangeQueryNode
+        || node instanceof RegexpQueryNode) {
+
+      MultiTermQuery.RewriteMethod rewriteMethod =
+          getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
 
       if (rewriteMethod == null) {
         // This should not happen, this configuration is set in the
@@ -55,7 +55,6 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
 
       // use a TAG to take the value to the Builder
       node.setTag(MultiTermRewriteMethodProcessor.TAG_ID, rewriteMethod);
-
     }
 
     return node;

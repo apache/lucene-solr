@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.analysis.payloads;
 
+import java.io.IOException;
+import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -24,9 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-import java.io.IOException;
-import java.io.StringReader;
-
 public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
@@ -34,7 +33,8 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     final MockTokenizer input = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     input.setReader(new StringReader(test));
-    NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(input), 3, "D");
+    NumericPayloadTokenFilter nptf =
+        new NumericPayloadTokenFilter(new WordTokenFilter(input), 3, "D");
     boolean seenDogs = false;
     CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
@@ -44,10 +44,17 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
       if (termAtt.toString().equals("dogs")) {
         seenDogs = true;
         assertTrue(typeAtt.type() + " is not equal to " + "D", typeAtt.type().equals("D") == true);
-        assertTrue("payloadAtt.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
-        byte [] bytes = payloadAtt.getPayload().bytes;//safe here to just use the bytes, otherwise we should use offset, length
-        assertTrue(bytes.length + " does not equal: " + payloadAtt.getPayload().length, bytes.length == payloadAtt.getPayload().length);
-        assertTrue(payloadAtt.getPayload().offset + " does not equal: " + 0, payloadAtt.getPayload().offset == 0);
+        assertTrue(
+            "payloadAtt.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
+        byte[] bytes =
+            payloadAtt.getPayload()
+                .bytes; // safe here to just use the bytes, otherwise we should use offset, length
+        assertTrue(
+            bytes.length + " does not equal: " + payloadAtt.getPayload().length,
+            bytes.length == payloadAtt.getPayload().length);
+        assertTrue(
+            payloadAtt.getPayload().offset + " does not equal: " + 0,
+            payloadAtt.getPayload().offset == 0);
         float pay = PayloadHelper.decodeFloat(bytes);
         assertTrue(pay + " does not equal: " + 3, pay == 3);
       } else {
@@ -60,21 +67,19 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   private static final class WordTokenFilter extends TokenFilter {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
-    
+
     private WordTokenFilter(TokenStream input) {
       super(input);
     }
-    
+
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        if (termAtt.toString().equals("dogs"))
-          typeAtt.setType("D");
+        if (termAtt.toString().equals("dogs")) typeAtt.setType("D");
         return true;
       } else {
         return false;
       }
     }
   }
-
 }

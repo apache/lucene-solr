@@ -16,25 +16,25 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 
 /**
  * A {@link RateLimiter rate limiting} {@link IndexOutput}
- * 
+ *
  * @lucene.internal
  */
-
 public final class RateLimitedIndexOutput extends IndexOutput {
-  
+
   private final IndexOutput delegate;
   private final RateLimiter rateLimiter;
 
   /** How many bytes we've written since we last called rateLimiter.pause. */
   private long bytesSinceLastPause;
-  
-  /** Cached here not not always have to call RateLimiter#getMinPauseCheckBytes()
-   * which does volatile read. */
+
+  /**
+   * Cached here not not always have to call RateLimiter#getMinPauseCheckBytes() which does volatile
+   * read.
+   */
   private long currentMinPauseCheckBytes;
 
   public RateLimitedIndexOutput(final RateLimiter rateLimiter, final IndexOutput delegate) {
@@ -43,7 +43,7 @@ public final class RateLimitedIndexOutput extends IndexOutput {
     this.rateLimiter = rateLimiter;
     this.currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();
   }
-  
+
   @Override
   public void close() throws IOException {
     delegate.close();
@@ -72,12 +72,12 @@ public final class RateLimitedIndexOutput extends IndexOutput {
     checkRate();
     delegate.writeBytes(b, offset, length);
   }
-  
+
   private void checkRate() throws IOException {
     if (bytesSinceLastPause > currentMinPauseCheckBytes) {
       rateLimiter.pause(bytesSinceLastPause);
       bytesSinceLastPause = 0;
       currentMinPauseCheckBytes = rateLimiter.getMinPauseCheckBytes();
-    }    
+    }
   }
 }

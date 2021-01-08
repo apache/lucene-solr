@@ -19,7 +19,6 @@ package org.apache.lucene.monitor;
 
 import java.util.Map;
 import java.util.function.BiPredicate;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -27,34 +26,31 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A Presearcher is used by the Monitor to reduce the number of queries actually
- * run against a Document.  It defines how queries are stored in the monitor's
- * internal index, and how a Document is converted to a query against that
- * index.
+ * A Presearcher is used by the Monitor to reduce the number of queries actually run against a
+ * Document. It defines how queries are stored in the monitor's internal index, and how a Document
+ * is converted to a query against that index.
  */
 public abstract class Presearcher {
 
-  /**
-   * A Presearcher implementation that does no query filtering, and runs all
-   * registered queries
-   */
-  public static final Presearcher NO_FILTERING = new Presearcher() {
-    @Override
-    public Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor) {
-      return new MatchAllDocsQuery();
-    }
+  /** A Presearcher implementation that does no query filtering, and runs all registered queries */
+  public static final Presearcher NO_FILTERING =
+      new Presearcher() {
+        @Override
+        public Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor) {
+          return new MatchAllDocsQuery();
+        }
 
-    @Override
-    public Document indexQuery(Query query, Map<String, String> metadata) {
-      return new Document();
-    }
-  };
+        @Override
+        public Document indexQuery(Query query, Map<String, String> metadata) {
+          return new Document();
+        }
+      };
 
   /**
    * Build a query for a Monitor's queryindex from a LeafReader over a set of documents to monitor.
    *
-   * @param reader          a {@link LeafReader} over the input documents
-   * @param termAcceptor    a predicate indicating if a term should be added to the query
+   * @param reader a {@link LeafReader} over the input documents
+   * @param termAcceptor a predicate indicating if a term should be added to the query
    * @return a Query to run over a Monitor's queryindex
    */
   public abstract Query buildQuery(LeafReader reader, BiPredicate<String, BytesRef> termAcceptor);
@@ -62,10 +58,9 @@ public abstract class Presearcher {
   /**
    * Build a lucene Document to index the query in a Monitor's queryindex
    *
-   * @param query    the Query to index
+   * @param query the Query to index
    * @param metadata a Map of arbitrary query metadata
    * @return a lucene Document to add to the queryindex
    */
   public abstract Document indexQuery(Query query, Map<String, String> metadata);
-
 }

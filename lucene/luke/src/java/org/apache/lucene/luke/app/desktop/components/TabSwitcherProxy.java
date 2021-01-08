@@ -45,5 +45,4 @@ public class TabSwitcherProxy {
   public interface TabSwitcher {
     void switchTab(TabbedPaneProvider.Tab tab);
   }
-
 }

@@ -30,6 +30,5 @@
 
   <dynamicField name="*_s" type="string" multiValued="false"/>
   <dynamicField name="*_l" type="plong" multiValued="false"/>
-  <dynamicField name="*_c" type="currency" indexed="true" stored="true"/>
 
 </schema>

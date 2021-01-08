@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Postings format that can delegate to different formats per-field.
- */
+/** Postings format that can delegate to different formats per-field. */
 package org.apache.lucene.codecs.perfield;

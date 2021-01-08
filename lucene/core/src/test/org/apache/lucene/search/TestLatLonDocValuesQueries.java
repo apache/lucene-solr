@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonDocValuesField;
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
@@ -31,12 +32,14 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+  protected Query newRectQuery(
+      String field, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonDocValuesField.newSlowBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
+  protected Query newDistanceQuery(
+      String field, double centerLat, double centerLon, double radiusMeters) {
     return LatLonDocValuesField.newSlowDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
@@ -47,7 +50,8 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
-    return LatLonDocValuesField.newSlowGeometryQuery(field, geometry);
+    return LatLonDocValuesField.newSlowGeometryQuery(
+        field, ShapeField.QueryRelation.INTERSECTS, geometry);
   }
 
   @Override

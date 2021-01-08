@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
  * Marks terms as keywords via the {@link KeywordAttribute}.
- * 
+ *
  * @see KeywordAttribute
  */
 public abstract class KeywordMarkerFilter extends TokenFilter {
@@ -34,6 +32,7 @@ public abstract class KeywordMarkerFilter extends TokenFilter {
 
   /**
    * Creates a new {@link KeywordMarkerFilter}
+   *
    * @param in the input stream
    */
   protected KeywordMarkerFilter(TokenStream in) {
@@ -43,7 +42,7 @@ public abstract class KeywordMarkerFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      if (isKeyword()) { 
+      if (isKeyword()) {
         keywordAttr.setKeyword(true);
       }
       return true;
@@ -51,7 +50,6 @@ public abstract class KeywordMarkerFilter extends TokenFilter {
       return false;
     }
   }
-  
+
   protected abstract boolean isKeyword();
-  
 }

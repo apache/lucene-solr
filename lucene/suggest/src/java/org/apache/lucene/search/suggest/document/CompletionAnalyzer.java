@@ -22,50 +22,47 @@ import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 
 /**
- * Wraps an {@link org.apache.lucene.analysis.Analyzer}
- * to provide additional completion-only tuning
- * (e.g. preserving token separators, preserving position increments while converting
- * a token stream to an automaton)
- * <p>
- * Can be used to index {@link SuggestField} and {@link ContextSuggestField}
- * and as a query analyzer to {@link PrefixCompletionQuery} amd {@link FuzzyCompletionQuery}
- * <p>
- * NOTE: In most cases, index and query analyzer should have same values for {@link #preservePositionIncrements()}
- * and {@link #preserveSep()}
+ * Wraps an {@link org.apache.lucene.analysis.Analyzer} to provide additional completion-only tuning
+ * (e.g. preserving token separators, preserving position increments while converting a token stream
+ * to an automaton)
+ *
+ * <p>Can be used to index {@link SuggestField} and {@link ContextSuggestField} and as a query
+ * analyzer to {@link PrefixCompletionQuery} amd {@link FuzzyCompletionQuery}
+ *
+ * <p>NOTE: In most cases, index and query analyzer should have same values for {@link
+ * #preservePositionIncrements()} and {@link #preserveSep()}
  *
  * @lucene.experimental
- *
  * @since 5.1.0
  */
 public final class CompletionAnalyzer extends AnalyzerWrapper {
 
   /**
-   * Represent a hole character, inserted by {@link org.apache.lucene.analysis.TokenStreamToAutomaton}
+   * Represent a hole character, inserted by {@link
+   * org.apache.lucene.analysis.TokenStreamToAutomaton}
    */
-  final static int HOLE_CHARACTER = TokenStreamToAutomaton.HOLE;
+  static final int HOLE_CHARACTER = TokenStreamToAutomaton.HOLE;
 
   private final Analyzer analyzer;
 
   /**
-   * Preserve separation between tokens
-   * when converting to an automaton
-   * <p>
-   * Defaults to <code>true</code>
+   * Preserve separation between tokens when converting to an automaton
+   *
+   * <p>Defaults to <code>true</code>
    */
   private final boolean preserveSep;
 
   /**
-   * Preserve position increments for tokens
-   * when converting to an automaton
-   * <p>
-   * Defaults to <code>true</code>
+   * Preserve position increments for tokens when converting to an automaton
+   *
+   * <p>Defaults to <code>true</code>
    */
   private final boolean preservePositionIncrements;
 
   /**
    * Sets the maximum number of graph expansions of a completion automaton
-   * <p>
-   * Defaults to <code>-1</code> (no limit)
+   *
+   * <p>Defaults to <code>-1</code> (no limit)
    */
   private final int maxGraphExpansions;
 
@@ -74,10 +71,15 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    *
    * @param analyzer token stream to be converted to an automaton
    * @param preserveSep Preserve separation between tokens when converting to an automaton
-   * @param preservePositionIncrements Preserve position increments for tokens when converting to an automaton
+   * @param preservePositionIncrements Preserve position increments for tokens when converting to an
+   *     automaton
    * @param maxGraphExpansions Sets the maximum number of graph expansions of a completion automaton
    */
-  public CompletionAnalyzer(Analyzer analyzer, boolean preserveSep, boolean preservePositionIncrements, int maxGraphExpansions) {
+  public CompletionAnalyzer(
+      Analyzer analyzer,
+      boolean preserveSep,
+      boolean preservePositionIncrements,
+      int maxGraphExpansions) {
     super(PER_FIELD_REUSE_STRATEGY);
     this.analyzer = analyzer;
     this.preserveSep = preserveSep;
@@ -90,15 +92,24 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    * preserving token separation, position increments and no limit on graph expansions
    */
   public CompletionAnalyzer(Analyzer analyzer) {
-    this(analyzer, ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP, ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS, ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
+    this(
+        analyzer,
+        ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP,
+        ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS,
+        ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
    * Calls {@link #CompletionAnalyzer(org.apache.lucene.analysis.Analyzer, boolean, boolean, int)}
    * with no limit on graph expansions
    */
-  public CompletionAnalyzer(Analyzer analyzer, boolean preserveSep, boolean preservePositionIncrements) {
-    this(analyzer, preserveSep, preservePositionIncrements, ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
+  public CompletionAnalyzer(
+      Analyzer analyzer, boolean preserveSep, boolean preservePositionIncrements) {
+    this(
+        analyzer,
+        preserveSep,
+        preservePositionIncrements,
+        ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
   }
 
   /**
@@ -106,20 +117,24 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
    * preserving token separation and position increments
    */
   public CompletionAnalyzer(Analyzer analyzer, int maxGraphExpansions) {
-    this(analyzer, ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP, ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS, maxGraphExpansions);
+    this(
+        analyzer,
+        ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP,
+        ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS,
+        maxGraphExpansions);
   }
 
   /**
-   * Returns true if separation between tokens are preserved when converting
-   * the token stream to an automaton
+   * Returns true if separation between tokens are preserved when converting the token stream to an
+   * automaton
    */
   public boolean preserveSep() {
     return preserveSep;
   }
 
   /**
-   * Returns true if position increments are preserved when converting
-   * the token stream to an automaton
+   * Returns true if position increments are preserved when converting the token stream to an
+   * automaton
    */
   public boolean preservePositionIncrements() {
     return preservePositionIncrements;
@@ -131,9 +146,14 @@ public final class CompletionAnalyzer extends AnalyzerWrapper {
   }
 
   @Override
-  protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
-    CompletionTokenStream tokenStream = new CompletionTokenStream(components.getTokenStream(),
-        preserveSep, preservePositionIncrements, maxGraphExpansions);
+  protected TokenStreamComponents wrapComponents(
+      String fieldName, TokenStreamComponents components) {
+    CompletionTokenStream tokenStream =
+        new CompletionTokenStream(
+            components.getTokenStream(),
+            preserveSep,
+            preservePositionIncrements,
+            maxGraphExpansions);
     return new TokenStreamComponents(components.getSource(), tokenStream);
   }
 }

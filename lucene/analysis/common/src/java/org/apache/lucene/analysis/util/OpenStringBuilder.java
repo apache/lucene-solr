@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.analysis.util;
 
-
-/**
- * A StringBuilder that allows one to access the array.
- */
+/** A StringBuilder that allows one to access the array. */
 public class OpenStringBuilder implements Appendable, CharSequence {
   protected char[] buf;
   protected int len;
@@ -36,18 +33,31 @@ public class OpenStringBuilder implements Appendable, CharSequence {
     set(arr, len);
   }
 
-  public void setLength(int len) { this.len = len; }
+  public void setLength(int len) {
+    this.len = len;
+  }
 
   public void set(char[] arr, int end) {
     this.buf = arr;
     this.len = end;
   }
 
-  public char[] getArray() { return buf; }
-  public int size() { return len; }
+  public char[] getArray() {
+    return buf;
+  }
+
+  public int size() {
+    return len;
+  }
+
   @Override
-  public int length() { return len; }
-  public int capacity() { return buf.length; }
+  public int length() {
+    return len;
+  }
+
+  public int capacity() {
+    return buf.length;
+  }
 
   @Override
   public Appendable append(CharSequence csq) {
@@ -56,8 +66,8 @@ public class OpenStringBuilder implements Appendable, CharSequence {
 
   @Override
   public Appendable append(CharSequence csq, int start, int end) {
-    reserve(end-start);
-    for (int i=start; i<end; i++) {
+    reserve(end - start);
+    for (int i = start; i < end; i++) {
       unsafeWrite(csq.charAt(i));
     }
     return this;
@@ -75,7 +85,7 @@ public class OpenStringBuilder implements Appendable, CharSequence {
   }
 
   public void setCharAt(int index, char ch) {
-    buf[index] = ch;    
+    buf[index] = ch;
   }
 
   @Override
@@ -87,7 +97,9 @@ public class OpenStringBuilder implements Appendable, CharSequence {
     buf[len++] = b;
   }
 
-  public void unsafeWrite(int b) { unsafeWrite((char)b); }
+  public void unsafeWrite(int b) {
+    unsafeWrite((char) b);
+  }
 
   public void unsafeWrite(char b[], int off, int len) {
     System.arraycopy(b, off, buf, this.len, len);
@@ -106,15 +118,17 @@ public class OpenStringBuilder implements Appendable, CharSequence {
 
   public void write(char b) {
     if (len >= buf.length) {
-      resize(len +1);
+      resize(len + 1);
     }
     unsafeWrite(b);
   }
 
-  public void write(int b) { write((char)b); }
+  public void write(int b) {
+    write((char) b);
+  }
 
   public final void write(char[] b) {
-    write(b,0,b.length);
+    write(b, 0, b.length);
   }
 
   public void write(char b[], int off, int len) {
@@ -128,15 +142,14 @@ public class OpenStringBuilder implements Appendable, CharSequence {
 
   public void write(String s) {
     reserve(s.length());
-    s.getChars(0,s.length(),buf, len);
-    len +=s.length();
+    s.getChars(0, s.length(), buf, len);
+    len += s.length();
   }
 
-  public void flush() {
-  }
+  public void flush() {}
 
   public final void reset() {
-    len =0;
+    len = 0;
   }
 
   public char[] toCharArray() {

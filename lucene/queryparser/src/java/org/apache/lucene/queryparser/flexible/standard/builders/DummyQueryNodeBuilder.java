@@ -22,29 +22,26 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.search.TermQuery;
 
 /**
- * This builder does nothing. Commonly used for {@link QueryNode} objects that
- * are built by its parent's builder.
- * 
+ * This builder does nothing. Commonly used for {@link QueryNode} objects that are built by its
+ * parent's builder.
+ *
  * @see StandardQueryBuilder
  * @see QueryTreeBuilder
  */
 public class DummyQueryNodeBuilder implements StandardQueryBuilder {
 
-  /**
-   * Constructs a {@link DummyQueryNodeBuilder} object.
-   */
+  /** Constructs a {@link DummyQueryNodeBuilder} object. */
   public DummyQueryNodeBuilder() {
     // empty constructor
   }
 
   /**
    * Always return <code>null</code>.
-   * 
-   * return <code>null</code>
+   *
+   * <p>return <code>null</code>
    */
   @Override
   public TermQuery build(QueryNode queryNode) throws QueryNodeException {
     return null;
   }
-
 }

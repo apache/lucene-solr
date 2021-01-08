@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.norm;
 
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestMinMaxNormalizer {
 
-  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  private final SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
 
   private Normalizer implTestMinMax(Map<String,Object> params,
       float expectedMin, float expectedMax) {
@@ -123,7 +124,7 @@ public class TestMinMaxNormalizer {
 
     final Map<String,Object> params = n1.paramsToMap();
     final MinMaxNormalizer n2 = (MinMaxNormalizer) Normalizer.getInstance(
-        new SolrResourceLoader(),
+        new SolrResourceLoader(Paths.get("").toAbsolutePath()),
         MinMaxNormalizer.class.getName(),
         params);
     assertEquals(n1.getMin(), n2.getMin(), 1e-6);

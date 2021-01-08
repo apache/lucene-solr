@@ -16,19 +16,16 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * A {@link Collector} which allows running a search with several
- * {@link Collector}s. It offers a static {@link #wrap} method which accepts a
- * list of collectors and wraps them with {@link MultiCollector}, while
- * filtering out the <code>null</code> null ones.
+ * A {@link Collector} which allows running a search with several {@link Collector}s. It offers a
+ * static {@link #wrap} method which accepts a list of collectors and wraps them with {@link
+ * MultiCollector}, while filtering out the <code>null</code> null ones.
  */
 public class MultiCollector implements Collector {
 
@@ -38,20 +35,17 @@ public class MultiCollector implements Collector {
   }
 
   /**
-   * Wraps a list of {@link Collector}s with a {@link MultiCollector}. This
-   * method works as follows:
+   * Wraps a list of {@link Collector}s with a {@link MultiCollector}. This method works as follows:
+   *
    * <ul>
-   * <li>Filters out the <code>null</code> collectors, so they are not used
-   * during search time.
-   * <li>If the input contains 1 real collector (i.e. non-<code>null</code> ),
-   * it is returned.
-   * <li>Otherwise the method returns a {@link MultiCollector} which wraps the
-   * non-<code>null</code> ones.
+   *   <li>Filters out the <code>null</code> collectors, so they are not used during search time.
+   *   <li>If the input contains 1 real collector (i.e. non-<code>null</code> ), it is returned.
+   *   <li>Otherwise the method returns a {@link MultiCollector} which wraps the non-<code>null
+   *       </code> ones.
    * </ul>
-   * 
-   * @throws IllegalArgumentException
-   *           if either 0 collectors were input, or all collectors are
-   *           <code>null</code>.
+   *
+   * @throws IllegalArgumentException if either 0 collectors were input, or all collectors are
+   *     <code>null</code>.
    */
   public static Collector wrap(Iterable<? extends Collector> collectors) {
     // For the user's convenience, we allow null collectors to be passed.
@@ -87,7 +81,7 @@ public class MultiCollector implements Collector {
       return new MultiCollector(colls);
     }
   }
-  
+
   private final boolean cacheScores;
   private final Collector[] collectors;
 
@@ -134,7 +128,8 @@ public class MultiCollector implements Collector {
       case 1:
         return leafCollectors.get(0);
       default:
-        return new MultiLeafCollector(leafCollectors, cacheScores, scoreMode() == ScoreMode.TOP_SCORES);
+        return new MultiLeafCollector(
+            leafCollectors, cacheScores, scoreMode() == ScoreMode.TOP_SCORES);
     }
   }
 
@@ -145,7 +140,8 @@ public class MultiCollector implements Collector {
     private final float[] minScores;
     private final boolean skipNonCompetitiveScores;
 
-    private MultiLeafCollector(List<LeafCollector> collectors, boolean cacheScores, boolean skipNonCompetitive) {
+    private MultiLeafCollector(
+        List<LeafCollector> collectors, boolean cacheScores, boolean skipNonCompetitive) {
       this.collectors = collectors.toArray(new LeafCollector[collectors.size()]);
       this.cacheScores = cacheScores;
       this.skipNonCompetitiveScores = skipNonCompetitive;
@@ -161,19 +157,19 @@ public class MultiCollector implements Collector {
         for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
           if (c != null) {
-            c.setScorer(new MinCompetitiveScoreAwareScorable(scorer,  i,  minScores));
+            c.setScorer(new MinCompetitiveScoreAwareScorable(scorer, i, minScores));
           }
         }
       } else {
-        scorer = new FilterScorable(scorer) {
-          @Override
-          public void setMinCompetitiveScore(float minScore) throws IOException {
-            // Ignore calls to setMinCompetitiveScore so that if we wrap two
-            // collectors and one of them wants to skip low-scoring hits, then
-            // the other collector still sees all hits.
-          }
-
-        };
+        scorer =
+            new FilterScorable(scorer) {
+              @Override
+              public void setMinCompetitiveScore(float minScore) throws IOException {
+                // Ignore calls to setMinCompetitiveScore so that if we wrap two
+                // collectors and one of them wants to skip low-scoring hits, then
+                // the other collector still sees all hits.
+              }
+            };
         for (int i = 0; i < collectors.length; ++i) {
           final LeafCollector c = collectors[i];
           if (c != null) {
@@ -208,11 +204,10 @@ public class MultiCollector implements Collector {
       }
       return true;
     }
-
   }
-  
-  final static class MinCompetitiveScoreAwareScorable extends FilterScorable {
-    
+
+  static final class MinCompetitiveScoreAwareScorable extends FilterScorable {
+
     private final int idx;
     private final float[] minScores;
 
@@ -221,7 +216,7 @@ public class MultiCollector implements Collector {
       this.idx = idx;
       this.minScores = minScores;
     }
-    
+
     @Override
     public void setMinCompetitiveScore(float minScore) throws IOException {
       if (minScore > minScores[idx]) {
@@ -239,7 +234,5 @@ public class MultiCollector implements Collector {
       }
       return min;
     }
-    
   }
-
 }

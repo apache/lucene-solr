@@ -29,5 +29,4 @@ public class TestFixedBitDocIdSet extends BaseDocIdSetTestCase<BitDocIdSet> {
     }
     return new BitDocIdSet(set);
   }
-  
 }

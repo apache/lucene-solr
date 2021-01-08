@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
-import java.io.IOException;
 
+import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 
- 
-/**
- * Simple single-term clause
- */
+/** Simple single-term clause */
 public class SrndTermQuery extends SimpleTerm {
   public SrndTermQuery(String termText, boolean quoted) {
     super(quoted);
@@ -35,21 +32,23 @@ public class SrndTermQuery extends SimpleTerm {
   }
 
   private final String termText;
-  public String getTermText() {return termText;}
-        
+
+  public String getTermText() {
+    return termText;
+  }
+
   public Term getLuceneTerm(String fieldName) {
     return new Term(fieldName, getTermText());
   }
-  
+
   @Override
-  public String toStringUnquoted() {return getTermText();}
-  
+  public String toStringUnquoted() {
+    return getTermText();
+  }
+
   @Override
-  public void visitMatchingTerms(
-    IndexReader reader,
-    String fieldName,
-    MatchingTermVisitor mtv) throws IOException
-  {
+  public void visitMatchingTerms(IndexReader reader, String fieldName, MatchingTermVisitor mtv)
+      throws IOException {
     /* check term presence in index here for symmetry with other SimpleTerm's */
     Terms terms = MultiTerms.getTerms(reader, fieldName);
     if (terms != null) {
@@ -62,6 +61,3 @@ public class SrndTermQuery extends SimpleTerm {
     }
   }
 }
-  
-
-

@@ -16,37 +16,40 @@
  */
 package org.apache.lucene.misc.store;
 
-import java.io.IOException;
 import java.io.FileDescriptor;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/**
- * Provides JNI access to native methods such as madvise() for
- * {@link NativeUnixDirectory}
- */
+/** Provides JNI access to native methods such as madvise() for {@link NativeUnixDirectory} */
 public final class NativePosixUtil {
-  public final static int NORMAL = 0;
-  public final static int SEQUENTIAL = 1;
-  public final static int RANDOM = 2;
-  public final static int WILLNEED = 3;
-  public final static int DONTNEED = 4;
-  public final static int NOREUSE = 5;
+  public static final int NORMAL = 0;
+  public static final int SEQUENTIAL = 1;
+  public static final int RANDOM = 2;
+  public static final int WILLNEED = 3;
+  public static final int DONTNEED = 4;
+  public static final int NOREUSE = 5;
 
   static {
     System.loadLibrary("LuceneNativeIO");
   }
 
-  private static native int posix_fadvise(FileDescriptor fd, long offset, long len, int advise) throws IOException;
-  public static native int posix_madvise(ByteBuffer buf, int advise) throws IOException;
-  public static native int madvise(ByteBuffer buf, int advise) throws IOException;
-  public static native FileDescriptor open_direct(String filename, boolean read) throws IOException;
-  public static native long pread(FileDescriptor fd, long pos, ByteBuffer byteBuf) throws IOException;
+  private static native int posix_fadvise(FileDescriptor fd, long offset, long len, int advise)
+      throws IOException;
 
-  public static void advise(FileDescriptor fd, long offset, long len, int advise) throws IOException {
+  public static native int posix_madvise(ByteBuffer buf, int advise) throws IOException;
+
+  public static native int madvise(ByteBuffer buf, int advise) throws IOException;
+
+  public static native FileDescriptor open_direct(String filename, boolean read) throws IOException;
+
+  public static native long pread(FileDescriptor fd, long pos, ByteBuffer byteBuf)
+      throws IOException;
+
+  public static void advise(FileDescriptor fd, long offset, long len, int advise)
+      throws IOException {
     final int code = posix_fadvise(fd, offset, len, advise);
     if (code != 0) {
       throw new RuntimeException("posix_fadvise failed code=" + code);
     }
   }
 }
-    

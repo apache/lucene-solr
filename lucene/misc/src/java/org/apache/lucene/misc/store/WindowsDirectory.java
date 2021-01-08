@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.misc.store;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -24,33 +28,31 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockFactory;
 
-import java.io.IOException;
-import java.io.EOFException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-
 /**
  * Native {@link Directory} implementation for Microsoft Windows.
- * <p>
- * Steps:
- * <ol> 
+ *
+ * <p>Steps:
+ *
+ * <ol>
  *   <li>Compile the source code to create libLuceneNativeIO.dll: <code>./gradlew build</code>
- *   <li>Put the resulting <code>libLuceneNativeIO.dll</code>
- *   (from <code>lucene/misc/native/build/lib/release/platform/</code>)
- *   into some directory in your windows PATH
+ *   <li>Put the resulting <code>libLuceneNativeIO.dll</code> (from <code>
+ *       lucene/misc/native/build/lib/release/platform/</code>) into some directory in your windows
+ *       PATH
  *   <li>Open indexes with WindowsDirectory and use it.
  * </ol>
+ *
  * @lucene.experimental
  */
 public class WindowsDirectory extends FSDirectory {
   private static final int DEFAULT_BUFFERSIZE = 4096; /* default pgsize on ia32/amd64 */
-  
+
   static {
     System.loadLibrary("LuceneNativeIO");
   }
-  
-  /** Create a new WindowsDirectory for the named location.
-   * 
+
+  /**
+   * Create a new WindowsDirectory for the named location.
+   *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use
    * @throws IOException If there is a low-level I/O error
@@ -59,7 +61,8 @@ public class WindowsDirectory extends FSDirectory {
     super(path, lockFactory);
   }
 
-  /** Create a new WindowsDirectory for the named location and {@link FSLockFactory#getDefault()}.
+  /**
+   * Create a new WindowsDirectory for the named location and {@link FSLockFactory#getDefault()}.
    *
    * @param path the path of the directory
    * @throws IOException If there is a low-level I/O error
@@ -71,27 +74,30 @@ public class WindowsDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    return new WindowsIndexInput(getDirectory().resolve(name), Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
+    return new WindowsIndexInput(
+        getDirectory().resolve(name),
+        Math.max(BufferedIndexInput.bufferSize(context), DEFAULT_BUFFERSIZE));
   }
-  
+
   static class WindowsIndexInput extends BufferedIndexInput {
     private final long fd;
     private final long length;
     boolean isClone;
     boolean isOpen;
-    
+
     public WindowsIndexInput(Path file, int bufferSize) throws IOException {
       super("WindowsIndexInput(path=\"" + file + "\")", bufferSize);
       fd = WindowsDirectory.open(file.toString());
       length = WindowsDirectory.length(fd);
       isOpen = true;
     }
-    
+
     @Override
     protected void readInternal(ByteBuffer b) throws IOException {
       int bytesRead;
       try {
-        bytesRead = WindowsDirectory.read(fd, b.array(), b.position(), b.remaining(), getFilePointer());
+        bytesRead =
+            WindowsDirectory.read(fd, b.array(), b.position(), b.remaining(), getFilePointer());
       } catch (IOException ioe) {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
@@ -102,8 +108,7 @@ public class WindowsDirectory extends FSDirectory {
     }
 
     @Override
-    protected void seekInternal(long pos) throws IOException {
-    }
+    protected void seekInternal(long pos) throws IOException {}
 
     @Override
     public synchronized void close() throws IOException {
@@ -118,24 +123,25 @@ public class WindowsDirectory extends FSDirectory {
     public long length() {
       return length;
     }
-    
+
     @Override
     public WindowsIndexInput clone() {
-      WindowsIndexInput clone = (WindowsIndexInput)super.clone();
+      WindowsIndexInput clone = (WindowsIndexInput) super.clone();
       clone.isClone = true;
       return clone;
     }
   }
-  
+
   /** Opens a handle to a file. */
   private static native long open(String filename) throws IOException;
-  
+
   /** Reads data from a file at pos into bytes */
-  private static native int read(long fd, byte bytes[], int offset, int length, long pos) throws IOException;
-  
+  private static native int read(long fd, byte bytes[], int offset, int length, long pos)
+      throws IOException;
+
   /** Closes a handle to a file */
   private static native void close(long fd) throws IOException;
-  
+
   /** Returns the length of a file */
   private static native long length(long fd) throws IOException;
 }

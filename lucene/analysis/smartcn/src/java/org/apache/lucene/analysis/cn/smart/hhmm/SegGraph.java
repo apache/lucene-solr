@@ -23,23 +23,21 @@ import java.util.Map;
 
 /**
  * Graph representing possible tokens at each start offset in the sentence.
- * <p>
- * For each start offset, a list of possible tokens is stored.
- * </p>
+ *
+ * <p>For each start offset, a list of possible tokens is stored.
+ *
  * @lucene.experimental
  */
 class SegGraph {
 
-  /**
-   * Map of start offsets to ArrayList of tokens at that position
-   */
-  private Map<Integer,ArrayList<SegToken>> tokenListTable = new HashMap<>();
+  /** Map of start offsets to ArrayList of tokens at that position */
+  private Map<Integer, ArrayList<SegToken>> tokenListTable = new HashMap<>();
 
   private int maxStart = -1;
 
   /**
    * Returns true if a mapping for the specified start offset exists
-   * 
+   *
    * @param s startOffset
    * @return true if there are tokens for the startOffset
    */
@@ -49,7 +47,7 @@ class SegGraph {
 
   /**
    * Get the list of tokens at the specified start offset
-   * 
+   *
    * @param s startOffset
    * @return List of tokens at the specified start offset.
    */
@@ -59,7 +57,7 @@ class SegGraph {
 
   /**
    * Get the highest start offset in the map
-   * 
+   *
    * @return maximum start offset, or -1 if the map is empty.
    */
   public int getMaxStart() {
@@ -67,7 +65,8 @@ class SegGraph {
   }
 
   /**
-   * Set the {@link SegToken#index} for each token, based upon its order by startOffset. 
+   * Set the {@link SegToken#index} for each token, based upon its order by startOffset.
+   *
    * @return a {@link List} of these ordered tokens.
    */
   public List<SegToken> makeIndex() {
@@ -91,7 +90,9 @@ class SegGraph {
   }
 
   /**
-   * Add a {@link SegToken} to the mapping, creating a new mapping at the token's startOffset if one does not exist. 
+   * Add a {@link SegToken} to the mapping, creating a new mapping at the token's startOffset if one
+   * does not exist.
+   *
    * @param token {@link SegToken}
    */
   public void addToken(SegToken token) {
@@ -104,13 +105,12 @@ class SegGraph {
       List<SegToken> tokenList = tokenListTable.get(s);
       tokenList.add(token);
     }
-    if (s > maxStart)
-      maxStart = s;
+    if (s > maxStart) maxStart = s;
   }
 
   /**
    * Return a {@link List} of all tokens in the map, ordered by startOffset.
-   * 
+   *
    * @return {@link List} of all tokens in the map.
    */
   public List<SegToken> toTokenList() {

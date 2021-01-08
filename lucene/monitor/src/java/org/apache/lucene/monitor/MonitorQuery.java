@@ -21,12 +21,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-
 import org.apache.lucene.search.Query;
 
-/**
- * Defines a query to be stored in a Monitor
- */
+/** Defines a query to be stored in a Monitor */
 public class MonitorQuery {
 
   private final String id;
@@ -37,11 +34,11 @@ public class MonitorQuery {
   /**
    * Creates a new MonitorQuery
    *
-   * @param id          the query ID
-   * @param query       the query to store
+   * @param id the query ID
+   * @param query the query to store
    * @param queryString an optional string representation of the query, for persistent Monitors
-   * @param metadata    metadata passed to {@link Presearcher#indexQuery(Query, Map)}.  Must not
-   *                    have any null values
+   * @param metadata metadata passed to {@link Presearcher#indexQuery(Query, Map)}. Must not have
+   *     any null values
    */
   public MonitorQuery(String id, Query query, String queryString, Map<String, String> metadata) {
     this.id = id;
@@ -54,7 +51,7 @@ public class MonitorQuery {
   /**
    * Creates a new MonitorQuery with empty metadata and no string representation
    *
-   * @param id    the ID
+   * @param id the ID
    * @param query the query
    */
   public MonitorQuery(String id, Query query) {
@@ -64,34 +61,27 @@ public class MonitorQuery {
   private static void checkNullEntries(Map<String, String> metadata) {
     for (Map.Entry<String, String> entry : metadata.entrySet()) {
       if (entry.getValue() == null)
-        throw new IllegalArgumentException("Null value for key " + entry.getKey() + " in metadata map");
+        throw new IllegalArgumentException(
+            "Null value for key " + entry.getKey() + " in metadata map");
     }
   }
 
-  /**
-   * @return this MonitorQuery's ID
-   */
+  /** @return this MonitorQuery's ID */
   public String getId() {
     return id;
   }
 
-  /**
-   * @return this MonitorQuery's query
-   */
+  /** @return this MonitorQuery's query */
   public Query getQuery() {
     return query;
   }
 
-  /**
-   * @return this MonitorQuery's string representation
-   */
+  /** @return this MonitorQuery's string representation */
   public String getQueryString() {
     return queryString;
   }
 
-  /**
-   * @return this MonitorQuery's metadata
-   */
+  /** @return this MonitorQuery's metadata */
   public Map<String, String> getMetadata() {
     return metadata;
   }
@@ -101,7 +91,9 @@ public class MonitorQuery {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MonitorQuery that = (MonitorQuery) o;
-    return Objects.equals(id, that.id) && Objects.equals(query, that.query) && Objects.equals(metadata, that.metadata);
+    return Objects.equals(id, that.id)
+        && Objects.equals(query, that.query)
+        && Objects.equals(metadata, that.metadata);
   }
 
   @Override
@@ -115,8 +107,7 @@ public class MonitorQuery {
     sb.append(": ");
     if (queryString == null) {
       sb.append(query.toString());
-    }
-    else {
+    } else {
       sb.append(queryString);
     }
     if (metadata.size() != 0) {
@@ -125,8 +116,7 @@ public class MonitorQuery {
       for (Map.Entry<String, String> entry : metadata.entrySet()) {
         n--;
         sb.append(entry.getKey()).append(": ").append(entry.getValue());
-        if (n > 0)
-          sb.append(", ");
+        if (n > 0) sb.append(", ");
       }
       sb.append(" }");
     }

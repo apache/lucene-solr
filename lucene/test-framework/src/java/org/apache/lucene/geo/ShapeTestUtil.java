@@ -16,11 +16,10 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
+import java.util.ArrayList;
+import java.util.Random;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -54,6 +53,13 @@ public class ShapeTestUtil {
       // triangle
       return trianglePolygon(box);
     }
+  }
+
+  public static XYPoint nextPoint() {
+    Random random = random();
+    float x = nextFloat(random);
+    float y = nextFloat(random);
+    return new XYPoint(x, y);
   }
 
   public static XYLine nextLine() {
@@ -149,18 +155,24 @@ public class ShapeTestUtil {
       ArrayList<Float> yList = new ArrayList<>();
       double angle = 0.0;
       while (true) {
-        angle += random.nextDouble()*40.0;
+        angle += random.nextDouble() * 40.0;
         if (angle > 360) {
           break;
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random.nextDouble());
-        float maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
-        float maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
+        float maxX =
+            StrictMath.min(
+                StrictMath.abs(Float.MAX_VALUE - centerX),
+                StrictMath.abs(-Float.MAX_VALUE - centerX));
+        float maxY =
+            StrictMath.min(
+                StrictMath.abs(Float.MAX_VALUE - centerY),
+                StrictMath.abs(-Float.MAX_VALUE - centerY));
 
         len = StrictMath.min(len, StrictMath.min(maxX, maxY));
 
-        float x = (float)(centerX + len * Math.cos(Math.toRadians(angle)));
-        float y = (float)(centerY + len * Math.sin(Math.toRadians(angle)));
+        float x = (float) (centerX + len * Math.cos(Math.toRadians(angle)));
+        float y = (float) (centerY + len * Math.sin(Math.toRadians(angle)));
 
         xList.add(x);
         yList.add(y);
@@ -172,7 +184,7 @@ public class ShapeTestUtil {
 
       float[] xArray = new float[xList.size()];
       float[] yArray = new float[yList.size()];
-      for(int i=0;i<xList.size();i++) {
+      for (int i = 0; i < xList.size(); i++) {
         xArray[i] = xList.get(i);
         yArray[i] = yList.get(i);
       }
@@ -180,28 +192,35 @@ public class ShapeTestUtil {
     }
   }
 
-  /** Makes an n-gon, centered at the provided x/y, and each vertex approximately
-   *  distanceMeters away from the center.
+  /**
+   * Makes an n-gon, centered at the provided x/y, and each vertex approximately distanceMeters away
+   * from the center.
    *
-   * Do not invoke me across the dateline or a pole!! */
-  public static XYPolygon createRegularPolygon(double centerX, double centerY, double radius, int gons) {
+   * <p>Do not invoke me across the dateline or a pole!!
+   */
+  public static XYPolygon createRegularPolygon(
+      double centerX, double centerY, double radius, int gons) {
 
-    double maxX = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
-    double maxY = StrictMath.min(StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
+    double maxX =
+        StrictMath.min(
+            StrictMath.abs(Float.MAX_VALUE - centerX), StrictMath.abs(-Float.MAX_VALUE - centerX));
+    double maxY =
+        StrictMath.min(
+            StrictMath.abs(Float.MAX_VALUE - centerY), StrictMath.abs(-Float.MAX_VALUE - centerY));
 
     radius = StrictMath.min(radius, StrictMath.min(maxX, maxY));
 
     float[][] result = new float[2][];
-    result[0] = new float[gons+1];
-    result[1] = new float[gons+1];
-    //System.out.println("make gon=" + gons);
-    for(int i=0;i<gons;i++) {
-      double angle = 360.0-i*(360.0/gons);
-      //System.out.println("  angle " + angle);
+    result[0] = new float[gons + 1];
+    result[1] = new float[gons + 1];
+    // System.out.println("make gon=" + gons);
+    for (int i = 0; i < gons; i++) {
+      double angle = 360.0 - i * (360.0 / gons);
+      // System.out.println("  angle " + angle);
       double x = Math.cos(StrictMath.toRadians(angle));
       double y = Math.sin(StrictMath.toRadians(angle));
-      result[0][i] = (float)(centerY + y * radius);
-      result[1][i] = (float)(centerX + x * radius);
+      result[0][i] = (float) (centerY + y * radius);
+      result[1][i] = (float) (centerX + x * radius);
     }
 
     // close poly
@@ -220,19 +239,22 @@ public class ShapeTestUtil {
     return RandomizedContext.current().getRandom();
   }
 
-  /**
-   * Simple slow point in polygon check (for testing)
-   */
+  /** Simple slow point in polygon check (for testing) */
   // direct port of PNPOLY C code (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html)
   // this allows us to improve the code yet still ensure we have its properties
-  // it is under the BSD license (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
+  // it is under the BSD license
+  // (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
   //
   // Copyright (c) 1970-2003, Wm. Randolph Franklin
   //
-  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-  // documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-  // to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+  // and associated
+  // documentation files (the "Software"), to deal in the Software without restriction, including
+  // without limitation
+  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+  // the Software, and
+  // to permit persons to whom the Software is furnished to do so, subject to the following
+  // conditions:
   //
   // 1. Redistributions of source code must retain the above copyright
   //    notice, this list of conditions and the following disclaimers.
@@ -243,17 +265,21 @@ public class ShapeTestUtil {
   //    promote products derived from this Software without specific
   //    prior written permission.
   //
-  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
-  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
-  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+  // BUT NOT LIMITED
+  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+  // NO EVENT SHALL
+  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+  // IN AN ACTION OF
+  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+  // OR OTHER DEALINGS
   // IN THE SOFTWARE.
   public static boolean containsSlowly(XYPolygon polygon, double x, double y) {
     if (polygon.getHoles().length > 0) {
       throw new UnsupportedOperationException("this testing method does not support holes");
     }
     double polyXs[] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX());
-    double polyYs[] =XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY());
+    double polyYs[] = XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY());
     // bounding box check required due to rounding errors (we don't solve that problem)
     if (x < polygon.minX || x > polygon.maxX || y < polygon.minY || y > polygon.maxY) {
       return false;
@@ -267,15 +293,17 @@ public class ShapeTestUtil {
     double testy = y;
     double testx = x;
     for (i = 0, j = 1; j < nvert; ++i, ++j) {
-      if (testy == verty[j] && testy == verty[i] ||
-          ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
-        if ((testx == vertx[j] && testx == vertx[i]) ||
-            ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i]) &&
-                GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
+      if (testy == verty[j] && testy == verty[i]
+          || ((testy <= verty[j] && testy >= verty[i])
+              != (testy >= verty[j] && testy <= verty[i]))) {
+        if ((testx == vertx[j] && testx == vertx[i])
+            || ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i])
+                && GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
           // return true if point is on boundary
           return true;
-        } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&
-            (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ) {
+        } else if (((verty[i] > testy) != (verty[j] > testy))
+            && (testx
+                < (vertx[j] - vertx[i]) * (testy - verty[i]) / (verty[j] - verty[i]) + vertx[i])) {
           c = !c;
         }
       }

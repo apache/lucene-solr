@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.function.valuesource;
+
 import org.apache.lucene.queries.function.ValueSource;
 
-
 /**
- * A {@link ValueSource} that abstractly represents {@link ValueSource}s for
- * poly fields, and other things.
- **/
+ * A {@link ValueSource} that abstractly represents {@link ValueSource}s for poly fields, and other
+ * things.
+ */
 public abstract class MultiValueSource extends ValueSource {
 
   public abstract int dimension();

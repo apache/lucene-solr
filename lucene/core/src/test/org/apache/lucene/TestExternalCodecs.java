@@ -16,7 +16,6 @@
  */
 package org.apache.lucene;
 
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
@@ -32,14 +31,13 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-
 /* Intentionally outside of oal.index to verify fully
-   external codecs work fine */
+external codecs work fine */
 
 public class TestExternalCodecs extends LuceneTestCase {
 
   private static final class CustomPerFieldCodec extends AssertingCodec {
-    
+
     private final PostingsFormat ramFormat = PostingsFormat.forName("RAMOnly");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
 
@@ -57,7 +55,7 @@ public class TestExternalCodecs extends LuceneTestCase {
   // whose term sort is backwards unicode code point, and
   // storing "field1" as a custom entirely-in-RAM codec
   public void testPerFieldCodec() throws Exception {
-    
+
     final int NUM_DOCS = atLeast(173);
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
@@ -65,26 +63,28 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we use a custom codec provider
-    IndexWriter w = new IndexWriter(
-        dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).
-        setCodec(new CustomPerFieldCodec()).
-            setMergePolicy(newLogMergePolicy(3))
-    );
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setCodec(new CustomPerFieldCodec())
+                .setMergePolicy(newLogMergePolicy(3)));
     Document doc = new Document();
     // uses default codec:
-    doc.add(newTextField("field1", "this field uses the standard codec as the test", Field.Store.NO));
+    doc.add(
+        newTextField("field1", "this field uses the standard codec as the test", Field.Store.NO));
     // uses memory codec:
-    Field field2 = newTextField("field2", "this field uses the memory codec as the test", Field.Store.NO);
+    Field field2 =
+        newTextField("field2", "this field uses the memory codec as the test", Field.Store.NO);
     doc.add(field2);
-    
+
     Field idField = newStringField("id", "", Field.Store.NO);
 
     doc.add(idField);
-    for(int i=0;i<NUM_DOCS;i++) {
-      idField.setStringValue(""+i);
+    for (int i = 0; i < NUM_DOCS; i++) {
+      idField.setStringValue("" + i);
       w.addDocument(doc);
-      if ((i+1)%10 == 0) {
+      if ((i + 1) % 10 == 0) {
         w.commit();
       }
     }
@@ -94,11 +94,11 @@ public class TestExternalCodecs extends LuceneTestCase {
     w.deleteDocuments(new Term("id", "77"));
 
     IndexReader r = DirectoryReader.open(w);
-    
-    assertEquals(NUM_DOCS-1, r.numDocs());
+
+    assertEquals(NUM_DOCS - 1, r.numDocs());
     IndexSearcher s = newSearcher(r);
-    assertEquals(NUM_DOCS-1, s.count(new TermQuery(new Term("field1", "standard"))));
-    assertEquals(NUM_DOCS-1, s.count(new TermQuery(new Term("field2", "memory"))));
+    assertEquals(NUM_DOCS - 1, s.count(new TermQuery(new Term("field1", "standard"))));
+    assertEquals(NUM_DOCS - 1, s.count(new TermQuery(new Term("field2", "memory"))));
     r.close();
 
     if (VERBOSE) {
@@ -114,11 +114,11 @@ public class TestExternalCodecs extends LuceneTestCase {
       System.out.println("\nTEST: now open reader");
     }
     r = DirectoryReader.open(w);
-    assertEquals(NUM_DOCS-2, r.maxDoc());
-    assertEquals(NUM_DOCS-2, r.numDocs());
+    assertEquals(NUM_DOCS - 2, r.maxDoc());
+    assertEquals(NUM_DOCS - 2, r.numDocs());
     s = newSearcher(r);
-    assertEquals(NUM_DOCS-2, s.count(new TermQuery(new Term("field1", "standard"))));
-    assertEquals(NUM_DOCS-2, s.count(new TermQuery(new Term("field2", "memory"))));
+    assertEquals(NUM_DOCS - 2, s.count(new TermQuery(new Term("field1", "standard"))));
+    assertEquals(NUM_DOCS - 2, s.count(new TermQuery(new Term("field2", "memory"))));
     assertEquals(1, s.count(new TermQuery(new Term("id", "76"))));
     assertEquals(0, s.count(new TermQuery(new Term("id", "77"))));
     assertEquals(0, s.count(new TermQuery(new Term("id", "44"))));

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Additional ICU-specific Attributes for text analysis.
- */
+/** Additional ICU-specific Attributes for text analysis. */
 package org.apache.lucene.analysis.icu.tokenattributes;

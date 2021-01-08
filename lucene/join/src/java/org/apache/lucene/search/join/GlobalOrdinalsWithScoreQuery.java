@@ -17,7 +17,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.OrdinalMap;
@@ -38,12 +37,14 @@ import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
 final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(GlobalOrdinalsWithScoreQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(GlobalOrdinalsWithScoreQuery.class);
 
   private final GlobalOrdinalsWithScoreCollector collector;
   private final String joinField;
   private final OrdinalMap globalOrds;
-  // Is also an approximation of the docs that will match. Can be all docs that have toField or something more specific.
+  // Is also an approximation of the docs that will match. Can be all docs that have toField or
+  // something more specific.
   private final Query toQuery;
 
   // just for hashcode and equals:
@@ -51,14 +52,22 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
   private final Query fromQuery;
   private final int min;
   private final int max;
-  // id of the context rather than the context itself in order not to hold references to index readers
+  // id of the context rather than the context itself in order not to hold references to index
+  // readers
   private final Object indexReaderContextId;
 
   private final long ramBytesUsed; // cache
 
-  GlobalOrdinalsWithScoreQuery(GlobalOrdinalsWithScoreCollector collector, ScoreMode scoreMode, String joinField,
-                               OrdinalMap globalOrds, Query toQuery, Query fromQuery, int min, int max,
-                               Object indexReaderContextId) {
+  GlobalOrdinalsWithScoreQuery(
+      GlobalOrdinalsWithScoreCollector collector,
+      ScoreMode scoreMode,
+      String joinField,
+      OrdinalMap globalOrds,
+      Query toQuery,
+      Query fromQuery,
+      int min,
+      int max,
+      Object indexReaderContextId) {
     this.collector = collector;
     this.joinField = joinField;
     this.globalOrds = globalOrds;
@@ -69,11 +78,14 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
     this.max = max;
     this.indexReaderContextId = indexReaderContextId;
 
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(this.fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
-        RamUsageEstimator.sizeOfObject(this.globalOrds) +
-        RamUsageEstimator.sizeOfObject(this.joinField) +
-        RamUsageEstimator.sizeOfObject(this.toQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
+    this.ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(
+                this.fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.sizeOfObject(this.globalOrds)
+            + RamUsageEstimator.sizeOfObject(this.joinField)
+            + RamUsageEstimator.sizeOfObject(
+                this.toQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   @Override
@@ -82,34 +94,45 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(
+      IndexSearcher searcher, org.apache.lucene.search.ScoreMode scoreMode, float boost)
+      throws IOException {
     if (searcher.getTopReaderContext().id() != indexReaderContextId) {
-      throw new IllegalStateException("Creating the weight against a different index reader than this query has been built for.");
+      throw new IllegalStateException(
+          "Creating the weight against a different index reader than this query has been built for.");
     }
     boolean doNoMinMax = min <= 1 && max == Integer.MAX_VALUE;
     if (scoreMode.needsScores() == false && doNoMinMax) {
       // We don't need scores then quickly change the query to not uses the scores:
-      GlobalOrdinalsQuery globalOrdinalsQuery = new GlobalOrdinalsQuery(collector.collectedOrds, joinField, globalOrds,
-          toQuery, fromQuery, indexReaderContextId);
-      return globalOrdinalsQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
+      GlobalOrdinalsQuery globalOrdinalsQuery =
+          new GlobalOrdinalsQuery(
+              collector.collectedOrds,
+              joinField,
+              globalOrds,
+              toQuery,
+              fromQuery,
+              indexReaderContextId);
+      return globalOrdinalsQuery.createWeight(
+          searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, boost);
     }
-    return new W(this, toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f));
+    return new W(
+        this,
+        toQuery.createWeight(searcher, org.apache.lucene.search.ScoreMode.COMPLETE_NO_SCORES, 1f));
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(GlobalOrdinalsWithScoreQuery other) {
-    return min == other.min &&
-           max == other.max &&
-           scoreMode.equals(other.scoreMode) &&
-           joinField.equals(other.joinField) &&
-           fromQuery.equals(other.fromQuery) &&
-           toQuery.equals(other.toQuery) &&
-           indexReaderContextId.equals(other.indexReaderContextId);
+    return min == other.min
+        && max == other.max
+        && scoreMode.equals(other.scoreMode)
+        && joinField.equals(other.joinField)
+        && fromQuery.equals(other.fromQuery)
+        && toQuery.equals(other.toQuery)
+        && indexReaderContextId.equals(other.indexReaderContextId);
   }
 
   @Override
@@ -127,12 +150,16 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
 
   @Override
   public String toString(String field) {
-    return "GlobalOrdinalsQuery{" +
-          "joinField=" + joinField +
-          "min=" + min +
-          "max=" + max +
-          "fromQuery=" + fromQuery +
-        '}';
+    return "GlobalOrdinalsQuery{"
+        + "joinField="
+        + joinField
+        + "min="
+        + min
+        + "max="
+        + max
+        + "fromQuery="
+        + fromQuery
+        + '}';
   }
 
   @Override
@@ -184,7 +211,12 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
       if (approximationScorer == null) {
         return null;
       } else if (globalOrds != null) {
-        return new OrdinalMapScorer(this, collector, values, approximationScorer.iterator(), globalOrds.getGlobalOrds(context.ord));
+        return new OrdinalMapScorer(
+            this,
+            collector,
+            values,
+            approximationScorer.iterator(),
+            globalOrds.getGlobalOrds(context.ord));
       } else {
         return new SegmentOrdinalScorer(this, collector, values, approximationScorer.iterator());
       }
@@ -199,12 +231,17 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
     }
   }
 
-  final static class OrdinalMapScorer extends BaseGlobalOrdinalScorer {
+  static final class OrdinalMapScorer extends BaseGlobalOrdinalScorer {
 
     final LongValues segmentOrdToGlobalOrdLookup;
     final GlobalOrdinalsWithScoreCollector collector;
 
-    public OrdinalMapScorer(Weight weight, GlobalOrdinalsWithScoreCollector collector, SortedDocValues values, DocIdSetIterator approximation, LongValues segmentOrdToGlobalOrdLookup) {
+    public OrdinalMapScorer(
+        Weight weight,
+        GlobalOrdinalsWithScoreCollector collector,
+        SortedDocValues values,
+        DocIdSetIterator approximation,
+        LongValues segmentOrdToGlobalOrdLookup) {
       super(weight, values, approximation);
       this.segmentOrdToGlobalOrdLookup = segmentOrdToGlobalOrdLookup;
       this.collector = collector;
@@ -235,11 +272,15 @@ final class GlobalOrdinalsWithScoreQuery extends Query implements Accountable {
     }
   }
 
-  final static class SegmentOrdinalScorer extends BaseGlobalOrdinalScorer {
+  static final class SegmentOrdinalScorer extends BaseGlobalOrdinalScorer {
 
     final GlobalOrdinalsWithScoreCollector collector;
 
-    public SegmentOrdinalScorer(Weight weight, GlobalOrdinalsWithScoreCollector collector, SortedDocValues values, DocIdSetIterator approximation) {
+    public SegmentOrdinalScorer(
+        Weight weight,
+        GlobalOrdinalsWithScoreCollector collector,
+        SortedDocValues values,
+        DocIdSetIterator approximation) {
       super(weight, values, approximation);
       this.collector = collector;
     }

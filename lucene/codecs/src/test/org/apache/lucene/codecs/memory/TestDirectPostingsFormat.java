@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests DirectPostingsFormat
- */
+/** Tests DirectPostingsFormat */
 public class TestDirectPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize parameters
   private final Codec codec = TestUtil.alwaysPostingsFormat(new DirectPostingsFormat());

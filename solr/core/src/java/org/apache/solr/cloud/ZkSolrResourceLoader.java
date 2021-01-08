@@ -81,7 +81,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
         if (zkController.pathExists(file)) {
           Stat stat = new Stat();
           byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
-          return new ZkByteArrayInputStream(bytes, stat);
+          return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
           //Path does not exists. We only retry for session expired exceptions.
           break;
@@ -126,11 +126,12 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   public static class ZkByteArrayInputStream extends ByteArrayInputStream{
 
+    public final String fileName;
     private final Stat stat;
-    public ZkByteArrayInputStream(byte[] buf, Stat stat) {
+    public ZkByteArrayInputStream(byte[] buf, String fileName, Stat stat) {
       super(buf);
+      this.fileName = fileName;
       this.stat = stat;
-
     }
 
     public Stat getStat(){
