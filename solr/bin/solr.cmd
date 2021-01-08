@@ -1086,6 +1086,10 @@ IF "!IS_RESTART!"=="1" set SCRIPT_CMD=start
 IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
+IF DEFINED SOLR_PORT_ADVERTISE (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
+)
+
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
   For /f "tokens=2,5" %%j in ('netstat -aon ^| find "TCP " ^| find ":0 " ^| find ":%SOLR_PORT% "') do (

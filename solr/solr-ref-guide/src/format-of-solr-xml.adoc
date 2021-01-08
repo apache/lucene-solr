@@ -34,7 +34,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
 
   <solrcloud>
     <str name="host">${host:}</str>
-    <int name="hostPort">${jetty.port:8983}</int>
+    <int name="hostPort">${solr.port.advertise:0}</int>
     <str name="hostContext">${hostContext:solr}</str>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
@@ -134,9 +134,13 @@ The hostname Solr uses to access cores.
 The url context path.
 
 `hostPort`::
-The port Solr uses to access cores.
+The port Solr uses to access cores, and advertise Solr node locations through liveNodes.
+This option is only necessary if a Solr instance is listening on a different port than it wants other nodes to contact it at.
+For example, if the Solr node is running behind a proxy or in a cloud environment that allows for port mapping, such as Kubernetes.
+`hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
-In the default `solr.xml` file, this is set to `${jetty.port:8983}`, which will use the Solr port defined in Jetty, and otherwise fall back to 8983.
+In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
+If no port is passed via the `solr.xml` (i.e. `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
 
 `leaderVoteWait`::
 When SolrCloud is starting up, how long each Solr node will wait for all known replicas for that shard to be found before assuming that any nodes that haven't reported are down.

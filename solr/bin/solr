@@ -1894,6 +1894,10 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
+if [ -n "$SOLR_PORT_ADVERTISE" ]; then
+  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
+fi
+
 if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
 fi
