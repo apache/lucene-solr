@@ -33,6 +33,6 @@ jobs:
           ${{ runner.os }}-gradle-
 
     - name: Build with Gradle
-      run: ./gradlew precommit
+      run: ./gradlew check -x test
 
     - uses: gradle/wrapper-validation-action@v1

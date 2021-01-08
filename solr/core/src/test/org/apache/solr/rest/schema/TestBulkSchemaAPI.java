@@ -773,6 +773,108 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
   }
 
+  @SuppressWarnings({"rawtypes"})
+  public void testCopyFieldWithReplace() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    String newFieldName = "test_solr_14950";
+
+    // add-field-type
+    String addFieldTypeAnalyzer = "{\n" +
+        "'add-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'charFilters' : [{\n" +
+        "                'name':'patternReplace',\n" +
+        "                'replacement':'$1$1',\n" +
+        "                'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "            }],\n" +
+        "        'tokenizer' : { 'name':'whitespace' },\n" +
+        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "    }\n"+
+        "}}";
+
+    String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    Map map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+    map = getObj(harness, "myNewTextField", "fieldTypes");
+    assertNotNull("'myNewTextField' field type does not exist in the schema", map);
+
+    // add-field
+    String payload = "{\n" +
+        "    'add-field' : {\n" +
+        "                 'name':'" + newFieldName + "',\n" +
+        "                 'type':'myNewTextField',\n" +
+        "                 'stored':true,\n" +
+        "                 'indexed':true\n" +
+        "                 }\n" +
+        "    }";
+
+    response = harness.post("/schema", json(payload));
+
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    Map m = getObj(harness, newFieldName, "fields");
+    assertNotNull("'"+ newFieldName + "' field does not exist in the schema", m);
+
+    // add copy-field with explicit source and destination
+    List l = getSourceCopyFields(harness, "bleh_s");
+    assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
+
+    payload = "{\n" +
+        "          'add-copy-field' : {\n" +
+        "                       'source' :'bleh_s',\n" +
+        "                       'dest':'"+ newFieldName + "'\n" +
+        "                       }\n" +
+        "          }\n";
+    response = harness.post("/schema", json(payload));
+
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertFalse("'bleh_s' copyField rule doesn't exist", l.isEmpty());
+    assertEquals("bleh_s", ((Map)l.get(0)).get("source"));
+    assertEquals(newFieldName, ((Map)l.get(0)).get("dest"));
+
+    // replace-field-type
+    String replaceFieldTypeAnalyzer = "{\n" +
+        "'replace-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'tokenizer' : { 'name':'whitespace' },\n" +
+        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "    }\n"+
+        "}}";
+
+    response = restTestHarness.post("/schema", json(replaceFieldTypeAnalyzer));
+    map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    map = getObj(restTestHarness, "myNewTextField", "fieldTypes");
+    assertNotNull(map);
+    Map analyzer = (Map)map.get("analyzer");
+    assertNull("'myNewTextField' shouldn't contain charFilters", analyzer.get("charFilters"));
+
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertFalse("'bleh_s' copyField rule doesn't exist", l.isEmpty());
+    assertEquals("bleh_s", ((Map)l.get(0)).get("source"));
+    assertEquals(newFieldName, ((Map)l.get(0)).get("dest"));
+
+    // with replace-field
+    String replaceField = "{'replace-field' : {'name':'" + newFieldName + "', 'type':'string'}}";
+    response = harness.post("/schema", json(replaceField));
+    map = (Map) fromJSONString(response);
+    assertNull(map.get("error"));
+
+    l = getSourceCopyFields(harness, "bleh_s");
+    assertFalse("'bleh_s' copyField rule doesn't exist", l.isEmpty());
+    assertEquals("bleh_s", ((Map)l.get(0)).get("source"));
+    assertEquals(newFieldName, ((Map)l.get(0)).get("dest"));
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
