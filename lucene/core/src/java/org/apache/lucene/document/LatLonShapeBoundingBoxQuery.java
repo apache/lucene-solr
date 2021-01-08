@@ -24,7 +24,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
-import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.lucene.document.ShapeField.QueryRelation;
