@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 

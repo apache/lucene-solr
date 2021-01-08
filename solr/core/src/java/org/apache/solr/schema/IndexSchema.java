@@ -16,9 +16,6 @@
  */
 package org.apache.solr.schema;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -44,6 +41,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
@@ -51,6 +49,7 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
+import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -65,26 +64,20 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.ConcurrentLRUCache;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.util.PayloadUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -124,13 +117,9 @@ public class IndexSchema {
   public static final String UNIQUE_KEY = "uniqueKey";
   public static final String VERSION = "version";
 
-  private static final String AT = "@";
   private static final String DESTINATION_DYNAMIC_BASE = "destDynamicBase";
-  private static final String SOLR_CORE_NAME = "solr.core.name";
   private static final String SOURCE_DYNAMIC_BASE = "sourceDynamicBase";
   private static final String SOURCE_EXPLICIT_FIELDS = "sourceExplicitFields";
-  private static final String TEXT_FUNCTION = "text()";
-  private static final String XPATH_OR = " | ";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected String resourceName;
@@ -149,6 +138,9 @@ public class IndexSchema {
   protected DynamicField[] dynamicFields = new DynamicField[] {};
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
+
+  private static final Set<String> FIELDTYPE_KEYS = ImmutableSet.of("fieldtype", "fieldType");
+  private static final Set<String> FIELD_KEYS = ImmutableSet.of("dynamicField", "field");
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
@@ -171,21 +163,26 @@ public class IndexSchema {
    * directives that target them.
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
+  private ConfigNode rootNode;
+
 
   /**
    * Constructs a schema using the specified resource name and stream.
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
+  public IndexSchema(String name, ConfigSetService.ConfigResource schemaResource, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
     this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
+    ConfigNode.SUBSTITUTES.set(substitutableProperties::getProperty);
     try {
-      readSchema(is);
+      readSchema(schemaResource);
       loader.inform(loader);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      ConfigNode.SUBSTITUTES.remove();
     }
   }
 
@@ -482,7 +479,7 @@ public class IndexSchema {
     @Override
     protected HashMap<String, Analyzer> analyzerCache() {
       HashMap<String, Analyzer> cache = new HashMap<>();
-       for (SchemaField f : getFields().values()) {
+      for (SchemaField f : getFields().values()) {
         Analyzer analyzer = f.getType().getQueryAnalyzer();
         cache.put(f.getName(), analyzer);
       }
@@ -496,23 +493,17 @@ public class IndexSchema {
     }
   }
 
-  protected void readSchema(InputSource is) {
+  protected void readSchema(ConfigSetService.ConfigResource is) {
     assert null != is : "schema InputSource should never be null";
     try {
-      // pass the config resource loader to avoid building an empty one for no reason:
-      // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
-      Document document = schemaConf.getDocument();
-      final XPath xpath = schemaConf.getXPath();
-      String expression = stepsToPath(SCHEMA, AT + NAME);
-      Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      rootNode = is.get();
+      name = rootNode.attributes().get("name");
       StringBuilder sb = new StringBuilder();
       // Another case where the initialization from the test harness is different than the "real world"
-      if (nd==null) {
+      if (name==null) {
         sb.append("schema has no name!");
         log.warn("{}", sb);
       } else {
-        name = nd.getNodeValue();
         sb.append("Schema ");
         sb.append(NAME);
         sb.append("=");
@@ -520,22 +511,21 @@ public class IndexSchema {
         log.info("{}", sb);
       }
 
-      //                      /schema/@version
-      expression = stepsToPath(SCHEMA, AT + VERSION);
-      version = schemaConf.getFloat(expression, 1.0f);
+      version =  Float.parseFloat(rootNode.attributes().get("version","1.0f"));
 
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
-      expression = getFieldTypeXPathExpressions();
-      NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      typeLoader.load(solrClassLoader, nodes);
+
+      List<ConfigNode> fTypes = rootNode.children(null, FIELDTYPE_KEYS);
+      ConfigNode types = rootNode.child(TYPES);
+      if(types != null) fTypes.addAll(types.children(null, FIELDTYPE_KEYS));
+      typeLoader.load(solrClassLoader, fTypes);
 
       // load the fields
-      Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
+      Map<String,Boolean> explicitRequiredProp = loadFields(rootNode);
 
-      expression = stepsToPath(SCHEMA, SIMILARITY); //   /schema/similarity
-      Node node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      similarityFactory = readSimilarity(solrClassLoader, node);
+
+      similarityFactory = readSimilarity(solrClassLoader, rootNode.child(SIMILARITY));
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
@@ -545,12 +535,12 @@ public class IndexSchema {
         isExplicitSimilarity = true;
       }
       if ( ! (similarityFactory instanceof SolrCoreAware)) {
-        // if the sim factory isn't SolrCoreAware (and hence schema aware), 
+        // if the sim factory isn't SolrCoreAware (and hence schema aware),
         // then we are responsible for erroring if a field type is trying to specify a sim.
         for (FieldType ft : fieldTypes.values()) {
           if (null != ft.getSimilarity()) {
             String msg = "FieldType '" + ft.getTypeName()
-                + "' is configured with a similarity, but the global similarity does not support it: " 
+                + "' is configured with a similarity, but the global similarity does not support it: "
                 + similarityFactory.getClass();
             log.error(msg);
             throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -558,41 +548,36 @@ public class IndexSchema {
         }
       }
 
-      //                      /schema/defaultSearchField/text()
-      expression = stepsToPath(SCHEMA, "defaultSearchField", TEXT_FUNCTION);
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      ConfigNode node = rootNode.child("defaultSearchField");
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
-      //                      /schema/solrQueryParser/@defaultOperator
-      expression = stepsToPath(SCHEMA, "solrQueryParser", AT + "defaultOperator");
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      node = rootNode.child(it -> it.attributes().get("defaultOperator") != null, "solrQueryParser");
       if (node != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
-      //                      /schema/uniqueKey/text()
-      expression = stepsToPath(SCHEMA, UNIQUE_KEY, TEXT_FUNCTION);
-      node = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
+      node = rootNode.child(UNIQUE_KEY);
+
       if (node==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
-        uniqueKeyField=getIndexedField(node.getNodeValue().trim());
+        uniqueKeyField=getIndexedField(node.textValue().trim());
         uniqueKeyFieldName=uniqueKeyField.getName();
         uniqueKeyFieldType=uniqueKeyField.getType();
-        
+
         // we fail on init if the ROOT field is *explicitly* defined as incompatible with uniqueKey
         // we don't want ot fail if there happens to be a dynamicField matching ROOT, (ie: "*")
         // because the user may not care about child docs at all.  The run time code
         // related to child docs can catch that if it happens
         if (fields.containsKey(ROOT_FIELD_NAME) && ! isUsableForChildDocs()) {
           String msg = ROOT_FIELD_NAME + " field must be defined using the exact same fieldType as the " +
-            UNIQUE_KEY + " field ("+uniqueKeyFieldName+") uses: " + uniqueKeyFieldType.getTypeName();
+              UNIQUE_KEY + " field ("+uniqueKeyFieldName+") uses: " + uniqueKeyFieldType.getTypeName();
           log.error(msg);
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
-        
+
         if (null != uniqueKeyField.getDefaultValue()) {
           String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
               ") can not be configured with a default value ("+
@@ -613,11 +598,11 @@ public class IndexSchema {
 
         if (uniqueKeyField.getType().isPointField()) {
           String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
-            ") can not be configured to use a Points based FieldType: " + uniqueKeyField.getType().getTypeName();
+              ") can not be configured to use a Points based FieldType: " + uniqueKeyField.getType().getTypeName();
           log.error(msg);
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
-        
+
         // Unless the uniqueKeyField is marked 'required=false' then make sure it exists
         if( Boolean.FALSE != explicitRequiredProp.get( uniqueKeyFieldName ) ) {
           uniqueKeyField.required = true;
@@ -630,7 +615,7 @@ public class IndexSchema {
       // expression = "/schema/copyField";
 
       dynamicCopyFields = new DynamicCopy[] {};
-      loadCopyFields(document, xpath);
+      loadCopyFields(rootNode);
 
       postReadInform();
 
@@ -656,66 +641,60 @@ public class IndexSchema {
     }
   }
 
-  /** 
+  /**
    * Loads fields and dynamic fields.
-   * 
-   * @return a map from field name to explicit required value  
-   */ 
-  protected synchronized Map<String,Boolean> loadFields(Document document, XPath xpath) throws XPathExpressionException {
+   *
+   * @return a map from field name to explicit required value
+   */
+  protected synchronized Map<String,Boolean> loadFields(ConfigNode n) {
     // Hang on to the fields that say if they are required -- this lets us set a reasonable default for the unique key
     Map<String,Boolean> explicitRequiredProp = new HashMap<>();
-    
+
     ArrayList<DynamicField> dFields = new ArrayList<>();
 
-    //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
-    String expression = stepsToPath(SCHEMA, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, DYNAMIC_FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, FIELD)
-        + XPATH_OR + stepsToPath(SCHEMA, FIELDS, DYNAMIC_FIELD);
+    List<ConfigNode> nodes = n.children(null,  FIELD_KEYS);
+    ConfigNode child = n.child(FIELDS);
+    if(child != null) {
+      nodes.addAll(child.children(null, FIELD_KEYS));
+    }
 
-    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
-
-    for (int i=0; i<nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-
-      NamedNodeMap attrs = node.getAttributes();
-
-      String name = DOMUtil.getAttr(attrs, NAME, "field definition");
+    for (ConfigNode node : nodes) {
+      String name = DOMUtil.getAttr(node, NAME, "field definition");
       log.trace("reading field def {}", name);
-      String type = DOMUtil.getAttr(attrs, TYPE, "field " + name);
+      String type = DOMUtil.getAttr(node, TYPE, "field " + name);
 
       FieldType ft = fieldTypes.get(type);
-      if (ft==null) {
+      if (ft == null) {
         throw new SolrException
             (ErrorCode.BAD_REQUEST, "Unknown " + FIELD_TYPE + " '" + type + "' specified on field " + name);
       }
 
-      Map<String,String> args = DOMUtil.toMapExcept(attrs, NAME, TYPE);
+      Map<String, String> args = DOMUtil.toMapExcept(node, NAME, TYPE);
       if (null != args.get(REQUIRED)) {
         explicitRequiredProp.put(name, Boolean.valueOf(args.get(REQUIRED)));
       }
 
-      SchemaField f = SchemaField.create(name,ft,args);
+      SchemaField f = SchemaField.create(name, ft, args);
 
-      if (node.getNodeName().equals(FIELD)) {
-        SchemaField old = fields.put(f.getName(),f);
-        if( old != null ) {
+      if (node.name().equals(FIELD)) {
+        SchemaField old = fields.put(f.getName(), f);
+        if (old != null) {
           String msg = "[schema.xml] Duplicate field definition for '"
-            + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
-          throw new SolrException(ErrorCode.SERVER_ERROR, msg );
+              + f.getName() + "' [[[" + old.toString() + "]]] and [[[" + f.toString() + "]]]";
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
         log.debug("field defined: {}", f);
-        if( f.getDefaultValue() != null ) {
+        if (f.getDefaultValue() != null) {
           if (log.isDebugEnabled()) {
             log.debug("{} contains default value {}", name, f.getDefaultValue());
           }
-          fieldsWithDefaultValue.add( f );
+          fieldsWithDefaultValue.add(f);
         }
         if (f.isRequired()) {
           log.debug("{} is required in this schema", name);
           requiredFields.add(f);
         }
-      } else if (node.getNodeName().equals(DYNAMIC_FIELD)) {
+      } else if (node.name().equals(DYNAMIC_FIELD)) {
         if (isValidDynamicField(dFields, f)) {
           addDynamicFieldNoDupCheck(dFields, f);
         }
@@ -731,17 +710,17 @@ public class IndexSchema {
     requiredFields.addAll(fieldsWithDefaultValue);
 
     dynamicFields = dynamicFieldListToSortedArray(dFields);
-                                                                   
+
     return explicitRequiredProp;
   }
-  
+
   /**
    * Sort the dynamic fields and stuff them in a normal array for faster access.
    */
   protected static DynamicField[] dynamicFieldListToSortedArray(List<DynamicField> dynamicFieldList) {
     // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
     // rather than Collections.sort() then converting to an array, since Collections.sort()
-    // copies to an array first, then sets each collection member from the array. 
+    // copies to an array first, then sets each collection member from the array.
     DynamicField[] dFields = dynamicFieldList.toArray(new DynamicField[dynamicFieldList.size()]);
     Arrays.sort(dFields);
 
@@ -749,23 +728,25 @@ public class IndexSchema {
       log.trace("Dynamic Field Ordering: {}", Arrays.toString(dFields));
     }
 
-    return dFields; 
+    return dFields;
   }
 
   /**
    * Loads the copy fields
    */
-  protected synchronized void loadCopyFields(Document document, XPath xpath) throws XPathExpressionException {
-    String expression = "//" + COPY_FIELD;
-    NodeList nodes = (NodeList)xpath.evaluate(expression, document, XPathConstants.NODESET);
+  protected synchronized void loadCopyFields(ConfigNode n) {
+    List<ConfigNode> nodes = n.children(COPY_FIELD);
+    ConfigNode f = n.child(FIELDS);
+    if (f != null) {
+      List<ConfigNode> c = f.children(COPY_FIELD);
+      if (nodes.isEmpty()) nodes = c;
+      else nodes.addAll(c);
+    }
+    for (ConfigNode node : nodes) {
 
-    for (int i=0; i<nodes.getLength(); i++) {
-      Node node = nodes.item(i);
-      NamedNodeMap attrs = node.getAttributes();
-
-      String source = DOMUtil.getAttr(attrs, SOURCE, COPY_FIELD + " definition");
-      String dest   = DOMUtil.getAttr(attrs, DESTINATION,  COPY_FIELD + " definition");
-      String maxChars = DOMUtil.getAttr(attrs, MAX_CHARS);
+      String source = DOMUtil.getAttr(node, SOURCE, COPY_FIELD + " definition");
+      String dest   = DOMUtil.getAttr(node, DESTINATION,  COPY_FIELD + " definition");
+      String maxChars = DOMUtil.getAttr(node, MAX_CHARS, null);
 
       int maxCharsInt = CopyField.UNLIMITED;
       if (maxChars != null) {
@@ -779,7 +760,7 @@ public class IndexSchema {
 
       if (dest.equals(uniqueKeyFieldName)) {
         String msg = UNIQUE_KEY + " field ("+uniqueKeyFieldName+
-          ") can not be the " + DESTINATION + " of a " + COPY_FIELD + "(" + SOURCE + "=" +source+")";
+            ") can not be the " + DESTINATION + " of a " + COPY_FIELD + "(" + SOURCE + "=" +source+")";
         log.error(msg);
         throw new SolrException(ErrorCode.SERVER_ERROR, msg);
       }
@@ -793,17 +774,6 @@ public class IndexSchema {
             , entry.getKey().name, COPY_FIELDS, entry.getValue());
       }
     }
-  }
-
-  /**
-   * Converts a sequence of path steps into a rooted path, by inserting slashes in front of each step.
-   * @param steps The steps to join with slashes to form a path
-   * @return a rooted path: a leading slash followed by the given steps joined with slashes
-   */
-  private String stepsToPath(String... steps) {
-    StringBuilder builder = new StringBuilder();
-    for (String step : steps) { builder.append(SLASH).append(step); }
-    return builder.toString();
   }
 
   /** Returns true if the given name has exactly one asterisk either at the start or end of the name */
@@ -887,7 +857,7 @@ public class IndexSchema {
    */
   public void registerCopyField(String source, String dest, int maxChars) {
     log.debug("{} {}='{}' {}='{}' {}='{}'", COPY_FIELD, SOURCE, source, DESTINATION, dest
-              ,MAX_CHARS, maxChars);
+        ,MAX_CHARS, maxChars);
 
     DynamicField destDynamicField = null;
     SchemaField destSchemaField = fields.get(dest);
@@ -901,7 +871,7 @@ public class IndexSchema {
 
 
     final String invalidGlobMessage = "is an invalid glob: either it contains more than one asterisk,"
-                                    + " or the asterisk occurs neither at the start nor at the end.";
+        + " or the asterisk occurs neither at the start nor at the end.";
     final boolean sourceIsGlob = isValidFieldGlob(source);
     if (source.contains("*") && ! sourceIsGlob) {
       String msg = "copyField source :'" + source + "' " + invalidGlobMessage;
@@ -967,13 +937,13 @@ public class IndexSchema {
         incrementCopyFieldTargetCount(destSchemaField);
       }
     } else if (sourceIsDynamicFieldReference) {
-        if (null != destDynamicField) {  // source: no-asterisk dynamic field ref ; dest: dynamic field ref
-          registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
-          incrementCopyFieldTargetCount(destSchemaField);
-        } else {                        // source: no-asterisk dynamic field ref ; dest: explicit field
-          sourceSchemaField = getField(source);
-          registerExplicitSrcAndDestFields(source, maxChars, destSchemaField, sourceSchemaField);
-        }
+      if (null != destDynamicField) {  // source: no-asterisk dynamic field ref ; dest: dynamic field ref
+        registerDynamicCopyField(new DynamicCopy(source, destDynamicField, maxChars, sourceDynamicBase, destDynamicBase));
+        incrementCopyFieldTargetCount(destSchemaField);
+      } else {                        // source: no-asterisk dynamic field ref ; dest: explicit field
+        sourceSchemaField = getField(source);
+        registerExplicitSrcAndDestFields(source, maxChars, destSchemaField, sourceSchemaField);
+      }
     } else {
       if (null != destDynamicField) { // source: explicit field ; dest: dynamic field reference
         if (destDynamicField.pattern instanceof DynamicReplacement.DynamicPattern.NameEquals) {
@@ -982,7 +952,7 @@ public class IndexSchema {
           incrementCopyFieldTargetCount(destSchemaField);
         } else {                    // source: explicit field ; dest: dynamic field with an asterisk
           String msg = "copyField only supports a dynamic destination with an asterisk "
-                     + "if the source also has an asterisk";
+              + "if the source also has an asterisk";
           throw new SolrException(ErrorCode.SERVER_ERROR, msg);
         }
       } else {                        // source & dest: explicit fields
@@ -1012,12 +982,12 @@ public class IndexSchema {
     dynamicCopyFields = temp;
   }
 
-  static SimilarityFactory readSimilarity(SolrClassLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrClassLoader loader, ConfigNode node) {
     if (node==null) {
       return null;
     } else {
       SimilarityFactory similarityFactory;
-      final String classArg = ((Element) node).getAttribute(SimilarityFactory.CLASS_NAME);
+      final String classArg = node.attributes().get(SimilarityFactory.CLASS_NAME);
       final Object obj = loader.newInstance(classArg, Object.class, "search.similarities.");
       if (obj instanceof SimilarityFactory) {
         // configure a factory, get a similarity back
@@ -1189,10 +1159,10 @@ public class IndexSchema {
   }
 
   public String getDynamicPattern(String fieldName) {
-   for (DynamicField df : dynamicFields) {
-     if (df.matches(fieldName)) return df.getRegex();
-   }
-   return  null; 
+    for (DynamicField df : dynamicFields) {
+      if (df.matches(fieldName)) return df.getRegex();
+    }
+    return  null;
   }
 
   /**
@@ -1273,8 +1243,8 @@ public class IndexSchema {
     // Hmmm, default field could also be implemented with a dynamic field of "*".
     // It would have to be special-cased and only used if nothing else matched.
     /***  REMOVED -YCS
-    if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
-    ***/
+     if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
+     ***/
     throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field: \""+fieldName+"\"");
   }
 
@@ -1341,14 +1311,14 @@ public class IndexSchema {
    * @see #getFieldTypeNoEx
    */
   public FieldType getDynamicFieldType(String fieldName) {
-     for (DynamicField df : dynamicFields) {
+    for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
-     for (DynamicField df : dynamicFields) {
+    for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.prototype.getType();
     }
     return null;
@@ -1568,7 +1538,7 @@ public class IndexSchema {
    * @return a list of copyField directives
    */
   public List<SimpleOrderedMap<Object>> getCopyFieldProperties
-      (boolean showDetails, Set<String> requestedSourceFields, Set<String> requestedDestinationFields) {
+  (boolean showDetails, Set<String> requestedSourceFields, Set<String> requestedDestinationFields) {
     List<SimpleOrderedMap<Object>> copyFieldProperties = new ArrayList<>();
     SortedMap<String,List<CopyField>> sortedCopyFields = new TreeMap<>(copyFieldsMap);
     for (List<CopyField> copyFields : sortedCopyFields.values()) {
@@ -1585,9 +1555,9 @@ public class IndexSchema {
           SimpleOrderedMap<Object> props = new SimpleOrderedMap<>();
           props.add(SOURCE, source);
           props.add(DESTINATION, destination);
-            if (0 != copyField.getMaxChars()) {
-              props.add(MAX_CHARS, copyField.getMaxChars());
-            }
+          if (0 != copyField.getMaxChars()) {
+            props.add(MAX_CHARS, copyField.getMaxChars());
+          }
           copyFieldProperties.add(props);
         }
       }
@@ -1750,9 +1720,9 @@ public class IndexSchema {
    * @see #newDynamicField(String, String, Map)
    */
   public IndexSchema addDynamicFields
-      (Collection<SchemaField> newDynamicFields,
-       Map<String, Collection<String>> copyFieldNames,
-       boolean persist) {
+  (Collection<SchemaField> newDynamicFields,
+   Map<String, Collection<String>> copyFieldNames,
+   boolean persist) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
@@ -1791,23 +1761,23 @@ public class IndexSchema {
    * @return a new IndexSchema based on this schema with the named dynamic field replaced
    */
   public ManagedIndexSchema replaceDynamicField
-      (String fieldNamePattern, FieldType replacementFieldType, Map<String,?> replacementArgs) {
+  (String fieldNamePattern, FieldType replacementFieldType, Map<String,?> replacementArgs) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-    /**
-     * Copies this schema and adds the new copy fields to the copy
-     * Requires synchronizing on the object returned by
-     * {@link #getSchemaUpdateLock()}.
-     *
-     * @see #addCopyFields(String,Collection,int) to limit the number of copied characters.
-     *
-     * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
-     * @param persist to persist the schema or not
-     * @return The new Schema with the copy fields added
-     */
+  /**
+   * Copies this schema and adds the new copy fields to the copy
+   * Requires synchronizing on the object returned by
+   * {@link #getSchemaUpdateLock()}.
+   *
+   * @see #addCopyFields(String,Collection,int) to limit the number of copied characters.
+   *
+   * @param copyFields Key is the name of the source field name, value is a collection of target field names.  Fields must exist.
+   * @param persist to persist the schema or not
+   * @return The new Schema with the copy fields added
+   */
   public IndexSchema addCopyFields(Map<String, Collection<String>> copyFields, boolean persist) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
@@ -1970,14 +1940,6 @@ public class IndexSchema {
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);
   }
 
-  protected String getFieldTypeXPathExpressions() {
-    //               /schema/fieldtype | /schema/fieldType | /schema/types/fieldtype | /schema/types/fieldType
-    String expression = stepsToPath(SCHEMA, FIELD_TYPE.toLowerCase(Locale.ROOT)) // backcompat(?)
-            + XPATH_OR + stepsToPath(SCHEMA, FIELD_TYPE)
-            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE.toLowerCase(Locale.ROOT))
-            + XPATH_OR + stepsToPath(SCHEMA, TYPES, FIELD_TYPE);
-    return expression;
-  }
 
   /**
    * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
@@ -1989,8 +1951,8 @@ public class IndexSchema {
     //TODO make this boolean a field so it needn't be looked up each time?
     FieldType rootType = getFieldTypeNoEx(ROOT_FIELD_NAME);
     return (null != uniqueKeyFieldType &&
-            null != rootType &&
-            rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
+        null != rootType &&
+        rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 

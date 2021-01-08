@@ -90,7 +90,7 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;

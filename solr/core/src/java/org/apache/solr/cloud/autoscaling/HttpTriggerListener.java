@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

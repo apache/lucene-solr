@@ -20,7 +20,7 @@ package org.apache.solr.prometheus.exporter;
 import java.util.List;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 
 public class PrometheusExporterSettings {

@@ -77,7 +77,7 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
-import org.apache.solr.util.DOMUtil;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

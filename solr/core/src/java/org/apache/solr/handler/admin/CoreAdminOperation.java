@@ -45,7 +45,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;

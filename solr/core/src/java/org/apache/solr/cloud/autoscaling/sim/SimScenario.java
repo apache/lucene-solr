@@ -74,7 +74,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
