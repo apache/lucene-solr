@@ -31,5 +31,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-solrj-
           ${{ runner.os }}-gradle-
+    - name: Initialize gradle settings
+      run: ./gradlew localSettings
     - name: Test the SolrJ Package
       run: ./gradlew solr:solrj:test
