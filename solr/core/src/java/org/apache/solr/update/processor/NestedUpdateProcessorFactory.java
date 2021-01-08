@@ -75,7 +75,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     @Override
     public void processAdd(AddUpdateCommand cmd) throws IOException {
       SolrInputDocument doc = cmd.getSolrInputDocument();
-      cmd.isNested = processDocChildren(doc, null);
+      processDocChildren(doc, null);
       super.processAdd(cmd);
     }
 
