@@ -20,7 +20,7 @@ description = 'Solr Docker Package image'
 apply plugin: 'base'
 
 configurations {
-  dockerPackage {
+  packageDockerImage {
     canBeConsumed = true
     canBeResolved = true
   }
@@ -44,18 +44,24 @@ task dockerTar(type: Tar, dependsOn: solrPackaging.tasks.distTar) {
   compression = Compression.GZIP
 }
 
-task dockerBuild(type: Exec, dependsOn: tasks.dockerTar) {
+task dockerBuild(dependsOn: tasks.dockerTar) {
   group = 'Docker'
   description = 'Build Solr package docker image'
 
-  standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
-  commandLine "docker", "build", "-t", "apache/solr-build:${version}", "--iidfile", "$buildDir/image-id", "-"
+  def imageIdFile = "$buildDir/image-id"
 
-  outputs.files("$buildDir/image-id")
+  doLast {
+    exec {
+      standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+      commandLine "docker", "build", "--iidfile", imageIdFile, "-" // , "-t", "apache/solr-build:${version}"
+    }
+  }
+
+  outputs.files(imageIdFile)
 }
 
 artifacts {
-  dockerPackage(tasks.dockerBuild.outputs.files.singleFile) {
+  packageDockerImage(tasks.dockerBuild.outputs.files.singleFile) {
     builtBy(tasks.dockerBuild)
   }
 }
