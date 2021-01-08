@@ -167,9 +167,17 @@ final class Point2D implements Component2D {
 
   /** create a Point2D component tree from a LatLon point */
   static Component2D create(Point point) {
-    return new Point2D(
-        GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(point.getLon())),
-        GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(point.getLat())));
+    // Points behave as rectangles
+    double qLat =
+        point.getLat() == GeoUtils.MAX_LAT_INCL
+            ? point.getLat()
+            : GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitudeCeil(point.getLat()));
+    double qLon =
+        point.getLon() == GeoUtils.MAX_LON_INCL
+            ? point.getLon()
+            : GeoEncodingUtils.decodeLongitude(
+                GeoEncodingUtils.encodeLongitudeCeil(point.getLon()));
+    return new Point2D(qLon, qLat);
   }
 
   /** create a Point2D component tree from a XY point */
