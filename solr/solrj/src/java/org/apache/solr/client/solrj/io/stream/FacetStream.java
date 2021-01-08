@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,8 +55,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The FacetStream abstracts the output from the JSON facet API as a Stream of Tuples. This provides an alternative to the
@@ -69,10 +66,10 @@ import org.slf4j.LoggerFactory;
 public class FacetStream extends TupleStream implements Expressible, ParallelMetricsRollup {
 
   private static final long serialVersionUID = 1;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // allow client apps to disable the auto-plist via system property if they want to turn it off globally
-  private static final boolean defaultPlistEnabled = Boolean.parseBoolean(System.getProperty("solr.facet.stream.plist.enabled", "true"));
+  private static final boolean defaultPlistEnabled =
+      Boolean.parseBoolean(System.getProperty("solr.facet.stream.plist.enabled", "true"));
 
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
@@ -592,7 +589,6 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
-      log.info("Sending JSON facet request to collection {} with params {}", collection, paramsLoc);
       @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, buckets, metrics);
