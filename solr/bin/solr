@@ -1896,6 +1896,10 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
+if [ -n "$SOLR_PORT_ADVERTISE" ]; then
+  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
+fi
+
 if [ -n "$SOLR_JETTY_HOST" ]; then
   SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi

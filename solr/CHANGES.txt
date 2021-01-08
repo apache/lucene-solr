@@ -338,6 +338,8 @@ Other Changes
 
 * SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
 
+* SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
 * SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
