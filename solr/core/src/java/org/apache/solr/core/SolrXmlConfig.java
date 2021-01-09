@@ -434,7 +434,7 @@ public class SolrXmlConfig {
 
   private static CloudConfig fillSolrCloudSection(NamedList<Object> nl, XmlConfigFile config, String defaultZkHost) {
 
-    int hostPort = parseInt("hostPort", removeValue(nl, "hostPort"));
+    int hostPort = parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     if (hostPort <= 0) {
       // Default to the port that jetty is listening on, or 8983 if that is not provided.
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
