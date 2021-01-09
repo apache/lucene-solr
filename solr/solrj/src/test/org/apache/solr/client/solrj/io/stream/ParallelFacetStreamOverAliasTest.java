@@ -159,12 +159,9 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @Test
   public void testParallelFacetOverAlias() throws Exception {
 
-    StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(solrClientCache);
-
     String facetExprTmpl = "" +
         "facet(\n" +
-        "  SOME_ALIAS_WITH_MANY_COLLS,\n" +
+        "  %s,\n" +
         "  tiered=%s,\n" +
         "  q=\"*:*\", \n" +
         "  buckets=\"a_i\", \n" +
@@ -173,25 +170,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
-    String facetExpr = String.format(Locale.US, facetExprTmpl, "true");
-
-    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
-    TupleStream stream = factory.constructStream(facetExpr);
-    stream.setStreamContext(streamContext);
-    assertParallelFacetStreamConfig(stream, 1);
-
-    List<Tuple> plistTuples = getTuples(stream);
-    assertEquals(CARDINALITY, plistTuples.size());
-
-    // now re-execute the same expression w/o plist
-    facetExpr = String.format(Locale.US, facetExprTmpl, "false");
-    stream = factory.constructStream(facetExpr);
-    stream.setStreamContext(streamContext);
-    List<Tuple> tuples = getTuples(stream);
-    assertEquals(CARDINALITY, tuples.size());
-
-    // results should be identical regardless of plist=true|false
-    assertListOfTuplesEquals(plistTuples, tuples);
+    compareTieredStreamWithNonTiered(facetExprTmpl, 1);
   }
 
   /**
@@ -200,41 +179,45 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @Test
   public void testParallelFacetMultipleDimensionsOverAlias() throws Exception {
 
-    StreamContext streamContext = new StreamContext();
-    streamContext.setSolrClientCache(solrClientCache);
-
     // notice we're sorting the stream by a metric, but internally, that doesn't work for parallelization
     // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel streams are merged
     String facetExprTmpl = "" +
         "facet(\n" +
-        "  SOME_ALIAS_WITH_MANY_COLLS,\n" +
+        "  %s,\n" +
         "  tiered=%s,\n" +
         "  q=\"*:*\", \n" +
-        "  buckets=\"a_i,b_i\", \n" +
+        "  buckets=\"a_i,b_i\", \n" + /* two dimensions here ~ doubles the number of tuples */
         "  bucketSorts=\"sum(a_d) desc\", \n" +
         "  bucketSizeLimit=100, \n" +
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
-    String facetExpr = String.format(Locale.US, facetExprTmpl, "true");
+    compareTieredStreamWithNonTiered(facetExprTmpl, 2);
+  }
 
-    String zkhost = cluster.getZkServer().getZkAddress();
-    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(zkhost);
+  // execute the provided expression with tiered=true and compare to results of tiered=false
+  private void compareTieredStreamWithNonTiered(String facetExprTmpl, int dims) throws IOException {
+    String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true");
+
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(solrClientCache);
+    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
+
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
-    assertParallelFacetStreamConfig(stream, 2);
+
+    // check the parallel setup logic
+    assertParallelFacetStreamConfig(stream, dims);
 
     List<Tuple> plistTuples = getTuples(stream);
-
-    // cardinality doubles b/c of the b_i dimension which has card 2
-    assertEquals(CARDINALITY * 2, plistTuples.size());
+    assertEquals(CARDINALITY * dims, plistTuples.size());
 
     // now re-execute the same expression w/o plist
-    facetExpr = String.format(Locale.US, facetExprTmpl, "false");
+    facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "false");
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
-    assertEquals(CARDINALITY * 2, tuples.size());
+    assertEquals(CARDINALITY * dims, tuples.size());
 
     // results should be identical regardless of plist=true|false
     assertListOfTuplesEquals(plistTuples, tuples);
