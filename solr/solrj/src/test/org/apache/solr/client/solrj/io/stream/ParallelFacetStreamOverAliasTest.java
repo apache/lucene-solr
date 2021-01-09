@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -46,8 +48,6 @@ import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.client.solrj.io.stream.FacetStream.TIERED_PARAM;
 
 /**
  * Verify auto-plist with rollup over a facet expression when using collection alias over multiple collections.
@@ -65,6 +65,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   private static final int CARDINALITY = 10;
   private static final RandomGenerator rand = new JDKRandomGenerator(5150);
   private static List<String> listOfCollections;
+  private static SolrClientCache solrClientCache;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -75,6 +76,8 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         .configure();
     cleanup();
     setupCollectionsAndAlias();
+
+    solrClientCache = new SolrClientCache();
   }
 
   /**
@@ -102,7 +105,10 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
         UpdateRequest ur = new UpdateRequest();
         Stream.iterate(0, n -> n + 1).limit(limit)
             .forEach(docId -> ur.add(id, UUID.randomUUID().toString(),
-                "a_s", "hello" + docId, "a_i", String.valueOf(docId % CARDINALITY), "a_d", String.valueOf(dists[docId % dists.length].sample())));
+                "a_s", "hello" + docId,
+                "a_i", String.valueOf(docId % CARDINALITY),
+                "b_i", rand.nextBoolean() ? "1" : "0",
+                "a_d", String.valueOf(dists[docId % dists.length].sample())));
         ur.commit(cluster.getSolrClient(), collectionName);
       } catch (SolrServerException | IOException e) {
         errors.add(e);
@@ -141,6 +147,10 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   @AfterClass
   public static void after() throws Exception {
     cleanup();
+
+    if (solrClientCache != null) {
+      solrClientCache.close();
+    }
   }
 
   /**
@@ -150,33 +160,31 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
   public void testParallelFacetOverAlias() throws Exception {
 
     StreamContext streamContext = new StreamContext();
-    SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
 
     String facetExprTmpl = "" +
         "facet(\n" +
-        "  SOME_ALIAS_WITH_MANY_COLLS, %s\n" + /* placeholder is for the tiered=true|false arg */
+        "  SOME_ALIAS_WITH_MANY_COLLS,\n" +
+        "  tiered=%s,\n" +
         "  q=\"*:*\", \n" +
-        "  fl=\"a_i\", \n" +
-        "  sort=\"a_i asc\", \n" +
         "  buckets=\"a_i\", \n" +
-        "  bucketSorts=\"count(*) asc\", \n" +
-        "  bucketSizeLimit=10000, \n" +
+        "  bucketSorts=\"a_i asc\", \n" +
+        "  bucketSizeLimit=100, \n" +
         "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
         ")\n";
 
-    String facetExpr = String.format(Locale.US, facetExprTmpl, TIERED_PARAM + "=true,");
+    String facetExpr = String.format(Locale.US, facetExprTmpl, "true");
 
-    String zkhost = cluster.getZkServer().getZkAddress();
-    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(zkhost);
+    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(cluster.getZkServer().getZkAddress());
     TupleStream stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
-    List<Tuple> plistTuples = getTuples(stream);
+    assertParallelFacetStreamConfig(stream, 1);
 
+    List<Tuple> plistTuples = getTuples(stream);
     assertEquals(CARDINALITY, plistTuples.size());
 
     // now re-execute the same expression w/o plist
-    facetExpr = String.format(Locale.US, facetExprTmpl, TIERED_PARAM + "=false,");
+    facetExpr = String.format(Locale.US, facetExprTmpl, "false");
     stream = factory.constructStream(facetExpr);
     stream.setStreamContext(streamContext);
     List<Tuple> tuples = getTuples(stream);
@@ -184,8 +192,76 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
     // results should be identical regardless of plist=true|false
     assertListOfTuplesEquals(plistTuples, tuples);
+  }
 
-    solrClientCache.close();
+  /**
+   * Test parallelized calls to facet expression with multiple dimensions, one for each collection in the alias
+   */
+  @Test
+  public void testParallelFacetMultipleDimensionsOverAlias() throws Exception {
+
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    // notice we're sorting the stream by a metric, but internally, that doesn't work for parallelization
+    // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel streams are merged
+    String facetExprTmpl = "" +
+        "facet(\n" +
+        "  SOME_ALIAS_WITH_MANY_COLLS,\n" +
+        "  tiered=%s,\n" +
+        "  q=\"*:*\", \n" +
+        "  buckets=\"a_i,b_i\", \n" +
+        "  bucketSorts=\"sum(a_d) desc\", \n" +
+        "  bucketSizeLimit=100, \n" +
+        "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
+        ")\n";
+
+    String facetExpr = String.format(Locale.US, facetExprTmpl, "true");
+
+    String zkhost = cluster.getZkServer().getZkAddress();
+    StreamFactory factory = new SolrDefaultStreamFactory().withDefaultZkHost(zkhost);
+    TupleStream stream = factory.constructStream(facetExpr);
+    stream.setStreamContext(streamContext);
+    assertParallelFacetStreamConfig(stream, 2);
+
+    List<Tuple> plistTuples = getTuples(stream);
+
+    // cardinality doubles b/c of the b_i dimension which has card 2
+    assertEquals(CARDINALITY * 2, plistTuples.size());
+
+    // now re-execute the same expression w/o plist
+    facetExpr = String.format(Locale.US, facetExprTmpl, "false");
+    stream = factory.constructStream(facetExpr);
+    stream.setStreamContext(streamContext);
+    List<Tuple> tuples = getTuples(stream);
+    assertEquals(CARDINALITY * 2, tuples.size());
+
+    // results should be identical regardless of plist=true|false
+    assertListOfTuplesEquals(plistTuples, tuples);
+  }
+
+  private void assertParallelFacetStreamConfig(TupleStream stream, int dims) throws IOException {
+    assertTrue(stream instanceof FacetStream);
+    FacetStream facetStream = (FacetStream) stream;
+    TupleStream[] parallelStreams = facetStream.parallelize(listOfCollections);
+    assertEquals(2, parallelStreams.length);
+    assertTrue(parallelStreams[0] instanceof FacetStream);
+
+    Optional<Metric[]> rollupMetrics = facetStream.getRollupMetrics(facetStream.getMetrics().toArray(new Metric[0]));
+    assertTrue(rollupMetrics.isPresent());
+    assertEquals(5, rollupMetrics.get().length);
+    Map<String, String> selectFields = facetStream.getRollupSelectFields(rollupMetrics.get());
+    assertNotNull(selectFields);
+    assertEquals(5 + dims /* num metrics + num dims */, selectFields.size());
+    assertEquals("a_i", selectFields.get("a_i"));
+    assertEquals("max(a_d)", selectFields.get("max(max(a_d))"));
+    assertEquals("min(a_d)", selectFields.get("min(min(a_d))"));
+    assertEquals("sum(a_d)", selectFields.get("sum(sum(a_d))"));
+    assertEquals("avg(a_d)", selectFields.get("wsum(avg(a_d), count(*), false)"));
+    assertEquals("count(*)", selectFields.get("sum(count(*))"));
+    if (dims > 1) {
+      assertEquals("b_i", selectFields.get("b_i"));
+    }
   }
 
   // assert results are the same, with some sorting and rounding of floating point values

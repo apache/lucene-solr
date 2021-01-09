@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -38,6 +37,7 @@ public interface ParallelMetricsRollup {
 
   /**
    * Given a list of collections, return an array of TupleStream for each partition.
+   *
    * @param partitions A list of collections to parallelize metrics computation across.
    * @return An array of TupleStream for each partition requested.
    * @throws IOException if an error occurs while constructing the underlying TupleStream for a partition.
@@ -45,29 +45,24 @@ public interface ParallelMetricsRollup {
   TupleStream[] parallelize(List<String> partitions) throws IOException;
 
   /**
-   * Get the rollup for the parallelized streams.
-   * @param plistStream A parallel list stream to fetch metrics from each partition concurrently
+   * Get the rollup for the parallelized streams that is sorted based on the original (non-parallel) sort order.
+   *
+   * @param plistStream   A parallel list stream to fetch metrics from each partition concurrently
    * @param rollupMetrics An array of metrics to rollup
-   * @return A rollup over parallelized streams that provide metrics
+   * @return A rollup over parallelized streams that provide metrics; this is typically a SortStream.
    * @throws IOException if an error occurs while reading from the sorted stream
    */
-  RollupStream getRollupStream(ParallelListStream plistStream, Metric[] rollupMetrics) throws IOException;
-
-  /**
-   * The projection of dimensions and metrics from the rollup stream.
-   * @param rollupMetrics The metrics being rolled up.
-   * @return A mapping of fields produced by the rollup stream to their output name.
-   */
-  Map<String, String> getRollupSelectFields(Metric[] rollupMetrics);
+  TupleStream getSortedRollupStream(ParallelListStream plistStream, Metric[] rollupMetrics) throws IOException;
 
   /**
    * Given a list of partitions (collections), open a select stream that projects the dimensions and
    * metrics produced by rolling up over a parallelized group of streams. If it's not possible to rollup
    * the metrics produced by the underlying metrics stream, this method returns Optional.empty.
-   * @param context The current streaming expression context
+   *
+   * @param context    The current streaming expression context
    * @param partitions A list of collections to parallelize metrics computation across.
-   * @param metrics A list of metrics to rollup.
-   * @return Either a TupleStream that performs a rollup over parallelized streams or empty.
+   * @param metrics    A list of metrics to rollup.
+   * @return Either a TupleStream that performs a rollup over parallelized streams or empty if parallelization is not possible.
    * @throws IOException if an error occurs reading tuples from the parallelized streams
    */
   default Optional<TupleStream> openParallelStream(StreamContext context, List<String> partitions, Metric[] metrics) throws IOException {
@@ -75,17 +70,15 @@ public interface ParallelMetricsRollup {
     if (maybeRollupMetrics.isEmpty())
       return Optional.empty(); // some metric is incompatible with doing a rollup over the plist results
 
-    TupleStream[] parallelStreams = parallelize(partitions);
-    Metric[] rollupMetrics = maybeRollupMetrics.get();
-    RollupStream rollup = getRollupStream(new ParallelListStream(parallelStreams), rollupMetrics);
-    SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
-    select.setStreamContext(context);
-    select.open();
-    return Optional.of(select);
+    TupleStream parallelStream = getSortedRollupStream(new ParallelListStream(parallelize(partitions)), maybeRollupMetrics.get());
+    parallelStream.setStreamContext(context);
+    parallelStream.open();
+    return Optional.of(parallelStream);
   }
 
   /**
    * Either an array of metrics that can be parallelized and rolled up or empty.
+   *
    * @param metrics The list of metrics that we want to parallelize.
    * @return Either an array of metrics that can be parallelized and rolled up or empty.
    */

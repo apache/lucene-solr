@@ -884,6 +884,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     }
   }
 
+  List<Metric> getMetrics() {
+    return Arrays.asList(metrics);
+  }
+
   @Override
   public TupleStream[] parallelize(List<String> partitions) throws IOException {
 
@@ -891,35 +895,44 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     withoutTieredParam.remove(TIERED_PARAM); // each individual facet request is not tiered
 
     TupleStream[] streams = new TupleStream[partitions.size()];
-    for (int p = 0; p < partitions.size(); p++) {
+    for (int p = 0; p < streams.length; p++) {
       FacetStream cloned = new FacetStream();
-      // need to call init with all of this' initialized fields, just changing the collectionName and params
-      cloned.init(partitions.get(p),
-          withoutTieredParam,
-          buckets,
-          bucketSorts,
-          metrics,
-          rows,
-          offset,
-          bucketSizeLimit,
-          refine,
-          method,
-          serializeBucketSizeLimit,
-          overfetch,
-          zkHost);
+      cloned.init(partitions.get(p), /* each collection */
+                  withoutTieredParam, /* removes the tiered param */
+                  buckets,
+                  bucketSorts,
+                  metrics,
+                  rows,
+                  offset,
+                  bucketSizeLimit,
+                  refine,
+                  method,
+                  serializeBucketSizeLimit,
+                  overfetch,
+                  zkHost);
       streams[p] = cloned;
     }
     return streams;
   }
 
   @Override
-  public RollupStream getRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
+  public TupleStream getSortedRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
     // the tuples from each plist need to be sorted using the same order to do a rollup
-    return new RollupStream(new SortStream(plist, getRollupSorter()), this.buckets, rollupMetrics);
+    // for rollup, we want to sort the stream by all dimensions and the resort the final based on the original
+    // stream sort order if needed
+    RollupStream rollup = new RollupStream(new SortStream(plist, getRollupSorter()), this.buckets, rollupMetrics);
+    SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
+    // the final stream must be sorted based on the original stream sort
+    return new SortStream(select, getStreamSort());
   }
 
-  @Override
-  public Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
+  /**
+   * The projection of dimensions and metrics from the rollup stream.
+   *
+   * @param rollupMetrics The metrics being rolled up.
+   * @return A mapping of fields produced by the rollup stream to their output name.
+   */
+  protected Map<String, String> getRollupSelectFields(Metric[] rollupMetrics) {
     Map<String, String> map = new HashMap<>();
     for (Bucket b : buckets) {
       String key = b.toString();
@@ -933,17 +946,13 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     return map;
   }
 
-  // Get a comparator for sorting the parallel streams needed for doing a rollup.
-  private StreamComparator getRollupSorter() throws IOException {
-    String sortParam = params.get("sort");
-    FieldComparator[] comps;
-    if (sortParam != null) {
-      comps = parseBucketSorts(sortParam, this.buckets);
-    } else {
-      comps = new FieldComparator[buckets.length];
-      for (int c = 0; c < comps.length; c++) {
-        comps[c] = new FieldComparator(buckets[c].toString(), ComparatorOrder.ASCENDING);
-      }
+  // Get a comparator for sorting the parallel streams needed for doing a rollup
+  // This comparator is different than the sort of each stream individually as we need to merge the parallel streams
+  // so we can't rely on a sort order based on metrics, it has to be based on all dimensions
+  protected StreamComparator getRollupSorter() {
+    FieldComparator[] comps = new FieldComparator[buckets.length];
+    for (int c = 0; c < comps.length; c++) {
+      comps[c] = new FieldComparator(buckets[c].toString(), ComparatorOrder.ASCENDING);
     }
     return (comps.length > 1) ? new MultipleFieldComparator(comps) : comps[0];
   }
