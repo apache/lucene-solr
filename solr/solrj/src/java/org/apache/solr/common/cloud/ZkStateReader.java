@@ -1623,8 +1623,7 @@ public class ZkStateReader implements SolrCloseable {
           log.info("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
           return replicaStates;
         } catch (Exception e) {
-          //TODO
-          throw new RuntimeException(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error fetching per-replica-states");
         }
       });
       try {
