@@ -16,13 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import junit.framework.Assert;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,6 +25,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Test for SuggestComponent's distributed querying
