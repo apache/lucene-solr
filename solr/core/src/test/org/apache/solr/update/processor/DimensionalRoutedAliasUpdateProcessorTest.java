@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateTimeRou
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.api.collections.CategoryRoutedAlias;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
 import org.apache.solr.common.SolrDocument;
@@ -100,7 +101,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     CollectionAdminRequest.DimensionalRoutedAlias dra = CollectionAdminRequest.createDimensionalRoutedAlias(getAlias(),
         CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
-            .setMaxShardsPerNode(2), TRA_Dim,  CRA_Dim);
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .setMaxShardsPerNode(2), TRA_Dim, CRA_Dim);
 
     SolrParams params = dra.getParams();
     assertEquals("Dimensional[TIME,CATEGORY]", params.get(CollectionAdminRequest.RoutedAliasAdminRequest.ROUTER_TYPE_NAME));
@@ -361,6 +363,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     CollectionAdminRequest.DimensionalRoutedAlias dra = CollectionAdminRequest.createDimensionalRoutedAlias(getAlias(),
         CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setMaxShardsPerNode(2), CRA_Dim, TRA_Dim);
 
     SolrParams params = dra.getParams();

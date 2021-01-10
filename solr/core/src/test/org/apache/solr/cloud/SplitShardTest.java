@@ -77,6 +77,7 @@ public class SplitShardTest extends SolrCloudTestCase {
   public void doTest() throws IOException, SolrServerException {
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
     
@@ -128,6 +129,7 @@ public class SplitShardTest extends SolrCloudTestCase {
     String collectionName = "splitFuzzCollection";
     CollectionAdminRequest
         .createCollection(collectionName, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
 
@@ -157,6 +159,7 @@ public class SplitShardTest extends SolrCloudTestCase {
 
       CollectionAdminRequest
           .createCollection(collectionName, "conf", 1, repFactor)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
 

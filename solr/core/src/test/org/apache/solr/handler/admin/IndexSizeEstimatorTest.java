@@ -75,6 +75,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
         .configure();
     solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setMaxShardsPerNode(2).process(solrClient);
     cluster.waitForActiveCollection(collection, 2, 4);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);

@@ -179,7 +179,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       while (! waitUntil.hasTimedOut()) {
         waitUntil.sleep(100);
         created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
-        if(created) break;
+        if (created) break;
       }
       if (!created) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);

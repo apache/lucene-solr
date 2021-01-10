@@ -79,6 +79,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     try (HttpSolrClient httpSolrClient = getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       CollectionAdminResponse collectionAdminResponse = CollectionAdminRequest.createCollection("test", "_default", 1, 1)
           .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(httpSolrClient);
       assertEquals(0, collectionAdminResponse.getStatus());
       SolrResponse response = req.process(httpSolrClient);

@@ -144,6 +144,7 @@ public class TestPackages extends SolrCloudTestCase {
 
       CollectionAdminRequest
           .createCollection(COLLECTION_NAME, "conf", 2, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);

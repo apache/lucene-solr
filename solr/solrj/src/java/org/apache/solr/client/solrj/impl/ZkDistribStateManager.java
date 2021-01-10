@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.AutoScalingParams;
@@ -206,5 +207,10 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+
+  @Override
+  public PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+    return PerReplicaStates.fetch(path, zkClient, null);
   }
 }

@@ -73,6 +73,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     boolean implicit = random().nextBoolean();
     String routerName = implicit ? "implicit":"compositeId";
     Create createCmd = CollectionAdminRequest.createCollection(COLLECTION, configName, shards.length, replicas)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setMaxShardsPerNode(shards.length * replicas)
         .setProperties(collectionProperties)
         .setRouterName(routerName)
