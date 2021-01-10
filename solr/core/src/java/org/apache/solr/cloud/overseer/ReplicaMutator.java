@@ -248,7 +248,6 @@ public class ReplicaMutator {
     boolean forceSetState = message.getBool(ZkStateReader.FORCE_SET_STATE_PROP, true);
 
     DocCollection collection = prevState.getCollectionOrNull(collectionName);
-
     if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, coreNodeName)) {
       log.info("Failed to update state because the replica does not exist, {}", message);
       return ZkStateWriter.NO_OP;
@@ -294,12 +293,11 @@ public class ReplicaMutator {
       persistCollectionState = true;
     }
 
-    Slice slice = collection != null ? collection.getSlice(sliceName) : null;
+    Slice slice = collection != null ?  collection.getSlice(sliceName) : null;
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(message.getProperties());
-    Replica oldReplica = null;
     if (slice != null) {
-      oldReplica = slice.getReplica(coreNodeName);
+      Replica oldReplica = slice.getReplica(coreNodeName);
       if (oldReplica != null) {
         if (oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
           replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));

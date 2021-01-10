@@ -55,12 +55,15 @@ public class PerReplicaStates implements ReflectMapWriter {
   public static final int MAX_RETRIES = 5;
 
 
+  //znode path where thisis loaded from
   @JsonProperty
   public final String path;
 
+  // the child version of that znode
   @JsonProperty
   public final int cversion;
 
+  //states of individual replicas
   @JsonProperty
   public final SimpleMap<State> states;
 
@@ -165,6 +168,26 @@ public class PerReplicaStates implements ReflectMapWriter {
     }
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("{").append(path).append("/[").append(cversion).append("]: [");
+    appendStates(sb);
+    return sb.append("]}").toString();
+  }
+
+  private StringBuilder appendStates(StringBuilder sb) {
+    states.forEachEntry(new BiConsumer<String, State>() {
+      int count = 0;
+
+      @Override
+      public void accept(String s, State state) {
+        if (count++ > 0) sb.append(", ");
+        sb.append(state.asString);
+        for (State d : state.getDuplicates()) sb.append(d.asString);
+      }
+    });
+    return sb;
+  }
 
   /**
    * The state of a replica as stored as a node under /collections/collection-name/state.json/replica-state
@@ -284,27 +307,6 @@ public class PerReplicaStates implements ReflectMapWriter {
     public int hashCode() {
       return asString.hashCode();
     }
-  }
-
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder("{").append(path).append("/[").append(cversion).append("]: [");
-    appendStates(sb);
-    return sb.append("]}").toString();
-  }
-
-  private StringBuilder appendStates(StringBuilder sb) {
-    states.forEachEntry(new BiConsumer<String, State>() {
-      int count = 0;
-      @Override
-      public void accept(String s, State state) {
-        if (count++ > 0) sb.append(", ");
-        sb.append(state.asString);
-        for (State d : state.getDuplicates()) sb.append(d.asString);
-      }
-    });
-    return sb;
   }
 
 }

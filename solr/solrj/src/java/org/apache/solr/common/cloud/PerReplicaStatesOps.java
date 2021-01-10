@@ -75,7 +75,9 @@ public class PerReplicaStatesOps {
 
   }
 
-  static List<PerReplicaStates.Operation> addDeleteStaleNodes(List<PerReplicaStates.Operation> ops, PerReplicaStates.State rs) {
+  /**There is a possibility that a replica may have some leftover entries . delete them too
+   */
+  private static List<PerReplicaStates.Operation> addDeleteStaleNodes(List<PerReplicaStates.Operation> ops, PerReplicaStates.State rs) {
     while (rs != null) {
       ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, rs));
       rs = rs.duplicate;
