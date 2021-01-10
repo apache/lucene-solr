@@ -144,7 +144,9 @@ public class Replica extends ZkNodeProps {
     Objects.requireNonNull(this.core, "'core' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
     ClusterState.getReplicaStatesProvider().get().ifPresent(it -> {
-      log.debug("A replica  {} state fetched from per-replica state", name);
+      if(log.isDebugEnabled()) {
+        log.debug("replica: {}, state fetched from per-replica state", name);
+      }
       replicaState = it.getStates().get(name);
       if (replicaState!= null) {
         propMap.put(ZkStateReader.STATE_PROP, replicaState.state.toString().toLowerCase(Locale.ROOT));
