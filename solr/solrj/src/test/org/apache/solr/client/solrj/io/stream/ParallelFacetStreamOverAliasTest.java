@@ -195,6 +195,25 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     compareTieredStreamWithNonTiered(facetExprTmpl, 2);
   }
 
+  @Test
+  public void testParallelFacetSortByDimensions() throws Exception {
+
+    // notice we're sorting the stream by a metric, but internally, that doesn't work for parallelization
+    // so the rollup has to sort by dimensions and then apply a final re-sort once the parallel streams are merged
+    String facetExprTmpl = "" +
+        "facet(\n" +
+        "  %s,\n" +
+        "  tiered=%s,\n" +
+        "  q=\"*:*\", \n" +
+        "  buckets=\"a_i,b_i\", \n" +
+        "  bucketSorts=\"a_i asc, b_i asc\", \n" +
+        "  bucketSizeLimit=100, \n" +
+        "  sum(a_d), avg(a_d), min(a_d), max(a_d), count(*)\n" +
+        ")\n";
+
+    compareTieredStreamWithNonTiered(facetExprTmpl, 2);
+  }
+
   // execute the provided expression with tiered=true and compare to results of tiered=false
   private void compareTieredStreamWithNonTiered(String facetExprTmpl, int dims) throws IOException {
     String facetExpr = String.format(Locale.US, facetExprTmpl, ALIAS_NAME, "true");

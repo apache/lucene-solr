@@ -918,12 +918,15 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   @Override
   public TupleStream getSortedRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
     // the tuples from each plist need to be sorted using the same order to do a rollup
-    // for rollup, we want to sort the stream by all dimensions and the resort the final based on the original
-    // stream sort order if needed
-    RollupStream rollup = new RollupStream(new SortStream(plist, getRollupSorter()), this.buckets, rollupMetrics);
+    // for rollup, we want to sort the stream by all dimensions and then re-sort the final based on the original
+    // stream sort order (if needed). If the stream sort includes all bucket fields, then we can just use that
+    StreamComparator streamSorter = getStreamSort();
+    StreamComparator rollupSorter = (buckets.length == bucketSorts.length) ? streamSorter : getRollupSorter();
+    RollupStream rollup = new RollupStream(new SortStream(plist, rollupSorter), this.buckets, rollupMetrics);
     SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
-    // the final stream must be sorted based on the original stream sort
-    return new SortStream(select, getStreamSort());
+    // the final stream must be sorted based on the original stream sort so if the rollup sorter is equal,
+    // we don't need another sort operation on the stream
+    return streamSorter.equals(rollupSorter) ? select : new SortStream(select, streamSorter);
   }
 
   /**
