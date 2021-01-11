@@ -227,7 +227,7 @@ Improvements
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
   and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
-  
+
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
@@ -337,6 +337,8 @@ Other Changes
 * SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
 
 * SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
+
+* SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
 
