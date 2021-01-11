@@ -259,6 +259,9 @@ Optimizations
   Partial updates to nested documents and Realtime Get of child documents is now more reliable.
   (David Smiley, Thomas Wöckinger)
 
+* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a 
+  collection alias with multiple collections and count|sum|min|max|avg metrics. (Timothy Potter)
+
 Bug Fixes
 ---------------------
 * SOLR-14946: Fix responseHeader being returned in response when omitHeader=true and EmbeddedSolrServer is used

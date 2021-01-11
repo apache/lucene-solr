@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,6 +60,19 @@ public class MultipleFieldComparator implements StreamComparator {
     }
 
     return 0;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MultipleFieldComparator that = (MultipleFieldComparator) o;
+    return Arrays.equals(comps, that.comps);
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(comps);
   }
 
   @Override
