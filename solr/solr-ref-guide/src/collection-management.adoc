@@ -1250,6 +1250,9 @@ What to name the backup that is created.  This is checked to make sure it doesn'
 
 `location`::
 The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
++
+If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
+Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -1289,7 +1292,7 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
-There's a number of optional parameters that determine the target collection layout.
+There are also optional parameters that determine the target collection layout.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `createNodeSet`, `createNodeSet.shuffle`.
 
