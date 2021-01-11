@@ -268,6 +268,9 @@ Optimizations
 * LUCENE-9636: Faster decoding of postings for some numbers of bits per value.
   (Guo Feng via Adrien Grand)
 
+* LUCENE-9346: WANDScorer now supports queries that have a
+  `minimumNumberShouldMatch` configured. (Xi Zachary Chen via Adrien Grand)
+
 Bug Fixes
 ---------------------
 
