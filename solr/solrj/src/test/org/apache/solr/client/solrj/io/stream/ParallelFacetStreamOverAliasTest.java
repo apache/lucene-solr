@@ -238,7 +238,7 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(stream);
     assertEquals(CARDINALITY * dims, tuples.size());
 
-    // results should be identical regardless of plist=true|false
+    // results should be identical regardless of tiered=true|false
     assertListOfTuplesEquals(plistTuples, tuples);
   }
 

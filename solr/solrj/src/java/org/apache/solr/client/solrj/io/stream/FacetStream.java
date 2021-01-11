@@ -921,16 +921,11 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   @Override
   public TupleStream getSortedRollupStream(ParallelListStream plist, Metric[] rollupMetrics) throws IOException {
-    // the tuples from each plist need to be sorted using the same order to do a rollup
-    // for rollup, we want to sort the stream by all dimensions and then re-sort the final based on the original
-    // stream sort order (if needed). If the stream sort includes all bucket fields, then we can just use that
-    StreamComparator streamSorter = getStreamSort();
-    StreamComparator rollupSorter = (buckets.length == bucketSorts.length && !resortNeeded(bucketSorts)) ? streamSorter : getRollupSorter();
-    RollupStream rollup = new RollupStream(new SortStream(plist, rollupSorter), this.buckets, rollupMetrics);
+    // using a hashRollup removes the need to sort the streams from the plist
+    HashRollupStream rollup = new HashRollupStream(plist, buckets, rollupMetrics);
     SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
-    // the final stream must be sorted based on the original stream sort so if the rollup sorter is equal,
-    // we don't need another sort operation on the stream
-    return streamSorter.equals(rollupSorter) ? select : new SortStream(select, streamSorter);
+    // the final stream must be sorted based on the original stream sort
+    return new SortStream(select, getStreamSort());
   }
 
   /**
@@ -951,16 +946,5 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
       map.put(m.getIdentifier(), col);
     }
     return map;
-  }
-
-  // Get a comparator for sorting the parallel streams needed for doing a rollup
-  // This comparator is different than the sort of each stream individually as we need to merge the parallel streams
-  // so we can't rely on a sort order based on metrics, it has to be based on all dimensions
-  protected StreamComparator getRollupSorter() {
-    FieldComparator[] comps = new FieldComparator[buckets.length];
-    for (int c = 0; c < comps.length; c++) {
-      comps[c] = new FieldComparator(buckets[c].toString(), ComparatorOrder.ASCENDING);
-    }
-    return (comps.length > 1) ? new MultipleFieldComparator(comps) : comps[0];
   }
 }
