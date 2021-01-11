@@ -87,7 +87,7 @@ public class MinMetric extends Metric {
       if(l < longMin) {
         longMin = l;
       }
-    } else {
+    } else if(o instanceof Long) {
       long l = (long)o;
       if(l < longMin) {
         longMin = l;

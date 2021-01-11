@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.comp;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -41,16 +42,13 @@ public class FieldComparator implements StreamComparator {
   private ComparatorLambda comparator;
   
   public FieldComparator(String fieldName, ComparatorOrder order){
-    leftFieldName = fieldName;
-    rightFieldName = fieldName;
-    this.order = order;
-    assignComparator();
+    this(fieldName, fieldName, order);
   }
   
   public FieldComparator(String leftFieldName, String rightFieldName, ComparatorOrder order) {
     this.leftFieldName = leftFieldName;
     this.rightFieldName = rightFieldName;
-    this.order = order;
+    this.order = order != null ? order : ComparatorOrder.ASCENDING;
     assignComparator();
   }
   
@@ -175,5 +173,20 @@ public class FieldComparator implements StreamComparator {
   @Override
   public StreamComparator append(StreamComparator other){
     return new MultipleFieldComparator(this).append(other);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    FieldComparator that = (FieldComparator) o;
+    return leftFieldName.equals(that.leftFieldName) &&
+        rightFieldName.equals(that.rightFieldName) &&
+        order == that.order; // comparator is based on the other fields so is not needed in this compare
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(leftFieldName, rightFieldName, order);
   }
 }
