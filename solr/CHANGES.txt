@@ -72,7 +72,7 @@ Optimizations
   Partial updates to nested documents and Realtime Get of child documents is now more reliable.
   (David Smiley, Thomas Wöckinger)
 
-* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a 
+* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a
   collection alias with multiple collections and count|sum|min|max|avg metrics. (Timothy Potter)
 
 Bug Fixes
@@ -162,6 +162,8 @@ Other Changes
 * SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
 
 * SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
+* SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
 
