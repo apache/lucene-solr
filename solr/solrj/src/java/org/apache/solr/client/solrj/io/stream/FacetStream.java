@@ -584,6 +584,10 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     paramsLoc.set("rows", "0");
 
     QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
+    if (paramsLoc.get("lb.proxy") != null) {
+      request.setPath("/"+collection+"/select");
+    }
+
     try {
       @SuppressWarnings({"rawtypes"})
       NamedList response = cloudSolrClient.request(request, collection);
@@ -921,7 +925,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
     // for rollup, we want to sort the stream by all dimensions and then re-sort the final based on the original
     // stream sort order (if needed). If the stream sort includes all bucket fields, then we can just use that
     StreamComparator streamSorter = getStreamSort();
-    StreamComparator rollupSorter = (buckets.length == bucketSorts.length) ? streamSorter : getRollupSorter();
+    StreamComparator rollupSorter = (buckets.length == bucketSorts.length && !resortNeeded(bucketSorts)) ? streamSorter : getRollupSorter();
     RollupStream rollup = new RollupStream(new SortStream(plist, rollupSorter), this.buckets, rollupMetrics);
     SelectStream select = new SelectStream(rollup, getRollupSelectFields(rollupMetrics));
     // the final stream must be sorted based on the original stream sort so if the rollup sorter is equal,
