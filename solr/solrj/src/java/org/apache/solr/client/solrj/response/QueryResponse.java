@@ -170,7 +170,7 @@ public class QueryResponse extends SolrResponseBase
         // Don't call extractJsonFacetingInfo(_jsonFacetingInfo) here in an effort to do it lazily
       }
       else if ( "suggest".equals( n ) )  {
-        _suggestInfo = (Map<String,NamedList<Object>>) res.getVal( i );
+        populateRawSuggestInfo(res.getVal(i)); // See comment on this method for more info.
         extractSuggesterInfo(_suggestInfo);
       }
       else if ( "stats".equals( n ) )  {
@@ -201,6 +201,31 @@ public class QueryResponse extends SolrResponseBase
 
   private void extractJsonFacetingInfo(NamedList<Object> facetInfo) {
     _jsonFacetingResponse = new NestableJsonFacet(facetInfo);
+  }
+
+  /**
+   * Massages the deserialized 'suggest' section of the response into a Map structure
+   *
+   * A serialization/deserialization bug (see SOLR-15070) causes the response NamedList in SolrJ to look different based
+   * on the ResponseParser used by the transmitting client.  javabin requests see the 'suggest' response section as a Map,
+   * while clients using XMLResponseParser produce a 'suggest' response section that uses a NamedList.  This is fixed in
+   * 9.0 by changing the response sent by Solr.  In an effort to maintain backcompatibility across 8.x releases, the
+   * issue is solved differently here, where we just check for both types and convert to Map regardless of the input type.
+   *
+   * See SOLR-15070 for more info.
+   */
+  private void populateRawSuggestInfo(Object suggestData) {
+    if (suggestData instanceof Map) {
+      _suggestInfo = (Map<String,NamedList<Object>>) suggestData;
+    } else if (suggestData instanceof NamedList) {
+      final NamedList<Object> suggestDataAsNL = (NamedList<Object>) suggestData;
+      final Map<String, NamedList<Object>> mapSuggestInfo = new LinkedHashMap<>();
+      suggestDataAsNL.forEach((key, value) -> mapSuggestInfo.put(key, (NamedList<Object>) value));
+      _suggestInfo = mapSuggestInfo;
+    } else {
+      throw new IllegalStateException("'suggest' response in unexpected format.  Expected top-level type to be NamedList" +
+          " or Map, but was " + suggestData.getClass().getSimpleName());
+    }
   }
 
   private void extractSuggesterInfo(Map<String, NamedList<Object>> suggestInfo) {

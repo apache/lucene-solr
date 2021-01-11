@@ -35,25 +35,46 @@ public class SuggesterResponse {
 
   private final Map<String, List<Suggestion>> suggestionsPerDictionary = new LinkedHashMap<>();
 
+  /**
+   * Create a Map representing the suggest section of Solr's response.
+   */
+  public SuggesterResponse(NamedList<NamedList<Object>> suggestInfo) {
+    for (Map.Entry<String, NamedList<Object>> entry : suggestInfo) {
+      final String suggesterName = entry.getKey();
+      final NamedList suggestionsNode = (NamedList) entry.getValue().getVal(0);
+      parseSingleSuggester(suggesterName, suggestionsNode);
+    }
+  }
+
+  /**
+   * Create from a Map representing the suggest section of Solr's response.
+   *
+   * @deprecated use {@link #SuggesterResponse(NamedList)} instead
+   */
   @SuppressWarnings({"unchecked", "rawtypes"})
+  @Deprecated
   public SuggesterResponse(Map<String, NamedList<Object>> suggestInfo) {
     for (Map.Entry<String, NamedList<Object>> entry : suggestInfo.entrySet()) {
       SimpleOrderedMap suggestionsNode = (SimpleOrderedMap) entry.getValue().getVal(0);
-      List<SimpleOrderedMap> suggestionListToParse;
-      List<Suggestion> suggestionList = new LinkedList<>();
-      if (suggestionsNode != null) {
+      parseSingleSuggester(entry.getKey(), suggestionsNode);
+    }
+  }
 
-        suggestionListToParse = (List<SimpleOrderedMap>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
-        for (SimpleOrderedMap suggestion : suggestionListToParse) {
-          String term = (String) suggestion.get(TERM_NODE_NAME);
-          long weight = (long) suggestion.get(WEIGHT_NODE_NAME);
-          String payload = (String) suggestion.get(PAYLOAD_NODE_NAME);
+  private void parseSingleSuggester(String suggesterName, NamedList suggestionsNode) {
+    List<SimpleOrderedMap> suggestionListToParse;
+    List<Suggestion> suggestionList = new LinkedList<>();
+    if (suggestionsNode != null) {
 
-          Suggestion parsedSuggestion = new Suggestion(term, weight, payload);
-          suggestionList.add(parsedSuggestion);
-        }
-        suggestionsPerDictionary.put(entry.getKey(), suggestionList);
+      suggestionListToParse = (List<SimpleOrderedMap>) suggestionsNode.get(SUGGESTIONS_NODE_NAME);
+      for (SimpleOrderedMap suggestion : suggestionListToParse) {
+        String term = (String) suggestion.get(TERM_NODE_NAME);
+        long weight = (long) suggestion.get(WEIGHT_NODE_NAME);
+        String payload = (String) suggestion.get(PAYLOAD_NODE_NAME);
+
+        Suggestion parsedSuggestion = new Suggestion(term, weight, payload);
+        suggestionList.add(parsedSuggestion);
       }
+      suggestionsPerDictionary.put(suggesterName, suggestionList);
     }
   }
 
