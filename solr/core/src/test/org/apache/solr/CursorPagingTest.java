@@ -42,6 +42,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -500,6 +501,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
    * test that timeAllowed parameter can be used with cursors
    * uses DelayingSearchComponent in solrconfig-deeppaging.xml
    */
+  @LogLevel("org.apache.solr.search.SolrIndexSearcher=ERROR;org.apache.solr.handler.component.SearchHandler=ERROR")
   public void testTimeAllowed() throws Exception {
     String wontExceedTimeout = "10000";
     int numDocs = 1000;
