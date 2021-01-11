@@ -111,7 +111,7 @@ elif [ -n "$JAVA_HOME" ]; then
       if [ -x "$java/jstack" ]; then
         JSTACK="$java/jstack"
       elif [ -x "$(command -v jattach)" ]; then
-        JATTACH="jattach"
+        JATTACH="$(command -v jattach)"
       else
         echo >&2 "neither jattach nor jstack in $JAVA_HOME could be found, so no thread dumps are possible. Continuing."
       fi
