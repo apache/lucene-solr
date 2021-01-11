@@ -36,9 +36,12 @@ public class SuggesterResponse {
   private final Map<String, List<Suggestion>> suggestionsPerDictionary = new LinkedHashMap<>();
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public SuggesterResponse(Map<String, NamedList<Object>> suggestInfo) {
-    for (Map.Entry<String, NamedList<Object>> entry : suggestInfo.entrySet()) {
-      SimpleOrderedMap suggestionsNode = (SimpleOrderedMap) entry.getValue().getVal(0);
+  public SuggesterResponse(NamedList<NamedList<Object>> suggestInfo) {
+    for (int i = 0 ; i < suggestInfo.size(); i++) {
+      final String outerName = suggestInfo.getName(i);
+      final NamedList<Object> outerValue = suggestInfo.getVal(i);
+
+      SimpleOrderedMap suggestionsNode = (SimpleOrderedMap) outerValue.getVal(0);
       List<SimpleOrderedMap> suggestionListToParse;
       List<Suggestion> suggestionList = new LinkedList<>();
       if (suggestionsNode != null) {
@@ -52,7 +55,7 @@ public class SuggesterResponse {
           Suggestion parsedSuggestion = new Suggestion(term, weight, payload);
           suggestionList.add(parsedSuggestion);
         }
-        suggestionsPerDictionary.put(entry.getKey(), suggestionList);
+        suggestionsPerDictionary.put(outerName, suggestionList);
       }
     }
   }
