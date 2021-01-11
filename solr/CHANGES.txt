@@ -227,7 +227,7 @@ Improvements
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
   and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
-  
+
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
@@ -259,7 +259,7 @@ Optimizations
   Partial updates to nested documents and Realtime Get of child documents is now more reliable.
   (David Smiley, Thomas Wöckinger)
 
-* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a 
+* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a
   collection alias with multiple collections and count|sum|min|max|avg metrics. (Timothy Potter)
 
 Bug Fixes
@@ -347,6 +347,8 @@ Other Changes
 * SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
 
 * SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
+* SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
 
