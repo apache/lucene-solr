@@ -96,7 +96,10 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
       final String collectionName = "coll" + colIdx;
       collections.add(collectionName);
       try {
-        CollectionAdminRequest.createCollection(collectionName, "conf", NUM_SHARDS_PER_COLLECTION, 1).process(cluster.getSolrClient());
+        CollectionAdminRequest.Create createCmd =
+            CollectionAdminRequest.createCollection(collectionName, "conf", NUM_SHARDS_PER_COLLECTION, 1);
+        createCmd.setMaxShardsPerNode(NUM_SHARDS_PER_COLLECTION);
+        createCmd.process(cluster.getSolrClient());
         cluster.waitForActiveCollection(collectionName, NUM_SHARDS_PER_COLLECTION, NUM_SHARDS_PER_COLLECTION);
 
         // want a variable num of docs per collection so that avg of avg does not work ;-)
@@ -290,11 +293,13 @@ public class ParallelFacetStreamOverAliasTest extends SolrCloudTestCase {
 
   List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     List<Tuple> tuples = new ArrayList<>();
-    try (tupleStream) {
+    try {
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
         tuples.add(t);
       }
+    } finally {
+      tupleStream.close();
     }
     return tuples;
   }

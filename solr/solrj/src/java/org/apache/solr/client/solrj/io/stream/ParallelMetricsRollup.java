@@ -67,7 +67,7 @@ public interface ParallelMetricsRollup {
    */
   default Optional<TupleStream> openParallelStream(StreamContext context, List<String> partitions, Metric[] metrics) throws IOException {
     Optional<Metric[]> maybeRollupMetrics = getRollupMetrics(metrics);
-    if (maybeRollupMetrics.isEmpty())
+    if (!maybeRollupMetrics.isPresent())
       return Optional.empty(); // some metric is incompatible with doing a rollup over the plist results
 
     TupleStream parallelStream = getSortedRollupStream(new ParallelListStream(parallelize(partitions)), maybeRollupMetrics.get());

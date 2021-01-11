@@ -67,7 +67,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
 
   // allow client apps to disable the auto-plist via system property if they want to turn it off globally
   private static final boolean defaultTieredEnabled =
-      Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "true"));
+      Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "false"));
 
   static final String TIERED_PARAM = "tiered";
 
