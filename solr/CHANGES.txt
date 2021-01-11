@@ -328,6 +328,8 @@ Bug Fixes
 * SOLR-12559: Fix placeholder valuesource 'FIELDNAME' not working with de-referenced values in JSON aggregator parsing.
   (hossman, Munendra S N)
 
+* SOLR-15070: Suggester requests made with SolrJ can now use XMLResponseParser (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
