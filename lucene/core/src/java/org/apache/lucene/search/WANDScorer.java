@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import static org.apache.lucene.search.DisiPriorityQueue.leftNode;
 import static org.apache.lucene.search.DisiPriorityQueue.parentNode;
 import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
+import static org.apache.lucene.search.ScorerUtil.costWithMinShouldMatch;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -130,10 +131,21 @@ final class WANDScorer extends Scorer {
 
   int upTo; // upper bound for which max scores are valid
 
-  WANDScorer(Weight weight, Collection<Scorer> scorers) throws IOException {
+  final int minShouldMatch;
+  int freq;
+
+  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) throws IOException {
     super(weight);
 
+    if (minShouldMatch >= scorers.size()) {
+      throw new IllegalArgumentException("minShouldMatch should be < the number of scorers");
+    }
+
     this.minCompetitiveScore = 0;
+
+    assert minShouldMatch >= 0 : "minShouldMatch should not be negative, but got " + minShouldMatch;
+    this.minShouldMatch = minShouldMatch;
+
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
 
@@ -155,13 +167,15 @@ final class WANDScorer extends Scorer {
     // Use a scaling factor of 0 if all max scores are either 0 or +Infty
     this.scalingFactor = scalingFactor.orElse(0);
 
-    long cost = 0;
     for (Scorer scorer : scorers) {
-      DisiWrapper w = new DisiWrapper(scorer);
-      cost += w.cost;
-      addLead(w);
+      addLead(new DisiWrapper(scorer));
     }
-    this.cost = cost;
+
+    this.cost =
+        costWithMinShouldMatch(
+            scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
+            scorers.size(),
+            minShouldMatch);
     this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
@@ -265,15 +279,17 @@ final class WANDScorer extends Scorer {
 
       @Override
       public boolean matches() throws IOException {
-        while (leadMaxScore < minCompetitiveScore) {
-          if (leadMaxScore + tailMaxScore >= minCompetitiveScore) {
+        while (leadMaxScore < minCompetitiveScore || freq < minShouldMatch) {
+          if (leadMaxScore + tailMaxScore < minCompetitiveScore
+              || freq + tailSize < minShouldMatch) {
+            return false;
+          } else {
             // a match on doc is still possible, try to
             // advance scorers from the tail
             advanceTail();
-          } else {
-            return false;
           }
         }
+
         return true;
       }
 
@@ -290,6 +306,7 @@ final class WANDScorer extends Scorer {
     lead.next = this.lead;
     this.lead = lead;
     leadMaxScore += lead.maxScore;
+    freq += 1;
   }
 
   /** Move disis that are in 'lead' back to the tail. */
@@ -429,6 +446,7 @@ final class WANDScorer extends Scorer {
     lead = head.pop();
     lead.next = null;
     leadMaxScore = lead.maxScore;
+    freq = 1;
     doc = lead.doc;
     while (head.size() > 0 && head.top().doc == doc) {
       addLead(head.pop());
@@ -437,7 +455,7 @@ final class WANDScorer extends Scorer {
 
   /** Move iterators to the tail until there is a potential match. */
   private int doNextCompetitiveCandidate() throws IOException {
-    while (leadMaxScore + tailMaxScore < minCompetitiveScore) {
+    while (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
       moveToNextCandidate(doc + 1);
