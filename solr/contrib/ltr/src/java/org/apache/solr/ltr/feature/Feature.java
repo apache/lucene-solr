@@ -367,7 +367,7 @@ public abstract class Feature extends Query implements Accountable {
 
       @Override
       public TwoPhaseIterator twoPhaseIterator() {
-        return in.twoPhaseIterator();
+        return null;
       }
 
       @Override
