@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.WeightedSumMetric;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
@@ -37,6 +38,7 @@ public class SolrDefaultStreamFactory extends DefaultStreamFactory {
     this.withFunctionName("cat", CatStream.class);
     this.withFunctionName("classify", ClassifyStream.class);
     this.withFunctionName("haversineMeters", HaversineMetersEvaluator.class);
+    this.withFunctionName("wsum", WeightedSumMetric.class);
   }
 
   public SolrDefaultStreamFactory withSolrResourceLoader(SolrResourceLoader solrResourceLoader) {
