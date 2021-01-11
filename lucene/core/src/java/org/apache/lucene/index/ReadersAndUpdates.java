@@ -66,8 +66,8 @@ final class ReadersAndUpdates {
 
   // Indicates whether this segment is currently being merged. While a segment
   // is merging, all field updates are also registered in the
-  // mergingNumericUpdates map. Also, calls to writeFieldUpdates merge the
-  // updates with mergingNumericUpdates.
+  // mergingDVUpdates map. Also, calls to writeFieldUpdates merge the
+  // updates with mergingDVUpdates.
   // That way, when the segment is done merging, IndexWriter can apply the
   // updates on the merged segment too.
   private boolean isMerging = false;
