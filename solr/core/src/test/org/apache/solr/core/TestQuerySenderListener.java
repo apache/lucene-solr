@@ -60,8 +60,7 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
   @Test
   public void testSearcherEvents() throws Exception {
     SolrCore core = h.getCore();
-    SolrEventListener newSearcherListener = core.newSearcherListeners.get(0).get();
-
+    SolrEventListener newSearcherListener = core.newSearcherListeners.get(0);
     assertTrue("Not an instance of QuerySenderListener", newSearcherListener instanceof QuerySenderListener);
     QuerySenderListener qsl = (QuerySenderListener) newSearcherListener;
 

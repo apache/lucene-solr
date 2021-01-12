@@ -47,26 +47,23 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<PluginHolder<SolrEventListener>> commitCallbacks = new Vector<>();
-  protected Vector<PluginHolder<SolrEventListener>> softCommitCallbacks = new Vector<>();
-  protected Vector<PluginHolder<SolrEventListener>> optimizeCallbacks = new Vector<>();
+  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
+  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
+  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
 
   protected final UpdateLog ulog;
 
   protected SolrMetricsContext solrMetricsContext;
 
-  @SuppressWarnings("unchecked")
   private void parseEventListeners() {
-    final Class<SolrEventListener> clazz = SolrEventListener.class;
-    final String label = "Event Listener";
     for (PluginInfo info : core.getSolrConfig().getPluginInfos(SolrEventListener.class.getName())) {
       String event = info.attributes.get("event");
       if ("postCommit".equals(event)) {
-        PluginHolder<SolrEventListener> obj = createHolder(info, core, SolrEventListener.class, label);
+        SolrEventListener obj = core.createEventListener(info);
         commitCallbacks.add(obj);
         log.info("added SolrEventListener for postCommit: {}", obj);
       } else if ("postOptimize".equals(event)) {
-        PluginHolder<SolrEventListener> obj = createHolder(info, core, SolrEventListener.class, label);
+        SolrEventListener obj = core.createEventListener(info);
         optimizeCallbacks.add(obj);
         log.info("added SolrEventListener for postOptimize: {}", obj);
       }
@@ -77,35 +74,33 @@ public abstract class UpdateHandler implements SolrInfoBean {
    * Call the {@link SolrCoreAware#inform(SolrCore)} on all the applicable registered listeners.
    */
   public void informEventListeners(SolrCore core) {
-    for (PluginHolder<SolrEventListener> listener : commitCallbacks) {
-      if (listener instanceof PackagePluginHolder) continue;
-      if (listener.get() instanceof SolrCoreAware) {
-        ((SolrCoreAware) listener.get()).inform(core);
+    for (SolrEventListener listener: commitCallbacks) {
+      if (listener instanceof SolrCoreAware) {
+        ((SolrCoreAware) listener).inform(core);
       }
     }
-    for (PluginHolder<SolrEventListener> listener : optimizeCallbacks) {
-      if (listener instanceof PackagePluginHolder) continue;
-      if (listener.get() instanceof SolrCoreAware) {
-        ((SolrCoreAware) listener.get()).inform(core);
+    for (SolrEventListener listener: optimizeCallbacks) {
+      if (listener instanceof SolrCoreAware) {
+        ((SolrCoreAware) listener).inform(core);
       }
     }
   }
 
   protected void callPostCommitCallbacks() {
-    for (PluginHolder<SolrEventListener> listener : commitCallbacks) {
-      listener.get(). postCommit();
+    for (SolrEventListener listener : commitCallbacks) {
+      listener.postCommit();
     }
   }
 
   protected void callPostSoftCommitCallbacks() {
-    for (PluginHolder<SolrEventListener>  listener : softCommitCallbacks) {
-      listener.get().postSoftCommit();
+    for (SolrEventListener listener : softCommitCallbacks) {
+      listener.postSoftCommit();
     }
   }
 
   protected void callPostOptimizeCallbacks() {
-    for (PluginHolder<SolrEventListener> listener : optimizeCallbacks) {
-      listener.get().postCommit();
+    for (SolrEventListener listener : optimizeCallbacks) {
+      listener.postCommit();
     }
   }
 
@@ -172,8 +167,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
    *
    * @see SolrCoreAware
    */
-  public void registerCommitCallback( SolrEventListener listener) {
-    commitCallbacks.add(createHolder(listener,  SolrEventListener.class));
+  public void registerCommitCallback( SolrEventListener listener )
+  {
+    commitCallbacks.add( listener );
   }
 
   /**
@@ -183,8 +179,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
    *
    * @see SolrCoreAware
    */
-  public void registerSoftCommitCallback( SolrEventListener listener ) {
-    softCommitCallbacks.add(createHolder(listener,  SolrEventListener.class));
+  public void registerSoftCommitCallback( SolrEventListener listener )
+  {
+    softCommitCallbacks.add( listener );
   }
 
   /**
@@ -194,8 +191,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
    *
    * @see SolrCoreAware
    */
-  public void registerOptimizeCallback( SolrEventListener listener ) {
-    optimizeCallbacks.add(createHolder(listener,  SolrEventListener.class));
+  public void registerOptimizeCallback( SolrEventListener listener )
+  {
+    optimizeCallbacks.add( listener );
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;
