@@ -1,5 +1,10 @@
 # Apache Lucene Migration Guide
 
+## BM25Similarity.setDiscountOverlaps and LegacyBM25Similarity.setDiscountOverlaps methods removed (LUCENE-9646)
+
+The discount discountOverlaps parameter for both BM25Similarity and LegacyBM25Similarity
+is now set by the ctor of those classes.
+
 ## Packages in misc module are renamed (LUCENE-9600)
 
 Following package names in misc module are renamed.
