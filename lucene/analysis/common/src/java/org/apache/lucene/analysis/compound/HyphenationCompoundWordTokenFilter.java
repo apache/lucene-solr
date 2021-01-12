@@ -77,9 +77,18 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
       int minSubwordSize,
       int maxSubwordSize,
       boolean onlyLongestMatch) {
-    this(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch, false, false);
+    this(
+        input,
+        hyphenator,
+        dictionary,
+        minWordSize,
+        minSubwordSize,
+        maxSubwordSize,
+        onlyLongestMatch,
+        false,
+        false);
   }
-  
+
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
@@ -89,14 +98,15 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
    * @param minWordSize only words longer than this get processed
    * @param minSubwordSize only subwords longer than this get to the output stream
    * @param maxSubwordSize only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch Add only the longest matching subword for each hyphenation to the stream
+   * @param onlyLongestMatch Add only the longest matching subword for each hyphenation to the
+   *     stream
    * @param noSubMatches Excludes subwords that are enclosed by an other token
    * @param noOverlappingMatches Excludes subwords that overlap with an other subword
    */
   public HyphenationCompoundWordTokenFilter(
       TokenStream input,
       HyphenationTree hyphenator,
-      CharArraySet dictionary, 
+      CharArraySet dictionary,
       int minWordSize,
       int minSubwordSize,
       int maxSubwordSize,
@@ -138,12 +148,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
    * DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE }
    */
   public HyphenationCompoundWordTokenFilter(TokenStream input, HyphenationTree hyphenator) {
-    this(
-        input,
-        hyphenator,
-        DEFAULT_MIN_WORD_SIZE,
-        DEFAULT_MIN_SUBWORD_SIZE,
-        DEFAULT_MAX_SUBWORD_SIZE);
+    this(input, hyphenator, DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE);
   }
 
   /**
@@ -180,7 +185,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
     //shorter to avoid problems with genitive 's characters and other binding characters
     if(dictionary != null && !this.calcSubMatches && 
       (dictionary.contains(termAtt.buffer(), 0, termAtt.length()) ||
-          termAtt.length() > 1 && dictionary.contains(termAtt.buffer(), 0, termAtt.length() - 1))){
+        termAtt.length() > 1 && dictionary.contains(termAtt.buffer(), 0, termAtt.length() - 1))){
       return; //the whole token is in the dictionary - do not decompose
     }
     
