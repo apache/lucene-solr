@@ -22,11 +22,16 @@ description = 'Solr Docker image'
 
 apply plugin: 'base'
 
+// Solr Docker inputs
 def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
 def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
 def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
 def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
 def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
+
+// Build directory locations
+def dockerBuildDistribution = "$buildDir/distributions"
+def imageIdFile = "$buildDir/image-id"
 
 configurations {
   packaging {
@@ -40,7 +45,7 @@ configurations {
 dependencies {
   packaging project(path: ":solr:packaging", configuration: 'archives')
 
-  dockerImage files("$buildDir/image-id") {
+  dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
   }
 }
@@ -59,28 +64,42 @@ task dockerTar(type: Tar) {
     include '*.tgz'
   }
   from file('Dockerfile')
-  destinationDirectory = file('build/distributions')
+  destinationDirectory = file(dockerBuildDistribution)
   extension 'tgz'
   compression = Compression.GZIP
 }
 
-task dockerBuild(dependsOn: [tasks.dockerTar]) {
+task dockerBuild(dependsOn: tasks.dockerTar) {
   group = 'Docker'
   description = 'Build Solr docker image'
 
-  def imageIdFile = "$buildDir/image-id"
+  // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
+  inputs.properties([
+          baseDockerImage: baseDockerImage,
+          githubUrlOrMirror: githubUrlOrMirror,
+          version: version
+  ])
+  inputs.dir(dockerBuildDistribution)
 
   doLast {
     exec {
       standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
       commandLine "docker", "build",
               "--iidfile", imageIdFile,
-              "--build-arg", "BASE_IMAGE=${baseDockerImage}",
-              //"--build-arg", "SOLR_PACKAGE_IMAGE=${configurations.packageDockerImage.singleFile.text}",
+              "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
               "--build-arg", "SOLR_VERSION=${version}",
-              "--build-arg", "GITHUB_URL=${githubUrlOrMirror}",
+              "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }
+  }
+
+  // Print information on the image after it has been created
+  doLast {
+    def dockerImageId = file(imageIdFile).text
+    project.logger.lifecycle("Solr Docker Image Created")
+    project.logger.lifecycle("\tID: \t$dockerImageId")
+    project.logger.lifecycle("\tBase Image: \t$baseDockerImage")
+    project.logger.lifecycle("\tSolr Version: \t$version")
   }
 
   outputs.files(imageIdFile)
@@ -90,23 +109,36 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Tag Solr docker image'
 
+  // Ensure that the docker image is re-tagged if the image ID or desired tag changes
+  inputs.properties([
+          dockerImageName: dockerImageName,
+  ])
+  inputs.file(imageIdFile)
+
   doLast {
     exec {
-      commandLine "docker", "tag", tasks.dockerBuild.outputs.files.singleFile.text, dockerImageName
+      commandLine "docker", "tag", tasks.dockerBuild.outputs.files.singleFile.text, inputs.properties.dockerImageName
     }
   }
 
   // Print information on the image after it has been created
   doLast {
-    project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tTag: $dockerImageName")
-    project.logger.lifecycle("\tBase Image: $baseDockerImage")
+    def dockerImageId = tasks.dockerBuild.outputs.files.singleFile.text
+    project.logger.lifecycle("Solr Docker Image Tagged")
+    project.logger.lifecycle("\tID: \t$dockerImageId")
+    project.logger.lifecycle("\tTag: \t$dockerImageName")
   }
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {
   group = 'Docker'
   description = 'Push Solr docker image'
+
+  // Ensure that the docker image is re-pushed if the image ID or tag changes
+  inputs.properties([
+          dockerImageName: dockerImageName,
+  ])
+  inputs.file(imageIdFile)
 
   doLast {
     exec {
@@ -116,7 +148,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
 
   // Print information on the image after it has been created
   doLast {
-    project.logger.lifecycle("Solr Docker Image Pushed: $dockerImageName")
+    project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
   }
 }
 
@@ -125,24 +157,33 @@ task testDocker(dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image'
 
+  def inputDir = "tests/cases"
+  def outputDir = "$buildDir/tmp/tests"
+
+  // Ensure that the docker image is re-tested if the image ID changes or the test files change
+  inputs.properties([
+          includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("tests", "SOLR_DOCKER_TESTS", ",").split(","))),
+          ignoreTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("ignore", "SOLR_DOCKER_TESTS_INGORE", ",").split(",")))
+  ])
+  inputs.file(imageIdFile)
+  inputs.dir(inputDir)
+
   doLast {
-    def solrImageName = tasks.dockerBuild.outputs.files.singleFile.text
+    def solrImageId = tasks.dockerBuild.outputs.files.singleFile.text
+    def solrImageName = solrImageId.substring(7, 14)
 
-    def includeTests = new HashSet(Arrays.asList(propertyOrEnvOrDefault("tests", "SOLR_DOCKER_TESTS", ",").split(",")))
-    def ignoreTests = new HashSet(Arrays.asList(propertyOrEnvOrDefault("ignore", "SOLR_DOCKER_TESTS_INGORE", ",").split(",")))
-    logger.lifecycle(includeTests.toString())
-    logger.lifecycle(ignoreTests.toString())
-
-    def outputDir = file("$buildDir/tmp/tests")
     // Print information on the image before it is tested
-    logger.lifecycle("Testing Solr Image: $solrImageName\n")
-    def sourceDir = file("tests/cases")
+    logger.lifecycle("Testing Solr Image:")
+    logger.lifecycle("\tID: $solrImageId\n")
+
+    // Run the tests
+    def sourceDir = file(inputDir)
     sourceDir.eachFile  { file ->
       def testName = file.getName()
-      def testCaseBuildDir = "${outputDir.path}/${testName}"
+      def testCaseBuildDir = "${outputDir}/${testName}"
 
       // If specific tests are specified, only run those. Otherwise run all that are not ignored.
-      def runTest = !includeTests.isEmpty() ? includeTests.contains(testName) : !ignoreTests.contains(testName)
+      def runTest = !inputs.properties.includeTests.isEmpty() ? inputs.properties.includeTests.contains(testName) : !inputs.properties.ignoreTests.contains(testName)
       if (runTest) {
         exec {
           environment "TEST_DIR", file
@@ -152,6 +193,8 @@ task testDocker(dependsOn: tasks.dockerBuild) {
       }
     }
   }
+
+  outputs.dir(outputDir)
 }
 
 artifacts {
