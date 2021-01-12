@@ -31,9 +31,11 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
+@Ignore // nocommit
 public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final int NUM_SHARD = 3;
@@ -47,7 +49,6 @@ public class HttpSolrCallGetCoreTest extends SolrCloudTestCase {
 
     CollectionAdminRequest
         .createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
-        .setMaxShardsPerNode(NUM_SHARD * REPLICA_FACTOR)
         .process(cluster.getSolrClient());
   }
 

@@ -132,9 +132,10 @@ public class PerThreadExecService extends AbstractExecutorService {
   @Override
   public void execute(Runnable runnable) {
 
-    if (shutdown) {
-      throw new RejectedExecutionException();
-    }
+//    if (shutdown) {
+//      throw new RejectedExecutionException();
+//    }
+
     running.incrementAndGet();
     if (runnable instanceof ParWork.SolrFutureTask && !((ParWork.SolrFutureTask) runnable).isCallerThreadAllowed()) {
       if (noCallerRunsAvailableLimit) {

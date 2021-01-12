@@ -899,9 +899,9 @@ public class CoreContainer implements Closeable {
           if (isZooKeeperAware() && !CloudUtil.checkIfValidCloudCore(this, cd)) {
             continue;
           }
-          if (isZooKeeperAware()) {
-            ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false));
-          }
+//          if (isZooKeeperAware()) {
+//            ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false));
+//          }
           coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
             SolrCore core;
             try {
@@ -909,17 +909,20 @@ public class CoreContainer implements Closeable {
                 zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
               }
               core = createFromDescriptor(cd, false);
+
             } finally {
               solrCores.markCoreAsNotLoading(cd);
             }
-
+            if (isZooKeeperAware()) {
+              new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false).call();
+            }
             return core;
           }));
         }
       }
-
-
-
+      if (zkSys != null && zkSys.getZkController() != null) {
+        zkSys.getZkController().createEphemeralLiveNode();
+      }
     } finally {
 
       startedLoadingCores = true;
@@ -934,9 +937,6 @@ public class CoreContainer implements Closeable {
             log.error("Error waiting for SolrCore to be loaded on startup", e.getCause());
           }
         }
-      }
-      if (zkSys != null && zkSys.getZkController() != null) {
-        zkSys.getZkController().createEphemeralLiveNode();
       }
     }
     if (isZooKeeperAware()) {

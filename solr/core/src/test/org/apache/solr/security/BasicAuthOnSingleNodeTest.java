@@ -56,6 +56,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  @Ignore // nocommit
   public void basicTest() throws Exception {
     try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
         .build()){

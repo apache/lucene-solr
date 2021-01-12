@@ -328,7 +328,7 @@ public class ZkController implements Closeable, Runnable {
         log.info("Registering core {} afterExpiration? {}", descriptor.getName(), afterExpiration);
       }
 
-      if (zkController.isDcCalled() || zkController.getCoreContainer().isShutDown()) {
+      if (zkController.isDcCalled() || zkController.getCoreContainer().isShutDown() || (afterExpiration && !descriptor.getCloudDescriptor().hasRegistered())) {
         return null;
       }
       zkController.register(descriptor.getName(), descriptor, afterExpiration);
@@ -1332,23 +1332,20 @@ public class ZkController implements Closeable, Runnable {
     }
     MDCLoggingContext.setCoreDescriptor(cc, desc);
     ZkShardTerms shardTerms = null;
+    LeaderElector leaderElector = null;
     try {
       final String baseUrl = getBaseUrl();
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
       final String collection = cloudDesc.getCollectionName();
       final String shardId = cloudDesc.getShardId();
 
-      log.info("Register terms for replica {}", coreName);
-      ZkCollectionTerms ct = createCollectionTerms(collection);
-      shardTerms = getShardTerms(collection, cloudDesc.getShardId());
-
+      log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={} skipRecovery={}", coreName, baseUrl, collection, shardId);
+      AtomicReference<DocCollection> coll = new AtomicReference<>();
+      AtomicReference<Replica> replicaRef = new AtomicReference<>();
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       getZkStateReader().registerCore(cloudDesc.getCollectionName());
 
-      log.info("Register SolrCore, core={} baseUrl={} collection={}, shard={} skipRecovery={}", coreName, baseUrl, collection, shardId);
-      AtomicReference<DocCollection> coll = new AtomicReference<>();
-      AtomicReference<Replica> replicaRef = new AtomicReference<>();
       try {
         log.info("Waiting to see our entry in state.json {}", desc.getName());
         zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 10000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
@@ -1377,11 +1374,16 @@ public class ZkController implements Closeable, Runnable {
       }
 
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
-      if (isDcCalled() || isClosed) {
+      if (isDcCalled()) {
+        log.info("Disconnect already called, won't register");
         throw new AlreadyClosedException();
       }
 
-      LeaderElector leaderElector = leaderElectors.get(replica.getName());
+      log.info("Register terms for replica {}", coreName);
+      //ZkCollectionTerms ct = createCollectionTerms(collection);
+      shardTerms = getShardTerms(collection, cloudDesc.getShardId());
+
+      leaderElector = leaderElectors.get(replica.getName());
       if (leaderElector == null) {
         ContextKey contextKey = new ContextKey(collection, coreName);
         leaderElector = new LeaderElector(this, contextKey);
@@ -1394,7 +1396,7 @@ public class ZkController implements Closeable, Runnable {
         // If we're a preferred leader, insert ourselves at the head of the queue
         boolean joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
         if (replica.getType() != Type.PULL) {
-          ct.register(cloudDesc.getShardId(), coreName);
+          //getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
           // nocommit review
           joinElection(desc, joinAtHead);
         }
@@ -1499,6 +1501,9 @@ public class ZkController implements Closeable, Runnable {
       log.info("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
       return shardId;
     } finally {
+      if (isDcCalled() || isClosed()) {
+        IOUtils.closeQuietly(leaderElector);
+      }
       MDCLoggingContext.clear();
     }
   }

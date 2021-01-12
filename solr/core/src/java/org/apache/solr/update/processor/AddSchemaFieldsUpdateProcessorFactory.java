@@ -392,6 +392,18 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         final String message = "This IndexSchema is not mutable.";
         throw new SolrException(BAD_REQUEST, message);
       }
+      updateSchemaIfNeeded(cmd);
+
+      try {
+        super.processAdd(cmd);
+      } catch (ManagedIndexSchema.UnknownFieldException e) {
+        log.info("Unknown field, retry ...");
+        updateSchemaIfNeeded(cmd);
+        super.processAdd(cmd);
+      }
+    }
+
+    private void updateSchemaIfNeeded(AddUpdateCommand cmd) {
       final SolrInputDocument doc = cmd.getSolrInputDocument();
       final SolrCore core = cmd.getReq().getCore();
       // use the cmd's schema rather than the latest, because the schema
@@ -407,8 +419,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // processing may have changed
         try {
 
-          // use latest schema
-          oldSchema = cmd.getReq().getCore().getLatestSchema();
+          oldSchema = cmd.getReq().getSchema();
 
           FieldNameSelector selector = buildSelector(oldSchema);
           Map<String,List<SolrInputField>> unknownFields = new HashMap<>();
@@ -510,8 +521,6 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           }
         }
       }
-
-      super.processAdd(cmd);
     }
 
     /**
