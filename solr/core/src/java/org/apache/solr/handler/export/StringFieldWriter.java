@@ -65,6 +65,11 @@ class StringFieldWriter extends FieldWriter {
         When we have long runs of repeated values do to the sort order of the docs this is a huge win.
        */
 
+      if(stringValue.currentOrd == -1) {
+        //Null sort value
+        return false;
+      }
+
       if (this.lastOrd == stringValue.currentOrd) {
         ref = lastRef;
       }
