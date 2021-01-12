@@ -73,5 +73,4 @@ include "solr:example"
 
 include "solr:documentation"
 include "solr:packaging"
-include "solr:docker:package"
 include "solr:docker"
