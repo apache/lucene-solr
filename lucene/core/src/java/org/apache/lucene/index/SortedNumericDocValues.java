@@ -18,28 +18,21 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-
-/**
- * A list of per-document numeric values, sorted 
- * according to {@link Long#compare(long, long)}.
- */
+/** A list of per-document numeric values, sorted according to {@link Long#compare(long, long)}. */
 public abstract class SortedNumericDocValues extends DocValuesIterator {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected SortedNumericDocValues() {}
 
-  /** 
-   * Iterates to the next value in the current document.  Do not call this more than {@link #docValueCount} times
-   * for the document.
+  /**
+   * Iterates to the next value in the current document. Do not call this more than {@link
+   * #docValueCount} times for the document.
    */
   public abstract long nextValue() throws IOException;
-  
-  /** 
-   * Retrieves the number of values for the current document.  This must always
-   * be greater than zero.
-   * It is illegal to call this method after {@link #advanceExact(int)}
-   * returned {@code false}.
+
+  /**
+   * Retrieves the number of values for the current document. This must always be greater than zero.
+   * It is illegal to call this method after {@link #advanceExact(int)} returned {@code false}.
    */
   public abstract int docValueCount();
 }

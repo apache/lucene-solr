@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -50,8 +49,11 @@ public class TestFeatureField extends LuceneTestCase {
 
   public void testBasics() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     FeatureField pagerank = new FeatureField("features", "pagerank", 1);
     FeatureField urlLength = new FeatureField("features", "urlLen", 1);
@@ -156,21 +158,21 @@ public class TestFeatureField extends LuceneTestCase {
 
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, s.iterator().nextDoc());
 
-    q = FeatureField.newSaturationQuery("features", "urlLen", 3f, 1f/24);
+    q = FeatureField.newSaturationQuery("features", "urlLen", 3f, 1f / 24);
     w = q.createWeight(searcher, ScoreMode.TOP_SCORES, 2);
     s = w.scorer(context);
 
     assertEquals(0, s.iterator().nextDoc());
-    assertEquals(6f * (1 - (1f/24) / (1f/24 + round(1f/24))), s.score(), 0f);
+    assertEquals(6f * (1 - (1f / 24) / (1f / 24 + round(1f / 24))), s.score(), 0f);
 
     assertEquals(1, s.iterator().nextDoc());
-    assertEquals(6f * (1 - 1f/24 / (1f/24 + round(1f/20))), s.score(), 0f);
+    assertEquals(6f * (1 - 1f / 24 / (1f / 24 + round(1f / 20))), s.score(), 0f);
 
     assertEquals(3, s.iterator().nextDoc());
-    assertEquals(6f * (1 - 1f/24 / (1f/24 + round(1f/100))), s.score(), 0f);
+    assertEquals(6f * (1 - 1f / 24 / (1f / 24 + round(1f / 100))), s.score(), 0f);
 
     assertEquals(4, s.iterator().nextDoc());
-    assertEquals(6f * (1 - 1f/24 / (1f/24 + round(1f/23))), s.score(), 0f);
+    assertEquals(6f * (1 - 1f / 24 / (1f / 24 + round(1f / 23))), s.score(), 0f);
 
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, s.iterator().nextDoc());
 
@@ -180,8 +182,11 @@ public class TestFeatureField extends LuceneTestCase {
 
   public void testExplanations() throws Exception {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     FeatureField pagerank = new FeatureField("features", "pagerank", 1);
     doc.add(pagerank);
@@ -205,22 +210,31 @@ public class TestFeatureField extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader);
 
-    QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", 1f, 4.5f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newLogQuery("features", "pagerank", 1f, 4.5f), searcher);
     QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", 1f), searcher);
-    QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", 1f, 12f), searcher);
-    QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", 1f, 12f, 0.6f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSaturationQuery("features", "pagerank", 1f, 12f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSigmoidQuery("features", "pagerank", 1f, 12f, 0.6f), searcher);
 
     // Test boosts that are > 1
-    QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", 3f, 4.5f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newLogQuery("features", "pagerank", 3f, 4.5f), searcher);
     QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", 3f), searcher);
-    QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", 3f, 12f), searcher);
-    QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", 3f, 12f, 0.6f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSaturationQuery("features", "pagerank", 3f, 12f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSigmoidQuery("features", "pagerank", 3f, 12f, 0.6f), searcher);
 
     // Test boosts that are < 1
-    QueryUtils.check(random(), FeatureField.newLogQuery("features", "pagerank", .2f, 4.5f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newLogQuery("features", "pagerank", .2f, 4.5f), searcher);
     QueryUtils.check(random(), FeatureField.newLinearQuery("features", "pagerank", .2f), searcher);
-    QueryUtils.check(random(), FeatureField.newSaturationQuery("features", "pagerank", .2f, 12f), searcher);
-    QueryUtils.check(random(), FeatureField.newSigmoidQuery("features", "pagerank", .2f, 12f, 0.6f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSaturationQuery("features", "pagerank", .2f, 12f), searcher);
+    QueryUtils.check(
+        random(), FeatureField.newSigmoidQuery("features", "pagerank", .2f, 12f, 0.6f), searcher);
 
     reader.close();
     dir.close();
@@ -285,7 +299,7 @@ public class TestFeatureField extends LuceneTestCase {
     writer.close();
 
     pivot = FeatureField.computePivotFeatureValue(reader, "features", "pagerank");
-    double expected = Math.pow(10 * 100 * 1 * 42, 1/4.); // geometric mean
+    double expected = Math.pow(10 * 100 * 1 * 42, 1 / 4.); // geometric mean
     assertEquals(expected, pivot, 0.1);
 
     reader.close();
@@ -294,8 +308,11 @@ public class TestFeatureField extends LuceneTestCase {
 
   public void testDemo() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig()
-        .setMergePolicy(newLogMergePolicy(random().nextBoolean())));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig().setMergePolicy(newLogMergePolicy(random().nextBoolean())));
     Document doc = new Document();
     FeatureField pagerank = new FeatureField("features", "pagerank", 1);
     doc.add(pagerank);
@@ -326,15 +343,14 @@ public class TestFeatureField extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new BM25Similarity());
-    Query query = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("body", "apache")), Occur.SHOULD)
-        .add(new TermQuery(new Term("body", "lucene")), Occur.SHOULD)
-        .build();
+    Query query =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("body", "apache")), Occur.SHOULD)
+            .add(new TermQuery(new Term("body", "lucene")), Occur.SHOULD)
+            .build();
     Query boost = FeatureField.newSaturationQuery("features", "pagerank");
-    Query boostedQuery = new BooleanQuery.Builder()
-        .add(query, Occur.MUST)
-        .add(boost, Occur.SHOULD)
-        .build();
+    Query boostedQuery =
+        new BooleanQuery.Builder().add(query, Occur.MUST).add(boost, Occur.SHOULD).build();
     TopDocs topDocs = searcher.search(boostedQuery, 10);
     assertEquals(4, topDocs.scoreDocs.length);
     assertEquals(1, topDocs.scoreDocs[0].doc);
@@ -345,5 +361,4 @@ public class TestFeatureField extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-
 }

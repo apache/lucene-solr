@@ -19,14 +19,11 @@ package org.apache.lucene.search;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-
 import org.apache.lucene.document.InetAddressPoint;
 import org.apache.lucene.document.InetAddressRange;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-/**
- * Random testing for {@link InetAddressRange}
- */
+/** Random testing for {@link InetAddressRange} */
 @SuppressCodecs({"Direct"})
 public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   private static final String FIELD_NAME = "ipRangeField";
@@ -85,31 +82,35 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
   /** return random range */
   @Override
   protected InetAddressRange newRangeField(Range r) {
-    return new InetAddressRange(FIELD_NAME, ((IpRange)r).minAddress, ((IpRange)r).maxAddress);
+    return new InetAddressRange(FIELD_NAME, ((IpRange) r).minAddress, ((IpRange) r).maxAddress);
   }
 
   /** return random intersects query */
   @Override
   protected Query newIntersectsQuery(Range r) {
-    return InetAddressRange.newIntersectsQuery(FIELD_NAME, ((IpRange)r).minAddress, ((IpRange)r).maxAddress);
+    return InetAddressRange.newIntersectsQuery(
+        FIELD_NAME, ((IpRange) r).minAddress, ((IpRange) r).maxAddress);
   }
 
   /** return random contains query */
   @Override
   protected Query newContainsQuery(Range r) {
-    return InetAddressRange.newContainsQuery(FIELD_NAME, ((IpRange)r).minAddress, ((IpRange)r).maxAddress);
+    return InetAddressRange.newContainsQuery(
+        FIELD_NAME, ((IpRange) r).minAddress, ((IpRange) r).maxAddress);
   }
 
   /** return random within query */
   @Override
   protected Query newWithinQuery(Range r) {
-    return InetAddressRange.newWithinQuery(FIELD_NAME, ((IpRange)r).minAddress, ((IpRange)r).maxAddress);
+    return InetAddressRange.newWithinQuery(
+        FIELD_NAME, ((IpRange) r).minAddress, ((IpRange) r).maxAddress);
   }
 
   /** return random crosses query */
   @Override
   protected Query newCrossesQuery(Range r) {
-    return InetAddressRange.newCrossesQuery(FIELD_NAME, ((IpRange)r).minAddress, ((IpRange)r).maxAddress);
+    return InetAddressRange.newCrossesQuery(
+        FIELD_NAME, ((IpRange) r).minAddress, ((IpRange) r).maxAddress);
   }
 
   /** encapsulated IpRange for test validation */
@@ -138,7 +139,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMin(int dim, Object val) {
-      InetAddress v = (InetAddress)val;
+      InetAddress v = (InetAddress) val;
       byte[] e = InetAddressPoint.encode(v);
 
       if (Arrays.compareUnsigned(min, 0, e.length, e, 0, e.length) < 0) {
@@ -157,7 +158,7 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected void setMax(int dim, Object val) {
-      InetAddress v = (InetAddress)val;
+      InetAddress v = (InetAddress) val;
       byte[] e = InetAddressPoint.encode(v);
 
       if (Arrays.compareUnsigned(max, 0, e.length, e, 0, e.length) > 0) {
@@ -171,29 +172,29 @@ public class TestInetAddressRangeQueries extends BaseRangeFieldQueryTestCase {
 
     @Override
     protected boolean isEqual(Range o) {
-      IpRange other = (IpRange)o;
+      IpRange other = (IpRange) o;
       return Arrays.equals(min, other.min) && Arrays.equals(max, other.max);
     }
 
     @Override
     protected boolean isDisjoint(Range o) {
-      IpRange other = (IpRange)o;
-      return Arrays.compareUnsigned(min, 0, min.length, other.max, 0, min.length) > 0 ||
-          Arrays.compareUnsigned(max, 0, max.length, other.min, 0, max.length) < 0;
+      IpRange other = (IpRange) o;
+      return Arrays.compareUnsigned(min, 0, min.length, other.max, 0, min.length) > 0
+          || Arrays.compareUnsigned(max, 0, max.length, other.min, 0, max.length) < 0;
     }
 
     @Override
     protected boolean isWithin(Range o) {
-      IpRange other = (IpRange)o;
-      return Arrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) >= 0 &&
-          Arrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) <= 0;
+      IpRange other = (IpRange) o;
+      return Arrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) >= 0
+          && Arrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) <= 0;
     }
 
     @Override
     protected boolean contains(Range o) {
-      IpRange other = (IpRange)o;
-      return Arrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) <= 0 &&
-          Arrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) >= 0;
+      IpRange other = (IpRange) o;
+      return Arrays.compareUnsigned(min, 0, min.length, other.min, 0, min.length) <= 0
+          && Arrays.compareUnsigned(max, 0, max.length, other.max, 0, max.length) >= 0;
     }
 
     @Override

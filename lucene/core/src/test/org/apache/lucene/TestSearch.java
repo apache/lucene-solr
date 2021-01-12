@@ -16,13 +16,11 @@
  */
 package org.apache.lucene;
 
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -33,85 +31,82 @@ import org.apache.lucene.util.LuceneTestCase;
 /** JUnit adaptation of an older test case SearchTest. */
 public class TestSearch extends LuceneTestCase {
 
-    /** This test performs a number of searches. It also compares output
-     *  of searches using multi-file index segments with single-file
-     *  index segments.
-     *
-     *  TODO: someone should check that the results of the searches are
-     *        still correct by adding assert statements. Right now, the test
-     *        passes if the results are the same between multi-file and
-     *        single-file formats, even if the results are wrong.
-     */
-    public void testSearch() throws Exception {
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw, true);
-      doTestSearch(random(), pw, false);
-      pw.close();
-      sw.close();
-      String multiFileOutput = sw.toString();
-      //System.out.println(multiFileOutput);
+  /**
+   * This test performs a number of searches. It also compares output of searches using multi-file
+   * index segments with single-file index segments.
+   *
+   * <p>TODO: someone should check that the results of the searches are still correct by adding
+   * assert statements. Right now, the test passes if the results are the same between multi-file
+   * and single-file formats, even if the results are wrong.
+   */
+  public void testSearch() throws Exception {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw, true);
+    doTestSearch(random(), pw, false);
+    pw.close();
+    sw.close();
+    String multiFileOutput = sw.toString();
+    // System.out.println(multiFileOutput);
 
-      sw = new StringWriter();
-      pw = new PrintWriter(sw, true);
-      doTestSearch(random(), pw, true);
-      pw.close();
-      sw.close();
-      String singleFileOutput = sw.toString();
+    sw = new StringWriter();
+    pw = new PrintWriter(sw, true);
+    doTestSearch(random(), pw, true);
+    pw.close();
+    sw.close();
+    String singleFileOutput = sw.toString();
 
-      assertEquals(multiFileOutput, singleFileOutput);
+    assertEquals(multiFileOutput, singleFileOutput);
+  }
+
+  private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
+      throws Exception {
+    Directory directory = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random);
+    IndexWriterConfig conf = newIndexWriterConfig(analyzer);
+    MergePolicy mp = conf.getMergePolicy();
+    mp.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
+    IndexWriter writer = new IndexWriter(directory, conf);
+
+    String[] docs = {
+      "a b c d e",
+      "a b c d e a b c d e",
+      "a b c d e f g h i j",
+      "a c e",
+      "e c a",
+      "a c e a c e",
+      "a c e a b c"
+    };
+    for (int j = 0; j < docs.length; j++) {
+      Document d = new Document();
+      d.add(newTextField("contents", docs[j], Field.Store.YES));
+      d.add(new NumericDocValuesField("id", j));
+      writer.addDocument(d);
     }
+    writer.close();
 
+    IndexReader reader = DirectoryReader.open(directory);
+    IndexSearcher searcher = newSearcher(reader);
 
-    private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
-    throws Exception {
-      Directory directory = newDirectory();
-      Analyzer analyzer = new MockAnalyzer(random);
-      IndexWriterConfig conf = newIndexWriterConfig(analyzer);
-      MergePolicy mp = conf.getMergePolicy();
-      mp.setNoCFSRatio(useCompoundFile ? 1.0 : 0.0);
-      IndexWriter writer = new IndexWriter(directory, conf);
+    ScoreDoc[] hits = null;
 
-      String[] docs = {
-        "a b c d e",
-        "a b c d e a b c d e",
-        "a b c d e f g h i j",
-        "a c e",
-        "e c a",
-        "a c e a c e",
-        "a c e a b c"
-      };
-      for (int j = 0; j < docs.length; j++) {
-        Document d = new Document();
-        d.add(newTextField("contents", docs[j], Field.Store.YES));
-        d.add(new NumericDocValuesField("id", j));
-        writer.addDocument(d);
+    Sort sort = new Sort(SortField.FIELD_SCORE, new SortField("id", SortField.Type.INT));
+
+    for (Query query : buildQueries()) {
+      out.println("Query: " + query.toString("contents"));
+      if (VERBOSE) {
+        System.out.println("TEST: query=" + query);
       }
-      writer.close();
 
-      IndexReader reader = DirectoryReader.open(directory);
-      IndexSearcher searcher = newSearcher(reader);
+      hits = searcher.search(query, 1000, sort).scoreDocs;
 
-      ScoreDoc[] hits = null;
-
-      Sort sort = new Sort(SortField.FIELD_SCORE,
-                           new SortField("id", SortField.Type.INT));
-
-      for (Query query : buildQueries()) {
-        out.println("Query: " + query.toString("contents"));
-        if (VERBOSE) {
-          System.out.println("TEST: query=" + query);
-        }
-
-        hits = searcher.search(query, 1000, sort).scoreDocs;
-
-        out.println(hits.length + " total results");
-        for (int i = 0 ; i < hits.length && i < 10; i++) {
-          Document d = searcher.doc(hits[i].doc);
-          out.println(i + " " + hits[i].score + " " + d.get("contents"));
-        }
+      out.println(hits.length + " total results");
+      for (int i = 0; i < hits.length && i < 10; i++) {
+        Document d = searcher.doc(hits[i].doc);
+        out.println(i + " " + hits[i].score + " " + d.get("contents"));
       }
-      reader.close();
-      directory.close();
+    }
+    reader.close();
+    directory.close();
   }
 
   private List<Query> buildQueries() {

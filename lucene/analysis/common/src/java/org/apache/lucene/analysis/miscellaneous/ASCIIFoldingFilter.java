@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -25,67 +24,79 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * This class converts alphabetic, numeric, and symbolic Unicode characters
- * which are not in the first 127 ASCII characters (the "Basic Latin" Unicode
- * block) into their ASCII equivalents, if one exists.
+ * This class converts alphabetic, numeric, and symbolic Unicode characters which are not in the
+ * first 127 ASCII characters (the "Basic Latin" Unicode block) into their ASCII equivalents, if one
+ * exists.
  *
- * Characters from the following Unicode blocks are converted; however, only
- * those characters with reasonable ASCII alternatives are converted:
+ * <p>Characters from the following Unicode blocks are converted; however, only those characters
+ * with reasonable ASCII alternatives are converted:
  *
  * <ul>
- *   <li>C1 Controls and Latin-1 Supplement: <a href="http://www.unicode.org/charts/PDF/U0080.pdf">http://www.unicode.org/charts/PDF/U0080.pdf</a>
- *   <li>Latin Extended-A: <a href="http://www.unicode.org/charts/PDF/U0100.pdf">http://www.unicode.org/charts/PDF/U0100.pdf</a>
- *   <li>Latin Extended-B: <a href="http://www.unicode.org/charts/PDF/U0180.pdf">http://www.unicode.org/charts/PDF/U0180.pdf</a>
- *   <li>Latin Extended Additional: <a href="http://www.unicode.org/charts/PDF/U1E00.pdf">http://www.unicode.org/charts/PDF/U1E00.pdf</a>
- *   <li>Latin Extended-C: <a href="http://www.unicode.org/charts/PDF/U2C60.pdf">http://www.unicode.org/charts/PDF/U2C60.pdf</a>
- *   <li>Latin Extended-D: <a href="http://www.unicode.org/charts/PDF/UA720.pdf">http://www.unicode.org/charts/PDF/UA720.pdf</a>
- *   <li>IPA Extensions: <a href="http://www.unicode.org/charts/PDF/U0250.pdf">http://www.unicode.org/charts/PDF/U0250.pdf</a>
- *   <li>Phonetic Extensions: <a href="http://www.unicode.org/charts/PDF/U1D00.pdf">http://www.unicode.org/charts/PDF/U1D00.pdf</a>
- *   <li>Phonetic Extensions Supplement: <a href="http://www.unicode.org/charts/PDF/U1D80.pdf">http://www.unicode.org/charts/PDF/U1D80.pdf</a>
- *   <li>General Punctuation: <a href="http://www.unicode.org/charts/PDF/U2000.pdf">http://www.unicode.org/charts/PDF/U2000.pdf</a>
- *   <li>Superscripts and Subscripts: <a href="http://www.unicode.org/charts/PDF/U2070.pdf">http://www.unicode.org/charts/PDF/U2070.pdf</a>
- *   <li>Enclosed Alphanumerics: <a href="http://www.unicode.org/charts/PDF/U2460.pdf">http://www.unicode.org/charts/PDF/U2460.pdf</a>
- *   <li>Dingbats: <a href="http://www.unicode.org/charts/PDF/U2700.pdf">http://www.unicode.org/charts/PDF/U2700.pdf</a>
- *   <li>Supplemental Punctuation: <a href="http://www.unicode.org/charts/PDF/U2E00.pdf">http://www.unicode.org/charts/PDF/U2E00.pdf</a>
- *   <li>Alphabetic Presentation Forms: <a href="http://www.unicode.org/charts/PDF/UFB00.pdf">http://www.unicode.org/charts/PDF/UFB00.pdf</a>
- *   <li>Halfwidth and Fullwidth Forms: <a href="http://www.unicode.org/charts/PDF/UFF00.pdf">http://www.unicode.org/charts/PDF/UFF00.pdf</a>
+ *   <li>C1 Controls and Latin-1 Supplement: <a
+ *       href="http://www.unicode.org/charts/PDF/U0080.pdf">http://www.unicode.org/charts/PDF/U0080.pdf</a>
+ *   <li>Latin Extended-A: <a
+ *       href="http://www.unicode.org/charts/PDF/U0100.pdf">http://www.unicode.org/charts/PDF/U0100.pdf</a>
+ *   <li>Latin Extended-B: <a
+ *       href="http://www.unicode.org/charts/PDF/U0180.pdf">http://www.unicode.org/charts/PDF/U0180.pdf</a>
+ *   <li>Latin Extended Additional: <a
+ *       href="http://www.unicode.org/charts/PDF/U1E00.pdf">http://www.unicode.org/charts/PDF/U1E00.pdf</a>
+ *   <li>Latin Extended-C: <a
+ *       href="http://www.unicode.org/charts/PDF/U2C60.pdf">http://www.unicode.org/charts/PDF/U2C60.pdf</a>
+ *   <li>Latin Extended-D: <a
+ *       href="http://www.unicode.org/charts/PDF/UA720.pdf">http://www.unicode.org/charts/PDF/UA720.pdf</a>
+ *   <li>IPA Extensions: <a
+ *       href="http://www.unicode.org/charts/PDF/U0250.pdf">http://www.unicode.org/charts/PDF/U0250.pdf</a>
+ *   <li>Phonetic Extensions: <a
+ *       href="http://www.unicode.org/charts/PDF/U1D00.pdf">http://www.unicode.org/charts/PDF/U1D00.pdf</a>
+ *   <li>Phonetic Extensions Supplement: <a
+ *       href="http://www.unicode.org/charts/PDF/U1D80.pdf">http://www.unicode.org/charts/PDF/U1D80.pdf</a>
+ *   <li>General Punctuation: <a
+ *       href="http://www.unicode.org/charts/PDF/U2000.pdf">http://www.unicode.org/charts/PDF/U2000.pdf</a>
+ *   <li>Superscripts and Subscripts: <a
+ *       href="http://www.unicode.org/charts/PDF/U2070.pdf">http://www.unicode.org/charts/PDF/U2070.pdf</a>
+ *   <li>Enclosed Alphanumerics: <a
+ *       href="http://www.unicode.org/charts/PDF/U2460.pdf">http://www.unicode.org/charts/PDF/U2460.pdf</a>
+ *   <li>Dingbats: <a
+ *       href="http://www.unicode.org/charts/PDF/U2700.pdf">http://www.unicode.org/charts/PDF/U2700.pdf</a>
+ *   <li>Supplemental Punctuation: <a
+ *       href="http://www.unicode.org/charts/PDF/U2E00.pdf">http://www.unicode.org/charts/PDF/U2E00.pdf</a>
+ *   <li>Alphabetic Presentation Forms: <a
+ *       href="http://www.unicode.org/charts/PDF/UFB00.pdf">http://www.unicode.org/charts/PDF/UFB00.pdf</a>
+ *   <li>Halfwidth and Fullwidth Forms: <a
+ *       href="http://www.unicode.org/charts/PDF/UFF00.pdf">http://www.unicode.org/charts/PDF/UFF00.pdf</a>
  * </ul>
- *  
- * See: <a href="http://en.wikipedia.org/wiki/Latin_characters_in_Unicode">http://en.wikipedia.org/wiki/Latin_characters_in_Unicode</a>
  *
- * For example, '&agrave;' will be replaced by 'a'.
+ * See: <a
+ * href="http://en.wikipedia.org/wiki/Latin_characters_in_Unicode">http://en.wikipedia.org/wiki/Latin_characters_in_Unicode</a>
+ *
+ * <p>For example, '&agrave;' will be replaced by 'a'.
  */
 public final class ASCIIFoldingFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncAttr = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAttr =
+      addAttribute(PositionIncrementAttribute.class);
   private final boolean preserveOriginal;
   private char[] output = new char[512];
   private int outputPos;
   private State state;
 
-  public ASCIIFoldingFilter(TokenStream input)
-  {
+  public ASCIIFoldingFilter(TokenStream input) {
     this(input, false);
   }
 
   /**
    * Create a new {@link ASCIIFoldingFilter}.
-   * 
-   * @param input
-   *          TokenStream to filter
-   * @param preserveOriginal
-   *          should the original tokens be kept on the input stream with a 0 position increment
-   *          from the folded tokens?
-   **/
-  public ASCIIFoldingFilter(TokenStream input, boolean preserveOriginal)
-  {
+   *
+   * @param input TokenStream to filter
+   * @param preserveOriginal should the original tokens be kept on the input stream with a 0
+   *     position increment from the folded tokens?
+   */
+  public ASCIIFoldingFilter(TokenStream input, boolean preserveOriginal) {
     super(input);
     this.preserveOriginal = preserveOriginal;
   }
 
-  /**
-   * Does the filter preserve the original tokens?
-   */
+  /** Does the filter preserve the original tokens? */
   public boolean isPreserveOriginal() {
     return preserveOriginal;
   }
@@ -105,10 +116,9 @@ public final class ASCIIFoldingFilter extends TokenFilter {
 
       // If no characters actually require rewriting then we
       // just return token as-is:
-      for(int i = 0 ; i < length ; ++i) {
+      for (int i = 0; i < length; ++i) {
         final char c = buffer[i];
-        if (c >= '\u0080')
-        {
+        if (c >= '\u0080') {
           foldToASCII(buffer, length);
           termAtt.copyBuffer(output, 0, outputPos);
           break;
@@ -127,13 +137,13 @@ public final class ASCIIFoldingFilter extends TokenFilter {
   }
 
   /**
-   * Converts characters above ASCII to their ASCII equivalents.  For example,
-   * accents are removed from accented characters.
+   * Converts characters above ASCII to their ASCII equivalents. For example, accents are removed
+   * from accented characters.
+   *
    * @param input The string to fold
    * @param length The number of characters in the input string
    */
-  public void foldToASCII(char[] input, int length)
-  {
+  public void foldToASCII(char[] input, int length) {
     // Worst-case length required:
     final int maxSizeNeeded = 4 * length;
     if (output.length < maxSizeNeeded) {
@@ -148,16 +158,17 @@ public final class ASCIIFoldingFilter extends TokenFilter {
 
   /**
    * Check if foldToASCII generated a different token.
+   *
    * @param input original term
    * @param inputLength length of the original term
    * @return true if foldToASCII generated a different token
    */
   private boolean needToPreserve(char[] input, int inputLength) {
-    if(inputLength != outputPos) {
+    if (inputLength != outputPos) {
       return true;
     }
-    for(int i = 0; i < inputLength; i++) {
-      if(input[i] != output[i]) {
+    for (int i = 0; i < inputLength; i++) {
+      if (input[i] != output[i]) {
         return true;
       }
     }
@@ -165,20 +176,21 @@ public final class ASCIIFoldingFilter extends TokenFilter {
   }
 
   /**
-   * Converts characters above ASCII to their ASCII equivalents.  For example,
-   * accents are removed from accented characters.
-   * @param input     The characters to fold
-   * @param inputPos  Index of the first character to fold
-   * @param output    The result of the folding. Should be of size &gt;= {@code length * 4}.
+   * Converts characters above ASCII to their ASCII equivalents. For example, accents are removed
+   * from accented characters.
+   *
+   * @param input The characters to fold
+   * @param inputPos Index of the first character to fold
+   * @param output The result of the folding. Should be of size &gt;= {@code length * 4}.
    * @param outputPos Index of output where to put the result of the folding
-   * @param length    The number of characters to fold
+   * @param length The number of characters to fold
    * @return length of output
    * @lucene.internal
    */
-  public static final int foldToASCII(char input[], int inputPos, char output[], int outputPos, int length)
-  {
+  public static final int foldToASCII(
+      char input[], int inputPos, char output[], int outputPos, int length) {
     final int end = inputPos + length;
-    for (int pos = inputPos; pos < end ; ++pos) {
+    for (int pos = inputPos; pos < end; ++pos) {
       final char c = input[pos];
 
       // Quick test: if it's not in range then just keep current character
@@ -277,7 +289,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
             output[outputPos++] = 'E';
             break;
           case '\uA734': // Ꜵ  [LATIN CAPITAL LETTER AO]
-            output[outputPos++] = 'A';                    
+            output[outputPos++] = 'A';
             output[outputPos++] = 'O';
             break;
           case '\uA736': // Ꜷ  [LATIN CAPITAL LETTER AU]
@@ -351,7 +363,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
             output[outputPos++] = 'b';
             break;
           case '\u249D': // ⒝  [PARENTHESIZED LATIN SMALL LETTER B]
-            output[outputPos++] = '(';                    
+            output[outputPos++] = '(';
             output[outputPos++] = 'b';
             output[outputPos++] = ')';
             break;

@@ -19,19 +19,17 @@ package org.apache.lucene.search.grouping;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 /**
- * SecondPassGroupingCollector runs over an already collected set of
- * groups, further applying a {@link GroupReducer} to each group
+ * SecondPassGroupingCollector runs over an already collected set of groups, further applying a
+ * {@link GroupReducer} to each group
  *
  * @see TopGroupsCollector
  * @see DistinctValuesCollector
- *
  * @lucene.experimental
  */
 public class SecondPassGroupingCollector<T> extends SimpleCollector {
@@ -45,13 +43,17 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
 
   /**
    * Create a new SecondPassGroupingCollector
-   * @param groupSelector   the GroupSelector that defines groups for this search
-   * @param groups          the groups to collect documents for
-   * @param reducer         the reducer to apply to each group
+   *
+   * @param groupSelector the GroupSelector that defines groups for this search
+   * @param groups the groups to collect documents for
+   * @param reducer the reducer to apply to each group
    */
-  public SecondPassGroupingCollector(GroupSelector<T> groupSelector, Collection<SearchGroup<T>> groups, GroupReducer<T, ?> reducer) {
+  public SecondPassGroupingCollector(
+      GroupSelector<T> groupSelector,
+      Collection<SearchGroup<T>> groups,
+      GroupReducer<T, ?> reducer) {
 
-    //System.out.println("SP init");
+    // System.out.println("SP init");
     if (groups.isEmpty()) {
       throw new IllegalArgumentException("no groups to collect (groups is empty)");
     }
@@ -64,9 +66,7 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
     reducer.setGroups(groups);
   }
 
-  /**
-   * @return the GroupSelector used in this collector
-   */
+  /** @return the GroupSelector used in this collector */
   public GroupSelector<T> getGroupSelector() {
     return groupSelector;
   }
@@ -85,8 +85,9 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
   @Override
   public void collect(int doc) throws IOException {
     totalHitCount++;
-    if (groupSelector.advanceTo(doc) == GroupSelector.State.SKIP)
+    if (groupSelector.advanceTo(doc) == GroupSelector.State.SKIP) {
       return;
+    }
     totalGroupedHitCount++;
     T value = groupSelector.currentValue();
     groupReducer.collect(value, doc);
@@ -97,5 +98,4 @@ public class SecondPassGroupingCollector<T> extends SimpleCollector {
     groupReducer.setNextReader(readerContext);
     groupSelector.setNextReader(readerContext);
   }
-
 }

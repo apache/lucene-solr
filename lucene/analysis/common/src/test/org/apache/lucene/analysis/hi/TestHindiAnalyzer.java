@@ -20,17 +20,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
-
-/**
- * Tests the HindiAnalyzer
- */
+/** Tests the HindiAnalyzer */
 public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new HindiAnalyzer().close();
   }
-  
+
   public void testBasics() throws Exception {
     Analyzer a = new HindiAnalyzer();
     // two ways to write 'hindi' itself.
@@ -38,24 +34,21 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "हिंदी", "हिंद");
     a.close();
   }
-  
+
   public void testExclusionSet() throws Exception {
-    CharArraySet exclusionSet = new CharArraySet( asSet("हिंदी"), false);
-    Analyzer a = new HindiAnalyzer( 
-        HindiAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("हिंदी"), false);
+    Analyzer a = new HindiAnalyzer(HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "हिंदी", "हिंदी");
     a.close();
   }
-  
-  /**
-   * test we fold digits to latin-1
-   */
+
+  /** test we fold digits to latin-1 */
   public void testDigits() throws Exception {
     HindiAnalyzer a = new HindiAnalyzer();
     checkOneTerm(a, "१२३४", "1234");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new HindiAnalyzer();

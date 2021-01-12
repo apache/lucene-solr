@@ -24,8 +24,17 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cluster.Cluster;
+import org.apache.solr.cluster.Node;
+import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.AttributeFetcher;
+import org.apache.solr.cluster.placement.AttributeValues;
+import org.apache.solr.cluster.placement.CollectionMetrics;
+import org.apache.solr.cluster.placement.NodeMetric;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.ReplicaMetrics;
+import org.apache.solr.cluster.placement.ShardMetrics;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -47,6 +56,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -218,6 +229,80 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     waitForVersionChange(version, wrapper, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
+  }
+
+  @Test
+  public void testAttributeFetcherImpl() throws Exception {
+    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.isSuccess());
+    cluster.waitForActiveCollection(COLLECTION, 2, 4);
+    Cluster cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(cloudManager);
+    SolrCollection collection = cluster.getCollection(COLLECTION);
+    AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
+    NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
+    String sysprop = "user.name";
+    String sysenv = "PWD";
+    attributeFetcher
+        .fetchFrom(cluster.getLiveNodes())
+        .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
+        .requestNodeMetric(NodeMetricImpl.SYSLOAD_AVG)
+        .requestNodeMetric(NodeMetricImpl.NUM_CORES)
+        .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.TOTAL_DISK_GB)
+        .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
+        .requestNodeMetric(someMetricKey)
+        .requestNodeSystemProperty(sysprop)
+        .requestNodeEnvironmentVariable(sysenv)
+        .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB, ReplicaMetricImpl.QUERY_RATE_1MIN, ReplicaMetricImpl.UPDATE_RATE_1MIN));
+    AttributeValues attributeValues = attributeFetcher.fetchAttributes();
+    String userName = System.getProperty("user.name");
+    String pwd = System.getenv("PWD");
+    // node metrics
+    for (Node node : cluster.getLiveNodes()) {
+      Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
+      assertTrue("heap usage", doubleOpt.isPresent());
+      assertTrue("heap usage should be 0 < heapUsage < 100 but was " + doubleOpt, doubleOpt.get() > 0 && doubleOpt.get() < 100);
+      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.TOTAL_DISK_GB);
+      assertTrue("total disk", doubleOpt.isPresent());
+      assertTrue("total disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
+      doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.FREE_DISK_GB);
+      assertTrue("free disk", doubleOpt.isPresent());
+      assertTrue("free disk should be > 0 but was " + doubleOpt, doubleOpt.get() > 0);
+      Optional<Integer> intOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES);
+      assertTrue("cores", intOpt.isPresent());
+      assertTrue("cores should be > 0", intOpt.get() > 0);
+      assertTrue("systemLoadAverage 2", attributeValues.getNodeMetric(node, NodeMetricImpl.SYSLOAD_AVG).isPresent());
+      assertTrue("availableProcessors", attributeValues.getNodeMetric(node, NodeMetricImpl.AVAILABLE_PROCESSORS).isPresent());
+      Optional<String> userNameOpt = attributeValues.getNodeMetric(node, someMetricKey);
+      assertTrue("user.name", userNameOpt.isPresent());
+      assertEquals("userName", userName, userNameOpt.get());
+      Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
+      assertTrue("sysprop", syspropOpt.isPresent());
+      assertEquals("user.name sysprop", userName, syspropOpt.get());
+      Optional<String> sysenvOpt = attributeValues.getEnvironmentVariable(node, sysenv);
+      assertTrue("sysenv", sysenvOpt.isPresent());
+      assertEquals("PWD sysenv", pwd, sysenvOpt.get());
+    }
+    assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
+    CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();
+    collection.shards().forEach(shard -> {
+      Optional<ShardMetrics> shardMetricsOpt = collectionMetrics.getShardMetrics(shard.getShardName());
+      assertTrue("shard metrics", shardMetricsOpt.isPresent());
+      shard.replicas().forEach(replica -> {
+        Optional<ReplicaMetrics> replicaMetricsOpt = shardMetricsOpt.get().getReplicaMetrics(replica.getReplicaName());
+        assertTrue("replica metrics", replicaMetricsOpt.isPresent());
+        ReplicaMetrics replicaMetrics = replicaMetricsOpt.get();
+        Optional<Double> indexSizeOpt = replicaMetrics.getReplicaMetric(ReplicaMetricImpl.INDEX_SIZE_GB);
+        assertTrue("indexSize", indexSizeOpt.isPresent());
+        assertTrue("wrong type, expected Double but was " + indexSizeOpt.get().getClass(), indexSizeOpt.get() instanceof Double);
+        assertTrue("indexSize should be > 0 but was " + indexSizeOpt.get(), indexSizeOpt.get() > 0);
+        assertTrue("indexSize should be < 0.01 but was " + indexSizeOpt.get(), indexSizeOpt.get() < 0.01);
+
+        assertNotNull("queryRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.QUERY_RATE_1MIN));
+        assertNotNull("updateRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
+      });
+    });
   }
 
   private int waitForVersionChange(int currentVersion, DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {

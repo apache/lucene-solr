@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.analysis;
 
-import java.io.PrintWriter;
 import java.io.IOException;
-
+import java.io.PrintWriter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -35,9 +34,10 @@ public class TokenStreamToDot {
   private final String inputText;
   protected final PrintWriter out;
 
-  /** If inputText is non-null, and the TokenStream has
-   *  offsets, we include the surface form in each arc's
-   *  label. */
+  /**
+   * If inputText is non-null, and the TokenStream has offsets, we include the surface form in each
+   * arc's label.
+   */
   public TokenStreamToDot(String inputText, TokenStream in, PrintWriter out) {
     this.in = in;
     this.out = out;
@@ -91,7 +91,8 @@ public class TokenStreamToDot {
       if (offsetAtt != null) {
         final int startOffset = offsetAtt.startOffset();
         final int endOffset = offsetAtt.endOffset();
-        //System.out.println("start=" + startOffset + " end=" + endOffset + " len=" + inputText.length());
+        // System.out.println("start=" + startOffset + " end=" + endOffset + " len=" +
+        // inputText.length());
         if (inputText != null) {
           String fragment = inputText.substring(startOffset, endOffset);
           if (fragment.equals(termAtt.toString()) == false) {
@@ -139,18 +140,22 @@ public class TokenStreamToDot {
     out.println();
   }
 
-  private final static String FONT_NAME = "Helvetica";
+  private static final String FONT_NAME = "Helvetica";
 
   /** Override to customize. */
   protected void writeHeader() {
     out.println("digraph tokens {");
-    out.println("  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\" ];");
+    out.println(
+        "  graph [ fontsize=30 labelloc=\"t\" label=\"\" splines=true overlap=false rankdir = \"LR\" ];");
     out.println("  // A2 paper size");
     out.println("  size = \"34.4,16.5\";");
-    //out.println("  // try to fill paper");
-    //out.println("  ratio = fill;");
+    // out.println("  // try to fill paper");
+    // out.println("  ratio = fill;");
     out.println("  edge [ fontname=\"" + FONT_NAME + "\" fontcolor=\"red\" color=\"#606060\" ]");
-    out.println("  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\"" + FONT_NAME + "\" ]");
+    out.println(
+        "  node [ style=\"filled\" fillcolor=\"#e8e8f0\" shape=\"Mrecord\" fontname=\""
+            + FONT_NAME
+            + "\" ]");
     out.println();
   }
 

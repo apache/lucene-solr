@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.blockterms;
 
-
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
-
 
 // TODO
 //   - allow for non-regular index intervals?  eg with a
@@ -31,14 +28,12 @@ import org.apache.lucene.util.BytesRef;
 //     frequent indexing
 
 /**
- * {@link BlockTermsReader} interacts with an instance of this class
- * to manage its terms index.  The writer must accept
- * indexed terms (many pairs of BytesRef text + long
- * fileOffset), and then this reader must be able to
- * retrieve the nearest index term to a provided term
- * text. 
- * @lucene.experimental */
-
+ * {@link BlockTermsReader} interacts with an instance of this class to manage its terms index. The
+ * writer must accept indexed terms (many pairs of BytesRef text + long fileOffset), and then this
+ * reader must be able to retrieve the nearest index term to a provided term text.
+ *
+ * @lucene.experimental
+ */
 public abstract class TermsIndexReaderBase implements Closeable, Accountable {
 
   public abstract FieldIndexEnum getFieldEnum(FieldInfo fieldInfo);
@@ -48,16 +43,16 @@ public abstract class TermsIndexReaderBase implements Closeable, Accountable {
 
   public abstract boolean supportsOrd();
 
-  /** 
-   * Similar to TermsEnum, except, the only "metadata" it
-   * reports for a given indexed term is the long fileOffset
-   * into the main terms dictionary file.
+  /**
+   * Similar to TermsEnum, except, the only "metadata" it reports for a given indexed term is the
+   * long fileOffset into the main terms dictionary file.
    */
-  public static abstract class FieldIndexEnum {
+  public abstract static class FieldIndexEnum {
 
-    /** Seeks to "largest" indexed term that's &lt;=
-     *  term; returns file pointer index (into the main
-     *  terms index file) for that term */
+    /**
+     * Seeks to "largest" indexed term that's &lt;= term; returns file pointer index (into the main
+     * terms index file) for that term
+     */
     public abstract long seek(BytesRef term) throws IOException;
 
     /** Returns -1 at end */
@@ -67,9 +62,8 @@ public abstract class TermsIndexReaderBase implements Closeable, Accountable {
 
     /** Only implemented if {@link TermsIndexReaderBase#supportsOrd()} returns true. */
     public abstract long seek(long ord) throws IOException;
-    
+
     /** Only implemented if {@link TermsIndexReaderBase#supportsOrd()} returns true. */
     public abstract long ord();
   }
-
 }

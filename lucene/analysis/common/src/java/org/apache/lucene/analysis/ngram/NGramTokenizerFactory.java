@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
+import java.io.Reader;
+import java.util.Map;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.io.Reader;
-import java.util.Map;
-
 /**
  * Factory for {@link NGramTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -54,13 +53,16 @@ public class NGramTokenizerFactory extends TokenizerFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public NGramTokenizerFactory() {
     throw defaultCtorException();
   }
 
-  /** Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link AttributeFactory}. */
+  /**
+   * Creates the {@link TokenStream} of n-grams from the given {@link Reader} and {@link
+   * AttributeFactory}.
+   */
   @Override
   public Tokenizer create(AttributeFactory factory) {
     return new NGramTokenizer(factory, minGramSize, maxGramSize);

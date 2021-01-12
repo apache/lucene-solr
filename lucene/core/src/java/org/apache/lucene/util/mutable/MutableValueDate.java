@@ -20,6 +20,7 @@ import java.util.Date;
 
 /**
  * {@link MutableValue} implementation of type {@link Date}.
+ *
  * @see MutableValueLong
  */
 public class MutableValueDate extends MutableValueLong {
@@ -34,5 +35,5 @@ public class MutableValueDate extends MutableValueLong {
     v.value = this.value;
     v.exists = this.exists;
     return v;
-  }  
+  }
 }

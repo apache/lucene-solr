@@ -17,12 +17,13 @@
 
 package org.apache.lucene.sandbox.search;
 
+import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.HitQueue;
@@ -34,14 +35,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.TotalHits;
 
-import static org.apache.lucene.search.TopDocsCollector.EMPTY_TOPDOCS;
-
 /**
- * Optimized collector for large number of hits.
- * The collector maintains an ArrayList of hits until it accumulates
- * the requested number of hits. Post that, it builds a Priority Queue
- * and starts filtering further hits based on the minimum competitive
- * score.
+ * Optimized collector for large number of hits. The collector maintains an ArrayList of hits until
+ * it accumulates the requested number of hits. Post that, it builds a Priority Queue and starts
+ * filtering further hits based on the minimum competitive score.
  */
 public final class LargeNumHitsTopDocsCollector implements Collector {
   private final int requestedHitCount;
@@ -127,8 +124,8 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
   }
 
   /**
-   * Populates the results array with the ScoreDoc instances. This can be
-   * overridden in case a different ScoreDoc type should be returned.
+   * Populates the results array with the ScoreDoc instances. This can be overridden in case a
+   * different ScoreDoc type should be returned.
    */
   protected void populateResults(ScoreDoc[] results, int howMany) {
     if (pq != null) {
@@ -141,8 +138,11 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
 
     // Total number of hits collected were less than requestedHitCount
     assert totalHits < requestedHitCount;
-    Collections.sort(hits, Comparator.comparing((ScoreDoc scoreDoc) ->
-        scoreDoc.score).reversed().thenComparing(scoreDoc -> scoreDoc.doc));
+    Collections.sort(
+        hits,
+        Comparator.comparing((ScoreDoc scoreDoc) -> scoreDoc.score)
+            .reversed()
+            .thenComparing(scoreDoc -> scoreDoc.doc));
 
     for (int i = 0; i < howMany; i++) {
       results[i] = hits.get(i);
@@ -150,13 +150,14 @@ public final class LargeNumHitsTopDocsCollector implements Collector {
   }
 
   /**
-   * Returns a {@link TopDocs} instance containing the given results. If
-   * <code>results</code> is null it means there are no results to return,
-   * either because there were 0 calls to collect() or because the arguments to
-   * topDocs were invalid.
+   * Returns a {@link TopDocs} instance containing the given results. If <code>results</code> is
+   * null it means there are no results to return, either because there were 0 calls to collect() or
+   * because the arguments to topDocs were invalid.
    */
   protected TopDocs newTopDocs(ScoreDoc[] results) {
-    return results == null ? EMPTY_TOPDOCS : new TopDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), results);
+    return results == null
+        ? EMPTY_TOPDOCS
+        : new TopDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), results);
   }
 
   /** Returns the top docs that were collected by this collector. */

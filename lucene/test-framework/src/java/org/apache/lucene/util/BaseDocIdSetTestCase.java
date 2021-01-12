@@ -21,7 +21,6 @@ import static org.apache.lucene.util.BaseBitSetTestCase.randomSet;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
-
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -106,7 +105,8 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     for (int i = 0; i < iters; ++i) {
       final int pow = random.nextInt(20);
       final int maxDoc = TestUtil.nextInt(random, 1, 1 << pow);
-      final int numDocs = TestUtil.nextInt(random, 0, Math.min(maxDoc, 1 << TestUtil.nextInt(random, 0, pow)));
+      final int numDocs =
+          TestUtil.nextInt(random, 0, Math.min(maxDoc, 1 << TestUtil.nextInt(random, 0, pow)));
       final BitSet set = randomSet(maxDoc, numDocs);
       final DocIdSet copy = copyOf(set, maxDoc);
       final long actualBytes = ramBytesUsed(copy, maxDoc);
@@ -115,7 +115,10 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     }
   }
 
-  /** Assert that the content of the {@link DocIdSet} is the same as the content of the {@link BitSet}. */
+  /**
+   * Assert that the content of the {@link DocIdSet} is the same as the content of the {@link
+   * BitSet}.
+   */
   public void assertEquals(int numBits, BitSet ds1, T ds2) throws IOException {
     Random random = random();
     // nextDoc
@@ -137,7 +140,7 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     if (it2 == null) {
       assertEquals(-1, ds1.nextSetBit(0));
     } else {
-      for (int doc = -1; doc != DocIdSetIterator.NO_MORE_DOCS;) {
+      for (int doc = -1; doc != DocIdSetIterator.NO_MORE_DOCS; ) {
         if (random.nextBoolean()) {
           doc = ds1.nextSetBit(doc + 1);
           if (doc == -1) {
@@ -146,7 +149,8 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
           assertEquals(doc, it2.nextDoc());
           assertEquals(doc, it2.docID());
         } else {
-          final int target = doc + 1 + random.nextInt(random.nextBoolean() ? 64 : Math.max(numBits / 8, 1));
+          final int target =
+              doc + 1 + random.nextInt(random.nextBoolean() ? 64 : Math.max(numBits / 8, 1));
           doc = ds1.nextSetBit(target);
           if (doc == -1) {
             doc = DocIdSetIterator.NO_MORE_DOCS;
@@ -191,5 +195,4 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     long bytes2 = RamUsageTester.sizeOf(dummy);
     return bytes1 - bytes2;
   }
-
 }

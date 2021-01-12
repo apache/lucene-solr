@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -33,13 +32,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
 
 /** Simple test methods for IOUtils */
 public class TestIOUtils extends LuceneTestCase {
-  
+
   public void testDeleteFileIgnoringExceptions() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
@@ -48,14 +46,14 @@ public class TestIOUtils extends LuceneTestCase {
     assertFalse(Files.exists(file1));
     // actually deletes
   }
-  
+
   public void testDontDeleteFileIgnoringExceptions() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
     IOUtils.deleteFilesIgnoringExceptions(file1);
     // no exception
   }
-  
+
   public void testDeleteTwoFilesIgnoringExceptions() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
@@ -67,7 +65,7 @@ public class TestIOUtils extends LuceneTestCase {
     // no exception
     // actually deletes file2
   }
-  
+
   public void testDeleteFileIfExists() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
@@ -76,14 +74,14 @@ public class TestIOUtils extends LuceneTestCase {
     assertFalse(Files.exists(file1));
     // actually deletes
   }
-  
+
   public void testDontDeleteDoesntExist() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
     IOUtils.deleteFilesIfExist(file1);
     // no exception
   }
-  
+
   public void testDeleteTwoFilesIfExist() throws Exception {
     Path dir = createTempDir();
     Path file1 = dir.resolve("file1");
@@ -95,7 +93,7 @@ public class TestIOUtils extends LuceneTestCase {
     // no exception
     // actually deletes file2
   }
-  
+
   public void testFsyncDirectory() throws Exception {
     Path dir = createTempDir();
     dir = FilterPath.unwrap(dir).toRealPath();
@@ -106,7 +104,8 @@ public class TestIOUtils extends LuceneTestCase {
     // no exception
   }
 
-  private static final class AccessDeniedWhileOpeningDirectoryFileSystem extends FilterFileSystemProvider {
+  private static final class AccessDeniedWhileOpeningDirectoryFileSystem
+      extends FilterFileSystemProvider {
 
     AccessDeniedWhileOpeningDirectoryFileSystem(final FileSystem delegate) {
       super("access_denied://", Objects.requireNonNull(delegate));
@@ -114,20 +113,20 @@ public class TestIOUtils extends LuceneTestCase {
 
     @Override
     public FileChannel newFileChannel(
-        final Path path,
-        final Set<? extends OpenOption> options,
-        final FileAttribute<?>... attrs) throws IOException {
+        final Path path, final Set<? extends OpenOption> options, final FileAttribute<?>... attrs)
+        throws IOException {
       if (Files.isDirectory(path)) {
         throw new AccessDeniedException(path.toString());
       }
       return delegate.newFileChannel(path, options, attrs);
     }
-
   }
 
   public void testFsyncAccessDeniedOpeningDirectory() throws Exception {
     final Path path = createTempDir().toRealPath();
-    final FileSystem fs = new AccessDeniedWhileOpeningDirectoryFileSystem(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    final FileSystem fs =
+        new AccessDeniedWhileOpeningDirectoryFileSystem(path.getFileSystem())
+            .getFileSystem(URI.create("file:///"));
     final Path wrapped = new FilterPath(path, fs);
     if (Constants.WINDOWS) {
       // no exception, we early return and do not even try to open the directory
@@ -159,11 +158,16 @@ public class TestIOUtils extends LuceneTestCase {
 
   public void testApplyToAll() {
     ArrayList<Integer> closed = new ArrayList<>();
-    RuntimeException runtimeException = expectThrows(RuntimeException.class, () ->
-        IOUtils.applyToAll(Arrays.asList(1, 2), i -> {
-          closed.add(i);
-          throw new RuntimeException("" + i);
-        }));
+    RuntimeException runtimeException =
+        expectThrows(
+            RuntimeException.class,
+            () ->
+                IOUtils.applyToAll(
+                    Arrays.asList(1, 2),
+                    i -> {
+                      closed.add(i);
+                      throw new RuntimeException("" + i);
+                    }));
     assertEquals("1", runtimeException.getMessage());
     assertEquals(1, runtimeException.getSuppressed().length);
     assertEquals("2", runtimeException.getSuppressed()[0].getMessage());
@@ -171,5 +175,4 @@ public class TestIOUtils extends LuceneTestCase {
     assertEquals(1, closed.get(0).intValue());
     assertEquals(2, closed.get(1).intValue());
   }
-
 }

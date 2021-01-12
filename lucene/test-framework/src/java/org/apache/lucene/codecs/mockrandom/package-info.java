@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/** 
- * Frankenstein codec for testing that pieces together random components.
- */
+/** Frankenstein codec for testing that pieces together random components. */
 package org.apache.lucene.codecs.mockrandom;

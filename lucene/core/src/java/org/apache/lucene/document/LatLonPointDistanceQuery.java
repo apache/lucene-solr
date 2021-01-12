@@ -16,9 +16,13 @@
  */
 package org.apache.lucene.document;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Rectangle;
@@ -43,21 +47,15 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-
-/**
- * Distance query for {@link LatLonPoint}.
- */
+/** Distance query for {@link LatLonPoint}. */
 final class LatLonPointDistanceQuery extends Query {
   final String field;
   final double latitude;
   final double longitude;
   final double radiusMeters;
 
-  public LatLonPointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+  public LatLonPointDistanceQuery(
+      String field, double latitude, double longitude, double radiusMeters) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
@@ -80,7 +78,8 @@ final class LatLonPointDistanceQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     Rectangle box = Rectangle.fromPointDistance(latitude, longitude, radiusMeters);
     // create bounding box(es) for the distance range
     // these are pre-encoded with LatLonPoint's encoding
@@ -115,7 +114,8 @@ final class LatLonPointDistanceQuery extends Query {
 
     return new ConstantScoreWeight(this, boost) {
 
-      final GeoEncodingUtils.DistancePredicate distancePredicate = GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
+      final GeoEncodingUtils.DistancePredicate distancePredicate =
+          GeoEncodingUtils.createDistancePredicate(latitude, longitude, radiusMeters);
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -165,7 +165,7 @@ final class LatLonPointDistanceQuery extends Query {
               // by computing the set of documents that do NOT match the range
               final FixedBitSet result = new FixedBitSet(reader.maxDoc());
               result.set(0, reader.maxDoc());
-              int[] cost = new int[]{reader.maxDoc()};
+              int[] cost = new int[] {reader.maxDoc()};
               values.intersect(getInverseIntersectVisitor(result, cost));
               final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
               return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
@@ -183,20 +183,41 @@ final class LatLonPointDistanceQuery extends Query {
             return cost;
           }
         };
-
       }
 
       private boolean matches(byte[] packedValue) {
         // bounding box check
-        if (Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
-            Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
+        if (Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0
+            || Arrays.compareUnsigned(packedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES)
+                < 0) {
           // latitude out of bounding box range
           return false;
         }
 
-        if ((Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
-            Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
-            && Arrays.compareUnsigned(packedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
+        if ((Arrays.compareUnsigned(
+                        packedValue,
+                        Integer.BYTES,
+                        Integer.BYTES + Integer.BYTES,
+                        maxLon,
+                        0,
+                        Integer.BYTES)
+                    > 0
+                || Arrays.compareUnsigned(
+                        packedValue,
+                        Integer.BYTES,
+                        Integer.BYTES + Integer.BYTES,
+                        minLon,
+                        0,
+                        Integer.BYTES)
+                    < 0)
+            && Arrays.compareUnsigned(
+                    packedValue,
+                    Integer.BYTES,
+                    Integer.BYTES + Integer.BYTES,
+                    minLon2,
+                    0,
+                    Integer.BYTES)
+                < 0) {
           // longitude out of bounding box range
           return false;
         }
@@ -211,19 +232,43 @@ final class LatLonPointDistanceQuery extends Query {
 
       // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
       // 1. check our bounding box(es) first. if the subtree is entirely outside of those, bail.
-      // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with circle
-      // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 4.
+      // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with
+      // circle
+      // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis,
+      // wrapping half way around the world, etc: then this can't work, just go to step 4.
       // 4. recurse naively (subtrees crossing over circle edge)
       private Relation relate(byte[] minPackedValue, byte[] maxPackedValue) {
-        if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0 ||
-            Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES) < 0) {
+        if (Arrays.compareUnsigned(minPackedValue, 0, Integer.BYTES, maxLat, 0, Integer.BYTES) > 0
+            || Arrays.compareUnsigned(maxPackedValue, 0, Integer.BYTES, minLat, 0, Integer.BYTES)
+                < 0) {
           // latitude out of bounding box range
           return Relation.CELL_OUTSIDE_QUERY;
         }
 
-        if ((Arrays.compareUnsigned(minPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, maxLon, 0, Integer.BYTES) > 0 ||
-            Arrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon, 0, Integer.BYTES) < 0)
-            && Arrays.compareUnsigned(maxPackedValue, Integer.BYTES, Integer.BYTES + Integer.BYTES, minLon2, 0, Integer.BYTES) < 0) {
+        if ((Arrays.compareUnsigned(
+                        minPackedValue,
+                        Integer.BYTES,
+                        Integer.BYTES + Integer.BYTES,
+                        maxLon,
+                        0,
+                        Integer.BYTES)
+                    > 0
+                || Arrays.compareUnsigned(
+                        maxPackedValue,
+                        Integer.BYTES,
+                        Integer.BYTES + Integer.BYTES,
+                        minLon,
+                        0,
+                        Integer.BYTES)
+                    < 0)
+            && Arrays.compareUnsigned(
+                    maxPackedValue,
+                    Integer.BYTES,
+                    Integer.BYTES + Integer.BYTES,
+                    minLon2,
+                    0,
+                    Integer.BYTES)
+                < 0) {
           // longitude out of bounding box range
           return Relation.CELL_OUTSIDE_QUERY;
         }
@@ -233,12 +278,11 @@ final class LatLonPointDistanceQuery extends Query {
         double latMax = decodeLatitude(maxPackedValue, 0);
         double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-        return GeoUtils.relate(latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
+        return GeoUtils.relate(
+            latMin, latMax, lonMin, lonMax, latitude, longitude, sortKey, axisLat);
       }
 
-      /**
-       * Create a visitor that collects documents matching the range.
-       */
+      /** Create a visitor that collects documents matching the range. */
       private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result) {
         return new IntersectVisitor() {
 
@@ -278,9 +322,7 @@ final class LatLonPointDistanceQuery extends Query {
         };
       }
 
-      /**
-       * Create a visitor that clears documents that do NOT match the range.
-       */
+      /** Create a visitor that clears documents that do NOT match the range. */
       private IntersectVisitor getInverseIntersectVisitor(FixedBitSet result, int[] cost) {
         return new IntersectVisitor() {
 
@@ -359,15 +401,14 @@ final class LatLonPointDistanceQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
 
   private boolean equalsTo(LatLonPointDistanceQuery other) {
-    return field.equals(other.field) &&
-           Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude) &&
-           Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude) &&
-           Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
+    return field.equals(other.field)
+        && Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude)
+        && Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude)
+        && Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
   }
 
   @Override

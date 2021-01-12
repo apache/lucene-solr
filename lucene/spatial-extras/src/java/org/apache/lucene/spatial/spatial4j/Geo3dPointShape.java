@@ -39,9 +39,11 @@ public class Geo3dPointShape extends Geo3dShape<GeoPointShape> implements Point 
 
   @Override
   public void reset(double x, double y) {
-    shape = GeoPointShapeFactory.makeGeoPointShape(shape.getPlanetModel(),
-        y * DistanceUtils.DEGREES_TO_RADIANS,
-        x * DistanceUtils.DEGREES_TO_RADIANS);
+    shape =
+        GeoPointShapeFactory.makeGeoPointShape(
+            shape.getPlanetModel(),
+            y * DistanceUtils.DEGREES_TO_RADIANS,
+            x * DistanceUtils.DEGREES_TO_RADIANS);
     center = this;
     boundingBox = null;
   }
@@ -58,7 +60,7 @@ public class Geo3dPointShape extends Geo3dShape<GeoPointShape> implements Point 
 
   @Override
   public Rectangle getBoundingBox() {
-    Rectangle bbox = this.boundingBox;//volatile read once
+    Rectangle bbox = this.boundingBox; // volatile read once
     if (bbox == null) {
       bbox = new Geo3dRectangleShape(shape, spatialcontext);
       this.boundingBox = bbox;

@@ -19,13 +19,9 @@ package org.apache.lucene.search;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Used for defining custom algorithms to allow searches to early terminate
- */
+/** Used for defining custom algorithms to allow searches to early terminate */
 abstract class HitsThresholdChecker {
-  /**
-   * Implementation of HitsThresholdChecker which allows global hit counting
-   */
+  /** Implementation of HitsThresholdChecker which allows global hit counting */
   private static class GlobalHitsThresholdChecker extends HitsThresholdChecker {
     private final int totalHitsThreshold;
     private final AtomicLong globalHitCount;
@@ -33,7 +29,8 @@ abstract class HitsThresholdChecker {
     public GlobalHitsThresholdChecker(int totalHitsThreshold) {
 
       if (totalHitsThreshold < 0) {
-        throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+        throw new IllegalArgumentException(
+            "totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
       }
 
       this.totalHitsThreshold = totalHitsThreshold;
@@ -46,7 +43,7 @@ abstract class HitsThresholdChecker {
     }
 
     @Override
-    public boolean isThresholdReached(){
+    public boolean isThresholdReached() {
       return globalHitCount.getAcquire() > totalHitsThreshold;
     }
 
@@ -61,9 +58,7 @@ abstract class HitsThresholdChecker {
     }
   }
 
-  /**
-   * Default implementation of HitsThresholdChecker to be used for single threaded execution
-   */
+  /** Default implementation of HitsThresholdChecker to be used for single threaded execution */
   private static class LocalHitsThresholdChecker extends HitsThresholdChecker {
     private final int totalHitsThreshold;
     private int hitCount;
@@ -71,7 +66,8 @@ abstract class HitsThresholdChecker {
     public LocalHitsThresholdChecker(int totalHitsThreshold) {
 
       if (totalHitsThreshold < 0) {
-        throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+        throw new IllegalArgumentException(
+            "totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
       }
 
       this.totalHitsThreshold = totalHitsThreshold;
@@ -113,7 +109,10 @@ abstract class HitsThresholdChecker {
   }
 
   public abstract void incrementHitCount();
+
   public abstract ScoreMode scoreMode();
+
   public abstract int getHitsThreshold();
+
   public abstract boolean isThresholdReached();
 }

@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -39,27 +38,27 @@ public abstract class DoubleDocValues extends FunctionValues {
 
   @Override
   public byte byteVal(int doc) throws IOException {
-    return (byte)doubleVal(doc);
+    return (byte) doubleVal(doc);
   }
 
   @Override
   public short shortVal(int doc) throws IOException {
-    return (short)doubleVal(doc);
+    return (short) doubleVal(doc);
   }
 
   @Override
   public float floatVal(int doc) throws IOException {
-    return (float)doubleVal(doc);
+    return (float) doubleVal(doc);
   }
 
   @Override
   public int intVal(int doc) throws IOException {
-    return (int)doubleVal(doc);
+    return (int) doubleVal(doc);
   }
 
   @Override
   public long longVal(int doc) throws IOException {
-    return (long)doubleVal(doc);
+    return (long) doubleVal(doc);
   }
 
   @Override
@@ -84,18 +83,24 @@ public abstract class DoubleDocValues extends FunctionValues {
   public String toString(int doc) throws IOException {
     return vs.description() + '=' + strVal(doc);
   }
-  
-  @Override
-  public ValueSourceScorer getRangeScorer(Weight weight,  LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
-    double lower,upper;
 
-    if (lowerVal==null) {
+  @Override
+  public ValueSourceScorer getRangeScorer(
+      Weight weight,
+      LeafReaderContext readerContext,
+      String lowerVal,
+      String upperVal,
+      boolean includeLower,
+      boolean includeUpper) {
+    double lower, upper;
+
+    if (lowerVal == null) {
       lower = Double.NEGATIVE_INFINITY;
     } else {
       lower = Double.parseDouble(lowerVal);
     }
 
-     if (upperVal==null) {
+    if (upperVal == null) {
       upper = Double.POSITIVE_INFINITY;
     } else {
       upper = Double.parseDouble(upperVal);
@@ -103,7 +108,6 @@ public abstract class DoubleDocValues extends FunctionValues {
 
     final double l = lower;
     final double u = upper;
-
 
     if (includeLower && includeUpper) {
       return new ValueSourceScorer(weight, readerContext, this) {
@@ -114,8 +118,7 @@ public abstract class DoubleDocValues extends FunctionValues {
           return docVal >= l && docVal <= u;
         }
       };
-    }
-    else if (includeLower && !includeUpper) {
+    } else if (includeLower && !includeUpper) {
       return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
@@ -124,8 +127,7 @@ public abstract class DoubleDocValues extends FunctionValues {
           return docVal >= l && docVal < u;
         }
       };
-    }
-    else if (!includeLower && includeUpper) {
+    } else if (!includeLower && includeUpper) {
       return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
@@ -134,8 +136,7 @@ public abstract class DoubleDocValues extends FunctionValues {
           return docVal > l && docVal <= u;
         }
       };
-    }
-    else {
+    } else {
       return new ValueSourceScorer(weight, readerContext, this) {
         @Override
         public boolean matches(int doc) throws IOException {
@@ -164,5 +165,4 @@ public abstract class DoubleDocValues extends FunctionValues {
       }
     };
   }
-
 }

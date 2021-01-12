@@ -22,19 +22,13 @@ package org.apache.lucene.monitor;
  */
 public class PresearcherMatch<T extends QueryMatch> {
 
-  /**
-   * The presearcher hits
-   */
+  /** The presearcher hits */
   public final String presearcherMatches;
 
-  /**
-   * The QueryMatch
-   */
+  /** The QueryMatch */
   public final T queryMatch;
 
-  /**
-   * The query id
-   */
+  /** The query id */
   public final String queryId;
 
   PresearcherMatch(String id, String presearcherMatches, T queryMatch) {

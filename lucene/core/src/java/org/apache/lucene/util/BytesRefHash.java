@@ -16,38 +16,36 @@
  */
 package org.apache.lucene.util;
 
-
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
-
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
+
 /**
- * {@link BytesRefHash} is a special purpose hash-map like data-structure
- * optimized for {@link BytesRef} instances. BytesRefHash maintains mappings of
- * byte arrays to ids (Map&lt;BytesRef,int&gt;) storing the hashed bytes
- * efficiently in continuous storage. The mapping to the id is
- * encapsulated inside {@link BytesRefHash} and is guaranteed to be increased
- * for each added {@link BytesRef}.
- * 
- * <p>
- * Note: The maximum capacity {@link BytesRef} instance passed to
- * {@link #add(BytesRef)} must not be longer than {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2. 
- * The internal storage is limited to 2GB total byte storage.
- * </p>
- * 
+ * {@link BytesRefHash} is a special purpose hash-map like data-structure optimized for {@link
+ * BytesRef} instances. BytesRefHash maintains mappings of byte arrays to ids
+ * (Map&lt;BytesRef,int&gt;) storing the hashed bytes efficiently in continuous storage. The mapping
+ * to the id is encapsulated inside {@link BytesRefHash} and is guaranteed to be increased for each
+ * added {@link BytesRef}.
+ *
+ * <p>Note: The maximum capacity {@link BytesRef} instance passed to {@link #add(BytesRef)} must not
+ * be longer than {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2. The internal storage is limited to 2GB
+ * total byte storage.
+ *
  * @lucene.internal
  */
 public final class BytesRefHash implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class) +
-      // size of scratch1
-      RamUsageEstimator.shallowSizeOfInstance(BytesRef.class) +
-      // size of Counter
-      RamUsageEstimator.primitiveSizes.get(long.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class)
+          +
+          // size of scratch1
+          RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
+          +
+          // size of Counter
+          RamUsageEstimator.primitiveSizes.get(long.class);
 
   public static final int DEFAULT_CAPACITY = 16;
 
@@ -67,23 +65,19 @@ public final class BytesRefHash implements Accountable {
   private Counter bytesUsed;
 
   /**
-   * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a
-   * {@link DirectAllocator}.
+   * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a {@link
+   * DirectAllocator}.
    */
-  public BytesRefHash() { 
+  public BytesRefHash() {
     this(new ByteBlockPool(new DirectAllocator()));
   }
-  
-  /**
-   * Creates a new {@link BytesRefHash}
-   */
+
+  /** Creates a new {@link BytesRefHash} */
   public BytesRefHash(ByteBlockPool pool) {
     this(pool, DEFAULT_CAPACITY, new DirectBytesStartArray(DEFAULT_CAPACITY));
   }
 
-  /**
-   * Creates a new {@link BytesRefHash}
-   */
+  /** Creates a new {@link BytesRefHash} */
   public BytesRefHash(ByteBlockPool pool, int capacity, BytesStartArray bytesStartArray) {
     hashSize = capacity;
     hashHalfSize = hashSize >> 1;
@@ -93,13 +87,14 @@ public final class BytesRefHash implements Accountable {
     Arrays.fill(ids, -1);
     this.bytesStartArray = bytesStartArray;
     bytesStart = bytesStartArray.init();
-    bytesUsed = bytesStartArray.bytesUsed() == null? Counter.newCounter() : bytesStartArray.bytesUsed();
+    bytesUsed =
+        bytesStartArray.bytesUsed() == null ? Counter.newCounter() : bytesStartArray.bytesUsed();
     bytesUsed.addAndGet(hashSize * Integer.BYTES);
   }
 
   /**
    * Returns the number of {@link BytesRef} values in this {@link BytesRefHash}.
-   * 
+   *
    * @return the number of {@link BytesRef} values in this {@link BytesRefHash}.
    */
   public int size() {
@@ -107,34 +102,28 @@ public final class BytesRefHash implements Accountable {
   }
 
   /**
-   * Populates and returns a {@link BytesRef} with the bytes for the given
-   * bytesID.
-   * <p>
-   * Note: the given bytesID must be a positive integer less than the current
-   * size ({@link #size()})
-   * 
-   * @param bytesID
-   *          the id
-   * @param ref
-   *          the {@link BytesRef} to populate
-   * 
-   * @return the given BytesRef instance populated with the bytes for the given
-   *         bytesID
+   * Populates and returns a {@link BytesRef} with the bytes for the given bytesID.
+   *
+   * <p>Note: the given bytesID must be a positive integer less than the current size ({@link
+   * #size()})
+   *
+   * @param bytesID the id
+   * @param ref the {@link BytesRef} to populate
+   * @return the given BytesRef instance populated with the bytes for the given bytesID
    */
   public BytesRef get(int bytesID, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
-    assert bytesID < bytesStart.length: "bytesID exceeds byteStart len: " + bytesStart.length;
+    assert bytesID < bytesStart.length : "bytesID exceeds byteStart len: " + bytesStart.length;
     pool.setBytesRef(ref, bytesStart[bytesID]);
     return ref;
   }
 
   /**
-   * Returns the ids array in arbitrary order. Valid ids start at offset of 0
-   * and end at a limit of {@link #size()} - 1
-   * <p>
-   * Note: This is a destructive operation. {@link #clear()} must be called in
-   * order to reuse this {@link BytesRefHash} instance.
-   * </p>
+   * Returns the ids array in arbitrary order. Valid ids start at offset of 0 and end at a limit of
+   * {@link #size()} - 1
+   *
+   * <p>Note: This is a destructive operation. {@link #clear()} must be called in order to reuse
+   * this {@link BytesRefHash} instance.
    *
    * @lucene.internal
    */
@@ -158,10 +147,9 @@ public final class BytesRefHash implements Accountable {
 
   /**
    * Returns the values array sorted by the referenced byte values.
-   * <p>
-   * Note: This is a destructive operation. {@link #clear()} must be called in
-   * order to reuse this {@link BytesRefHash} instance.
-   * </p>
+   *
+   * <p>Note: This is a destructive operation. {@link #clear()} must be called in order to reuse
+   * this {@link BytesRefHash} instance.
    */
   public int[] sort() {
     final int[] compact = compact();
@@ -181,7 +169,6 @@ public final class BytesRefHash implements Accountable {
         pool.setBytesRef(scratch, bytesStart[compact[i]]);
         return scratch;
       }
-
     }.sort(0, count);
     return compact;
   }
@@ -211,9 +198,7 @@ public final class BytesRefHash implements Accountable {
     }
   }
 
-  /**
-   * Clears the {@link BytesRef} which maps to the given {@link BytesRef}
-   */
+  /** Clears the {@link BytesRef} which maps to the given {@link BytesRef} */
   public void clear(boolean resetPool) {
     lastCount = count;
     count = 0;
@@ -231,10 +216,8 @@ public final class BytesRefHash implements Accountable {
   public void clear() {
     clear(true);
   }
-  
-  /**
-   * Closes the BytesRefHash and releases all internally used memory
-   */
+
+  /** Closes the BytesRefHash and releases all internally used memory */
   public void close() {
     clear(true);
     ids = null;
@@ -243,17 +226,13 @@ public final class BytesRefHash implements Accountable {
 
   /**
    * Adds a new {@link BytesRef}
-   * 
-   * @param bytes
-   *          the bytes to hash
-   * @return the id the given bytes are hashed if there was no mapping for the
-   *         given bytes, otherwise <code>(-(id)-1)</code>. This guarantees
-   *         that the return value will always be &gt;= 0 if the given bytes
-   *         haven't been hashed before.
-   * 
-   * @throws MaxBytesLengthExceededException
-   *           if the given bytes are {@code > 2 +}
-   *           {@link ByteBlockPool#BYTE_BLOCK_SIZE}
+   *
+   * @param bytes the bytes to hash
+   * @return the id the given bytes are hashed if there was no mapping for the given bytes,
+   *     otherwise <code>(-(id)-1)</code>. This guarantees that the return value will always be
+   *     &gt;= 0 if the given bytes haven't been hashed before.
+   * @throws MaxBytesLengthExceededException if the given bytes are {@code > 2 +} {@link
+   *     ByteBlockPool#BYTE_BLOCK_SIZE}
    */
   public int add(BytesRef bytes) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
@@ -261,14 +240,14 @@ public final class BytesRefHash implements Accountable {
     // final position
     final int hashPos = findHash(bytes);
     int e = ids[hashPos];
-    
+
     if (e == -1) {
       // new entry
       final int len2 = 2 + bytes.length;
       if (len2 + pool.byteUpto > BYTE_BLOCK_SIZE) {
         if (len2 > BYTE_BLOCK_SIZE) {
-          throw new MaxBytesLengthExceededException("bytes can be at most "
-              + (BYTE_BLOCK_SIZE - 2) + " in length; got " + bytes.length);
+          throw new MaxBytesLengthExceededException(
+              "bytes can be at most " + (BYTE_BLOCK_SIZE - 2) + " in length; got " + bytes.length);
         }
         pool.nextBuffer();
       }
@@ -276,8 +255,7 @@ public final class BytesRefHash implements Accountable {
       final int bufferUpto = pool.byteUpto;
       if (count >= bytesStart.length) {
         bytesStart = bytesStartArray.grow();
-        assert count < bytesStart.length + 1 : "count: " + count + " len: "
-            + bytesStart.length;
+        assert count < bytesStart.length + 1 : "count: " + count + " len: " + bytesStart.length;
       }
       e = count++;
 
@@ -291,16 +269,14 @@ public final class BytesRefHash implements Accountable {
         // 1 byte to store length
         buffer[bufferUpto] = (byte) length;
         pool.byteUpto += length + 1;
-        assert length >= 0: "Length must be positive: " + length;
-        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 1,
-            length);
+        assert length >= 0 : "Length must be positive: " + length;
+        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 1, length);
       } else {
         // 2 byte to store length
         buffer[bufferUpto] = (byte) (0x80 | (length & 0x7f));
         buffer[bufferUpto + 1] = (byte) ((length >> 7) & 0xff);
         pool.byteUpto += length + 2;
-        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 2,
-            length);
+        System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 2, length);
       }
       assert ids[hashPos] == -1;
       ids[hashPos] = e;
@@ -312,15 +288,12 @@ public final class BytesRefHash implements Accountable {
     }
     return -(e + 1);
   }
-  
+
   /**
    * Returns the id of the given {@link BytesRef}.
-   * 
-   * @param bytes
-   *          the bytes to look for
-   * 
-   * @return the id of the given bytes, or {@code -1} if there is no mapping for the
-   *         given bytes.
+   *
+   * @param bytes the bytes to look for
+   * @return the id of the given bytes, or {@code -1} if there is no mapping for the given bytes.
    */
   public int find(BytesRef bytes) {
     return ids[findHash(bytes)];
@@ -343,16 +316,16 @@ public final class BytesRefHash implements Accountable {
         e = ids[hashPos];
       } while (e != -1 && !equals(e, bytes));
     }
-    
+
     return hashPos;
   }
 
-  /** Adds a "arbitrary" int offset instead of a BytesRef
-   *  term.  This is used in the indexer to hold the hash for term
-   *  vectors, because they do not redundantly store the byte[] term
-   *  directly and instead reference the byte[] term
-   *  already stored by the postings BytesRefHash.  See
-   *  add(int textStart) in TermsHashPerField. */
+  /**
+   * Adds a "arbitrary" int offset instead of a BytesRef term. This is used in the indexer to hold
+   * the hash for term vectors, because they do not redundantly store the byte[] term directly and
+   * instead reference the byte[] term already stored by the postings BytesRefHash. See add(int
+   * textStart) in TermsHashPerField.
+   */
   public int addByPoolOffset(int offset) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     // final position
@@ -372,8 +345,7 @@ public final class BytesRefHash implements Accountable {
       // new entry
       if (count >= bytesStart.length) {
         bytesStart = bytesStartArray.grow();
-        assert count < bytesStart.length + 1 : "count: " + count + " len: "
-            + bytesStart.length;
+        assert count < bytesStart.length + 1 : "count: " + count + " len: " + bytesStart.length;
       }
       e = count++;
       bytesStart[e] = offset;
@@ -389,8 +361,7 @@ public final class BytesRefHash implements Accountable {
   }
 
   /**
-   * Called when hash is too small ({@code > 50%} occupied) or too large ({@code < 20%}
-   * occupied).
+   * Called when hash is too small ({@code > 50%} occupied) or too large ({@code < 20%} occupied).
    */
   private void rehash(final int newSize, boolean hashOnData) {
     final int newMask = newSize - 1;
@@ -447,15 +418,14 @@ public final class BytesRefHash implements Accountable {
   }
 
   /**
-   * reinitializes the {@link BytesRefHash} after a previous {@link #clear()}
-   * call. If {@link #clear()} has not been called previously this method has no
-   * effect.
+   * reinitializes the {@link BytesRefHash} after a previous {@link #clear()} call. If {@link
+   * #clear()} has not been called previously this method has no effect.
    */
   public void reinit() {
     if (bytesStart == null) {
       bytesStart = bytesStartArray.init();
     }
-    
+
     if (ids == null) {
       ids = new int[hashSize];
       bytesUsed.addAndGet(Integer.BYTES * hashSize);
@@ -463,13 +433,11 @@ public final class BytesRefHash implements Accountable {
   }
 
   /**
-   * Returns the bytesStart offset into the internally used
-   * {@link ByteBlockPool} for the given bytesID
-   * 
-   * @param bytesID
-   *          the id to look up
-   * @return the bytesStart offset into the internally used
-   *         {@link ByteBlockPool} for the given id
+   * Returns the bytesStart offset into the internally used {@link ByteBlockPool} for the given
+   * bytesID
+   *
+   * @param bytesID the id to look up
+   * @return the bytesStart offset into the internally used {@link ByteBlockPool} for the given id
    */
   public int byteStart(int bytesID) {
     assert bytesStart != null : "bytesStart is null - not initialized";
@@ -479,16 +447,17 @@ public final class BytesRefHash implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    long size = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(bytesStart) +
-        RamUsageEstimator.sizeOfObject(ids) +
-        RamUsageEstimator.sizeOfObject(pool);
+    long size =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(bytesStart)
+            + RamUsageEstimator.sizeOfObject(ids)
+            + RamUsageEstimator.sizeOfObject(pool);
     return size;
   }
 
   /**
-   * Thrown if a {@link BytesRef} exceeds the {@link BytesRefHash} limit of
-   * {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2.
+   * Thrown if a {@link BytesRef} exceeds the {@link BytesRefHash} limit of {@link
+   * ByteBlockPool#BYTE_BLOCK_SIZE}-2.
    */
   @SuppressWarnings("serial")
   public static class MaxBytesLengthExceededException extends RuntimeException {
@@ -501,39 +470,39 @@ public final class BytesRefHash implements Accountable {
   public abstract static class BytesStartArray {
     /**
      * Initializes the BytesStartArray. This call will allocate memory
-     * 
+     *
      * @return the initialized bytes start array
      */
     public abstract int[] init();
 
     /**
      * Grows the {@link BytesStartArray}
-     * 
+     *
      * @return the grown array
      */
     public abstract int[] grow();
 
     /**
      * clears the {@link BytesStartArray} and returns the cleared instance.
-     * 
+     *
      * @return the cleared instance, this might be <code>null</code>
      */
     public abstract int[] clear();
 
     /**
-     * A {@link Counter} reference holding the number of bytes used by this
-     * {@link BytesStartArray}. The {@link BytesRefHash} uses this reference to
-     * track it memory usage
-     * 
-     * @return a {@link AtomicLong} reference holding the number of bytes used
-     *         by this {@link BytesStartArray}.
+     * A {@link Counter} reference holding the number of bytes used by this {@link BytesStartArray}.
+     * The {@link BytesRefHash} uses this reference to track it memory usage
+     *
+     * @return a {@link AtomicLong} reference holding the number of bytes used by this {@link
+     *     BytesStartArray}.
      */
     public abstract Counter bytesUsed();
   }
 
-  /** A simple {@link BytesStartArray} that tracks
-   *  memory allocation using a private {@link Counter}
-   *  instance.  */
+  /**
+   * A simple {@link BytesStartArray} that tracks memory allocation using a private {@link Counter}
+   * instance.
+   */
   public static class DirectBytesStartArray extends BytesStartArray {
     // TODO: can't we just merge this w/
     // TrackingDirectBytesStartArray...?  Just add a ctor
@@ -542,12 +511,12 @@ public final class BytesRefHash implements Accountable {
     protected final int initSize;
     private int[] bytesStart;
     private final Counter bytesUsed;
-    
+
     public DirectBytesStartArray(int initSize, Counter counter) {
       this.bytesUsed = counter;
-      this.initSize = initSize;      
+      this.initSize = initSize;
     }
-    
+
     public DirectBytesStartArray(int initSize) {
       this(initSize, Counter.newCounter());
     }

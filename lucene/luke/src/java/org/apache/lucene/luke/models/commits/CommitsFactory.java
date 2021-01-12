@@ -30,5 +30,4 @@ public class CommitsFactory {
   public Commits newInstance(DirectoryReader reader, String indexPath) {
     return new CommitsImpl(reader, indexPath);
   }
-
 }

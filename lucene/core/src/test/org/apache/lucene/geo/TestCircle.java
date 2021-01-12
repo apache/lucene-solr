@@ -22,33 +22,49 @@ public class TestCircle extends LuceneTestCase {
 
   /** latitude should be on range */
   public void testInvalidLat() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Circle(134.14, 45.23, 1000);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude 134.14; must be between -90.0 and 90.0"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Circle(134.14, 45.23, 1000);
+            });
+    assertTrue(
+        expected.getMessage().contains("invalid latitude 134.14; must be between -90.0 and 90.0"));
   }
 
   /** longitude should be on range */
   public void testInvalidLon() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Circle(43.5, 180.5, 1000);
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude 180.5; must be between -180.0 and 180.0"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Circle(43.5, 180.5, 1000);
+            });
+    assertTrue(
+        expected
+            .getMessage()
+            .contains("invalid longitude 180.5; must be between -180.0 and 180.0"));
   }
 
   /** radius must be positive */
   public void testNegativeRadius() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Circle(43.5, 45.23, -1000);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Circle(43.5, 45.23, -1000);
+            });
     assertTrue(expected.getMessage().contains("radiusMeters: '-1000.0' is invalid"));
   }
 
   /** radius must cannot be infinite */
   public void testInfiniteRadius() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new Circle(43.5, 45.23, Double.POSITIVE_INFINITY);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new Circle(43.5, 45.23, Double.POSITIVE_INFINITY);
+            });
     assertTrue(expected.getMessage().contains("radiusMeters: 'Infinity' is invalid"));
   }
 
@@ -59,7 +75,9 @@ public class TestCircle extends LuceneTestCase {
     assertEquals(circle, copy);
     assertEquals(circle.hashCode(), copy.hashCode());
     Circle otherCircle = GeoTestUtil.nextCircle();
-    if (circle.getLon() != otherCircle.getLon() || circle.getLat() != otherCircle.getLat() || circle.getRadius() != otherCircle.getRadius()) {
+    if (circle.getLon() != otherCircle.getLon()
+        || circle.getLat() != otherCircle.getLat()
+        || circle.getRadius() != otherCircle.getRadius()) {
       assertNotEquals(circle, otherCircle);
       assertNotEquals(circle.hashCode(), otherCircle.hashCode());
     } else {

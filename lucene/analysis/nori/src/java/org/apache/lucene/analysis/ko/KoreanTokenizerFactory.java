@@ -25,17 +25,17 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
+import org.apache.lucene.analysis.ko.dict.UserDictionary;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
 
 /**
  * Factory for {@link KoreanTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ko" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -50,17 +50,18 @@ import org.apache.lucene.analysis.ko.KoreanTokenizer.DecompoundMode;
  * &lt;/fieldType&gt;
  * </pre>
  *
- * <p>
- * Supports the following attributes:
- * <ul>
- *   <li>userDictionary: User dictionary path.</li>
- *   <li>userDictionaryEncoding: User dictionary encoding.</li>
- *   <li>decompoundMode: Decompound mode. Either 'none', 'discard', 'mixed'. Default is discard. See {@link DecompoundMode}</li>
- *   <li>outputUnknownUnigrams: If true outputs unigrams for unknown words.</li>
- *   <li>discardPunctuation: true if punctuation tokens should be dropped from the output.</li>
- * </ul>
- * @lucene.experimental
+ * <p>Supports the following attributes:
  *
+ * <ul>
+ *   <li>userDictionary: User dictionary path.
+ *   <li>userDictionaryEncoding: User dictionary encoding.
+ *   <li>decompoundMode: Decompound mode. Either 'none', 'discard', 'mixed'. Default is discard. See
+ *       {@link DecompoundMode}
+ *   <li>outputUnknownUnigrams: If true outputs unigrams for unknown words.
+ *   <li>discardPunctuation: true if punctuation tokens should be dropped from the output.
+ * </ul>
+ *
+ * @lucene.experimental
  * @since 7.4.0
  * @lucene.spi {@value #NAME}
  */
@@ -88,7 +89,10 @@ public class KoreanTokenizerFactory extends TokenizerFactory implements Resource
     super(args);
     userDictionaryPath = args.remove(USER_DICT_PATH);
     userDictionaryEncoding = args.remove(USER_DICT_ENCODING);
-    mode = KoreanTokenizer.DecompoundMode.valueOf(get(args, DECOMPOUND_MODE, KoreanTokenizer.DEFAULT_DECOMPOUND.toString()).toUpperCase(Locale.ROOT));
+    mode =
+        KoreanTokenizer.DecompoundMode.valueOf(
+            get(args, DECOMPOUND_MODE, KoreanTokenizer.DEFAULT_DECOMPOUND.toString())
+                .toUpperCase(Locale.ROOT));
     outputUnknownUnigrams = getBoolean(args, OUTPUT_UNKNOWN_UNIGRAMS, false);
     discardPunctuation = getBoolean(args, DISCARD_PUNCTUATION, true);
 
@@ -110,9 +114,11 @@ public class KoreanTokenizerFactory extends TokenizerFactory implements Resource
         if (encoding == null) {
           encoding = IOUtils.UTF_8;
         }
-        CharsetDecoder decoder = Charset.forName(encoding).newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT)
-          .onUnmappableCharacter(CodingErrorAction.REPORT);
+        CharsetDecoder decoder =
+            Charset.forName(encoding)
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT);
         Reader reader = new InputStreamReader(stream, decoder);
         userDictionary = UserDictionary.open(reader);
       }
@@ -123,6 +129,7 @@ public class KoreanTokenizerFactory extends TokenizerFactory implements Resource
 
   @Override
   public KoreanTokenizer create(AttributeFactory factory) {
-    return new KoreanTokenizer(factory, userDictionary, mode, outputUnknownUnigrams, discardPunctuation);
+    return new KoreanTokenizer(
+        factory, userDictionary, mode, outputUnknownUnigrams, discardPunctuation);
   }
 }

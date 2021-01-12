@@ -18,13 +18,13 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 
 final class IntervalMatches {
 
-  static IntervalMatchesIterator asMatches(IntervalIterator iterator, IntervalMatchesIterator source, int doc) throws IOException {
+  static IntervalMatchesIterator asMatches(
+      IntervalIterator iterator, IntervalMatchesIterator source, int doc) throws IOException {
     if (source == null) {
       return null;
     }
@@ -89,7 +89,12 @@ final class IntervalMatches {
     };
   }
 
-  enum State { UNPOSITIONED, ITERATING, NO_MORE_INTERVALS, EXHAUSTED }
+  enum State {
+    UNPOSITIONED,
+    ITERATING,
+    NO_MORE_INTERVALS,
+    EXHAUSTED
+  }
 
   static IntervalIterator wrapMatches(IntervalMatchesIterator mi, int doc) {
     return new IntervalIterator() {

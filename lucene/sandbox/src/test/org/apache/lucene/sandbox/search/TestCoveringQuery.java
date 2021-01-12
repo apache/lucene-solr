@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -31,7 +30,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.CoveringQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -59,7 +57,8 @@ public class TestCoveringQuery extends LuceneTestCase {
     QueryUtils.checkEqual(q1, q3);
 
     // values source matters
-    CoveringQuery q4 = new CoveringQuery(Arrays.asList(tq2, tq1), LongValuesSource.fromLongField("other_field"));
+    CoveringQuery q4 =
+        new CoveringQuery(Arrays.asList(tq2, tq1), LongValuesSource.fromLongField("other_field"));
     QueryUtils.checkUnequal(q1, q4);
 
     // duplicates matter
@@ -87,8 +86,10 @@ public class TestCoveringQuery extends LuceneTestCase {
     TermQuery tq2 = new TermQuery(new Term("foo", "quux"));
     LongValuesSource vs = LongValuesSource.fromIntField("field");
     CoveringQuery q = new CoveringQuery(Arrays.asList(tq1, tq2), vs);
-    assertEquals("CoveringQuery(queries=[foo:bar, foo:quux], minimumNumberMatch=long(field))", q.toString());
-    assertEquals("CoveringQuery(queries=[bar, quux], minimumNumberMatch=long(field))", q.toString("foo"));
+    assertEquals(
+        "CoveringQuery(queries=[foo:bar, foo:quux], minimumNumberMatch=long(field))", q.toString());
+    assertEquals(
+        "CoveringQuery(queries=[bar, quux], minimumNumberMatch=long(field))", q.toString("foo"));
   }
 
   public void testRandom() throws IOException {
@@ -140,25 +141,23 @@ public class TestCoveringQuery extends LuceneTestCase {
       QueryUtils.check(random(), q, searcher);
 
       for (int i = 1; i < 4; ++i) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder()
-            .setMinimumNumberShouldMatch(i);
+        BooleanQuery.Builder builder = new BooleanQuery.Builder().setMinimumNumberShouldMatch(i);
         for (Query query : queries) {
           builder.add(query, Occur.SHOULD);
         }
         Query q1 = builder.build();
         Query q2 = new CoveringQuery(queries, LongValuesSource.constant(i));
-        assertEquals(
-            searcher.count(q1),
-            searcher.count(q2));
+        assertEquals(searcher.count(q1), searcher.count(q2));
       }
 
-      Query filtered = new BooleanQuery.Builder()
-          .add(q, Occur.MUST)
-          .add(new TermQuery(new Term("field", "A")), Occur.MUST)
-          .build();
+      Query filtered =
+          new BooleanQuery.Builder()
+              .add(q, Occur.MUST)
+              .add(new TermQuery(new Term("field", "A")), Occur.MUST)
+              .build();
       QueryUtils.check(random(), filtered, searcher);
     }
-    
+
     r.close();
     dir.close();
   }

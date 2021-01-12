@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.codecs.blocktreeords;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.codecs.blocktreeords.FSTOrdsOutputs.Output;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -49,34 +47,46 @@ final class OrdsFieldReader extends Terms implements Accountable {
   final OrdsBlockTreeTermsReader parent;
 
   final FST<Output> index;
-  //private boolean DEBUG;
+  // private boolean DEBUG;
 
-  OrdsFieldReader(OrdsBlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms,
-                  Output rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-                  long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+  OrdsFieldReader(
+      OrdsBlockTreeTermsReader parent,
+      FieldInfo fieldInfo,
+      long numTerms,
+      Output rootCode,
+      long sumTotalTermFreq,
+      long sumDocFreq,
+      int docCount,
+      long indexStartFP,
+      IndexInput indexIn,
+      BytesRef minTerm,
+      BytesRef maxTerm)
+      throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
-    //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
+    // DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
     this.parent = parent;
     this.numTerms = numTerms;
-    this.sumTotalTermFreq = sumTotalTermFreq; 
-    this.sumDocFreq = sumDocFreq; 
+    this.sumTotalTermFreq = sumTotalTermFreq;
+    this.sumDocFreq = sumDocFreq;
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {
-    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode=" + rootCode + " divisor=" + indexDivisor);
+    //   System.out.println("BTTR: seg=" + segment + " field=" + fieldInfo.name + " rootBlockCode="
+    // + rootCode + " divisor=" + indexDivisor);
     // }
 
-    rootBlockFP = (new ByteArrayDataInput(rootCode.bytes.bytes,
-                                          rootCode.bytes.offset,
-                                          rootCode.bytes.length)).readVLong() >>> OrdsBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
+    rootBlockFP =
+        (new ByteArrayDataInput(rootCode.bytes.bytes, rootCode.bytes.offset, rootCode.bytes.length))
+                .readVLong()
+            >>> OrdsBlockTreeTermsWriter.OUTPUT_FLAGS_NUM_BITS;
 
     if (indexIn != null) {
       final IndexInput clone = indexIn.clone();
-      //System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
+      // System.out.println("start=" + indexStartFP + " field=" + fieldInfo.name);
       clone.seek(indexStartFP);
       index = new FST<>(clone, clone, OrdsBlockTreeTermsWriter.FST_OUTPUTS);
 
@@ -121,14 +131,17 @@ final class OrdsFieldReader extends Terms implements Accountable {
 
   @Override
   public boolean hasOffsets() {
-    return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+    return fieldInfo
+            .getIndexOptions()
+            .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+        >= 0;
   }
 
   @Override
   public boolean hasPositions() {
     return fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
   }
-    
+
   @Override
   public boolean hasPayloads() {
     return fieldInfo.hasPayloads();
@@ -169,7 +182,7 @@ final class OrdsFieldReader extends Terms implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return ((index!=null)? index.ramBytesUsed() : 0);
+    return ((index != null) ? index.ramBytesUsed() : 0);
   }
 
   @Override
@@ -180,9 +193,17 @@ final class OrdsFieldReader extends Terms implements Accountable {
       return Collections.singleton(Accountables.namedAccountable("term index", index));
     }
   }
-  
+
   @Override
   public String toString() {
-    return "OrdsBlockTreeTerms(terms=" + numTerms + ",postings=" + sumDocFreq + ",positions=" + sumTotalTermFreq + ",docs=" + docCount + ")";
+    return "OrdsBlockTreeTerms(terms="
+        + numTerms
+        + ",postings="
+        + sumDocFreq
+        + ",positions="
+        + sumTotalTermFreq
+        + ",docs="
+        + docCount
+        + ")";
   }
 }

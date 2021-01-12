@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Kuromoji dictionary implementation.
- */
+/** Kuromoji dictionary implementation. */
 package org.apache.lucene.analysis.ja.dict;

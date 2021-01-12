@@ -17,22 +17,22 @@
 
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.search.DocIdSetIterator; // javadocs
 import org.apache.lucene.util.PriorityQueue;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/** Utility class to help merging documents from sub-readers according to either simple
- *  concatenated (unsorted) order, or by a specified index-time sort, skipping
- *  deleted documents and remapping non-deleted documents. */
-
+/**
+ * Utility class to help merging documents from sub-readers according to either simple concatenated
+ * (unsorted) order, or by a specified index-time sort, skipping deleted documents and remapping
+ * non-deleted documents.
+ */
 public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
 
   /** Represents one sub-reader being merged */
-  public static abstract class Sub {
+  public abstract static class Sub {
     /** Mapped doc ID */
     public int mappedDocID;
 
@@ -43,12 +43,16 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
       this.docMap = docMap;
     }
 
-    /** Returns the next document ID from this sub reader, and {@link DocIdSetIterator#NO_MORE_DOCS} when done */
+    /**
+     * Returns the next document ID from this sub reader, and {@link DocIdSetIterator#NO_MORE_DOCS}
+     * when done
+     */
     public abstract int nextDoc() throws IOException;
   }
 
   /** Construct this from the provided subs, specifying the maximum sub count */
-  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(List<T> subs, int maxCount, boolean indexIsSorted) throws IOException {
+  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(
+      List<T> subs, int maxCount, boolean indexIsSorted) throws IOException {
     if (indexIsSorted && maxCount > 1) {
       return new SortedDocIDMerger<>(subs, maxCount);
     } else {
@@ -57,16 +61,18 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
   }
 
   /** Construct this from the provided subs */
-  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(List<T> subs, boolean indexIsSorted) throws IOException {
+  public static <T extends DocIDMerger.Sub> DocIDMerger<T> of(List<T> subs, boolean indexIsSorted)
+      throws IOException {
     return of(subs, subs.size(), indexIsSorted);
   }
 
   /** Reuse API, currently only used by postings during merge */
   public abstract void reset() throws IOException;
 
-  /** Returns null when done.
-   *  <b>NOTE:</b> after the iterator has exhausted you should not call this
-   *  method, as it may result in unpredicted behavior. */
+  /**
+   * Returns null when done. <b>NOTE:</b> after the iterator has exhausted you should not call this
+   * method, as it may result in unpredicted behavior.
+   */
   public abstract T next() throws IOException;
 
   private DocIDMerger() {}
@@ -114,7 +120,6 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
         }
       }
     }
-
   }
 
   private static class SortedDocIDMerger<T extends DocIDMerger.Sub> extends DocIDMerger<T> {
@@ -124,13 +129,14 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
 
     private SortedDocIDMerger(List<T> subs, int maxCount) throws IOException {
       this.subs = subs;
-      queue = new PriorityQueue<T>(maxCount) {
-        @Override
-        protected boolean lessThan(Sub a, Sub b) {
-          assert a.mappedDocID != b.mappedDocID;
-          return a.mappedDocID < b.mappedDocID;
-        }
-      };
+      queue =
+          new PriorityQueue<T>(maxCount) {
+            @Override
+            protected boolean lessThan(Sub a, Sub b) {
+              assert a.mappedDocID != b.mappedDocID;
+              return a.mappedDocID < b.mappedDocID;
+            }
+          };
       reset();
     }
 
@@ -139,7 +145,7 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
       // caller may not have fully consumed the queue:
       queue.clear();
       boolean first = true;
-      for(T sub : subs) {
+      for (T sub : subs) {
         if (first) {
           // by setting mappedDocID = -1, this entry is guaranteed to be the top of the queue
           // so the first call to next() will advance it
@@ -193,5 +199,4 @@ public abstract class DocIDMerger<T extends DocIDMerger.Sub> {
       return top;
     }
   }
-
 }

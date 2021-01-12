@@ -24,8 +24,8 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Scorer for conjunctions that checks the maximum scores of each clause in
- * order to potentially skip over blocks that can't have competitive matches.
+ * Scorer for conjunctions that checks the maximum scores of each clause in order to potentially
+ * skip over blocks that can't have competitive matches.
  */
 final class BlockMaxConjunctionScorer extends Scorer {
   final Scorer[] scorers;
@@ -64,9 +64,8 @@ final class BlockMaxConjunctionScorer extends Scorer {
     if (twoPhases.length == 0) {
       return null;
     }
-    float matchCost = (float) Arrays.stream(twoPhases)
-        .mapToDouble(TwoPhaseIterator::matchCost)
-        .sum();
+    float matchCost =
+        (float) Arrays.stream(twoPhases).mapToDouble(TwoPhaseIterator::matchCost).sum();
     final DocIdSetIterator approx = approximation();
     return new TwoPhaseIterator(approx) {
       @Override
@@ -89,8 +88,9 @@ final class BlockMaxConjunctionScorer extends Scorer {
 
   @Override
   public DocIdSetIterator iterator() {
-    return twoPhases.length == 0 ? approximation() :
-        TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
+    return twoPhases.length == 0
+        ? approximation()
+        : TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator());
   }
 
   private DocIdSetIterator approximation() {
@@ -149,7 +149,8 @@ final class BlockMaxConjunctionScorer extends Scorer {
       }
 
       private int doNext(int doc) throws IOException {
-        advanceHead: for(;;) {
+        advanceHead:
+        for (; ; ) {
           assert doc == lead.docID();
 
           if (doc == NO_MORE_DOCS) {
@@ -179,7 +180,8 @@ final class BlockMaxConjunctionScorer extends Scorer {
               final int next = other.advance(doc);
 
               if (next > doc) {
-                // iterator beyond the current doc - advance lead and continue to the new highest doc.
+                // iterator beyond the current doc - advance lead and continue to the new highest
+                // doc.
                 doc = lead.advance(advanceTarget(next));
                 continue advanceHead;
               }

@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -40,15 +39,14 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
- * Abstract class for range queries involving multiple ranges against physical points such as {@code IntPoints}
- * All ranges are logically ORed together
- * TODO: Add capability for handling overlapping ranges at rewrite time
+ * Abstract class for range queries involving multiple ranges against physical points such as {@code
+ * IntPoints} All ranges are logically ORed together TODO: Add capability for handling overlapping
+ * ranges at rewrite time
+ *
  * @lucene.experimental
  */
 public abstract class MultiRangeQuery extends Query {
-  /**
-   * Representation of a single clause in a MultiRangeQuery
-   */
+  /** Representation of a single clause in a MultiRangeQuery */
   public static class RangeClause {
     byte[] lowerValue;
     byte[] upperValue;
@@ -60,7 +58,7 @@ public abstract class MultiRangeQuery extends Query {
   }
 
   /** A builder for multirange queries. */
-  public static abstract class Builder {
+  public abstract static class Builder {
 
     protected final String field;
     protected final int bytesPerDim;
@@ -84,29 +82,29 @@ public abstract class MultiRangeQuery extends Query {
       this.numDims = numDims;
     }
 
-    /**
-     * Add a new clause to this {@link Builder}.
-     */
+    /** Add a new clause to this {@link Builder}. */
     public Builder add(RangeClause clause) {
       clauses.add(clause);
       return this;
     }
 
-    /**
-     * Add a new clause to this {@link Builder}.
-     */
+    /** Add a new clause to this {@link Builder}. */
     public Builder add(byte[] lowerValue, byte[] upperValue) {
       checkArgs(lowerValue, upperValue);
       return add(new RangeClause(lowerValue, upperValue));
     }
 
-    /** Create a new {@link MultiRangeQuery} based on the parameters that have
-     *  been set on this builder. */
+    /**
+     * Create a new {@link MultiRangeQuery} based on the parameters that have been set on this
+     * builder.
+     */
     public abstract MultiRangeQuery build();
 
     /**
      * Check preconditions for all factory methods
-     * @throws IllegalArgumentException if {@code field}, {@code lowerPoint} or {@code upperPoint} are null.
+     *
+     * @throws IllegalArgumentException if {@code field}, {@code lowerPoint} or {@code upperPoint}
+     *     are null.
      */
     private void checkArgs(Object lowerPoint, Object upperPoint) {
       if (lowerPoint == null) {
@@ -129,7 +127,8 @@ public abstract class MultiRangeQuery extends Query {
    * @param rangeClauses Range Clauses for this query
    * @param numDims number of dimensions.
    */
-  protected MultiRangeQuery(String field, int numDims, int bytesPerDim, List<RangeClause> rangeClauses) {
+  protected MultiRangeQuery(
+      String field, int numDims, int bytesPerDim, List<RangeClause> rangeClauses) {
     this.field = field;
     this.numDims = numDims;
     this.bytesPerDim = bytesPerDim;
@@ -147,7 +146,8 @@ public abstract class MultiRangeQuery extends Query {
    * TODO: Organize ranges similar to how EdgeTree does, to avoid linear scan of ranges
    */
   @Override
-  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -175,8 +175,22 @@ public abstract class MultiRangeQuery extends Query {
             for (RangeClause rangeClause : rangeClauses) {
               for (int dim = 0; dim < numDims; dim++) {
                 int offset = dim * bytesPerDim;
-                if ((Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, rangeClause.lowerValue, offset, offset + bytesPerDim) >= 0) &&
-                  (Arrays.compareUnsigned(packedValue, offset, offset + bytesPerDim, rangeClause.upperValue, offset, offset + bytesPerDim) <= 0)) {
+                if ((Arrays.compareUnsigned(
+                            packedValue,
+                            offset,
+                            offset + bytesPerDim,
+                            rangeClause.lowerValue,
+                            offset,
+                            offset + bytesPerDim)
+                        >= 0)
+                    && (Arrays.compareUnsigned(
+                            packedValue,
+                            offset,
+                            offset + bytesPerDim,
+                            rangeClause.upperValue,
+                            offset,
+                            offset + bytesPerDim)
+                        <= 0)) {
                   // Doc is in-bounds. Add and short circuit
                   adder.add(docID);
                   return;
@@ -192,22 +206,51 @@ public abstract class MultiRangeQuery extends Query {
             boolean crosses = false;
 
             /**
-             * CROSSES and INSIDE take priority over OUTSIDE. How we calculate the position is:
-             * 1) If any range sees the point as inside, return INSIDE.
-             * 2) If no range sees the point as inside and atleast one range sees the point as CROSSES, return CROSSES
-             * 3) If none of the above, return OUTSIDE
+             * CROSSES and INSIDE take priority over OUTSIDE. How we calculate the position is: 1)
+             * If any range sees the point as inside, return INSIDE. 2) If no range sees the point
+             * as inside and atleast one range sees the point as CROSSES, return CROSSES 3) If none
+             * of the above, return OUTSIDE
              */
             for (RangeClause rangeClause : rangeClauses) {
               for (int dim = 0; dim < numDims; dim++) {
                 int offset = dim * bytesPerDim;
 
-                if ((Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, rangeClause.lowerValue, offset, offset + bytesPerDim) >= 0) &&
-                    (Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, rangeClause.upperValue, offset, offset + bytesPerDim) <= 0)) {
+                if ((Arrays.compareUnsigned(
+                            minPackedValue,
+                            offset,
+                            offset + bytesPerDim,
+                            rangeClause.lowerValue,
+                            offset,
+                            offset + bytesPerDim)
+                        >= 0)
+                    && (Arrays.compareUnsigned(
+                            maxPackedValue,
+                            offset,
+                            offset + bytesPerDim,
+                            rangeClause.upperValue,
+                            offset,
+                            offset + bytesPerDim)
+                        <= 0)) {
                   return PointValues.Relation.CELL_INSIDE_QUERY;
                 }
 
-                crosses |= Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, rangeClause.lowerValue, offset, offset + bytesPerDim) < 0 ||
-                    Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, rangeClause.upperValue, offset, offset + bytesPerDim) > 0;
+                crosses |=
+                    Arrays.compareUnsigned(
+                                minPackedValue,
+                                offset,
+                                offset + bytesPerDim,
+                                rangeClause.lowerValue,
+                                offset,
+                                offset + bytesPerDim)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                maxPackedValue,
+                                offset,
+                                offset + bytesPerDim,
+                                rangeClause.upperValue,
+                                offset,
+                                offset + bytesPerDim)
+                            > 0;
               }
             }
 
@@ -231,10 +274,22 @@ public abstract class MultiRangeQuery extends Query {
         }
 
         if (values.getNumIndexDimensions() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numIndexDimensions=" + values.getNumIndexDimensions() + " but this query has numDims=" + numDims);
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with numIndexDimensions="
+                  + values.getNumIndexDimensions()
+                  + " but this query has numDims="
+                  + numDims);
         }
         if (bytesPerDim != values.getBytesPerDimension()) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + values.getBytesPerDimension() + " but this query has bytesPerDim=" + bytesPerDim);
+          throw new IllegalArgumentException(
+              "field=\""
+                  + field
+                  + "\" was indexed with bytesPerDim="
+                  + values.getBytesPerDimension()
+                  + " but this query has bytesPerDim="
+                  + bytesPerDim);
         }
 
         boolean allDocsMatch;
@@ -245,8 +300,22 @@ public abstract class MultiRangeQuery extends Query {
           for (RangeClause rangeClause : rangeClauses) {
             for (int i = 0; i < numDims; ++i) {
               int offset = i * bytesPerDim;
-              if (Arrays.compareUnsigned(rangeClause.lowerValue, offset, offset + bytesPerDim, fieldPackedLower, offset, offset + bytesPerDim) > 0
-                  || Arrays.compareUnsigned(rangeClause.upperValue, offset, offset + bytesPerDim, fieldPackedUpper, offset, offset + bytesPerDim) < 0) {
+              if (Arrays.compareUnsigned(
+                          rangeClause.lowerValue,
+                          offset,
+                          offset + bytesPerDim,
+                          fieldPackedLower,
+                          offset,
+                          offset + bytesPerDim)
+                      > 0
+                  || Arrays.compareUnsigned(
+                          rangeClause.upperValue,
+                          offset,
+                          offset + bytesPerDim,
+                          fieldPackedUpper,
+                          offset,
+                          offset + bytesPerDim)
+                      < 0) {
                 allDocsMatch = false;
                 break;
               }
@@ -262,7 +331,8 @@ public abstract class MultiRangeQuery extends Query {
           return new ScorerSupplier() {
             @Override
             public Scorer get(long leadCost) {
-              return new ConstantScoreScorer(weight, score(), scoreMode, DocIdSetIterator.all(reader.maxDoc()));
+              return new ConstantScoreScorer(
+                  weight, score(), scoreMode, DocIdSetIterator.all(reader.maxDoc()));
             }
 
             @Override
@@ -310,7 +380,6 @@ public abstract class MultiRangeQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 
@@ -341,15 +410,14 @@ public abstract class MultiRangeQuery extends Query {
 
   @Override
   public final boolean equals(Object o) {
-    return sameClassAs(o) &&
-        equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(MultiRangeQuery other) {
-    return Objects.equals(field, other.field) &&
-        numDims == other.numDims &&
-        bytesPerDim == other.bytesPerDim &&
-        rangeClauses.equals(other.rangeClauses);
+    return Objects.equals(field, other.field)
+        && numDims == other.numDims
+        && bytesPerDim == other.bytesPerDim
+        && rangeClauses.equals(other.rangeClauses);
   }
 
   @Override
@@ -375,9 +443,17 @@ public abstract class MultiRangeQuery extends Query {
         int startOffset = bytesPerDim * i;
 
         sb.append('[');
-        sb.append(toString(i, ArrayUtil.copyOfSubArray(rangeClause.lowerValue, startOffset, startOffset + bytesPerDim)));
+        sb.append(
+            toString(
+                i,
+                ArrayUtil.copyOfSubArray(
+                    rangeClause.lowerValue, startOffset, startOffset + bytesPerDim)));
         sb.append(" TO ");
-        sb.append(toString(i, ArrayUtil.copyOfSubArray(rangeClause.upperValue, startOffset, startOffset + bytesPerDim)));
+        sb.append(
+            toString(
+                i,
+                ArrayUtil.copyOfSubArray(
+                    rangeClause.upperValue, startOffset, startOffset + bytesPerDim)));
         sb.append(']');
       }
       sb.append('}');
@@ -388,8 +464,8 @@ public abstract class MultiRangeQuery extends Query {
   }
 
   /**
-   * Returns a string of a single value in a human-readable format for debugging.
-   * This is used by {@link #toString()}.
+   * Returns a string of a single value in a human-readable format for debugging. This is used by
+   * {@link #toString()}.
    *
    * @param dimension dimension of the particular value
    * @param value single value, never null

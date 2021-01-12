@@ -21,6 +21,10 @@ New Features
   Improve support for arbitrary container-level plugins. Add ClusterSingleton
   support for plugins that require only one active instance in the cluster. (ab, noble)
 
+* SOLR-14613: Autoscaling replacement using placement plugins (ilan, ab, noble)
+
+* SOLR-15019: Replica placement API needs a way to fetch existing replica metrics. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -180,6 +184,8 @@ Other Changes
 
 * SOLR-15016: Replica placement plugins should use container plugins API / configs. (ab, ilan)
 
+* SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -221,14 +227,40 @@ Improvements
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
   and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
-  
+
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
 
+* SOLR-14413: Allow timeAllowed and cursorMark parameters together. (John Gallagher via Mike Drob)
+
+* SOLR-15062: /api/cluster/zk/ls should give the stat of the current node (noble)
+
+* SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
+  (David Smiley)
+
+* SOLR-14923: The use case of atomic/partial updates to child documents no longer requires that
+  _root_ be stored or have docValues, and no longer requires the _nest_path_ field.  However it
+  now requires that the client pass a _root_ field on these updates to point to the root ID.
+  (David Smiley)
+
+* SOLR-15059: Add panels to the default Grafana dashboard for query performance monitoring, includes updates
+  to the Prometheus exporter to export query performance metrics, such as QPS and p95. (Timothy Potter)
+
+* SOLR-15040: Improvements to postlogs timestamp handling (Joel Bernstein)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
+
+* SOLR-15049: Optimize same-core, same-field joins in TopLevelJoinQuery (Jason Gerlowski)
+
+* SOLR-14923: Indexing nested documents is faster, especially under concurrent indexing load.  In addition,
+  Partial updates to nested documents and Realtime Get of child documents is now more reliable.
+  (David Smiley, Thomas Wöckinger)
+
+* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a
+  collection alias with multiple collections and count|sum|min|max|avg metrics. (Timothy Potter)
 
 Bug Fixes
 ---------------------
@@ -266,6 +298,38 @@ Bug Fixes
 
 * SOLR-14939: JSON range faceting to support cache=false parameter. (Christine Poerschke, Mike Drob)
 
+* SOLR-15031: Fix preventing null being wrapped in a QueryValueSource subQuery. Such null queries can be caused by query text
+  resulting in an empty token stream. (Pieter van Boxtel via Mike Drob)
+
+* SOLR-15061: Fix NPE in SearchHandler when shards.info and no QueryComponent configured. (Bruno Roustant)
+
+* SOLR-14571: Download speed was hard-coded in the "Replication" screen of the Solr Admin UI. (Florin Babes via Christine Poerschke)
+
+* SOLR-15048: Fixed collapse parser behavior when dealing with docs boosted by QueryElevationComponent that are in the
+  null group to treat them consistently regardless of collapse field type or group head selector. (hossman)
+
+* SOLR-15058: Enforce node_name contains colon and port and find first underscore after colon to parse context
+  when converting a node_name to a base URL. (Timothy Potter, Su Sasa)
+
+* SOLR-15047: Fix collapse parser behavior when collapsing on numeric fields to differentiate '0' group from null group (hossman)
+
+* SOLR-10860: Return proper error code for bad input in case of inplace updates (Tomas Eduardo Fernandez Lobbe, Munendra S N)
+
+* SOLR-14950: Fix error in copyField regeneration when explicit source/destination is not present in schema but
+  matches the dynamic rule. The copyFields are rebuilt with replace-field and replace-field-type, if required
+  (Andrew Shumway, Munendra S N)
+
+* SOLR-12539: Handle parsing of values for 'other', 'include', and 'excludeTags' in JSON facets when specified as
+  comma-separated values with extra spaces (hossman, Munendra S N)
+
+* SOLR-14514: Avoid picking 'stream' method in JSON facet when any of 'allBuckets', 'numBuckets', and 'missing' parameters are enabled
+  (hossman, Munendra S N)
+
+* SOLR-12559: Fix placeholder valuesource 'FIELDNAME' not working with de-referenced values in JSON aggregator parsing.
+  (hossman, Munendra S N)
+
+* SOLR-15070: Suggester requests made with SolrJ can now use XMLResponseParser (Jason Gerlowski)
+
 Other Changes
 ---------------------
 
@@ -277,6 +341,14 @@ Other Changes
 * SOLR-14995: Update Jetty to 9.4.34 (Mike Drob)
 
 * SOLR-14958: Refactor zkHost config logic to make testing easier and reduce risk of incorrect value being used (hossman)
+
+* SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
+
+* SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
+
+* SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
+* SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
 

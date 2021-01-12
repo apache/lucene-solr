@@ -19,8 +19,8 @@ package org.apache.lucene.queryparser.flexible.messages;
 import java.util.Locale;
 
 /**
- * Default implementation of Message interface.
- * For Native Language Support (NLS), system of software internationalization.
+ * Default implementation of Message interface. For Native Language Support (NLS), system of
+ * software internationalization.
  */
 public class MessageImpl implements Message {
 
@@ -30,7 +30,6 @@ public class MessageImpl implements Message {
 
   public MessageImpl(String key) {
     this.key = key;
-
   }
 
   public MessageImpl(String key, Object... args) {
@@ -69,5 +68,4 @@ public class MessageImpl implements Message {
     }
     return sb.toString();
   }
-
 }

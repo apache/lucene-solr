@@ -17,15 +17,17 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * Membership shapes have capabilities of both geohashing and membership
- * determination.  This is a useful baseclass for them.
+ * Membership shapes have capabilities of both geohashing and membership determination. This is a
+ * useful baseclass for them.
  *
  * @lucene.experimental
  */
 public abstract class GeoBaseMembershipShape extends GeoBaseShape implements GeoMembershipShape {
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model to use.
    */
   public GeoBaseMembershipShape(final PlanetModel planetModel) {
     super(planetModel);
@@ -42,15 +44,15 @@ public abstract class GeoBaseMembershipShape extends GeoBaseShape implements Geo
   }
 
   @Override
-  public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    if (isWithin(x,y,z)) {
+  public double computeOutsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    if (isWithin(x, y, z)) {
       return 0.0;
     }
-    return outsideDistance(distanceStyle, x,y,z);
+    return outsideDistance(distanceStyle, x, y, z);
   }
 
   /** Called by a {@code computeOutsideDistance} method if X/Y/Z is not within this shape. */
-  protected abstract double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
-
+  protected abstract double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z);
 }
-

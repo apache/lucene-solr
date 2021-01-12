@@ -20,7 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.builders.QueryTreeBuilder;
@@ -30,10 +29,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNod
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.TermQuery;
 
-/**
- * Builds a {@link MultiPhraseQuery} object from a {@link MultiPhraseQueryNode}
- * object.
- */
+/** Builds a {@link MultiPhraseQuery} object from a {@link MultiPhraseQueryNode} object. */
 public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
 
   public MultiPhraseQueryNodeBuilder() {
@@ -53,30 +49,24 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
 
       for (QueryNode child : children) {
         FieldQueryNode termNode = (FieldQueryNode) child;
-        TermQuery termQuery = (TermQuery) termNode
-            .getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
-        List<Term> termList = positionTermMap.get(termNode
-            .getPositionIncrement());
+        TermQuery termQuery =
+            (TermQuery) termNode.getTag(QueryTreeBuilder.QUERY_TREE_BUILDER_TAGID);
+        List<Term> termList = positionTermMap.get(termNode.getPositionIncrement());
 
         if (termList == null) {
           termList = new LinkedList<>();
           positionTermMap.put(termNode.getPositionIncrement(), termList);
-
         }
 
         termList.add(termQuery.getTerm());
-
       }
 
       for (Map.Entry<Integer, List<Term>> entry : positionTermMap.entrySet()) {
         List<Term> termList = entry.getValue();
         phraseQueryBuilder.add(termList.toArray(new Term[termList.size()]), entry.getKey());
       }
-
     }
 
     return phraseQueryBuilder.build();
-
   }
-
 }

@@ -17,20 +17,19 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.BytesRef;
 
-/** Add an instance of this to your {@link Document} to add
- *  a facet label associated with a float.  Use {@link
- *  TaxonomyFacetSumFloatAssociations} to aggregate float values
- *  per facet label at search time.
- * 
- *  @lucene.experimental */
+/**
+ * Add an instance of this to your {@link Document} to add a facet label associated with a float.
+ * Use {@link TaxonomyFacetSumFloatAssociations} to aggregate float values per facet label at search
+ * time.
+ *
+ * @lucene.experimental
+ */
 public class FloatAssociationFacetField extends AssociationFacetField {
 
-  /** Creates this from {@code dim} and {@code path} and a
-   *  float association */
+  /** Creates this from {@code dim} and {@code path} and a float association */
   public FloatAssociationFacetField(float assoc, String dim, String... path) {
     super(floatToBytesRef(assoc), dim, path);
   }
@@ -47,6 +46,12 @@ public class FloatAssociationFacetField extends AssociationFacetField {
 
   @Override
   public String toString() {
-    return "FloatAssociationFacetField(dim=" + dim + " path=" + Arrays.toString(path) + " value=" + bytesRefToFloat(assoc) + ")";
+    return "FloatAssociationFacetField(dim="
+        + dim
+        + " path="
+        + Arrays.toString(path)
+        + " value="
+        + bytesRefToFloat(assoc)
+        + ")";
   }
 }

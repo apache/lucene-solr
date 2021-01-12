@@ -16,31 +16,24 @@
  */
 package org.apache.lucene.util.automaton;
 
-
 import org.apache.lucene.util.IntsRef;
 
 /**
- * {@link FiniteStringsIterator} which limits the number of iterated accepted strings.
- * If more than <code>limit</code> strings are accepted,
- * the first <code>limit</code> strings found are returned.
+ * {@link FiniteStringsIterator} which limits the number of iterated accepted strings. If more than
+ * <code>limit</code> strings are accepted, the first <code>limit</code> strings found are returned.
  *
  * <p>If the {@link Automaton} has cycles then this iterator may throw an {@code
  * IllegalArgumentException}, but this is not guaranteed!
  *
- * <p>Be aware that the iteration order is implementation dependent
- * and may change across releases.
+ * <p>Be aware that the iteration order is implementation dependent and may change across releases.
  *
  * @lucene.experimental
  */
 public class LimitedFiniteStringsIterator extends FiniteStringsIterator {
-  /**
-   * Maximum number of finite strings to create.
-   */
+  /** Maximum number of finite strings to create. */
   private int limit = Integer.MAX_VALUE;
 
-  /**
-   * Number of generated finite strings.
-   */
+  /** Number of generated finite strings. */
   private int count = 0;
 
   /**
@@ -53,10 +46,11 @@ public class LimitedFiniteStringsIterator extends FiniteStringsIterator {
     super(a);
 
     if (limit != -1 && limit <= 0) {
-      throw new IllegalArgumentException("limit must be -1 (which means no limit), or > 0; got: " + limit);
+      throw new IllegalArgumentException(
+          "limit must be -1 (which means no limit), or > 0; got: " + limit);
     }
 
-    this.limit = limit > 0? limit : Integer.MAX_VALUE;
+    this.limit = limit > 0 ? limit : Integer.MAX_VALUE;
   }
 
   @Override
@@ -74,9 +68,7 @@ public class LimitedFiniteStringsIterator extends FiniteStringsIterator {
     return result;
   }
 
-  /**
-   * Number of iterated finite strings.
-   */
+  /** Number of iterated finite strings. */
   public int size() {
     return count;
   }

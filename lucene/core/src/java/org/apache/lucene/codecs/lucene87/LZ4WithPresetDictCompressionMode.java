@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.lucene87;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Compressor;
 import org.apache.lucene.codecs.compressing.Decompressor;
@@ -30,8 +29,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.compress.LZ4;
 
 /**
- * A compression mode that compromises on the compression ratio to provide
- * fast compression and decompression.
+ * A compression mode that compromises on the compression ratio to provide fast compression and
+ * decompression.
+ *
  * @lucene.internal
  */
 public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
@@ -69,12 +69,13 @@ public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
       buffer = new byte[0];
     }
 
-    private int readCompressedLengths(DataInput in,  int originalLength, int dictLength, int blockLength) throws IOException {
+    private int readCompressedLengths(
+        DataInput in, int originalLength, int dictLength, int blockLength) throws IOException {
       in.readVInt(); // compressed length of the dictionary, unused
       int totalLength = dictLength;
       int i = 0;
       while (totalLength < originalLength) {
-        compressedLengths = ArrayUtil.grow(compressedLengths, i+1);
+        compressedLengths = ArrayUtil.grow(compressedLengths, i + 1);
         compressedLengths[i++] = in.readVInt();
         totalLength += blockLength;
       }
@@ -82,7 +83,8 @@ public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
     }
 
     @Override
-    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
+    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes)
+        throws IOException {
       assert offset + length <= originalLength;
 
       if (length == 0) {
@@ -142,7 +144,6 @@ public final class LZ4WithPresetDictCompressionMode extends CompressionMode {
     public Decompressor clone() {
       return new LZ4WithPresetDictDecompressor();
     }
-
   }
 
   private static class LZ4WithPresetDictCompressor extends Compressor {

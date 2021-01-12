@@ -22,87 +22,76 @@ package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.automaton.LevenshteinAutomata.ParametricDescription;
 
-/** Parametric description for generating a Levenshtein automaton of degree 1, 
-    with transpositions as primitive edits */
+/**
+ * Parametric description for generating a Levenshtein automaton of degree 1, with transpositions as
+ * primitive edits
+ */
 class Lev1TParametricDescription extends ParametricDescription {
-  
+
   @Override
   int transition(int absState, int position, int vector) {
     // null absState should never be passed in
     assert absState != -1;
-    
+
     // decode absState -> state, offset
-    int state = absState/(w+1);
-    int offset = absState%(w+1);
+    int state = absState / (w + 1);
+    int offset = absState % (w + 1);
     assert offset >= 0;
-    
+
     if (position == w) {
       if (state < 2) {
         final int loc = vector * 2 + state;
         offset += unpack(offsetIncrs0, loc, 1);
-        state = unpack(toStates0, loc, 2)-1;
+        state = unpack(toStates0, loc, 2) - 1;
       }
-    } else if (position == w-1) {
+    } else if (position == w - 1) {
       if (state < 3) {
         final int loc = vector * 3 + state;
         offset += unpack(offsetIncrs1, loc, 1);
-        state = unpack(toStates1, loc, 2)-1;
+        state = unpack(toStates1, loc, 2) - 1;
       }
-    } else if (position == w-2) {
+    } else if (position == w - 2) {
       if (state < 6) {
         final int loc = vector * 6 + state;
         offset += unpack(offsetIncrs2, loc, 2);
-        state = unpack(toStates2, loc, 3)-1;
+        state = unpack(toStates2, loc, 3) - 1;
       }
     } else {
       if (state < 6) {
         final int loc = vector * 6 + state;
         offset += unpack(offsetIncrs3, loc, 2);
-        state = unpack(toStates3, loc, 3)-1;
+        state = unpack(toStates3, loc, 3) - 1;
       }
     }
-    
+
     if (state == -1) {
       // null state
       return -1;
     } else {
       // translate back to abs
-      return state*(w+1)+offset;
+      return state * (w + 1) + offset;
     }
   }
-    
+
   // 1 vectors; 2 states per vector; array length = 2
-  private final static long[] toStates0 = new long[] /*2 bits per value */ {
-    0x2L
-  };
-  private final static long[] offsetIncrs0 = new long[] /*1 bits per value */ {
-    0x0L
-  };
-    
+  private static final long[] toStates0 = new long[] /*2 bits per value */ {0x2L};
+  private static final long[] offsetIncrs0 = new long[] /*1 bits per value */ {0x0L};
+
   // 2 vectors; 3 states per vector; array length = 6
-  private final static long[] toStates1 = new long[] /*2 bits per value */ {
-    0xa43L
-  };
-  private final static long[] offsetIncrs1 = new long[] /*1 bits per value */ {
-    0x38L
-  };
-    
+  private static final long[] toStates1 = new long[] /*2 bits per value */ {0xa43L};
+  private static final long[] offsetIncrs1 = new long[] /*1 bits per value */ {0x38L};
+
   // 4 vectors; 6 states per vector; array length = 24
-  private final static long[] toStates2 = new long[] /*3 bits per value */ {
-    0xb45a491412180003L,0x69L
-  };
-  private final static long[] offsetIncrs2 = new long[] /*2 bits per value */ {
-    0x5555558a0000L
-  };
-    
+  private static final long[] toStates2 =
+      new long[] /*3 bits per value */ {0xb45a491412180003L, 0x69L};
+  private static final long[] offsetIncrs2 = new long[] /*2 bits per value */ {0x5555558a0000L};
+
   // 8 vectors; 6 states per vector; array length = 48
-  private final static long[] toStates3 = new long[] /*3 bits per value */ {
-    0xa1904864900c0003L,0x5a6d196a45a49169L,0x9634L
-  };
-  private final static long[] offsetIncrs3 = new long[] /*2 bits per value */ {
-    0x5555ba08a0fc0000L,0x55555555L
-  };
-  
+  private static final long[] toStates3 =
+      new long[] /*3 bits per value */ {0xa1904864900c0003L, 0x5a6d196a45a49169L, 0x9634L};
+  private static final long[] offsetIncrs3 =
+      new long[] /*2 bits per value */ {0x5555ba08a0fc0000L, 0x55555555L};
+
   // state map
   //   0 -> [(0, 0)]
   //   1 -> [(0, 1)]
@@ -110,9 +99,8 @@ class Lev1TParametricDescription extends ParametricDescription {
   //   3 -> [(0, 1), (1, 1), (2, 1)]
   //   4 -> [(0, 1), (2, 1)]
   //   5 -> [t(0, 1), (0, 1), (1, 1), (2, 1)]
-  
-  
+
   public Lev1TParametricDescription(int w) {
-    super(w, 1, new int[] {0,1,0,-1,-1,-1});
+    super(w, 1, new int[] {0, 1, 0, -1, -1, -1});
   }
 }

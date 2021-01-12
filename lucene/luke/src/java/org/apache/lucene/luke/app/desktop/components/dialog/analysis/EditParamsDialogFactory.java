@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -36,7 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
@@ -71,7 +70,7 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
 
   private Callable callback;
 
-  public synchronized static EditParamsDialogFactory getInstance() throws IOException {
+  public static synchronized EditParamsDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new EditParamsDialogFactory();
     }
@@ -126,7 +125,11 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
     header.add(targetLbl);
     panel.add(header, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(paramsTable, ListSelectionModel.SINGLE_SELECTION, new ParamsTableModel(params), null,
+    TableUtils.setupTable(
+        paramsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new ParamsTableModel(params),
+        null,
         ParamsTableModel.Column.DELETE.getColumnWidth(),
         ParamsTableModel.Column.NAME.getColumnWidth());
     paramsTable.setShowGrid(true);
@@ -135,28 +138,37 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING, 10, 5));
     footer.setOpaque(false);
     JButton okBtn = new JButton(MessageUtils.getLocalizedMessage("button.ok"));
-    okBtn.addActionListener(e -> {
-      Map<String, String> params = new HashMap<>();
-      for (int i = 0; i < paramsTable.getRowCount(); i++) {
-        boolean deleted = (boolean) paramsTable.getValueAt(i, ParamsTableModel.Column.DELETE.getIndex());
-        String name = (String) paramsTable.getValueAt(i, ParamsTableModel.Column.NAME.getIndex());
-        String value = (String) paramsTable.getValueAt(i, ParamsTableModel.Column.VALUE.getIndex());
-        if (deleted || Objects.isNull(name) || name.equals("") || Objects.isNull(value) || value.equals("")) {
-          continue;
-        }
-        params.put(name, value);
-      }
-      updateTargetParams(params);
-      callback.call();
-      this.params.clear();
-      dialog.dispose();
-    });
+    okBtn.addActionListener(
+        e -> {
+          Map<String, String> params = new HashMap<>();
+          for (int i = 0; i < paramsTable.getRowCount(); i++) {
+            boolean deleted =
+                (boolean) paramsTable.getValueAt(i, ParamsTableModel.Column.DELETE.getIndex());
+            String name =
+                (String) paramsTable.getValueAt(i, ParamsTableModel.Column.NAME.getIndex());
+            String value =
+                (String) paramsTable.getValueAt(i, ParamsTableModel.Column.VALUE.getIndex());
+            if (deleted
+                || Objects.isNull(name)
+                || name.equals("")
+                || Objects.isNull(value)
+                || value.equals("")) {
+              continue;
+            }
+            params.put(name, value);
+          }
+          updateTargetParams(params);
+          callback.call();
+          this.params.clear();
+          dialog.dispose();
+        });
     footer.add(okBtn);
     JButton cancelBtn = new JButton(MessageUtils.getLocalizedMessage("button.cancel"));
-    cancelBtn.addActionListener(e -> {
-      this.params.clear();
-      dialog.dispose();
-    });
+    cancelBtn.addActionListener(
+        e -> {
+          this.params.clear();
+          dialog.dispose();
+        });
     footer.add(cancelBtn);
     panel.add(footer, BorderLayout.PAGE_END);
 
@@ -164,19 +176,22 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
   }
 
   private void updateTargetParams(Map<String, String> params) {
-    operatorRegistry.get(CustomAnalyzerPanelOperator.class).ifPresent(operator -> {
-      switch (mode) {
-        case CHARFILTER:
-          operator.updateCharFilterParams(targetIndex, params);
-          break;
-        case TOKENIZER:
-          operator.updateTokenizerParams(params);
-          break;
-        case TOKENFILTER:
-          operator.updateTokenFilterParams(targetIndex, params);
-          break;
-      }
-    });
+    operatorRegistry
+        .get(CustomAnalyzerPanelOperator.class)
+        .ifPresent(
+            operator -> {
+              switch (mode) {
+                case CHARFILTER:
+                  operator.updateCharFilterParams(targetIndex, params);
+                  break;
+                case TOKENIZER:
+                  operator.updateTokenizerParams(params);
+                  break;
+                case TOKENFILTER:
+                  operator.updateTokenFilterParams(targetIndex, params);
+                  break;
+              }
+            });
   }
 
   static final class ParamsTableModel extends TableModelBase<ParamsTableModel.Column> {
@@ -217,7 +232,6 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
       public int getColumnWidth() {
         return width;
       }
-
     }
 
     private static final int PARAM_SIZE = 20;
@@ -249,6 +263,4 @@ public final class EditParamsDialogFactory implements DialogOpener.DialogFactory
       return Column.values();
     }
   }
-
 }
-

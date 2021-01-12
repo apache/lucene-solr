@@ -19,31 +19,29 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 /**
- * Manages reference counting for a given object. Extensions can override
- * {@link #release()} to do custom logic when reference counting hits 0.
+ * Manages reference counting for a given object. Extensions can override {@link #release()} to do
+ * custom logic when reference counting hits 0.
  */
 public class RefCount<T> {
-  
+
   private final AtomicInteger refCount = new AtomicInteger(1);
-  
+
   protected final T object;
-  
+
   public RefCount(T object) {
     this.object = object;
   }
 
   /**
-   * Called when reference counting hits 0. By default this method does nothing,
-   * but extensions can override to e.g. release resources attached to object
-   * that is managed by this class.
+   * Called when reference counting hits 0. By default this method does nothing, but extensions can
+   * override to e.g. release resources attached to object that is managed by this class.
    */
   protected void release() throws IOException {}
-  
+
   /**
-   * Decrements the reference counting of this object. When reference counting
-   * hits 0, calls {@link #release()}.
+   * Decrements the reference counting of this object. When reference counting hits 0, calls {@link
+   * #release()}.
    */
   public final void decRef() throws IOException {
     final int rc = refCount.decrementAndGet();
@@ -59,26 +57,25 @@ public class RefCount<T> {
         }
       }
     } else if (rc < 0) {
-      throw new IllegalStateException("too many decRef calls: refCount is " + rc + " after decrement");
+      throw new IllegalStateException(
+          "too many decRef calls: refCount is " + rc + " after decrement");
     }
   }
-  
+
   public final T get() {
     return object;
   }
-  
+
   /** Returns the current reference count. */
   public final int getRefCount() {
     return refCount.get();
   }
-  
+
   /**
-   * Increments the reference count. Calls to this method must be matched with
-   * calls to {@link #decRef()}.
+   * Increments the reference count. Calls to this method must be matched with calls to {@link
+   * #decRef()}.
    */
   public final void incRef() {
     refCount.incrementAndGet();
   }
-  
 }
-

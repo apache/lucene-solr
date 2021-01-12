@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -36,72 +34,76 @@ import org.apache.lucene.util.packed.DirectMonotonicWriter;
  * Lucene 5.0 stored fields format.
  *
  * <p><b>Principle</b>
- * <p>This {@link StoredFieldsFormat} compresses blocks of documents in
- * order to improve the compression ratio compared to document-level
- * compression. It uses the <a href="http://code.google.com/p/lz4/">LZ4</a>
- * compression algorithm by default in 16KB blocks, which is fast to compress 
- * and very fast to decompress data. Although the default compression method 
- * that is used ({@link Mode#BEST_SPEED BEST_SPEED}) focuses more on speed than on 
- * compression ratio, it should provide interesting compression ratios
- * for redundant inputs (such as log files, HTML or plain text). For higher
- * compression, you can choose ({@link Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses 
- * the <a href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 60KB blocks 
- * for a better ratio at the expense of slower performance. 
- * These two options can be configured like this:
+ *
+ * <p>This {@link StoredFieldsFormat} compresses blocks of documents in order to improve the
+ * compression ratio compared to document-level compression. It uses the <a
+ * href="http://code.google.com/p/lz4/">LZ4</a> compression algorithm by default in 16KB blocks,
+ * which is fast to compress and very fast to decompress data. Although the default compression
+ * method that is used ({@link Mode#BEST_SPEED BEST_SPEED}) focuses more on speed than on
+ * compression ratio, it should provide interesting compression ratios for redundant inputs (such as
+ * log files, HTML or plain text). For higher compression, you can choose ({@link
+ * Mode#BEST_COMPRESSION BEST_COMPRESSION}), which uses the <a
+ * href="http://en.wikipedia.org/wiki/DEFLATE">DEFLATE</a> algorithm with 60KB blocks for a better
+ * ratio at the expense of slower performance. These two options can be configured like this:
+ *
  * <pre class="prettyprint">
  *   // the default: for high performance
  *   indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_SPEED));
  *   // instead for higher performance (but slower):
  *   // indexWriterConfig.setCodec(new Lucene54Codec(Mode.BEST_COMPRESSION));
  * </pre>
+ *
  * <p><b>File formats</b>
+ *
  * <p>Stored fields are represented by three files:
+ *
  * <ol>
- * <li><a id="field_data"></a>
- * <p>A fields data file (extension <code>.fdt</code>). This file stores a compact
- * representation of documents in compressed blocks of 16KB or more. When
- * writing a segment, documents are appended to an in-memory <code>byte[]</code>
- * buffer. When its size reaches 16KB or more, some metadata about the documents
- * is flushed to disk, immediately followed by a compressed representation of
- * the buffer using the
- * <a href="https://github.com/lz4/lz4">LZ4</a>
- * <a href="http://fastcompression.blogspot.fr/2011/05/lz4-explained.html">compression format</a>.</p>
- * <p>Notes
- * <ul>
- * <li>If documents are larger than 16KB then chunks will likely contain only
- * one document. However, documents can never spread across several chunks (all
- * fields of a single document are in the same chunk).</li>
- * <li>When at least one document in a chunk is large enough so that the chunk
- * is larger than 32KB, the chunk will actually be compressed in several LZ4
- * blocks of 16KB. This allows {@link StoredFieldVisitor}s which are only
- * interested in the first fields of a document to not have to decompress 10MB
- * of data if the document is 10MB, but only 16KB.</li>
- * <li>Given that the original lengths are written in the metadata of the chunk,
- * the decompressor can leverage this information to stop decoding as soon as
- * enough data has been decompressed.</li>
- * <li>In case documents are incompressible, the overhead of the compression format
- * is less than 0.5%.</li>
- * </ul>
- * </li>
- * <li><a id="field_index"></a>
- * <p>A fields index file (extension <code>.fdx</code>). This file stores two
- * {@link DirectMonotonicWriter monotonic arrays}, one for the first doc IDs of
- * each block of compressed documents, and another one for the corresponding
- * offsets on disk. At search time, the array containing doc IDs is
- * binary-searched in order to find the block that contains the expected doc ID,
- * and the associated offset on disk is retrieved from the second array.</p>
- * <li><a id="field_meta"></a>
- * <p>A fields meta file (extension <code>.fdm</code>). This file stores metadata
- * about the monotonic arrays stored in the index file.</p>
- * </li>
+ *   <li><a id="field_data"></a>
+ *       <p>A fields data file (extension <code>.fdt</code>). This file stores a compact
+ *       representation of documents in compressed blocks of 16KB or more. When writing a segment,
+ *       documents are appended to an in-memory <code>byte[]</code> buffer. When its size reaches
+ *       16KB or more, some metadata about the documents is flushed to disk, immediately followed by
+ *       a compressed representation of the buffer using the <a
+ *       href="https://github.com/lz4/lz4">LZ4</a> <a
+ *       href="http://fastcompression.blogspot.fr/2011/05/lz4-explained.html">compression
+ *       format</a>.
+ *       <p>Notes
+ *       <ul>
+ *         <li>If documents are larger than 16KB then chunks will likely contain only one document.
+ *             However, documents can never spread across several chunks (all fields of a single
+ *             document are in the same chunk).
+ *         <li>When at least one document in a chunk is large enough so that the chunk is larger
+ *             than 32KB, the chunk will actually be compressed in several LZ4 blocks of 16KB. This
+ *             allows {@link StoredFieldVisitor}s which are only interested in the first fields of a
+ *             document to not have to decompress 10MB of data if the document is 10MB, but only
+ *             16KB.
+ *         <li>Given that the original lengths are written in the metadata of the chunk, the
+ *             decompressor can leverage this information to stop decoding as soon as enough data
+ *             has been decompressed.
+ *         <li>In case documents are incompressible, the overhead of the compression format is less
+ *             than 0.5%.
+ *       </ul>
+ *   <li><a id="field_index"></a>
+ *       <p>A fields index file (extension <code>.fdx</code>). This file stores two {@link
+ *       DirectMonotonicWriter monotonic arrays}, one for the first doc IDs of each block of
+ *       compressed documents, and another one for the corresponding offsets on disk. At search
+ *       time, the array containing doc IDs is binary-searched in order to find the block that
+ *       contains the expected doc ID, and the associated offset on disk is retrieved from the
+ *       second array.
+ *   <li><a id="field_meta"></a>
+ *       <p>A fields meta file (extension <code>.fdm</code>). This file stores metadata about the
+ *       monotonic arrays stored in the index file.
  * </ol>
+ *
  * <p><b>Known limitations</b>
- * <p>This {@link StoredFieldsFormat} does not support individual documents
- * larger than (<code>2<sup>31</sup> - 2<sup>14</sup></code>) bytes.
+ *
+ * <p>This {@link StoredFieldsFormat} does not support individual documents larger than (<code>
+ * 2<sup>31</sup> - 2<sup>14</sup></code>) bytes.
+ *
  * @lucene.experimental
  */
 public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
-  
+
   /** Configuration option for stored fields. */
   public static enum Mode {
     /** Trade compression ratio for retrieval speed. */
@@ -109,24 +111,25 @@ public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
     /** Trade retrieval speed for compression ratio. */
     BEST_COMPRESSION
   }
-  
+
   /** Attribute key for compression mode. */
   public static final String MODE_KEY = Lucene50StoredFieldsFormat.class.getSimpleName() + ".mode";
-  
+
   final Mode mode;
-  
+
   /** Stored fields format with default options */
   public Lucene50StoredFieldsFormat() {
     this(Mode.BEST_SPEED);
   }
-  
+
   /** Stored fields format with specified mode */
   public Lucene50StoredFieldsFormat(Mode mode) {
     this.mode = Objects.requireNonNull(mode);
   }
 
   @Override
-  public final StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public final StoredFieldsReader fieldsReader(
+      Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     String value = si.getAttribute(MODE_KEY);
     if (value == null) {
       throw new IllegalStateException("missing value for " + MODE_KEY + " for segment: " + si.name);
@@ -136,17 +139,21 @@ public class Lucene50StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   @Override
-  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
+  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
+      throws IOException {
     throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
-  
+
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
-      case BEST_SPEED: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
-      case BEST_COMPRESSION: 
-        return new CompressingStoredFieldsFormat("Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
-      default: throw new AssertionError();
+      case BEST_SPEED:
+        return new CompressingStoredFieldsFormat(
+            "Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
+      case BEST_COMPRESSION:
+        return new CompressingStoredFieldsFormat(
+            "Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+      default:
+        throw new AssertionError();
     }
   }
 }

@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -60,33 +59,35 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValueBool;
 
 /**
- * A generalized version of {@link PhraseQuery}, built with one or more {@link MultiTermQuery}
- * that provides term expansions for multi-terms (one of the expanded terms must match).
- * <p>
- * Its main advantage is to control the total number of expansions across all {@link MultiTermQuery}
- * and across all segments.
- * <p>
- * Use the {@link Builder} to build a {@link PhraseWildcardQuery}.
- * <p>
- * This query is similar to {@link MultiPhraseQuery}, but it handles, controls and optimizes the
+ * A generalized version of {@link PhraseQuery}, built with one or more {@link MultiTermQuery} that
+ * provides term expansions for multi-terms (one of the expanded terms must match).
+ *
+ * <p>Its main advantage is to control the total number of expansions across all {@link
+ * MultiTermQuery} and across all segments.
+ *
+ * <p>Use the {@link Builder} to build a {@link PhraseWildcardQuery}.
+ *
+ * <p>This query is similar to {@link MultiPhraseQuery}, but it handles, controls and optimizes the
  * multi-term expansions.
- * <p>
- * This query is equivalent to building an ordered {@link org.apache.lucene.search.spans.SpanNearQuery}
- * with a list of {@link org.apache.lucene.search.spans.SpanTermQuery} and
- * {@link org.apache.lucene.search.spans.SpanMultiTermQueryWrapper}.
- * But it optimizes the multi-term expansions and the segment accesses.
- * It first resolves the single-terms to early stop if some does not match. Then
- * it expands each multi-term sequentially, stopping immediately if one does not
- * match. It detects the segments that do not match to skip them for the next
- * expansions. This often avoid expanding the other multi-terms on some or
- * even all segments. And finally it controls the total number of expansions.
- * <p>
- * Immutable.
+ *
+ * <p>This query is equivalent to building an ordered {@link
+ * org.apache.lucene.search.spans.SpanNearQuery} with a list of {@link
+ * org.apache.lucene.search.spans.SpanTermQuery} and {@link
+ * org.apache.lucene.search.spans.SpanMultiTermQueryWrapper}. But it optimizes the multi-term
+ * expansions and the segment accesses. It first resolves the single-terms to early stop if some
+ * does not match. Then it expands each multi-term sequentially, stopping immediately if one does
+ * not match. It detects the segments that do not match to skip them for the next expansions. This
+ * often avoid expanding the other multi-terms on some or even all segments. And finally it controls
+ * the total number of expansions.
+ *
+ * <p>Immutable.
+ *
  * @lucene.experimental
  */
 public class PhraseWildcardQuery extends Query {
 
-  protected static final Query NO_MATCH_QUERY = new MatchNoDocsQuery("Empty " + PhraseWildcardQuery.class.getSimpleName());
+  protected static final Query NO_MATCH_QUERY =
+      new MatchNoDocsQuery("Empty " + PhraseWildcardQuery.class.getSimpleName());
 
   protected final String field;
   protected final List<PhraseTerm> phraseTerms;
@@ -134,7 +135,8 @@ public class PhraseWildcardQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     IndexReader reader = searcher.getIndexReader();
 
     // Build a list of segments ordered by terms size (number of terms).
@@ -184,7 +186,14 @@ public class PhraseWildcardQuery extends Query {
         // Consider the remaining expansions allowed for all remaining multi-terms.
         // Divide it evenly to get the expansion limit for the current multi-term.
         int maxExpansionsForTerm = remainingExpansions / remainingMultiTerms;
-        int numExpansions = phraseTerm.collectTermData(this, searcher, sizeSortedSegments, remainingMultiTerms, maxExpansionsForTerm, termsData);
+        int numExpansions =
+            phraseTerm.collectTermData(
+                this,
+                searcher,
+                sizeSortedSegments,
+                remainingMultiTerms,
+                maxExpansionsForTerm,
+                termsData);
         assert numExpansions >= 0 && numExpansions <= maxExpansionsForTerm;
         if (numExpansions == 0) {
           // Early stop here because the multi-term does not match in any segment.
@@ -200,16 +209,14 @@ public class PhraseWildcardQuery extends Query {
     assert remainingMultiTerms == 0;
     assert remainingExpansions >= 0;
 
-//    TestCounters.get().printTestCounters(termsData);
+    //    TestCounters.get().printTestCounters(termsData);
 
-    return termsData.areAllTermsMatching() ?
-        createPhraseWeight(searcher, scoreMode, boost, termsData)
+    return termsData.areAllTermsMatching()
+        ? createPhraseWeight(searcher, scoreMode, boost, termsData)
         : noMatchWeight();
   }
 
-  /**
-   * Creates new {@link TermsData}.
-   */
+  /** Creates new {@link TermsData}. */
   protected TermsData createTermsData(int numSegments) {
     return new TermsData(phraseTerms.size(), numSegments);
   }
@@ -233,8 +240,9 @@ public class PhraseWildcardQuery extends Query {
     };
   }
 
-  PhraseWeight createPhraseWeight(IndexSearcher searcher, ScoreMode scoreMode,
-                                  float boost, TermsData termsData) throws IOException {
+  PhraseWeight createPhraseWeight(
+      IndexSearcher searcher, ScoreMode scoreMode, float boost, TermsData termsData)
+      throws IOException {
     return new PhraseWeight(this, field, searcher, scoreMode) {
 
       @Override
@@ -242,14 +250,18 @@ public class PhraseWildcardQuery extends Query {
         if (termsData.termStatsList.isEmpty()) {
           return null;
         }
-        return searcher.getSimilarity().scorer(
-            boost,
-            searcher.collectionStatistics(field),
-            termsData.termStatsList.toArray(new TermStatistics[0]));
+        return searcher
+            .getSimilarity()
+            .scorer(
+                boost,
+                searcher.collectionStatistics(field),
+                termsData.termStatsList.toArray(new TermStatistics[0]));
       }
 
       @Override
-      protected PhraseMatcher getPhraseMatcher(LeafReaderContext leafReaderContext, Similarity.SimScorer scorer, boolean exposeOffsets) throws IOException {
+      protected PhraseMatcher getPhraseMatcher(
+          LeafReaderContext leafReaderContext, Similarity.SimScorer scorer, boolean exposeOffsets)
+          throws IOException {
         Terms fieldTerms = leafReaderContext.reader().terms(field);
         if (fieldTerms == null) {
           return null;
@@ -257,13 +269,15 @@ public class PhraseWildcardQuery extends Query {
         TermsEnum termsEnum = fieldTerms.iterator();
         float totalMatchCost = 0;
 
-        PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[phraseTerms.size()];
+        PhraseQuery.PostingsAndFreq[] postingsFreqs =
+            new PhraseQuery.PostingsAndFreq[phraseTerms.size()];
         for (int termPosition = 0; termPosition < postingsFreqs.length; termPosition++) {
           TermData termData = termsData.getTermData(termPosition);
           assert termData != null;
           List<TermBytesTermState> termStates = termData.getTermStatesForSegment(leafReaderContext);
           if (termStates == null) {
-            // If the current phrase term does not match in the segment, then the phrase cannot match on the segment.
+            // If the current phrase term does not match in the segment, then the phrase cannot
+            // match on the segment.
             // So early stop by returning a null scorer.
             return null;
           }
@@ -272,16 +286,26 @@ public class PhraseWildcardQuery extends Query {
           List<PostingsEnum> postingsEnums = new ArrayList<>(termStates.size());
           for (TermBytesTermState termBytesTermState : termStates) {
             termsEnum.seekExact(termBytesTermState.termBytes, termBytesTermState.termState);
-            postingsEnums.add(termsEnum.postings(null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
+            postingsEnums.add(
+                termsEnum.postings(
+                    null, exposeOffsets ? PostingsEnum.ALL : PostingsEnum.POSITIONS));
             totalMatchCost += PhraseQuery.termPositionsCost(termsEnum);
           }
           PostingsEnum unionPostingsEnum;
           if (postingsEnums.size() == 1) {
             unionPostingsEnum = postingsEnums.get(0);
           } else {
-            unionPostingsEnum = exposeOffsets ? new MultiPhraseQuery.UnionFullPostingsEnum(postingsEnums) : new MultiPhraseQuery.UnionPostingsEnum(postingsEnums);
+            unionPostingsEnum =
+                exposeOffsets
+                    ? new MultiPhraseQuery.UnionFullPostingsEnum(postingsEnums)
+                    : new MultiPhraseQuery.UnionPostingsEnum(postingsEnums);
           }
-          postingsFreqs[termPosition] = new PhraseQuery.PostingsAndFreq(unionPostingsEnum, new SlowImpactsEnum(unionPostingsEnum), termPosition, termData.terms);
+          postingsFreqs[termPosition] =
+              new PhraseQuery.PostingsAndFreq(
+                  unionPostingsEnum,
+                  new SlowImpactsEnum(unionPostingsEnum),
+                  termPosition,
+                  termData.terms);
         }
 
         if (slop == 0) {
@@ -289,7 +313,8 @@ public class PhraseWildcardQuery extends Query {
           ArrayUtil.timSort(postingsFreqs);
           return new ExactPhraseMatcher(postingsFreqs, scoreMode, scorer, totalMatchCost);
         } else {
-          return new SloppyPhraseMatcher(postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
+          return new SloppyPhraseMatcher(
+              postingsFreqs, slop, scoreMode, scorer, totalMatchCost, exposeOffsets);
         }
       }
     };
@@ -337,8 +362,7 @@ public class PhraseWildcardQuery extends Query {
   }
 
   /**
-   * Collects the {@link TermState} and {@link TermStatistics} for a single-term
-   * without expansion.
+   * Collects the {@link TermState} and {@link TermStatistics} for a single-term without expansion.
    *
    * @param termsData receives the collected data.
    */
@@ -346,7 +370,8 @@ public class PhraseWildcardQuery extends Query {
       SingleTerm singleTerm,
       IndexSearcher searcher,
       List<LeafReaderContext> segments,
-      TermsData termsData) throws IOException {
+      TermsData termsData)
+      throws IOException {
     TermData termData = termsData.getOrCreateTermData(singleTerm.termPosition);
     Term term = singleTerm.term;
     termData.terms.add(term);
@@ -366,7 +391,9 @@ public class PhraseWildcardQuery extends Query {
         if (termState != null) {
           termMatchesInSegment = true;
           numMatches++;
-          termData.setTermStatesForSegment(leafReaderContext, Collections.singletonList(new TermBytesTermState(term.bytes(), termState)));
+          termData.setTermStatesForSegment(
+              leafReaderContext,
+              Collections.singletonList(new TermBytesTermState(term.bytes(), termState)));
         }
       }
       if (!termMatchesInSegment && shouldOptimizeSegments()) {
@@ -377,18 +404,18 @@ public class PhraseWildcardQuery extends Query {
     }
     // Collect the term stats across all segments.
     if (termStates.docFreq() > 0) {
-      termsData.termStatsList.add(searcher.termStatistics(term, termStates.docFreq(), termStates.totalTermFreq()));
+      termsData.termStatsList.add(
+          searcher.termStatistics(term, termStates.docFreq(), termStates.totalTermFreq()));
     }
     return numMatches;
   }
 
   /**
-   * Collects the {@link TermState} and {@link TermStatistics} for a multi-term
-   * with expansion.
+   * Collects the {@link TermState} and {@link TermStatistics} for a multi-term with expansion.
    *
-   * @param remainingMultiTerms the number of remaining multi-terms to process,
-   *                            including the current one, excluding the multi-terms already processed.
-   * @param termsData           receives the collected data.
+   * @param remainingMultiTerms the number of remaining multi-terms to process, including the
+   *     current one, excluding the multi-terms already processed.
+   * @param termsData receives the collected data.
    */
   protected int collectMultiTermData(
       MultiTerm multiTerm,
@@ -396,7 +423,8 @@ public class PhraseWildcardQuery extends Query {
       List<LeafReaderContext> segments,
       int remainingMultiTerms, // Unused here but leveraged by extending classes.
       int maxExpansionsForTerm,
-      TermsData termsData) throws IOException {
+      TermsData termsData)
+      throws IOException {
     TermData termData = termsData.getOrCreateTermData(multiTerm.termPosition);
     Map<BytesRef, TermStats> termStatsMap = createTermStatsMap(multiTerm);
     int numExpansions = 0;
@@ -407,8 +435,13 @@ public class PhraseWildcardQuery extends Query {
       LeafReaderContext leafReaderContext = segmentIterator.next();
       int remainingExpansions = maxExpansionsForTerm - numExpansions;
       assert remainingExpansions >= 0;
-      List<TermBytesTermState> termStates = collectMultiTermDataForSegment(
-          multiTerm, leafReaderContext, remainingExpansions, shouldStopSegmentIteration, termStatsMap);
+      List<TermBytesTermState> termStates =
+          collectMultiTermDataForSegment(
+              multiTerm,
+              leafReaderContext,
+              remainingExpansions,
+              shouldStopSegmentIteration,
+              termStatsMap);
 
       if (!termStates.isEmpty()) {
         assert termStates.size() <= remainingExpansions;
@@ -432,29 +465,28 @@ public class PhraseWildcardQuery extends Query {
     return segmentOptimizationEnabled;
   }
 
-  /**
-   * Creates a {@link TermStats} map for a {@link MultiTerm}.
-   */
-  protected Map<BytesRef, TermStats> createTermStatsMap(MultiTerm multiTerm) { // multiTerm param can be used by sub-classes.
+  /** Creates a {@link TermStats} map for a {@link MultiTerm}. */
+  protected Map<BytesRef, TermStats> createTermStatsMap(
+      MultiTerm multiTerm) { // multiTerm param can be used by sub-classes.
     return new HashMap<>();
   }
 
   /**
-   * Collects the {@link TermState} list and {@link TermStatistics} for a multi-term
-   * on a specific index segment.
+   * Collects the {@link TermState} list and {@link TermStatistics} for a multi-term on a specific
+   * index segment.
    *
-   * @param remainingExpansions        the number of remaining expansions allowed
-   *                                   for the segment.
-   * @param shouldStopSegmentIteration to be set to true to stop the segment
-   *                                   iteration calling this method repeatedly.
-   * @param termStatsMap               receives the collected {@link TermStats} across all segments.
+   * @param remainingExpansions the number of remaining expansions allowed for the segment.
+   * @param shouldStopSegmentIteration to be set to true to stop the segment iteration calling this
+   *     method repeatedly.
+   * @param termStatsMap receives the collected {@link TermStats} across all segments.
    */
   protected List<TermBytesTermState> collectMultiTermDataForSegment(
       MultiTerm multiTerm,
       LeafReaderContext leafReaderContext,
       int remainingExpansions,
       MutableValueBool shouldStopSegmentIteration,
-      Map<BytesRef, TermStats> termStatsMap) throws IOException {
+      Map<BytesRef, TermStats> termStatsMap)
+      throws IOException {
     TermsEnum termsEnum = createTermsEnum(multiTerm, leafReaderContext);
     if (termsEnum == null) {
       return Collections.emptyList();
@@ -488,7 +520,8 @@ public class PhraseWildcardQuery extends Query {
    *
    * @return null if there is no term for this query field in the segment.
    */
-  protected TermsEnum createTermsEnum(MultiTerm multiTerm, LeafReaderContext leafReaderContext) throws IOException {
+  protected TermsEnum createTermsEnum(MultiTerm multiTerm, LeafReaderContext leafReaderContext)
+      throws IOException {
     Terms terms = leafReaderContext.reader().terms(field);
     if (terms == null) {
       return null;
@@ -503,36 +536,41 @@ public class PhraseWildcardQuery extends Query {
    * Collect the term stats across all segments.
    *
    * @param termStatsMap input map of already collected {@link TermStats}.
-   * @param termsData    receives the {@link TermStatistics} computed for all {@link TermStats}.
-   * @param termData     receives all the collected {@link Term}.
+   * @param termsData receives the {@link TermStatistics} computed for all {@link TermStats}.
+   * @param termData receives all the collected {@link Term}.
    */
   protected void collectMultiTermStats(
       IndexSearcher searcher,
       Map<BytesRef, TermStats> termStatsMap,
       TermsData termsData,
-      TermData termData) throws IOException {
+      TermData termData)
+      throws IOException {
     // Collect term stats across all segments.
-    // Collect stats the same way MultiPhraseQuery.MultiPhraseWeight constructor does, for all terms and all segments.
+    // Collect stats the same way MultiPhraseQuery.MultiPhraseWeight constructor does, for all terms
+    // and all segments.
     for (Map.Entry<BytesRef, TermStats> termStatsEntry : termStatsMap.entrySet()) {
       Term term = new Term(field, termStatsEntry.getKey());
       termData.terms.add(term);
       TermStats termStats = termStatsEntry.getValue();
       if (termStats.docFreq > 0) {
-        termsData.termStatsList.add(searcher.termStatistics(term, termStats.docFreq, termStats.totalTermFreq));
+        termsData.termStatsList.add(
+            searcher.termStatistics(term, termStats.docFreq, termStats.totalTermFreq));
       }
     }
   }
 
   protected void checkTermsHavePositions(Terms terms) {
     if (!terms.hasPositions()) {
-      throw new IllegalStateException("field \"" + field + "\" was indexed without position data;" +
-          " cannot run " + PhraseWildcardQuery.class.getSimpleName());
+      throw new IllegalStateException(
+          "field \""
+              + field
+              + "\" was indexed without position data;"
+              + " cannot run "
+              + PhraseWildcardQuery.class.getSimpleName());
     }
   }
 
-  /**
-   * Builds a {@link PhraseWildcardQuery}.
-   */
+  /** Builds a {@link PhraseWildcardQuery}. */
   public static class Builder {
 
     protected final String field;
@@ -542,28 +580,30 @@ public class PhraseWildcardQuery extends Query {
     protected final boolean segmentOptimizationEnabled;
 
     /**
-     * @param field                  The query field.
-     * @param maxMultiTermExpansions The maximum number of expansions across all multi-terms and across all segments.
-     *                               It counts expansions for each segments individually, that allows optimizations per
-     *                               segment and unused expansions are credited to next segments. This is different from
-     *                               {@link MultiPhraseQuery} and {@link org.apache.lucene.search.spans.SpanMultiTermQueryWrapper}
-     *                               which have an expansion limit per multi-term.
+     * @param field The query field.
+     * @param maxMultiTermExpansions The maximum number of expansions across all multi-terms and
+     *     across all segments. It counts expansions for each segments individually, that allows
+     *     optimizations per segment and unused expansions are credited to next segments. This is
+     *     different from {@link MultiPhraseQuery} and {@link
+     *     org.apache.lucene.search.spans.SpanMultiTermQueryWrapper} which have an expansion limit
+     *     per multi-term.
      */
     public Builder(String field, int maxMultiTermExpansions) {
       this(field, maxMultiTermExpansions, true);
     }
 
     /**
-     * @param field                      The query field.
-     * @param maxMultiTermExpansions     The maximum number of expansions across all multi-terms and across all segments.
-     *                                   It counts expansions for each segments individually, that allows optimizations per
-     *                                   segment and unused expansions are credited to next segments. This is different from
-     *                                   {@link MultiPhraseQuery} and {@link org.apache.lucene.search.spans.SpanMultiTermQueryWrapper}
-     *                                   which have an expansion limit per multi-term.
-     * @param segmentOptimizationEnabled Whether to enable the segment optimization which consists in ignoring a segment
-     *                                   for further analysis as soon as a term is not present inside it. This optimizes
-     *                                   the query execution performance but changes the scoring. The result ranking is
-     *                                   preserved.
+     * @param field The query field.
+     * @param maxMultiTermExpansions The maximum number of expansions across all multi-terms and
+     *     across all segments. It counts expansions for each segments individually, that allows
+     *     optimizations per segment and unused expansions are credited to next segments. This is
+     *     different from {@link MultiPhraseQuery} and {@link
+     *     org.apache.lucene.search.spans.SpanMultiTermQueryWrapper} which have an expansion limit
+     *     per multi-term.
+     * @param segmentOptimizationEnabled Whether to enable the segment optimization which consists
+     *     in ignoring a segment for further analysis as soon as a term is not present inside it.
+     *     This optimizes the query execution performance but changes the scoring. The result
+     *     ranking is preserved.
      */
     public Builder(String field, int maxMultiTermExpansions, boolean segmentOptimizationEnabled) {
       this.field = field;
@@ -572,44 +612,49 @@ public class PhraseWildcardQuery extends Query {
       phraseTerms = new ArrayList<>();
     }
 
-    /**
-     * Adds a single term at the next position in the phrase.
-     */
+    /** Adds a single term at the next position in the phrase. */
     public Builder addTerm(BytesRef termBytes) {
       return addTerm(new Term(field, termBytes));
     }
 
-    /**
-     * Adds a single term at the next position in the phrase.
-     */
+    /** Adds a single term at the next position in the phrase. */
     public Builder addTerm(Term term) {
       if (!term.field().equals(field)) {
-        throw new IllegalArgumentException(term.getClass().getSimpleName()
-            + " field \"" + term.field() + "\" cannot be different from the "
-            + PhraseWildcardQuery.class.getSimpleName() + " field \"" + field + "\"");
+        throw new IllegalArgumentException(
+            term.getClass().getSimpleName()
+                + " field \""
+                + term.field()
+                + "\" cannot be different from the "
+                + PhraseWildcardQuery.class.getSimpleName()
+                + " field \""
+                + field
+                + "\"");
       }
       phraseTerms.add(new SingleTerm(term, phraseTerms.size()));
       return this;
     }
 
     /**
-     * Adds a multi-term at the next position in the phrase.
-     * Any of the terms returned by the provided {@link MultiTermQuery} enumeration
-     * may match (expansion as a disjunction).
+     * Adds a multi-term at the next position in the phrase. Any of the terms returned by the
+     * provided {@link MultiTermQuery} enumeration may match (expansion as a disjunction).
      */
     public Builder addMultiTerm(MultiTermQuery multiTermQuery) {
       if (!multiTermQuery.getField().equals(field)) {
-        throw new IllegalArgumentException(multiTermQuery.getClass().getSimpleName()
-            + " field \"" + multiTermQuery.getField() + "\" cannot be different from the "
-            + PhraseWildcardQuery.class.getSimpleName() + " field \"" + field + "\"");
+        throw new IllegalArgumentException(
+            multiTermQuery.getClass().getSimpleName()
+                + " field \""
+                + multiTermQuery.getField()
+                + "\" cannot be different from the "
+                + PhraseWildcardQuery.class.getSimpleName()
+                + " field \""
+                + field
+                + "\"");
       }
       phraseTerms.add(new MultiTerm(multiTermQuery, phraseTerms.size()));
       return this;
     }
 
-    /**
-     * Sets the phrase slop.
-     */
+    /** Sets the phrase slop. */
     public Builder setSlop(int slop) {
       if (slop < 0) {
         throw new IllegalArgumentException("slop value cannot be negative");
@@ -618,18 +663,17 @@ public class PhraseWildcardQuery extends Query {
       return this;
     }
 
-    /**
-     * Builds a {@link PhraseWildcardQuery}.
-     */
+    /** Builds a {@link PhraseWildcardQuery}. */
     public PhraseWildcardQuery build() {
-      return new PhraseWildcardQuery(field, phraseTerms, slop, maxMultiTermExpansions, segmentOptimizationEnabled);
+      return new PhraseWildcardQuery(
+          field, phraseTerms, slop, maxMultiTermExpansions, segmentOptimizationEnabled);
     }
   }
 
   /**
-   * All {@link PhraseTerm} are light and immutable. They do not hold query
-   * processing data such as {@link TermsData}. That way, the {@link PhraseWildcardQuery}
-   * is immutable and light itself and can be used safely as a key of the query cache.
+   * All {@link PhraseTerm} are light and immutable. They do not hold query processing data such as
+   * {@link TermsData}. That way, the {@link PhraseWildcardQuery} is immutable and light itself and
+   * can be used safely as a key of the query cache.
    */
   protected abstract static class PhraseTerm {
 
@@ -644,16 +688,17 @@ public class PhraseWildcardQuery extends Query {
     protected abstract Query getQuery();
 
     /**
-     * Collects {@link TermState} and {@link TermStatistics} for the term without expansion.
-     * It must be called only if {@link #hasExpansions()} returns false.
-     * Simplified version of {@code #collectTermData(PhraseWildcardQuery, IndexSearcher, List, int, int, TermsData)}
-     * with less arguments. This method throws {@link UnsupportedOperationException} if not overridden.
+     * Collects {@link TermState} and {@link TermStatistics} for the term without expansion. It must
+     * be called only if {@link #hasExpansions()} returns false. Simplified version of {@code
+     * #collectTermData(PhraseWildcardQuery, IndexSearcher, List, int, int, TermsData)} with less
+     * arguments. This method throws {@link UnsupportedOperationException} if not overridden.
      */
     protected int collectTermData(
         PhraseWildcardQuery query,
         IndexSearcher searcher,
         List<LeafReaderContext> segments,
-        TermsData termsData) throws IOException {
+        TermsData termsData)
+        throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -661,8 +706,8 @@ public class PhraseWildcardQuery extends Query {
      * Collects {@link TermState} and {@link TermStatistics} for the term (potentially expanded).
      *
      * @param termsData {@link TermsData} to update with the collected terms and stats.
-     * @return The number of expansions or matches in all segments; or 0 if this term
-     * does not match in any segment, in this case the phrase query can immediately stop.
+     * @return The number of expansions or matches in all segments; or 0 if this term does not match
+     *     in any segment, in this case the phrase query can immediately stop.
      */
     protected abstract int collectTermData(
         PhraseWildcardQuery query,
@@ -670,7 +715,8 @@ public class PhraseWildcardQuery extends Query {
         List<LeafReaderContext> segments,
         int remainingMultiTerms,
         int maxExpansionsForTerm,
-        TermsData termsData) throws IOException;
+        TermsData termsData)
+        throws IOException;
 
     protected abstract void toString(StringBuilder builder);
 
@@ -681,9 +727,7 @@ public class PhraseWildcardQuery extends Query {
     public abstract int hashCode();
   }
 
-  /**
-   * Phrase term with no expansion.
-   */
+  /** Phrase term with no expansion. */
   protected static class SingleTerm extends PhraseTerm {
 
     protected final Term term;
@@ -708,7 +752,8 @@ public class PhraseWildcardQuery extends Query {
         PhraseWildcardQuery query,
         IndexSearcher searcher,
         List<LeafReaderContext> segments,
-        TermsData termsData) throws IOException {
+        TermsData termsData)
+        throws IOException {
       return collectTermData(query, searcher, segments, 0, 0, termsData);
     }
 
@@ -719,7 +764,8 @@ public class PhraseWildcardQuery extends Query {
         List<LeafReaderContext> segments,
         int remainingMultiTerms,
         int maxExpansionsForTerm,
-        TermsData termsData) throws IOException {
+        TermsData termsData)
+        throws IOException {
       return query.collectSingleTermData(this, searcher, segments, termsData);
     }
 
@@ -743,9 +789,7 @@ public class PhraseWildcardQuery extends Query {
     }
   }
 
-  /**
-   * Phrase term with expansions.
-   */
+  /** Phrase term with expansions. */
   protected static class MultiTerm extends PhraseTerm {
 
     protected final MultiTermQuery query;
@@ -772,8 +816,10 @@ public class PhraseWildcardQuery extends Query {
         List<LeafReaderContext> segments,
         int remainingMultiTerms,
         int maxExpansionsForTerm,
-        TermsData termsData) throws IOException {
-      return query.collectMultiTermData(this, searcher, segments, remainingMultiTerms, maxExpansionsForTerm, termsData);
+        TermsData termsData)
+        throws IOException {
+      return query.collectMultiTermData(
+          this, searcher, segments, remainingMultiTerms, maxExpansionsForTerm, termsData);
     }
 
     @Override
@@ -797,8 +843,8 @@ public class PhraseWildcardQuery extends Query {
   }
 
   /**
-   * Holds the {@link TermState} and {@link TermStatistics} for all the matched
-   * and collected {@link Term}, for all phrase terms, for all segments.
+   * Holds the {@link TermState} and {@link TermStatistics} for all the matched and collected {@link
+   * Term}, for all phrase terms, for all segments.
    */
   protected static class TermsData {
 
@@ -841,10 +887,13 @@ public class PhraseWildcardQuery extends Query {
       builder.append(", termDataPerPosition=").append(Arrays.asList(termDataPerPosition));
       builder.append(", termsStatsList=[");
       for (TermStatistics termStatistics : termStatsList) {
-        builder.append("{")
+        builder
+            .append("{")
             .append(termStatistics.term().utf8ToString())
-            .append(", ").append(termStatistics.docFreq())
-            .append(", ").append(termStatistics.totalTermFreq())
+            .append(", ")
+            .append(termStatistics.docFreq())
+            .append(", ")
+            .append(termStatistics.totalTermFreq())
             .append("}");
       }
       builder.append("]");
@@ -854,8 +903,8 @@ public class PhraseWildcardQuery extends Query {
   }
 
   /**
-   * Holds the {@link TermState} for all the collected {@link Term},
-   * for a specific phrase term, for all segments.
+   * Holds the {@link TermState} for all the collected {@link Term}, for a specific phrase term, for
+   * all segments.
    */
   protected static class TermData {
 
@@ -870,11 +919,10 @@ public class PhraseWildcardQuery extends Query {
       terms = new ArrayList<>();
     }
 
-    /**
-     * Sets the collected list of {@link TermBytesTermState} for the given segment.
-     */
+    /** Sets the collected list of {@link TermBytesTermState} for the given segment. */
     @SuppressWarnings("unchecked")
-    protected void setTermStatesForSegment(LeafReaderContext leafReaderContext, List<TermBytesTermState> termStates) {
+    protected void setTermStatesForSegment(
+        LeafReaderContext leafReaderContext, List<TermBytesTermState> termStates) {
       if (termStatesPerSegment == null) {
         termStatesPerSegment = (List<TermBytesTermState>[]) new List<?>[numSegments];
         termsData.numTermsMatching++;
@@ -883,11 +931,13 @@ public class PhraseWildcardQuery extends Query {
     }
 
     /**
-     * @return The collected list of {@link TermBytesTermState} for the given segment;
-     * or null if this phrase term does not match in the given segment.
+     * @return The collected list of {@link TermBytesTermState} for the given segment; or null if
+     *     this phrase term does not match in the given segment.
      */
-    protected List<TermBytesTermState> getTermStatesForSegment(LeafReaderContext leafReaderContext) {
-      assert termStatesPerSegment != null : "No TermState for any segment; the query should have been stopped before";
+    protected List<TermBytesTermState> getTermStatesForSegment(
+        LeafReaderContext leafReaderContext) {
+      assert termStatesPerSegment != null
+          : "No TermState for any segment; the query should have been stopped before";
       return termStatesPerSegment[leafReaderContext.ord];
     }
 
@@ -907,9 +957,7 @@ public class PhraseWildcardQuery extends Query {
     }
   }
 
-  /**
-   * Holds a pair of term bytes - term state.
-   */
+  /** Holds a pair of term bytes - term state. */
   public static class TermBytesTermState {
 
     protected final BytesRef termBytes;
@@ -926,9 +974,7 @@ public class PhraseWildcardQuery extends Query {
     }
   }
 
-  /**
-   * Accumulates the doc freq and total term freq.
-   */
+  /** Accumulates the doc freq and total term freq. */
   public static class TermStats {
 
     protected final BytesRef termBytes;
@@ -955,11 +1001,10 @@ public class PhraseWildcardQuery extends Query {
 
   /**
    * Compares segments based of the number of terms they contain.
-   * <p>
-   * This is used to sort segments incrementally by number of terms. This
-   * way the first segment to search is the smallest, so a term has the lowest
-   * probability to match in this segment. And if the term does not match,
-   * we credit unused expansions when searching the other next segments.
+   *
+   * <p>This is used to sort segments incrementally by number of terms. This way the first segment
+   * to search is the smallest, so a term has the lowest probability to match in this segment. And
+   * if the term does not match, we credit unused expansions when searching the other next segments.
    */
   protected class SegmentTermsSizeComparator implements Comparator<LeafReaderContext> {
 
@@ -974,7 +1019,8 @@ public class PhraseWildcardQuery extends Query {
       }
     }
 
-    protected List<LeafReaderContext> createTermsSizeSortedCopyOf(List<LeafReaderContext> segments) throws IOException {
+    protected List<LeafReaderContext> createTermsSizeSortedCopyOf(List<LeafReaderContext> segments)
+        throws IOException {
       List<LeafReaderContext> copy = new ArrayList<>(segments);
       try {
         copy.sort(this);
@@ -993,9 +1039,7 @@ public class PhraseWildcardQuery extends Query {
     }
   }
 
-  /**
-   * Test counters incremented when assertions are enabled. Used only when testing.
-   */
+  /** Test counters incremented when assertions are enabled. Used only when testing. */
   protected static class TestCounters {
 
     private static final TestCounters SINGLETON = new TestCounters();
@@ -1050,14 +1094,14 @@ public class PhraseWildcardQuery extends Query {
       queryEarlyStopCount = 0;
     }
 
-//    protected void printTestCounters(TermsData termsData) {
-//      System.out.println("singleTermAnalysisCount=" + singleTermAnalysisCount);
-//      System.out.println("multiTermAnalysisCount=" + multiTermAnalysisCount);
-//      System.out.println("expansionCount=" + expansionCount);
-//      System.out.println("segmentUseCount=" + segmentUseCount);
-//      System.out.println("segmentSkipCount=" + segmentSkipCount);
-//      System.out.println("queryEarlyStopCount=" + queryEarlyStopCount);
-//      System.out.println(termsData);
-//    }
+    //    protected void printTestCounters(TermsData termsData) {
+    //      System.out.println("singleTermAnalysisCount=" + singleTermAnalysisCount);
+    //      System.out.println("multiTermAnalysisCount=" + multiTermAnalysisCount);
+    //      System.out.println("expansionCount=" + expansionCount);
+    //      System.out.println("segmentUseCount=" + segmentUseCount);
+    //      System.out.println("segmentSkipCount=" + segmentSkipCount);
+    //      System.out.println("queryEarlyStopCount=" + queryEarlyStopCount);
+    //      System.out.println(termsData);
+    //    }
   }
 }

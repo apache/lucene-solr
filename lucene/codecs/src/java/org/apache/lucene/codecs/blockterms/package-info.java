@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Pluggable term index / block terms dictionary implementations.
- */
+/** Pluggable term index / block terms dictionary implementations. */
 package org.apache.lucene.codecs.blockterms;

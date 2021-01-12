@@ -33,8 +33,7 @@ class AssertingMatches implements Matches {
   @Override
   public MatchesIterator getMatches(String field) throws IOException {
     MatchesIterator mi = in.getMatches(field);
-    if (mi == null)
-      return null;
+    if (mi == null) return null;
     return new AssertingMatchesIterator(mi);
   }
 
@@ -50,7 +49,7 @@ class AssertingMatches implements Matches {
 
   public static Matches unWrap(Matches m) {
     while (m instanceof AssertingMatches) {
-      m = (((AssertingMatches)m).in);
+      m = (((AssertingMatches) m).in);
     }
     return m;
   }

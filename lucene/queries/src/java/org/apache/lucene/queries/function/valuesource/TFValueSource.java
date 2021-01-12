@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -30,13 +29,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 
-/** 
- * Function that returns {@link TFIDFSimilarity#tf(float)}
- * for every document.
- * <p>
- * Note that the configured Similarity for the field must be
- * a subclass of {@link TFIDFSimilarity}
- * @lucene.internal */
+/**
+ * Function that returns {@link TFIDFSimilarity#tf(float)} for every document.
+ *
+ * <p>Note that the configured Similarity for the field must be a subclass of {@link
+ * TFIDFSimilarity}
+ *
+ * @lucene.internal
+ */
 public class TFValueSource extends TermFreqValueSource {
   public TFValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);
@@ -48,24 +48,29 @@ public class TFValueSource extends TermFreqValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final Terms terms = readerContext.reader().terms(indexedField);
-    IndexSearcher searcher = (IndexSearcher)context.get("searcher");
-    final TFIDFSimilarity similarity = IDFValueSource.asTFIDF(searcher.getSimilarity(), indexedField);
+    IndexSearcher searcher = (IndexSearcher) context.get("searcher");
+    final TFIDFSimilarity similarity =
+        IDFValueSource.asTFIDF(searcher.getSimilarity(), indexedField);
     if (similarity == null) {
-      throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as ClassicSimilarity)");
+      throw new UnsupportedOperationException(
+          "requires a TFIDFSimilarity (such as ClassicSimilarity)");
     }
 
     return new FloatDocValues(this) {
-      PostingsEnum docs ;
+      PostingsEnum docs;
       int atDoc;
       int lastDocRequested = -1;
 
-      { reset(); }
+      {
+        reset();
+      }
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
-        
+
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(indexedBytes)) {
@@ -78,52 +83,53 @@ public class TFValueSource extends TermFreqValueSource {
         }
 
         if (docs == null) {
-          docs = new PostingsEnum() {
-            @Override
-            public int freq() {
-              return 0;
-            }
+          docs =
+              new PostingsEnum() {
+                @Override
+                public int freq() {
+                  return 0;
+                }
 
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
+                @Override
+                public int nextPosition() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
+                @Override
+                public int startOffset() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
+                @Override
+                public int endOffset() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
-            }
+                @Override
+                public BytesRef getPayload() throws IOException {
+                  return null;
+                }
 
-            @Override
-            public int docID() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int docID() {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public int nextDoc() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int nextDoc() {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public int advance(int target) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int advance(int target) {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+                @Override
+                public long cost() {
+                  return 0;
+                }
+              };
         }
         atDoc = -1;
       }
@@ -150,7 +156,8 @@ public class TFValueSource extends TermFreqValueSource {
           // a match!
           return similarity.tf(docs.freq());
         } catch (IOException e) {
-          throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);
+          throw new RuntimeException(
+              "caught exception in function " + description() + " : doc=" + doc, e);
         }
       }
     };

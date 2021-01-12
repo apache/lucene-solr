@@ -21,53 +21,80 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestAxiomaticSimilarity extends LuceneTestCase {
 
   public void testIllegalS() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(Float.POSITIVE_INFINITY, 0.1f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(Float.POSITIVE_INFINITY, 0.1f);
+            });
     assertTrue(expected.getMessage().contains("illegal s value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(-1, 0.1f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(-1, 0.1f);
+            });
     assertTrue(expected.getMessage().contains("illegal s value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(Float.NaN, 0.1f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(Float.NaN, 0.1f);
+            });
     assertTrue(expected.getMessage().contains("illegal s value"));
   }
 
   public void testIllegalK() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(0.35f, 2f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(0.35f, 2f);
+            });
     assertTrue(expected.getMessage().contains("illegal k value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(0.35f, -1f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(0.35f, -1f);
+            });
     assertTrue(expected.getMessage().contains("illegal k value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(0.35f, Float.POSITIVE_INFINITY);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(0.35f, Float.POSITIVE_INFINITY);
+            });
     assertTrue(expected.getMessage().contains("illegal k value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(0.35f, Float.NaN);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(0.35f, Float.NaN);
+            });
     assertTrue(expected.getMessage().contains("illegal k value"));
   }
 
   public void testIllegalQL() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF3EXP(0.35f, -1);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF3EXP(0.35f, -1);
+            });
     assertTrue(expected.getMessage().contains("illegal query length value"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new AxiomaticF2EXP(0.35f, Integer.MAX_VALUE + 1);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new AxiomaticF2EXP(0.35f, Integer.MAX_VALUE + 1);
+            });
     assertTrue(expected.getMessage().contains("illegal k value"));
   }
 }

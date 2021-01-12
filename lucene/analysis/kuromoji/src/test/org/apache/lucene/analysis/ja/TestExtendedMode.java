@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,31 +29,32 @@ import org.apache.lucene.util.UnicodeUtil;
 
 public class TestExtendedMode extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.EXTENDED);
-        return new TokenStreamComponents(tokenizer, tokenizer);
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer =
+                new JapaneseTokenizer(newAttributeFactory(), null, true, Mode.EXTENDED);
+            return new TokenStreamComponents(tokenizer, tokenizer);
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /** simple test for supplementary characters */
   public void testSurrogates() throws IOException {
-    assertAnalyzesTo(analyzer, "𩬅艱鍟䇹愯瀛",
-      new String[] { "𩬅", "艱", "鍟", "䇹", "愯", "瀛" });
+    assertAnalyzesTo(analyzer, "𩬅艱鍟䇹愯瀛", new String[] {"𩬅", "艱", "鍟", "䇹", "愯", "瀛"});
   }
-  
+
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
     int numIterations = atLeast(500);
@@ -71,22 +70,22 @@ public class TestExtendedMode extends BaseTokenStreamTestCase {
       }
     }
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random, analyzer, 100 * RANDOM_MULTIPLIER);
   }
-  
+
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
   }
-  
+
   @Nightly
   public void testRandomHugeStringsAtNight() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 3 * RANDOM_MULTIPLIER, 8192);
   }
 }

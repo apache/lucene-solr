@@ -16,15 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 
-/**
- * A query that matches all documents.
- */
+/** A query that matches all documents. */
 public final class MatchAllDocsQuery extends Query {
 
   @Override
@@ -34,9 +30,11 @@ public final class MatchAllDocsQuery extends Query {
       public String toString() {
         return "weight(" + MatchAllDocsQuery.this + ")";
       }
+
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        return new ConstantScoreScorer(this, score(), scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
+        return new ConstantScoreScorer(
+            this, score(), scoreMode, DocIdSetIterator.all(context.reader().maxDoc()));
       }
 
       @Override
@@ -53,7 +51,8 @@ public final class MatchAllDocsQuery extends Query {
         final int maxDoc = context.reader().maxDoc();
         return new BulkScorer() {
           @Override
-          public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+          public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+              throws IOException {
             max = Math.min(max, maxDoc);
             ScoreAndDoc scorer = new ScoreAndDoc();
             scorer.score = score;
@@ -66,6 +65,7 @@ public final class MatchAllDocsQuery extends Query {
             }
             return max == maxDoc ? DocIdSetIterator.NO_MORE_DOCS : max;
           }
+
           @Override
           public long cost() {
             return maxDoc;

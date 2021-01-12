@@ -25,7 +25,8 @@ import java.util.Objects;
 class NotContainedByIntervalsSource extends DifferenceIntervalsSource {
 
   static IntervalsSource build(IntervalsSource minuend, IntervalsSource subtrahend) {
-    return Intervals.or(Disjunctions.pullUp(subtrahend, s -> new NotContainedByIntervalsSource(minuend, s)));
+    return Intervals.or(
+        Disjunctions.pullUp(subtrahend, s -> new NotContainedByIntervalsSource(minuend, s)));
   }
 
   private NotContainedByIntervalsSource(IntervalsSource minuend, IntervalsSource subtrahend) {
@@ -67,15 +68,18 @@ class NotContainedByIntervalsSource extends DifferenceIntervalsSource {
 
     @Override
     public int nextInterval() throws IOException {
-      if (bpos == false)
+      if (bpos == false) {
         return a.nextInterval();
+      }
       while (a.nextInterval() != NO_MORE_INTERVALS) {
         while (b.end() < a.end()) {
-          if (b.nextInterval() == NO_MORE_INTERVALS)
+          if (b.nextInterval() == NO_MORE_INTERVALS) {
             return a.start();
+          }
         }
-        if (a.start() < b.start())
+        if (a.start() < b.start()) {
           return a.start();
+        }
       }
       return NO_MORE_INTERVALS;
     }

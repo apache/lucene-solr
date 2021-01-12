@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -25,12 +24,10 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util.IOUtils;
@@ -43,21 +40,24 @@ import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * A {@link ContentSource} which reads the English Wikipedia dump. You can read
- * the .bz2 file directly (it will be decompressed on the fly). Config
- * properties:
+ * A {@link ContentSource} which reads the English Wikipedia dump. You can read the .bz2 file
+ * directly (it will be decompressed on the fly). Config properties:
+ *
  * <ul>
- * <li>keep.image.only.docs=false|true (default <b>true</b>).
- * <li>docs.file=&lt;path to the file&gt;
+ *   <li>keep.image.only.docs=false|true (default <b>true</b>).
+ *   <li>docs.file=&lt;path to the file&gt;
  * </ul>
  */
 public class EnwikiContentSource extends ContentSource {
 
   private static final SAXParserFactory SAX_PARSER_FACTORY = SAXParserFactory.newDefaultInstance();
+
   static {
     try {
       SAX_PARSER_FACTORY.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-    } catch (SAXNotRecognizedException | SAXNotSupportedException | ParserConfigurationException e) {
+    } catch (SAXNotRecognizedException
+        | SAXNotSupportedException
+        | ParserConfigurationException e) {
       throw new Error(e);
     }
   }
@@ -73,7 +73,7 @@ public class EnwikiContentSource extends ContentSource {
     private String body;
     private String time;
     private String id;
-    
+
     String[] next() throws NoMoreDataException {
       if (t == null) {
         threadDone = false;
@@ -82,8 +82,8 @@ public class EnwikiContentSource extends ContentSource {
         t.start();
       }
       String[] result;
-      synchronized(this){
-        while(tuple == null && nmde == null && !threadDone && !stopped) {
+      synchronized (this) {
+        while (tuple == null && nmde == null && !threadDone && !stopped) {
           try {
             wait();
           } catch (InterruptedException ie) {
@@ -109,7 +109,7 @@ public class EnwikiContentSource extends ContentSource {
         throw new NoMoreDataException();
       }
     }
-    
+
     String time(String original) {
       StringBuilder buffer = new StringBuilder();
 
@@ -124,15 +124,14 @@ public class EnwikiContentSource extends ContentSource {
 
       return buffer.toString();
     }
-    
+
     @Override
     public void characters(char[] ch, int start, int length) {
       contents.append(ch, start, length);
     }
 
     @Override
-    public void endElement(String namespace, String simple, String qualified)
-      throws SAXException {
+    public void endElement(String namespace, String simple, String qualified) throws SAXException {
       int elemType = getElementType(qualified);
       switch (elemType) {
         case PAGE:
@@ -144,7 +143,7 @@ public class EnwikiContentSource extends ContentSource {
             tmpTuple[DATE] = time.replace('\t', ' ');
             tmpTuple[BODY] = body.replaceAll("[\t\n]", " ");
             tmpTuple[ID] = id;
-            synchronized(this) {
+            synchronized (this) {
               while (tuple != null && !stopped) {
                 try {
                   wait();
@@ -159,8 +158,9 @@ public class EnwikiContentSource extends ContentSource {
           break;
         case BODY:
           body = contents.toString();
-          //workaround that startswith doesn't have an ignore case option, get at least 20 chars.
-          String startsWith = body.substring(0, Math.min(10, contents.length())).toLowerCase(Locale.ROOT);
+          // workaround that startswith doesn't have an ignore case option, get at least 20 chars.
+          String startsWith =
+              body.substring(0, Math.min(10, contents.length())).toLowerCase(Locale.ROOT);
           if (startsWith.startsWith("#redirect")) {
             body = null;
           }
@@ -172,7 +172,8 @@ public class EnwikiContentSource extends ContentSource {
           title = contents.toString();
           break;
         case ID:
-          //the doc id is the first one in the page.  All other ids after that one can be ignored according to the schema
+          // the doc id is the first one in the page.  All other ids after that one can be ignored
+          // according to the schema
           if (id == null) {
             id = contents.toString();
           }
@@ -187,14 +188,17 @@ public class EnwikiContentSource extends ContentSource {
 
       try {
         SAXParser reader = SAX_PARSER_FACTORY.newSAXParser();
-        while(!stopped){
+        while (!stopped) {
           final InputStream localFileIS = is;
-          if (localFileIS != null) { // null means fileIS was closed on us 
+          if (localFileIS != null) { // null means fileIS was closed on us
             try {
-              // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
-              reader.parse(new InputSource(IOUtils.getDecodingReader(localFileIS, StandardCharsets.UTF_8)), this);
+              // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so
+              // we simply provide reader.
+              reader.parse(
+                  new InputSource(IOUtils.getDecodingReader(localFileIS, StandardCharsets.UTF_8)),
+                  this);
             } catch (IOException ioe) {
-              synchronized(EnwikiContentSource.this) {
+              synchronized (EnwikiContentSource.this) {
                 if (localFileIS != is) {
                   // fileIS was closed on us, so, just fall through
                 } else
@@ -203,7 +207,7 @@ public class EnwikiContentSource extends ContentSource {
               }
             }
           }
-          synchronized(this) {
+          synchronized (this) {
             if (stopped || !forever) {
               nmde = new NoMoreDataException();
               notify();
@@ -217,7 +221,7 @@ public class EnwikiContentSource extends ContentSource {
       } catch (SAXException | IOException | ParserConfigurationException sae) {
         throw new RuntimeException(sae);
       } finally {
-        synchronized(this) {
+        synchronized (this) {
           threadDone = true;
           notify();
         }
@@ -225,8 +229,8 @@ public class EnwikiContentSource extends ContentSource {
     }
 
     @Override
-    public void startElement(String namespace, String simple, String qualified,
-                             Attributes attributes) {
+    public void startElement(
+        String namespace, String simple, String qualified, Attributes attributes) {
       int elemType = getElementType(qualified);
       switch (elemType) {
         case PAGE:
@@ -235,7 +239,7 @@ public class EnwikiContentSource extends ContentSource {
           time = null;
           id = null;
           break;
-        // intentional fall-through.
+          // intentional fall-through.
         case BODY:
         case DATE:
         case TITLE:
@@ -256,10 +260,9 @@ public class EnwikiContentSource extends ContentSource {
         }
       }
     }
-
   }
 
-  private static final Map<String,Integer> ELEMENTS = new HashMap<>();
+  private static final Map<String, Integer> ELEMENTS = new HashMap<>();
   private static final int TITLE = 0;
   private static final int DATE = TITLE + 1;
   private static final int BODY = DATE + 1;
@@ -269,9 +272,9 @@ public class EnwikiContentSource extends ContentSource {
   // should not be part of the tuple, we should define them after LENGTH.
   private static final int PAGE = LENGTH + 1;
 
-  private static final String[] months = {"JAN", "FEB", "MAR", "APR",
-                                  "MAY", "JUN", "JUL", "AUG",
-                                  "SEP", "OCT", "NOV", "DEC"};
+  private static final String[] months = {
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+  };
 
   static {
     ELEMENTS.put("page", Integer.valueOf(PAGE));
@@ -280,22 +283,22 @@ public class EnwikiContentSource extends ContentSource {
     ELEMENTS.put("title", Integer.valueOf(TITLE));
     ELEMENTS.put("id", Integer.valueOf(ID));
   }
-  
+
   /**
-   * Returns the type of the element if defined, otherwise returns -1. This
-   * method is useful in startElement and endElement, by not needing to compare
-   * the element qualified name over and over.
+   * Returns the type of the element if defined, otherwise returns -1. This method is useful in
+   * startElement and endElement, by not needing to compare the element qualified name over and
+   * over.
    */
-  private final static int getElementType(String elem) {
+  private static final int getElementType(String elem) {
     Integer val = ELEMENTS.get(elem);
     return val == null ? -1 : val.intValue();
   }
-  
+
   private Path file;
   private boolean keepImages = true;
   private InputStream is;
   private Parser parser = new Parser();
-  
+
   @Override
   public void close() throws IOException {
     synchronized (EnwikiContentSource.this) {
@@ -306,9 +309,10 @@ public class EnwikiContentSource extends ContentSource {
       }
     }
   }
-  
+
   @Override
-  public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
+  public synchronized DocData getNextDocData(DocData docData)
+      throws NoMoreDataException, IOException {
     String[] tuple = parser.next();
     docData.clear();
     docData.setName(tuple[ID]);
@@ -328,7 +332,7 @@ public class EnwikiContentSource extends ContentSource {
   protected InputStream openInputStream() throws IOException {
     return StreamUtils.inputStream(file);
   }
-  
+
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
@@ -338,5 +342,4 @@ public class EnwikiContentSource extends ContentSource {
       file = Paths.get(fileName).toAbsolutePath();
     }
   }
-  
 }

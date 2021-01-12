@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Provides range faceting capabilities. 
- */
+/** Provides range faceting capabilities. */
 package org.apache.lucene.facet.range;

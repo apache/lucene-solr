@@ -21,11 +21,13 @@ import java.io.Reader;
 import java.util.Map;
 import java.util.TreeMap;
 
-/** the purpose of this charfilter is to send offsets out of bounds
-  if the analyzer doesn't use correctOffset or does incorrect offset math. */
+/**
+ * the purpose of this charfilter is to send offsets out of bounds if the analyzer doesn't use
+ * correctOffset or does incorrect offset math.
+ */
 public class MockCharFilter extends CharFilter {
   final int remainder;
-  
+
   // for testing only
   public MockCharFilter(Reader in, int remainder) {
     super(in);
@@ -33,19 +35,20 @@ public class MockCharFilter extends CharFilter {
     // random seed?
     this.remainder = remainder;
     if (remainder < 0 || remainder >= 10) {
-      throw new IllegalArgumentException("invalid remainder parameter (must be 0..10): " + remainder);
+      throw new IllegalArgumentException(
+          "invalid remainder parameter (must be 0..10): " + remainder);
     }
   }
-  
+
   // for testing only, uses a remainder of 0
   public MockCharFilter(Reader in) {
     this(in, 0);
   }
-  
+
   int currentOffset = -1;
   int delta = 0;
   int bufferedCh = -1;
-  
+
   @Override
   public int read() throws IOException {
     // we have a buffered character, add an offset correction and return it
@@ -53,22 +56,23 @@ public class MockCharFilter extends CharFilter {
       int ch = bufferedCh;
       bufferedCh = -1;
       currentOffset++;
-      
-      addOffCorrectMap(currentOffset, delta-1);
+
+      addOffCorrectMap(currentOffset, delta - 1);
       delta--;
       return ch;
     }
-    
-    // otherwise actually read one    
+
+    // otherwise actually read one
     int ch = input.read();
-    if (ch < 0)
-      return ch;
-    
+    if (ch < 0) return ch;
+
     currentOffset++;
-    if ((ch % 10) != remainder || Character.isHighSurrogate((char)ch) || Character.isLowSurrogate((char)ch)) {
+    if ((ch % 10) != remainder
+        || Character.isHighSurrogate((char) ch)
+        || Character.isLowSurrogate((char) ch)) {
       return ch;
     }
-    
+
     // we will double this character, so buffer it.
     bufferedCh = ch;
     return ch;
@@ -88,15 +92,15 @@ public class MockCharFilter extends CharFilter {
 
   @Override
   public int correct(int currentOff) {
-    Map.Entry<Integer,Integer> lastEntry = corrections.lowerEntry(currentOff+1);
+    Map.Entry<Integer, Integer> lastEntry = corrections.lowerEntry(currentOff + 1);
     int ret = lastEntry == null ? currentOff : currentOff + lastEntry.getValue();
-    assert ret >= 0 : "currentOff=" + currentOff + ",diff=" + (ret-currentOff);
+    assert ret >= 0 : "currentOff=" + currentOff + ",diff=" + (ret - currentOff);
     return ret;
   }
-  
+
   protected void addOffCorrectMap(int off, int cumulativeDiff) {
     corrections.put(off, cumulativeDiff);
   }
-  
-  TreeMap<Integer,Integer> corrections = new TreeMap<>();
+
+  TreeMap<Integer, Integer> corrections = new TreeMap<>();
 }

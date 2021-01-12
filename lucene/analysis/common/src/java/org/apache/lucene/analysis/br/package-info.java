@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Brazilian Portuguese.
- */
+/** Analyzer for Brazilian Portuguese. */
 package org.apache.lucene.analysis.br;

@@ -30,5 +30,4 @@ public class IndexToolsFactory {
   public IndexTools newInstance(IndexReader reader, boolean useCompound, boolean keepAllCommits) {
     return new IndexToolsImpl(reader, useCompound, keepAllCommits);
   }
-
 }

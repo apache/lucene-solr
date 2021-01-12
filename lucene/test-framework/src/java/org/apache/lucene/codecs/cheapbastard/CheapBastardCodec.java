@@ -21,16 +21,16 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.TestUtil;
 
 /** Codec that tries to use as little ram as possible because he spent all his money on beer */
-// TODO: better name :) 
+// TODO: better name :)
 // but if we named it "LowMemory" in codecs/ package, it would be irresistible like optimize()!
 public class CheapBastardCodec extends FilterCodec {
-  
+
   private final PostingsFormat postings = TestUtil.getDefaultPostingsFormat(100, 200);
 
   public CheapBastardCodec() {
     super("CheapBastard", TestUtil.getDefaultCodec());
   }
-  
+
   @Override
   public PostingsFormat postingsFormat() {
     return postings;

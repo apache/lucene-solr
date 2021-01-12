@@ -34,7 +34,7 @@ public class CorruptingIndexOutput extends IndexOutput {
   }
 
   @Override
-  public String getName() {    
+  public String getName() {
     return out.getName();
   }
 
@@ -42,7 +42,8 @@ public class CorruptingIndexOutput extends IndexOutput {
   public void close() throws IOException {
     if (closed == false) {
       out.close();
-      // NOTE: must corrupt after file is closed, because if we corrupt "inlined" (as bytes are being written) the checksum sees the wrong
+      // NOTE: must corrupt after file is closed, because if we corrupt "inlined" (as bytes are
+      // being written) the checksum sees the wrong
       // bytes and is "correct"!!
       corruptFile();
       closed = true;
@@ -52,18 +53,24 @@ public class CorruptingIndexOutput extends IndexOutput {
   protected void corruptFile() throws IOException {
     // Now corrupt the specfied byte:
     String newTempName;
-    try(IndexOutput tmpOut = dir.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
+    try (IndexOutput tmpOut = dir.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
         IndexInput in = dir.openInput(out.getName(), IOContext.DEFAULT)) {
       newTempName = tmpOut.getName();
 
       if (byteToCorrupt >= in.length()) {
-        throw new IllegalArgumentException("byteToCorrupt=" + byteToCorrupt + " but file \"" + out.getName() + "\" is only length=" + in.length());
+        throw new IllegalArgumentException(
+            "byteToCorrupt="
+                + byteToCorrupt
+                + " but file \""
+                + out.getName()
+                + "\" is only length="
+                + in.length());
       }
 
       tmpOut.copyBytes(in, byteToCorrupt);
       // Flip the 0th bit:
       tmpOut.writeByte((byte) (in.readByte() ^ 1));
-      tmpOut.copyBytes(in, in.length()-byteToCorrupt-1);
+      tmpOut.copyBytes(in, in.length() - byteToCorrupt - 1);
     }
 
     // Delete original and copy corrupt version back:
@@ -94,8 +101,8 @@ public class CorruptingIndexOutput extends IndexOutput {
 
   @Override
   public void writeBytes(byte[] b, int offset, int length) throws IOException {
-    for(int i=0;i<length;i++) {
-      writeByte(b[offset+i]);
+    for (int i = 0; i < length; i++) {
+      writeByte(b[offset + i]);
     }
   }
 }

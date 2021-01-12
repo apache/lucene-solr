@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.facet;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -33,8 +34,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-
 public class TestFacetQuery extends FacetTestCase {
 
   private static Directory indexDirectory;
@@ -44,19 +43,24 @@ public class TestFacetQuery extends FacetTestCase {
   private static FacetsConfig config;
 
   private static final IndexableField[] DOC_SINGLEVALUED =
-          new IndexableField[] { new SortedSetDocValuesFacetField("Author", "Mark Twain") };
+      new IndexableField[] {new SortedSetDocValuesFacetField("Author", "Mark Twain")};
 
   private static final IndexableField[] DOC_MULTIVALUED =
-          new SortedSetDocValuesFacetField[] { new SortedSetDocValuesFacetField("Author", "Kurt Vonnegut") };
+      new SortedSetDocValuesFacetField[] {
+        new SortedSetDocValuesFacetField("Author", "Kurt Vonnegut")
+      };
 
   private static final IndexableField[] DOC_NOFACET =
-          new IndexableField[] { new TextField("Hello", "World", Field.Store.YES) };
+      new IndexableField[] {new TextField("Hello", "World", Field.Store.YES)};
 
   @BeforeClass
   public static void createTestIndex() throws IOException {
     indexDirectory = newDirectory();
     // create and open an index writer
-    indexWriter = new RandomIndexWriter(random(), indexDirectory,
+    indexWriter =
+        new RandomIndexWriter(
+            random(),
+            indexDirectory,
             newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
 
     config = new FacetsConfig();
@@ -96,8 +100,11 @@ public class TestFacetQuery extends FacetTestCase {
 
   @Test
   public void testMultiValued() throws Exception {
-    TopDocs topDocs = searcher.search(
-            new MultiFacetQuery("Author", new String[] { "Mark Twain" }, new String[] { "Kurt Vonnegut" }), 10);
+    TopDocs topDocs =
+        searcher.search(
+            new MultiFacetQuery(
+                "Author", new String[] {"Mark Twain"}, new String[] {"Kurt Vonnegut"}),
+            10);
     assertEquals(2, topDocs.totalHits.value);
   }
 }

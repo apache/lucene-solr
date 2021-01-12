@@ -17,12 +17,10 @@
 package org.apache.lucene.backward_codecs.lucene86;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 
-/**
- * RW impersonation of {@link Lucene86Codec}.
- */
+/** RW impersonation of {@link Lucene86Codec}. */
 public class Lucene86RWCodec extends Lucene86Codec {
 
   private final StoredFieldsFormat storedFieldsFormat;
@@ -41,5 +39,4 @@ public class Lucene86RWCodec extends Lucene86Codec {
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
-
 }

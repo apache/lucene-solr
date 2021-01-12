@@ -25,19 +25,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.util.IOUtils;
 
-/** Handles copying one set of files, e.g. all files for a new NRT point, or files for pre-copying a merged segment.
- *  This notifies the caller via OnceDone when the job finishes or failed.
+/**
+ * Handles copying one set of files, e.g. all files for a new NRT point, or files for pre-copying a
+ * merged segment. This notifies the caller via OnceDone when the job finishes or failed.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public abstract class CopyJob implements Comparable<CopyJob> {
-  private final static AtomicLong counter = new AtomicLong();
+  private static final AtomicLong counter = new AtomicLong();
   protected final ReplicaNode dest;
 
-  protected final Map<String,FileMetaData> files;
+  protected final Map<String, FileMetaData> files;
 
   public final long ord = counter.incrementAndGet();
 
@@ -50,7 +51,7 @@ public abstract class CopyJob implements Comparable<CopyJob> {
 
   public final String reason;
 
-  protected final List<Map.Entry<String,FileMetaData>> toCopy;
+  protected final List<Map.Entry<String, FileMetaData>> toCopy;
 
   protected long totBytes;
 
@@ -64,9 +65,15 @@ public abstract class CopyJob implements Comparable<CopyJob> {
   protected volatile String cancelReason;
 
   // toString may concurrently access this:
-  protected final Map<String,String> copiedFiles = new ConcurrentHashMap<>();
+  protected final Map<String, String> copiedFiles = new ConcurrentHashMap<>();
 
-  protected CopyJob(String reason, Map<String,FileMetaData> files, ReplicaNode dest, boolean highPriority, OnceDone onceDone) throws IOException {
+  protected CopyJob(
+      String reason,
+      Map<String, FileMetaData> files,
+      ReplicaNode dest,
+      boolean highPriority,
+      OnceDone onceDone)
+      throws IOException {
     this.reason = reason;
     this.files = files;
     this.dest = dest;
@@ -87,9 +94,12 @@ public abstract class CopyJob implements Comparable<CopyJob> {
     public void run(CopyJob job) throws IOException;
   }
 
-  /** Transfers whatever tmp files were already copied in this previous job and cancels the previous job */
+  /**
+   * Transfers whatever tmp files were already copied in this previous job and cancels the previous
+   * job
+   */
   public synchronized void transferAndCancel(CopyJob prevJob) throws IOException {
-    synchronized(prevJob) {
+    synchronized (prevJob) {
       dest.message("CopyJob: now transfer prevJob " + prevJob);
       try {
         _transferAndCancel(prevJob);
@@ -116,19 +126,27 @@ public abstract class CopyJob implements Comparable<CopyJob> {
     prevJob.exc = new Throwable();
 
     // Carry over already copied files that we also want to copy
-    Iterator<Map.Entry<String,FileMetaData>> it = toCopy.iterator();
+    Iterator<Map.Entry<String, FileMetaData>> it = toCopy.iterator();
     long bytesAlreadyCopied = 0;
 
     // Iterate over all files we think we need to copy:
     while (it.hasNext()) {
-      Map.Entry<String,FileMetaData> ent = it.next();
+      Map.Entry<String, FileMetaData> ent = it.next();
       String fileName = ent.getKey();
       String prevTmpFileName = prevJob.copiedFiles.get(fileName);
       if (prevTmpFileName != null) {
-        // This fileName is common to both jobs, and the old job already finished copying it (to a temp file), so we keep it:
+        // This fileName is common to both jobs, and the old job already finished copying it (to a
+        // temp file), so we keep it:
         long fileLength = ent.getValue().length;
         bytesAlreadyCopied += fileLength;
-        dest.message("xfer: carry over already-copied file " + fileName + " (" + prevTmpFileName + ", " + fileLength + " bytes)");
+        dest.message(
+            "xfer: carry over already-copied file "
+                + fileName
+                + " ("
+                + prevTmpFileName
+                + ", "
+                + fileLength
+                + " bytes)");
         copiedFiles.put(fileName, prevTmpFileName);
 
         // So we don't try to delete it, below:
@@ -137,20 +155,34 @@ public abstract class CopyJob implements Comparable<CopyJob> {
         // So it's not in our copy list anymore:
         it.remove();
       } else if (prevJob.current != null && prevJob.current.name.equals(fileName)) {
-        // This fileName is common to both jobs, and it's the file that the previous job was in the process of copying.  In this case
-        // we continue copying it from the prevoius job.  This is important for cases where we are copying over a large file
-        // because otherwise we could keep failing the NRT copy and restarting this file from the beginning and never catch up:
-        dest.message("xfer: carry over in-progress file " + fileName + " (" + prevJob.current.tmpName + ") bytesCopied=" + prevJob.current.getBytesCopied() + " of " + prevJob.current.bytesToCopy);
+        // This fileName is common to both jobs, and it's the file that the previous job was in the
+        // process of copying.  In this case
+        // we continue copying it from the prevoius job.  This is important for cases where we are
+        // copying over a large file
+        // because otherwise we could keep failing the NRT copy and restarting this file from the
+        // beginning and never catch up:
+        dest.message(
+            "xfer: carry over in-progress file "
+                + fileName
+                + " ("
+                + prevJob.current.tmpName
+                + ") bytesCopied="
+                + prevJob.current.getBytesCopied()
+                + " of "
+                + prevJob.current.bytesToCopy);
         bytesAlreadyCopied += prevJob.current.getBytesCopied();
 
         assert current == null;
 
-        // must set current first, before writing/read to c.in/out in case that hits an exception, so that we then close the temp
+        // must set current first, before writing/read to c.in/out in case that hits an exception,
+        // so that we then close the temp
         // IndexOutput when cancelling ourselves:
         current = newCopyOneFile(prevJob.current);
 
-        // Tell our new (primary) connection we'd like to copy this file first, but resuming from how many bytes we already copied last time:
-        // We do this even if bytesToCopy == bytesCopied, because we still need to readLong() the checksum from the primary connection:
+        // Tell our new (primary) connection we'd like to copy this file first, but resuming from
+        // how many bytes we already copied last time:
+        // We do this even if bytesToCopy == bytesCopied, because we still need to readLong() the
+        // checksum from the primary connection:
         assert prevJob.current.getBytesCopied() <= prevJob.current.bytesToCopy;
 
         prevJob.current = null;
@@ -169,7 +201,7 @@ public abstract class CopyJob implements Comparable<CopyJob> {
     dest.message("xfer: now delete old temp files: " + prevJob.copiedFiles.values());
     IOUtils.deleteFilesIgnoringExceptions(dest.dir, prevJob.copiedFiles.values());
 
-    if (prevJob.current != null) { 
+    if (prevJob.current != null) {
       IOUtils.closeWhileHandlingException(prevJob.current);
       if (Node.VERBOSE_FILES) {
         dest.message("remove partial file " + prevJob.current.tmpName);
@@ -184,7 +216,10 @@ public abstract class CopyJob implements Comparable<CopyJob> {
   /** Begin copying files */
   public abstract void start() throws IOException;
 
-  /** Use current thread (blocking) to do all copying and then return once done, or throw exception on failure */
+  /**
+   * Use current thread (blocking) to do all copying and then return once done, or throw exception
+   * on failure
+   */
   public abstract void runBlocking() throws Exception;
 
   public void cancel(String reason, Throwable exc) throws IOException {
@@ -193,10 +228,14 @@ public abstract class CopyJob implements Comparable<CopyJob> {
       return;
     }
 
-    dest.message(String.format(Locale.ROOT, "top: cancel after copying %s; exc=%s:\n  files=%s\n  copiedFiles=%s",
-                               Node.bytesToString(totBytesCopied),
-                               exc,
-                               files == null ? "null" : files.keySet(), copiedFiles.keySet()));
+    dest.message(
+        String.format(
+            Locale.ROOT,
+            "top: cancel after copying %s; exc=%s:\n  files=%s\n  copiedFiles=%s",
+            Node.bytesToString(totBytesCopied),
+            exc,
+            files == null ? "null" : files.keySet(),
+            copiedFiles.keySet()));
 
     if (exc == null) {
       exc = new Throwable();
@@ -208,7 +247,7 @@ public abstract class CopyJob implements Comparable<CopyJob> {
     // Delete all temp files we wrote:
     IOUtils.deleteFilesIgnoringExceptions(dest.dir, copiedFiles.values());
 
-    if (current != null) { 
+    if (current != null) {
       IOUtils.closeWhileHandlingException(current);
       if (Node.VERBOSE_FILES) {
         dest.message("remove partial file " + current.tmpName);

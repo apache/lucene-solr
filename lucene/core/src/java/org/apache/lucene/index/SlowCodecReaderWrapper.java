@@ -16,36 +16,33 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.util.Bits;
 
 /**
- * Wraps arbitrary readers for merging. Note that this can cause slow
- * and memory-intensive merges. Consider using {@link FilterCodecReader}
- * instead.
+ * Wraps arbitrary readers for merging. Note that this can cause slow and memory-intensive merges.
+ * Consider using {@link FilterCodecReader} instead.
  */
 public final class SlowCodecReaderWrapper {
-  
+
   /** No instantiation */
   private SlowCodecReaderWrapper() {}
-  
+
   /**
-   * Returns a {@code CodecReader} view of reader. 
-   * <p>
-   * If {@code reader} is already a {@code CodecReader}, it is returned
-   * directly. Otherwise, a (slow) view is returned.
+   * Returns a {@code CodecReader} view of reader.
+   *
+   * <p>If {@code reader} is already a {@code CodecReader}, it is returned directly. Otherwise, a
+   * (slow) view is returned.
    */
   public static CodecReader wrap(final LeafReader reader) throws IOException {
     if (reader instanceof CodecReader) {
@@ -157,14 +154,12 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
         return 0;
       }
-
     };
   }
 
@@ -181,8 +176,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
@@ -205,8 +199,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
@@ -249,8 +242,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
@@ -277,8 +269,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
@@ -305,8 +296,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {
@@ -345,8 +335,7 @@ public final class SlowCodecReaderWrapper {
       }
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {

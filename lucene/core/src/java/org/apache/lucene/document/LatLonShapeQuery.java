@@ -17,7 +17,8 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
-
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
@@ -27,15 +28,14 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed cartesian shapes that comply the given {@link QueryRelation} with
- * the specified array of {@link LatLonGeometry}.
+ * Finds all previously indexed geo shapes that comply the given {@link QueryRelation} with the
+ * specified array of {@link LatLonGeometry}.
  *
  * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
- *
- **/
-final class LatLonShapeQuery extends ShapeQuery {
-  final private LatLonGeometry[] geometries;
-  final private Component2D component2D;
+ */
+final class LatLonShapeQuery extends SpatialQuery {
+  private final LatLonGeometry[] geometries;
+  private final Component2D component2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided array of {@link LatLonGeometry}
@@ -46,116 +46,162 @@ final class LatLonShapeQuery extends ShapeQuery {
       for (LatLonGeometry geometry : geometries) {
         if (geometry instanceof Line) {
           // TODO: line queries do not support within relations
-          throw new IllegalArgumentException("LatLonShapeQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
+          throw new IllegalArgumentException(
+              "LatLonShapeQuery does not support "
+                  + QueryRelation.WITHIN
+                  + " queries with line geometries");
         }
       }
-
     }
     this.component2D = LatLonGeometry.create(geometries);
     this.geometries = geometries.clone();
   }
 
   @Override
-  protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+  protected SpatialVisitor getSpatialVisitor() {
 
-    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    return new SpatialVisitor() {
+      @Override
+      protected Relation relate(byte[] minTriangle, byte[] maxTriangle) {
+        double minLat =
+            GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, 0));
+        double minLon =
+            GeoEncodingUtils.decodeLongitude(
+                NumericUtils.sortableBytesToInt(minTriangle, ShapeField.BYTES));
+        double maxLat =
+            GeoEncodingUtils.decodeLatitude(
+                NumericUtils.sortableBytesToInt(maxTriangle, 2 * ShapeField.BYTES));
+        double maxLon =
+            GeoEncodingUtils.decodeLongitude(
+                NumericUtils.sortableBytesToInt(maxTriangle, 3 * ShapeField.BYTES));
 
-    // check internal node against query
-    return component2D.relate(minLon, maxLon, minLat, maxLat);
-  }
+        // check internal node against query
+        return component2D.relate(minLon, maxLon, minLat, maxLat);
+      }
 
-  @Override
-  protected boolean queryIntersects(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Predicate<byte[]> intersects() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        return component2D.contains(alon, alat);
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                return component2D.contains(alon, alat);
+              }
+            case LINE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                return component2D.intersectsLine(alon, alat, blon, blat);
+              }
+            case TRIANGLE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+                double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+                return component2D.intersectsTriangle(alon, alat, blon, blat, clon, clat);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        return component2D.intersectsLine(alon, alat, blon, blat);
-      }
-      case TRIANGLE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-        double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.intersectsTriangle(alon, alat, blon, blat, clon, clat);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
-  }
 
-  @Override
-  protected boolean queryContains(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Predicate<byte[]> within() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        return component2D.contains(alon, alat);
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                return component2D.contains(alon, alat);
+              }
+            case LINE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                return component2D.containsLine(alon, alat, blon, blat);
+              }
+            case TRIANGLE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+                double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+                return component2D.containsTriangle(alon, alat, blon, blat, clon, clat);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        return component2D.containsLine(alon, alat, blon, blat);
-      }
-      case TRIANGLE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-        double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.containsTriangle(alon, alat, blon, blat, clon, clat);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
-  }
 
-  @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Function<byte[], Component2D.WithinRelation> contains() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        return component2D.withinPoint(alon, alat);
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                return component2D.withinPoint(alon, alat);
+              }
+            case LINE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                return component2D.withinLine(alon, alat, scratchTriangle.ab, blon, blat);
+              }
+            case TRIANGLE:
+              {
+                double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+                double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+                double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+                double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+                double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+                double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+                return component2D.withinTriangle(
+                    alon,
+                    alat,
+                    scratchTriangle.ab,
+                    blon,
+                    blat,
+                    scratchTriangle.bc,
+                    clon,
+                    clat,
+                    scratchTriangle.ca);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        return component2D.withinLine(alon, alat, scratchTriangle.ab, blon, blat);
-      }
-      case TRIANGLE: {
-        double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-        double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-        double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-        double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-        double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-        double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
-        return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
+    };
   }
 
   @Override
@@ -179,7 +225,7 @@ final class LatLonShapeQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeQuery)o).geometries);
+    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeQuery) o).geometries);
   }
 
   @Override

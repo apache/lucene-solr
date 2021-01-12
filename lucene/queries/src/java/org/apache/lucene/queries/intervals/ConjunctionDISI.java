@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.queries.intervals;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.CollectionUtil;
 
-/** A conjunction of DocIdSetIterators.
- * This iterates over the doc ids that are present in each given DocIdSetIterator.
+/**
+ * A conjunction of DocIdSetIterators. This iterates over the doc ids that are present in each given
+ * DocIdSetIterator.
+ *
  * @lucene.internal
  */
 final class ConjunctionDISI extends DocIdSetIterator {
@@ -48,8 +48,8 @@ final class ConjunctionDISI extends DocIdSetIterator {
   private static void addIterator(DocIdSetIterator disi, List<DocIdSetIterator> allIterators) {
     if (disi.getClass() == ConjunctionDISI.class) { // Check for exactly this class for collapsing
       ConjunctionDISI conjunction = (ConjunctionDISI) disi;
-      // subconjuctions have already split themselves into two phase iterators and others, so we can take those
-      // iterators as they are and move them up to this conjunction
+      // subconjuctions have already split themselves into two phase iterators and others, so we can
+      // take those iterators as they are and move them up to this conjunction
       allIterators.add(conjunction.lead1);
       allIterators.add(conjunction.lead2);
       Collections.addAll(allIterators, conjunction.others);
@@ -72,7 +72,8 @@ final class ConjunctionDISI extends DocIdSetIterator {
   }
 
   private int doNext(int doc) throws IOException {
-    advanceHead: for(;;) {
+    advanceHead:
+    for (; ; ) {
       assert doc == lead1.docID();
 
       // find agreement between the two iterators with the lower costs
@@ -125,5 +126,4 @@ final class ConjunctionDISI extends DocIdSetIterator {
   public long cost() {
     return lead1.cost(); // overestimate
   }
-
 }

@@ -17,11 +17,10 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import java.io.IOException;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
-import java.io.IOException;
-
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -121,7 +120,11 @@ public final class TabbedPaneProvider implements TabSwitcherProxy.TabSwitcher {
 
   /** tabs in the main frame */
   public enum Tab {
-    OVERVIEW(0), DOCUMENTS(1), SEARCH(2), ANALYZER(3), COMMITS(4);
+    OVERVIEW(0),
+    DOCUMENTS(1),
+    SEARCH(2),
+    ANALYZER(3),
+    COMMITS(4);
 
     private int tabIdx;
 
@@ -133,5 +136,4 @@ public final class TabbedPaneProvider implements TabSwitcherProxy.TabSwitcher {
       return tabIdx;
     }
   }
-
 }

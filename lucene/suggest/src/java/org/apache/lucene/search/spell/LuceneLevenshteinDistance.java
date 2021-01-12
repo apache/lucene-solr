@@ -19,29 +19,25 @@ package org.apache.lucene.search.spell;
 import org.apache.lucene.util.IntsRef;
 
 /**
- *  Damerau-Levenshtein (optimal string alignment) implemented in a consistent 
- *  way as Lucene's FuzzyTermsEnum with the transpositions option enabled.
- *  
- *  Notes:
- *  <ul>
- *    <li> This metric treats full unicode codepoints as characters
- *    <li> This metric scales raw edit distances into a floating point score
- *         based upon the shortest of the two terms
- *    <li> Transpositions of two adjacent codepoints are treated as primitive 
- *         edits.
- *    <li> Edits are applied in parallel: for example, "ab" and "bca" have 
- *         distance 3.
- *  </ul>
- *  
- *  NOTE: this class is not particularly efficient. It is only intended
- *  for merging results from multiple DirectSpellCheckers.
+ * Damerau-Levenshtein (optimal string alignment) implemented in a consistent way as Lucene's
+ * FuzzyTermsEnum with the transpositions option enabled.
+ *
+ * <p>Notes:
+ *
+ * <ul>
+ *   <li>This metric treats full unicode codepoints as characters
+ *   <li>This metric scales raw edit distances into a floating point score based upon the shortest
+ *       of the two terms
+ *   <li>Transpositions of two adjacent codepoints are treated as primitive edits.
+ *   <li>Edits are applied in parallel: for example, "ab" and "bca" have distance 3.
+ * </ul>
+ *
+ * NOTE: this class is not particularly efficient. It is only intended for merging results from
+ * multiple DirectSpellCheckers.
  */
 public final class LuceneLevenshteinDistance implements StringDistance {
 
-  /**
-   * Creates a new comparator, mimicing the behavior of Lucene's internal
-   * edit distance.
-   */
+  /** Creates a new comparator, mimicing the behavior of Lucene's internal edit distance. */
   public LuceneLevenshteinDistance() {}
 
   @Override
@@ -51,10 +47,10 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     int n;
     int d[][]; // cost array
 
-    // NOTE: if we cared, we could 3*m space instead of m*n space, similar to 
-    // what LevenshteinDistance does, except cycling thru a ring of three 
-    // horizontal cost arrays... but this comparator is never actually used by 
-    // DirectSpellChecker, it's only used for merging results from multiple shards 
+    // NOTE: if we cared, we could 3*m space instead of m*n space, similar to
+    // what LevenshteinDistance does, except cycling thru a ring of three
+    // horizontal cost arrays... but this comparator is never actually used by
+    // DirectSpellChecker, it's only used for merging results from multiple shards
     // in "distributed spellcheck", and it's inefficient in other ways too...
 
     // cheaper to do this up front once
@@ -62,13 +58,12 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     otherPoints = toIntsRef(other);
     n = targetPoints.length;
     final int m = otherPoints.length;
-    d = new int[n+1][m+1];
+    d = new int[n + 1][m + 1];
 
     if (n == 0 || m == 0) {
       if (n == m) {
         return 0;
-      }
-      else {
+      } else {
         return Math.max(n, m);
       }
     }
@@ -81,24 +76,27 @@ public final class LuceneLevenshteinDistance implements StringDistance {
 
     int cost; // cost
 
-    for (i = 0; i<=n; i++) {
+    for (i = 0; i <= n; i++) {
       d[i][0] = i;
     }
 
-    for (j = 0; j<=m; j++) {
+    for (j = 0; j <= m; j++) {
       d[0][j] = j;
     }
 
-    for (j = 1; j<=m; j++) {
-      t_j = otherPoints.ints[j-1];
+    for (j = 1; j <= m; j++) {
+      t_j = otherPoints.ints[j - 1];
 
-      for (i=1; i<=n; i++) {
-        cost = targetPoints.ints[i-1]==t_j ? 0 : 1;
+      for (i = 1; i <= n; i++) {
+        cost = targetPoints.ints[i - 1] == t_j ? 0 : 1;
         // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
-        d[i][j] = Math.min(Math.min(d[i-1][j]+1, d[i][j-1]+1), d[i-1][j-1]+cost);
+        d[i][j] = Math.min(Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1), d[i - 1][j - 1] + cost);
         // transposition
-        if (i > 1 && j > 1 && targetPoints.ints[i-1] == otherPoints.ints[j-2] && targetPoints.ints[i-2] == otherPoints.ints[j-1]) {
-          d[i][j] = Math.min(d[i][j], d[i-2][j-2] + cost);
+        if (i > 1
+            && j > 1
+            && targetPoints.ints[i - 1] == otherPoints.ints[j - 2]
+            && targetPoints.ints[i - 2] == otherPoints.ints[j - 1]) {
+          d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
         }
       }
     }
@@ -127,5 +125,4 @@ public final class LuceneLevenshteinDistance implements StringDistance {
     // constant hashCode since all instances of this class are equal()
     return 6;
   }
-
 }

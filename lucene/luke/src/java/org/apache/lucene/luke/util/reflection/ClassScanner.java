@@ -29,14 +29,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.util.LoggerFactory;
 import org.apache.lucene.util.NamedThreadFactory;
 
-/**
- * Utility class for scanning class files in jars.
- */
+/** Utility class for scanning class files in jars. */
 public class ClassScanner {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,7 +60,8 @@ public class ClassScanner {
         collectors.get(i % numThreads).addUrl(urls.get(i));
       }
 
-      ExecutorService executorService = Executors.newFixedThreadPool(numThreads, new NamedThreadFactory("scanner-scan-subtypes"));
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(numThreads, new NamedThreadFactory("scanner-scan-subtypes"));
       for (SubtypeCollector<T> collector : collectors) {
         executorService.submit(collector);
       }
@@ -101,7 +99,7 @@ public class ClassScanner {
         }
       }
     }
-    return  urls;
+    return urls;
   }
 
   private static String resourceName(String packageName) {

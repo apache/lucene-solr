@@ -31,5 +31,5 @@ public class TestAssertingTermVectorsFormat extends BaseTermVectorsFormatTestCas
   @Override
   protected Codec getCodec() {
     return codec;
-  } 
+  }
 }

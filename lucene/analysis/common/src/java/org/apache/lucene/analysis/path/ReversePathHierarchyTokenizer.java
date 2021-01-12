@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.path;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -28,8 +27,8 @@ import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Tokenizer for domain-like hierarchies.
- * <p>
- * Take something like:
+ *
+ * <p>Take something like:
  *
  * <pre>
  * www.site.co.uk
@@ -43,7 +42,6 @@ import org.apache.lucene.util.AttributeFactory;
  * co.uk
  * uk
  * </pre>
- *
  */
 public class ReversePathHierarchyTokenizer extends Tokenizer {
 
@@ -68,23 +66,24 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   }
 
   public ReversePathHierarchyTokenizer(char delimiter, int skip) {
-    this( DEFAULT_BUFFER_SIZE, delimiter, delimiter, skip);
+    this(DEFAULT_BUFFER_SIZE, delimiter, delimiter, skip);
   }
 
   public ReversePathHierarchyTokenizer(char delimiter, char replacement, int skip) {
     this(DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public ReversePathHierarchyTokenizer
-      (AttributeFactory factory, char delimiter, char replacement, int skip) {
+  public ReversePathHierarchyTokenizer(
+      AttributeFactory factory, char delimiter, char replacement, int skip) {
     this(factory, DEFAULT_BUFFER_SIZE, delimiter, replacement, skip);
   }
 
-  public ReversePathHierarchyTokenizer( int bufferSize, char delimiter, char replacement, int skip) {
+  public ReversePathHierarchyTokenizer(int bufferSize, char delimiter, char replacement, int skip) {
     this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, bufferSize, delimiter, replacement, skip);
   }
-  public ReversePathHierarchyTokenizer
-      (AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {
+
+  public ReversePathHierarchyTokenizer(
+      AttributeFactory factory, int bufferSize, char delimiter, char replacement, int skip) {
     super(factory);
     if (bufferSize < 0) {
       throw new IllegalArgumentException("bufferSize cannot be negative");
@@ -98,7 +97,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
     this.skip = skip;
     resultToken = new StringBuilder(bufferSize);
     resultTokenBuffer = new char[bufferSize];
-    delimiterPositions = new ArrayList<>(bufferSize/10);
+    delimiterPositions = new ArrayList<>(bufferSize / 10);
   }
 
   private static final int DEFAULT_BUFFER_SIZE = 1024;
@@ -112,7 +111,7 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
-  
+
   private int endPosition = 0;
   private int finalOffset = 0;
   private int skipped = 0;
@@ -125,46 +124,44 @@ public class ReversePathHierarchyTokenizer extends Tokenizer {
   @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
-    if(delimitersCount == -1){
+    if (delimitersCount == -1) {
       int length = 0;
       delimiterPositions.add(0);
       while (true) {
         int c = input.read();
-        if( c < 0 ) {
+        if (c < 0) {
           break;
         }
         length++;
-        if( c == delimiter ) {
+        if (c == delimiter) {
           delimiterPositions.add(length);
           resultToken.append(replacement);
-        }
-        else{
-          resultToken.append((char)c);
+        } else {
+          resultToken.append((char) c);
         }
       }
       delimitersCount = delimiterPositions.size();
-      if( delimiterPositions.get(delimitersCount-1) < length ){
+      if (delimiterPositions.get(delimitersCount - 1) < length) {
         delimiterPositions.add(length);
         delimitersCount++;
       }
-      if( resultTokenBuffer.length < resultToken.length() ){
+      if (resultTokenBuffer.length < resultToken.length()) {
         resultTokenBuffer = new char[resultToken.length()];
       }
       resultToken.getChars(0, resultToken.length(), resultTokenBuffer, 0);
       resultToken.setLength(0);
-      int idx = delimitersCount-1 - skip;
+      int idx = delimitersCount - 1 - skip;
       if (idx >= 0) {
         // otherwise it's ok, because we will skip and return false
         endPosition = delimiterPositions.get(idx);
       }
       finalOffset = correctOffset(length);
       posAtt.setPositionIncrement(1);
-    }
-    else{
+    } else {
       posAtt.setPositionIncrement(0);
     }
 
-    while( skipped < delimitersCount-skip-1 ){
+    while (skipped < delimitersCount - skip - 1) {
       int start = delimiterPositions.get(skipped);
       termAtt.copyBuffer(resultTokenBuffer, start, endPosition - start);
       offsetAtt.setOffset(correctOffset(start), correctOffset(endPosition));

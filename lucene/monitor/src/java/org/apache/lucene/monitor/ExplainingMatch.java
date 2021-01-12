@@ -20,36 +20,38 @@ package org.apache.lucene.monitor;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 
-/**
- * A query match containing the score explanation of the match
- */
+/** A query match containing the score explanation of the match */
 public class ExplainingMatch extends QueryMatch {
 
-  /**
-   * A MatcherFactory for producing ExplainingMatches
-   */
-  public static final MatcherFactory<ExplainingMatch> MATCHER = searcher -> new CandidateMatcher<ExplainingMatch>(searcher) {
-    @Override
-    protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
-      int maxDocs = searcher.getIndexReader().maxDoc();
-      for (int i = 0; i < maxDocs; i++) {
-        Explanation explanation = searcher.explain(matchQuery, i);
-        if (explanation.isMatch())
-          addMatch(new ExplainingMatch(queryId, explanation), i);
-      }
-    }
+  /** A MatcherFactory for producing ExplainingMatches */
+  public static final MatcherFactory<ExplainingMatch> MATCHER =
+      searcher ->
+          new CandidateMatcher<ExplainingMatch>(searcher) {
+            @Override
+            protected void matchQuery(
+                String queryId, Query matchQuery, Map<String, String> metadata) throws IOException {
+              int maxDocs = searcher.getIndexReader().maxDoc();
+              for (int i = 0; i < maxDocs; i++) {
+                Explanation explanation = searcher.explain(matchQuery, i);
+                if (explanation.isMatch()) addMatch(new ExplainingMatch(queryId, explanation), i);
+              }
+            }
 
-    @Override
-    public ExplainingMatch resolve(ExplainingMatch match1, ExplainingMatch match2) {
-      return new ExplainingMatch(match1.getQueryId(),
-          Explanation.match(match1.getExplanation().getValue().doubleValue() + match2.getExplanation().getValue().doubleValue(),
-              "sum of:", match1.getExplanation(), match2.getExplanation()));
-    }
-  };
+            @Override
+            public ExplainingMatch resolve(ExplainingMatch match1, ExplainingMatch match2) {
+              return new ExplainingMatch(
+                  match1.getQueryId(),
+                  Explanation.match(
+                      match1.getExplanation().getValue().doubleValue()
+                          + match2.getExplanation().getValue().doubleValue(),
+                      "sum of:",
+                      match1.getExplanation(),
+                      match2.getExplanation()));
+            }
+          };
 
   private final Explanation explanation;
 
@@ -58,9 +60,7 @@ public class ExplainingMatch extends QueryMatch {
     this.explanation = explanation;
   }
 
-  /**
-   * @return the Explanation
-   */
+  /** @return the Explanation */
   public Explanation getExplanation() {
     return explanation;
   }

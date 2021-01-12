@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,8 +27,12 @@ class ConjunctionScorer extends Scorer {
   final Scorer[] scorers;
   final Collection<Scorer> required;
 
-  /** Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code required}. */
-  ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers) throws IOException {
+  /**
+   * Create a new {@link ConjunctionScorer}, note that {@code scorers} must be a subset of {@code
+   * required}.
+   */
+  ConjunctionScorer(Weight weight, Collection<Scorer> required, Collection<Scorer> scorers)
+      throws IOException {
     super(weight);
     assert required.containsAll(scorers);
     this.disi = ConjunctionDISI.intersectScorers(required);

@@ -20,27 +20,29 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Accessor to make some package protected methods in {@link IndexWriter} available for testing.
+ *
  * @lucene.internal
  */
-public final class IndexWriterMaxDocsChanger  {
-  
+public final class IndexWriterMaxDocsChanger {
+
   private IndexWriterMaxDocsChanger() {}
-  
+
   /**
-   * Tells {@link IndexWriter} to enforce the specified limit as the maximum number of documents in one index; call
-   * {@link #restoreMaxDocs} once your test is done.
+   * Tells {@link IndexWriter} to enforce the specified limit as the maximum number of documents in
+   * one index; call {@link #restoreMaxDocs} once your test is done.
+   *
    * @see LuceneTestCase#setIndexWriterMaxDocs(int)
    */
   public static void setMaxDocs(int limit) {
     IndexWriter.setMaxDocs(limit);
   }
 
-  /** 
+  /**
    * Returns to the default {@link IndexWriter#MAX_DOCS} limit.
+   *
    * @see LuceneTestCase#restoreIndexWriterMaxDocs()
    */
   public static void restoreMaxDocs() {
     IndexWriter.setMaxDocs(IndexWriter.MAX_DOCS);
   }
-
 }

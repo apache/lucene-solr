@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
@@ -27,13 +26,13 @@ import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
 
 /**
  * Reader for sequences of longs written with {@link BlockPackedWriter}.
+ *
  * @see BlockPackedWriter
  * @lucene.internal
  */
@@ -80,12 +79,14 @@ public final class BlockPackedReaderIterator {
   int off;
   long ord;
 
-  /** Sole constructor.
-   * @param blockSize the number of values of a block, must be equal to the
-   *                  block size of the {@link BlockPackedWriter} which has
-   *                  been used to write the stream
+  /**
+   * Sole constructor.
+   *
+   * @param blockSize the number of values of a block, must be equal to the block size of the {@link
+   *     BlockPackedWriter} which has been used to write the stream
    */
-  public BlockPackedReaderIterator(DataInput in, int packedIntsVersion, int blockSize, long valueCount) {
+  public BlockPackedReaderIterator(
+      DataInput in, int packedIntsVersion, int blockSize, long valueCount) {
     checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     this.packedIntsVersion = packedIntsVersion;
     this.blockSize = blockSize;
@@ -94,8 +95,10 @@ public final class BlockPackedReaderIterator {
     reset(in, valueCount);
   }
 
-  /** Reset the current reader to wrap a stream of <code>valueCount</code>
-   * values contained in <code>in</code>. The block size remains unchanged. */
+  /**
+   * Reset the current reader to wrap a stream of <code>valueCount</code> values contained in <code>
+   * in</code>. The block size remains unchanged.
+   */
   public void reset(DataInput in, long valueCount) {
     this.in = in;
     assert valueCount >= 0;
@@ -131,7 +134,8 @@ public final class BlockPackedReaderIterator {
       if ((token & MIN_VALUE_EQUALS_0) == 0) {
         readVLong(in);
       }
-      final long blockBytes = PackedInts.Format.PACKED.byteCount(packedIntsVersion, blockSize, bitsPerValue);
+      final long blockBytes =
+          PackedInts.Format.PACKED.byteCount(packedIntsVersion, blockSize, bitsPerValue);
       skipBytes(blockBytes);
       ord += blockSize;
       count -= blockSize;
@@ -210,7 +214,8 @@ public final class BlockPackedReaderIterator {
     if (bitsPerValue == 0) {
       Arrays.fill(values, minValue);
     } else {
-      final PackedInts.Decoder decoder = PackedInts.getDecoder(PackedInts.Format.PACKED, packedIntsVersion, bitsPerValue);
+      final PackedInts.Decoder decoder =
+          PackedInts.getDecoder(PackedInts.Format.PACKED, packedIntsVersion, bitsPerValue);
       final int iterations = blockSize / decoder.byteValueCount();
       final int blocksSize = iterations * decoder.byteBlockCount();
       if (blocks == null || blocks.length < blocksSize) {
@@ -218,7 +223,8 @@ public final class BlockPackedReaderIterator {
       }
 
       final int valueCount = (int) Math.min(this.valueCount - ord, blockSize);
-      final int blocksCount = (int) PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, bitsPerValue);
+      final int blocksCount =
+          (int) PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, bitsPerValue);
       in.readBytes(blocks, 0, blocksCount);
 
       decoder.decode(blocks, 0, values, 0, iterations);
@@ -236,5 +242,4 @@ public final class BlockPackedReaderIterator {
   public long ord() {
     return ord;
   }
-
 }

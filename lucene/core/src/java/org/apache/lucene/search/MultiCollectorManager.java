@@ -20,20 +20,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 
 /**
- * A {@link CollectorManager} implements which wrap a set of {@link CollectorManager}
- * as {@link MultiCollector} acts for {@link Collector}.
+ * A {@link CollectorManager} implements which wrap a set of {@link CollectorManager} as {@link
+ * MultiCollector} acts for {@link Collector}.
  */
-public class MultiCollectorManager implements CollectorManager<MultiCollectorManager.Collectors, Object[]> {
+public class MultiCollectorManager
+    implements CollectorManager<MultiCollectorManager.Collectors, Object[]> {
 
-  final private CollectorManager<Collector, ?>[] collectorManagers;
+  private final CollectorManager<Collector, ?>[] collectorManagers;
 
   @SafeVarargs
   @SuppressWarnings({"varargs", "unchecked"})
-  public MultiCollectorManager(final CollectorManager<? extends Collector, ?>... collectorManagers) {
+  public MultiCollectorManager(
+      final CollectorManager<? extends Collector, ?>... collectorManagers) {
     if (collectorManagers.length < 1) {
       throw new IllegalArgumentException("There must be at least one collector");
     }
@@ -70,12 +71,13 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
     }
 
     @Override
-    final public LeafCollector getLeafCollector(final LeafReaderContext context) throws IOException {
+    public final LeafCollector getLeafCollector(final LeafReaderContext context)
+        throws IOException {
       return new LeafCollectors(context);
     }
 
     @Override
-    final public ScoreMode scoreMode() {
+    public final ScoreMode scoreMode() {
       ScoreMode scoreMode = null;
       for (Collector collector : collectors) {
         if (scoreMode == null) {
@@ -89,6 +91,7 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
 
     /**
      * Wraps multiple leaf collectors and delegates collection across each one
+     *
      * @lucene.internal
      */
     public class LeafCollectors implements LeafCollector {
@@ -102,19 +105,16 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
       }
 
       @Override
-      final public void setScorer(final Scorable scorer) throws IOException {
+      public final void setScorer(final Scorable scorer) throws IOException {
         for (LeafCollector leafCollector : leafCollectors)
-          if (leafCollector != null)
-            leafCollector.setScorer(scorer);
+          if (leafCollector != null) leafCollector.setScorer(scorer);
       }
 
       @Override
-      final public void collect(final int doc) throws IOException {
+      public final void collect(final int doc) throws IOException {
         for (LeafCollector leafCollector : leafCollectors)
-          if (leafCollector != null)
-            leafCollector.collect(doc);
+          if (leafCollector != null) leafCollector.collect(doc);
       }
     }
   }
-
 }

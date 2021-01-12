@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -33,9 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests the maxTermFrequency statistic in FieldInvertState
- */
+/** Tests the maxTermFrequency statistic in FieldInvertState */
 public class TestMaxTermFrequency extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
@@ -46,8 +42,9 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true))
-                                 .setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig config =
+        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true))
+            .setMergePolicy(newLogMergePolicy());
     config.setSimilarity(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
@@ -77,10 +74,9 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   }
 
   /**
-   * Makes a bunch of single-char tokens (the max freq will at most be 255).
-   * shuffles them around, and returns the whole list with Arrays.toString().
-   * This works fine because we use lettertokenizer.
-   * puts the max-frequency term into expected, to be checked against the norm.
+   * Makes a bunch of single-char tokens (the max freq will at most be 255). shuffles them around,
+   * and returns the whole list with Arrays.toString(). This works fine because we use
+   * lettertokenizer. puts the max-frequency term into expected, to be checked against the norm.
    */
   private String addValue() {
     List<String> terms = new ArrayList<>();
@@ -88,8 +84,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     int max = 0;
     for (char ch = 'a'; ch <= 'z'; ch++) {
       int num = TestUtil.nextInt(random(), 0, maxCeiling);
-      for (int i = 0; i < num; i++)
-        terms.add(Character.toString(ch));
+      for (int i = 0; i < num; i++) terms.add(Character.toString(ch));
       max = Math.max(max, num);
     }
     expected.add(max);
@@ -97,9 +92,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     return Arrays.toString(terms.toArray(new String[terms.size()]));
   }
 
-  /**
-   * Simple similarity that encodes maxTermFrequency directly as a byte
-   */
+  /** Simple similarity that encodes maxTermFrequency directly as a byte */
   static class TestSimilarity extends Similarity {
 
     @Override
@@ -108,16 +101,15 @@ public class TestMaxTermFrequency extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       return new SimScorer() {
 
         @Override
         public float score(float freq, long norm) {
           return 0;
         }
-
       };
     }
-
   }
 }

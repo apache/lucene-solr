@@ -22,15 +22,19 @@ import org.apache.lucene.codecs.lucene87.DeflateWithPresetDictCompressionMode;
 public class DeflateWithPresetCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
-  public DeflateWithPresetCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("DeflateWithPresetCompressingStoredFieldsData", 
-          withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-          new DeflateWithPresetDictCompressionMode(), chunkSize, maxDocsPerChunk, blockSize);
+  public DeflateWithPresetCompressingCodec(
+      int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
+    super(
+        "DeflateWithPresetCompressingStoredFieldsData",
+        withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
+        new DeflateWithPresetDictCompressionMode(),
+        chunkSize,
+        maxDocsPerChunk,
+        blockSize);
   }
 
   /** No-arg constructor. */
   public DeflateWithPresetCompressingCodec() {
-    this(1<<18, 512, false, 10);
+    this(1 << 18, 512, false, 10);
   }
-
 }

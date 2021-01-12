@@ -32,7 +32,7 @@ public class TestDoubleRangeGroupSelector extends BaseGroupSelectorTestCase<Doub
   @Override
   protected void addGroupField(Document document, int id) {
     if (rarely()) {
-      return;   // missing value
+      return; // missing value
     }
     // numbers between 0 and 1000, groups are 100 wide from 100 to 900
     double value = random().nextDouble() * 1000;
@@ -42,8 +42,8 @@ public class TestDoubleRangeGroupSelector extends BaseGroupSelectorTestCase<Doub
 
   @Override
   protected GroupSelector<DoubleRange> getGroupSelector() {
-    return new DoubleRangeGroupSelector(DoubleValuesSource.fromDoubleField("double"),
-        new DoubleRangeFactory(100, 100, 900));
+    return new DoubleRangeGroupSelector(
+        DoubleValuesSource.fromDoubleField("double"), new DoubleRangeFactory(100, 100, 900));
   }
 
   @Override

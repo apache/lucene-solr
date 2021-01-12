@@ -16,8 +16,7 @@
  */
 package org.apache.lucene.facet;
 
-/** Single label and its value, usually contained in a
- *  {@link FacetResult}. */
+/** Single label and its value, usually contained in a {@link FacetResult}. */
 public final class LabelAndValue {
   /** Facet's label. */
   public final String label;

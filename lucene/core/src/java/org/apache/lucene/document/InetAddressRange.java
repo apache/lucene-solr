@@ -18,26 +18,30 @@ package org.apache.lucene.document;
 
 import java.net.InetAddress;
 import java.util.Arrays;
-
 import org.apache.lucene.document.RangeFieldQuery.QueryType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * An indexed InetAddress Range Field
- * <p>
- * This field indexes an {@code InetAddress} range defined as a min/max pairs. It is single
- * dimension only (indexed as two 16 byte paired values).
- * <p>
- * Multiple values are supported.
  *
- * <p>
- * This field defines the following static factory methods for common search operations over Ip Ranges
+ * <p>This field indexes an {@code InetAddress} range defined as a min/max pairs. It is single
+ * dimension only (indexed as two 16 byte paired values).
+ *
+ * <p>Multiple values are supported.
+ *
+ * <p>This field defines the following static factory methods for common search operations over Ip
+ * Ranges
+ *
  * <ul>
- *   <li>{@link #newIntersectsQuery newIntersectsQuery()} matches ip ranges that intersect the defined search range.
- *   <li>{@link #newWithinQuery newWithinQuery()} matches ip ranges that are within the defined search range.
- *   <li>{@link #newContainsQuery newContainsQuery()} matches ip ranges that contain the defined search range.
- *   <li>{@link #newCrossesQuery newCrossesQuery()} matches ip ranges that cross the defined search range
+ *   <li>{@link #newIntersectsQuery newIntersectsQuery()} matches ip ranges that intersect the
+ *       defined search range.
+ *   <li>{@link #newWithinQuery newWithinQuery()} matches ip ranges that are within the defined
+ *       search range.
+ *   <li>{@link #newContainsQuery newContainsQuery()} matches ip ranges that contain the defined
+ *       search range.
+ *   <li>{@link #newCrossesQuery newCrossesQuery()} matches ip ranges that cross the defined search
+ *       range
  * </ul>
  */
 public class InetAddressRange extends Field {
@@ -45,6 +49,7 @@ public class InetAddressRange extends Field {
   public static final int BYTES = InetAddressPoint.BYTES;
 
   private static final FieldType TYPE;
+
   static {
     TYPE = new FieldType();
     TYPE.setDimensions(2, BYTES);
@@ -53,6 +58,7 @@ public class InetAddressRange extends Field {
 
   /**
    * Create a new InetAddressRange from min/max value
+   *
    * @param name field name. must not be null.
    * @param min range min value; defined as an {@code InetAddress}
    * @param max range max value; defined as an {@code InetAddress}
@@ -64,16 +70,17 @@ public class InetAddressRange extends Field {
 
   /**
    * Change (or set) the min/max values of the field.
+   *
    * @param min range min value; defined as an {@code InetAddress}
    * @param max range max value; defined as an {@code InetAddress}
    */
   public void setRangeValues(InetAddress min, InetAddress max) {
     final byte[] bytes;
     if (fieldsData == null) {
-      bytes = new byte[BYTES*2];
+      bytes = new byte[BYTES * 2];
       fieldsData = new BytesRef(bytes);
     } else {
-      bytes = ((BytesRef)fieldsData).bytes;
+      bytes = ((BytesRef) fieldsData).bytes;
     }
     encode(min, max, bytes);
   }
@@ -85,7 +92,8 @@ public class InetAddressRange extends Field {
     final byte[] maxEncoded = InetAddressPoint.encode(max);
     // ensure min is lt max
     if (Arrays.compareUnsigned(minEncoded, 0, BYTES, maxEncoded, 0, BYTES) > 0) {
-      throw new IllegalArgumentException("min value cannot be greater than max value for InetAddressRange field");
+      throw new IllegalArgumentException(
+          "min value cannot be greater than max value for InetAddressRange field");
     }
     System.arraycopy(minEncoded, 0, bytes, 0, BYTES);
     System.arraycopy(maxEncoded, 0, bytes, BYTES, BYTES);
@@ -93,30 +101,35 @@ public class InetAddressRange extends Field {
 
   /** encode the min/max range and return the byte array */
   private static byte[] encode(InetAddress min, InetAddress max) {
-    byte[] b = new byte[BYTES*2];
+    byte[] b = new byte[BYTES * 2];
     encode(min, max, b);
     return b;
   }
 
   /**
    * Create a query for matching indexed ip ranges that {@code INTERSECT} the defined range.
+   *
    * @param field field name. must not be null.
    * @param min range min value; provided as an {@code InetAddress}
    * @param max range max value; provided as an {@code InetAddress}
    * @return query for matching intersecting ranges (overlap, within, crosses, or contains)
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
-  public static Query newIntersectsQuery(String field, final InetAddress min, final InetAddress max) {
+  public static Query newIntersectsQuery(
+      String field, final InetAddress min, final InetAddress max) {
     return newRelationQuery(field, min, max, QueryType.INTERSECTS);
   }
 
   /**
    * Create a query for matching indexed ip ranges that {@code CONTAINS} the defined range.
+   *
    * @param field field name. must not be null.
    * @param min range min value; provided as an {@code InetAddress}
    * @param max range max value; provided as an {@code InetAddress}
    * @return query for matching intersecting ranges (overlap, within, crosses, or contains)
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newContainsQuery(String field, final InetAddress min, final InetAddress max) {
     return newRelationQuery(field, min, max, QueryType.CONTAINS);
@@ -124,11 +137,13 @@ public class InetAddressRange extends Field {
 
   /**
    * Create a query for matching indexed ip ranges that are {@code WITHIN} the defined range.
+   *
    * @param field field name. must not be null.
    * @param min range min value; provided as an {@code InetAddress}
    * @param max range max value; provided as an {@code InetAddress}
    * @return query for matching intersecting ranges (overlap, within, crosses, or contains)
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newWithinQuery(String field, final InetAddress min, final InetAddress max) {
     return newRelationQuery(field, min, max, QueryType.WITHIN);
@@ -136,18 +151,21 @@ public class InetAddressRange extends Field {
 
   /**
    * Create a query for matching indexed ip ranges that {@code CROSS} the defined range.
+   *
    * @param field field name. must not be null.
    * @param min range min value; provided as an {@code InetAddress}
    * @param max range max value; provided as an {@code InetAddress}
    * @return query for matching intersecting ranges (overlap, within, crosses, or contains)
-   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is invalid
+   * @throws IllegalArgumentException if {@code field} is null, {@code min} or {@code max} is
+   *     invalid
    */
   public static Query newCrossesQuery(String field, final InetAddress min, final InetAddress max) {
     return newRelationQuery(field, min, max, QueryType.CROSSES);
   }
 
   /** helper method for creating the desired relational query */
-  private static Query newRelationQuery(String field, final InetAddress min, final InetAddress max, QueryType relation) {
+  private static Query newRelationQuery(
+      String field, final InetAddress min, final InetAddress max, QueryType relation) {
     return new RangeFieldQuery(field, encode(min, max), 1, relation) {
       @Override
       protected String toString(byte[] ranges, int dimension) {
@@ -158,6 +176,7 @@ public class InetAddressRange extends Field {
 
   /**
    * Returns the String representation for the range at the given dimension
+   *
    * @param ranges the encoded ranges, never null
    * @param dimension the dimension of interest (not used for this field)
    * @return The string representation for the range at the provided dimension

@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.BaseDirectoryWrapper;
@@ -34,9 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Test that the default codec detects bit flips at open or checkIntegrity time.
- */
+/** Test that the default codec detects bit flips at open or checkIntegrity time. */
 @SuppressFileSystems("ExtrasFS")
 @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9356")
 public class TestAllFilesDetectBitFlips extends LuceneTestCase {
@@ -73,7 +69,8 @@ public class TestAllFilesDetectBitFlips extends LuceneTestCase {
         riw.deleteDocuments(new Term("docid", Integer.toString(i)));
       }
       if (random().nextInt(15) == 0) {
-        riw.updateNumericDocValue(new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
+        riw.updateNumericDocValue(
+            new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
       }
     }
     if (TEST_NIGHTLY == false) {
@@ -83,15 +80,15 @@ public class TestAllFilesDetectBitFlips extends LuceneTestCase {
     checkBitFlips(dir);
     dir.close();
   }
-  
+
   private void checkBitFlips(Directory dir) throws IOException {
-    for(String name : dir.listAll()) {
+    for (String name : dir.listAll()) {
       if (name.equals(IndexWriter.WRITE_LOCK_NAME) == false) {
         corruptFile(dir, name);
       }
     }
   }
-  
+
   private void corruptFile(Directory dir, String victim) throws IOException {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
@@ -100,23 +97,31 @@ public class TestAllFilesDetectBitFlips extends LuceneTestCase {
       long flipOffset = TestUtil.nextLong(random(), 0, victimLength - 1);
 
       if (VERBOSE) {
-        System.out.println("TEST: now corrupt file " + victim + " by changing byte at offset " + flipOffset + " (length= " + victimLength + ")");
+        System.out.println(
+            "TEST: now corrupt file "
+                + victim
+                + " by changing byte at offset "
+                + flipOffset
+                + " (length= "
+                + victimLength
+                + ")");
       }
 
-      for(String name : dir.listAll()) {
+      for (String name : dir.listAll()) {
         if (name.equals(victim) == false) {
           dirCopy.copyFrom(dir, name, name, IOContext.DEFAULT);
         } else {
           try (IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
               IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
-              out.copyBytes(in, flipOffset);
-              out.writeByte((byte) (in.readByte() + TestUtil.nextInt(random(), 0x01, 0xFF)));
-              out.copyBytes(in, victimLength - flipOffset - 1);
+            out.copyBytes(in, flipOffset);
+            out.writeByte((byte) (in.readByte() + TestUtil.nextInt(random(), 0x01, 0xFF)));
+            out.copyBytes(in, victimLength - flipOffset - 1);
           }
           try (IndexInput in = dirCopy.openInput(name, IOContext.DEFAULT)) {
             try {
               CodecUtil.checksumEntireFile(in);
-              System.out.println("TEST: changing a byte in " + victim + " did not update the checksum)");
+              System.out.println(
+                  "TEST: changing a byte in " + victim + " did not update the checksum)");
               return;
             } catch (CorruptIndexException e) {
               // ok
@@ -127,15 +132,18 @@ public class TestAllFilesDetectBitFlips extends LuceneTestCase {
       }
 
       // corruption must be detected
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, IndexFormatTooOldException.class, IndexFormatTooNewException.class),
+      expectThrowsAnyOf(
+          Arrays.asList(
+              CorruptIndexException.class,
+              IndexFormatTooOldException.class,
+              IndexFormatTooNewException.class),
           () -> {
             try (IndexReader reader = DirectoryReader.open(dirCopy)) {
               for (LeafReaderContext context : reader.leaves()) {
                 context.reader().checkIntegrity();
               }
             }
-          }
-      );
+          });
     }
   }
 }

@@ -47,12 +47,14 @@ import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -357,6 +359,26 @@ public class IndexSchema {
     } else {
       return val.toString();
     }
+  }
+
+  /** Like {@link #printableUniqueKey(org.apache.lucene.document.Document)} */
+  public String printableUniqueKey(SolrInputDocument solrDoc) {
+    Object val = solrDoc.getFieldValue(uniqueKeyFieldName);
+    if (val == null) {
+      return null;
+    } else {
+      return val.toString();
+    }
+  }
+
+  /** Given an indexable uniqueKey value, return the readable/printable version */
+  public String printableUniqueKey(BytesRef idBytes) {
+    return uniqueKeyFieldType.indexedToReadable(idBytes.utf8ToString());
+  }
+
+  /** Given a readable/printable uniqueKey value, return an indexable version */
+  public BytesRef indexableUniqueKey(String idStr) {
+    return new BytesRef(uniqueKeyFieldType.toInternal(idStr));
   }
 
   private SchemaField getIndexedField(String fname) {
@@ -1928,32 +1950,6 @@ public class IndexSchema {
     return (null != uniqueKeyFieldType &&
             null != rootType &&
             rootType.getTypeName().equals(uniqueKeyFieldType.getTypeName()));
-  }
-
-  /**
-   * Helper method that returns <code>true</code> if the {@link #ROOT_FIELD_NAME} uses the exact
-   * same 'type' as the {@link #getUniqueKeyField()} and has {@link #NEST_PATH_FIELD_NAME}
-   * defined as a {@link NestPathField}
-   * @lucene.internal
-   */
-  public boolean savesChildDocRelations() {
-    //TODO make this boolean a field so it needn't be looked up each time?
-    if (!isUsableForChildDocs()) {
-      return false;
-    }
-    FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
-    return nestPathType instanceof NestPathField;
-  }
-
-  /**
-   * Does this schema supports partial updates (aka atomic updates) and child docs as well.
-   */
-  public boolean supportsPartialUpdatesOfChildDocs() {
-    if (savesChildDocRelations() == false) {
-      return false;
-    }
-    SchemaField rootField = getField(IndexSchema.ROOT_FIELD_NAME);
-    return rootField.stored() || rootField.hasDocValues();
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {

@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.analysis.ko.dict;
 
+import static org.apache.lucene.analysis.ko.dict.BinaryDictionary.ResourceScheme;
+
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.util.DictionaryBuilder;
 import org.apache.lucene.util.IntsRef;
@@ -32,17 +33,15 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntsRefFSTEnum;
 
-import static org.apache.lucene.analysis.ko.dict.BinaryDictionary.ResourceScheme;
-
-/**
- * Tests of TokenInfoDictionary build tools; run using ant test-tools
- */
+/** Tests of TokenInfoDictionary build tools; run using ant test-tools */
 public class TokenInfoDictionaryTest extends LuceneTestCase {
 
   public void testPut() throws Exception {
-    TokenInfoDictionary dict = newDictionary("명사,1,1,2,NNG,*,*,*,*,*,*,*",
-        // "large" id
-        "일반,5000,5000,3,NNG,*,*,*,*,*,*,*");
+    TokenInfoDictionary dict =
+        newDictionary(
+            "명사,1,1,2,NNG,*,*,*,*,*,*,*",
+            // "large" id
+            "일반,5000,5000,3,NNG,*,*,*,*,*,*,*");
     IntsRef wordIdRef = new IntsRefBuilder().get();
 
     dict.lookupWordIds(0, wordIdRef);
@@ -61,7 +60,8 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
   private TokenInfoDictionary newDictionary(String... entries) throws Exception {
     Path dir = createTempDir();
     try (OutputStream out = Files.newOutputStream(dir.resolve("test.csv"));
-         PrintWriter printer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+        PrintWriter printer =
+            new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
       for (String entry : entries) {
         printer.println(entry);
       }
@@ -69,7 +69,8 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
     Files.createFile(dir.resolve("unk.def"));
     Files.createFile(dir.resolve("char.def"));
     try (OutputStream out = Files.newOutputStream(dir.resolve("matrix.def"));
-         PrintWriter printer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
+        PrintWriter printer =
+            new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
       printer.println("1 1");
     }
     DictionaryBuilder.build(dir, dir, "utf-8", true);
@@ -79,10 +80,12 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
   }
 
   public void testPutException() {
-    //too few columns
+    // too few columns
     expectThrows(IllegalArgumentException.class, () -> newDictionary("HANGUL,1,1,1,NNG,*,*,*,*,*"));
     // id too large
-    expectThrows(IllegalArgumentException.class, () -> newDictionary("HANGUL,8192,8192,1,NNG,*,*,*,*,*,*,*"));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> newDictionary("HANGUL,8192,8192,1,NNG,*,*,*,*,*,*,*"));
   }
 
   /** enumerates the entire FST/lookup data and just does basic sanity checks */
@@ -105,7 +108,7 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
       IntsRef input = mapping.input;
       char[] chars = new char[input.length];
       for (int i = 0; i < chars.length; i++) {
-        chars[i] = (char)input.ints[input.offset+i];
+        chars[i] = (char) input.ints[input.offset + i];
       }
       String surfaceForm = new String(chars);
       assertFalse(surfaceForm.isEmpty());
@@ -120,7 +123,7 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
       tid.lookupWordIds(sourceId, scratch);
       for (int i = 0; i < scratch.length; i++) {
         numWords++;
-        int wordId = scratch.ints[scratch.offset+i];
+        int wordId = scratch.ints[scratch.offset + i];
         assertTrue(wordId > lastWordId);
         lastWordId = wordId;
 
@@ -153,7 +156,7 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
             assertSame(leftPOS, rightPOS);
             assertTrue(leftPOS == POS.Tag.NNG || rightPOS == POS.Tag.NNP);
           }
-          Dictionary.Morpheme[] decompound = tid.getMorphemes(wordId,  chars, 0, chars.length);
+          Dictionary.Morpheme[] decompound = tid.getMorphemes(wordId, chars, 0, chars.length);
           if (decompound != null) {
             int offset = 0;
             for (Dictionary.Morpheme morph : decompound) {
@@ -161,7 +164,9 @@ public class TokenInfoDictionaryTest extends LuceneTestCase {
               assertFalse(morph.surfaceForm.isEmpty());
               assertEquals(morph.surfaceForm.trim(), morph.surfaceForm);
               if (type != POS.Type.INFLECT) {
-                assertEquals(morph.surfaceForm, surfaceForm.substring(offset, offset + morph.surfaceForm.length()));
+                assertEquals(
+                    morph.surfaceForm,
+                    surfaceForm.substring(offset, offset + morph.surfaceForm.length()));
                 offset += morph.surfaceForm.length();
               }
             }

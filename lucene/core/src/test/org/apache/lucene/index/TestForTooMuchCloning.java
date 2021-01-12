@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,16 +36,19 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     final MockDirectoryWrapper dir = newMockDirectory();
     final TieredMergePolicy tmp = new TieredMergePolicy();
     tmp.setMaxMergeAtOnce(2);
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-                                                      newIndexWriterConfig(new MockAnalyzer(random()))
-                                                        .setMaxBufferedDocs(2)
-                                                        // use a FilterMP otherwise RIW will randomly reconfigure
-                                                        // the MP while the test runs
-                                                        .setMergePolicy(new FilterMergePolicy(tmp)));
+    final RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                // use a FilterMP otherwise RIW will randomly reconfigure
+                // the MP while the test runs
+                .setMergePolicy(new FilterMergePolicy(tmp)));
     final int numDocs = 20;
-    for(int docs=0;docs<numDocs;docs++) {
+    for (int docs = 0; docs < numDocs; docs++) {
       StringBuilder sb = new StringBuilder();
-      for(int terms=0;terms<100;terms++) {
+      for (int terms = 0; terms < 100; terms++) {
         sb.append(TestUtil.randomRealisticUnicodeString(random()));
         sb.append(' ');
       }
@@ -56,26 +58,28 @@ public class TestForTooMuchCloning extends LuceneTestCase {
     }
     final IndexReader r = w.getReader();
     w.close();
-    //System.out.println("merge clone count=" + cloneCount);
-    assertTrue("too many calls to IndexInput.clone during merging: " + dir.getInputCloneCount(), dir.getInputCloneCount() < 500);
+    // System.out.println("merge clone count=" + cloneCount);
+    assertTrue(
+        "too many calls to IndexInput.clone during merging: " + dir.getInputCloneCount(),
+        dir.getInputCloneCount() < 500);
 
     final IndexSearcher s = newSearcher(r);
     // important: set this after newSearcher, it might have run checkindex
     final int cloneCount = dir.getInputCloneCount();
     // dir.setVerboseClone(true);
-    
+
     // MTQ that matches all terms so the AUTO_REWRITE should
     // cutover to filter rewrite and reuse a single DocsEnum
     // across all terms;
-    final TopDocs hits = s.search(new TermRangeQuery("field",
-                                                     new BytesRef(),
-                                                     new BytesRef("\uFFFF"),
-                                                     true,
-                                                     true), 10);
+    final TopDocs hits =
+        s.search(
+            new TermRangeQuery("field", new BytesRef(), new BytesRef("\uFFFF"), true, true), 10);
     assertTrue(hits.totalHits.value > 0);
     final int queryCloneCount = dir.getInputCloneCount() - cloneCount;
-    //System.out.println("query clone count=" + queryCloneCount);
-    assertTrue("too many calls to IndexInput.clone during TermRangeQuery: " + queryCloneCount, queryCloneCount < 50);
+    // System.out.println("query clone count=" + queryCloneCount);
+    assertTrue(
+        "too many calls to IndexInput.clone during TermRangeQuery: " + queryCloneCount,
+        queryCloneCount < 50);
     r.close();
     dir.close();
   }

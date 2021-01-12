@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.surround.query;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class Test02Boolean extends LuceneTestCase {
@@ -43,85 +42,129 @@ public class Test02Boolean extends LuceneTestCase {
     super.setUp();
     db1 = new SingleFieldTestDb(random(), docs1, fieldName);
   }
-  
+
   SingleFieldTestDb db1;
 
   public void normalTest1(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTst bqt = new BooleanQueryTst( query, expdnrs, db1, fieldName, this,
-                                                new BasicQueryFactory(maxBasicQueries));
+    BooleanQueryTst bqt =
+        new BooleanQueryTst(
+            query, expdnrs, db1, fieldName, this, new BasicQueryFactory(maxBasicQueries));
     bqt.setVerbose(verbose);
     bqt.doTest();
   }
 
   public void test02Terms01() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "word1", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("word1", expdnrs);
   }
+
   public void test02Terms02() throws Exception {
-    int[] expdnrs = {0, 1, 3}; normalTest1( "word*", expdnrs);
+    int[] expdnrs = {0, 1, 3};
+    normalTest1("word*", expdnrs);
   }
+
   public void test02Terms03() throws Exception {
-    int[] expdnrs = {2}; normalTest1( "ord2", expdnrs);
+    int[] expdnrs = {2};
+    normalTest1("ord2", expdnrs);
   }
+
   public void test02Terms04() throws Exception {
-    int[] expdnrs = {}; normalTest1( "kxork*", expdnrs);
+    int[] expdnrs = {};
+    normalTest1("kxork*", expdnrs);
   }
+
   public void test02Terms05() throws Exception {
-    int[] expdnrs = {0, 1, 3}; normalTest1( "wor*", expdnrs);
+    int[] expdnrs = {0, 1, 3};
+    normalTest1("wor*", expdnrs);
   }
+
   public void test02Terms06() throws Exception {
-    int[] expdnrs = {}; normalTest1( "ab", expdnrs);
+    int[] expdnrs = {};
+    normalTest1("ab", expdnrs);
   }
-  
+
   public void test02Terms10() throws Exception {
-    int[] expdnrs = {}; normalTest1( "abc?", expdnrs);
+    int[] expdnrs = {};
+    normalTest1("abc?", expdnrs);
   }
+
   public void test02Terms13() throws Exception {
-    int[] expdnrs = {0,1,3}; normalTest1( "word?", expdnrs);
+    int[] expdnrs = {0, 1, 3};
+    normalTest1("word?", expdnrs);
   }
+
   public void test02Terms14() throws Exception {
-    int[] expdnrs = {0,1,3}; normalTest1( "w?rd?", expdnrs);
+    int[] expdnrs = {0, 1, 3};
+    normalTest1("w?rd?", expdnrs);
   }
+
   public void test02Terms20() throws Exception {
-    int[] expdnrs = {0,1,3}; normalTest1( "w*rd?", expdnrs);
+    int[] expdnrs = {0, 1, 3};
+    normalTest1("w*rd?", expdnrs);
   }
+
   public void test02Terms21() throws Exception {
-    int[] expdnrs = {3}; normalTest1( "w*rd??", expdnrs);
+    int[] expdnrs = {3};
+    normalTest1("w*rd??", expdnrs);
   }
+
   public void test02Terms22() throws Exception {
-    int[] expdnrs = {3}; normalTest1( "w*?da?", expdnrs);
+    int[] expdnrs = {3};
+    normalTest1("w*?da?", expdnrs);
   }
+
   public void test02Terms23() throws Exception {
-    int[] expdnrs = {}; normalTest1( "w?da?", expdnrs);
+    int[] expdnrs = {};
+    normalTest1("w?da?", expdnrs);
   }
-  
+
   public void test03And01() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "word1 AND word2", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("word1 AND word2", expdnrs);
   }
+
   public void test03And02() throws Exception {
-    int[] expdnrs = {3}; normalTest1( "word* and ord*", expdnrs);
+    int[] expdnrs = {3};
+    normalTest1("word* and ord*", expdnrs);
   }
+
   public void test03And03() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "and(word1,word2)", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("and(word1,word2)", expdnrs);
   }
+
   public void test04Or01() throws Exception {
-    int[] expdnrs = {0, 3}; normalTest1( "word1 or word2", expdnrs);
+    int[] expdnrs = {0, 3};
+    normalTest1("word1 or word2", expdnrs);
   }
+
   public void test04Or02() throws Exception {
-    int[] expdnrs = {0, 1, 2, 3}; normalTest1( "word* OR ord*", expdnrs);
+    int[] expdnrs = {0, 1, 2, 3};
+    normalTest1("word* OR ord*", expdnrs);
   }
+
   public void test04Or03() throws Exception {
-    int[] expdnrs = {0, 3}; normalTest1( "OR (word1, word2)", expdnrs);
+    int[] expdnrs = {0, 3};
+    normalTest1("OR (word1, word2)", expdnrs);
   }
+
   public void test05Not01() throws Exception {
-    int[] expdnrs = {3}; normalTest1( "word2 NOT word1", expdnrs);
+    int[] expdnrs = {3};
+    normalTest1("word2 NOT word1", expdnrs);
   }
+
   public void test05Not02() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "word2* not ord*", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("word2* not ord*", expdnrs);
   }
+
   public void test06AndOr01() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "(word1 or ab)and or(word2,xyz, defg)", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("(word1 or ab)and or(word2,xyz, defg)", expdnrs);
   }
+
   public void test07AndOrNot02() throws Exception {
-    int[] expdnrs = {0}; normalTest1( "or( word2* not ord*, and(xyz,def))", expdnrs);
+    int[] expdnrs = {0};
+    normalTest1("or( word2* not ord*, and(xyz,def))", expdnrs);
   }
 }

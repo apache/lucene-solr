@@ -16,29 +16,25 @@
  */
 package org.apache.lucene.index;
 
+import static java.lang.System.nanoTime;
 
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.System.nanoTime;
-
 /**
- * An implementation of {@link QueryTimeout} that can be used by
- * the {@link ExitableDirectoryReader} class to time out and exit out
- * when a query takes a long time to rewrite.
+ * An implementation of {@link QueryTimeout} that can be used by the {@link ExitableDirectoryReader}
+ * class to time out and exit out when a query takes a long time to rewrite.
  */
 public class QueryTimeoutImpl implements QueryTimeout {
 
-  /**
-   * The local variable to store the time beyond which, the processing should exit.
-   */
+  /** The local variable to store the time beyond which, the processing should exit. */
   private Long timeoutAt;
 
-  /** 
+  /**
    * Sets the time at which to time out by adding the given timeAllowed to the current time.
-   * 
+   *
    * @param timeAllowed Number of milliseconds after which to time out. Use {@code Long.MAX_VALUE}
-   *                    to effectively never time out.
-   */                    
+   *     to effectively never time out.
+   */
   public QueryTimeoutImpl(long timeAllowed) {
     if (timeAllowed < 0L) {
       timeAllowed = Long.MAX_VALUE;
@@ -47,34 +43,29 @@ public class QueryTimeoutImpl implements QueryTimeout {
   }
 
   /**
-   * Returns time at which to time out, in nanoseconds relative to the (JVM-specific)
-   * epoch for {@link System#nanoTime()}, to compare with the value returned by
-   * {@code nanoTime()}.
+   * Returns time at which to time out, in nanoseconds relative to the (JVM-specific) epoch for
+   * {@link System#nanoTime()}, to compare with the value returned by {@code nanoTime()}.
    */
   public Long getTimeoutAt() {
     return timeoutAt;
   }
 
   /**
-   * Return true if {@link #reset()} has not been called
-   * and the elapsed time has exceeded the time allowed.
+   * Return true if {@link #reset()} has not been called and the elapsed time has exceeded the time
+   * allowed.
    */
   @Override
   public boolean shouldExit() {
     return timeoutAt != null && nanoTime() - timeoutAt > 0;
   }
 
-  /**
-   * Reset the timeout value.
-   */
+  /** Reset the timeout value. */
   public void reset() {
     timeoutAt = null;
   }
-  
+
   @Override
   public String toString() {
     return "timeoutAt: " + timeoutAt + " (System.nanoTime(): " + nanoTime() + ")";
   }
 }
-
-

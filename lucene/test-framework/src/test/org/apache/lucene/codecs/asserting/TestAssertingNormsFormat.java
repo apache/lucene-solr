@@ -22,9 +22,9 @@ import org.apache.lucene.index.BaseNormsFormatTestCase;
 /** Test AssertingNormsFormat directly */
 public class TestAssertingNormsFormat extends BaseNormsFormatTestCase {
   private final Codec codec = new AssertingCodec();
-  
+
   @Override
   protected Codec getCodec() {
     return codec;
-  } 
+  }
 }

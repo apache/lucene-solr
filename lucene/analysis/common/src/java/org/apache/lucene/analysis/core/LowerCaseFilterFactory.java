@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link LowerCaseFilter}. 
+ * Factory for {@link LowerCaseFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lwrcase" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,9 +38,9 @@ public class LowerCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "lowercase";
-  
+
   /** Creates a new LowerCaseFilterFactory */
-  public LowerCaseFilterFactory(Map<String,String> args) {
+  public LowerCaseFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

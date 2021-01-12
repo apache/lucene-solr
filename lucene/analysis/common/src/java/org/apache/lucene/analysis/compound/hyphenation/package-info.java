@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-/** 
- * Hyphenation code for the CompoundWordTokenFilter. 
- * The code for the compound word hyphenation is taken from the 
- * <a href="http://xmlgraphics.apache.org/fop/">Apache FOP project</a>. 
- * All credits for the hyphenation code belongs to them.
+/**
+ * Hyphenation code for the CompoundWordTokenFilter. The code for the compound word hyphenation is
+ * taken from the <a href="http://xmlgraphics.apache.org/fop/">Apache FOP project</a>. All credits
+ * for the hyphenation code belongs to them.
  */
 package org.apache.lucene.analysis.compound.hyphenation;

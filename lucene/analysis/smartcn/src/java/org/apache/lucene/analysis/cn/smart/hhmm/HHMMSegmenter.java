@@ -17,13 +17,13 @@
 package org.apache.lucene.analysis.cn.smart.hhmm;
 
 import java.util.List;
-
 import org.apache.lucene.analysis.cn.smart.CharType;
 import org.apache.lucene.analysis.cn.smart.Utility;
 import org.apache.lucene.analysis.cn.smart.WordType;
 
 /**
  * Finds the optimal segmentation of a sentence into Chinese words
+ *
  * @lucene.experimental
  */
 public class HHMMSegmenter {
@@ -69,35 +69,35 @@ public class HHMMSegmenter {
           j = i + 1;
           wordBuf.delete(0, wordBuf.length());
           // It doesn't matter if a single Chinese character (Hanzi) can form a phrase or not,
-          // it will store that single Chinese character (Hanzi) in the SegGraph.  Otherwise, it will
+          // it will store that single Chinese character (Hanzi) in the SegGraph.  Otherwise, it
+          // will
           // cause word division.
           wordBuf.append(sentence.charAt(i));
-          charArray = new char[] { sentence.charAt(i) };
+          charArray = new char[] {sentence.charAt(i)};
           frequency = wordDict.getFrequency(charArray);
-          token = new SegToken(charArray, i, j, WordType.CHINESE_WORD,
-              frequency);
+          token = new SegToken(charArray, i, j, WordType.CHINESE_WORD, frequency);
           segGraph.addToken(token);
 
           foundIndex = wordDict.getPrefixMatch(charArray);
           while (j <= length && foundIndex != -1) {
             if (wordDict.isEqual(charArray, foundIndex) && charArray.length > 1) {
-              // It is the phrase we are looking for; In other words, we have found a phrase SegToken
+              // It is the phrase we are looking for; In other words, we have found a phrase
+              // SegToken
               // from i to j.  It is not a monosyllabic word (single word).
               frequency = wordDict.getFrequency(charArray);
-              token = new SegToken(charArray, i, j, WordType.CHINESE_WORD,
-                  frequency);
+              token = new SegToken(charArray, i, j, WordType.CHINESE_WORD, frequency);
               segGraph.addToken(token);
             }
 
-            while (j < length && charTypeArray[j] == CharType.SPACE_LIKE)
-              j++;
+            while (j < length && charTypeArray[j] == CharType.SPACE_LIKE) j++;
 
             if (j < length && charTypeArray[j] == CharType.HANZI) {
               wordBuf.append(sentence.charAt(j));
               charArray = new char[wordBuf.length()];
               wordBuf.getChars(0, charArray.length, charArray, 0);
-              // idArray has been found (foundWordIndex!=-1) as a prefix before.  
-              // Therefore, idArray after it has been lengthened can only appear after foundWordIndex.  
+              // idArray has been found (foundWordIndex!=-1) as a prefix before.
+              // Therefore, idArray after it has been lengthened can only appear after
+              // foundWordIndex.
               // So start searching after foundWordIndex.
               foundIndex = wordDict.getPrefixMatch(charArray, foundIndex);
               j++;
@@ -112,9 +112,9 @@ public class HHMMSegmenter {
         case CharType.LETTER:
           j = i + 1;
           while (j < length
-              && (charTypeArray[j] == CharType.LETTER || charTypeArray[j] == CharType.FULLWIDTH_LETTER)) {
-            if (charTypeArray[j] == CharType.FULLWIDTH_LETTER)
-              hasFullWidth = true;
+              && (charTypeArray[j] == CharType.LETTER
+                  || charTypeArray[j] == CharType.FULLWIDTH_LETTER)) {
+            if (charTypeArray[j] == CharType.FULLWIDTH_LETTER) hasFullWidth = true;
             j++;
           }
           // Found a Token from i to j. Type is LETTER char string.
@@ -130,9 +130,9 @@ public class HHMMSegmenter {
         case CharType.DIGIT:
           j = i + 1;
           while (j < length
-              && (charTypeArray[j] == CharType.DIGIT || charTypeArray[j] == CharType.FULLWIDTH_DIGIT)) {
-            if (charTypeArray[j] == CharType.FULLWIDTH_DIGIT)
-              hasFullWidth = true;
+              && (charTypeArray[j] == CharType.DIGIT
+                  || charTypeArray[j] == CharType.FULLWIDTH_DIGIT)) {
+            if (charTypeArray[j] == CharType.FULLWIDTH_DIGIT) hasFullWidth = true;
             j++;
           }
           // Found a Token from i to j. Type is NUMBER char string.
@@ -145,9 +145,10 @@ public class HHMMSegmenter {
           break;
         case CharType.DELIMITER:
           j = i + 1;
-          // No need to search the weight for the punctuation.  Picking the highest frequency will work.
+          // No need to search the weight for the punctuation.  Picking the highest frequency will
+          // work.
           frequency = Utility.MAX_FREQUENCE;
-          charArray = new char[] { sentence.charAt(i) };
+          charArray = new char[] {sentence.charAt(i)};
           token = new SegToken(charArray, i, j, WordType.DELIMITER, frequency);
           segGraph.addToken(token);
           i = j;
@@ -174,8 +175,7 @@ public class HHMMSegmenter {
     // "end xx end"
     charArray = Utility.END_CHAR_ARRAY;
     frequency = wordDict.getFrequency(charArray);
-    token = new SegToken(charArray, length, length + 1, WordType.SENTENCE_END,
-        frequency);
+    token = new SegToken(charArray, length, length + 1, WordType.SENTENCE_END, frequency);
     segGraph.addToken(token);
 
     return segGraph;
@@ -201,6 +201,7 @@ public class HHMMSegmenter {
 
   /**
    * Return a list of {@link SegToken} representing the best segmentation of a sentence
+   *
    * @param sentence input sentence
    * @return best segmentation as a {@link List}
    */

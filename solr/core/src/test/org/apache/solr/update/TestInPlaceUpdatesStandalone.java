@@ -18,6 +18,7 @@
 
 package org.apache.solr.update;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +49,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -119,6 +121,36 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void deleteAllAndCommit() throws Exception {
     clearIndex();
     assertU(commit("softCommit", "false"));
+  }
+
+  @Test
+  public void testUpdateBadRequest() throws Exception {
+    final long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 41), null);
+    assertU(commit());
+
+    // invalid value with set operation
+    SolrException e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("set", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // invalid value with inc operation
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("inc", "NOT_NUMBER")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+
+    // inc op with null value
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("inc", null)));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid input 'null' for field inplace_updatable_float"));
+
+    e = expectThrows(SolrException.class,
+        () -> addAndAssertVersion(version1, "id", "1", "inplace_updatable_float",
+            map("inc", new ArrayList<>(Collections.singletonList(123)))));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid input '[123]' for field inplace_updatable_float"));
   }
 
   @Test

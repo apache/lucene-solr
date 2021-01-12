@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -27,11 +26,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
-/** Tests for SortedSetSortField selectors other than MIN,
- *  these require optional codec support (random access to ordinals) */
+/**
+ * Tests for SortedSetSortField selectors other than MIN, these require optional codec support
+ * (random access to ordinals)
+ */
 @SuppressCodecs({"SimpleText"})
 public class TestSortedSetSelector extends LuceneTestCase {
-  
+
   public void testMax() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -49,7 +50,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
 
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    
+
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -57,11 +58,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMaxReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -76,10 +77,10 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    
+
     Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MAX));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -87,11 +88,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMaxMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -112,7 +113,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
 
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    
+
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MAX);
     sortField.setMissingValue(SortField.STRING_FIRST);
     Sort sort = new Sort(sortField);
@@ -124,11 +125,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'baz' comes before 'foo'
     assertEquals("3", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMaxMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -149,7 +150,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
 
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
-    
+
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MAX);
     sortField.setMissingValue(SortField.STRING_LAST);
     Sort sort = new Sort(sortField);
@@ -161,11 +162,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMaxSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -179,7 +180,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MAX));
@@ -193,7 +194,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMin() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -210,7 +211,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN));
@@ -220,11 +221,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMinReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -241,7 +242,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MIDDLE_MIN));
@@ -251,11 +252,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMinMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -275,7 +276,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN);
@@ -289,11 +290,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMinMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -313,7 +314,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN);
@@ -327,11 +328,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMinSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -345,7 +346,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MIN));
@@ -359,7 +360,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMax() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -376,7 +377,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX));
@@ -386,11 +387,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMaxReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -407,7 +408,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", true, SortedSetSelector.Type.MIDDLE_MAX));
@@ -417,11 +418,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMaxMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -441,7 +442,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX);
@@ -455,11 +456,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     // 'b' comes before 'c'
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
     assertEquals("1", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMaxMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -479,7 +480,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX);
@@ -493,11 +494,11 @@ public class TestSortedSetSelector extends LuceneTestCase {
     assertEquals("1", searcher.doc(td.scoreDocs[1].doc).get("id"));
     // null comes last
     assertEquals("3", searcher.doc(td.scoreDocs[2].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testMiddleMaxSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -511,7 +512,7 @@ public class TestSortedSetSelector extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     // slow wrapper does not support random access ordinals (there is no need for that!)
     IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortedSetSortField("value", false, SortedSetSelector.Type.MIDDLE_MAX));

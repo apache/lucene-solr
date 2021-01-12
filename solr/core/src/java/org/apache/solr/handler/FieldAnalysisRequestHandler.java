@@ -105,8 +105,6 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     return "Provide a breakdown of the analysis process of field/query text";
   }
 
-  // ================================================= Helper methods ================================================
-
   /**
    * Resolves the AnalysisRequest based on the parameters in the given SolrParams.
    *

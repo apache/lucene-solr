@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.codecs.lucene84;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -29,8 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
 public class TestPForUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
@@ -40,8 +38,8 @@ public class TestPForUtil extends LuceneTestCase {
     for (int i = 0; i < iterations; ++i) {
       final int bpv = TestUtil.nextInt(random(), 0, 31);
       for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-        values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
-            0, (int) PackedInts.maxValue(bpv));
+        values[i * ForUtil.BLOCK_SIZE + j] =
+            RandomNumbers.randomIntBetween(random(), 0, (int) PackedInts.maxValue(bpv));
         if (random().nextInt(100) == 0) {
           final int exceptionBpv;
           if (random().nextInt(10) == 0) {
@@ -65,7 +63,7 @@ public class TestPForUtil extends LuceneTestCase {
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          source[j] = values[i*ForUtil.BLOCK_SIZE+j];
+          source[j] = values[i * ForUtil.BLOCK_SIZE + j];
         }
         pforUtil.encode(source, out);
       }
@@ -88,8 +86,9 @@ public class TestPForUtil extends LuceneTestCase {
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
           ints[j] = Math.toIntExact(restored[j]);
         }
-        assertArrayEquals(Arrays.toString(ints),
-            ArrayUtil.copyOfSubArray(values, i*ForUtil.BLOCK_SIZE, (i+1)*ForUtil.BLOCK_SIZE),
+        assertArrayEquals(
+            Arrays.toString(ints),
+            ArrayUtil.copyOfSubArray(values, i * ForUtil.BLOCK_SIZE, (i + 1) * ForUtil.BLOCK_SIZE),
             ints);
       }
       assertEquals(endPointer, in.getFilePointer());

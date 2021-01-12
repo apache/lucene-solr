@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
@@ -31,44 +30,41 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.RollingBuffer;
 
 /**
- * Converts an incoming graph token stream, such as one from
- * {@link SynonymGraphFilter}, into a flat form so that
- * all nodes form a single linear chain with no side paths.  Every
- * path through the graph touches every node.  This is necessary
- * when indexing a graph token stream, because the index does not
- * save {@link PositionLengthAttribute} and so it cannot
- * preserve the graph structure.  However, at search time,
- * query parsers can correctly handle the graph and this token
- * filter should <b>not</b> be used.
+ * Converts an incoming graph token stream, such as one from {@link SynonymGraphFilter}, into a flat
+ * form so that all nodes form a single linear chain with no side paths. Every path through the
+ * graph touches every node. This is necessary when indexing a graph token stream, because the index
+ * does not save {@link PositionLengthAttribute} and so it cannot preserve the graph structure.
+ * However, at search time, query parsers can correctly handle the graph and this token filter
+ * should <b>not</b> be used.
  *
- * <p>If the graph was not already flat to start, this
- * is likely a lossy process, i.e. it will often cause the 
- * graph to accept token sequences it should not, and to
- * reject token sequences it should not.
+ * <p>If the graph was not already flat to start, this is likely a lossy process, i.e. it will often
+ * cause the graph to accept token sequences it should not, and to reject token sequences it should
+ * not.
  *
- * <p>However, when applying synonyms during indexing, this
- * is necessary because Lucene already does not index a graph 
- * and so the indexing process is already lossy
- * (it ignores the {@link PositionLengthAttribute}).
+ * <p>However, when applying synonyms during indexing, this is necessary because Lucene already does
+ * not index a graph and so the indexing process is already lossy (it ignores the {@link
+ * PositionLengthAttribute}).
  *
  * @lucene.experimental
  */
 public final class FlattenGraphFilter extends TokenFilter {
 
   /** Holds all tokens leaving a given input position. */
-  private final static class InputNode implements RollingBuffer.Resettable {
+  private static final class InputNode implements RollingBuffer.Resettable {
     private final List<AttributeSource.State> tokens = new ArrayList<>();
 
     /** Our input node, or -1 if we haven't been assigned yet */
     int node = -1;
 
-    /** Maximum to input node for all tokens leaving here; we use this
-     *  to know when we can freeze. */
+    /**
+     * Maximum to input node for all tokens leaving here; we use this to know when we can freeze.
+     */
     int maxToNode = -1;
 
-    /** Where we currently map to; this changes (can only
-     *  increase as we see more input tokens), until we are finished
-     *  with this position. */
+    /**
+     * Where we currently map to; this changes (can only increase as we see more input tokens),
+     * until we are finished with this position.
+     */
     int outputNode = -1;
 
     /** Which token (index into {@link #tokens}) we will next output. */
@@ -84,10 +80,11 @@ public final class FlattenGraphFilter extends TokenFilter {
     }
   }
 
-  /** Gathers up merged input positions into a single output position,
-   *  only for the current "frontier" of nodes we've seen but can't yet
-   *  output because they are not frozen. */
-  private final static class OutputNode implements RollingBuffer.Resettable {
+  /**
+   * Gathers up merged input positions into a single output position, only for the current
+   * "frontier" of nodes we've seen but can't yet output because they are not frozen.
+   */
+  private static final class OutputNode implements RollingBuffer.Resettable {
     private final List<Integer> inputNodes = new ArrayList<>();
 
     /** Node ID for this output, or -1 if we haven't been assigned yet. */
@@ -95,7 +92,7 @@ public final class FlattenGraphFilter extends TokenFilter {
 
     /** Which input node (index into {@link #inputNodes}) we will next output. */
     int nextOut;
-    
+
     /** Start offset of tokens leaving this node. */
     int startOffset = -1;
 
@@ -112,21 +109,24 @@ public final class FlattenGraphFilter extends TokenFilter {
     }
   }
 
-  private final RollingBuffer<InputNode> inputNodes = new RollingBuffer<InputNode>() {
-    @Override
-    protected InputNode newInstance() {
-      return new InputNode();
-    }
-  };
+  private final RollingBuffer<InputNode> inputNodes =
+      new RollingBuffer<InputNode>() {
+        @Override
+        protected InputNode newInstance() {
+          return new InputNode();
+        }
+      };
 
-  private final RollingBuffer<OutputNode> outputNodes = new RollingBuffer<OutputNode>() {
-    @Override
-    protected OutputNode newInstance() {
-      return new OutputNode();
-    }
-  };
+  private final RollingBuffer<OutputNode> outputNodes =
+      new RollingBuffer<OutputNode>() {
+        @Override
+        protected OutputNode newInstance() {
+          return new OutputNode();
+        }
+      };
 
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
@@ -137,7 +137,7 @@ public final class FlattenGraphFilter extends TokenFilter {
   private int outputFrom;
 
   // for debugging:
-  //private int retOutputFrom;
+  // private int retOutputFrom;
 
   private boolean done;
 
@@ -157,31 +157,36 @@ public final class FlattenGraphFilter extends TokenFilter {
 
   private boolean releaseBufferedToken() {
 
-    // We only need the while loop (retry) if we have a hole (an output node that has no tokens leaving):
+    // We only need the while loop (retry) if we have a hole (an output node that has no tokens
+    // leaving):
     while (outputFrom < outputNodes.getMaxPos()) {
       OutputNode output = outputNodes.get(outputFrom);
       if (output.inputNodes.isEmpty()) {
         // No tokens arrived to this node, which happens for the first node
         // after a hole:
-        //System.out.println("    skip empty outputFrom=" + outputFrom);
+        // System.out.println("    skip empty outputFrom=" + outputFrom);
         outputFrom++;
         continue;
       }
 
       int maxToNode = -1;
-      for(int inputNodeID : output.inputNodes) {
+      for (int inputNodeID : output.inputNodes) {
         InputNode inputNode = inputNodes.get(inputNodeID);
         assert inputNode.outputNode == outputFrom;
         maxToNode = Math.max(maxToNode, inputNode.maxToNode);
       }
-      //System.out.println("  release maxToNode=" + maxToNode + " vs inputFrom=" + inputFrom);
+      // System.out.println("  release maxToNode=" + maxToNode + " vs inputFrom=" + inputFrom);
 
       // TODO: we could shrink the frontier here somewhat if we
       // always output posLen=1 as part of our "sausagizing":
       if (maxToNode <= inputFrom || done) {
-        //System.out.println("  output node merged these inputs: " + output.inputNodes);
+        // System.out.println("  output node merged these inputs: " + output.inputNodes);
         // These tokens are now frozen
-        assert output.nextOut < output.inputNodes.size(): "output.nextOut=" + output.nextOut + " vs output.inputNodes.size()=" + output.inputNodes.size();
+        assert output.nextOut < output.inputNodes.size()
+            : "output.nextOut="
+                + output.nextOut
+                + " vs output.inputNodes.size()="
+                + output.inputNodes.size();
         InputNode inputNode = inputNodes.get(output.inputNodes.get(output.nextOut));
         if (done && inputNode.tokens.size() == 0 && outputFrom >= outputNodes.getMaxPos()) {
           return false;
@@ -192,7 +197,7 @@ public final class FlattenGraphFilter extends TokenFilter {
           // Hole dest nodes should never be merged since 1) we always
           // assign them to a new output position, and 2) since they never
           // have arriving tokens they cannot be pushed:
-          assert output.inputNodes.size() == 1: output.inputNodes.size();
+          assert output.inputNodes.size() == 1 : output.inputNodes.size();
           outputFrom++;
           inputNodes.freeBefore(output.inputNodes.get(0));
           outputNodes.freeBefore(outputFrom);
@@ -214,7 +219,7 @@ public final class FlattenGraphFilter extends TokenFilter {
         posLenAtt.setPositionLength(toInputNode.outputNode - outputFrom);
         lastOutputFrom = outputFrom;
         inputNode.nextOut++;
-        //System.out.println("  ret " + this);
+        // System.out.println("  ret " + this);
 
         OutputNode outputEndNode = outputNodes.get(toInputNode.outputNode);
 
@@ -227,7 +232,7 @@ public final class FlattenGraphFilter extends TokenFilter {
 
         // We must do this in case the incoming tokens have broken offsets:
         int endOffset = Math.max(startOffset, outputEndNode.endOffset);
-        
+
         offsetAtt.setOffset(startOffset, endOffset);
         lastStartOffset = startOffset;
 
@@ -246,22 +251,23 @@ public final class FlattenGraphFilter extends TokenFilter {
       }
     }
 
-    //System.out.println("    break false");
+    // System.out.println("    break false");
     return false;
   }
 
   @Override
   public boolean incrementToken() throws IOException {
-    //System.out.println("\nF.increment inputFrom=" + inputFrom + " outputFrom=" + outputFrom);
+    // System.out.println("\nF.increment inputFrom=" + inputFrom + " outputFrom=" + outputFrom);
 
     while (true) {
       if (releaseBufferedToken()) {
-        //retOutputFrom += posIncAtt.getPositionIncrement();
-        //System.out.println("    return buffered: " + termAtt + " " + retOutputFrom + "-" + (retOutputFrom + posLenAtt.getPositionLength()));
-        //printStates();
+        // retOutputFrom += posIncAtt.getPositionIncrement();
+        // System.out.println("    return buffered: " + termAtt + " " + retOutputFrom + "-" +
+        // (retOutputFrom + posLenAtt.getPositionLength()));
+        // printStates();
         return true;
       } else if (done) {
-        //System.out.println("    done, return false");
+        // System.out.println("    done, return false");
         return false;
       }
 
@@ -274,7 +280,7 @@ public final class FlattenGraphFilter extends TokenFilter {
 
         // Input node this token goes to:
         int inputTo = inputFrom + posLenAtt.getPositionLength();
-        //System.out.println("  input.inc " + termAtt + ": " + inputFrom + "-" + inputTo);
+        // System.out.println("  input.inc " + termAtt + ": " + inputFrom + "-" + inputTo);
 
         InputNode src = inputNodes.get(inputFrom);
         if (src.node == -1) {
@@ -289,7 +295,7 @@ public final class FlattenGraphFilter extends TokenFilter {
           src.node = inputFrom;
 
           src.outputNode = outputNodes.getMaxPos() + 1;
-          //System.out.println("    hole: force to outputNode=" + src.outputNode);
+          // System.out.println("    hole: force to outputNode=" + src.outputNode);
           OutputNode outSrc = outputNodes.get(src.outputNode);
 
           // Not assigned yet:
@@ -322,17 +328,20 @@ public final class FlattenGraphFilter extends TokenFilter {
 
         if (outputEndNode > dest.outputNode) {
           if (dest.outputNode != -1) {
-            boolean removed = outputNodes.get(dest.outputNode).inputNodes.remove(Integer.valueOf(inputTo));
+            boolean removed =
+                outputNodes.get(dest.outputNode).inputNodes.remove(Integer.valueOf(inputTo));
             assert removed;
           }
-          //System.out.println("    increase output node: " + dest.outputNode + " vs " + outputEndNode);
+          // System.out.println("    increase output node: " + dest.outputNode + " vs " +
+          // outputEndNode);
           outputNodes.get(outputEndNode).inputNodes.add(inputTo);
           dest.outputNode = outputEndNode;
 
           // Since all we ever do is merge incoming nodes together, and then renumber
           // the merged nodes sequentially, we should only ever assign smaller node
           // numbers:
-          assert outputEndNode <= inputTo: "outputEndNode=" + outputEndNode + " vs inputTo=" + inputTo;
+          assert outputEndNode <= inputTo
+              : "outputEndNode=" + outputEndNode + " vs inputTo=" + inputTo;
         }
 
         OutputNode outDest = outputNodes.get(dest.outputNode);
@@ -343,7 +352,7 @@ public final class FlattenGraphFilter extends TokenFilter {
         }
 
       } else {
-        //System.out.println("  got false from input");
+        // System.out.println("  got false from input");
         input.end();
         finalPosInc = posIncAtt.getPositionIncrement();
         finalOffset = offsetAtt.endOffset();
@@ -385,10 +394,10 @@ public final class FlattenGraphFilter extends TokenFilter {
       super.end();
     }
   }
-  
+
   @Override
   public void reset() throws IOException {
-    //System.out.println("F: reset");
+    // System.out.println("F: reset");
     super.reset();
     inputFrom = -1;
     inputNodes.reset();
@@ -402,7 +411,7 @@ public final class FlattenGraphFilter extends TokenFilter {
     out.inputNodes.add(0);
     out.startOffset = 0;
     outputFrom = 0;
-    //retOutputFrom = -1;
+    // retOutputFrom = -1;
     lastOutputFrom = -1;
     done = false;
     finalPosInc = -1;

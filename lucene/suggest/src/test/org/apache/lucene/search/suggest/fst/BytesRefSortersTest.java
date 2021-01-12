@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.fst;
 
 import java.util.Comparator;
-
 import org.apache.lucene.search.suggest.InMemorySorter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -43,7 +42,7 @@ public class BytesRefSortersTest extends LuceneTestCase {
 
   private void check(BytesRefSorter sorter) throws Exception {
     for (int i = 0; i < 100; i++) {
-      byte [] current = new byte [random().nextInt(256)];
+      byte[] current = new byte[random().nextInt(256)];
       random().nextBytes(current);
       sorter.add(new BytesRef(current));
     }
@@ -51,11 +50,13 @@ public class BytesRefSortersTest extends LuceneTestCase {
     // Create two iterators and check that they're aligned with each other.
     BytesRefIterator i1 = sorter.iterator();
     BytesRefIterator i2 = sorter.iterator();
-    
+
     // Verify sorter contract.
-    expectThrows(IllegalStateException.class, () -> {
-      sorter.add(new BytesRef(new byte [1]));
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          sorter.add(new BytesRef(new byte[1]));
+        });
 
     while (true) {
       BytesRef spare1 = i1.next();
@@ -65,5 +66,5 @@ public class BytesRefSortersTest extends LuceneTestCase {
         break;
       }
     }
-  }  
+  }
 }

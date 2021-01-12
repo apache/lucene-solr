@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis.uk;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-
 import morfologik.stemming.Dictionary;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
@@ -44,29 +42,34 @@ import org.apache.lucene.util.IOUtils;
  */
 public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
-  
+
   /** File containing default Ukrainian stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
-  
+  public static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+
   /**
    * Returns an unmodifiable instance of the default stop words set.
+   *
    * @return default stop words set.
    */
   public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
+
   /**
-   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
-   * accesses the static final set the first time.;
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class accesses the
+   * static final set the first time.;
    */
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
-        DEFAULT_STOP_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(UkrainianMorfologikAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+        DEFAULT_STOP_SET =
+            WordlistLoader.getSnowballWordSet(
+                IOUtils.getDecodingReader(
+                    UkrainianMorfologikAnalyzer.class,
+                    DEFAULT_STOPWORD_FILE,
+                    StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -75,16 +78,14 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
-   */
+  /** Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}. */
   public UkrainianMorfologikAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words.
-   * 
+   *
    * @param stopwords a stopword set
    */
   public UkrainianMorfologikAnalyzer(CharArraySet stopwords) {
@@ -92,10 +93,9 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link SetKeywordMarkerFilter} before
-   * stemming.
-   * 
+   * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is provided
+   * this analyzer will add a {@link SetKeywordMarkerFilter} before stemming.
+   *
    * @param stopwords a stopword set
    * @param stemExclusionSet a set of terms not to be stemmed
    */
@@ -125,16 +125,13 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates a
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * which tokenizes all the text in the provided {@link Reader}.
-   * 
-   * @return A
-   *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from an {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
-   *         provided and {@link MorfologikFilter} on the Ukrainian dictionary.
+   * Creates a {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} which tokenizes all
+   * the text in the provided {@link Reader}.
+   *
+   * @return A {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from an
+   *     {@link StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter} ,
+   *     {@link SetKeywordMarkerFilter} if a stem exclusion set is provided and {@link
+   *     MorfologikFilter} on the Ukrainian dictionary.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
@@ -152,7 +149,10 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
 
   private static Dictionary getDictionary() {
     try {
-      return Dictionary.read(UkrainianMorfologikAnalyzer.class.getClassLoader().getResource("ua/net/nlp/ukrainian.dict"));
+      return Dictionary.read(
+          UkrainianMorfologikAnalyzer.class
+              .getClassLoader()
+              .getResource("ua/net/nlp/ukrainian.dict"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

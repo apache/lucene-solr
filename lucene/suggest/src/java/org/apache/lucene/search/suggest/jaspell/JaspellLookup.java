@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellTernarySearchTrie.TSTNode;
@@ -32,9 +31,8 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 
 /**
- * Suggest implementation based on 
- * <a href="http://jaspell.sourceforge.net/">JaSpell</a>.
- * 
+ * Suggest implementation based on <a href="http://jaspell.sourceforge.net/">JaSpell</a>.
+ *
  * @see JaspellTernarySearchTrie
  * @deprecated Migrate to one of the newer suggesters which are much more RAM efficient.
  */
@@ -46,11 +44,12 @@ public class JaspellLookup extends Lookup implements Accountable {
 
   /** Number of entries the lookup was built with */
   private long count = 0;
-  
-  /** 
-   * Creates a new empty trie 
+
+  /**
+   * Creates a new empty trie
+   *
    * @see #build(InputIterator)
-   * */
+   */
   public JaspellLookup() {}
 
   @Override
@@ -78,11 +77,10 @@ public class JaspellLookup extends Lookup implements Accountable {
     }
   }
 
-  /** 
-   * Adds a new node if <code>key</code> already exists,
-   * otherwise replaces its value.
-   * <p>
-   * This method always returns false.
+  /**
+   * Adds a new node if <code>key</code> already exists, otherwise replaces its value.
+   *
+   * <p>This method always returns false.
    */
   public boolean add(CharSequence key, Object value) {
     trie.put(key, value);
@@ -90,16 +88,14 @@ public class JaspellLookup extends Lookup implements Accountable {
     return false;
   }
 
-  /**
-   * Returns the value for the specified key, or null
-   * if the key does not exist.
-   */
+  /** Returns the value for the specified key, or null if the key does not exist. */
   public Object get(CharSequence key) {
     return trie.get(key);
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(
+      CharSequence key, Set<BytesRef> contexts, boolean onlyMorePopular, int num) {
     if (contexts != null) {
       throw new IllegalArgumentException("this suggester doesn't support contexts");
     }
@@ -113,13 +109,12 @@ public class JaspellLookup extends Lookup implements Accountable {
     }
     if (list == null || list.size() == 0) {
       return res;
-      
     }
     int maxCnt = Math.min(num, list.size());
     if (onlyMorePopular) {
       LookupPriorityQueue queue = new LookupPriorityQueue(num);
       for (String s : list) {
-        long freq = ((Number)trie.get(s)).longValue();
+        long freq = ((Number) trie.get(s)).longValue();
         queue.insertWithOverflow(new LookupResult(new CharsRef(s), freq));
       }
       for (LookupResult lr : queue.getResults()) {
@@ -128,9 +123,9 @@ public class JaspellLookup extends Lookup implements Accountable {
     } else {
       for (int i = 0; i < maxCnt; i++) {
         String s = list.get(i);
-        long freq = ((Number)trie.get(s)).longValue();
+        long freq = ((Number) trie.get(s)).longValue();
         res.add(new LookupResult(new CharsRef(s), freq));
-      }      
+      }
     }
     return res;
   }
@@ -139,7 +134,7 @@ public class JaspellLookup extends Lookup implements Accountable {
   private static final byte EQ_KID = 0x02;
   private static final byte HI_KID = 0x04;
   private static final byte HAS_VALUE = 0x08;
- 
+
   private void readRecursively(DataInput in, TSTNode node) throws IOException {
     node.splitchar = in.readString().charAt(0);
     byte mask = in.readByte();
@@ -175,7 +170,7 @@ public class JaspellLookup extends Lookup implements Accountable {
     if (node.data != null) mask |= HAS_VALUE;
     out.writeByte(mask);
     if (node.data != null) {
-      out.writeLong(((Number)node.data).longValue());
+      out.writeLong(((Number) node.data).longValue());
     }
     writeRecursively(out, node.relatives[TSTNode.LOKID]);
     writeRecursively(out, node.relatives[TSTNode.EQKID]);
@@ -206,7 +201,7 @@ public class JaspellLookup extends Lookup implements Accountable {
   public long ramBytesUsed() {
     return trie.ramBytesUsed();
   }
-  
+
   @Override
   public long getCount() {
     return count;

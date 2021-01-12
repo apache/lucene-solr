@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.codecs.compressing;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -36,7 +36,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
 
@@ -70,26 +69,26 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     validDoc.add(new StoredField("id", 0));
     iw.addDocument(validDoc);
     iw.commit();
-    
+
     // make sure that #writeField will fail to trigger an abort
     final Document invalidDoc = new Document();
     FieldType fieldType = new FieldType();
     fieldType.setStored(true);
-    invalidDoc.add(new Field("invalid", fieldType) {
-      
-      @Override
-      public String stringValue() {
-        // TODO: really bad & scary that this causes IW to
-        // abort the segment!!  We should fix this.
-        return null;
-      }
-      
-    });
-    
+    invalidDoc.add(
+        new Field("invalid", fieldType) {
+
+          @Override
+          public String stringValue() {
+            // TODO: really bad & scary that this causes IW to
+            // abort the segment!!  We should fix this.
+            return null;
+          }
+        });
+
     try {
       iw.addDocument(invalidDoc);
       iw.commit();
-    } catch(IllegalArgumentException iae) {
+    } catch (IllegalArgumentException iae) {
       // expected
       assertEquals(iae, iw.getTragicException());
     }
@@ -121,13 +120,13 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
 
     // round-trip special values
     float special[] = {
-        -0.0f,
-        +0.0f,
-        Float.NEGATIVE_INFINITY,
-        Float.POSITIVE_INFINITY,
-        Float.MIN_VALUE,
-        Float.MAX_VALUE,
-        Float.NaN,
+      -0.0f,
+      +0.0f,
+      Float.NEGATIVE_INFINITY,
+      Float.POSITIVE_INFINITY,
+      Float.MIN_VALUE,
+      Float.MAX_VALUE,
+      Float.NaN,
     };
 
     for (float f : special) {
@@ -144,7 +143,9 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     for (int i = 0; i < 100000; i++) {
       float f = r.nextFloat() * (random().nextInt(100) - 50);
       CompressingStoredFieldsWriter.writeZFloat(out, f);
-      assertTrue("length=" + out.getPosition() + ", f=" + f, out.getPosition() <= ((Float.floatToIntBits(f) >>> 31) == 1 ? 5 : 4));
+      assertTrue(
+          "length=" + out.getPosition() + ", f=" + f,
+          out.getPosition() <= ((Float.floatToIntBits(f) >>> 31) == 1 ? 5 : 4));
       in.reset(buffer, 0, out.getPosition());
       float g = CompressingStoredFieldsReader.readZFloat(in);
       assertTrue(in.eof());
@@ -176,13 +177,13 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
 
     // round-trip special values
     double special[] = {
-        -0.0d,
-        +0.0d,
-        Double.NEGATIVE_INFINITY,
-        Double.POSITIVE_INFINITY,
-        Double.MIN_VALUE,
-        Double.MAX_VALUE,
-        Double.NaN
+      -0.0d,
+      +0.0d,
+      Double.NEGATIVE_INFINITY,
+      Double.POSITIVE_INFINITY,
+      Double.MIN_VALUE,
+      Double.MAX_VALUE,
+      Double.NaN
     };
 
     for (double x : special) {
@@ -269,19 +270,19 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       out.reset(buffer);
     }
   }
-  
+
   /**
-   * writes some tiny segments with incomplete compressed blocks,
-   * and ensures merge recompresses them.
+   * writes some tiny segments with incomplete compressed blocks, and ensures merge recompresses
+   * them.
    */
   public void testChunkCleanup() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
-    
+
     // we have to enforce certain things like maxDocsPerChunk to cause dirty chunks to be created
     // by this test.
-    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4*1024, 100, false, 8));
+    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4 * 1024, 100, false, 8));
     IndexWriter iw = new IndexWriter(dir, iwConf);
     DirectoryReader ir = DirectoryReader.open(iw);
     for (int i = 0; i < 5; i++) {
@@ -296,7 +297,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       // examine dirty counts:
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
-        CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
+        CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader) sr.getFieldsReader();
         assertTrue(reader.getNumDirtyDocs() > 0);
         assertTrue(reader.getNumDirtyDocs() < 100); // can't be gte the number of docs per chunk
         assertEquals(1, reader.getNumDirtyChunks());
@@ -309,7 +310,7 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
-    CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader)sr.getFieldsReader();
+    CompressingStoredFieldsReader reader = (CompressingStoredFieldsReader) sr.getFieldsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);
     ir.close();

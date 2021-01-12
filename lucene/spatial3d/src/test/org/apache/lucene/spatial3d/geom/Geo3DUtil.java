@@ -19,10 +19,10 @@ package org.apache.lucene.spatial3d.geom;
 class Geo3DUtil {
 
   /** How many radians are in one degree */
-  final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
+  static final double RADIANS_PER_DEGREE = Math.PI / 180.0;
   /** How many degrees in a radian */
-  final static double DEGREES_PER_RADIAN = 180.0 / Math.PI;
-  
+  static final double DEGREES_PER_RADIAN = 180.0 / Math.PI;
+
   /** Converts degress to radians */
   static double fromDegrees(final double degrees) {
     return degrees * RADIANS_PER_DEGREE;

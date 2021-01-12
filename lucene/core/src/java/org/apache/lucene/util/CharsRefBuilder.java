@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.util;
 
-
 /**
  * A builder for {@link CharsRef} instances.
+ *
  * @lucene.internal
  */
 public class CharsRefBuilder implements Appendable {
@@ -57,9 +57,7 @@ public class CharsRefBuilder implements Appendable {
     ref.chars[offset] = b;
   }
 
-  /**
-   * Reset this builder to the empty state.
-   */
+  /** Reset this builder to the empty state. */
   public void clear() {
     ref.length = 0;
   }
@@ -91,47 +89,35 @@ public class CharsRefBuilder implements Appendable {
     return this;
   }
 
-  /**
-   * Copies the given {@link CharsRef} referenced content into this instance.
-   */
+  /** Copies the given {@link CharsRef} referenced content into this instance. */
   public void copyChars(CharsRef other) {
     copyChars(other.chars, other.offset, other.length);
   }
 
-  /**
-   * Used to grow the reference array.
-   */
+  /** Used to grow the reference array. */
   public void grow(int newLength) {
     ref.chars = ArrayUtil.grow(ref.chars, newLength);
   }
 
-  /**
-   * Copy the provided bytes, interpreted as UTF-8 bytes.
-   */
+  /** Copy the provided bytes, interpreted as UTF-8 bytes. */
   public void copyUTF8Bytes(byte[] bytes, int offset, int length) {
     grow(length);
     ref.length = UnicodeUtil.UTF8toUTF16(bytes, offset, length, ref.chars);
   }
 
-  /**
-   * Copy the provided bytes, interpreted as UTF-8 bytes.
-   */
+  /** Copy the provided bytes, interpreted as UTF-8 bytes. */
   public void copyUTF8Bytes(BytesRef bytes) {
     copyUTF8Bytes(bytes.bytes, bytes.offset, bytes.length);
   }
 
-  /**
-   * Copies the given array into this instance.
-   */
+  /** Copies the given array into this instance. */
   public void copyChars(char[] otherChars, int otherOffset, int otherLength) {
     grow(otherLength);
     System.arraycopy(otherChars, otherOffset, ref.chars, 0, otherLength);
     ref.length = otherLength;
   }
 
-  /**
-   * Appends the given array to this CharsRef
-   */
+  /** Appends the given array to this CharsRef */
   public void append(char[] otherChars, int otherOffset, int otherLength) {
     int newLen = ref.length + otherLength;
     grow(newLen);
@@ -140,9 +126,8 @@ public class CharsRefBuilder implements Appendable {
   }
 
   /**
-   * Return a {@link CharsRef} that points to the internal content of this
-   * builder. Any update to the content of this builder might invalidate
-   * the provided <code>ref</code> and vice-versa.
+   * Return a {@link CharsRef} that points to the internal content of this builder. Any update to
+   * the content of this builder might invalidate the provided <code>ref</code> and vice-versa.
    */
   public CharsRef get() {
     assert ref.offset == 0 : "Modifying the offset of the returned ref is illegal";

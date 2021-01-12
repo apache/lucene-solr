@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.classification.document;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.KNearestNeighborClassifier;
@@ -39,36 +37,55 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A k-Nearest Neighbor Document classifier (see <code>http://en.wikipedia.org/wiki/K-nearest_neighbors</code>) based
- * on {@link org.apache.lucene.queries.mlt.MoreLikeThis} .
+ * A k-Nearest Neighbor Document classifier (see <code>
+ * http://en.wikipedia.org/wiki/K-nearest_neighbors</code>) based on {@link
+ * org.apache.lucene.queries.mlt.MoreLikeThis} .
  *
  * @lucene.experimental
  */
-public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifier implements DocumentClassifier<BytesRef> {
+public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifier
+    implements DocumentClassifier<BytesRef> {
 
-  /**
-   * map of per field analyzers
-   */
+  /** map of per field analyzers */
   protected final Map<String, Analyzer> field2analyzer;
 
   /**
    * Creates a {@link KNearestNeighborClassifier}.
    *
-   * @param indexReader     the reader on the index to be used for classification
-   * @param similarity     the {@link Similarity} to be used by the underlying {@link IndexSearcher} or {@code null}
-   *                       (defaults to {@link org.apache.lucene.search.similarities.BM25Similarity})
-   * @param query          a {@link org.apache.lucene.search.Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
-   * @param k              the no. of docs to select in the MLT results to find the nearest neighbor
-   * @param minDocsFreq    {@link org.apache.lucene.queries.mlt.MoreLikeThis#minDocFreq} parameter
-   * @param minTermFreq    {@link org.apache.lucene.queries.mlt.MoreLikeThis#minTermFreq} parameter
+   * @param indexReader the reader on the index to be used for classification
+   * @param similarity the {@link Similarity} to be used by the underlying {@link IndexSearcher} or
+   *     {@code null} (defaults to {@link org.apache.lucene.search.similarities.BM25Similarity})
+   * @param query a {@link org.apache.lucene.search.Query} to eventually filter the docs used for
+   *     training the classifier, or {@code null} if all the indexed docs should be used
+   * @param k the no. of docs to select in the MLT results to find the nearest neighbor
+   * @param minDocsFreq {@link org.apache.lucene.queries.mlt.MoreLikeThis#minDocFreq} parameter
+   * @param minTermFreq {@link org.apache.lucene.queries.mlt.MoreLikeThis#minTermFreq} parameter
    * @param classFieldName the name of the field used as the output for the classifier
-   * @param field2analyzer map with key a field name and the related {org.apache.lucene.analysis.Analyzer}
-   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
+   * @param field2analyzer map with key a field name and the related
+   *     {org.apache.lucene.analysis.Analyzer}
+   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can
+   *     contain boosting indication e.g. title^10
    */
-  public KNearestNeighborDocumentClassifier(IndexReader indexReader, Similarity similarity, Query query, int k, int minDocsFreq,
-                                            int minTermFreq, String classFieldName, Map<String, Analyzer> field2analyzer, String... textFieldNames) {
-    super(indexReader, similarity, null, query, k, minDocsFreq, minTermFreq, classFieldName, textFieldNames);
+  public KNearestNeighborDocumentClassifier(
+      IndexReader indexReader,
+      Similarity similarity,
+      Query query,
+      int k,
+      int minDocsFreq,
+      int minTermFreq,
+      String classFieldName,
+      Map<String, Analyzer> field2analyzer,
+      String... textFieldNames) {
+    super(
+        indexReader,
+        similarity,
+        null,
+        query,
+        k,
+        minDocsFreq,
+        minTermFreq,
+        classFieldName,
+        textFieldNames);
     this.field2analyzer = field2analyzer;
   }
 
@@ -86,7 +103,8 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
   }
 
   @Override
-  public List<ClassificationResult<BytesRef>> getClasses(Document document, int max) throws IOException {
+  public List<ClassificationResult<BytesRef>> getClasses(Document document, int max)
+      throws IOException {
     TopDocs knnResults = knnSearch(document);
     List<ClassificationResult<BytesRef>> assignedClasses = buildListFromTopDocs(knnResults);
     Collections.sort(assignedClasses);
@@ -114,13 +132,17 @@ public class KNearestNeighborDocumentClassifier extends KNearestNeighborClassifi
       String[] fieldValues = document.getValues(fieldName);
       mlt.setBoost(true); // we want always to use the boost coming from TF * IDF of the term
       if (boost != null) {
-        mlt.setBoostFactor(Float.parseFloat(boost)); // this is an additional multiplicative boost coming from the field boost
+        mlt.setBoostFactor(
+            Float.parseFloat(
+                boost)); // this is an additional multiplicative boost coming from the field boost
       }
       mlt.setAnalyzer(field2analyzer.get(fieldName));
       for (String fieldContent : fieldValues) {
-        mltQuery.add(new BooleanClause(mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
+        mltQuery.add(
+            new BooleanClause(
+                mlt.like(fieldName, new StringReader(fieldContent)), BooleanClause.Occur.SHOULD));
       }
-      mlt.setBoostFactor(1);// restore neutral boost for next field
+      mlt.setBoostFactor(1); // restore neutral boost for next field
     }
     Query classFieldQuery = new WildcardQuery(new Term(classFieldName, "*"));
     mltQuery.add(new BooleanClause(classFieldQuery, BooleanClause.Occur.MUST));

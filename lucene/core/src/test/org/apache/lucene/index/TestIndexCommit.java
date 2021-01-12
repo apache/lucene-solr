@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -30,28 +28,88 @@ public class TestIndexCommit extends LuceneTestCase {
   public void testEqualsHashCode() throws Exception {
     // LUCENE-2417: equals and hashCode() impl was inconsistent
     final Directory dir = newDirectory();
-    
-    IndexCommit ic1 = new IndexCommit() {
-      @Override public String getSegmentsFileName() { return "a"; }
-      @Override public Directory getDirectory() { return dir; }
-      @Override public Collection<String> getFileNames() { return null; }
-      @Override public void delete() {}
-      @Override public long getGeneration() { return 0; }
-      @Override public Map<String, String> getUserData() { return null; }
-      @Override public boolean isDeleted() { return false; }
-      @Override public int getSegmentCount() { return 2; }
-    };
-    
-    IndexCommit ic2 = new IndexCommit() {
-      @Override public String getSegmentsFileName() { return "b"; }
-      @Override public Directory getDirectory() { return dir; }
-      @Override public Collection<String> getFileNames() { return null; }
-      @Override public void delete() {}
-      @Override public long getGeneration() { return 0; }
-      @Override public Map<String, String> getUserData() { return null; }
-      @Override public boolean isDeleted() { return false; }
-      @Override public int getSegmentCount() { return 2; }
-    };
+
+    IndexCommit ic1 =
+        new IndexCommit() {
+          @Override
+          public String getSegmentsFileName() {
+            return "a";
+          }
+
+          @Override
+          public Directory getDirectory() {
+            return dir;
+          }
+
+          @Override
+          public Collection<String> getFileNames() {
+            return null;
+          }
+
+          @Override
+          public void delete() {}
+
+          @Override
+          public long getGeneration() {
+            return 0;
+          }
+
+          @Override
+          public Map<String, String> getUserData() {
+            return null;
+          }
+
+          @Override
+          public boolean isDeleted() {
+            return false;
+          }
+
+          @Override
+          public int getSegmentCount() {
+            return 2;
+          }
+        };
+
+    IndexCommit ic2 =
+        new IndexCommit() {
+          @Override
+          public String getSegmentsFileName() {
+            return "b";
+          }
+
+          @Override
+          public Directory getDirectory() {
+            return dir;
+          }
+
+          @Override
+          public Collection<String> getFileNames() {
+            return null;
+          }
+
+          @Override
+          public void delete() {}
+
+          @Override
+          public long getGeneration() {
+            return 0;
+          }
+
+          @Override
+          public Map<String, String> getUserData() {
+            return null;
+          }
+
+          @Override
+          public boolean isDeleted() {
+            return false;
+          }
+
+          @Override
+          public int getSegmentCount() {
+            return 2;
+          }
+        };
 
     assertEquals(ic1, ic2);
     assertEquals("hash codes are not equals", ic1.hashCode(), ic2.hashCode());

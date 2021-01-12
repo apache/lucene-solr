@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.codecs.blocktreeords;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -89,9 +87,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "" + (char) (97+i);
+      String term = "" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -99,9 +97,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc.add(newTextField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "m" + (char) (97+i);
+      String term = "m" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -124,14 +122,14 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
     Collections.sort(terms);
 
-    for(int i=terms.size()-1;i>=0;i--) {
+    for (int i = terms.size() - 1; i >= 0; i--) {
       te.seekExact(i);
       assertEquals(i, te.ord());
       assertEquals(terms.get(i), te.term().utf8ToString());
     }
 
     int iters = atLeast(1000);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       int ord = random().nextInt(terms.size());
       BytesRef term = new BytesRef(terms.get(ord));
       if (random().nextBoolean()) {
@@ -141,7 +139,15 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
         te.seekExact(ord);
       } else {
         if (VERBOSE) {
-          System.out.println("TEST: iter=" + iter + " seek to term=" + terms.get(ord) + " ord=" + ord + " of " + terms.size());
+          System.out.println(
+              "TEST: iter="
+                  + iter
+                  + " seek to term="
+                  + terms.get(ord)
+                  + " ord="
+                  + ord
+                  + " of "
+                  + terms.size());
         }
         te.seekExact(term);
       }
@@ -158,9 +164,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     List<String> terms = new ArrayList<>();
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "" + (char) (97+i);
+      String term = "" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -168,9 +174,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc.add(newTextField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "m" + (char) (97+i);
+      String term = "m" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -178,9 +184,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc.add(newTextField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "mo" + (char) (97+i);
+      String term = "mo" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -213,7 +219,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
 
   private void testEnum(TermsEnum te, List<String> terms) throws IOException {
     Collections.sort(terms);
-    for(int i=terms.size()-1;i>=0;i--) {
+    for (int i = terms.size() - 1; i >= 0; i--) {
       if (VERBOSE) {
         System.out.println("TEST: seek to ord=" + i);
       }
@@ -223,7 +229,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     }
 
     int iters = atLeast(1000);
-    for(int iter=0;iter<iters;iter++) {
+    for (int iter = 0; iter < iters; iter++) {
       int ord = random().nextInt(terms.size());
       if (random().nextBoolean()) {
         te.seekExact(ord);
@@ -239,7 +245,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
-    for(int i=0;i<128;i++) {
+    for (int i = 0; i < 128; i++) {
       Document doc = new Document();
       String term = "" + (char) i;
       if (VERBOSE) {
@@ -278,9 +284,9 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
-    for(int i=0;i<36;i++) {
+    for (int i = 0; i < 36; i++) {
       Document doc = new Document();
-      String term = "" + (char) (97+i);
+      String term = "" + (char) (97 + i);
       terms.add(term);
       if (VERBOSE) {
         System.out.println("i=" + i + " term=" + term);
@@ -288,7 +294,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       doc.add(newStringField("field", term, Field.Store.NO));
       w.addDocument(doc);
     }
-    for(int i=0;i<128;i++) {
+    for (int i = 0; i < 128; i++) {
       Document doc = new Document();
       String term = "m" + (char) i;
       terms.add(term);
@@ -324,10 +330,10 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     List<String> terms = new ArrayList<>();
-    for(int i=0;i<30;i++) {
-      for(int j=0;j<30;j++) {
+    for (int i = 0; i < 30; i++) {
+      for (int j = 0; j < 30; j++) {
         Document doc = new Document();
-        String term = "" + (char) (97+i) + (char) (97+j);
+        String term = "" + (char) (97 + i) + (char) (97 + j);
         terms.add(term);
         if (VERBOSE) {
           System.out.println("term=" + term);
@@ -340,14 +346,14 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     IndexReader r = DirectoryReader.open(w);
     TermsEnum te = MultiTerms.getTerms(r, "body").iterator();
 
-    for(int i=0;i<30;i++) {
-      for(int j=0;j<30;j++) {
-        String term = "" + (char) (97+i) + (char) (97+j);
+    for (int i = 0; i < 30; i++) {
+      for (int j = 0; j < 30; j++) {
+        String term = "" + (char) (97 + i) + (char) (97 + j);
         if (VERBOSE) {
           System.out.println("TEST: check term=" + term);
         }
         assertEquals(term, te.next().utf8ToString());
-        assertEquals(30*i+j, te.ord());
+        assertEquals(30 * i + j, te.ord());
       }
     }
 
@@ -368,11 +374,11 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
     // Get empty string in there!
     doc.add(newStringField("field", "", Field.Store.NO));
     w.addDocument(doc);
-    
-    for(int i=0;i<36;i++) {
+
+    for (int i = 0; i < 36; i++) {
       doc = new Document();
-      String term = "" + (char) (97+i);
-      String term2 = "a" + (char) (97+i);
+      String term = "" + (char) (97 + i);
+      String term2 = "a" + (char) (97 + i);
       doc.add(newStringField("field", term, Field.Store.NO));
       doc.add(newStringField("field", term2, Field.Store.NO));
       w.addDocument(doc);

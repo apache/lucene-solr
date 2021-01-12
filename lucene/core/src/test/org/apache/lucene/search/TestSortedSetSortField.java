@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -30,16 +29,16 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** Simple tests for SortedSetSortField, indexing the sortedset up front */
 public class TestSortedSetSortField extends LuceneTestCase {
-  
+
   public void testEmptyIndex() throws Exception {
     IndexSearcher empty = newSearcher(new MultiReader());
     Query query = new TermQuery(new Term("contents", "foo"));
-  
+
     Sort sort = new Sort();
     sort.setSort(new SortedSetSortField("sortedset", false));
     TopDocs td = empty.search(query, 10, sort, true);
     assertEquals(0, td.totalHits.value);
-    
+
     // for an empty index, any selector should work
     for (SortedSetSelector.Type v : SortedSetSelector.Type.values()) {
       sort.setSort(new SortedSetSortField("sortedset", false, v));
@@ -47,23 +46,23 @@ public class TestSortedSetSortField extends LuceneTestCase {
       assertEquals(0, td.totalHits.value);
     }
   }
-  
+
   public void testEquals() throws Exception {
     SortField sf = new SortedSetSortField("a", false);
     assertFalse(sf.equals(null));
-    
+
     assertEquals(sf, sf);
-    
+
     SortField sf2 = new SortedSetSortField("a", false);
     assertEquals(sf, sf2);
     assertEquals(sf.hashCode(), sf2.hashCode());
-    
+
     assertFalse(sf.equals(new SortedSetSortField("a", true)));
     assertFalse(sf.equals(new SortedSetSortField("b", false)));
     assertFalse(sf.equals(new SortedSetSortField("a", false, SortedSetSelector.Type.MAX)));
     assertFalse(sf.equals("foo"));
   }
-  
+
   public void testForward() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -78,7 +77,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", false));
 
@@ -87,11 +86,11 @@ public class TestSortedSetSortField extends LuceneTestCase {
     // 'bar' comes before 'baz'
     assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
     assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
-    
+
     ir.close();
     dir.close();
   }
-  
+
   public void testReverse() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -107,7 +106,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
 
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", true));
 
@@ -120,7 +119,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testMissingFirst() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -138,7 +137,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortedSetSortField("value", false);
     sortField.setMissingValue(SortField.STRING_FIRST);
@@ -155,7 +154,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -173,7 +172,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     SortField sortField = new SortedSetSortField("value", false);
     sortField.setMissingValue(SortField.STRING_LAST);
@@ -190,7 +189,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   public void testSingleton() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -204,7 +203,7 @@ public class TestSortedSetSortField extends LuceneTestCase {
     writer.addDocument(doc);
     IndexReader ir = writer.getReader();
     writer.close();
-    
+
     IndexSearcher searcher = newSearcher(ir);
     Sort sort = new Sort(new SortedSetSortField("value", false));
 

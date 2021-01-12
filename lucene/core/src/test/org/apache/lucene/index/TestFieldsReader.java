@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
@@ -57,8 +55,8 @@ public class TestFieldsReader extends LuceneTestCase {
       fieldInfo.setDocValuesType(ift.docValuesType());
     }
     dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()))
-                               .setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf =
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     conf.getMergePolicy().setNoCFSRatio(0.0);
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
@@ -108,19 +106,18 @@ public class TestFieldsReader extends LuceneTestCase {
     reader.close();
   }
 
-
   public class FaultyFSDirectory extends FilterDirectory {
     AtomicBoolean doFail = new AtomicBoolean();
 
     public FaultyFSDirectory(Directory fsDir) {
       super(fsDir);
     }
-    
+
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
       return new FaultyIndexInput(doFail, in.openInput(name, context));
     }
-    
+
     public void startFailing() {
       doFail.set(true);
     }
@@ -151,21 +148,20 @@ public class TestFieldsReader extends LuceneTestCase {
       delegate.readBytes(b.array(), b.position(), b.remaining());
       b.position(b.limit());
     }
-    
+
     @Override
-    public void seekInternal(long pos) throws IOException {
-    }
-    
+    public void seekInternal(long pos) throws IOException {}
+
     @Override
     public long length() {
       return delegate.length();
     }
-    
+
     @Override
     public void close() throws IOException {
       delegate.close();
     }
-    
+
     @Override
     public FaultyIndexInput clone() {
       FaultyIndexInput i = new FaultyIndexInput(doFail, delegate.clone());
@@ -177,7 +173,7 @@ public class TestFieldsReader extends LuceneTestCase {
       }
       return i;
     }
-    
+
     @Override
     public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
       IndexInput slice = delegate.slice(sliceDescription, offset, length);
@@ -191,11 +187,10 @@ public class TestFieldsReader extends LuceneTestCase {
 
     Directory fsDir = newFSDirectory(indexDir);
     FaultyFSDirectory dir = new FaultyFSDirectory(fsDir);
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-      .setOpenMode(OpenMode.CREATE);
+    IndexWriterConfig iwc =
+        newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.CREATE);
     IndexWriter writer = new IndexWriter(dir, iwc);
-    for(int i=0;i<2;i++)
-      writer.addDocument(testDoc);
+    for (int i = 0; i < 2; i++) writer.addDocument(testDoc);
     writer.forceMerge(1);
     writer.close();
 
@@ -204,7 +199,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     boolean exc = false;
 
-    for(int i=0;i<2;i++) {
+    for (int i = 0; i < 2; i++) {
       try {
         reader.document(i);
       } catch (IOException ioe) {

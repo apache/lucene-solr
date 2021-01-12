@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import org.apache.lucene.analysis.Analyzer;
 
 /**
  * An Analyzer that uses {@link UnicodeWhitespaceTokenizer}.
  *
  * @since 5.4.0
- **/
+ */
 public final class UnicodeWhitespaceAnalyzer extends Analyzer {
-  
-  /**
-   * Creates a new {@link UnicodeWhitespaceAnalyzer}
-   */
-  public UnicodeWhitespaceAnalyzer() {
-  }
-  
+
+  /** Creates a new {@link UnicodeWhitespaceAnalyzer} */
+  public UnicodeWhitespaceAnalyzer() {}
+
   @Override
   protected TokenStreamComponents createComponents(final String fieldName) {
     return new TokenStreamComponents(new UnicodeWhitespaceTokenizer());

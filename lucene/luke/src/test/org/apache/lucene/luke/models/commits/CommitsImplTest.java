@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -60,7 +59,8 @@ public class CommitsImplTest extends LuceneTestCase {
 
     Directory dir = newFSDirectory(indexDir);
 
-    IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.getDefaultCodec());
+    IndexWriterConfig config =
+        new IndexWriterConfig(new MockAnalyzer(random())).setCodec(TestUtil.getDefaultCodec());
     config.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
 
@@ -101,7 +101,7 @@ public class CommitsImplTest extends LuceneTestCase {
     assertTrue(commitList.size() > 0);
     // should be sorted by descending order in generation
     assertEquals(commitList.size(), commitList.get(0).getGeneration());
-    assertEquals(1, commitList.get(commitList.size()-1).getGeneration());
+    assertEquals(1, commitList.get(commitList.size() - 1).getGeneration());
   }
 
   @Test
@@ -179,11 +179,10 @@ public class CommitsImplTest extends LuceneTestCase {
     assertTrue(commits.getSegmentDiagnostics(10, "_0").isEmpty());
   }
 
-
   @Test
   public void testGetSegmentDiagnostics_invalid_name() {
     CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
-    Map<String, String> diagnostics = commits.getSegmentDiagnostics(1,"xxx");
+    Map<String, String> diagnostics = commits.getSegmentDiagnostics(1, "xxx");
     assertTrue(diagnostics.isEmpty());
   }
 
@@ -206,6 +205,5 @@ public class CommitsImplTest extends LuceneTestCase {
     CommitsImpl commits = new CommitsImpl(reader, indexDir.toString());
     Optional<Codec> codec = commits.getSegmentCodec(1, "xxx");
     assertFalse(codec.isPresent());
-
   }
 }

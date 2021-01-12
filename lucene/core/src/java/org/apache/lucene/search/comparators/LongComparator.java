@@ -17,22 +17,22 @@
 
 package org.apache.lucene.search.comparators;
 
+import java.io.IOException;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.LeafFieldComparator;
 
-import java.io.IOException;
-
 /**
- * Comparator based on {@link Long#compare} for {@code numHits}.
- * This comparator provides a skipping functionality – an iterator that can skip over non-competitive documents.
+ * Comparator based on {@link Long#compare} for {@code numHits}. This comparator provides a skipping
+ * functionality – an iterator that can skip over non-competitive documents.
  */
 public class LongComparator extends NumericComparator<Long> {
   private final long[] values;
   protected long topValue;
   protected long bottom;
 
-  public LongComparator(int numHits, String field, Long missingValue, boolean reverse, int sortPos) {
+  public LongComparator(
+      int numHits, String field, Long missingValue, boolean reverse, int sortPos) {
     super(field, missingValue != null ? missingValue : 0L, reverse, sortPos, Long.BYTES);
     values = new long[numHits];
   }
@@ -58,9 +58,7 @@ public class LongComparator extends NumericComparator<Long> {
     return new LongLeafComparator(context);
   }
 
-  /**
-   * Leaf comparator for {@link LongComparator} that provides skipping functionality
-   */
+  /** Leaf comparator for {@link LongComparator} that provides skipping functionality */
   public class LongLeafComparator extends NumericLeafComparator {
 
     public LongLeafComparator(LeafReaderContext context) throws IOException {
@@ -115,5 +113,4 @@ public class LongComparator extends NumericComparator<Long> {
       LongPoint.encodeDimension(topValue, packedValue, 0);
     }
   }
-
 }

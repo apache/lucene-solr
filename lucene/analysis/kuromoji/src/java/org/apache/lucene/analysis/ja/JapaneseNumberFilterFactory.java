@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link JapaneseNumberFilter}.
- * <br>
+ * Factory for {@link JapaneseNumberFilter}. <br>
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField"&gt;
  *   &lt;analyzer&gt;
@@ -33,9 +31,10 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
- * <p>
- * It is important that punctuation is not discarded by the tokenizer so use
- * {@code discardPunctuation="false"} in your {@link JapaneseTokenizerFactory}.
+ *
+ * <p>It is important that punctuation is not discarded by the tokenizer so use {@code
+ * discardPunctuation="false"} in your {@link JapaneseTokenizerFactory}.
+ *
  * @since 6.0.0
  * @lucene.spi {@value #NAME}
  */

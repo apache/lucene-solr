@@ -24,15 +24,15 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
 public class TestFacetLabel extends FacetTestCase {
-  
-  @Test 
+
+  @Test
   public void testBasic() {
     assertEquals(0, new FacetLabel().length);
     assertEquals(1, new FacetLabel("hello").length);
     assertEquals(2, new FacetLabel("hello", "world").length);
   }
-  
-  @Test 
+
+  @Test
   public void testToString() {
     // When the category is empty, we expect an empty string
     assertEquals("FacetLabel: []", new FacetLabel().toString());
@@ -42,7 +42,7 @@ public class TestFacetLabel extends FacetTestCase {
     assertEquals("FacetLabel: [hello, world]", new FacetLabel("hello", "world").toString());
   }
 
-  @Test 
+  @Test
   public void testGetComponent() {
     String[] components = new String[atLeast(10)];
     for (int i = 0; i < components.length; i++) {
@@ -64,12 +64,12 @@ public class TestFacetLabel extends FacetTestCase {
     assertEquals(0, p.length);
     assertEquals("FacetLabel: []", p.toString());
   }
-  
-  @Test 
+
+  @Test
   public void testSubPath() {
     final FacetLabel p = new FacetLabel("hi", "there", "man");
     assertEquals(p.length, 3);
-    
+
     FacetLabel p1 = p.subpath(2);
     assertEquals(2, p1.length);
     assertEquals("FacetLabel: [hi, there]", p1.toString());
@@ -82,8 +82,8 @@ public class TestFacetLabel extends FacetTestCase {
     assertEquals(0, p1.length);
     assertEquals("FacetLabel: []", p1.toString());
 
-    // with all the following lengths, the prefix should be the whole path 
-    int[] lengths = { 3, -1, 4 };
+    // with all the following lengths, the prefix should be the whole path
+    int[] lengths = {3, -1, 4};
     for (int i = 0; i < lengths.length; i++) {
       p1 = p.subpath(lengths[i]);
       assertEquals(3, p1.length);
@@ -92,36 +92,39 @@ public class TestFacetLabel extends FacetTestCase {
     }
   }
 
-  @Test 
+  @Test
   public void testEquals() {
     assertEquals(new FacetLabel(), new FacetLabel());
     assertFalse(new FacetLabel().equals(new FacetLabel("hi")));
     assertFalse(new FacetLabel().equals(Integer.valueOf(3)));
-    assertEquals(new FacetLabel("hello", "world"), new FacetLabel("hello", "world"));    
+    assertEquals(new FacetLabel("hello", "world"), new FacetLabel("hello", "world"));
   }
-  
-  @Test 
+
+  @Test
   public void testHashCode() {
     assertEquals(new FacetLabel().hashCode(), new FacetLabel().hashCode());
     assertFalse(new FacetLabel().hashCode() == new FacetLabel("hi").hashCode());
-    assertEquals(new FacetLabel("hello", "world").hashCode(), new FacetLabel("hello", "world").hashCode());
+    assertEquals(
+        new FacetLabel("hello", "world").hashCode(), new FacetLabel("hello", "world").hashCode());
   }
-  
-  @Test 
+
+  @Test
   public void testLongHashCode() {
     assertEquals(new FacetLabel().longHashCode(), new FacetLabel().longHashCode());
     assertFalse(new FacetLabel().longHashCode() == new FacetLabel("hi").longHashCode());
-    assertEquals(new FacetLabel("hello", "world").longHashCode(), new FacetLabel("hello", "world").longHashCode());
+    assertEquals(
+        new FacetLabel("hello", "world").longHashCode(),
+        new FacetLabel("hello", "world").longHashCode());
   }
-  
-  @Test 
+
+  @Test
   public void testArrayConstructor() {
     FacetLabel p = new FacetLabel("hello", "world", "yo");
     assertEquals(3, p.length);
     assertEquals("FacetLabel: [hello, world, yo]", p.toString());
   }
-  
-  @Test 
+
+  @Test
   public void testCompareTo() {
     FacetLabel p = new FacetLabel("a", "b", "c", "d");
     FacetLabel pother = new FacetLabel("a", "b", "c", "d");
@@ -144,70 +147,105 @@ public class TestFacetLabel extends FacetTestCase {
   @Test
   public void testEmptyNullComponents() throws Exception {
     // LUCENE-4724: CategoryPath should not allow empty or null components
-    String[][] components_tests = new String[][] {
-      new String[] { "", "test" }, // empty in the beginning
-      new String[] { "test", "" }, // empty in the end
-      new String[] { "test", "", "foo" }, // empty in the middle
-      new String[] { null, "test" }, // null at the beginning
-      new String[] { "test", null }, // null in the end
-      new String[] { "test", null, "foo" }, // null in the middle
-    };
+    String[][] components_tests =
+        new String[][] {
+          new String[] {"", "test"}, // empty in the beginning
+          new String[] {"test", ""}, // empty in the end
+          new String[] {"test", "", "foo"}, // empty in the middle
+          new String[] {null, "test"}, // null at the beginning
+          new String[] {"test", null}, // null in the end
+          new String[] {"test", null, "foo"}, // null in the middle
+        };
 
     // empty or null components should not be allowed.
     for (String[] components : components_tests) {
-      expectThrows(IllegalArgumentException.class, () -> {
-        new FacetLabel(components);
-      });
-      expectThrows(IllegalArgumentException.class, () -> {
-        new FacetField("dim", components);
-      });
-      expectThrows(IllegalArgumentException.class, () -> {
-        new AssociationFacetField(new BytesRef(), "dim", components);
-      });
-      expectThrows(IllegalArgumentException.class, () -> {
-        new IntAssociationFacetField(17, "dim", components);
-      });
-      expectThrows(IllegalArgumentException.class, () -> {
-        new FloatAssociationFacetField(17.0f, "dim", components);
-      });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new FacetLabel(components);
+          });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new FacetField("dim", components);
+          });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new AssociationFacetField(new BytesRef(), "dim", components);
+          });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new IntAssociationFacetField(17, "dim", components);
+          });
+      expectThrows(
+          IllegalArgumentException.class,
+          () -> {
+            new FloatAssociationFacetField(17.0f, "dim", components);
+          });
     }
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      new FacetField(null, new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new FacetField("", new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new IntAssociationFacetField(17, null, new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new IntAssociationFacetField(17, "", new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new FloatAssociationFacetField(17.0f, null, new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new FloatAssociationFacetField(17.0f, "", new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new AssociationFacetField(new BytesRef(), null, new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new AssociationFacetField(new BytesRef(), "", new String[] {"abc"});
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new SortedSetDocValuesFacetField(null, "abc");
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new SortedSetDocValuesFacetField("", "abc");
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new SortedSetDocValuesFacetField("dim", null);
-    });
-    expectThrows(IllegalArgumentException.class, () -> {
-      new SortedSetDocValuesFacetField("dim", "");
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FacetField(null, new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FacetField("", new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new IntAssociationFacetField(17, null, new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new IntAssociationFacetField(17, "", new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FloatAssociationFacetField(17.0f, null, new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FloatAssociationFacetField(17.0f, "", new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AssociationFacetField(new BytesRef(), null, new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new AssociationFacetField(new BytesRef(), "", new String[] {"abc"});
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SortedSetDocValuesFacetField(null, "abc");
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SortedSetDocValuesFacetField("", "abc");
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SortedSetDocValuesFacetField("dim", null);
+        });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new SortedSetDocValuesFacetField("dim", "");
+        });
   }
 
   @Test
@@ -224,8 +262,10 @@ public class TestFacetLabel extends FacetTestCase {
 
     // long paths should not be allowed
     final String longPath = bigComp;
-    expectThrows(IllegalArgumentException.class, () -> {
-      new FacetLabel("dim", longPath);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          new FacetLabel("dim", longPath);
+        });
   }
 }

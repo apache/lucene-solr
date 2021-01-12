@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.blockterms;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -33,16 +32,15 @@ import org.apache.lucene.index.SegmentWriteState;
 // any PostingsFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene84PostingsFormat} that uses
- * {@link FixedGapTermsIndexWriter}.
+ * Customized version of {@link Lucene84PostingsFormat} that uses {@link FixedGapTermsIndexWriter}.
  */
 public final class LuceneFixedGap extends PostingsFormat {
   final int termIndexInterval;
-  
+
   public LuceneFixedGap() {
     this(FixedGapTermsIndexWriter.DEFAULT_TERM_INDEX_INTERVAL);
   }
-  
+
   public LuceneFixedGap(int termIndexInterval) {
     super("LuceneFixedGap");
     this.termIndexInterval = termIndexInterval;

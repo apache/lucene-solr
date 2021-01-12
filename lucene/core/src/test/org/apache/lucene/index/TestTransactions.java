@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,7 +30,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTransactions extends LuceneTestCase {
-  
+
   private static volatile boolean doFail;
 
   private class RandomFailure extends MockDirectoryWrapper.Failure {
@@ -48,12 +46,12 @@ public class TestTransactions extends LuceneTestCase {
     }
   }
 
-  private static abstract class TimedThread extends Thread {
+  private abstract static class TimedThread extends Thread {
     volatile boolean failed;
     private static float RUN_TIME_MSEC = atLeast(500);
     private TimedThread[] allThreads;
 
-    abstract public void doWork() throws Throwable;
+    public abstract void doWork() throws Throwable;
 
     TimedThread(TimedThread[] threads) {
       this.allThreads = threads;
@@ -76,9 +74,8 @@ public class TestTransactions extends LuceneTestCase {
     }
 
     private boolean anyErrors() {
-      for(int i=0;i<allThreads.length;i++)
-        if (allThreads[i] != null && allThreads[i].failed)
-          return true;
+      for (int i = 0; i < allThreads.length; i++)
+        if (allThreads[i] != null && allThreads[i].failed) return true;
       return false;
     }
   }
@@ -99,24 +96,24 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(
-          dir1,
-          newIndexWriterConfig(new MockAnalyzer(random())).
-              setMaxBufferedDocs(3).
-              setMergeScheduler(new ConcurrentMergeScheduler()).
-              setMergePolicy(newLogMergePolicy(2))
-      );
+      IndexWriter writer1 =
+          new IndexWriter(
+              dir1,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(3)
+                  .setMergeScheduler(new ConcurrentMergeScheduler())
+                  .setMergePolicy(newLogMergePolicy(2)));
       ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       // Intentionally use different params so flush/merge
       // happen @ different times
-      IndexWriter writer2 = new IndexWriter(
-          dir2,
-          newIndexWriterConfig(new MockAnalyzer(random())).
-              setMaxBufferedDocs(2).
-              setMergeScheduler(new ConcurrentMergeScheduler()).
-              setMergePolicy(newLogMergePolicy(3))
-      );
+      IndexWriter writer2 =
+          new IndexWriter(
+              dir2,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(2)
+                  .setMergeScheduler(new ConcurrentMergeScheduler())
+                  .setMergePolicy(newLogMergePolicy(3)));
       ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       update(writer1);
@@ -124,17 +121,19 @@ public class TestTransactions extends LuceneTestCase {
 
       TestTransactions.doFail = true;
       try {
-        synchronized(lock) {
+        synchronized (lock) {
           try {
             writer1.prepareCommit();
           } catch (Throwable t) {
             // release resources
             try {
               writer1.rollback();
-            } catch (Throwable ignore) {}
+            } catch (Throwable ignore) {
+            }
             try {
               writer2.rollback();
-            } catch (Throwable ignore) {}
+            } catch (Throwable ignore) {
+            }
             return;
           }
           try {
@@ -143,10 +142,12 @@ public class TestTransactions extends LuceneTestCase {
             // release resources
             try {
               writer1.rollback();
-            } catch (Throwable ignore) {}
+            } catch (Throwable ignore) {
+            }
             try {
               writer2.rollback();
-            } catch (Throwable ignore) {}
+            } catch (Throwable ignore) {
+            }
             return;
           }
 
@@ -155,7 +156,7 @@ public class TestTransactions extends LuceneTestCase {
         }
       } finally {
         TestTransactions.doFail = false;
-      }  
+      }
 
       writer1.close();
       writer2.close();
@@ -165,7 +166,7 @@ public class TestTransactions extends LuceneTestCase {
       // Add 10 docs:
       FieldType customType = new FieldType(StringField.TYPE_NOT_STORED);
       customType.setStoreTermVectors(true);
-      for(int j=0; j<10; j++) {
+      for (int j = 0; j < 10; j++) {
         Document d = new Document();
         int n = random().nextInt();
         d.add(newField("id", Integer.toString(nextID++), customType));
@@ -174,9 +175,9 @@ public class TestTransactions extends LuceneTestCase {
       }
 
       // Delete 5 docs:
-      int deleteID = nextID-1;
-      for(int j=0; j<5; j++) {
-        writer.deleteDocuments(new Term("id", ""+deleteID));
+      int deleteID = nextID - 1;
+      for (int j = 0; j < 5; j++) {
+        writer.deleteDocuments(new Term("id", "" + deleteID));
         deleteID -= 2;
       }
     }
@@ -196,8 +197,8 @@ public class TestTransactions extends LuceneTestCase {
 
     @Override
     public void doWork() throws Throwable {
-      IndexReader r1=null, r2=null;
-      synchronized(lock) {
+      IndexReader r1 = null, r2 = null;
+      synchronized (lock) {
         try {
           r1 = DirectoryReader.open(dir1);
           r2 = DirectoryReader.open(dir2);
@@ -220,7 +221,7 @@ public class TestTransactions extends LuceneTestCase {
 
   public void initIndex(Directory dir) throws Throwable {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    for(int j=0; j<7; j++) {
+    for (int j = 0; j < 7; j++) {
       Document d = new Document();
       int n = random().nextInt();
       d.add(newTextField("contents", English.intToEnglish(n), Field.Store.NO));
@@ -261,11 +262,9 @@ public class TestTransactions extends LuceneTestCase {
     threads[numThread++] = searcherThread2;
     searcherThread2.start();
 
-    for(int i=0;i<numThread;i++)
-      threads[i].join();
+    for (int i = 0; i < numThread; i++) threads[i].join();
 
-    for(int i=0;i<numThread;i++)
-      assertTrue(!threads[i].failed);
+    for (int i = 0; i < numThread; i++) assertTrue(!threads[i].failed);
     dir1.close();
     dir2.close();
   }

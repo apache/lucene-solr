@@ -16,12 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Random;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
-
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -33,22 +27,25 @@ import static org.apache.lucene.geo.GeoUtils.MAX_LON_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
-/**
- Tests methods in {@link GeoEncodingUtils}
- */
+import java.util.Random;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.TestUtil;
+
+/** Tests methods in {@link GeoEncodingUtils} */
 public class TestGeoEncodingUtils extends LuceneTestCase {
 
   /**
-   * step through some integers, ensuring they decode to their expected double values.
-   * double values start at -90 and increase by LATITUDE_DECODE for each integer.
-   * check edge cases within the double range and random doubles within the range too.
+   * step through some integers, ensuring they decode to their expected double values. double values
+   * start at -90 and increase by LATITUDE_DECODE for each integer. check edge cases within the
+   * double range and random doubles within the range too.
    */
   public void testLatitudeQuantization() throws Exception {
-    final double LATITUDE_DECODE = 180.0D/(0x1L<<32);
+    final double LATITUDE_DECODE = 180.0D / (0x1L << 32);
     Random random = random();
     for (int i = 0; i < 10000; i++) {
       int encoded = random.nextInt();
-      double min = MIN_LAT_INCL + (encoded - (long)Integer.MIN_VALUE) * LATITUDE_DECODE;
+      double min = MIN_LAT_INCL + (encoded - (long) Integer.MIN_VALUE) * LATITUDE_DECODE;
       double decoded = decodeLatitude(encoded);
       // should exactly equal expected value
       assertEquals(min, decoded, 0.0D);
@@ -61,43 +58,44 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
         // all double values between [min .. max) should encode to the current integer
         // all double values between (min .. max] should encodeCeil to the next integer.
         double max = min + LATITUDE_DECODE;
-        assertEquals(max, decodeLatitude(encoded+1), 0.0D);
-        assertEquals(encoded+1, encodeLatitude(max));
-        assertEquals(encoded+1, encodeLatitudeCeil(max));
+        assertEquals(max, decodeLatitude(encoded + 1), 0.0D);
+        assertEquals(encoded + 1, encodeLatitude(max));
+        assertEquals(encoded + 1, encodeLatitudeCeil(max));
 
         // first and last doubles in range that will be quantized
         double minEdge = Math.nextUp(min);
         double maxEdge = Math.nextDown(max);
-        assertEquals(encoded,   encodeLatitude(minEdge));
-        assertEquals(encoded+1, encodeLatitudeCeil(minEdge));
-        assertEquals(encoded,   encodeLatitude(maxEdge));
-        assertEquals(encoded+1, encodeLatitudeCeil(maxEdge));
+        assertEquals(encoded, encodeLatitude(minEdge));
+        assertEquals(encoded + 1, encodeLatitudeCeil(minEdge));
+        assertEquals(encoded, encodeLatitude(maxEdge));
+        assertEquals(encoded + 1, encodeLatitudeCeil(maxEdge));
 
         // check random values within the double range
         long minBits = NumericUtils.doubleToSortableLong(minEdge);
         long maxBits = NumericUtils.doubleToSortableLong(maxEdge);
         for (int j = 0; j < 100; j++) {
-          double value = NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
+          double value =
+              NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
           // round down
-          assertEquals(encoded,   encodeLatitude(value));
+          assertEquals(encoded, encodeLatitude(value));
           // round up
-          assertEquals(encoded+1, encodeLatitudeCeil(value));
+          assertEquals(encoded + 1, encodeLatitudeCeil(value));
         }
       }
     }
   }
 
   /**
-   * step through some integers, ensuring they decode to their expected double values.
-   * double values start at -180 and increase by LONGITUDE_DECODE for each integer.
-   * check edge cases within the double range and a random doubles within the range too.
+   * step through some integers, ensuring they decode to their expected double values. double values
+   * start at -180 and increase by LONGITUDE_DECODE for each integer. check edge cases within the
+   * double range and a random doubles within the range too.
    */
   public void testLongitudeQuantization() throws Exception {
-    final double LONGITUDE_DECODE = 360.0D/(0x1L<<32);
+    final double LONGITUDE_DECODE = 360.0D / (0x1L << 32);
     Random random = random();
     for (int i = 0; i < 10000; i++) {
       int encoded = random.nextInt();
-      double min = MIN_LON_INCL + (encoded - (long)Integer.MIN_VALUE) * LONGITUDE_DECODE;
+      double min = MIN_LON_INCL + (encoded - (long) Integer.MIN_VALUE) * LONGITUDE_DECODE;
       double decoded = decodeLongitude(encoded);
       // should exactly equal expected value
       assertEquals(min, decoded, 0.0D);
@@ -110,27 +108,28 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
         // all double values between [min .. max) should encode to the current integer
         // all double values between (min .. max] should encodeCeil to the next integer.
         double max = min + LONGITUDE_DECODE;
-        assertEquals(max, decodeLongitude(encoded+1), 0.0D);
-        assertEquals(encoded+1, encodeLongitude(max));
-        assertEquals(encoded+1, encodeLongitudeCeil(max));
+        assertEquals(max, decodeLongitude(encoded + 1), 0.0D);
+        assertEquals(encoded + 1, encodeLongitude(max));
+        assertEquals(encoded + 1, encodeLongitudeCeil(max));
 
         // first and last doubles in range that will be quantized
         double minEdge = Math.nextUp(min);
         double maxEdge = Math.nextDown(max);
-        assertEquals(encoded,   encodeLongitude(minEdge));
-        assertEquals(encoded+1, encodeLongitudeCeil(minEdge));
-        assertEquals(encoded,   encodeLongitude(maxEdge));
-        assertEquals(encoded+1, encodeLongitudeCeil(maxEdge));
+        assertEquals(encoded, encodeLongitude(minEdge));
+        assertEquals(encoded + 1, encodeLongitudeCeil(minEdge));
+        assertEquals(encoded, encodeLongitude(maxEdge));
+        assertEquals(encoded + 1, encodeLongitudeCeil(maxEdge));
 
         // check random values within the double range
         long minBits = NumericUtils.doubleToSortableLong(minEdge);
         long maxBits = NumericUtils.doubleToSortableLong(maxEdge);
         for (int j = 0; j < 100; j++) {
-          double value = NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
+          double value =
+              NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
           // round down
           assertEquals(encoded, encodeLongitude(value));
           // round up
-          assertEquals(encoded+1, encodeLongitudeCeil(value));
+          assertEquals(encoded + 1, encodeLongitudeCeil(value));
         }
       }
     }

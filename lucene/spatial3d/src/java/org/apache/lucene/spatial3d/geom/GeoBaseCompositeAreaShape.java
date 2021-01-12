@@ -17,8 +17,8 @@
 
 package org.apache.lucene.spatial3d.geom;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Base class to create a composite of GeoAreaShapes
@@ -26,36 +26,38 @@ import java.io.IOException;
  * @param <T> is the type of GeoAreaShapes of the composite.
  * @lucene.internal
  */
-abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBaseCompositeMembershipShape<T> implements GeoAreaShape {
+abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape>
+    extends GeoBaseCompositeMembershipShape<T> implements GeoAreaShape {
 
   /** All edgepoints inside shape */
-  protected final static int ALL_INSIDE = 0;
+  protected static final int ALL_INSIDE = 0;
   /** Some edgepoints inside shape */
-  protected final static int SOME_INSIDE = 1;
+  protected static final int SOME_INSIDE = 1;
   /** No edgepoints inside shape */
-  protected final static int NONE_INSIDE = 2;
+  protected static final int NONE_INSIDE = 2;
 
-  /**
-   * Constructor.
-   */
+  /** Constructor. */
   public GeoBaseCompositeAreaShape(PlanetModel planetModel) {
     super(planetModel);
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    * @param clazz is the class of the generic.
    */
-  public GeoBaseCompositeAreaShape(final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz) throws IOException {
+  public GeoBaseCompositeAreaShape(
+      final PlanetModel planetModel, final InputStream inputStream, final Class<T> clazz)
+      throws IOException {
     super(planetModel, inputStream, clazz);
   }
 
   @Override
-  public boolean intersects(GeoShape geoShape){
-    for(GeoAreaShape geoAreaShape : shapes){
-      if (geoAreaShape.intersects(geoShape)){
+  public boolean intersects(GeoShape geoShape) {
+    for (GeoAreaShape geoAreaShape : shapes) {
+      if (geoAreaShape.intersects(geoShape)) {
         return true;
       }
     }
@@ -77,31 +79,32 @@ abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBase
       return GeoArea.OVERLAPS;
     }
 
-    if (insideGeoAreaShape == ALL_INSIDE && insideShape==ALL_INSIDE) {
+    if (insideGeoAreaShape == ALL_INSIDE && insideShape == ALL_INSIDE) {
       return GeoArea.OVERLAPS;
     }
 
-    if (intersects(geoShape)){
-      return  GeoArea.OVERLAPS;
+    if (intersects(geoShape)) {
+      return GeoArea.OVERLAPS;
     }
 
     if (insideGeoAreaShape == ALL_INSIDE) {
       return GeoArea.WITHIN;
     }
 
-    if (insideShape==ALL_INSIDE) {
+    if (insideShape == ALL_INSIDE) {
       return GeoArea.CONTAINS;
     }
 
     return GeoArea.DISJOINT;
   }
 
-  /** Determine the relationship between the GeoAreShape and the
-   * shape's edgepoints.
-   *@param geoShape is the shape.
-   *@return the relationship.
+  /**
+   * Determine the relationship between the GeoAreShape and the shape's edgepoints.
+   *
+   * @param geoShape is the shape.
+   * @return the relationship.
    */
-  protected  int isShapeInsideGeoAreaShape(final GeoShape geoShape) {
+  protected int isShapeInsideGeoAreaShape(final GeoShape geoShape) {
     boolean foundOutside = false;
     boolean foundInside = false;
     for (GeoPoint p : geoShape.getEdgePoints()) {
@@ -114,21 +117,25 @@ abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBase
         return SOME_INSIDE;
       }
     }
-    if (!foundInside && !foundOutside)
+    if (!foundInside && !foundOutside) {
       return NONE_INSIDE;
-    if (foundInside && !foundOutside)
+    }
+    if (foundInside && !foundOutside) {
       return ALL_INSIDE;
-    if (foundOutside && !foundInside)
+    }
+    if (foundOutside && !foundInside) {
       return NONE_INSIDE;
+    }
     return SOME_INSIDE;
   }
 
-  /** Determine the relationship between the GeoAreShape's edgepoints and the
-   * provided shape.
-   *@param geoshape is the shape.
-   *@return the relationship.
+  /**
+   * Determine the relationship between the GeoAreShape's edgepoints and the provided shape.
+   *
+   * @param geoshape is the shape.
+   * @return the relationship.
    */
-  protected int isGeoAreaShapeInsideShape(final GeoShape geoshape)  {
+  protected int isGeoAreaShapeInsideShape(final GeoShape geoshape) {
     boolean foundOutside = false;
     boolean foundInside = false;
     for (GeoPoint p : getEdgePoints()) {
@@ -141,12 +148,15 @@ abstract class GeoBaseCompositeAreaShape<T extends GeoAreaShape> extends GeoBase
         return SOME_INSIDE;
       }
     }
-    if (!foundInside && !foundOutside)
+    if (!foundInside && !foundOutside) {
       return NONE_INSIDE;
-    if (foundInside && !foundOutside)
+    }
+    if (foundInside && !foundOutside) {
       return ALL_INSIDE;
-    if (foundOutside && !foundInside)
+    }
+    if (foundOutside && !foundInside) {
       return NONE_INSIDE;
+    }
     return SOME_INSIDE;
   }
 }

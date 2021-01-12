@@ -16,20 +16,22 @@
  */
 package org.apache.lucene.analysis.payloads;
 
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
-import java.nio.charset.StandardCharsets;
 
 public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testPayloads() throws Exception {
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
-      (whitespaceMockTokenizer(test), 
-       DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
+    DelimitedPayloadTokenFilter filter =
+        new DelimitedPayloadTokenFilter(
+            whitespaceMockTokenizer(test),
+            DelimitedPayloadTokenFilter.DEFAULT_DELIMITER,
+            new IdentityEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();
@@ -51,9 +53,11 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void testNext() throws Exception {
 
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
-      (whitespaceMockTokenizer(test), 
-       DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
+    DelimitedPayloadTokenFilter filter =
+        new DelimitedPayloadTokenFilter(
+            whitespaceMockTokenizer(test),
+            DelimitedPayloadTokenFilter.DEFAULT_DELIMITER,
+            new IdentityEncoder());
     filter.reset();
     assertTermEquals("The", filter, null);
     assertTermEquals("quick", filter, "JJ".getBytes(StandardCharsets.UTF_8));
@@ -70,10 +74,10 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     filter.close();
   }
 
-
   public void testFloatEncoding() throws Exception {
     String test = "The quick|1.0 red|2.0 fox|3.5 jumped|0.5 over the lazy|5 brown|99.3 dogs|83.7";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new FloatEncoder());
+    DelimitedPayloadTokenFilter filter =
+        new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new FloatEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();
@@ -94,7 +98,8 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
   public void testIntEncoding() throws Exception {
     String test = "The quick|1 red|2 fox|3 jumped over the lazy|5 brown|99 dogs|83";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new IntegerEncoder());
+    DelimitedPayloadTokenFilter filter =
+        new DelimitedPayloadTokenFilter(whitespaceMockTokenizer(test), '|', new IntegerEncoder());
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     filter.reset();
@@ -120,26 +125,37 @@ public class DelimitedPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     assertEquals(expected, termAtt.toString());
     BytesRef payload = payloadAtt.getPayload();
     if (payload != null) {
-      assertTrue(payload.length + " does not equal: " + expectPay.length, payload.length == expectPay.length);
+      assertTrue(
+          payload.length + " does not equal: " + expectPay.length,
+          payload.length == expectPay.length);
       for (int i = 0; i < expectPay.length; i++) {
-        assertTrue(expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset], expectPay[i] == payload.bytes[i + payload.offset]);
-
+        assertTrue(
+            expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset],
+            expectPay[i] == payload.bytes[i + payload.offset]);
       }
     } else {
       assertTrue("expectPay is not null and it should be", expectPay == null);
     }
   }
 
-
-  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt, PayloadAttribute payAtt, byte[] expectPay) throws Exception {
+  void assertTermEquals(
+      String expected,
+      TokenStream stream,
+      CharTermAttribute termAtt,
+      PayloadAttribute payAtt,
+      byte[] expectPay)
+      throws Exception {
     assertTrue(stream.incrementToken());
     assertEquals(expected, termAtt.toString());
     BytesRef payload = payAtt.getPayload();
     if (payload != null) {
-      assertTrue(payload.length + " does not equal: " + expectPay.length, payload.length == expectPay.length);
+      assertTrue(
+          payload.length + " does not equal: " + expectPay.length,
+          payload.length == expectPay.length);
       for (int i = 0; i < expectPay.length; i++) {
-        assertTrue(expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset], expectPay[i] == payload.bytes[i + payload.offset]);
-
+        assertTrue(
+            expectPay[i] + " does not equal: " + payload.bytes[i + payload.offset],
+            expectPay[i] == payload.bytes[i + payload.offset]);
       }
     } else {
       assertTrue("expectPay is not null and it should be", expectPay == null);

@@ -22,9 +22,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopScoreDocCollector;
 
-/**
- * Does search w/ a custom collector
- */
+/** Does search w/ a custom collector */
 public class SearchWithCollectorTask extends SearchTask {
 
   protected String clnName;
@@ -36,13 +34,11 @@ public class SearchWithCollectorTask extends SearchTask {
   @Override
   public void setup() throws Exception {
     super.setup();
-    //check to make sure either the doc is being stored
+    // check to make sure either the doc is being stored
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();
     clnName = config.get("collector.class", "");
   }
-
-  
 
   @Override
   public boolean withCollector() {
@@ -54,7 +50,7 @@ public class SearchWithCollectorTask extends SearchTask {
     Collector collector = null;
     if (clnName.equalsIgnoreCase("topScoreDoc") == true) {
       collector = TopScoreDocCollector.create(numHits(), Integer.MAX_VALUE);
-    } else if (clnName.length() > 0){
+    } else if (clnName.length() > 0) {
       collector = Class.forName(clnName).asSubclass(Collector.class).getConstructor().newInstance();
 
     } else {
@@ -87,5 +83,4 @@ public class SearchWithCollectorTask extends SearchTask {
   public boolean withWarm() {
     return false;
   }
-
 }

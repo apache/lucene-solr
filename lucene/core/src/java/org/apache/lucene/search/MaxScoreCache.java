@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsSource;
@@ -27,9 +26,9 @@ import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * Compute maximum scores based on {@link Impacts} and keep them in a cache in
- * order not to run expensive similarity score computations multiple times on
- * the same data.
+ * Compute maximum scores based on {@link Impacts} and keep them in a cache in order not to run
+ * expensive similarity score computations multiple times on the same data.
+ *
  * @lucene.internal
  */
 final class MaxScoreCache {
@@ -39,9 +38,7 @@ final class MaxScoreCache {
   private float[] maxScoreCache;
   private int[] maxScoreCacheUpTo;
 
-  /**
-   * Sole constructor.
-   */
+  /** Sole constructor. */
   public MaxScoreCache(ImpactsSource impactsSource, SimScorer scorer) {
     this.impactsSource = impactsSource;
     this.scorer = scorer;
@@ -67,8 +64,8 @@ final class MaxScoreCache {
   }
 
   /**
-   * Return the first level that includes all doc IDs up to {@code upTo},
-   * or -1 if there is no such level.
+   * Return the first level that includes all doc IDs up to {@code upTo}, or -1 if there is no such
+   * level.
    */
   int getLevel(int upTo) throws IOException {
     final Impacts impacts = impactsSource.getImpacts();
@@ -81,9 +78,7 @@ final class MaxScoreCache {
     return -1;
   }
 
-  /**
-   * Return the maximum score for the given {@code level}.
-   */
+  /** Return the maximum score for the given {@code level}. */
   float getMaxScoreForLevel(int level) throws IOException {
     final Impacts impacts = impactsSource.getImpacts();
     ensureCacheSize(level + 1);
@@ -95,10 +90,7 @@ final class MaxScoreCache {
     return maxScoreCache[level];
   }
 
-  /**
-   * Return the maximum level at which scores are all less than {@code minScore},
-   * or -1 if none.
-   */
+  /** Return the maximum level at which scores are all less than {@code minScore}, or -1 if none. */
   private int getSkipLevel(Impacts impacts, float minScore) throws IOException {
     final int numLevels = impacts.numLevels();
     for (int level = 0; level < numLevels; ++level) {
@@ -110,9 +102,8 @@ final class MaxScoreCache {
   }
 
   /**
-   * Return the an inclusive upper bound of documents that all have a score that
-   * is less than {@code minScore}, or {@code -1} if the current document may
-   * be competitive.
+   * Return the an inclusive upper bound of documents that all have a score that is less than {@code
+   * minScore}, or {@code -1} if the current document may be competitive.
    */
   int getSkipUpTo(float minScore) throws IOException {
     final Impacts impacts = impactsSource.getImpacts();
@@ -122,5 +113,4 @@ final class MaxScoreCache {
     }
     return impacts.getDocIdUpTo(level);
   }
-
 }

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.concurrent.RejectedExecutionException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -38,10 +36,13 @@ public class TestReaderClosed extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
-          .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
@@ -57,7 +58,7 @@ public class TestReaderClosed extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
   }
-  
+
   public void test() throws Exception {
     assertTrue(reader.getRefCount() > 0);
     IndexSearcher searcher = newSearcher(reader);
@@ -99,15 +100,14 @@ public class TestReaderClosed extends LuceneTestCase {
         throw new AssertionError("Query failed, but not due to an AlreadyClosedException", e);
       }
       assertEquals(
-        "this IndexReader cannot be used anymore as one of its child readers was closed",
-        ace.getMessage()
-      );
+          "this IndexReader cannot be used anymore as one of its child readers was closed",
+          ace.getMessage());
     } finally {
       // close executor: in case of wrap-wrap-wrapping
       searcher.getIndexReader().close();
     }
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();

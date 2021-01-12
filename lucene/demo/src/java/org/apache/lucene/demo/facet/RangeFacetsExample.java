@@ -18,7 +18,6 @@ package org.apache.lucene.demo.facet;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
@@ -33,8 +32,8 @@ import org.apache.lucene.facet.range.LongRange;
 import org.apache.lucene.facet.range.LongRangeFacetCounts;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
@@ -46,23 +45,25 @@ public class RangeFacetsExample implements Closeable {
 
   private final Directory indexDir = new ByteBuffersDirectory();
   private IndexSearcher searcher;
-  private final long nowSec = System.currentTimeMillis()/1000L;
+  private final long nowSec = System.currentTimeMillis() / 1000L;
 
-  final LongRange PAST_HOUR = new LongRange("Past hour", nowSec-3600, true, nowSec, true);
-  final LongRange PAST_SIX_HOURS = new LongRange("Past six hours", nowSec-6*3600, true, nowSec, true);
-  final LongRange PAST_DAY = new LongRange("Past day", nowSec-24*3600, true, nowSec, true);
+  final LongRange PAST_HOUR = new LongRange("Past hour", nowSec - 3600, true, nowSec, true);
+  final LongRange PAST_SIX_HOURS =
+      new LongRange("Past six hours", nowSec - 6 * 3600, true, nowSec, true);
+  final LongRange PAST_DAY = new LongRange("Past day", nowSec - 24 * 3600, true, nowSec, true);
 
   /** Empty constructor */
   public RangeFacetsExample() {}
-  
+
   /** Build the example index. */
   public void index() throws IOException {
-    IndexWriter indexWriter = new IndexWriter(indexDir, new IndexWriterConfig(
-        new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
+    IndexWriter indexWriter =
+        new IndexWriter(
+            indexDir, new IndexWriterConfig(new WhitespaceAnalyzer()).setOpenMode(OpenMode.CREATE));
 
     // Add documents with a fake timestamp, 1000 sec before
     // "now", 2000 sec before "now", ...:
-    for(int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       long then = nowSec - i * 1000;
       // Add as doc values field, so we can compute range facets:
@@ -92,13 +93,10 @@ public class RangeFacetsExample implements Closeable {
     // you'd use a "normal" query:
     FacetsCollector.search(searcher, new MatchAllDocsQuery(), 10, fc);
 
-    Facets facets = new LongRangeFacetCounts("timestamp", fc,
-                                             PAST_HOUR,
-                                             PAST_SIX_HOURS,
-                                             PAST_DAY);
+    Facets facets = new LongRangeFacetCounts("timestamp", fc, PAST_HOUR, PAST_SIX_HOURS, PAST_DAY);
     return facets.getTopChildren(10, "timestamp");
   }
-  
+
   /** User drills down on the specified range. */
   public TopDocs drillDown(LongRange range) throws IOException {
 
@@ -117,19 +115,24 @@ public class RangeFacetsExample implements Closeable {
     DrillDownQuery q = new DrillDownQuery(getConfig());
     q.add("timestamp", LongPoint.newRangeQuery("timestamp", range.min, range.max));
 
-    // DrillSideways only handles taxonomy and sorted set drill facets by default; to do range facets we must subclass and override the
+    // DrillSideways only handles taxonomy and sorted set drill facets by default; to do range
+    // facets we must subclass and override the
     // buildFacetsResult method.
-    DrillSideways.DrillSidewaysResult result = new DrillSideways(searcher, getConfig(), null, null) {
-      @Override
-      protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims) throws IOException {
-        // If we had other dims we would also compute their drill-down or drill-sideways facets here:
-        assert drillSidewaysDims[0].equals("timestamp");
-        return new LongRangeFacetCounts("timestamp", drillSideways[0],
-                                        PAST_HOUR,
-                                        PAST_SIX_HOURS,
-                                        PAST_DAY);
-      }
-    }.search(q, 10);
+    DrillSideways.DrillSidewaysResult result =
+        new DrillSideways(searcher, getConfig(), null, null) {
+          @Override
+          protected Facets buildFacetsResult(
+              FacetsCollector drillDowns,
+              FacetsCollector[] drillSideways,
+              String[] drillSidewaysDims)
+              throws IOException {
+            // If we had other dims we would also compute their drill-down or drill-sideways facets
+            // here:
+            assert drillSidewaysDims[0].equals("timestamp");
+            return new LongRangeFacetCounts(
+                "timestamp", drillSideways[0], PAST_HOUR, PAST_SIX_HOURS, PAST_DAY);
+          }
+        }.search(q, 10);
 
     return result;
   }

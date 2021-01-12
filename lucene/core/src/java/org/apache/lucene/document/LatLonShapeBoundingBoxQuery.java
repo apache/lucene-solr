@@ -16,15 +16,6 @@
  */
 package org.apache.lucene.document;
 
-import java.util.Arrays;
-
-import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
-
 import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
@@ -33,117 +24,182 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.NumericUtils;
+
 /**
  * Finds all previously indexed geo shapes that intersect the specified bounding box.
  *
- * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
- **/
-final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
+ * <p>The field must be indexed using {@link
+ * org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ */
+final class LatLonShapeBoundingBoxQuery extends SpatialQuery {
   private final Rectangle rectangle;
-  private final EncodedRectangle encodedRectangle;
 
   LatLonShapeBoundingBoxQuery(String field, QueryRelation queryRelation, Rectangle rectangle) {
     super(field, queryRelation);
     this.rectangle = rectangle;
-    this.encodedRectangle = new EncodedRectangle(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
   }
 
   @Override
-  protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
-      return encodedRectangle.intersectRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-    }
-    return encodedRectangle.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-  }
+  protected SpatialVisitor getSpatialVisitor() {
+    final EncodedRectangle encodedRectangle =
+        new EncodedRectangle(
+            rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    return new SpatialVisitor() {
 
+      @Override
+      protected Relation relate(byte[] minTriangle, byte[] maxTriangle) {
+        if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
+          return encodedRectangle.intersectRangeBBox(
+              ShapeField.BYTES,
+              0,
+              minTriangle,
+              3 * ShapeField.BYTES,
+              2 * ShapeField.BYTES,
+              maxTriangle);
+        }
+        return encodedRectangle.relateRangeBBox(
+            ShapeField.BYTES,
+            0,
+            minTriangle,
+            3 * ShapeField.BYTES,
+            2 * ShapeField.BYTES,
+            maxTriangle);
+      }
 
-  @Override
-  protected boolean queryIntersects(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Predicate<byte[]> intersects() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
+              }
+            case LINE:
+              {
+                int aY = scratchTriangle.aY;
+                int aX = scratchTriangle.aX;
+                int bY = scratchTriangle.bY;
+                int bX = scratchTriangle.bX;
+                return encodedRectangle.intersectsLine(aX, aY, bX, bY);
+              }
+            case TRIANGLE:
+              {
+                int aY = scratchTriangle.aY;
+                int aX = scratchTriangle.aX;
+                int bY = scratchTriangle.bY;
+                int bX = scratchTriangle.bX;
+                int cY = scratchTriangle.cY;
+                int cX = scratchTriangle.cX;
+                return encodedRectangle.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        int aY = scratchTriangle.aY;
-        int aX = scratchTriangle.aX;
-        int bY = scratchTriangle.bY;
-        int bX = scratchTriangle.bX;
-        return encodedRectangle.intersectsLine(aX, aY, bX, bY);
-      }
-      case TRIANGLE: {
-        int aY = scratchTriangle.aY;
-        int aX = scratchTriangle.aX;
-        int bY = scratchTriangle.bY;
-        int bX = scratchTriangle.bX;
-        int cY = scratchTriangle.cY;
-        int cX = scratchTriangle.cX;
-        return encodedRectangle.intersectsTriangle(aX, aY, bX, bY, cX, cY);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
-  }
 
-  @Override
-  protected boolean queryContains(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Predicate<byte[]> within() {
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY);
+              }
+            case LINE:
+              {
+                int aY = scratchTriangle.aY;
+                int aX = scratchTriangle.aX;
+                int bY = scratchTriangle.bY;
+                int bX = scratchTriangle.bX;
+                return encodedRectangle.containsLine(aX, aY, bX, bY);
+              }
+            case TRIANGLE:
+              {
+                int aY = scratchTriangle.aY;
+                int aX = scratchTriangle.aX;
+                int bY = scratchTriangle.bY;
+                int bX = scratchTriangle.bX;
+                int cY = scratchTriangle.cY;
+                int cX = scratchTriangle.cX;
+                return encodedRectangle.containsTriangle(aX, aY, bX, bY, cX, cY);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        int aY = scratchTriangle.aY;
-        int aX = scratchTriangle.aX;
-        int bY = scratchTriangle.bY;
-        int bX = scratchTriangle.bX;
-        return encodedRectangle.containsLine(aX, aY, bX, bY);
-      }
-      case TRIANGLE: {
-        int aY = scratchTriangle.aY;
-        int aX = scratchTriangle.aX;
-        int bY = scratchTriangle.bY;
-        int bX = scratchTriangle.bX;
-        int cY = scratchTriangle.cY;
-        int cX = scratchTriangle.cX;
-        return encodedRectangle.containsTriangle(aX, aY, bX, bY, cX, cY);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
-  }
 
-  @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    if (encodedRectangle.crossesDateline()) {
-      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
-    }
-    // decode indexed triangle
-    ShapeField.decodeTriangle(t, scratchTriangle);
+      @Override
+      protected Function<byte[], Component2D.WithinRelation> contains() {
+        if (encodedRectangle.crossesDateline()) {
+          throw new IllegalArgumentException(
+              "withinTriangle is not supported for rectangles crossing the date line");
+        }
+        final ShapeField.DecodedTriangle scratchTriangle = new ShapeField.DecodedTriangle();
+        return triangle -> {
 
-    switch (scratchTriangle.type) {
-      case POINT: {
-        return  encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY) 
-                ? Component2D.WithinRelation.NOTWITHIN : Component2D.WithinRelation.DISJOINT;
+          // decode indexed triangle
+          ShapeField.decodeTriangle(triangle, scratchTriangle);
+
+          switch (scratchTriangle.type) {
+            case POINT:
+              {
+                return encodedRectangle.contains(scratchTriangle.aX, scratchTriangle.aY)
+                    ? Component2D.WithinRelation.NOTWITHIN
+                    : Component2D.WithinRelation.DISJOINT;
+              }
+            case LINE:
+              {
+                return encodedRectangle.withinLine(
+                    scratchTriangle.aX,
+                    scratchTriangle.aY,
+                    scratchTriangle.ab,
+                    scratchTriangle.bX,
+                    scratchTriangle.bY);
+              }
+            case TRIANGLE:
+              {
+                return encodedRectangle.withinTriangle(
+                    scratchTriangle.aX,
+                    scratchTriangle.aY,
+                    scratchTriangle.ab,
+                    scratchTriangle.bX,
+                    scratchTriangle.bY,
+                    scratchTriangle.bc,
+                    scratchTriangle.cX,
+                    scratchTriangle.cY,
+                    scratchTriangle.ca);
+              }
+            default:
+              throw new IllegalArgumentException(
+                  "Unsupported triangle type :[" + scratchTriangle.type + "]");
+          }
+        };
       }
-      case LINE: {
-        return encodedRectangle.withinLine(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
-            scratchTriangle.bX, scratchTriangle.bY);
-      }
-      case TRIANGLE: {
-        return encodedRectangle.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
-            scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
-            scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
-      }
-      default: throw new IllegalArgumentException("Unsupported triangle type :[" + scratchTriangle.type + "]");
-    }
+    };
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && rectangle.equals(((LatLonShapeBoundingBoxQuery)o).rectangle);
+    return super.equalsTo(o) && rectangle.equals(((LatLonShapeBoundingBoxQuery) o).rectangle);
   }
 
   @Override
@@ -184,7 +240,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
       this.minX = encodeLongitudeCeil(minLon);
       this.maxX = encodeLongitude(maxLon);
-      this.minY  = encodeLatitudeCeil(minLat);
+      this.minY = encodeLatitudeCeil(minLat);
       this.maxY = encodeLatitude(maxLat);
       this.crossesDateline = minLon > maxLon;
       if (this.crossesDateline) {
@@ -198,10 +254,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
     }
 
-    /**
-     * encodes a bounding box into the provided byte array
-     */
-    private static void encode(final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
+    /** encodes a bounding box into the provided byte array */
+    private static void encode(
+        final int minX, final int maxX, final int minY, final int maxY, byte[] b) {
       if (b == null) {
         b = new byte[4 * BYTES];
       }
@@ -215,47 +270,71 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       return crossesDateline;
     }
 
-    /**
-     * compare this to a provided range bounding box
-     **/
-    Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-      Relation eastRelation = compareBBoxToRangeBBox(this.bbox,
-          minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    /** compare this to a provided range bounding box */
+    Relation relateRangeBBox(
+        int minXOffset,
+        int minYOffset,
+        byte[] minTriangle,
+        int maxXOffset,
+        int maxYOffset,
+        byte[] maxTriangle) {
+      Relation eastRelation =
+          compareBBoxToRangeBBox(
+              this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
-        return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+        return compareBBoxToRangeBBox(
+            this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+      }
+      return eastRelation;
+    }
+
+    /** intersects this to a provided range bounding box */
+    Relation intersectRangeBBox(
+        int minXOffset,
+        int minYOffset,
+        byte[] minTriangle,
+        int maxXOffset,
+        int maxYOffset,
+        byte[] maxTriangle) {
+      Relation eastRelation =
+          intersectBBoxWithRangeBBox(
+              this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+      if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
+        return intersectBBoxWithRangeBBox(
+            this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
       }
       return eastRelation;
     }
 
     /**
-     * intersects this to a provided range bounding box
-     **/
-    Relation intersectRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                                int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-      Relation eastRelation = intersectBBoxWithRangeBBox(this.bbox,
-          minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-      if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
-        return intersectBBoxWithRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-      }
-      return eastRelation;
-    }
-
-    /**
-     * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
-     **/
-    private static Relation compareBBoxToRangeBBox(final byte[] bbox,
-                                                   int minXOffset, int minYOffset, byte[] minTriangle,
-                                                   int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+     * static utility method to compare a bbox with a range of triangles (just the bbox of the
+     * triangle collection)
+     */
+    private static Relation compareBBoxToRangeBBox(
+        final byte[] bbox,
+        int minXOffset,
+        int minYOffset,
+        byte[] minTriangle,
+        int maxXOffset,
+        int maxYOffset,
+        byte[] maxTriangle) {
       // check bounding box (DISJOINT)
-      if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
+      if (disjoint(
+          bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
         return Relation.CELL_OUTSIDE_QUERY;
       }
 
-      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+      if (Arrays.compareUnsigned(
+                  minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES)
+              >= 0
+          && Arrays.compareUnsigned(
+                  maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES)
+              <= 0
+          && Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES)
+              >= 0
+          && Arrays.compareUnsigned(
+                  maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES)
+              <= 0) {
         return Relation.CELL_INSIDE_QUERY;
       }
 
@@ -263,37 +342,64 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     }
 
     /**
-     * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
-     * for intersection
-     **/
-    private static Relation intersectBBoxWithRangeBBox(final byte[] bbox,
-                                                       int minXOffset, int minYOffset, byte[] minTriangle,
-                                                       int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+     * static utility method to compare a bbox with a range of triangles (just the bbox of the
+     * triangle collection) for intersection
+     */
+    private static Relation intersectBBoxWithRangeBBox(
+        final byte[] bbox,
+        int minXOffset,
+        int minYOffset,
+        byte[] minTriangle,
+        int maxXOffset,
+        int maxYOffset,
+        byte[] maxTriangle) {
       // check bounding box (DISJOINT)
-      if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
+      if (disjoint(
+          bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
         return Relation.CELL_OUTSIDE_QUERY;
       }
 
-      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
-        if (Arrays.compareUnsigned(maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+      if (Arrays.compareUnsigned(
+                  minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES)
+              >= 0
+          && Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES)
+              >= 0) {
+        if (Arrays.compareUnsigned(
+                    maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES)
+                <= 0
+            && Arrays.compareUnsigned(
+                    maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES)
+                <= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
-        if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-            Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+        if (Arrays.compareUnsigned(
+                    maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES)
+                <= 0
+            && Arrays.compareUnsigned(
+                    maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES)
+                <= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
       }
 
-      if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
-        if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+      if (Arrays.compareUnsigned(
+                  maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES)
+              <= 0
+          && Arrays.compareUnsigned(
+                  maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES)
+              <= 0) {
+        if (Arrays.compareUnsigned(
+                    minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES)
+                >= 0
+            && Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES)
+                >= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
-        if (Arrays.compareUnsigned(minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-            Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+        if (Arrays.compareUnsigned(
+                    minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES)
+                >= 0
+            && Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES)
+                >= 0) {
           return Relation.CELL_INSIDE_QUERY;
         }
       }
@@ -301,21 +407,29 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       return Relation.CELL_CROSSES_QUERY;
     }
 
-    /**
-     * static utility method to check a bbox is disjoint with a range of triangles
-     **/
-    private static boolean disjoint(final byte[] bbox,
-                                    int minXOffset, int minYOffset, byte[] minTriangle,
-                                    int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-      return Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-             Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-             Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-             Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
+    /** static utility method to check a bbox is disjoint with a range of triangles */
+    private static boolean disjoint(
+        final byte[] bbox,
+        int minXOffset,
+        int minYOffset,
+        byte[] minTriangle,
+        int maxXOffset,
+        int maxYOffset,
+        byte[] maxTriangle) {
+      return Arrays.compareUnsigned(
+                  minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES)
+              > 0
+          || Arrays.compareUnsigned(
+                  maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES)
+              < 0
+          || Arrays.compareUnsigned(
+                  minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES)
+              > 0
+          || Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES)
+              < 0;
     }
 
-    /**
-     * Checks if the rectangle contains the provided point
-     **/
+    /** Checks if the rectangle contains the provided point */
     boolean contains(int x, int y) {
       if (y < minY || y > maxY) {
         return false;
@@ -327,9 +441,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       }
     }
 
-    /**
-     * Checks if the rectangle intersects the provided LINE
-     **/
+    /** Checks if the rectangle intersects the provided LINE */
     boolean intersectsLine(int aX, int aY, int bX, int bY) {
       if (contains(aX, aY) || contains(bX, bY)) {
         return true;
@@ -351,9 +463,7 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       return edgeIntersectsQuery(aX, aY, bX, bY);
     }
 
-    /**
-     * Checks if the rectangle intersects the provided triangle
-     **/
+    /** Checks if the rectangle intersects the provided triangle */
     boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
       // query contains any triangle points
       if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
@@ -378,60 +488,48 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         }
       }
       // expensive part
-      return Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY) ||
-             edgeIntersectsQuery(aX, aY, bX, bY) ||
-             edgeIntersectsQuery(bX, bY, cX, cY) ||
-             edgeIntersectsQuery(cX, cY, aX, aY);
+      return Component2D.pointInTriangle(
+              tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)
+          || edgeIntersectsQuery(aX, aY, bX, bY)
+          || edgeIntersectsQuery(bX, bY, cX, cY)
+          || edgeIntersectsQuery(cX, cY, aX, aY);
     }
 
-    /**
-     * Checks if the rectangle contains the provided LINE
-     **/
+    /** Checks if the rectangle contains the provided LINE */
     boolean containsLine(int aX, int aY, int bX, int bY) {
-      if (aY < minY || bY < minY ||
-          aY > maxY || bY > maxY ) {
+      if (aY < minY || bY < minY || aY > maxY || bY > maxY) {
         return false;
       }
       if (crossesDateline) { // crosses dateline
-        return (aX >= minX && bX >= minX) ||
-               (aX <= maxX && bX <= maxX);
+        return (aX >= minX && bX >= minX) || (aX <= maxX && bX <= maxX);
       } else {
-        return aX >= minX && bX >= minX &&
-               aX <= maxX && bX <= maxX;
+        return aX >= minX && bX >= minX && aX <= maxX && bX <= maxX;
       }
     }
 
-    /**
-     * Checks if the rectangle contains the provided triangle
-     **/
+    /** Checks if the rectangle contains the provided triangle */
     boolean containsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
-      if (aY < minY || bY < minY || cY < minY ||
-          aY > maxY || bY > maxY || cY > maxY) {
+      if (aY < minY || bY < minY || cY < minY || aY > maxY || bY > maxY || cY > maxY) {
         return false;
       }
       if (crossesDateline) { // crosses dateline
-        return (aX >= minX && bX >= minX && cX >= minX) ||
-               (aX <= maxX && bX <= maxX && cX <= maxX);
+        return (aX >= minX && bX >= minX && cX >= minX) || (aX <= maxX && bX <= maxX && cX <= maxX);
       } else {
-        return aX >= minX && bX >= minX && cX >= minX &&
-               aX <= maxX && bX <= maxX && cX <= maxX;
+        return aX >= minX && bX >= minX && cX >= minX && aX <= maxX && bX <= maxX && cX <= maxX;
       }
     }
 
-    /**
-     * Returns the Within relation to the provided triangle
-     */
+    /** Returns the Within relation to the provided triangle */
     Component2D.WithinRelation withinLine(int ax, int ay, boolean ab, int bx, int by) {
       if (ab == true && edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
-          return Component2D.WithinRelation.NOTWITHIN;
+        return Component2D.WithinRelation.NOTWITHIN;
       }
       return Component2D.WithinRelation.DISJOINT;
     }
 
-    /**
-     * Returns the Within relation to the provided triangle
-     */
-    Component2D.WithinRelation withinTriangle(int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
+    /** Returns the Within relation to the provided triangle */
+    Component2D.WithinRelation withinTriangle(
+        int aX, int aY, boolean ab, int bX, int bY, boolean bc, int cX, int cY, boolean ca) {
       // Points belong to the shape so if points are inside the rectangle then it cannot be within.
       if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
         return Component2D.WithinRelation.NOTWITHIN;
@@ -480,16 +578,15 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
         }
       }
       // Check if shape is within the triangle
-      if (relation == Component2D.WithinRelation.CANDIDATE ||
-          Component2D.pointInTriangle(tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
+      if (relation == Component2D.WithinRelation.CANDIDATE
+          || Component2D.pointInTriangle(
+              tMinX, tMaxX, tMinY, tMaxY, minX, minY, aX, aY, bX, bY, cX, cY)) {
         return Component2D.WithinRelation.CANDIDATE;
       }
       return relation;
     }
 
-    /**
-     * returns true if the edge (defined by (aX, aY) (bX, bY)) intersects the query
-     */
+    /** returns true if the edge (defined by (aX, aY) (bX, bY)) intersects the query */
     private boolean edgeIntersectsQuery(int aX, int aY, int bX, int bY) {
       if (crossesDateline) {
         return edgeIntersectsBox(aX, aY, bX, bY, MIN_LON_ENCODED, this.maxX, this.minY, this.maxY)
@@ -498,18 +595,22 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       return edgeIntersectsBox(aX, aY, bX, bY, this.minX, this.maxX, this.minY, this.maxY);
     }
 
-    /**
-     * returns true if the edge (defined by (aX, aY) (bX, bY)) intersects the box
-     */
-    private static boolean edgeIntersectsBox(int aX, int aY, int bX, int bY,
-                                             int minX, int maxX, int minY, int maxY) {
-      if (Math.max(aX, bX) < minX || Math.min(aX, bX) > maxX || Math.min(aY, bY) > maxY || Math.max(aY, bY) < minY) {
+    /** returns true if the edge (defined by (aX, aY) (bX, bY)) intersects the box */
+    private static boolean edgeIntersectsBox(
+        int aX, int aY, int bX, int bY, int minX, int maxX, int minY, int maxY) {
+      if (Math.max(aX, bX) < minX
+          || Math.min(aX, bX) > maxX
+          || Math.min(aY, bY) > maxY
+          || Math.max(aY, bY) < minY) {
         return false;
       }
-      return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY,  maxX, maxY) || // top
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY,  maxX, minY) || // bottom
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY,  minX, minY) || // left
-             GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY,  minX, maxY);   // right
+      return GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, maxY, maxX, maxY)
+          || // top
+          GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, maxY, maxX, minY)
+          || // bottom
+          GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, maxX, minY, minX, minY)
+          || // left
+          GeoUtils.lineCrossesLineWithBoundary(aX, aY, bX, bY, minX, minY, minX, maxY); // right
     }
   }
 }

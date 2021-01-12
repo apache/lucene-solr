@@ -16,11 +16,12 @@
  */
 package org.apache.lucene.spatial;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,10 +40,6 @@ import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomDouble;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomGaussian;
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-
 /** A base test class for spatial lucene. It's mostly Lucene generic. */
 @SuppressSysoutChecks(bugUrl = "These tests use JUL extensively.")
 public abstract class SpatialTestCase extends LuceneTestCase {
@@ -55,14 +52,16 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   private Analyzer analyzer;
   protected IndexSearcher indexSearcher;
 
-  protected SpatialContext ctx;//subclass must initialize
+  protected SpatialContext ctx; // subclass must initialize
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     analyzer = new MockAnalyzer(random());
-    indexWriter = new RandomIndexWriter(random(), directory, LuceneTestCase.newIndexWriterConfig(random(), analyzer));
+    indexWriter =
+        new RandomIndexWriter(
+            random(), directory, LuceneTestCase.newIndexWriterConfig(random(), analyzer));
     indexReader = indexWriter.getReader();
     indexSearcher = newSearcher(indexReader);
   }
@@ -72,8 +71,6 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     IOUtils.close(indexWriter, indexReader, analyzer, directory);
     super.tearDown();
   }
-
-  // ================================================= Helper Methods ================================================
 
   protected void addDocument(Document doc) throws IOException {
     indexWriter.addDocument(doc);
@@ -120,9 +117,10 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
   protected Point randomPoint() {
     final Rectangle WB = ctx.getWorldBounds();
-    return ctx.getShapeFactory().pointXY(
-        randomIntBetween((int) WB.getMinX(), (int) WB.getMaxX()),
-        randomIntBetween((int) WB.getMinY(), (int) WB.getMaxY()));
+    return ctx.getShapeFactory()
+        .pointXY(
+            randomIntBetween((int) WB.getMinX(), (int) WB.getMaxX()),
+            randomIntBetween((int) WB.getMinY(), (int) WB.getMaxY()));
   }
 
   protected Rectangle randomRectangle() {
@@ -154,11 +152,12 @@ public abstract class SpatialTestCase extends LuceneTestCase {
       int intBoundLen = intBoundEnd - intBoundStart;
       int newLen = (int) randomGaussianMeanMax(intBoundLen / 16.0, intBoundLen);
       int newStart = intBoundStart + randomIntBetween(0, intBoundLen - newLen);
-      return new double[]{newStart, newLen};
+      return new double[] {newStart, newLen};
     } else { // (no int rounding)
       double newLen = randomGaussianMeanMax(boundLen / 16, boundLen);
-      double newStart = boundStart + (boundLen - newLen == 0 ? 0 : (randomDouble() % (boundLen - newLen)));
-      return new double[]{newStart, newLen};
+      double newStart =
+          boundStart + (boundLen - newLen == 0 ? 0 : (randomDouble() % (boundLen - newLen)));
+      return new double[] {newStart, newLen};
     }
   }
 
@@ -168,11 +167,10 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   }
 
   /**
-   * Within one standard deviation (68% of the time) the result is "close" to
-   * mean. By "close": when greater than mean, it's the lesser of 2*mean or half
-   * way to max, when lesser than mean, it's the greater of max-2*mean or half
-   * way to 0. The other 32% of the time it's in the rest of the range, touching
-   * either 0 or max but never exceeding.
+   * Within one standard deviation (68% of the time) the result is "close" to mean. By "close": when
+   * greater than mean, it's the lesser of 2*mean or half way to max, when lesser than mean, it's
+   * the greater of max-2*mean or half way to 0. The other 32% of the time it's in the rest of the
+   * range, touching either 0 or max but never exceeding.
    */
   private double randomGaussianMeanMax(double mean, double max) {
     // DWS: I verified the results empirically
@@ -188,19 +186,20 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     // pivot is the distance from mean2 towards max where the boundary of
     // 1 standard deviation alters the calculation
     double pivotMax = max - mean2;
-    double pivot = Math.min(mean2, pivotMax / 2);//from 0 to max-mean2
+    double pivot = Math.min(mean2, pivotMax / 2); // from 0 to max-mean2
     assert pivot >= 0 && pivotMax >= pivot && g >= 0;
     double pivotResult;
-    if (g <= 1)
+    if (g <= 1) {
       pivotResult = pivot * g;
-    else
+    } else {
       pivotResult = Math.min(pivotMax, (g - 1) * (pivotMax - pivot) + pivot);
+    }
 
     double result = mean + flip * pivotResult;
-    return (result < 0 || result > max) ? mean : result; // due this due to computational numerical precision
+    return (result < 0 || result > max)
+        ? mean
+        : result; // due this due to computational numerical precision
   }
-
-  // ================================================= Inner Classes =================================================
 
   protected static class SearchResults {
 
@@ -215,7 +214,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     public StringBuilder toDebugString() {
       StringBuilder str = new StringBuilder();
       str.append("found: ").append(numFound).append('[');
-      for(SearchResult r : results) {
+      for (SearchResult r : results) {
         String id = r.getId();
         str.append(id).append(", ");
       }
@@ -225,7 +224,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "[found:"+numFound+" "+results+"]";
+      return "[found:" + numFound + " " + results + "]";
     }
   }
 
@@ -245,7 +244,7 @@ public abstract class SpatialTestCase extends LuceneTestCase {
 
     @Override
     public String toString() {
-      return "["+score+"="+document+"]";
+      return "[" + score + "=" + document + "]";
     }
   }
 }

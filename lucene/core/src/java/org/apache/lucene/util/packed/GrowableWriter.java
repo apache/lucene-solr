@@ -16,19 +16,18 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/**     
- * Implements {@link PackedInts.Mutable}, but grows the
- * bit count of the underlying packed ints on-demand.
- * <p>Beware that this class will accept to set negative values but in order
- * to do this, it will grow the number of bits per value to 64.
+/**
+ * Implements {@link PackedInts.Mutable}, but grows the bit count of the underlying packed ints
+ * on-demand.
  *
- * <p>@lucene.internal</p>
+ * <p>Beware that this class will accept to set negative values but in order to do this, it will
+ * grow the number of bits per value to 64.
+ *
+ * <p>@lucene.internal
  */
 public class GrowableWriter extends PackedInts.Mutable {
 
@@ -37,8 +36,8 @@ public class GrowableWriter extends PackedInts.Mutable {
   private final float acceptableOverheadRatio;
 
   /**
-   * @param startBitsPerValue       the initial number of bits per value, may grow depending on the data
-   * @param valueCount              the number of values
+   * @param startBitsPerValue the initial number of bits per value, may grow depending on the data
+   * @param valueCount the number of values
    * @param acceptableOverheadRatio an acceptable overhead ratio
    */
   public GrowableWriter(int startBitsPerValue, int valueCount, float acceptableOverheadRatio) {
@@ -77,7 +76,8 @@ public class GrowableWriter extends PackedInts.Mutable {
     final int bitsRequired = PackedInts.unsignedBitsRequired(value);
     assert bitsRequired > current.getBitsPerValue();
     final int valueCount = size();
-    PackedInts.Mutable next = PackedInts.getMutable(valueCount, bitsRequired, acceptableOverheadRatio);
+    PackedInts.Mutable next =
+        PackedInts.getMutable(valueCount, bitsRequired, acceptableOverheadRatio);
     PackedInts.copy(current, 0, next, 0, valueCount, PackedInts.DEFAULT_BUFFER_SIZE);
     current = next;
     currentMask = mask(current.getBitsPerValue());
@@ -129,10 +129,10 @@ public class GrowableWriter extends PackedInts.Mutable {
   @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
-        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + RamUsageEstimator.NUM_BYTES_OBJECT_REF
-        + Long.BYTES
-        + Float.BYTES)
+            RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+                + RamUsageEstimator.NUM_BYTES_OBJECT_REF
+                + Long.BYTES
+                + Float.BYTES)
         + current.ramBytesUsed();
   }
 
@@ -140,5 +140,4 @@ public class GrowableWriter extends PackedInts.Mutable {
   public void save(DataOutput out) throws IOException {
     current.save(out);
   }
-
 }

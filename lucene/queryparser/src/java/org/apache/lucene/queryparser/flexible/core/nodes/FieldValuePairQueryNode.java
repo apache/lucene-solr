@@ -17,13 +17,11 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 /**
- * This interface should be implemented by {@link QueryNode} that holds a field
- * and an arbitrary value.
- * 
+ * This interface should be implemented by {@link QueryNode} that holds a field and an arbitrary
+ * value.
+ *
  * @see FieldableNode
  * @see ValueQueryNode
  */
-public interface FieldValuePairQueryNode<T extends Object> extends
-    FieldableNode, ValueQueryNode<T> {
-
-}
+public interface FieldValuePairQueryNode<T extends Object>
+    extends FieldableNode, ValueQueryNode<T> {}

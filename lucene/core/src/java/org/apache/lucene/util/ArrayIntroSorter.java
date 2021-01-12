@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Comparator;
 
 /**
  * An {@link IntroSorter} for object arrays.
+ *
  * @lucene.internal
  */
 final class ArrayIntroSorter<T> extends IntroSorter {
@@ -55,5 +55,4 @@ final class ArrayIntroSorter<T> extends IntroSorter {
   protected int comparePivot(int i) {
     return comparator.compare(pivot, arr[i]);
   }
-
 }

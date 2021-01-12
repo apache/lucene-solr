@@ -20,9 +20,12 @@
 
 Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#searching-nested-documents,search and retrieve>> them very efficiently.
 
-By way of examples: nested documents in Solr can be used to bind a blog post (parent document) with comments (child documents) -- or as a way to model major product lines as parent documents, with multiple types of child documents representing individual SKUs (with unique sizes / colors) and supporting documention (either directly nested under the products, or under individual SKUs.
+By way of examples: nested documents in Solr can be used to bind a blog post (parent document)
+with comments (child documents) -- or as a way to model major product lines as parent documents,
+with multiple types of child documents representing individual SKUs (with unique sizes / colors) and supporting documentation (either directly nested under the products, or under individual SKUs.
 
-The "top most" parent with all children is referred to as a "root level" document or "block document" and it explains some of the nomenclature of related features.
+The "top most" parent with all children is referred to as a "root" document or formerly "block
+document" and it explains some of the nomenclature of related features.
 
 At query time, the <<other-parsers.adoc#block-join-query-parsers,Block Join Query Parsers>> can search these relationships,
  and the `<<transforming-result-documents.adoc#child-childdoctransformerfactory,[child]>>` Document Transformer can attach child (or other "descendent") documents to the result documents.
@@ -36,22 +39,30 @@ Nested documents may be indexed via either the XML or JSON data syntax, and is a
 [CAUTION]
 ====
 .Re-Indexing Considerations
-With the exception of in-place updates, <<#maintaining-integrity-with-updates-and-deletes,blocks of nested documents must be updated/deleted together>>.  Modifying or replacing individual child documents requires reindexing of the entire block (either explicitly/externally, or under the covers inside of Solr).  For some applications this may result in a lot of extra indexing overhead and may not be worth the performance gains at query time.
+With the exception of in-place updates, Solr must internally re-index an entire nested document tree
+if there are updates to it.  For some applications this may
+result in a lot of extra indexing overhead that may not be worth the performance gains at query
+time versus other modeling approaches.
 ====
+
+In the examples on this page, the IDs of child documents are always provided.  However, you need not
+generate such IDs; you can let Solr populate them automatically.  It will concatenate the ID of its
+parent with a separator and path information that should be unique.  Try it out for yourself!
 
 [#example-indexing-syntax]
 == Example Indexing Syntax: Psuedo-Fields
 
-This example shows what it looks like to index two root level "product" documents, each containing two different types of child documents specified in "psuedo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
+This example shows what it looks like to index two root "product" documents, each containing two
+different types of child documents specified in "psuedo-fields": "skus" and "manuals".  Two of the "sku" type documents have their own nested child "manuals" documents...
 
 [NOTE]
 ====
-Even though the child documents in these examples are provided syntactically as field values syntactically, this is simply a matter of syntax and as such `skus` and `manuals` are not actual fields in the documents.  Consequently, these field names need not be defined in the schema and probably shouldn't be as it would be confusing.  There is no "child document" field type.
+Even though the child documents in these examples are provided syntactically as field values, this is simply a matter of syntax and as such `skus` and `manuals` are not actual fields in the documents.  Consequently, these field names need not be defined in the schema and probably shouldn't be as it would be confusing.  There is no "child document" field type.
 ====
 
 //
 // DO NOT MODIFY THESE EXAMPLE DOCS WITH OUT REVIEWING ALL PAGES THAT INCLUDE/REFER BACK TO THESE EXAMPLES
-// INCLUDING THE SEMI-EQUIVILENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
+// INCLUDING THE SEMI-EQUIVALENT ANONYMOUS CHILDREN EXAMPLE AT THE BOTTOM OF THIS PAGE
 //
 [.dynamic-tabs]
 --
@@ -218,53 +229,81 @@ Indexing nested documents _requires_ an indexed field named `\_root_`:
 
 [source,xml]
 ----
-<field name="_root_" type="string" indexed="true" />
+<field name="_root_" type="string" indexed="true" stored="false" docValues="false" />
 ----
 
-Solr automatically populates this field in every nested document with the `id` value of the top most parent document in the block.
+* Solr automatically populates this field in _all_ documents with the `id` value of it's root document
+-- it's highest ancestor, possibly itself.
+* This field must be indexed (`indexed="true"`) but doesn't need to
+be either stored (`stored="true"`) or use doc values (`docValues="true"`), however you are free
+to do so if you find it useful.  If you want to use `uniqueBlock(\_root_)`
+<<json-facet-api#stat-facet-functions,field type limitation>>, then you should enable docValues.
 
+Preferably, you will also define `\_nest_path_` which adds features and ease-of-use:
 
-There are several additional schema considerations that should be considered for people who wish to use nested documents:
-
-* Nested child documents are very much documents in their own right even if certain nested documents hold different information from the parent, Therefore:
-** All field names in the schema can only be configured in one -- different types of child documents can not have the same field name configured in different ways.
-** It may be infeasible to use `required` for any field names that aren't reqiured for all types of documents.
-** Even child documents need a _globally_ unique `id`.
-* `\_root_` must be configured to either be stored (`stored="true"`) or use doc values (`docValues="true"`) to enable <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>.
-** Also, beware of `uniqueBlock(\_root_)` <<json-facet-api#stat-facet-functions,field type limitation>>, if you plan to use one.
-* `\_nest_path_` is an optional field that (if definied) will be populated by Solr automatically with the ancestor path of each non-root document.
-+
 [source,xml]
 ----
 <fieldType name="_nest_path_" class="solr.NestPathField" />
 <field name="_nest_path_" type="_nest_path_" />`
 ----
-** This field is neccessary if you wish to use <<updating-parts-of-documents#updating-child-documents,atomic updates of nested documents>>
-** This field is neccessary in order for Solr to properly record & reconstruct the nested relationship of documents when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
-*** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
-** If you do not use `\_nest_path_` it is strongly recomended that every document have some field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly neccessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
-* `\_nest_parent_` is an optional field that (if defined) will be populated by Solr automatically to store the `id` of each document's _immediate_ parent document (if there is one).
-+
+
+* Solr automatically populates this field for any child document but not root documents.
+* This field enables Solr to properly record & reconstruct the named and nested relationship of documents
+when using the `<<searching-nested-documents.adoc#child-doc-transformer,[child]>>` doc transformer.
+** If this field does not exist, the `[child]` transformer will return all descendent child documents as a flattened list -- just as if they had been <<#indexing-anonymous-children,indexed as anonymous children>>.
+* If you do not use `\_nest_path_` it is strongly recommended that every document have some
+field that differentiates root documents from their nested children -- and differentiates different "types" of child documents.  This is not strictly necessary, so long as it's possible to write a "filter" query that can be used to isolate and select only parent documents for use in the <<other-parsers.adoc#block-join-query-parsers,block join query parsers>> and <<searching-nested-documents.adoc#child-doc-transformer,[child]>> doc transformer
+* It's possible to query on this field, although at present it's only documented how to in the
+context of `[child]`'s `childFilter` parameter.
+
+You might optionally want to define `\_nest_parent_` to store parent IDs:
+
 [source,xml]
 ----
 <field name="_nest_parent_" type="string" indexed="true" stored="true" />
 ----
 
+* Solr automatically populates this field in child documents but not root documents.
+
+
+Finally, understand that nested child documents are very much documents in their own right even if certain nested
+documents hold different information from the parent or other child documents, therefore:
+
+* All field names in the schema can only be configured in one -- different types of child documents can not have the same field name configured in different ways.
+* It may be infeasible to use `required` for any field names that aren't required for all types of
+documents.
+* Even child documents need a _globally_ unique `id`.
+
 [TIP]
 ====
-When using SolrCloud it is a _VERY_ good idea to use <<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a common prefix for all documents in the block.  This makes it much easier to apply <<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
+When using SolrCloud it is a _VERY_ good idea to use
+<<shards-and-indexing-data-in-solrcloud#document-routing,prefix based compositeIds>> with a
+common prefix for all documents in the nested document tree.  This makes it much easier to apply
+<<updating-parts-of-documents#updating-child-documents,atomic updates to individual child documents>>
 ====
 
 
 == Maintaining Integrity with Updates and Deletes
 
-Blocks of nested documents can be modified simply by adding/replacing the root document with more or fewer child/descendent documents as an application desires.  This can either be done explicitly/externaly by an indexing client completely reindexing the root level document, or internally by Solr when a client uses <<updating-parts-of-documents#updating-child-documents,atomic updates>> to modify child documents.  This aspect isn't different than updating any normal document except that Solr takes care to ensure that all related child documents of the existing version get deleted.
+Nested document trees can be modified with Solr's
+<<updating-parts-of-documents#updating-child-documents,atomic/partial update>> feature to
+manipulate any document in a nested tree, and even to add new child documents.
+This aspect isn't different than updating any normal document -- Solr internally deletes the old
+nested document tree and it adds the newly modified one.
+Just be mindful to add a `_root_` field if the partial update is to a child doc so that Solr
+knows which Root doc it's related to.
 
-Clients should however be very careful to *never* add a root document that has the same `id` of a child document -- or vice-versa.  Solr does not prevent clients from attempting this, but *_it will violate integrity assumptions that Solr expects._*
+Solr demands that the `id` of _all_ documents in a collection be unique.  Solr enforces this for
+root documents within a shard but it doesn't for child documents to avoid the expense of checking.
+Clients should be very careful to *never* violate this.
 
-To delete an entire block of documents, you can simply delete-by-ID using the `id` of the root document.  Delete-by-ID will not work with the `id` of a child document, since only root document IDs are considered. (Instead, use <<updating-parts-of-documents#updating-child-documents,atomic updates>> to remove the child document from it's parent)
+To delete an entire nested document tree, you can simply delete-by-ID using the `id` of the root
+document.  Delete-by-ID will not work with the `id` of a child document, since only root document
+IDs are considered.  Instead, use delete-by-query (most efficient) or
+<<updating-parts-of-documents#updating-child-documents,atomic updates>> to remove the child document from it's parent.
 
-If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query is strutured to ensure no descendent children remain of any documents that are being deleted.  *_Doing otherwise will violate integrity assumptions that Solr expects._*
+If you use Solr's delete-by-query APIs, you *MUST* be careful to ensure that any deletion query
+is structured to ensure no descendent children remain of any documents that are being deleted.  *_Doing otherwise will violate integrity assumptions that Solr expects._*
 
 
 
@@ -384,7 +423,11 @@ This simplified approach was common in older versions of Solr, and can still be 
 
 This approach should *NOT* be used when schemas include a `\_nest_path_` field, as the existence of that field triggers assumptions and changes in behavior in various query time functionality, such as the <<searching-nested-documents.adoc#child-doc-transformer,[child]>>, that will not work when nested documents do not have any intrinsic "nested path" information.
 
-The results of indexing anonymous nested children with a "Root-Only" schema are similar to what happens if you attempt to index "psuedo field" nested documents using a "Root-Only" schema.  Notably: since there is no nested path information for the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structured of a block of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
+The results of indexing anonymous nested children with a "Root-Only" schema are similar to what
+happens if you attempt to index "psuedo field" nested documents using a "Root-Only" schema.
+Notably: since there is no nested path information for the
+<<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer to use to reconstruct the structure of a nest
+of documents, it returns all matching children as a flat list, similar in structure to how they were originally indexed:
 
 
 

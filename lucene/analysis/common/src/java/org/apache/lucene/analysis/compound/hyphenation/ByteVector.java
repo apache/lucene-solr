@@ -18,27 +18,21 @@
 package org.apache.lucene.analysis.compound.hyphenation;
 
 /**
- * This class implements a simple byte vector with access to the underlying
- * array.
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ * This class implements a simple byte vector with access to the underlying array. This class has
+ * been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been
+ * slightly modified.
  */
 public class ByteVector {
 
-  /**
-   * Capacity increment size
-   */
+  /** Capacity increment size */
   private static final int DEFAULT_BLOCK_SIZE = 2048;
 
   private int blockSize;
 
-  /**
-   * The encapsulated array
-   */
+  /** The encapsulated array */
   private byte[] array;
 
-  /**
-   * Points to next free item
-   */
+  /** Points to next free item */
   private int n;
 
   public ByteVector() {
@@ -75,16 +69,12 @@ public class ByteVector {
     return array;
   }
 
-  /**
-   * return number of items in array
-   */
+  /** return number of items in array */
   public int length() {
     return n;
   }
 
-  /**
-   * returns current capacity of array
-   */
+  /** returns current capacity of array */
   public int capacity() {
     return array.length;
   }
@@ -97,9 +87,7 @@ public class ByteVector {
     return array[index];
   }
 
-  /**
-   * This is to implement memory allocation in the array. Like malloc().
-   */
+  /** This is to implement memory allocation in the array. Like malloc(). */
   public int alloc(int size) {
     int index = n;
     int len = array.length;
@@ -119,5 +107,4 @@ public class ByteVector {
       array = aux;
     }
   }
-
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queryparser.simple;
 
+import java.util.Collections;
+import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -30,99 +32,100 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
-import java.util.Collections;
-import java.util.Map;
-
 /**
  * SimpleQueryParser is used to parse human readable query syntax.
- * <p>
- * The main idea behind this parser is that a person should be able to type
- * whatever they want to represent a query, and this parser will do its best
- * to interpret what to search for no matter how poorly composed the request
- * may be. Tokens are considered to be any of a term, phrase, or subquery for the
- * operations described below.  Whitespace including ' ' '\n' '\r' and '\t'
- * and certain operators may be used to delimit tokens ( ) + | " .
- * <p>
- * Any errors in query syntax will be ignored and the parser will attempt
- * to decipher what it can; however, this may mean odd or unexpected results.
- * <p>
- * <b>Query Operators</b>
+ *
+ * <p>The main idea behind this parser is that a person should be able to type whatever they want to
+ * represent a query, and this parser will do its best to interpret what to search for no matter how
+ * poorly composed the request may be. Tokens are considered to be any of a term, phrase, or
+ * subquery for the operations described below. Whitespace including ' ' '\n' '\r' and '\t' and
+ * certain operators may be used to delimit tokens ( ) + | " .
+ *
+ * <p>Any errors in query syntax will be ignored and the parser will attempt to decipher what it
+ * can; however, this may mean odd or unexpected results.
+ *
+ * <p><b>Query Operators</b>
+ *
  * <ul>
- *  <li>'{@code +}' specifies {@code AND} operation: <code>token1+token2</code>
- *  <li>'{@code |}' specifies {@code OR} operation: <code>token1|token2</code>
- *  <li>'{@code -}' negates a single token: <code>-token0</code>
- *  <li>'{@code "}' creates phrases of terms: <code>"term1 term2 ..."</code>
- *  <li>'{@code *}' at the end of terms specifies prefix query: <code>term*</code>
- *  <li>'{@code ~}N' at the end of terms specifies fuzzy query: <code>term~1</code>
- *  <li>'{@code ~}N' at the end of phrases specifies near query: <code>"term1 term2"~5</code>
- *  <li>'{@code (}' and '{@code )}' specifies precedence: <code>token1 + (token2 | token3)</code>
+ *   <li>'{@code +}' specifies {@code AND} operation: <code>token1+token2</code>
+ *   <li>'{@code |}' specifies {@code OR} operation: <code>token1|token2</code>
+ *   <li>'{@code -}' negates a single token: <code>-token0</code>
+ *   <li>'{@code "}' creates phrases of terms: <code>"term1 term2 ..."</code>
+ *   <li>'{@code *}' at the end of terms specifies prefix query: <code>term*</code>
+ *   <li>'{@code ~}N' at the end of terms specifies fuzzy query: <code>term~1</code>
+ *   <li>'{@code ~}N' at the end of phrases specifies near query: <code>"term1 term2"~5</code>
+ *   <li>'{@code (}' and '{@code )}' specifies precedence: <code>token1 + (token2 | token3)</code>
  * </ul>
- * <p>
- * The {@link #setDefaultOperator default operator} is {@code OR} if no other operator is specified.
- * For example, the following will {@code OR} {@code token1} and {@code token2} together:
+ *
+ * <p>The {@link #setDefaultOperator default operator} is {@code OR} if no other operator is
+ * specified. For example, the following will {@code OR} {@code token1} and {@code token2} together:
  * <code>token1 token2</code>
- * <p>
- * Normal operator precedence will be simple order from right to left.
- * For example, the following will evaluate {@code token1 OR token2} first,
- * then {@code AND} with {@code token3}:
- * <blockquote>token1 | token2 + token3</blockquote>
+ *
+ * <p>Normal operator precedence will be simple order from right to left. For example, the following
+ * will evaluate {@code token1 OR token2} first, then {@code AND} with {@code token3}:
+ *
+ * <blockquote>
+ *
+ * token1 | token2 + token3
+ *
+ * </blockquote>
+ *
  * <b>Escaping</b>
- * <p>
- * An individual term may contain any possible character with certain characters
- * requiring escaping using a '{@code \}'.  The following characters will need to be escaped in
- * terms and phrases:
- * {@code + | " ( ) ' \}
- * <p>
- * The '{@code -}' operator is a special case.  On individual terms (not phrases) the first
- * character of a term that is {@code -} must be escaped; however, any '{@code -}' characters
- * beyond the first character do not need to be escaped.
- * For example:
+ *
+ * <p>An individual term may contain any possible character with certain characters requiring
+ * escaping using a '{@code \}'. The following characters will need to be escaped in terms and
+ * phrases: {@code + | " ( ) ' \}
+ *
+ * <p>The '{@code -}' operator is a special case. On individual terms (not phrases) the first
+ * character of a term that is {@code -} must be escaped; however, any '{@code -}' characters beyond
+ * the first character do not need to be escaped. For example:
+ *
  * <ul>
- *   <li>{@code -term1}   -- Specifies {@code NOT} operation against {@code term1}
- *   <li>{@code \-term1}  -- Searches for the term {@code -term1}.
- *   <li>{@code term-1}   -- Searches for the term {@code term-1}.
- *   <li>{@code term\-1}  -- Searches for the term {@code term-1}.
+ *   <li>{@code -term1} -- Specifies {@code NOT} operation against {@code term1}
+ *   <li>{@code \-term1} -- Searches for the term {@code -term1}.
+ *   <li>{@code term-1} -- Searches for the term {@code term-1}.
+ *   <li>{@code term\-1} -- Searches for the term {@code term-1}.
  * </ul>
- * <p>
- * The '{@code *}' operator is a special case. On individual terms (not phrases) the last
+ *
+ * <p>The '{@code *}' operator is a special case. On individual terms (not phrases) the last
  * character of a term that is '{@code *}' must be escaped; however, any '{@code *}' characters
  * before the last character do not need to be escaped:
+ *
  * <ul>
- *   <li>{@code term1*}  --  Searches for the prefix {@code term1}
- *   <li>{@code term1\*} --  Searches for the term {@code term1*}
- *   <li>{@code term*1}  --  Searches for the term {@code term*1}
- *   <li>{@code term\*1} --  Searches for the term {@code term*1}
+ *   <li>{@code term1*} -- Searches for the prefix {@code term1}
+ *   <li>{@code term1\*} -- Searches for the term {@code term1*}
+ *   <li>{@code term*1} -- Searches for the term {@code term*1}
+ *   <li>{@code term\*1} -- Searches for the term {@code term*1}
  * </ul>
- * <p>
- * Note that above examples consider the terms before text processing.
+ *
+ * <p>Note that above examples consider the terms before text processing.
  */
 public class SimpleQueryParser extends QueryBuilder {
   /** Map of fields to query against with their weights */
-  protected final Map<String,Float> weights;
+  protected final Map<String, Float> weights;
   /** flags to the parser (to turn features on/off) */
   protected final int flags;
 
   /** Enables {@code AND} operator (+) */
-  public static final int AND_OPERATOR         = 1<<0;
+  public static final int AND_OPERATOR = 1 << 0;
   /** Enables {@code NOT} operator (-) */
-  public static final int NOT_OPERATOR         = 1<<1;
+  public static final int NOT_OPERATOR = 1 << 1;
   /** Enables {@code OR} operator (|) */
-  public static final int OR_OPERATOR          = 1<<2;
+  public static final int OR_OPERATOR = 1 << 2;
   /** Enables {@code PREFIX} operator (*) */
-  public static final int PREFIX_OPERATOR      = 1<<3;
+  public static final int PREFIX_OPERATOR = 1 << 3;
   /** Enables {@code PHRASE} operator (") */
-  public static final int PHRASE_OPERATOR      = 1<<4;
+  public static final int PHRASE_OPERATOR = 1 << 4;
   /** Enables {@code PRECEDENCE} operators: {@code (} and {@code )} */
-  public static final int PRECEDENCE_OPERATORS = 1<<5;
+  public static final int PRECEDENCE_OPERATORS = 1 << 5;
   /** Enables {@code ESCAPE} operator (\) */
-  public static final int ESCAPE_OPERATOR      = 1<<6;
+  public static final int ESCAPE_OPERATOR = 1 << 6;
   /** Enables {@code WHITESPACE} operators: ' ' '\n' '\r' '\t' */
-  public static final int WHITESPACE_OPERATOR  = 1<<7;
+  public static final int WHITESPACE_OPERATOR = 1 << 7;
   /** Enables {@code FUZZY} operators: (~) on single terms */
-  public static final int FUZZY_OPERATOR       = 1<<8;
+  public static final int FUZZY_OPERATOR = 1 << 8;
   /** Enables {@code NEAR} operators: (~) on phrases */
-  public static final int NEAR_OPERATOR        = 1<<9;
-
+  public static final int NEAR_OPERATOR = 1 << 9;
 
   private BooleanClause.Occur defaultOperator = BooleanClause.Occur.SHOULD;
 
@@ -204,9 +207,10 @@ public class SimpleQueryParser extends QueryBuilder {
         // before the next character is determined
         continue;
       } else if ((state.data[state.index] == ' '
-          || state.data[state.index] == '\t'
-          || state.data[state.index] == '\n'
-          || state.data[state.index] == '\r') && (flags & WHITESPACE_OPERATOR) != 0) {
+              || state.data[state.index] == '\t'
+              || state.data[state.index] == '\n'
+              || state.data[state.index] == '\r')
+          && (flags & WHITESPACE_OPERATOR) != 0) {
         // ignore any whitespace found as it may have already been
         // used a delimiter across a term (or phrase or subquery)
         // or is simply extraneous
@@ -302,9 +306,9 @@ public class SimpleQueryParser extends QueryBuilder {
         } else if (state.data[state.index] == '"') {
           // if there are still characters after the closing ", check for a
           // tilde
-          if (state.length > (state.index + 1) &&
-              state.data[state.index+1] == '~' &&
-              (flags & NEAR_OPERATOR) != 0) {
+          if (state.length > (state.index + 1)
+              && state.data[state.index + 1] == '~'
+              && (flags & NEAR_OPERATOR) != 0) {
             state.index++;
             // check for characters after the tilde
             if (state.length > (state.index + 1)) {
@@ -477,6 +481,7 @@ public class SimpleQueryParser extends QueryBuilder {
 
   /**
    * Helper parsing fuzziness from parsing state
+   *
    * @return slop/edit distance, 0 in the case of non-parsing slop/edit string
    */
   private int parseFuzziness(State state) {
@@ -498,7 +503,7 @@ public class SimpleQueryParser extends QueryBuilder {
       }
       int fuzziness = 0;
       try {
-        String fuzzyString =  new String(slopText, 0, slopLength);
+        String fuzzyString = new String(slopText, 0, slopLength);
         if ("".equals(fuzzyString)) {
           // Use automatic fuzziness, ~2
           fuzziness = 2;
@@ -517,9 +522,7 @@ public class SimpleQueryParser extends QueryBuilder {
     return 0;
   }
 
-  /**
-   * Helper returning true if the state has reached the end of token.
-   */
+  /** Helper returning true if the state has reached the end of token. */
   private boolean tokenFinished(State state) {
     if ((state.data[state.index] == '"' && (flags & PHRASE_OPERATOR) != 0)
         || (state.data[state.index] == '|' && (flags & OR_OPERATOR) != 0)
@@ -527,20 +530,19 @@ public class SimpleQueryParser extends QueryBuilder {
         || (state.data[state.index] == '(' && (flags & PRECEDENCE_OPERATORS) != 0)
         || (state.data[state.index] == ')' && (flags & PRECEDENCE_OPERATORS) != 0)
         || ((state.data[state.index] == ' '
-        || state.data[state.index] == '\t'
-        || state.data[state.index] == '\n'
-        || state.data[state.index] == '\r') && (flags & WHITESPACE_OPERATOR) != 0)) {
+                || state.data[state.index] == '\t'
+                || state.data[state.index] == '\n'
+                || state.data[state.index] == '\r')
+            && (flags & WHITESPACE_OPERATOR) != 0)) {
       return true;
     }
     return false;
   }
 
-  /**
-   * Factory method to generate a standard query (no phrase or prefix operators).
-   */
+  /** Factory method to generate a standard query (no phrase or prefix operators). */
   protected Query newDefaultQuery(String text) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (Map.Entry<String,Float> entry : weights.entrySet()) {
+    for (Map.Entry<String, Float> entry : weights.entrySet()) {
       Query q = createBooleanQuery(entry.getKey(), text, defaultOperator);
       if (q != null) {
         float boost = entry.getValue();
@@ -553,12 +555,10 @@ public class SimpleQueryParser extends QueryBuilder {
     return simplify(bq.build());
   }
 
-  /**
-   * Factory method to generate a fuzzy query.
-   */
+  /** Factory method to generate a fuzzy query. */
   protected Query newFuzzyQuery(String text, int fuzziness) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (Map.Entry<String,Float> entry : weights.entrySet()) {
+    for (Map.Entry<String, Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
       final BytesRef term = getAnalyzer().normalize(fieldName, text);
       Query q = new FuzzyQuery(new Term(fieldName, term), fuzziness);
@@ -571,12 +571,10 @@ public class SimpleQueryParser extends QueryBuilder {
     return simplify(bq.build());
   }
 
-  /**
-   * Factory method to generate a phrase query with slop.
-   */
+  /** Factory method to generate a phrase query with slop. */
   protected Query newPhraseQuery(String text, int slop) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (Map.Entry<String,Float> entry : weights.entrySet()) {
+    for (Map.Entry<String, Float> entry : weights.entrySet()) {
       Query q = createPhraseQuery(entry.getKey(), text, slop);
       if (q != null) {
         float boost = entry.getValue();
@@ -589,12 +587,10 @@ public class SimpleQueryParser extends QueryBuilder {
     return simplify(bq.build());
   }
 
-  /**
-   * Factory method to generate a prefix query.
-   */
+  /** Factory method to generate a prefix query. */
   protected Query newPrefixQuery(String text) {
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
-    for (Map.Entry<String,Float> entry : weights.entrySet()) {
+    for (Map.Entry<String, Float> entry : weights.entrySet()) {
       final String fieldName = entry.getKey();
       final BytesRef term = getAnalyzer().normalize(fieldName, text);
       Query q = new PrefixQuery(new Term(fieldName, term));
@@ -607,9 +603,7 @@ public class SimpleQueryParser extends QueryBuilder {
     return simplify(bq.build());
   }
 
-  /**
-   * Helper to simplify boolean queries with 0 or 1 clause
-   */
+  /** Helper to simplify boolean queries with 0 or 1 clause */
   protected Query simplify(BooleanQuery bq) {
     if (bq.clauses().isEmpty()) {
       return null;
@@ -620,18 +614,12 @@ public class SimpleQueryParser extends QueryBuilder {
     }
   }
 
-  /**
-   * Returns the implicit operator setting, which will be
-   * either {@code SHOULD} or {@code MUST}.
-   */
+  /** Returns the implicit operator setting, which will be either {@code SHOULD} or {@code MUST}. */
   public BooleanClause.Occur getDefaultOperator() {
     return defaultOperator;
   }
 
-  /**
-   * Sets the implicit operator setting, which must be
-   * either {@code SHOULD} or {@code MUST}.
-   */
+  /** Sets the implicit operator setting, which must be either {@code SHOULD} or {@code MUST}. */
   public void setDefaultOperator(BooleanClause.Occur operator) {
     if (operator != BooleanClause.Occur.SHOULD && operator != BooleanClause.Occur.MUST) {
       throw new IllegalArgumentException("invalid operator: only SHOULD or MUST are allowed");
@@ -640,7 +628,7 @@ public class SimpleQueryParser extends QueryBuilder {
   }
 
   static class State {
-    final char[] data;   // the characters in the query string
+    final char[] data; // the characters in the query string
     final char[] buffer; // a temporary buffer used to reduce necessary allocations
     int index;
     int length;

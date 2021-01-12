@@ -104,56 +104,87 @@ public class TestTopGroups extends LuceneTestCase {
 
     final TopGroups<String> shard1TopGroups;
     {
-      final GroupDocs<String> group1 = haveBlueWhale
-          ? createSingletonGroupDocs(blueGroupValue, new Object[] { blueWhaleSize }, 1 /* docId */, blueWhaleScore, 0 /* shardIndex */)
-              : createEmptyGroupDocs(blueGroupValue, new Object[] { blueWhaleSize });
+      final GroupDocs<String> group1 =
+          haveBlueWhale
+              ? createSingletonGroupDocs(
+                  blueGroupValue,
+                  new Object[] {blueWhaleSize},
+                  1 /* docId */,
+                  blueWhaleScore,
+                  0 /* shardIndex */)
+              : createEmptyGroupDocs(blueGroupValue, new Object[] {blueWhaleSize});
 
-      final GroupDocs<String> group2 = haveRedAnt
-          ? createSingletonGroupDocs(redGroupValue, new Object[] { redAntSize }, 2 /* docId */, redAntScore, 0 /* shardIndex */)
-              : createEmptyGroupDocs(redGroupValue, new Object[] { redAntSize });
+      final GroupDocs<String> group2 =
+          haveRedAnt
+              ? createSingletonGroupDocs(
+                  redGroupValue,
+                  new Object[] {redAntSize},
+                  2 /* docId */,
+                  redAntScore,
+                  0 /* shardIndex */)
+              : createEmptyGroupDocs(redGroupValue, new Object[] {redAntSize});
 
-      shard1TopGroups = new TopGroups<String>(
-          sort.getSort() /* groupSort */,
-          sort.getSort() /* withinGroupSort */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
-          combineGroupDocs(group1, group2) /* groups */,
-          (haveBlueWhale ? blueWhaleScore : (haveRedAnt ? redAntScore : Float.NaN)) /* maxScore */);
+      shard1TopGroups =
+          new TopGroups<String>(
+              sort.getSort() /* groupSort */,
+              sort.getSort() /* withinGroupSort */,
+              group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
+              group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
+              combineGroupDocs(group1, group2) /* groups */,
+              (haveBlueWhale
+                  ? blueWhaleScore
+                  : (haveRedAnt ? redAntScore : Float.NaN)) /* maxScore */);
     }
 
     final TopGroups<String> shard2TopGroups;
     {
-      final GroupDocs<String> group1 = haveBlueDragonfly
-          ? createSingletonGroupDocs(blueGroupValue, new Object[] { blueDragonflySize }, 3 /* docId */, blueDragonflyScore, 1 /* shardIndex */)
-              : createEmptyGroupDocs(blueGroupValue, new Object[] { blueDragonflySize });
+      final GroupDocs<String> group1 =
+          haveBlueDragonfly
+              ? createSingletonGroupDocs(
+                  blueGroupValue,
+                  new Object[] {blueDragonflySize},
+                  3 /* docId */,
+                  blueDragonflyScore,
+                  1 /* shardIndex */)
+              : createEmptyGroupDocs(blueGroupValue, new Object[] {blueDragonflySize});
 
-      final GroupDocs<String> group2 = haveRedSquirrel
-      ? createSingletonGroupDocs(redGroupValue, new Object[] { redSquirrelSize }, 4 /* docId */, redSquirrelScore, 1 /* shardIndex */)
-          : createEmptyGroupDocs(redGroupValue, new Object[] { redSquirrelSize });
+      final GroupDocs<String> group2 =
+          haveRedSquirrel
+              ? createSingletonGroupDocs(
+                  redGroupValue,
+                  new Object[] {redSquirrelSize},
+                  4 /* docId */,
+                  redSquirrelScore,
+                  1 /* shardIndex */)
+              : createEmptyGroupDocs(redGroupValue, new Object[] {redSquirrelSize});
 
-      shard2TopGroups = new TopGroups<String>(
-          sort.getSort() /* groupSort */,
-          sort.getSort() /* withinGroupSort */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
-          combineGroupDocs(group1, group2) /* groups */,
-          (haveRedSquirrel ? redSquirrelScore : (haveBlueDragonfly ? blueDragonflyScore : Float.NaN)) /* maxScore */);
+      shard2TopGroups =
+          new TopGroups<String>(
+              sort.getSort() /* groupSort */,
+              sort.getSort() /* withinGroupSort */,
+              group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
+              group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
+              combineGroupDocs(group1, group2) /* groups */,
+              (haveRedSquirrel
+                  ? redSquirrelScore
+                  : (haveBlueDragonfly ? blueDragonflyScore : Float.NaN)) /* maxScore */);
     }
 
-    final TopGroups<String> mergedTopGroups = TopGroups.<String>merge(
-        combineTopGroups(shard1TopGroups, shard2TopGroups),
-        sort /* groupSort */,
-        sort /* docSort */,
-        0 /* docOffset */,
-        2 /* docTopN */,
-        TopGroups.ScoreMergeMode.None);
+    final TopGroups<String> mergedTopGroups =
+        TopGroups.<String>merge(
+            combineTopGroups(shard1TopGroups, shard2TopGroups),
+            sort /* groupSort */,
+            sort /* docSort */,
+            0 /* docOffset */,
+            2 /* docTopN */,
+            TopGroups.ScoreMergeMode.None);
     assertNotNull(mergedTopGroups);
 
     final int expectedCount =
-        (haveBlueWhale     ? 1 : 0) +
-        (haveRedAnt        ? 1 : 0) +
-        (haveBlueDragonfly ? 1 : 0) +
-        (haveRedSquirrel   ? 1 : 0);
+        (haveBlueWhale ? 1 : 0)
+            + (haveRedAnt ? 1 : 0)
+            + (haveBlueDragonfly ? 1 : 0)
+            + (haveRedSquirrel ? 1 : 0);
 
     assertEquals(expectedCount, mergedTopGroups.totalHitCount);
     assertEquals(expectedCount, mergedTopGroups.totalGroupedHitCount);
@@ -173,11 +204,13 @@ public class TestTopGroups extends LuceneTestCase {
     }
 
     final float expectedMaxScore =
-        (haveBlueWhale ? blueWhaleScore
-            : (haveRedSquirrel ? redSquirrelScore
-                : (haveBlueDragonfly ? blueDragonflyScore
-                    : (haveRedAnt ? redAntScore
-                        : Float.NaN))));
+        (haveBlueWhale
+            ? blueWhaleScore
+            : (haveRedSquirrel
+                ? redSquirrelScore
+                : (haveBlueDragonfly
+                    ? blueDragonflyScore
+                    : (haveRedAnt ? redAntScore : Float.NaN))));
     checkMaxScore(expectedMaxScore, mergedTopGroups.maxScore);
   }
 
@@ -191,41 +224,43 @@ public class TestTopGroups extends LuceneTestCase {
 
   // helper methods
 
-  private static GroupDocs<String> createEmptyGroupDocs(String groupValue, Object[] groupSortValues) {
-    return new  GroupDocs<String>(
+  private static GroupDocs<String> createEmptyGroupDocs(
+      String groupValue, Object[] groupSortValues) {
+    return new GroupDocs<String>(
         Float.NaN /* score */,
         Float.NaN /* maxScore */,
         new TotalHits(0, TotalHits.Relation.EQUAL_TO),
         new ScoreDoc[0],
         groupValue,
         groupSortValues);
-    }
+  }
 
-  private static GroupDocs<String> createSingletonGroupDocs(String groupValue, Object[] groupSortValues,
-      int docId, float docScore, int shardIndex) {
-    return new  GroupDocs<String>(
+  private static GroupDocs<String> createSingletonGroupDocs(
+      String groupValue, Object[] groupSortValues, int docId, float docScore, int shardIndex) {
+    return new GroupDocs<String>(
         Float.NaN /* score */,
         docScore /* maxScore */,
         new TotalHits(1, TotalHits.Relation.EQUAL_TO),
-        new ScoreDoc[] { new ScoreDoc(docId, docScore, shardIndex) },
+        new ScoreDoc[] {new ScoreDoc(docId, docScore, shardIndex)},
         groupValue,
         groupSortValues);
-    }
+  }
 
-  private static GroupDocs<String>[] combineGroupDocs(GroupDocs<String> group0, GroupDocs<String> group1) {
-    @SuppressWarnings({"unchecked","rawtypes"})
+  private static GroupDocs<String>[] combineGroupDocs(
+      GroupDocs<String> group0, GroupDocs<String> group1) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     final GroupDocs<String>[] groups = new GroupDocs[2];
     groups[0] = group0;
     groups[1] = group1;
     return groups;
   }
 
-  private static TopGroups<String>[] combineTopGroups(TopGroups<String> group0, TopGroups<String> group1) {
-    @SuppressWarnings({"unchecked","rawtypes"})
+  private static TopGroups<String>[] combineTopGroups(
+      TopGroups<String> group0, TopGroups<String> group1) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     final TopGroups<String>[] groups = new TopGroups[2];
     groups[0] = group0;
     groups[1] = group1;
     return groups;
   }
-
 }
