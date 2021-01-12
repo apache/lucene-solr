@@ -147,7 +147,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
   @Override
   public PlacementPlugin createPluginInstance() {
-    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB);
+    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB, config.withCollections);
   }
 
   @Override
@@ -171,14 +171,17 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private final long prioritizedFreeDiskGB;
 
+    private final Map<String, String> withCollections;
+
     private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
 
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
      */
-    private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
+    private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollections) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+      this.withCollections = withCollections;
 
       // We make things reproducible in tests by using test seed if any
       String seed = System.getProperty("tests.seed");
@@ -192,6 +195,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
                                           PlacementPlanFactory placementPlanFactory) throws PlacementException {
       Set<Node> nodes = request.getTargetNodes();
       SolrCollection solrCollection = request.getCollection();
+
+      nodes = filterNodesWithCollection(cluster, request, nodes);
 
       // Request all needed attributes
       attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
@@ -467,7 +472,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         if (candidateAzEntries == null) {
           // This can happen because not enough nodes for the placement request or already too many nodes with replicas of
           // the shard that can't accept new replicas or not enough nodes with enough free disk space.
-          throw new PlacementException("Not enough nodes to place " + numReplicas + " replica(s) of type " + replicaType +
+          throw new PlacementException("Not enough eligible nodes to place " + numReplicas + " replica(s) of type " + replicaType +
               " for shard " + shardName + " of collection " + solrCollection.getName());
         }
 
@@ -527,6 +532,32 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // Register the replica assignment just decided
         replicaPlacements.add(placementPlanFactory.createReplicaPlacement(solrCollection, shardName, assignTarget, replicaType));
       }
+    }
+
+    private Set<Node> filterNodesWithCollection(Cluster cluster, PlacementRequest request, Set<Node> initialNodes) throws PlacementException {
+      // if there's a `withCollection` constraint for this collection then remove nodes
+      // that are not eligible
+      String withCollectionName = withCollections.get(request.getCollection().getName());
+      if (withCollectionName == null) {
+        return initialNodes;
+      }
+      SolrCollection withCollection;
+      try {
+        withCollection = cluster.getCollection(withCollectionName);
+      } catch (Exception e) {
+        throw new PlacementException("Error getting info of withCollection=" + withCollectionName, e);
+      }
+      Set<Node> withCollectionNodes = new HashSet<>();
+      withCollection.shards().forEach(s -> s.replicas().forEach(r -> withCollectionNodes.add(r.getNode())));
+      if (withCollectionNodes.isEmpty()) {
+        throw new PlacementException("Collection " + withCollection + " defined in `withCollection` has no replicas on eligible nodes.");
+      }
+      HashSet<Node> filteredNodes = new HashSet<>(initialNodes);
+      filteredNodes.retainAll(withCollectionNodes);
+      if (filteredNodes.isEmpty()) {
+        throw new PlacementException("Collection " + withCollection + " defined in `withCollection` has no replicas on eligible nodes.");
+      }
+      return filteredNodes;
     }
 
     /**

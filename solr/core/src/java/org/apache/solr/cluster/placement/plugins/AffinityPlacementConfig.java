@@ -20,6 +20,9 @@ package org.apache.solr.cluster.placement.plugins;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.common.annotation.JsonProperty;
 
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * Configuration bean for {@link AffinityPlacementFactory}.
  */
@@ -43,14 +46,30 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
   @JsonProperty
   public long prioritizedFreeDiskGB;
 
+  /**
+   * This property defines an additional constraint that primary collections (keys) should be
+   * located on the same nodes as the secondary collections (values). The plugin will assume
+   * that the secondary collection replicas are already in place and ignore candidate nodes where
+   * they are not already present.
+   */
+  @JsonProperty
+  public Map<String, String> withCollections;
+
   // no-arg public constructor required for deserialization
   public AffinityPlacementConfig() {
     minimalFreeDiskGB = 20L;
     prioritizedFreeDiskGB = 100L;
+    withCollections = Map.of();
   }
 
   public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
+    this(minimalFreeDiskGB, prioritizedFreeDiskGB, Map.of());
+  }
+
+  public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollections) {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+    Objects.requireNonNull(withCollections);
+    this.withCollections = withCollections;
   }
 }

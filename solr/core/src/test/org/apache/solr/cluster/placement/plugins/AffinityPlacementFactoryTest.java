@@ -50,10 +50,15 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   private final static long MINIMAL_FREE_DISK_GB = 10L;
   private final static long PRIORITIZED_FREE_DISK_GB = 50L;
+  private final static String secondaryCollectionName = "withCollection_secondary";
+  private final static String primaryCollectionName = "withCollection_primary";
 
   @BeforeClass
   public static void setupPlugin() {
-    AffinityPlacementConfig config = new AffinityPlacementConfig(MINIMAL_FREE_DISK_GB, PRIORITIZED_FREE_DISK_GB);
+    AffinityPlacementConfig config = new AffinityPlacementConfig(
+        MINIMAL_FREE_DISK_GB,
+        PRIORITIZED_FREE_DISK_GB,
+        Map.of(primaryCollectionName, secondaryCollectionName));
     AffinityPlacementFactory factory = new AffinityPlacementFactory();
     factory.configure(config);
     plugin = factory.createPluginInstance();
@@ -647,6 +652,49 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
+    }
+  }
+
+  @Test
+  public void testWithCollectionConstraints() throws Exception {
+    int NUM_NODES = 3;
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    Cluster cluster = clusterBuilder.build();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    Set<Node> secondaryNodes = new HashSet<>();
+    secondaryCollection.shards().forEach(s -> s.replicas().forEach(r -> secondaryNodes.add(r.getNode())));
+
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(primaryCollection,
+      Set.of("shard1", "shard2"), cluster.getLiveNodes(), 1, 0, 0);
+
+
+    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
+    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    assertEquals(2, pp.getReplicaPlacements().size());
+    // verify that all placements are on nodes with the secondary replica
+    pp.getReplicaPlacements().forEach(placement ->
+        assertTrue("placement node " + placement.getNode() + " not in secondary=" + secondaryNodes,
+            secondaryNodes.contains(placement.getNode())));
+
+    placementRequest = new PlacementRequestImpl(primaryCollection,
+        Set.of("shard1"), cluster.getLiveNodes(), 3, 0, 0);
+    try {
+      pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+      fail("should generate 'Not enough eligible nodes' failure here");
+    } catch (PlacementException pe) {
+      assertTrue(pe.toString().contains("Not enough eligible nodes"));
     }
   }
 

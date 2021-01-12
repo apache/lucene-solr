@@ -127,8 +127,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   public static final String REQUESTID = "requestid";
 
-  public static final String COLL_PROP_PREFIX = "property.";
-
   public static final String ONLY_IF_DOWN = "onlyIfDown";
 
   public static final String SHARD_UNIQUE = "shardUnique";
@@ -560,7 +558,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
-      if (key.startsWith(COLL_PROP_PREFIX)) {
+      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         params.set(key, message.getStr(key));
       }
     }
@@ -569,7 +567,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void addPropertyParams(ZkNodeProps message, Map<String, Object> map) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
-      if (key.startsWith(COLL_PROP_PREFIX)) {
+      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         map.put(key, message.getStr(key));
       }
     }

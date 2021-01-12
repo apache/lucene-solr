@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -115,8 +116,8 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
-    if (StringUtils.startsWith(property, OverseerCollectionMessageHandler.COLL_PROP_PREFIX) == false) {
-      property = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + property;
+    if (StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX) == false) {
+      property = CollectionAdminParams.PROPERTY_PREFIX + property;
     }
     property = property.toLowerCase(Locale.ROOT);
     String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
@@ -180,8 +181,8 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
-    if (StringUtils.startsWith(property, OverseerCollectionMessageHandler.COLL_PROP_PREFIX) == false) {
-      property = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + property;
+    if (StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX) == false) {
+      property = CollectionAdminParams.PROPERTY_PREFIX + property;
     }
 
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -309,7 +310,7 @@ public class ReplicaMutator {
         replicaProps.put(ZkStateReader.REPLICA_TYPE, oldReplica.getType().toString());
         // Move custom props over.
         for (Map.Entry<String, Object> ent : oldReplica.getProperties().entrySet()) {
-          if (ent.getKey().startsWith(OverseerCollectionMessageHandler.COLL_PROP_PREFIX)) {
+          if (ent.getKey().startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
             replicaProps.put(ent.getKey(), ent.getValue());
           }
         }
