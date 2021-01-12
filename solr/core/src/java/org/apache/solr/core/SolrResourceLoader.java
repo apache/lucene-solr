@@ -86,9 +86,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
-          "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
-          "update.processor.", "util.", "spelling.", "handler.component.",
-          "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
+      "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
+      "update.processor.", "util.", "spelling.", "handler.component.",
+      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -197,11 +197,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
     if (log.isInfoEnabled()) {
       log.info("Added {} libs to classloader, from paths: {}",
-              urls.size(), urls.stream()
-                      .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
-                      .sorted()
-                      .distinct()
-                      .collect(Collectors.toList()));
+          urls.size(), urls.stream()
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .sorted()
+              .distinct()
+              .collect(Collectors.toList()));
     }
   }
 
@@ -320,7 +320,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     if (pathToCheck.startsWith(instanceDir))
       return pathToCheck;
     throw new IOException("File " + pathToCheck + " is outside resource loader dir " + instanceDir +
-            "; set -Dsolr.allow.unsafe.resourceloading=true to allow unsafe loading");
+        "; set -Dsolr.allow.unsafe.resourceloading=true to allow unsafe loading");
   }
 
   /**
@@ -423,7 +423,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       return WordlistLoader.getLines(openResource(resource), charset);
     } catch (CharacterCodingException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Error loading resource (wrong encoding?): " + resource, ex);
+          "Error loading resource (wrong encoding?): " + resource, ex);
     }
   }
 
@@ -439,7 +439,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern =
-          Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
 
   @Override
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
@@ -521,8 +521,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
         // using a shortname
         if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
-                !cname.equals(clazz.getName()) &&
-                (subpackages.length == 0 || subpackages == packages)) {
+            !cname.equals(clazz.getName()) &&
+            (subpackages.length == 0 || subpackages == packages)) {
           //store in the cache
           classNameCache.put(cname, clazz.getName());
         }
@@ -530,7 +530,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         // print warning if class is deprecated
         if (clazz.isAnnotationPresent(Deprecated.class)) {
           DeprecationLog.log(cname,
-                  "Solr loaded a deprecated plugin/analysis class [" + cname + "]. Please consult documentation how to replace it accordingly.");
+            "Solr loaded a deprecated plugin/analysis class [" + cname + "]. Please consult documentation how to replace it accordingly.");
         }
       }
     }
@@ -596,7 +596,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
     } catch (Error err) {
       log.error("Loading Class {} ({}) triggered serious java error: {}", cName, clazz.getName(),
-              err.getClass().getName(), err);
+          err.getClass().getName(), err);
 
       throw err;
 
@@ -767,32 +767,32 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   static {
     awareCompatibility = new HashMap<>();
     awareCompatibility.put(
-            SolrCoreAware.class, new Class<?>[]{
-                    // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-                    // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
-                    CodecFactory.class,
-                    DirectoryFactory.class,
-                    ManagedIndexSchemaFactory.class,
-                    QueryResponseWriter.class,
-                    SearchComponent.class,
-                    ShardHandlerFactory.class,
-                    SimilarityFactory.class,
-                    SolrRequestHandler.class,
-                    UpdateRequestProcessorFactory.class
-            }
+        SolrCoreAware.class, new Class<?>[]{
+            // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+            // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+            CodecFactory.class,
+            DirectoryFactory.class,
+            ManagedIndexSchemaFactory.class,
+            QueryResponseWriter.class,
+            SearchComponent.class,
+            ShardHandlerFactory.class,
+            SimilarityFactory.class,
+            SolrRequestHandler.class,
+            UpdateRequestProcessorFactory.class
+        }
     );
 
     awareCompatibility.put(
-            ResourceLoaderAware.class, new Class<?>[]{
-                    // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-                    // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
-                    // evaluate if this must go into schemaResourceLoaderComponents
-                    CharFilterFactory.class,
-                    TokenFilterFactory.class,
-                    TokenizerFactory.class,
-                    QParserPlugin.class,
-                    FieldType.class
-            }
+        ResourceLoaderAware.class, new Class<?>[]{
+            // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+            // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+            // evaluate if this must go into schemaResourceLoaderComponents
+            CharFilterFactory.class,
+            TokenFilterFactory.class,
+            TokenizerFactory.class,
+            QParserPlugin.class,
+            FieldType.class
+        }
     );
   }
 
@@ -801,10 +801,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    */
   @SuppressWarnings("rawtypes")
   private static final ImmutableSet<Class> schemaResourceLoaderComponents = ImmutableSet.of(
-          CharFilterFactory.class,
-          TokenFilterFactory.class,
-          TokenizerFactory.class,
-          FieldType.class);
+      CharFilterFactory.class,
+      TokenFilterFactory.class,
+      TokenizerFactory.class,
+      FieldType.class);
 
   /**
    * Utility function to throw an exception if the class is invalid
@@ -814,7 +814,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Unknown Aware interface: " + aware);
+          "Unknown Aware interface: " + aware);
     }
     for (Class v : valid) {
       if (v.isInstance(obj)) {
