@@ -21,8 +21,8 @@ import java.util.List;
 
 /**
  * The Indri implemenation of a disjunction scorer which stores the subscorers
- * for the child queries. The score and smoothingScore methods use the list
- * of all subscorers and not just the matches so that a smoothingScore can be
+ * for the child queries. The score and smoothingScore methods use the list of
+ * all subscorers and not just the matches so that a smoothingScore can be
  * calculated if there is not an exact match.
  *
  */

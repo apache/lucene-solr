@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 
-/** A Query that matches documents matching combinations of 
- * subqueries.  
+/**
+ * A Query that matches documents matching combinations of subqueries.
  */
 public class IndriAndQuery extends IndriQuery {
   

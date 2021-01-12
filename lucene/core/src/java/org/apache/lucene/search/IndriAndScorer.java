@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.List;
 
-/** Combines scores of subscorers. If a subscorer does not contain
- *  the docId, a smoothing score is calculated for that 
- *  document/subscorer combination.
+/**
+ * Combines scores of subscorers. If a subscorer does not contain the docId, a
+ * smoothing score is calculated for that document/subscorer combination.
  */
 public class IndriAndScorer extends IndriDisjunctionScorer {
   
@@ -50,9 +50,9 @@ public class IndriAndScorer extends IndriDisjunctionScorer {
       if (scorer instanceof IndriScorer) {
         IndriScorer indriScorer = (IndriScorer) scorer;
         int scorerDocId = indriScorer.docID();
-        //If the query exists in the document, score the document
-        //Otherwise, compute a smoothing score, which acts like an idf
-        //for subqueries/terms
+        // If the query exists in the document, score the document
+        // Otherwise, compute a smoothing score, which acts like an idf
+        // for subqueries/terms
         double tempScore = 0;
         if (docId == scorerDocId) {
           tempScore = indriScorer.score();

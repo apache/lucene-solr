@@ -115,9 +115,15 @@ public class IndriAndWeight extends Weight {
           subs);
     } else {
       Scorer scorer = scorer(context);
-      int advanced = scorer.iterator().advance(doc);
-      assert advanced == doc;
-      return Explanation.match(scorer.score(), "sum of:", subs);
+      if (scorer != null) {
+        int advanced = scorer.iterator().advance(doc);
+        assert advanced == doc;
+        return Explanation.match(scorer.score(), "sum of:", subs);
+      } else {
+        return Explanation.noMatch(
+            "Failure to meet condition(s) of required/prohibited clause(s)",
+            subs);
+      }
     }
   }
   
