@@ -362,7 +362,7 @@ in the variables *amzn* and *goog*. The `percentile` function is then used to ca
 the variable *p* is used to specify the list of percentiles that are calculated.
 
 Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated
-percentile values for both distributions on the *y axis*. And a line plot is used
+percentile values for both distributions on the *y-axis*. And a line plot is used
 to visualize the QQ plot.
 
 image::images/math-expressions/quantile-plot.png[]
@@ -432,7 +432,7 @@ Finally the `zplot` function is used to plot the correlation matrix as a heat ma
 image::images/math-expressions/corrmatrix.png[]
 
 Notice in the example the correlation matrix is square with complaint types shown on both
-the *x* and *y* axises. The color of the cells in the heat map shows the
+the *x* and y-axises. The color of the cells in the heat map shows the
 intensity of the correlation between the complaint types.
 
 The heat map is interactive, so mousing over one of the cells pops up the values

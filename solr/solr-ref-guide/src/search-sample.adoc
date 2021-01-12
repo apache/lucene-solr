@@ -50,7 +50,7 @@ We have also limited the result set to three specific fields.
 image::images/math-expressions/search-sort.png[]
 
 Once the data is loaded into the table we can switch to a scatter plot and plot the `filesize_d` column
-on the *x axis* and the `response_d` column on the *y axis*.
+on the *x-axis* and the `response_d` column on the *y-axis*.
 
 image::images/math-expressions/search-sort-plot.png[]
 
@@ -84,11 +84,11 @@ and <<machine-learning.adoc,Machine Learning>> sections.
 In the example below the `random` function is called in its simplest form with just a collection name as the parameter.
 
 When called with no other parameters the `random` function returns a random sample of 500 records with all fields from the collection.
-When called without the field list parameter (`fl`) the `random` function also generates a sequence, 0-499 in this case, which can be used for plotting the `x` axis.
+When called without the field list parameter (`fl`) the `random` function also generates a sequence, 0-499 in this case, which can be used for plotting the x-axis.
 This sequence is returned in a field called `x`.
 
 The visualization below shows a scatter plot with the `filesize_d` field
-plotted on the `y` axis and the `x` sequence plotted on the `x` axis.
+plotted on the y-axis and the `x` sequence plotted on the x-axis.
 The effect of this is to spread the `filesize_d` samples across the length
 of the plot so they can be more easily studied.
 
@@ -114,7 +114,7 @@ The field list (`fl`) now specifies two fields to be
 returned with each sample: `filesize_d` and `response_d`.
 The `q` and `rows` parameters are the same as the defaults but are included as an example of how to set these parameters.
 
-By plotting `filesize_d` on the *x* axis and `response_d` on the *y* axis we can begin to study the relationship between the two variables.
+By plotting `filesize_d` on the x-axis and `response_d` on the y-axis we can begin to study the relationship between the two variables.
 
 By studying the scatter plot we can learn the following:
 
@@ -246,7 +246,7 @@ text field containing movie reviews. The result shows the
 significant terms that appear in movie reviews that have the phrase "sci-fi".
 
 The results are visualized using a bubble chart with the *foreground* count on
-plotted on the *x* axis and the *background* count on the *y* axis. Each term is
+plotted on the x-axis and the *background* count on the y-axis. Each term is
 shown in a bubble sized by the *score*.
 
 image::images/math-expressions/sterms.png[]

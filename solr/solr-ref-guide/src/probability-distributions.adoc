@@ -37,17 +37,15 @@ are the supported continuous probability distributions.
 The `empiricalDistribution` function creates a continuous probability
 distribution from actual data.
 
-Empirical distributions can be used to conveniently visualize the probability density
-function of a random sample from a SolrCloud
-collection. The example below shows the zplot function visualizing the probability
+Empirical distributions can be used to conveniently visualize the probability density function of a random sample from a SolrCloud collection.
+The example below shows the `zplot` function visualizing the probability
 density of a random sample with a 32 bin histogram.
 
 image::images/math-expressions/empirical.png[]
 
 ==== normalDistribution
 
-The visualization below shows a normal distribution with a `mean` of 0 and `standard
-deviation` of 1.
+The visualization below shows a normal distribution with a `mean` of 0 and `standard deviation` of 1.
 
 image::images/math-expressions/dist.png[]
 
@@ -361,7 +359,7 @@ In this example 5000 random samples are selected from a collection of log record
 the fields `filesize_d` and `response_d`. The values of both fields conform to a normal distribution.
 
 Both fields are then vectorized. The `filesize_d` vector is stored in
-variable *`b`* and the `response_d` variable is stored in variable *`c`*.
+variable `b` and the `response_d` variable is stored in variable `c`.
 
 An array is created that contains the means of the two vectorized fields.
 
@@ -373,7 +371,7 @@ the observation matrix with the `cov` function. The covariance matrix describes 
 
 The `multivariateNormalDistribution` function is then called with the
 array of means for the two fields and the covariance matrix. The model for the
-multivariate normal distribution is assigned to variable *`g`*.
+multivariate normal distribution is assigned to variable `g`.
 
 Finally five samples are drawn from the multivariate normal distribution.
 

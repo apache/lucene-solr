@@ -22,11 +22,11 @@ in Streaming Expressions and Math Expressions.
 == Time Series Aggregation
 
 The `timeseries` function performs fast, distributed time
-series aggregation leveraging Solr's builtin faceting and date math capabilities.
+series aggregation leveraging Solr's built-in faceting and date math capabilities.
 
-The example below performs a monthly time series aggregation over a collection of
-daily stock price data.  In this example the average monthly closing price is calculated for the stock
-ticker *amzn* between a specific date range.
+The example below performs a monthly time series aggregation over a collection of daily stock price data.
+In this example the average monthly closing price is calculated for the stock
+ticker *AMZN* between a specific date range.
 
 [source,text]
 ----
@@ -74,8 +74,8 @@ When this expression is sent to the `/stream` handler it responds with:
       {
         "date_dt": "2010-07",
         "avg(close_d)": 117.5190476190476
-      },
-      ...
+      }
+]}}
 ----
 
 Using Zeppelin-Solr this time series can be visualized using a line chart.
@@ -89,30 +89,28 @@ Before a time series can be smoothed or modeled the data will need to be vectori
 The `col` function can be used
 to copy a column of data from a list of tuples into an array.
 
-The expression below demonstrates the vectorization of the *date_dt* and *avg(close_d)* fields.
-The `zplot` function is then used to plot the months on the x axis and the average closing prices
-on the y axis.
+The expression below demonstrates the vectorization of the `date_dt` and `avg(close_d)` fields.
+The `zplot` function is then used to plot the months on the x-axis and the average closing prices on the y-axis.
 
 image::images/math-expressions/timeseries2.png[]
 
 
 == Smoothing
 
-Time series smoothing is often used to remove the noise from a time series and help
-spot the underlying trend.
+Time series smoothing is often used to remove the noise from a time series and help spot the underlying trend.
 The math expressions library has three *sliding window* approaches
-for time series smoothing. The *sliding window* approaches use a summary value
-from a sliding window of the data to calculate a new set of smoothed data points.
+for time series smoothing.
+These approaches use a summary value from a sliding window of the data to calculate a new set of smoothed data points.
 
 The three *sliding window* functions are lagging indicators, which means
 they don't start to move in the direction of the trend until the trend effects
-the summary value of the sliding window. Because of this lagging quality these smoothing
-functions are often used to confirm the direction of the trend.
+the summary value of the sliding window.
+Because of this lagging quality these smoothing functions are often used to confirm the direction of the trend.
 
 === Moving Average
 
 The `movingAvg` function computes a simple moving average over a sliding window of data.
-The example below generates a time series, vectorizes the *avg(close_d)* field and computes the
+The example below generates a time series, vectorizes the `avg(close_d)` field and computes the
 moving average with a window size of 5.
 
 The moving average function returns an array that is of shorter length
@@ -120,9 +118,9 @@ then the original vector. This is because results are generated only when a full
 is available for computing the average. With a window size of five the moving average will
 begin generating results at the 5th value. The prior values are not included in the result.
 
-The `zplot` function is then used to plot the months on the x axis, and the average close and moving
-average on the y axis. Notice that the `ltrim` function is used to trim the first 4 values from
-the x axis and the average closing prices. This is done to line up the three arrays so they start
+The `zplot` function is then used to plot the months on the x-axis, and the average close and moving
+average on the y-axis. Notice that the `ltrim` function is used to trim the first 4 values from
+the x-axis and the average closing prices. This is done to line up the three arrays so they start
 from the 5th value.
 
 image::images/math-expressions/movingavg.png[]
@@ -226,7 +224,7 @@ For this example we'll be working with daily stock prices for Amazon over a two 
 period. The daily stock data will provide a larger data set to study.
 
 In the example below the `search` expression is used to return the daily closing price
-for the ticker *amzn* over a two year period.
+for the ticker *AMZN* over a two year period.
 
 image::images/math-expressions/anomaly.png[]
 
@@ -254,7 +252,7 @@ The `outliers` function takes four parameters:
 * Numeric vector
 * Low probability threshold
 * High probability threshold
-* List of results that the numeric vector was selected from.
+* List of results that the numeric vector was selected from
 
 The `outliers` function iterates the numeric vector and uses the probability
 distribution to calculate the cumulative probability of each value. If the cumulative
@@ -266,9 +264,9 @@ It also includes the cumulative probability and the value of the outlier.
 The example below shows the `outliers` function applied to the Amazon stock
 price data set. The empirical distribution of the moving mean absolute deviation is
 the first parameter. The vector containing the moving mean absolute
-deviations is the second parameter. -1 is the low and .99 is the high probability
-thresholds. -1 means that low outliers will not be considered. The final parameter
-is the original result set containing the *close_d* and *date_dt* fields.
+deviations is the second parameter. `-1` is the low and `.99` is the high probability
+thresholds. `-1` means that low outliers will not be considered. The final parameter
+is the original result set containing the `close_d` and `date_dt` fields.
 
 The output of the `outliers` function contains the results where an outlier was detected.
 In this case 5 results above the .99 probability threshold were detected.
@@ -281,7 +279,7 @@ image::images/math-expressions/outliers.png[]
 
 Math Expressions has a number of functions that can be used to
 model a time series. These functions include linear regression,
-polynomial and harmonic curve fitting, loess regression and KNN regression.
+polynomial and harmonic curve fitting, loess regression, and KNN regression.
 
 Each of these functions can model a time series and be used for
 interpolation (predicting values within the dataset) and several
@@ -297,8 +295,8 @@ monthly average closing price for Amazon over an eight year period.
 In this example the `polyfit` function returns a fitted model for the *y*
 axis, which is the average monthly closing prices, using a 4 degree polynomial.
 The degree of the polynomial determines the number of curves in the
-model. The fitted model is set to the variable *y1*. The fitted model
-is then directly plotted with `zplot` along with the original *y*
+model. The fitted model is set to the variable `y1`. The fitted model
+is then directly plotted with `zplot` along with the original `y`
 values.
 
 The visualization shows the smooth line fit through the average closing
@@ -312,17 +310,19 @@ image::images/math-expressions/timemodel.png[]
 The `polyfit` function can also be used to extrapolate a time series to forecast
 future stock prices. The example below demonstrates a 10 month forecast.
 
-In the example the `polyfit` function fits a model to the *y* access and the model
-is set to the variable *m*. Then to create a forecast 10 zeros are appended
-to the *y* axis to create new vector called y10. Then a new x axis is created using
-the `natural` function which returns a sequence of whole numbers 0 to the length of y10.
-The new x axis is stored in the variable x10.
+In the example the `polyfit` function fits a model to the y-axis and the model
+is set to the variable *`m`*.
+Then to create a forecast 10 zeros are appended
+to the y-axis to create new vector called `y10`.
+Then a new x-axis is created using
+the `natural` function which returns a sequence of whole numbers 0 to the length of `y10`.
+The new x-axis is stored in the variable `x10`.
 
-The `predict` function uses the fitted model to predict values for the new x axis stored in
-variable x10.
+The `predict` function uses the fitted model to predict values for the new x-axis stored in
+variable `x10`.
 
-The `zplot` function is then used to plot the x10 vector on the x axis and the y10 vector and extrapolated
-model on the y axis. Notice that the y10 vector drops to zero where the observed data
+The `zplot` function is then used to plot the `x10` vector on the x-axis and the `y10` vector and extrapolated
+model on the y-axis. Notice that the `y10` vector drops to zero where the observed data
 ends, but the forecast continues along the fitted curve
 of the model.
 

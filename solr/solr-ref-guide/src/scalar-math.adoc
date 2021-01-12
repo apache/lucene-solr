@@ -143,7 +143,7 @@ The expression above can be visualized as a table using Zeppelin-Solr.
 
 image::images/math-expressions/stream.png[]
 
-By switching to one of the line chart visualizations the two variables can be plotted on the x and y axis.
+By switching to one of the line chart visualizations the two variables can be plotted on the x and y-axis.
 
 image::images/math-expressions/line.png[]
 

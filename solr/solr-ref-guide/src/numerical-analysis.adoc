@@ -47,21 +47,21 @@ control points. Then a spline is used to interpolate the smoothed control points
 === Sampling Along the Curve
 
 One way to better understand interpolation is to visualize what it means to sample along a curve. The example
-below zooms in on a specific region of a curve by sampling the curve between a specific *x* axis range.
+below zooms in on a specific region of a curve by sampling the curve between a specific x-axis range.
 
 image::images/math-expressions/interpolate1.png[]
 
-The visualization above first creates two arrays with *x* and *y* axis points. Notice that the *x* axis ranges from
+The visualization above first creates two arrays with x and y-axis points. Notice that the x-axis ranges from
  0 to 9. Then the `akima`, `spline` and `lerp`
 functions are applied to the vectors to create three interpolation functions.
 
 Then 500 hundred random samples are drawn from a uniform distribution between 0 and 3. These are
-the new zoomed in *x* axis points, between 0 and 3. Notice that we are sampling a specific
+the new zoomed in x-axis points, between 0 and 3. Notice that we are sampling a specific
 area of the curve.
 
-Then the `predict` function is used to predict *y* axis points for
-the sampled *x* axis, for all three interpolation functions. Finally all three prediction vectors
-are plotted with the sampled *x* axis points.
+Then the `predict` function is used to predict y-axis points for
+the sampled x-axis, for all three interpolation functions. Finally all three prediction vectors
+are plotted with the sampled x-axis points.
 
 The red line is the `lerp` interpolation, the blue line is the `akima` and the purple line is
 the `spline` interpolation. You can see they each produce different curves in between the control
@@ -78,21 +78,21 @@ A technique known as local regression is used to compute the smoothed curve. The
 neighborhood of the local regression can be adjusted
 to control how close the new curve conforms to the original control points.
 
-The `loess` function is passed *`x`*- and *`y`*-axes and fits a smooth curve to the data.
-If only a single array is provided it is treated as the *`y`*-axis and a sequence is generated
-for the *`x`*-axis.
+The `loess` function is passed x- and y-axes and fits a smooth curve to the data.
+If only a single array is provided it is treated as the y-axis and a sequence is generated
+for the x-axis.
 
 The example below shows the `loess` function being used to model a monthly
 time series. In the example the `timeseries` function is used to generate
 a monthly time series of average closing prices for the stock ticker
-*amzn*. The *date_dt* and *avg(close_d)* fields from the time series
-are then vectorized and stored in variables *x* and *y*. The `loess`
+*AMZN*. The `date_dt` and `avg(close_d)` fields from the time series
+are then vectorized and stored in variables `x` and `y`. The `loess`
 function is then applied to the *y* vector containing the average closing
-prices. The *bandwidth* named parameter specifies the percentage
+prices. The `bandwidth` named parameter specifies the percentage
 of the data set used to compute the local regression. The `loess` function
 returns the fitted model of smoothed data points.
 
-The `zplot` function is then used to plot the *x*, *y* and *y1*
+The `zplot` function is then used to plot the `x`, `y` and `y1`
 variables.
 
 image::images/math-expressions/loess.png[]
@@ -100,8 +100,8 @@ image::images/math-expressions/loess.png[]
 
 == Derivatives
 
-The derivative of a function measures the rate of change of the *y* value in respects to the
-rate of change of the *x* value.
+The derivative of a function measures the rate of change of the `y` value in respects to the
+rate of change of the `x` value.
 
 The `derivative` function can compute the derivative for any of the
 interpolation functions described above. Each interpolation function
@@ -115,11 +115,11 @@ the rate of change or *velocity*.
 
 In the example two vectors are created, one representing hours and
 one representing miles traveled. The `lerp` function is then used to
-create a linear interpolation of the *hours* and *miles* vectors.
+create a linear interpolation of the `hours` and `miles` vectors.
 The `derivative` function is then applied to the
-linear interpolation. `zplot` is then used to plot the *hours*
-on the *x* axis and *miles* on the *y* axis, and the *derivative* as *mph*,
-at each *x* axis point.
+linear interpolation. `zplot` is then used to plot the *`hours`*
+on the x-axis and `miles` on the y-axis, and the `derivative` as `mph`,
+at each x-axis point.
 
 
 image::images/math-expressions/derivative.png[]
@@ -140,11 +140,11 @@ a derivative with rounded curves.
 === The Second Derivative (Acceleration)
 
 While the first derivative represents velocity, the second derivative
-represents *acceleration*. The second the derivative is the derivative
+represents `acceleration`. The second the derivative is the derivative
 of the first derivative.
 
 The example below builds on the first example and adds the second derivative.
-Notice that the second derivative *d2*, is taken by applying the
+Notice that the second derivative `d2` is taken by applying the
 derivative function to a linear interpolation of the first derivative.
 
 The second derivative is plotted as *acceleration* on the chart.
@@ -160,7 +160,7 @@ line drops to 0.
 The example below shows how to plot the `derivative` for a time series generated
 by the `timeseries` function. In the example a monthly time series is
 generated for the average closing price for the stock ticker `amzn`.
-The *avg(close)* column is vectorized and interpolated using linear
+The `avg(close)` column is vectorized and interpolated using linear
 interpolation (`lerp`).  The `zplot` function is then used to plot the derivative
 of the time series.
 
@@ -217,8 +217,8 @@ responds with:
 
 If the `integral` function is passed a single interpolated curve it returns a vector of the cumulative
 integrals for the curve. The cumulative integrals vector contains a cumulative integral calculation
-for each *x* axis point. The cumulative integral is calculated by taking the
-integral of the range between each *x* axis point and the *first* *x* axis point. In the example above this would
+for each x-axis point. The cumulative integral is calculated by taking the
+integral of the range between each x-axis point and the *first* x-axis point. In the example above this would
 mean calculating a vector of integrals as such:
 
 [source,text]
@@ -230,19 +230,19 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
 ----
 
 The plot of cumulative integrals visualizes how much cumulative volume of the curve is under each point
-*x* axis point.
+x-axis point.
 
 The example below shows the cumulative integral plot for a time series generated by
 the `timeseries` function. In the example a monthly time series is
 generated for the average closing price for the stock ticker `amzn`.
-The *avg(close)* column is vectorized and interpolated using a `spline`.
+The `avg(close)` column is vectorized and interpolated using a `spline`.
 
 The `zplot` function is then used to plot the cumulative integral
 of the time series.
 
 image::images/math-expressions/integral.png[]
 
-The plot above *visualizes* the volume under the curve as the *amzn* stock
+The plot above visualizes the volume under the curve as the *AMZN* stock
 price changes over time.  Because this plot is cumulative, the volume under
 a stock price time series which stays the same over time, will
 have a positive *linear* slope. A stock that has rising prices will have a *concave* shape and

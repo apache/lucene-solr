@@ -268,8 +268,8 @@ for the visualization of the *residual plot*.
 
 image::images/math-expressions/redwine1.png[]
 
-The residual plot plots the *predicted* values on the *x* axis and the *error* for the
-prediction on the *y* axis. The scatter plot shows how the errors
+The residual plot plots the *predicted* values on the x-axis and the *error* for the
+prediction on the y-axis. The scatter plot shows how the errors
 are distributed across the full range of predictions.
 
 The residual plot can be interpreted to understand how the KNN regression performed on the
@@ -441,8 +441,8 @@ is used to visualize the clusters as a scatter plot.
 image::images/math-expressions/2DCluster1.png[]
 
 The scatter plot above shows each lat/lon point plotted on a Euclidean plain with longitude on the
-*x* axis and
-latitude on the *y* axis. The plot is dense enough so the outlines of the different boroughs are visible
+x-axis and
+latitude on the y-axis. The plot is dense enough so the outlines of the different boroughs are visible
 if you know the boroughs of New York City.
 
 

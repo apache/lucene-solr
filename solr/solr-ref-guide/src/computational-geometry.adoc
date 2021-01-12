@@ -42,8 +42,8 @@ Before visualizing the convex hull its often useful to visualize the 2D points a
 
 In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
 the complaint description matches "rat sighting" and the zip code is 11238. The latitude and longitude fields
-are then vectorized and plotted as a scatter plot with longitude on *x* axis and latitude on the
-*y* axis.
+are then vectorized and plotted as a scatter plot with longitude on x-axis and latitude on the
+y-axis.
 
 image::images/math-expressions/convex0.png[]
 

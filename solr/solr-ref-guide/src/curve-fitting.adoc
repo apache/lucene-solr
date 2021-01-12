@@ -65,7 +65,7 @@ The residuals can be calculated and visualized in the same manner as linear
 regression as well. In the example below the `ebeSubtract` function is used
 to subtract the fitted model from the observed values, to
 calculate a vector of residuals. The residuals are then plotted in a *residual plot*
-with the predictions along the *x* axis and the model error on the *y* axis.
+with the predictions along the x-axis and the model error on the y-axis.
 
 image::images/math-expressions/polyfit-resid.png[]
 
@@ -73,8 +73,8 @@ image::images/math-expressions/polyfit-resid.png[]
 == Gaussian Curve Fitting
 
 The `gaussfit` function fits a smooth curve through a Gaussian peak. The `gaussfit`
-function takes an *x* and *y* axis and fits a smooth gaussian curve to the data. If
-only one vector of numbers is passed, `gaussfit` will treat it as the *y* axis
+function takes an *x* and y-axis and fits a smooth gaussian curve to the data. If
+only one vector of numbers is passed, `gaussfit` will treat it as the y-axis
 and will generate a sequence for the *x* access.
 
 One of the interesting use cases for `gaussfit` is to visualize how well a regression
@@ -93,8 +93,8 @@ observations in the
 bin. If the residuals are normally distributed we would expect the bin counts
 to roughly follow a gaussian curve.
 
-The bin count vector is then passed to `gaussfit` as the *y* axis. `gaussfit` generates
-a sequence for the *x* axis and then fits the gaussian curve to data.
+The bin count vector is then passed to `gaussfit` as the y-axis. `gaussfit` generates
+a sequence for the x-axis and then fits the gaussian curve to data.
 
 `zplot` is then used to plot the original bin counts and the fitted curve. In the
 example below, the blue line is the bin counts, and the smooth yellow line is the
@@ -130,7 +130,7 @@ image::images/math-expressions/harmfit.png[]
 
 
 The output of `harmfit` is a model that can be used by the `predict` function to interpolate and extrapolate
-the sine wave. In the example below the `natural` function creates an *x* axis from 0 to 127
+the sine wave. In the example below the `natural` function creates an x-axis from 0 to 127
 used to predict results for the model. This extrapolates the sine wave out to 128 points, when
 the original model curve had only 19 control points.
 

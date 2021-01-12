@@ -27,7 +27,7 @@ the second array is the dependent variable.
 
 In the example below the `random` function selects 50000 random samples each containing
 the fields `filesize_d` and `response_d`. The two fields are vectorized
-and stored in variables *`x`* and *`y`*. Then the `regress` function performs a regression
+and stored in variables `x` and `y`. Then the `regress` function performs a regression
 analysis on the two numeric arrays.
 
 The `regress` function returns a single tuple with the results of the regression
@@ -131,7 +131,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -148,8 +148,7 @@ When this expression is sent to the `/stream` handler it responds with:
           699.5597256337142,
           742.4738911248204,
           769.0342605881644,
-          746.6740473150268,
-          ...
+          746.6740473150268
           ]
       },
       {
@@ -163,9 +162,10 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Regression Plot
 
-Using *zplot* and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
-the same scatter plot. In the example below zplot is plotting the *filesize_d* observations on the
-*x* axis, the *response_d* observations on the *y* access and the predictions on the *y1* access.
+Using `zplot` and the Zeppelin-Solr interpreter we can visualize both the observations and the predictions in
+the same scatter plot.
+In the example below `zplot` is plotting the `filesize_d` observations on the
+x-axis, the `response_d` observations on the y-axis and the predictions on the y1-axis.
 
 image::images/math-expressions/linear.png[]
 
@@ -175,9 +175,9 @@ The difference between the observed value and the predicted value is known as th
 residual. There isn't a specific function to calculate the residuals but vector
 math can used to perform the calculation.
 
-In the example below the predictions are stored in variable *`p`*. The `ebeSubtract`
+In the example below the predictions are stored in variable `p`. The `ebeSubtract`
 function is then used to subtract the predictions
-from the actual `response_d` values stored in variable *`y`*. Variable *`e`* contains
+from the actual `response_d` values stored in variable `y`. Variable `e` contains
 the array of residuals.
 
 [source,text]
@@ -192,7 +192,7 @@ let(a=random(logs, q="*:*", rows="500", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -211,8 +211,7 @@ When this expression is sent to the `/stream` handler it responds with:
           -30.213178859683012,
           -30.609943619066826,
           10.527700442607625,
-          10.68046928406568,
-          ...
+          10.68046928406568
           ]
       },
       {
@@ -226,28 +225,24 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Residual Plot
 
-Using *zplot* and Zeppelin-Solr we can visualize the residuals with
+Using `zplot` and Zeppelin-Solr we can visualize the residuals with
 a residuals plot. The example residual plot below plots the predicted value on the
-*x* axis and the error of the prediction on the *y* access.
+x-axis and the error of the prediction on the y-axis.
 
 image::images/math-expressions/residual-plot.png[]
 
-The residual plot can be used to interpret reliability of the model. Three things
-to look for are:
+The residual plot can be used to interpret reliability of the model. Three things to look for are:
 
-1) Do the residuals appear to be normally distributed with a mean of 0. This makes
-it easier to interpret the results of the model to determine if the distribution
-of the errors is acceptable for predictions. It also makes it easier to use a model
-of the residuals for anomaly detection on new predictions.
+. Do the residuals appear to be normally distributed with a mean of 0?
+This makes it easier to interpret the results of the model to determine if the distribution of the errors is acceptable for predictions.
+It also makes it easier to use a model of the residuals for anomaly detection on new predictions.
 
-2) Do the residuals appear to be *heteroscedastic*. Which means is the variance
-of the residuals the same across the range of predictions. By plotting the prediction
-on the *x* axis and error on *y* access we can see if the variability stays the same
-as the predictions get higher. If the residuals are heteroscedastic it means
-that we can trust the models error to be consistent across the range of predictions.
+. Do the residuals appear to be *heteroscedastic*?
+Which means is the variance of the residuals the same across the range of predictions?
+By plotting the prediction on the x-axis and error on y-axis we can see if the variability stays the same as the predictions get higher.
+If the residuals are heteroscedastic it means that we can trust the models error to be consistent across the range of predictions.
 
-3) Is there any pattern to the residuals? If so there is likely still a signal within the
-data that needs to be modeled.
+. Is there any pattern to the residuals? If so there is likely still a signal within the data that needs to be modeled.
 
 
 == Multivariate Linear Regression
@@ -259,7 +254,7 @@ The example below extends the simple linear regression example by introducing a 
 called `load_d`. The `load_d` variable is the load on the network while the file is being downloaded.
 
 Notice that the two independent variables `filesize_d` and `load_d` are vectorized and stored
-in the variables *`b`* and *`c`*. The variables *`b`* and *`c`* are then added as rows to a `matrix`. The matrix is
+in the variables `b` and `c`. The variables `b` and `c` are then added as rows to a `matrix`. The matrix is
 then transposed so that each row in the matrix represents one observation with `filesize_d` and `service_d`.
 The `olsRegress` function then performs the multivariate regression analysis using the observation matrix as the
 independent variables and the `response_d` values, stored in variable *`d`*, as the dependent variable.
@@ -274,7 +269,7 @@ let(a=random(testapp, q="*:*", rows="30000", fl="filesize_d, load_d, response_d"
     r=olsRegress(m, z))
 ----
 
-Notice in the response that the RSquared of the regression analysis is 1. This means that linear relationship between
+Notice in the response that the `RSquared` of the regression analysis is `1`. This means that linear relationship between
 `filesize_d` and `service_d` describe 100% of the variability of the `response_d` variable:
 
 [source,json]
@@ -381,7 +376,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -399,8 +394,7 @@ When this expression is sent to the `/stream` handler it responds with:
           841.5253327135974,
           896.9648275225625,
           858.6511235977382,
-          869.8381475112501,
-          ...
+          869.8381475112501
           ]
       },
       {
@@ -418,7 +412,7 @@ Once the predictions are generated the residuals can be calculated using the sam
 simple linear regression.
 
 Below is an example of the residuals calculation following a multivariate linear regression. In the example
-the predictions stored variable *`g`* are subtracted from observed values stored in variable *`d`*.
+the predictions stored variable `g` are subtracted from observed values stored in variable `d`.
 
 [source,text]
 ----
@@ -434,7 +428,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,text]
+[source,json]
 ----
 {
   "result-set": {
@@ -451,8 +445,7 @@ When this expression is sent to the `/stream` handler it responds with:
           -4.276176642246014,
           10.781062392156628,
           0.00039750380267378205,
-          -1.8307638852961645,
-          ...
+          -1.8307638852961645
           ]
       },
       {
@@ -467,7 +460,7 @@ When this expression is sent to the `/stream` handler it responds with:
 === Residual Plot
 
 The residual plot for multi-variate linear regression is the same as for simple linear regression.
-The predictions are plotted on the *x* axis and the error is plotted on the *y* axis.
+The predictions are plotted on the x-axis and the error is plotted on the y-axis.
 
 image::images/math-expressions/residual-plot2.png[]
 
