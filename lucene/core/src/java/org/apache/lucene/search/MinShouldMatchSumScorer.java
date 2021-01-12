@@ -87,8 +87,6 @@ final class MinShouldMatchSumScorer extends Scorer {
             scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
             scorers.size(),
             minShouldMatch);
-    System.out.println(this + " cpoerschke debug: constructor freq = " + freq);
-    System.out.println(this + " cpoerschke debug: constructor minShouldMatch = " + minShouldMatch);
   }
 
   @Override
@@ -134,14 +132,14 @@ final class MinShouldMatchSumScorer extends Scorer {
               }
             }
 
-            setDocAndFreq("TwoPhaseIterator.nextDoc");
+            setDocAndFreq();
             // It would be correct to return doNextCandidate() at this point but if you
             // call nextDoc as opposed to advance, it probably means that you really
             // need the next match. Returning 'doc' here would lead to a similar
             // iteration over sub postings overall except that the decision making would
             // happen at a higher level where more abstractions are involved and
             // benchmarks suggested it causes a significant performance hit.
-            return doNext("TwoPhaseIterator.nextDoc");
+            return doNext();
           }
 
           @Override
@@ -167,8 +165,8 @@ final class MinShouldMatchSumScorer extends Scorer {
               headTop = head.updateTop(evicted);
             }
 
-            setDocAndFreq("TwoPhaseIterator.advance");
-            return doNextCandidate("TwoPhaseIterator.advance");
+            setDocAndFreq();
+            return doNextCandidate();
           }
 
           @Override
@@ -228,8 +226,7 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   /** Reinitializes head, freq and doc from 'head' */
-  private void setDocAndFreq(String caller) {
-    System.out.println(this + " cpoerschke debug: setDocAndFreq caller = " + caller);
+  private void setDocAndFreq() {
     assert head.size() > 0;
 
     // The top of `head` defines the next potential match
@@ -244,7 +241,7 @@ final class MinShouldMatchSumScorer extends Scorer {
   }
 
   /** Advance tail to the lead until there is a match. */
-  private int doNext(String caller) throws IOException {
+  private int doNext() throws IOException {
     while (freq < minShouldMatch) {
       assert freq > 0;
       if (freq + tailSize >= minShouldMatch) {
@@ -254,7 +251,7 @@ final class MinShouldMatchSumScorer extends Scorer {
       } else {
         // no match on doc is possible anymore, move to the next potential match
         pushBackLeads();
-        setDocAndFreq(caller);
+        setDocAndFreq();
       }
     }
 
@@ -265,11 +262,11 @@ final class MinShouldMatchSumScorer extends Scorer {
    * Move iterators to the tail until the cumulated size of lead+tail is greater than or equal to
    * minShouldMath
    */
-  private int doNextCandidate(String caller) throws IOException {
+  private int doNextCandidate() throws IOException {
     while (freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads();
-      setDocAndFreq(caller);
+      setDocAndFreq();
     }
 
     return doc;
@@ -277,9 +274,6 @@ final class MinShouldMatchSumScorer extends Scorer {
 
   /** Advance all entries from the tail to know about all matches on the current doc. */
   private void updateFreq() throws IOException {
-    System.out.println(this + " cpoerschke debug: updateFreq freq = " + freq);
-    System.out.println(this + " cpoerschke debug: updateFreq minShouldMatch = " + minShouldMatch);
-    System.out.println(this + " cpoerschke debug: updateFreq (freq >= minShouldMatch) = " + (freq >= minShouldMatch));
     assert freq >= minShouldMatch;
     // we return the next doc when there are minShouldMatch matching clauses
     // but some of the clauses in 'tail' might match as well
@@ -296,7 +290,6 @@ final class MinShouldMatchSumScorer extends Scorer {
 
   @Override
   public float score() throws IOException {
-    System.out.println(this + " cpoerschke debug: score");
     // we need to know about all matches
     updateFreq();
     double score = 0;
