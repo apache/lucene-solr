@@ -40,3 +40,5 @@ This section includes the following topics:
 <<docvalues.adoc#docvalues,DocValues>>: Describes how to create a docValues index for faster lookups.
 
 <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>: Automatically add previously unknown schema fields using value-based field type guessing.
+
+<<luke-request-handler.adoc#luke-request-handler,Luke Requst Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>> page of Solr's Admin UI.

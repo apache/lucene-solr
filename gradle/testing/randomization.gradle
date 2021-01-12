@@ -22,6 +22,7 @@
 import java.nio.file.*
 import com.carrotsearch.randomizedtesting.SeedUtils
 import com.carrotsearch.randomizedtesting.generators.RandomPicks
+import org.apache.tools.ant.types.Commandline
 
 buildscript {
   repositories {
@@ -144,7 +145,7 @@ allprojects {
         def value = testOptionsResolved[opt.propName]
         return defValue != value
       }.collect { opt ->
-        "-P" + opt.propName + "=" + testOptionsResolved[opt.propName]
+        Commandline.quoteArgument("-P" + opt.propName + "=" + testOptionsResolved[opt.propName])
       }.join(" ")
 
       // leaving temporary folder option has multiple aliases...

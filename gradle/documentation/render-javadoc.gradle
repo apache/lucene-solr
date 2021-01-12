@@ -101,8 +101,6 @@ configure(project(":lucene:analysis:common")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.lucene.analysis.standard" ]
   }
 }
 
@@ -147,29 +145,10 @@ configure([
   }
 }
 
-configure(project(":lucene:analysis:icu")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.collation",
-        "org.apache.lucene.collation.tokenattributes"
-    ]
-  }
-}
-
 configure(project(":lucene:backward-codecs")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing @param tags
     javadocMissingLevel = "method"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.codecs",
-        "org.apache.lucene.codecs.lucene50",
-        "org.apache.lucene.codecs.lucene60",
-        "org.apache.lucene.codecs.lucene80",
-        "org.apache.lucene.codecs.lucene84",
-        "org.apache.lucene.codecs.lucene86"
-    ]
   }
 }
 
@@ -204,11 +183,6 @@ configure(project(":lucene:sandbox")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.search",
-        "org.apache.lucene.document"
-    ]
   }
 }
 
@@ -216,16 +190,6 @@ configure(project(":lucene:misc")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "class"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.search",
-        "org.apache.lucene.search.similarity",
-        "org.apache.lucene.util",
-        "org.apache.lucene.util.fst",
-        "org.apache.lucene.store",
-        "org.apache.lucene.document",
-        "org.apache.lucene.index"
-    ]
   }
 }
 
@@ -236,7 +200,6 @@ configure(project(":lucene:core")) {
     // some packages are fixed already
     javadocMissingMethod = [
         "org.apache.lucene.util.automaton",
-        "org.apache.lucene.analysis",
         "org.apache.lucene.analysis.standard",
         "org.apache.lucene.analysis.tokenattributes",
         "org.apache.lucene.document",
@@ -258,13 +221,6 @@ configure(project(":solr").allprojects) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: fix missing javadocs
     javadocMissingLevel = "package"
-  }
-}
-
-configure(project(":solr:contrib:velocity")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.solr.response" ]
   }
 }
 
@@ -321,7 +277,8 @@ configure(project(":solr:test-framework")) {
 // Fix for Java 11 Javadoc tool that cannot handle split packages between modules correctly.
 // (by removing all the packages which are part of lucene-core)
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
-configure(subprojects.findAll { it.path.startsWith(':lucene') && it.path != ':lucene:core' }) {
+// LUCENE-9499: This workaround should be applied only to test-framework (we have no split package in other modules).
+configure(project(":lucene:test-framework")) {
   project.tasks.withType(RenderJavadocTask) {
     doLast {
       Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();

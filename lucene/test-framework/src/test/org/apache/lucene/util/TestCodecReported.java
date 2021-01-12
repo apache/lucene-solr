@@ -26,7 +26,7 @@ public class TestCodecReported extends WithNestedTests {
   public TestCodecReported() {
     super(true);
   }
-  
+
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     public static String codecName;
 
@@ -40,7 +40,6 @@ public class TestCodecReported extends WithNestedTests {
   public void testCorrectCodecReported() {
     Result r = JUnitCore.runClasses(Nested1.class);
     Assert.assertEquals(1, r.getFailureCount());
-    Assert.assertTrue(super.getSysErr(),
-        super.getSysErr().contains("codec=" + Nested1.codecName));
+    Assert.assertTrue(super.getSysErr(), super.getSysErr().contains("codec=" + Nested1.codecName));
   }
 }

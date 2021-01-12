@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BoostQuery;
@@ -28,44 +26,39 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 
-/**
- * Counterpart of {@link BoostQuery} for spans.
- */
+/** Counterpart of {@link BoostQuery} for spans. */
 public final class SpanBoostQuery extends SpanQuery {
 
   private final SpanQuery query;
   private final float boost;
 
-  /** Sole constructor: wrap {@code query} in such a way that the produced
-   *  scores will be boosted by {@code boost}. */
+  /**
+   * Sole constructor: wrap {@code query} in such a way that the produced scores will be boosted by
+   * {@code boost}.
+   */
   public SpanBoostQuery(SpanQuery query, float boost) {
     this.query = Objects.requireNonNull(query);
     this.boost = boost;
   }
 
-  /**
-   * Return the wrapped {@link SpanQuery}.
-   */
+  /** Return the wrapped {@link SpanQuery}. */
   public SpanQuery getQuery() {
     return query;
   }
 
-  /**
-   * Return the applied boost.
-   */
+  /** Return the applied boost. */
   public float getBoost() {
     return boost;
   }
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(SpanBoostQuery other) {
-    return query.equals(other.query) && 
-           Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
+    return query.equals(other.query)
+        && Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
   }
 
   @Override
@@ -118,8 +111,8 @@ public final class SpanBoostQuery extends SpanQuery {
   }
 
   @Override
-  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return query.createWeight(searcher, scoreMode, SpanBoostQuery.this.boost * boost);
   }
-
 }

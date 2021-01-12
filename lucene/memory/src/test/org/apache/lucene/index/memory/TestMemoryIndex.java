@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.index.memory;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.core.StringContains.containsString;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -23,7 +27,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.LongStream;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
@@ -74,10 +77,6 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.core.StringContains.containsString;
-
 public class TestMemoryIndex extends LuceneTestCase {
 
   private MockAnalyzer analyzer;
@@ -85,7 +84,7 @@ public class TestMemoryIndex extends LuceneTestCase {
   @Before
   public void setup() {
     analyzer = new MockAnalyzer(random());
-    analyzer.setEnableChecks(false);    // MemoryIndex can close a TokenStream on init error
+    analyzer.setEnableChecks(false); // MemoryIndex can close a TokenStream on init error
   }
 
   @Test
@@ -104,14 +103,20 @@ public class TestMemoryIndex extends LuceneTestCase {
     // freeze!
     mi.freeze();
 
-    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
-      mi.addField("f3", "and yet more", analyzer);
-    });
+    RuntimeException expected =
+        expectThrows(
+            RuntimeException.class,
+            () -> {
+              mi.addField("f3", "and yet more", analyzer);
+            });
     assertThat(expected.getMessage(), containsString("frozen"));
 
-    expected = expectThrows(RuntimeException.class, () -> {
-      mi.setSimilarity(new BM25Similarity(1, 1));
-    });
+    expected =
+        expectThrows(
+            RuntimeException.class,
+            () -> {
+              mi.setSimilarity(new BM25Similarity(1, 1));
+            });
     assertThat(expected.getMessage(), containsString("frozen"));
 
     assertThat(mi.search(new TermQuery(new Term("f1", "some"))), not(is(0.0f)));
@@ -123,7 +128,6 @@ public class TestMemoryIndex extends LuceneTestCase {
 
     // check we can set the Similarity again
     mi.setSimilarity(new ClassicSimilarity());
-
   }
 
   public void testSeekByTermOrd() throws IOException {
@@ -191,19 +195,20 @@ public class TestMemoryIndex extends LuceneTestCase {
     float n1 = norms.longValue();
 
     // Norms are re-computed when we change the Similarity
-    mi.setSimilarity(new Similarity() {
+    mi.setSimilarity(
+        new Similarity() {
 
-      @Override
-      public long computeNorm(FieldInvertState state) {
-        return 74;
-      }
+          @Override
+          public long computeNorm(FieldInvertState state) {
+            return 74;
+          }
 
-      @Override
-      public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        throw new UnsupportedOperationException();
-      }
-
-    });
+          @Override
+          public SimScorer scorer(
+              float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+            throw new UnsupportedOperationException();
+          }
+        });
     norms = reader.getNormValues("f1");
     assertEquals(0, norms.nextDoc());
     float n2 = norms.longValue();
@@ -246,7 +251,6 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertThat(mi.search(new PhraseQuery("field1", "some", "more", "text")), not(0.0f));
     assertThat(mi.search(new PhraseQuery("field1", "some", "text")), not(0.0f));
     assertThat(mi.search(new PhraseQuery("field1", "text", "some")), is(0.0f));
-
   }
 
   public void testDocValues() throws Exception {
@@ -270,7 +274,8 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(0, numericDocValues.nextDoc());
     assertEquals(29L, numericDocValues.longValue());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, numericDocValues.nextDoc());
-    SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
+    SortedNumericDocValues sortedNumericDocValues =
+        leafReader.getSortedNumericDocValues("sorted_numeric");
     assertEquals(0, sortedNumericDocValues.nextDoc());
     assertEquals(5, sortedNumericDocValues.docValueCount());
     assertEquals(30L, sortedNumericDocValues.nextValue());
@@ -329,7 +334,8 @@ public class TestMemoryIndex extends LuceneTestCase {
       assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSetDocValues.nextOrd());
     }
 
-    SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
+    SortedNumericDocValues sortedNumericDocValues =
+        leafReader.getSortedNumericDocValues("sorted_numeric");
     for (int times = 0; times < 3; times++) {
       assertTrue(sortedNumericDocValues.advanceExact(0));
       assertEquals(5, sortedNumericDocValues.docValueCount());
@@ -339,7 +345,6 @@ public class TestMemoryIndex extends LuceneTestCase {
       assertEquals(32L, sortedNumericDocValues.nextValue());
       assertEquals(33L, sortedNumericDocValues.nextValue());
     }
-
   }
 
   public void testInvalidDocValuesUsage() throws Exception {
@@ -349,7 +354,9 @@ public class TestMemoryIndex extends LuceneTestCase {
     try {
       MemoryIndex.fromDocument(doc, analyzer);
     } catch (IllegalArgumentException e) {
-      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"field\"", e.getMessage());
+      assertEquals(
+          "cannot change DocValues type from NUMERIC to BINARY for field \"field\"",
+          e.getMessage());
     }
 
     doc = new Document();
@@ -358,7 +365,9 @@ public class TestMemoryIndex extends LuceneTestCase {
     try {
       MemoryIndex.fromDocument(doc, analyzer);
     } catch (IllegalArgumentException e) {
-      assertEquals("Only one value per field allowed for [NUMERIC] doc values field [field]", e.getMessage());
+      assertEquals(
+          "Only one value per field allowed for [NUMERIC] doc values field [field]",
+          e.getMessage());
     }
 
     doc = new Document();
@@ -368,7 +377,8 @@ public class TestMemoryIndex extends LuceneTestCase {
     try {
       MemoryIndex.fromDocument(doc, analyzer);
     } catch (IllegalArgumentException e) {
-      assertEquals("Only one value per field allowed for [BINARY] doc values field [field]", e.getMessage());
+      assertEquals(
+          "Only one value per field allowed for [BINARY] doc values field [field]", e.getMessage());
     }
 
     doc = new Document();
@@ -378,7 +388,8 @@ public class TestMemoryIndex extends LuceneTestCase {
     try {
       MemoryIndex.fromDocument(doc, analyzer);
     } catch (IllegalArgumentException e) {
-      assertEquals("Only one value per field allowed for [SORTED] doc values field [field]", e.getMessage());
+      assertEquals(
+          "Only one value per field allowed for [SORTED] doc values field [field]", e.getMessage());
     }
   }
 
@@ -420,30 +431,38 @@ public class TestMemoryIndex extends LuceneTestCase {
   }
 
   public void testPointValues() throws Exception {
-    List<Function<Long, IndexableField>> fieldFunctions = Arrays.asList(
-        (t) -> new IntPoint("number", t.intValue()),
-        (t) -> new LongPoint("number", t),
-        (t) -> new FloatPoint("number", t.floatValue()),
-        (t) -> new DoublePoint("number", t.doubleValue())
-    );
-    List<Function<Long, Query>> exactQueryFunctions = Arrays.asList(
-        (t) -> IntPoint.newExactQuery("number", t.intValue()),
-        (t) -> LongPoint.newExactQuery("number", t),
-        (t) -> FloatPoint.newExactQuery("number", t.floatValue()),
-        (t) -> DoublePoint.newExactQuery("number", t.doubleValue())
-    );
-    List<Function<long[], Query>> setQueryFunctions = Arrays.asList(
-        (t) -> IntPoint.newSetQuery("number", LongStream.of(t).mapToInt(value -> (int) value).toArray()),
-        (t) -> LongPoint.newSetQuery("number", t),
-        (t) -> FloatPoint.newSetQuery("number", Arrays.asList(LongStream.of(t).mapToObj(value -> (float) value).toArray(Float[]::new))),
-        (t) -> DoublePoint.newSetQuery("number", LongStream.of(t).mapToDouble(value -> (double) value).toArray())
-    );
-    List<BiFunction<Long, Long, Query>> rangeQueryFunctions = Arrays.asList(
-        (t, u) -> IntPoint.newRangeQuery("number", t.intValue(), u.intValue()),
-        (t, u) -> LongPoint.newRangeQuery("number", t, u),
-        (t, u) -> FloatPoint.newRangeQuery("number", t.floatValue(), u.floatValue()),
-        (t, u) -> DoublePoint.newRangeQuery("number", t.doubleValue(), u.doubleValue())
-    );
+    List<Function<Long, IndexableField>> fieldFunctions =
+        Arrays.asList(
+            (t) -> new IntPoint("number", t.intValue()),
+            (t) -> new LongPoint("number", t),
+            (t) -> new FloatPoint("number", t.floatValue()),
+            (t) -> new DoublePoint("number", t.doubleValue()));
+    List<Function<Long, Query>> exactQueryFunctions =
+        Arrays.asList(
+            (t) -> IntPoint.newExactQuery("number", t.intValue()),
+            (t) -> LongPoint.newExactQuery("number", t),
+            (t) -> FloatPoint.newExactQuery("number", t.floatValue()),
+            (t) -> DoublePoint.newExactQuery("number", t.doubleValue()));
+    List<Function<long[], Query>> setQueryFunctions =
+        Arrays.asList(
+            (t) ->
+                IntPoint.newSetQuery(
+                    "number", LongStream.of(t).mapToInt(value -> (int) value).toArray()),
+            (t) -> LongPoint.newSetQuery("number", t),
+            (t) ->
+                FloatPoint.newSetQuery(
+                    "number",
+                    Arrays.asList(
+                        LongStream.of(t).mapToObj(value -> (float) value).toArray(Float[]::new))),
+            (t) ->
+                DoublePoint.newSetQuery(
+                    "number", LongStream.of(t).mapToDouble(value -> (double) value).toArray()));
+    List<BiFunction<Long, Long, Query>> rangeQueryFunctions =
+        Arrays.asList(
+            (t, u) -> IntPoint.newRangeQuery("number", t.intValue(), u.intValue()),
+            (t, u) -> LongPoint.newRangeQuery("number", t, u),
+            (t, u) -> FloatPoint.newRangeQuery("number", t.floatValue(), u.floatValue()),
+            (t, u) -> DoublePoint.newRangeQuery("number", t.doubleValue(), u.doubleValue()));
 
     for (int i = 0; i < fieldFunctions.size(); i++) {
       Function<Long, IndexableField> fieldFunction = fieldFunctions.get(i);
@@ -462,12 +481,11 @@ public class TestMemoryIndex extends LuceneTestCase {
       query = exactQueryFunction.apply(4L);
       assertEquals(0, indexSearcher.count(query));
 
-
-      query = setQueryFunction.apply(new long[]{3L, 9L, 19L});
+      query = setQueryFunction.apply(new long[] {3L, 9L, 19L});
       assertEquals(1, indexSearcher.count(query));
-      query = setQueryFunction.apply(new long[]{2L, 8L, 13L});
+      query = setQueryFunction.apply(new long[] {2L, 8L, 13L});
       assertEquals(1, indexSearcher.count(query));
-      query = setQueryFunction.apply(new long[]{2L, 8L, 16L});
+      query = setQueryFunction.apply(new long[] {2L, 8L, 16L});
       assertEquals(0, indexSearcher.count(query));
 
       query = rangeQueryFunction.apply(2L, 16L);
@@ -487,7 +505,13 @@ public class TestMemoryIndex extends LuceneTestCase {
     // field that exists but does not have points
     assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("field"));
     // field that does not exist
-    assertNull(indexSearcher.getIndexReader().leaves().get(0).reader().getPointValues("some_missing_field"));
+    assertNull(
+        indexSearcher
+            .getIndexReader()
+            .leaves()
+            .get(0)
+            .reader()
+            .getPointValues("some_missing_field"));
   }
 
   public void testPointValuesDoNotAffectPositionsOrOffset() throws Exception {
@@ -523,9 +547,18 @@ public class TestMemoryIndex extends LuceneTestCase {
     assertEquals(5, penum.endOffset());
 
     IndexSearcher indexSearcher = mi.createSearcher();
-    assertEquals(1, indexSearcher.count(BinaryPoint.newExactQuery("text", "quick".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(1, indexSearcher.count(BinaryPoint.newExactQuery("text", "brown".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(0, indexSearcher.count(BinaryPoint.newExactQuery("text", "jumps".getBytes(StandardCharsets.UTF_8))));
+    assertEquals(
+        1,
+        indexSearcher.count(
+            BinaryPoint.newExactQuery("text", "quick".getBytes(StandardCharsets.UTF_8))));
+    assertEquals(
+        1,
+        indexSearcher.count(
+            BinaryPoint.newExactQuery("text", "brown".getBytes(StandardCharsets.UTF_8))));
+    assertEquals(
+        0,
+        indexSearcher.count(
+            BinaryPoint.newExactQuery("text", "jumps".getBytes(StandardCharsets.UTF_8))));
   }
 
   public void test2DPoints() throws Exception {
@@ -546,10 +579,19 @@ public class TestMemoryIndex extends LuceneTestCase {
     MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
     IndexSearcher s = mi.createSearcher();
 
-    assertEquals(1, s.count(IntPoint.newRangeQuery("ints", new int[] {10, 10}, new int[] {30, 30})));
-    assertEquals(1, s.count(LongPoint.newRangeQuery("longs", new long[] {10L, 10L}, new long[] {30L, 30L})));
-    assertEquals(1, s.count(FloatPoint.newRangeQuery("floats", new float[] {10F, 10F}, new float[] {30F, 30F})));
-    assertEquals(1, s.count(DoublePoint.newRangeQuery("doubles", new double[] {10D, 10D}, new double[] {30D, 30D})));
+    assertEquals(
+        1, s.count(IntPoint.newRangeQuery("ints", new int[] {10, 10}, new int[] {30, 30})));
+    assertEquals(
+        1, s.count(LongPoint.newRangeQuery("longs", new long[] {10L, 10L}, new long[] {30L, 30L})));
+    assertEquals(
+        1,
+        s.count(
+            FloatPoint.newRangeQuery("floats", new float[] {10F, 10F}, new float[] {30F, 30F})));
+    assertEquals(
+        1,
+        s.count(
+            DoublePoint.newRangeQuery(
+                "doubles", new double[] {10D, 10D}, new double[] {30D, 30D})));
   }
 
   public void testMultiValuedPointsSortedCorrectly() throws Exception {
@@ -606,16 +648,19 @@ public class TestMemoryIndex extends LuceneTestCase {
     type.setDimensions(1, 4);
     type.setDocValuesType(DocValuesType.BINARY);
     type.freeze();
-    mi.addField(new BinaryPoint("pointAndDvField", "term".getBytes(StandardCharsets.UTF_8), type), analyzer);
+    mi.addField(
+        new BinaryPoint("pointAndDvField", "term".getBytes(StandardCharsets.UTF_8), type),
+        analyzer);
 
-    assertEquals("analyzedField:\n" +
-        "\t'[61 61]':2: [(0, 0, 2, [70 6f 73 3a 20 30]), (1, 6, 8, [70 6f 73 3a 20 32])]\n" +
-        "\t'[62 62]':1: [(1, 3, 5, [70 6f 73 3a 20 31])]\n" +
-        "\tterms=2, positions=3\n" +
-        "pointAndDvField:\n" +
-        "\tterms=0, positions=0\n" +
-        "\n" +
-        "fields=2, terms=2, positions=3", mi.toStringDebug());
+    assertEquals(
+        "analyzedField:\n"
+            + "\t'[61 61]':2: [(0, 0, 2, [70 6f 73 3a 20 30]), (1, 6, 8, [70 6f 73 3a 20 32])]\n"
+            + "\t'[62 62]':1: [(1, 3, 5, [70 6f 73 3a 20 31])]\n"
+            + "\tterms=2, positions=3\n"
+            + "pointAndDvField:\n"
+            + "\tterms=0, positions=0\n"
+            + "\n"
+            + "fields=2, terms=2, positions=3",
+        mi.toStringDebug());
   }
-
 }

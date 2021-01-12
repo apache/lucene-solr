@@ -16,8 +16,12 @@
  */
 package org.apache.solr.core;
 
-import com.google.common.annotations.VisibleForTesting;
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -30,15 +34,27 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
+import org.apache.lucene.analysis.CharFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.WordlistLoader;
-import org.apache.lucene.analysis.util.*;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -47,6 +63,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
@@ -69,9 +86,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
-      "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
-      "update.processor.", "util.", "spelling.", "handler.component.",
-      "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
+          "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
+          "update.processor.", "util.", "spelling.", "handler.component.",
+          "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -86,8 +103,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   private PackageListeningClassLoader schemaLoader ;
 
   private PackageListeningClassLoader coreReloadingClassLoader ;
-
-
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
@@ -97,7 +112,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   // Provide a registry so that managed resources can register themselves while the XML configuration
   // documents are being parsed ... after all are registered, they are asked by the RestManager to
   // initialize themselves. This two-step process is required because not all resources are available
-  // (such as the SolrZkClient) when XML docs are being parsed.    
+  // (such as the SolrZkClient) when XML docs are being parsed.
   private RestManager.Registry managedResourceRegistry;
 
   /** @see #reloadLuceneSPI() */
@@ -110,35 +125,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     return managedResourceRegistry;
   }
 
-  private PackageListeningClassLoader createSchemaLoader() {
-    CoreContainer cc = getCoreContainer();
-    if (cc == null) {
-      //corecontainer not available . can't load from packages
-      return null;
-    }
-    return new PackageListeningClassLoader(cc, this, pkg -> {
-      if (getSolrConfig() == null) return null;
-      return getSolrConfig().maxPackageVersion(pkg);
-    }, () -> {
-      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
-      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
-        if (c != null) {
-          c.fetchLatestSchema();
-        }
-      }
-    });
-  }
-
-
   public SolrClassLoader getSchemaLoader() {
     if (schemaLoader == null) {
       schemaLoader = createSchemaLoader();
     }
     return schemaLoader;
-  }
-
-  public SolrResourceLoader() {
-    this(SolrPaths.locateSolrHome(), null);
   }
 
   /**
@@ -160,6 +151,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   }
 
 
+  /**
+   * Creates a loader.
+   * @param instanceDir - base directory for this resource loader, must not be null
+   */
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null);
   }
@@ -168,18 +163,14 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
    * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
-   *
-   * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
-   * @see SolrPaths#locateSolrHome()
    */
   public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
-      this.instanceDir = SolrPaths.locateSolrHome();
-      log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
-    } else {
-      this.instanceDir = instanceDir;
-      log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
+      throw new NullPointerException("SolrResourceLoader instanceDir must be non-null");
     }
+
+    this.instanceDir = instanceDir;
+    log.debug("new SolrResourceLoader for directory: '{}'", this.instanceDir);
 
     if (parent == null) {
       parent = getClass().getClassLoader();
@@ -206,11 +197,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
     if (log.isInfoEnabled()) {
       log.info("Added {} libs to classloader, from paths: {}",
-          urls.size(), urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
-              .sorted()
-              .distinct()
-              .collect(Collectors.toList()));
+              urls.size(), urls.stream()
+                      .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+                      .sorted()
+                      .distinct()
+                      .collect(Collectors.toList()));
     }
   }
 
@@ -329,7 +320,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     if (pathToCheck.startsWith(instanceDir))
       return pathToCheck;
     throw new IOException("File " + pathToCheck + " is outside resource loader dir " + instanceDir +
-        "; set -Dsolr.allow.unsafe.resourceloading=true to allow unsafe loading");
+            "; set -Dsolr.allow.unsafe.resourceloading=true to allow unsafe loading");
   }
 
   /**
@@ -432,7 +423,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       return WordlistLoader.getLines(openResource(resource), charset);
     } catch (CharacterCodingException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error loading resource (wrong encoding?): " + resource, ex);
+              "Error loading resource (wrong encoding?): " + resource, ex);
     }
   }
 
@@ -448,7 +439,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern =
-      Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
+          Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
 
   @Override
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
@@ -480,8 +471,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         }
       }
     }
-
     Class<? extends T> clazz = null;
+    clazz = getPackageClass(cname, expectedType);
+    if(clazz != null) return clazz;
     try {
       // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
       final Matcher m = legacyAnalysisPattern.matcher(cname);
@@ -529,19 +521,37 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
         //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
         // using a shortname
         if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
-            !cname.equals(clazz.getName()) &&
-            (subpackages.length == 0 || subpackages == packages)) {
+                !cname.equals(clazz.getName()) &&
+                (subpackages.length == 0 || subpackages == packages)) {
           //store in the cache
           classNameCache.put(cname, clazz.getName());
         }
 
         // print warning if class is deprecated
         if (clazz.isAnnotationPresent(Deprecated.class)) {
-          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
-              cname);
+          DeprecationLog.log(cname,
+                  "Solr loaded a deprecated plugin/analysis class [" + cname + "]. Please consult documentation how to replace it accordingly.");
         }
       }
     }
+  }
+
+  private  <T> Class<? extends T> getPackageClass(String cname, Class<T> expectedType) {
+    PluginInfo.ClassName cName = PluginInfo.parseClassName(cname);
+    if (cName.pkg == null) return null;
+    ResourceLoaderAware aware = CURRENT_AWARE.get();
+    if (aware != null) {
+      //this is invoked from a component
+      //let's check if it's a schema component
+      @SuppressWarnings("rawtypes")
+      Class type = assertAwareCompatibility(ResourceLoaderAware.class, aware);
+      if (schemaResourceLoaderComponents.contains(type)) {
+        //this is a schema component
+        //lets use schema classloader
+        return getSchemaLoader().findClass(cname, expectedType);
+      }
+    }
+    return null;
   }
 
   static final String[] empty = new String[0];
@@ -586,7 +596,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
     } catch (Error err) {
       log.error("Loading Class {} ({}) triggered serious java error: {}", cName, clazz.getName(),
-          err.getClass().getName(), err);
+              err.getClass().getName(), err);
 
       throw err;
 
@@ -642,17 +652,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   /**
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
-  @Override
   public void inform(SolrCore core) {
     this.coreName = core.getName();
     this.config = core.getSolrConfig();
     this.coreId = core.uniqueId;
     this.coreContainer = core.getCoreContainer();
+    SolrCore.Provider coreProvider = core.coreProvider;
+
     this.coreReloadingClassLoader = new PackageListeningClassLoader(core.getCoreContainer(),
-        this, s -> config.maxPackageVersion(s), null){
+            this, s -> config.maxPackageVersion(s), null){
       @Override
       protected void doReloadAction(Ctx ctx) {
-         coreContainer.reload(coreName, coreId, true);
+        coreProvider.reload();
       }
     };
     core.getPackageListeners().addListener(coreReloadingClassLoader, true);
@@ -692,8 +703,21 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
 
       for (ResourceLoaderAware aware : arr) {
-        aware.inform(loader);
+        informAware(loader, aware);
+
       }
+    }
+  }
+
+  /**
+   * Set the current {@link ResourceLoaderAware} object in thread local so that appropriate classloader can be used for package loaded classes
+   */
+  public static void informAware(ResourceLoader loader, ResourceLoaderAware aware) throws IOException {
+    CURRENT_AWARE.set(aware);
+    try{
+      aware.inform(loader);
+    } finally {
+      CURRENT_AWARE.remove();
     }
   }
 
@@ -743,47 +767,58 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
   static {
     awareCompatibility = new HashMap<>();
     awareCompatibility.put(
-        SolrCoreAware.class, new Class<?>[]{
-            // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-            // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
-            CodecFactory.class,
-            DirectoryFactory.class,
-            ManagedIndexSchemaFactory.class,
-            QueryResponseWriter.class,
-            SearchComponent.class,
-            ShardHandlerFactory.class,
-            SimilarityFactory.class,
-            SolrRequestHandler.class,
-            UpdateRequestProcessorFactory.class
-        }
+            SolrCoreAware.class, new Class<?>[]{
+                    // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+                    // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+                    CodecFactory.class,
+                    DirectoryFactory.class,
+                    ManagedIndexSchemaFactory.class,
+                    QueryResponseWriter.class,
+                    SearchComponent.class,
+                    ShardHandlerFactory.class,
+                    SimilarityFactory.class,
+                    SolrRequestHandler.class,
+                    UpdateRequestProcessorFactory.class
+            }
     );
 
     awareCompatibility.put(
-        ResourceLoaderAware.class, new Class<?>[]{
-            // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-            // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
-            CharFilterFactory.class,
-            TokenFilterFactory.class,
-            TokenizerFactory.class,
-            QParserPlugin.class,
-            FieldType.class
-        }
+            ResourceLoaderAware.class, new Class<?>[]{
+                    // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
+                    // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+                    // evaluate if this must go into schemaResourceLoaderComponents
+                    CharFilterFactory.class,
+                    TokenFilterFactory.class,
+                    TokenizerFactory.class,
+                    QParserPlugin.class,
+                    FieldType.class
+            }
     );
   }
+
+  /**If these components are trying to load classes, use schema classloader
+   *
+   */
+  @SuppressWarnings("rawtypes")
+  private static final ImmutableSet<Class> schemaResourceLoaderComponents = ImmutableSet.of(
+          CharFilterFactory.class,
+          TokenFilterFactory.class,
+          TokenizerFactory.class,
+          FieldType.class);
 
   /**
    * Utility function to throw an exception if the class is invalid
    */
   @SuppressWarnings({"rawtypes"})
-  public static void assertAwareCompatibility(Class aware, Object obj) {
+  public static Class assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unknown Aware interface: " + aware);
+              "Unknown Aware interface: " + aware);
     }
     for (Class v : valid) {
       if (v.isInstance(obj)) {
-        return;
+        return v;
       }
     }
     StringBuilder builder = new StringBuilder();
@@ -825,6 +860,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
 
   }
 
+
   private  <T> T _classLookup(PluginInfo info, Function<PackageLoader.Package.Version, T> fun, boolean registerCoreReloadListener ) {
     PluginInfo.ClassName cName = info.cName;
     if (registerCoreReloadListener) {
@@ -852,6 +888,26 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
     return _classLookup( info, version -> version.getLoader().newInstance(info.cName.className, type), registerCoreReloadListener);
   }
+
+  private PackageListeningClassLoader createSchemaLoader() {
+    CoreContainer cc = getCoreContainer();
+    if (cc == null) {
+      //corecontainer not available . can't load from packages
+      return null;
+    }
+    return new PackageListeningClassLoader(cc, this, pkg -> {
+      if (getSolrConfig() == null) return null;
+      return getSolrConfig().maxPackageVersion(pkg);
+    }, () -> {
+      if(getCoreContainer() == null || config == null || coreName == null || coreId==null) return;
+      try (SolrCore c = getCoreContainer().getCore(coreName, coreId)) {
+        if (c != null) {
+          c.fetchLatestSchema();
+        }
+      }
+    });
+  }
+
 
   public static void persistConfLocally(SolrResourceLoader loader, String resourceName, byte[] content) {
     // Persist locally
@@ -882,5 +938,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
       }
     }
   }
+
+  //This is to verify if this requires to use the schema classloader for classes loaded from packages
+  private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
 
 }

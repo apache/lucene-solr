@@ -16,15 +16,6 @@
  */
 package org.apache.lucene.benchmark.quality.trec;
 
-
-import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
-import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
-import org.apache.lucene.benchmark.quality.*;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
@@ -34,28 +25,38 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.lucene.benchmark.quality.*;
+import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
+import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.FSDirectory;
 
-
-/**
- * Command-line tool for doing a TREC evaluation run.
- **/
+/** Command-line tool for doing a TREC evaluation run. */
 public class QueryDriver {
   public static void main(String[] args) throws Exception {
     if (args.length < 4 || args.length > 5) {
-      System.err.println("Usage: QueryDriver <topicsFile> <qrelsFile> <submissionFile> <indexDir> [querySpec]");
+      System.err.println(
+          "Usage: QueryDriver <topicsFile> <qrelsFile> <submissionFile> <indexDir> [querySpec]");
       System.err.println("topicsFile: input file containing queries");
       System.err.println("qrelsFile: input file containing relevance judgements");
       System.err.println("submissionFile: output submission file for trec_eval");
       System.err.println("indexDir: index directory");
-      System.err.println("querySpec: string composed of fields to use in query consisting of T=title,D=description,N=narrative:");
-      System.err.println("\texample: TD (query on Title + Description). The default is T (title only)");
+      System.err.println(
+          "querySpec: string composed of fields to use in query consisting of T=title,D=description,N=narrative:");
+      System.err.println(
+          "\texample: TD (query on Title + Description). The default is T (title only)");
       System.exit(1);
     }
-    
+
     Path topicsFile = Paths.get(args[0]);
     Path qrelsFile = Paths.get(args[1]);
     Path submissionFile = Paths.get(args[2]);
-    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(Files.newBufferedWriter(submissionFile, StandardCharsets.UTF_8)), "lucene");
+    SubmissionReport submitLog =
+        new SubmissionReport(
+            new PrintWriter(Files.newBufferedWriter(submissionFile, StandardCharsets.UTF_8)),
+            "lucene");
     FSDirectory dir = FSDirectory.open(Paths.get(args[3]));
     String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     IndexReader reader = DirectoryReader.open(dir);
@@ -64,11 +65,13 @@ public class QueryDriver {
     int maxResults = 1000;
     String docNameField = "docname";
 
-    PrintWriter logger = new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()), true);
+    PrintWriter logger =
+        new PrintWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()), true);
 
     // use trec utilities to read trec topics into quality queries
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(Files.newBufferedReader(topicsFile, StandardCharsets.UTF_8));
+    QualityQuery qqs[] =
+        qReader.readQueries(Files.newBufferedReader(topicsFile, StandardCharsets.UTF_8));
 
     // prepare judge, with trec utilities that read from a QRels file
     Judge judge = new TrecJudge(Files.newBufferedReader(qrelsFile, StandardCharsets.UTF_8));
@@ -80,7 +83,7 @@ public class QueryDriver {
     if (fieldSpec.indexOf('T') >= 0) fieldSet.add("title");
     if (fieldSpec.indexOf('D') >= 0) fieldSet.add("description");
     if (fieldSpec.indexOf('N') >= 0) fieldSet.add("narrative");
-    
+
     // set the parsing of quality queries into Lucene queries.
     QualityQueryParser qqParser = new SimpleQQParser(fieldSet.toArray(new String[0]), "body");
 

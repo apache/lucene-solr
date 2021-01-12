@@ -33,7 +33,5 @@ public class TestLongRangeFactory extends LuceneTestCase {
     assertEquals(new LongRange(30, 40), factory.getRange(35, scratch));
     assertEquals(new LongRange(50, Long.MAX_VALUE), factory.getRange(50, scratch));
     assertEquals(new LongRange(50, Long.MAX_VALUE), factory.getRange(500, scratch));
-
   }
-
 }

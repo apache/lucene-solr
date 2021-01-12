@@ -17,7 +17,6 @@
 package org.apache.lucene.benchmark.byTask.programmatic;
 
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.AddDocTask;
 import org.apache.lucene.benchmark.byTask.tasks.CloseIndexTask;
@@ -26,32 +25,31 @@ import org.apache.lucene.benchmark.byTask.tasks.RepSumByNameTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 
-/**
- * Sample performance test written programmatically - no algorithm file is needed here.
- */
+/** Sample performance test written programmatically - no algorithm file is needed here. */
 public class Sample {
 
   public static void main(String[] args) throws Exception {
     Properties p = initProps();
     Config conf = new Config(p);
     PerfRunData runData = new PerfRunData(conf);
-    
+
     // 1. top sequence
-    TaskSequence top = new TaskSequence(runData,null,null,false); // top level, not parallel
-    
+    TaskSequence top = new TaskSequence(runData, null, null, false); // top level, not parallel
+
     // 2. task to create the index
     CreateIndexTask create = new CreateIndexTask(runData);
     top.addTask(create);
-    
-    // 3. task seq to add 500 docs (order matters - top to bottom - add seq to top, only then add to seq)
-    TaskSequence seq1 = new TaskSequence(runData,"AddDocs",top,false);
+
+    // 3. task seq to add 500 docs (order matters - top to bottom - add seq to top, only then add to
+    // seq)
+    TaskSequence seq1 = new TaskSequence(runData, "AddDocs", top, false);
     seq1.setRepetitions(500);
     seq1.setNoChildReport();
     top.addTask(seq1);
 
     // 4. task to add the doc
     AddDocTask addDoc = new AddDocTask(runData);
-    //addDoc.setParams("1200"); // doc size limit if supported
+    // addDoc.setParams("1200"); // doc size limit if supported
     seq1.addTask(addDoc); // order matters 9see comment above)
 
     // 5. task to close the index
@@ -64,7 +62,7 @@ public class Sample {
 
     // print algorithm
     System.out.println(top.toString());
-    
+
     // execute
     top.doLogic();
   }
@@ -72,23 +70,20 @@ public class Sample {
   // Sample programmatic settings. Could also read from file.
   private static Properties initProps() {
     Properties p = new Properties();
-    p.setProperty ( "task.max.depth.log"  , "3" );
-    p.setProperty ( "max.buffered"        , "buf:10:10:100:100:10:10:100:100" );
-    p.setProperty ( "doc.maker"           , "org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource" );
-    p.setProperty ( "log.step"            , "2000" );
-    p.setProperty ( "doc.delete.step"     , "8" );
-    p.setProperty ( "analyzer"            , "org.apache.lucene.analysis.standard.StandardAnalyzer" );
-    p.setProperty ( "doc.term.vector"     , "false" );
-    p.setProperty ( "directory"           , "FSDirectory" );
-    p.setProperty ( "query.maker"         , "org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker" );
-    p.setProperty ( "doc.stored"          , "true" );
-    p.setProperty ( "docs.dir"            , "reuters-out" );
-    p.setProperty ( "compound"            , "cmpnd:true:true:true:true:false:false:false:false" );
-    p.setProperty ( "doc.tokenized"       , "true" );
-    p.setProperty ( "merge.factor"        , "mrg:10:100:10:100:10:100:10:100" );
+    p.setProperty("task.max.depth.log", "3");
+    p.setProperty("max.buffered", "buf:10:10:100:100:10:10:100:100");
+    p.setProperty("doc.maker", "org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource");
+    p.setProperty("log.step", "2000");
+    p.setProperty("doc.delete.step", "8");
+    p.setProperty("analyzer", "org.apache.lucene.analysis.standard.StandardAnalyzer");
+    p.setProperty("doc.term.vector", "false");
+    p.setProperty("directory", "FSDirectory");
+    p.setProperty("query.maker", "org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker");
+    p.setProperty("doc.stored", "true");
+    p.setProperty("docs.dir", "reuters-out");
+    p.setProperty("compound", "cmpnd:true:true:true:true:false:false:false:false");
+    p.setProperty("doc.tokenized", "true");
+    p.setProperty("merge.factor", "mrg:10:100:10:100:10:100:10:100");
     return p;
   }
-  
-  
-
 }

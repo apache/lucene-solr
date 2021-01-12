@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -41,7 +39,7 @@ import org.junit.Test;
 
 public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public static final String INDEX_PATH = "test.snapshots";
-  
+
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
     if (dp != null) {
@@ -52,7 +50,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
   protected void checkSnapshotExists(Directory dir, IndexCommit c) throws Exception {
     String segFileName = c.getSegmentsFileName();
-    assertTrue("segments file not found in directory: " + segFileName, slowFileExists(dir, segFileName));
+    assertTrue(
+        "segments file not found in directory: " + segFileName, slowFileExists(dir, segFileName));
   }
 
   protected void checkMaxDoc(IndexCommit commit, int expectedMaxDoc) throws Exception {
@@ -66,8 +65,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
   protected List<IndexCommit> snapshots = new ArrayList<>();
 
-  protected void prepareIndexAndSnapshots(SnapshotDeletionPolicy sdp,
-      IndexWriter writer, int numSnapshots)
+  protected void prepareIndexAndSnapshots(
+      SnapshotDeletionPolicy sdp, IndexWriter writer, int numSnapshots)
       throws RuntimeException, IOException {
     for (int i = 0; i < numSnapshots; i++) {
       // create dummy document to trigger commit.
@@ -81,7 +80,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     return new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
   }
 
-  protected void assertSnapshotExists(Directory dir, SnapshotDeletionPolicy sdp, int numSnapshots, boolean checkIndexCommitSame) throws Exception {
+  protected void assertSnapshotExists(
+      Directory dir, SnapshotDeletionPolicy sdp, int numSnapshots, boolean checkIndexCommitSame)
+      throws Exception {
     for (int i = 0; i < numSnapshots; i++) {
       IndexCommit snapshot = snapshots.get(i);
       checkMaxDoc(snapshot, i + 1);
@@ -89,11 +90,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       if (checkIndexCommitSame) {
         assertSame(snapshot, sdp.getIndexCommit(snapshot.getGeneration()));
       } else {
-        assertEquals(snapshot.getGeneration(), sdp.getIndexCommit(snapshot.getGeneration()).getGeneration());
+        assertEquals(
+            snapshot.getGeneration(), sdp.getIndexCommit(snapshot.getGeneration()).getGeneration());
       }
     }
   }
-  
+
   @Test
   public void testSnapshotDeletionPolicy() throws Exception {
     Directory fsDir = newDirectory();
@@ -106,50 +108,56 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 1000 : 100);
 
     SnapshotDeletionPolicy dp = getDeletionPolicy();
-    final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random))
-        .setIndexDeletionPolicy(dp)
-        .setMaxBufferedDocs(2));
+    final IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random))
+                .setIndexDeletionPolicy(dp)
+                .setMaxBufferedDocs(2));
 
     // Verify we catch misuse:
-    expectThrows(IllegalStateException.class, () -> {
-      dp.snapshot();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          dp.snapshot();
+        });
 
     writer.commit();
-    
-    final Thread t = new Thread() {
-        @Override
-        public void run() {
-          Document doc = new Document();
-          FieldType customType = new FieldType(TextField.TYPE_STORED);
-          customType.setStoreTermVectors(true);
-          customType.setStoreTermVectorPositions(true);
-          customType.setStoreTermVectorOffsets(true);
-          doc.add(newField("content", "aaa", customType));
-          do {
-            for(int i=0;i<27;i++) {
-              try {
-                writer.addDocument(doc);
-              } catch (Throwable t) {
-                t.printStackTrace(System.out);
-                fail("addDocument failed");
-              }
-              if (i%2 == 0) {
+
+    final Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            Document doc = new Document();
+            FieldType customType = new FieldType(TextField.TYPE_STORED);
+            customType.setStoreTermVectors(true);
+            customType.setStoreTermVectorPositions(true);
+            customType.setStoreTermVectorOffsets(true);
+            doc.add(newField("content", "aaa", customType));
+            do {
+              for (int i = 0; i < 27; i++) {
                 try {
-                  writer.commit();
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
+                  writer.addDocument(doc);
+                } catch (Throwable t) {
+                  t.printStackTrace(System.out);
+                  fail("addDocument failed");
+                }
+                if (i % 2 == 0) {
+                  try {
+                    writer.commit();
+                  } catch (Exception e) {
+                    throw new RuntimeException(e);
+                  }
                 }
               }
-            }
-            try {
-              Thread.sleep(1);
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
-            }
-          } while(System.currentTimeMillis() < stopTime);
-        }
-      };
+              try {
+                Thread.sleep(1);
+              } catch (InterruptedException ie) {
+                throw new ThreadInterruptedException(ie);
+              }
+            } while (System.currentTimeMillis() < stopTime);
+          }
+        };
 
     t.start();
 
@@ -158,7 +166,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     do {
       backupIndex(dir, dp);
       Thread.sleep(20);
-    } while(t.isAlive());
+    } while (t.isAlive());
 
     t.join();
 
@@ -176,14 +184,14 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Make sure we don't have any leftover files in the
     // directory:
     writer.close();
-    TestIndexWriter.assertNoUnreferencedFiles(dir, "some files were not deleted but should have been");
+    TestIndexWriter.assertNoUnreferencedFiles(
+        dir, "some files were not deleted but should have been");
   }
 
   /**
-   * Example showing how to use the SnapshotDeletionPolicy to take a backup.
-   * This method does not really do a backup; instead, it reads every byte of
-   * every file just to test that the files indeed exist and are readable even
-   * while the index is changing.
+   * Example showing how to use the SnapshotDeletionPolicy to take a backup. This method does not
+   * really do a backup; instead, it reads every byte of every file just to test that the files
+   * indeed exist and are readable even while the index is changing.
    */
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws Exception {
     // To backup an index we first take a snapshot:
@@ -204,7 +212,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // we take to do the backup, the IndexWriter will
     // never delete the files in the snapshot:
     Collection<String> files = cp.getFileNames();
-    for (final String fileName : files) { 
+    for (final String fileName : files) {
       // NOTE: in a real backup you would not use
       // readFile; you would need to use something else
       // that copies the file to a backup location.  This
@@ -224,10 +232,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       long bytesLeft = size;
       while (bytesLeft > 0) {
         final int numToRead;
-        if (bytesLeft < buffer.length)
-          numToRead = (int) bytesLeft;
-        else
-          numToRead = buffer.length;
+        if (bytesLeft < buffer.length) numToRead = (int) bytesLeft;
+        else numToRead = buffer.length;
         input.readBytes(buffer, 0, numToRead, false);
         bytesLeft -= numToRead;
       }
@@ -242,18 +248,18 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     }
   }
 
-  
   @Test
   public void testBasicSnapshots() throws Exception {
     int numSnapshots = 3;
-    
+
     // Create 3 snapshots: snapshot0, snapshot1, snapshot2
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    SnapshotDeletionPolicy sdp =
+        (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, numSnapshots);
     writer.close();
-    
+
     assertEquals(numSnapshots, sdp.getSnapshots().size());
     assertEquals(numSnapshots, sdp.getSnapshotCount());
     assertSnapshotExists(dir, sdp, numSnapshots, true);
@@ -275,33 +281,35 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
 
     final IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    final SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    final SnapshotDeletionPolicy sdp =
+        (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
 
     Thread[] threads = new Thread[10];
     final IndexCommit[] snapshots = new IndexCommit[threads.length];
     final CountDownLatch startingGun = new CountDownLatch(1);
     for (int i = 0; i < threads.length; i++) {
       final int finalI = i;
-      threads[i] = new Thread() {
-        @Override
-        public void run() {
-          try {
-            startingGun.await();
-            writer.addDocument(new Document());
-            writer.commit();
-            snapshots[finalI] = sdp.snapshot();
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
+      threads[i] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                writer.addDocument(new Document());
+                writer.commit();
+                snapshots[finalI] = sdp.snapshot();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            }
+          };
       threads[i].setName("t" + i);
     }
 
     for (Thread t : threads) {
       t.start();
     }
-    
+
     startingGun.countDown();
 
     for (Thread t : threads) {
@@ -311,8 +319,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // Do one last commit, so that after we release all snapshots, we stay w/ one commit
     writer.addDocument(new Document());
     writer.commit();
-    
-    for (int i=0;i<threads.length;i++) {
+
+    for (int i = 0; i < threads.length; i++) {
       sdp.release(snapshots[i]);
       writer.deleteUnusedFiles();
     }
@@ -341,7 +349,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
 
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
     String segFileName = snapshots.get(1).getSegmentsFileName();
-    assertTrue("snapshot files should exist in the directory: " + segFileName, slowFileExists(dir, segFileName));
+    assertTrue(
+        "snapshot files should exist in the directory: " + segFileName,
+        slowFileExists(dir, segFileName));
 
     dir.close();
   }
@@ -350,20 +360,23 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public void testReleaseSnapshot() throws Exception {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    SnapshotDeletionPolicy sdp =
+        (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     prepareIndexAndSnapshots(sdp, writer, 1);
-    
+
     // Create another commit - we must do that, because otherwise the "snapshot"
     // files will still remain in the index, since it's the last commit.
     writer.addDocument(new Document());
     writer.commit();
-    
+
     // Release
     String segFileName = snapshots.get(0).getSegmentsFileName();
     sdp.release(snapshots.get(0));
     writer.deleteUnusedFiles();
     writer.close();
-    assertFalse("segments file should not be found in dirctory: " + segFileName, slowFileExists(dir, segFileName));
+    assertFalse(
+        "segments file should not be found in dirctory: " + segFileName,
+        slowFileExists(dir, segFileName));
     dir.close();
   }
 
@@ -372,34 +385,36 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     Directory dir = newDirectory();
 
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    SnapshotDeletionPolicy sdp =
+        (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
-    
+
     IndexCommit s1 = sdp.snapshot();
     IndexCommit s2 = sdp.snapshot();
     assertSame(s1, s2); // should be the same instance
-    
+
     // create another commit
     writer.addDocument(new Document());
     writer.commit();
-    
+
     // release "s1" should not delete "s2"
     sdp.release(s1);
     writer.deleteUnusedFiles();
     checkSnapshotExists(dir, s2);
-    
+
     writer.close();
     dir.close();
   }
-  
+
   @Test
   public void testMissingCommits() throws Exception {
     // Tests the behavior of SDP when commits that are given at ctor are missing
     // on onInit().
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy()));
-    SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    SnapshotDeletionPolicy sdp =
+        (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     writer.addDocument(new Document());
     writer.commit();
     IndexCommit s1 = sdp.snapshot();
@@ -411,8 +426,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // open a new writer w/ KeepOnlyLastCommit policy, so it will delete "s1"
     // commit.
     new IndexWriter(dir, getConfig(random(), null)).close();
-    
-    assertFalse("snapshotted commit should not exist", slowFileExists(dir, s1.getSegmentsFileName()));
+
+    assertFalse(
+        "snapshotted commit should not exist", slowFileExists(dir, s1.getSegmentsFileName()));
     dir.close();
   }
 }

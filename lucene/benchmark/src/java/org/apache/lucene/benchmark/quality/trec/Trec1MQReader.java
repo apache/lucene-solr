@@ -21,27 +21,29 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-
 import org.apache.lucene.benchmark.quality.QualityQuery;
 
 /**
  * Read topics of TREC 1MQ track.
- * <p>
- * Expects this topic format -
+ *
+ * <p>Expects this topic format -
+ *
  * <pre>
  *   qnum:qtext
  * </pre>
+ *
  * Comment lines starting with '#' are ignored.
- * <p>
- * All topics will have a single name value pair.
+ *
+ * <p>All topics will have a single name value pair.
  */
 public class Trec1MQReader {
 
   private String name;
-  
+
   /**
-   *  Constructor for Trec's 1MQ TopicsReader
-   *  @param name name of name-value pair to set for all queries.
+   * Constructor for Trec's 1MQ TopicsReader
+   *
+   * @param name name of name-value pair to set for all queries.
    */
   public Trec1MQReader(String name) {
     super();
@@ -50,6 +52,7 @@ public class Trec1MQReader {
 
   /**
    * Read quality queries from trec 1MQ format topics file.
+   *
    * @param reader where queries are read from.
    * @return the result quality queries.
    * @throws IOException if cannot read the queries.
@@ -58,30 +61,29 @@ public class Trec1MQReader {
     ArrayList<QualityQuery> res = new ArrayList<>();
     String line;
     try {
-      while (null!=(line=reader.readLine())) {
+      while (null != (line = reader.readLine())) {
         line = line.trim();
         if (line.startsWith("#")) {
           continue;
         }
         // id
         int k = line.indexOf(":");
-        String id = line.substring(0,k).trim();
+        String id = line.substring(0, k).trim();
         // qtext
-        String qtext = line.substring(k+1).trim();
+        String qtext = line.substring(k + 1).trim();
         // we got a topic!
-        HashMap<String,String> fields = new HashMap<>();
-        fields.put(name,qtext);
-        //System.out.println("id: "+id+" qtext: "+qtext+"  line: "+line);
-        QualityQuery topic = new QualityQuery(id,fields);
+        HashMap<String, String> fields = new HashMap<>();
+        fields.put(name, qtext);
+        // System.out.println("id: "+id+" qtext: "+qtext+"  line: "+line);
+        QualityQuery topic = new QualityQuery(id, fields);
         res.add(topic);
       }
     } finally {
       reader.close();
     }
-    // sort result array (by ID) 
+    // sort result array (by ID)
     QualityQuery qq[] = res.toArray(new QualityQuery[0]);
     Arrays.sort(qq);
     return qq;
   }
-
 }

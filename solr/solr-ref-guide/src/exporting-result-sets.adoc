@@ -39,7 +39,7 @@ You can use `/export` to make requests to export the result set of a query.
 
 All queries must include `sort` and `fl` parameters, or the query will return an error. Filter queries are also supported.
 
-Optional parameter `batchSize` determines the size of the internal buffers for partial results. The default value is 30000 but users may want to specify smaller values to limit the memory use (at the cost of degraded performance) or higher values to improve export performance (the relationship is not linear and larger values don't bring proportionally larger performance increases).
+An optional parameter `batchSize` determines the size of the internal buffers for partial results. The default value is `30000` but users may want to specify smaller values to limit the memory use (at the cost of degraded performance) or higher values to improve export performance (the relationship is not linear and larger values don't bring proportionally larger performance increases).
 
 The supported response writers are `json` and `javabin`. For backward compatibility reasons `wt=xsort` is also supported as input, but `wt=xsort` behaves same as `wt=json`. The default output format is `json`.
 

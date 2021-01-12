@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.EntityResolver;

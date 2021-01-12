@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.models.documents;
 
 import java.util.List;
-
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Term;
@@ -28,10 +27,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
 
-
 // See: https://github.com/DmitryKey/luke/issues/133
 @LuceneTestCase.SuppressCodecs({
-    "DummyCompressingStoredFieldsData", "HighCompressionCompressingStoredFieldsData", "FastCompressingStoredFieldsData", "FastDecompressionCompressingStoredFieldsData"
+  "DummyCompressingStoredFieldsData",
+  "HighCompressionCompressingStoredFieldsData",
+  "FastCompressingStoredFieldsData",
+  "FastDecompressionCompressingStoredFieldsData"
 })
 public class DocumentsImplTest extends DocumentsTestBase {
 

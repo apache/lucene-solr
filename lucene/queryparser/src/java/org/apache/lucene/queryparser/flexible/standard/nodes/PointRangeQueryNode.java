@@ -20,92 +20,108 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 
 /**
- * This query node represents a range query composed by {@link PointQueryNode}
- * bounds, which means the bound values are {@link Number}s.
- * 
+ * This query node represents a range query composed by {@link PointQueryNode} bounds, which means
+ * the bound values are {@link Number}s.
+ *
  * @see PointQueryNode
  * @see AbstractRangeQueryNode
  */
 public class PointRangeQueryNode extends AbstractRangeQueryNode<PointQueryNode> {
-  
-  public PointsConfig numericConfig; 
-  
+
+  public PointsConfig numericConfig;
+
   /**
-   * Constructs a {@link PointRangeQueryNode} object using the given
-   * {@link PointQueryNode} as its bounds and {@link PointsConfig}.
-   * 
+   * Constructs a {@link PointRangeQueryNode} object using the given {@link PointQueryNode} as its
+   * bounds and {@link PointsConfig}.
+   *
    * @param lower the lower bound
    * @param upper the upper bound
-   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
-   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
-   * @param numericConfig the {@link PointsConfig} that represents associated with the upper and lower bounds
-   * 
+   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false
+   *     </code>
+   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false
+   *     </code>
+   * @param numericConfig the {@link PointsConfig} that represents associated with the upper and
+   *     lower bounds
    * @see #setBounds(PointQueryNode, PointQueryNode, boolean, boolean, PointsConfig)
    */
-  public PointRangeQueryNode(PointQueryNode lower, PointQueryNode upper,
-      boolean lowerInclusive, boolean upperInclusive, PointsConfig numericConfig) throws QueryNodeException {
+  public PointRangeQueryNode(
+      PointQueryNode lower,
+      PointQueryNode upper,
+      boolean lowerInclusive,
+      boolean upperInclusive,
+      PointsConfig numericConfig)
+      throws QueryNodeException {
     setBounds(lower, upper, lowerInclusive, upperInclusive, numericConfig);
   }
-  
+
   /**
-   * Sets the upper and lower bounds of this range query node and the
-   * {@link PointsConfig} associated with these bounds.
-   * 
+   * Sets the upper and lower bounds of this range query node and the {@link PointsConfig}
+   * associated with these bounds.
+   *
    * @param lower the lower bound
    * @param upper the upper bound
-   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
-   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
-   * @param pointsConfig the {@link PointsConfig} that represents associated with the upper and lower bounds
-   * 
+   * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false
+   *     </code>
+   * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false
+   *     </code>
+   * @param pointsConfig the {@link PointsConfig} that represents associated with the upper and
+   *     lower bounds
    */
-  public void setBounds(PointQueryNode lower, PointQueryNode upper,
-      boolean lowerInclusive, boolean upperInclusive, PointsConfig pointsConfig) throws QueryNodeException {
-    
+  public void setBounds(
+      PointQueryNode lower,
+      PointQueryNode upper,
+      boolean lowerInclusive,
+      boolean upperInclusive,
+      PointsConfig pointsConfig)
+      throws QueryNodeException {
+
     if (pointsConfig == null) {
       throw new IllegalArgumentException("pointsConfig must not be null!");
     }
-    
+
     Class<? extends Number> lowerNumberType, upperNumberType;
-    
+
     if (lower != null && lower.getValue() != null) {
       lowerNumberType = lower.getValue().getClass();
     } else {
       lowerNumberType = null;
     }
-    
+
     if (upper != null && upper.getValue() != null) {
       upperNumberType = upper.getValue().getClass();
     } else {
       upperNumberType = null;
     }
-    
-    if (lowerNumberType != null
-        && !lowerNumberType.equals(pointsConfig.getType())) {
+
+    if (lowerNumberType != null && !lowerNumberType.equals(pointsConfig.getType())) {
       throw new IllegalArgumentException(
           "lower value's type should be the same as numericConfig type: "
-              + lowerNumberType + " != " + pointsConfig.getType());
+              + lowerNumberType
+              + " != "
+              + pointsConfig.getType());
     }
-    
-    if (upperNumberType != null
-        && !upperNumberType.equals(pointsConfig.getType())) {
+
+    if (upperNumberType != null && !upperNumberType.equals(pointsConfig.getType())) {
       throw new IllegalArgumentException(
           "upper value's type should be the same as numericConfig type: "
-              + upperNumberType + " != " + pointsConfig.getType());
+              + upperNumberType
+              + " != "
+              + pointsConfig.getType());
     }
-    
+
     super.setBounds(lower, upper, lowerInclusive, upperInclusive);
     this.numericConfig = pointsConfig;
   }
-  
+
   /**
    * Returns the {@link PointsConfig} associated with the lower and upper bounds.
-   * 
+   *
    * @return the {@link PointsConfig} associated with the lower and upper bounds
    */
   public PointsConfig getPointsConfig() {
     return this.numericConfig;
   }
-  
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

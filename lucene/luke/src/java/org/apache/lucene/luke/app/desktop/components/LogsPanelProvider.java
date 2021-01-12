@@ -17,14 +17,13 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-
 import org.apache.lucene.luke.app.desktop.LukeMain;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 
@@ -54,5 +53,4 @@ public final class LogsPanelProvider {
     panel.add(new JScrollPane(logTextArea), BorderLayout.CENTER);
     return panel;
   }
-
 }

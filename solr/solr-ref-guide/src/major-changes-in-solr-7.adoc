@@ -21,7 +21,7 @@ Solr 7 is a major new release of Solr which introduces new features and a number
 == Upgrade Planning
 There are major changes in Solr 7 to consider before starting to migrate your configurations and indexes. This page is designed to highlight the biggest changes - new features you may want to be aware of, but also changes in default behavior and deprecated features that have been removed.
 
-There are many hundreds of changes in Solr 7, however, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 7. This section attempts to highlight some of the major changes you should be aware of.
+There are many hundreds of changes in Solr 7, however, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 7. This section attempts to highlight some of the major changes you should be aware of.
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 6.2, you should review changes made in all subsequent 6.x releases in addition to changes for 7.0.
 

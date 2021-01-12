@@ -16,12 +16,11 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
+import java.io.IOException;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -30,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
 
 /** An in-place update to a DocValues field. */
 abstract class DocValuesUpdate {
-  
+
   /* Rough logic: OBJ_HEADER + 3*PTR + INT
    * Term: OBJ_HEADER + 2*PTR
    *   Term.field: 2*OBJ_HEADER + 4*INT + PTR + string.length*CHAR
@@ -38,35 +37,38 @@ abstract class DocValuesUpdate {
    * String: 2*OBJ_HEADER + 4*INT + PTR + string.length*CHAR
    * T: OBJ_HEADER
    */
-  private static final int RAW_SIZE_IN_BYTES = 8*NUM_BYTES_OBJECT_HEADER + 8*NUM_BYTES_OBJECT_REF + 8*Integer.BYTES;
-  
+  private static final int RAW_SIZE_IN_BYTES =
+      8 * NUM_BYTES_OBJECT_HEADER + 8 * NUM_BYTES_OBJECT_REF + 8 * Integer.BYTES;
+
   final DocValuesType type;
   final Term term;
   final String field;
-  // used in BufferedDeletes to apply this update only to a slice of docs. It's initialized to BufferedUpdates.MAX_INT
+  // used in BufferedDeletes to apply this update only to a slice of docs. It's initialized to
+  // BufferedUpdates.MAX_INT
   // since it's safe and most often used this way we safe object creations.
-  final int docIDUpto;
+  final int docIDUpTo;
   final boolean hasValue;
 
   /**
    * Constructor.
-   * 
+   *
    * @param term the {@link Term} which determines the documents that will be updated
    * @param field the {@link NumericDocValuesField} to update
    */
-  protected DocValuesUpdate(DocValuesType type, Term term, String field, int docIDUpto, boolean hasValue) {
-    assert docIDUpto >= 0 : docIDUpto + "must be >= 0";
+  protected DocValuesUpdate(
+      DocValuesType type, Term term, String field, int docIDUpTo, boolean hasValue) {
+    assert docIDUpTo >= 0 : docIDUpTo + "must be >= 0";
     this.type = type;
     this.term = term;
     this.field = field;
-    this.docIDUpto = docIDUpto;
+    this.docIDUpTo = docIDUpTo;
     this.hasValue = hasValue;
   }
 
   abstract long valueSizeInBytes();
-  
-  final int sizeInBytes() {
-    int sizeInBytes = RAW_SIZE_IN_BYTES;
+
+  final long sizeInBytes() {
+    long sizeInBytes = RAW_SIZE_IN_BYTES;
     sizeInBytes += term.field.length() * Character.BYTES;
     sizeInBytes += term.bytes.bytes.length;
     sizeInBytes += field.length() * Character.BYTES;
@@ -82,33 +84,41 @@ abstract class DocValuesUpdate {
   boolean hasValue() {
     return hasValue;
   }
-  
+
   @Override
   public String toString() {
-    return "term=" + term + ",field=" + field + ",value=" + valueToString() + ",docIDUpto=" + docIDUpto;
+    return "term="
+        + term
+        + ",field="
+        + field
+        + ",value="
+        + valueToString()
+        + ",docIDUpTo="
+        + docIDUpTo;
   }
-  
+
   /** An in-place update to a binary DocValues field */
   static final class BinaryDocValuesUpdate extends DocValuesUpdate {
     private final BytesRef value;
 
     /* Size of BytesRef: 2*INT + ARRAY_HEADER + PTR */
-    private static final long RAW_VALUE_SIZE_IN_BYTES = NUM_BYTES_ARRAY_HEADER + 2*Integer.BYTES + NUM_BYTES_OBJECT_REF;
+    private static final long RAW_VALUE_SIZE_IN_BYTES =
+        2L * Integer.BYTES + NUM_BYTES_ARRAY_HEADER + NUM_BYTES_OBJECT_REF;
 
     BinaryDocValuesUpdate(Term term, String field, BytesRef value) {
       this(term, field, value, BufferedUpdates.MAX_INT);
     }
-    
+
     private BinaryDocValuesUpdate(Term term, String field, BytesRef value, int docIDUpTo) {
       super(DocValuesType.BINARY, term, field, docIDUpTo, value != null);
       this.value = value;
     }
 
-    BinaryDocValuesUpdate prepareForApply(int docIDUpto) {
-      if (docIDUpto == this.docIDUpto) {
+    BinaryDocValuesUpdate prepareForApply(int docIDUpTo) {
+      if (docIDUpTo == this.docIDUpTo) {
         return this; // it's a final value so we can safely reuse this instance
       }
-      return new BinaryDocValuesUpdate(term, field, value, docIDUpto);
+      return new BinaryDocValuesUpdate(term, field, value, docIDUpTo);
     }
 
     @Override
@@ -152,20 +162,20 @@ abstract class DocValuesUpdate {
     }
 
     NumericDocValuesUpdate(Term term, String field, Long value) {
-      this(term, field, value != null ? value.longValue() : -1, BufferedUpdates.MAX_INT, value != null);
+      this(term, field, value != null ? value : -1, BufferedUpdates.MAX_INT, value != null);
     }
 
-
-    private NumericDocValuesUpdate(Term term, String field, long value, int docIDUpTo, boolean hasValue) {
+    private NumericDocValuesUpdate(
+        Term term, String field, long value, int docIDUpTo, boolean hasValue) {
       super(DocValuesType.NUMERIC, term, field, docIDUpTo, hasValue);
       this.value = value;
     }
 
-    NumericDocValuesUpdate prepareForApply(int docIDUpto) {
-      if (docIDUpto == this.docIDUpto) {
+    NumericDocValuesUpdate prepareForApply(int docIDUpTo) {
+      if (docIDUpTo == this.docIDUpTo) {
         return this;
       }
-      return new NumericDocValuesUpdate(term, field, value, docIDUpto, hasValue);
+      return new NumericDocValuesUpdate(term, field, value, docIDUpTo, hasValue);
     }
 
     @Override

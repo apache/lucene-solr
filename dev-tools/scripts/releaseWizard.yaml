@@ -16,7 +16,7 @@
 #
 
 # =====================================================================
-# This file contains the definition TODO steps and commands to run for the
+# This file contains the definition TO-DO steps and commands to run for the
 # releaseWizard.py script. It also contains Jinja2 templates for use in those
 # definitions. See documentation for "groups" below the templates.
 # Edit this file with an editor with YAML support, such as Sublime Text
@@ -54,11 +54,6 @@ templates:
           still many manual steps and it is also important that the RM validates
           and QAs the process, validating that the right commands are run, and that
           the output from scripts are correct before proceeding.
-
-    DISCLAIMER: This is an alpha version. The wizard may be buggy and may generate
-                faulty commands, commands that won't work on your OS or with all
-                versions of tooling etc. So please keep the old ReleaseTODO handy
-                for cross-checking for now :)
   vote_logic: |
     {% set passed = plus_binding >= 3 and minus < plus_binding %}
     {% set too_few = plus_binding < 3 %}
@@ -296,8 +291,7 @@ groups:
       You will need these tools:
 
       * Python v3.4 or later, with dependencies listed in requirements.txt
-      * Java 8 in $JAVA8_HOME and Java 11 in $JAVA11_HOME
-      * Apache Ant 1.8 or later. (Known issue with 1.10 and GPG password entry)
+      * Java 11 in $JAVA11_HOME
       * gpg
       * git
       * svn
@@ -375,7 +369,7 @@ groups:
   todos:
   - !Todo
     id: clean_git_checkout
-    title: Do a clean git clone to do the release from.
+    title: Do a clean git clone to do the release from
     description: This eliminates the risk of a dirty checkout
     commands: !Commands
       root_folder: '{{ release_folder }}'
@@ -387,8 +381,8 @@ groups:
         cmd: git clone --progress https://gitbox.apache.org/repos/asf/lucene-solr.git lucene-solr
         logfile: git_clone.log
   - !Todo
-    id: ant_precommit
-    title: Run ant precommit and fix issues
+    id: gradle_precommit
+    title: Run gradle precommit and fix issues
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -396,7 +390,7 @@ groups:
         From the base branch {{ base_branch }} we'll run precommit tests.
         Fix any problems that are found by pushing fixes to the branch
         and then running this task again. This task will always do `git pull`
-        before `ant precommit` so it will catch changes to your branch :)
+        before `{{ gradle_cmd }} precommit` so it will catch changes to your branch :)
       confirm_each_command: false
       commands:
       - !Command
@@ -408,10 +402,12 @@ groups:
         logfile: git_clean.log
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         stdout: true
       - !Command
-        cmd: ant clean precommit
+        cmd: "{{ gradle_cmd }} localSettings"
+      - !Command
+        cmd: "{{ gradle_cmd }} clean check -x test"
   - !Todo
     id: create_stable_branch
     title: Create a new stable branch, off from master
@@ -427,7 +423,7 @@ groups:
         cmd: git checkout master
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ stable_branch }}
@@ -456,7 +452,7 @@ groups:
         cmd: git checkout {{ stable_branch }}
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: git ls-remote --exit-code --heads origin {{ release_branch }}
@@ -672,27 +668,23 @@ groups:
         cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
-        cmd: ant javadocs
-        cwd: lucene
-      - !Command
-        cmd: ant javadocs
-        cwd: solr
-    post_description: Check that both tests pass. If they fail, commit fixes for the failures before proceeding.
+        cmd: "{{ gradle_cmd }} documentation"
+    post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
-    id: clear_ivy_cache
-    title: Clear the ivy cache
+    id: clear_gradle_cache
+    title: Clear the gradle cache
     description: |
-        It is recommended to clean your Ivy cache before building the artifacts.
-        This ensures that all Ivy dependencies are freshly downloaded,
+        It is recommended to clean your Gradle cache before building the artifacts.
+        This ensures that all Gradle dependencies are freshly downloaded,
         so we emulate a user that never used the Lucene build system before.
     commands: !Commands
       root_folder: '{{ home }}'
-      remove_files: .ivy2/cache_bak
+      remove_files: .gradle/caches/modules-2/files-2.1_bak
       commands_text: These commands will help you rename the folder so you can get it back later if you wish
       commands:
       - !Command
-        cmd: "{{ rename_cmd }} cache cache_bak"
-        cwd: .ivy2
+        cmd: "{{ rename_cmd }} files-2.1 files-2.1_bak"
+        cwd: .gradle/caches/modules-2
         stdout: true
   - !Todo
     id: build_rc
@@ -728,7 +720,7 @@ groups:
         logfile: git_clean.log
         tee: true
       - !Command
-        cmd: git pull
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}
@@ -1059,7 +1051,7 @@ groups:
         logfile: checkout-release-tag.log
         tee: true
       - !Command
-        cmd: ant documentation -Dversion={{ release_version }}
+        cmd: "{{ gradle_cmd }} documentation -Dversion.release={{ release_version }}"
         comment: Build documentation
       - !Command
         cmd: svn -m "Add docs, changes and javadocs for Lucene {{ release_version }}"  import {{ git_checkout_folder }}/lucene/build/docs  https://svn.apache.org/repos/infra/websites/production/lucene/content/core/{{ version }}
@@ -1239,7 +1231,7 @@ groups:
       root_folder: '{{ git_website_folder }}'
       commands:
         - !Command
-          cmd: git checkout production && git pull
+          cmd: git checkout production && git pull --ff-only
           stdout: true
         - !Command
           cmd: git merge master
@@ -1273,7 +1265,7 @@ groups:
       commands_text: Edit DOAP files
       commands:
       - !Command
-        cmd: git checkout master && git pull
+        cmd: git checkout master && git pull --ff-only
         stdout: true
         comment: Goto master branch
       - !Command
@@ -1294,7 +1286,7 @@ groups:
         stdout: true
         comment: Push the master branch
       - !Command
-        cmd: "git checkout {{ stable_branch }} && git pull"
+        cmd: "git checkout {{ stable_branch }} && git pull --ff-only"
         stdout: true
         comment: Checkout the stable branch
       - !Command
@@ -1312,7 +1304,7 @@ groups:
         stdout: true
         comment: Push the stable branch
       - !Command
-        cmd: "git checkout {{ release_branch }} && git pull"
+        cmd: "git checkout {{ release_branch }} && git pull --ff-only"
         stdout: true
         comment: Checkout the release branch
       - !Command
@@ -1388,6 +1380,16 @@ groups:
     links:
     - https://en.wikipedia.org/wiki/Apache_Lucene
     - https://en.wikipedia.org/wiki/Apache_Solr
+  - !Todo
+    id: add_to_apache_reporter
+    title: Add the new version to the Apache Release Reporter
+    description: |
+      Go to the Apache Release Reporter and add a release for lucene.
+      Fill in the same date that you used for the release in previous steps.
+      Do not use a product name prefix for the version, as this is the main release of the lucene PMC.
+      Just use the version of this release: {{ release_version }}
+    links:
+      - https://reporter.apache.org/addrelease.html?lucene
 - !TodoGroup
   id: post_release
   title: Tasks to do after release.
@@ -1406,7 +1408,7 @@ groups:
       confirm_each_command: true
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to master branch
         logfile: checkout-master.log
       - !Command
@@ -1420,7 +1422,7 @@ groups:
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-master.log
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         logfile: checkout-stable.log
         comment: Now the same for the stable branch
       - !Command
@@ -1459,7 +1461,7 @@ groups:
         tee: true
         comment: Find version regexes
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to master branch
         logfile: checkout-master.log
       - !Command
@@ -1474,7 +1476,7 @@ groups:
         cmd: git add -u .  && git commit -m "Sync CHANGES for {{ release_version }}"  && git push
         logfile: commit-master.log
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         comment: Go to stable branch
         logfile: checkout-stable.log
       - !Command
@@ -1540,11 +1542,11 @@ groups:
       commands_text: Run these commands to add back-compat indices to release branch
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ release_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/
         logfile: add-backcompat.log
@@ -1569,11 +1571,11 @@ groups:
       commands_text: Run these commands to add back-compat indices to {{ stable_branch }}
       commands:
       - !Command
-        cmd: git checkout {{ stable_branch }} && git pull && git clean -df && git checkout -- .
+        cmd: git checkout {{ stable_branch }} && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py --no-cleanup  --temp-dir {{ temp_dir }} {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
@@ -1600,11 +1602,11 @@ groups:
       commands_text: Run these commands to add back-compat indices to master
       commands:
       - !Command
-        cmd: git checkout master && git pull && git clean -df && git checkout -- .
+        cmd: git checkout master && git pull --ff-only && git clean -df && git checkout -- .
         tee: true
         logfile: checkout.log
       - !Command
-        cmd: ant clean
+        cmd: "{{ gradle_cmd }} clean"
       - !Command
         cmd: python3 -u dev-tools/scripts/addBackcompatIndexes.py  --temp-dir {{ temp_dir }}  {{ release_version }}  && git add lucene/backward-codecs/src/test/org/apache/lucene/index/  
         logfile: add-backcompat.log
@@ -1742,14 +1744,3 @@ groups:
         cmd: |
           svn rm -m "Stop mirroring old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/lucene/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-lucene.log
-  - !Todo
-    id: update_wiki
-    title: Update old WIKI
-    description: |
-      The Solr WIKI has a page for every version which is often linked to from WIKI pages to 
-      indicate differences between versions, example: http://wiki.apache.org/solr/Solr4.3. 
-
-      Do the following:
-
-      . Update the page for the released version with release date and link to release statement
-      . Create a new placeholder page for the "next" version, if it does not exist

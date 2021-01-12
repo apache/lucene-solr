@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Indonesian.
- */
+/** Analyzer for Indonesian. */
 package org.apache.lucene.analysis.id;

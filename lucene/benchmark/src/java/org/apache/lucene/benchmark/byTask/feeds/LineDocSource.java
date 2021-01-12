@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,90 +25,101 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Properties;
-
 import org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A {@link ContentSource} reading one line at a time as a
- * {@link org.apache.lucene.document.Document} from a single file. This saves IO
- * cost (over DirContentSource) of recursing through a directory and opening a
- * new file for every document.<br>
- * The expected format of each line is (arguments are separated by &lt;TAB&gt;):
- * <i>title, date, body</i>. If a line is read in a different format, a
- * {@link RuntimeException} will be thrown. In general, you should use this
- * content source for files that were created with {@link WriteLineDocTask}.<br>
+ * A {@link ContentSource} reading one line at a time as a {@link
+ * org.apache.lucene.document.Document} from a single file. This saves IO cost (over
+ * DirContentSource) of recursing through a directory and opening a new file for every document.<br>
+ * The expected format of each line is (arguments are separated by &lt;TAB&gt;): <i>title, date,
+ * body</i>. If a line is read in a different format, a {@link RuntimeException} will be thrown. In
+ * general, you should use this content source for files that were created with {@link
+ * WriteLineDocTask}.<br>
  * <br>
  * Config properties:
+ *
  * <ul>
- * <li>docs.file=&lt;path to the file&gt;
- * <li>content.source.encoding - default to UTF-8.
- * <li>line.parser - default to {@link HeaderLineParser} if a header line exists which differs 
- *     from {@link WriteLineDocTask#DEFAULT_FIELDS} and to {@link SimpleLineParser} otherwise.
+ *   <li>docs.file=&lt;path to the file&gt;
+ *   <li>content.source.encoding - default to UTF-8.
+ *   <li>line.parser - default to {@link HeaderLineParser} if a header line exists which differs
+ *       from {@link WriteLineDocTask#DEFAULT_FIELDS} and to {@link SimpleLineParser} otherwise.
  * </ul>
  */
 public class LineDocSource extends ContentSource {
 
   /** Reader of a single input line into {@link DocData}. */
-  public static abstract class LineParser {
+  public abstract static class LineParser {
     protected final String[] header;
-    /** Construct with the header 
+    /**
+     * Construct with the header
+     *
      * @param header header line found in the input file, or null if none
      */
     public LineParser(String[] header) {
-      this.header = header; 
+      this.header = header;
     }
     /** parse an input line and fill doc data appropriately */
     public abstract void parseLine(DocData docData, String line);
   }
-  
-  /** 
-   * {@link LineParser} which ignores the header passed to its constructor
-   * and assumes simply that field names and their order are the same 
-   * as in {@link WriteLineDocTask#DEFAULT_FIELDS} 
+
+  /**
+   * {@link LineParser} which ignores the header passed to its constructor and assumes simply that
+   * field names and their order are the same as in {@link WriteLineDocTask#DEFAULT_FIELDS}
    */
   public static class SimpleLineParser extends LineParser {
     public SimpleLineParser(String[] header) {
       super(header);
     }
+
     @Override
     public void parseLine(DocData docData, String line) {
       int k1 = 0;
       int k2 = line.indexOf(WriteLineDocTask.SEP, k1);
-      if (k2<0) {
-        throw new RuntimeException("line: [" + line + "] is in an invalid format (missing: separator title::date)!");
+      if (k2 < 0) {
+        throw new RuntimeException(
+            "line: [" + line + "] is in an invalid format (missing: separator title::date)!");
       }
-      docData.setTitle(line.substring(k1,k2));
-      k1 = k2+1;
+      docData.setTitle(line.substring(k1, k2));
+      k1 = k2 + 1;
       k2 = line.indexOf(WriteLineDocTask.SEP, k1);
-      if (k2<0) {
-        throw new RuntimeException("line: [" + line + "] is in an invalid format (missing: separator date::body)!");
+      if (k2 < 0) {
+        throw new RuntimeException(
+            "line: [" + line + "] is in an invalid format (missing: separator date::body)!");
       }
-      docData.setDate(line.substring(k1,k2));
-      k1 = k2+1;
+      docData.setDate(line.substring(k1, k2));
+      k1 = k2 + 1;
       k2 = line.indexOf(WriteLineDocTask.SEP, k1);
-      if (k2>=0) {
-        throw new RuntimeException("line: [" + line + "] is in an invalid format (too many separators)!");
+      if (k2 >= 0) {
+        throw new RuntimeException(
+            "line: [" + line + "] is in an invalid format (too many separators)!");
       }
       // last one
       docData.setBody(line.substring(k1));
     }
   }
-  
-  /** 
-   * {@link LineParser} which sets field names and order by 
-   * the header - any header - of the lines file.
-   * It is less efficient than {@link SimpleLineParser} but more powerful.
+
+  /**
+   * {@link LineParser} which sets field names and order by the header - any header - of the lines
+   * file. It is less efficient than {@link SimpleLineParser} but more powerful.
    */
   public static class HeaderLineParser extends LineParser {
-    private enum FieldName { NAME , TITLE , DATE , BODY, PROP } 
+    private enum FieldName {
+      NAME,
+      TITLE,
+      DATE,
+      BODY,
+      PROP
+    }
+
     private final FieldName[] posToF;
+
     public HeaderLineParser(String[] header) {
       super(header);
       posToF = new FieldName[header.length];
-      for (int i=0; i<header.length; i++) {
+      for (int i = 0; i < header.length; i++) {
         String f = header[i];
         if (DocMaker.NAME_FIELD.equals(f)) {
           posToF[i] = FieldName.NAME;
@@ -124,44 +134,58 @@ public class LineDocSource extends ContentSource {
         }
       }
     }
-    
+
     @Override
     public void parseLine(DocData docData, String line) {
       int n = 0;
       int k1 = 0;
       int k2;
       while ((k2 = line.indexOf(WriteLineDocTask.SEP, k1)) >= 0) {
-        if (n>=header.length) {
-          throw new RuntimeException("input line has invalid format: "+(n+1)+" fields instead of "+header.length+" :: [" + line + "]");
+        if (n >= header.length) {
+          throw new RuntimeException(
+              "input line has invalid format: "
+                  + (n + 1)
+                  + " fields instead of "
+                  + header.length
+                  + " :: ["
+                  + line
+                  + "]");
         }
-        setDocDataField(docData, n, line.substring(k1,k2));
+        setDocDataField(docData, n, line.substring(k1, k2));
         ++n;
         k1 = k2 + 1;
       }
-      if (n!=header.length-1) {
-        throw new RuntimeException("input line has invalid format: "+(n+1)+" fields instead of "+header.length+" :: [" + line + "]");
+      if (n != header.length - 1) {
+        throw new RuntimeException(
+            "input line has invalid format: "
+                + (n + 1)
+                + " fields instead of "
+                + header.length
+                + " :: ["
+                + line
+                + "]");
       }
       // last one
-      setDocDataField(docData, n, line.substring(k1)); 
+      setDocDataField(docData, n, line.substring(k1));
     }
 
     private void setDocDataField(DocData docData, int position, String text) {
-      switch(posToF[position]) {
-        case NAME: 
+      switch (posToF[position]) {
+        case NAME:
           docData.setName(text);
           break;
-        case TITLE: 
+        case TITLE:
           docData.setTitle(text);
           break;
-        case DATE: 
+        case DATE:
           docData.setDate(text);
           break;
-        case BODY: 
+        case BODY:
           docData.setBody(text);
           break;
         case PROP:
           Properties p = docData.getProps();
-          if (p==null) {
+          if (p == null) {
             p = new Properties();
             docData.setProps(p);
           }
@@ -170,7 +194,7 @@ public class LineDocSource extends ContentSource {
       }
     }
   }
-  
+
   private Path file;
   private BufferedReader reader;
   private int readCount;
@@ -200,13 +224,13 @@ public class LineDocSource extends ContentSource {
       reader = null;
     }
   }
-  
+
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     final String line;
     final int myID;
-    
-    synchronized(this) {
+
+    synchronized (this) {
       line = reader.readLine();
       if (line == null) {
         if (!forever) {
@@ -223,9 +247,9 @@ public class LineDocSource extends ContentSource {
         }
       }
       // increment IDS only once...
-      myID = readCount++; 
+      myID = readCount++;
     }
-    
+
     // The date String was written in the format of DateTools.dateToString.
     docData.clear();
     docData.setID(myID);
@@ -238,26 +262,27 @@ public class LineDocSource extends ContentSource {
     String headIndicator = WriteLineDocTask.FIELDS_HEADER_INDICATOR + WriteLineDocTask.SEP;
 
     if (line.startsWith(headIndicator)) {
-      header = line.substring(headIndicator.length()).split(Character.toString(WriteLineDocTask.SEP));
+      header =
+          line.substring(headIndicator.length()).split(Character.toString(WriteLineDocTask.SEP));
       skipHeaderLine = true; // mark to skip the header line when input file is reopened
     } else {
       header = WriteLineDocTask.DEFAULT_FIELDS;
     }
-    
+
     // if a specific DocDataLineReader was configured, must respect it
     String docDataLineReaderClassName = getConfig().get("line.parser", null);
-    if (docDataLineReaderClassName!=null) {
+    if (docDataLineReaderClassName != null) {
       try {
-        final Class<? extends LineParser> clazz = 
-          Class.forName(docDataLineReaderClassName).asSubclass(LineParser.class);
+        final Class<? extends LineParser> clazz =
+            Class.forName(docDataLineReaderClassName).asSubclass(LineParser.class);
         Constructor<? extends LineParser> cnstr = clazz.getConstructor(String[].class);
-        return cnstr.newInstance((Object)header);
+        return cnstr.newInstance((Object) header);
       } catch (Exception e) {
-        throw new RuntimeException("Failed to instantiate "+docDataLineReaderClassName, e);
+        throw new RuntimeException("Failed to instantiate " + docDataLineReaderClassName, e);
       }
     }
 
-    // if this the simple case,   
+    // if this the simple case,
     if (Arrays.deepEquals(header, WriteLineDocTask.DEFAULT_FIELDS)) {
       return new SimpleLineParser(header);
     }
@@ -269,7 +294,7 @@ public class LineDocSource extends ContentSource {
     super.resetInputs();
     openFile();
   }
-  
+
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
@@ -282,5 +307,4 @@ public class LineDocSource extends ContentSource {
       encoding = IOUtils.UTF_8;
     }
   }
-
 }

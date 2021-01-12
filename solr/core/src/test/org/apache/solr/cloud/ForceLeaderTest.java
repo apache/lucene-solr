@@ -194,7 +194,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     // indexing during a partition
     log.info("Sending a doc during the network partition...");
     JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(leader));
-    sendDoc(2, null, leaderJetty);
+    sendDoc(2, leaderJetty);
     
     for (Replica replica : notLeaders) {
       waitForState(collectionName, replica.getName(), State.DOWN, 60000);
@@ -292,4 +292,3 @@ public class ForceLeaderTest extends HttpPartitionTest {
     return numActiveReplicas;
   }
 }
-

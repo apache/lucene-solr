@@ -19,7 +19,6 @@ package org.apache.lucene.monitor;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
@@ -41,7 +40,6 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
-
 public class TestHighlightingMatcher extends MonitorTestBase {
 
   private static final Analyzer WHITESPACE = new WhitespaceAnalyzer();
@@ -58,8 +56,8 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       MonitorQuery mq = new MonitorQuery("query1", parse("test"));
       monitor.register(mq);
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("this is a test document"),
-          HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("this is a test document"), HighlightsMatch.MATCHER);
       assertEquals(1, matches.getMatchCount());
       HighlightsMatch match = matches.matches("query1");
       assertTrue(match.getHits(FIELD).contains(new HighlightsMatch.Hit(3, 10, 3, 14)));
@@ -72,13 +70,12 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       MonitorQuery mq = new MonitorQuery("query1", parse("\"test document\""));
       monitor.register(mq);
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("this is a test document"),
-          HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("this is a test document"), HighlightsMatch.MATCHER);
       assertEquals(1, matches.getMatchCount());
       HighlightsMatch m = matches.matches("query1");
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(3, 10, 4, 23)));
     }
-
   }
 
   public void testToString() {
@@ -88,7 +85,9 @@ public class TestHighlightingMatcher extends MonitorTestBase {
     match.addHit("field", 0, 1, -1, -1);
     match.addHit("afield", 0, 1, 0, 4);
 
-    assertEquals("Match(query=1){hits={afield=[0(0)->1(4)], field=[0(-1)->1(-1), 2(-1)->3(-1)]}}", match.toString());
+    assertEquals(
+        "Match(query=1){hits={afield=[0(0)->1(4)], field=[0(-1)->1(-1), 2(-1)->3(-1)]}}",
+        match.toString());
   }
 
   public void testMultiFieldQueryMatches() throws IOException {
@@ -109,19 +108,20 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m.getHits("field1").contains(new HighlightsMatch.Hit(3, 10, 3, 14)));
       assertTrue(m.getHits("field2").contains(new HighlightsMatch.Hit(5, 26, 5, 30)));
     }
-
   }
 
   public void testQueryErrors() throws IOException {
 
     try (Monitor monitor = new Monitor(ANALYZER, Presearcher.NO_FILTERING)) {
 
-      monitor.register(new MonitorQuery("1", parse("test")),
+      monitor.register(
+          new MonitorQuery("1", parse("test")),
           new MonitorQuery("2", new ThrowOnRewriteQuery()),
           new MonitorQuery("3", parse("document")),
           new MonitorQuery("4", parse("foo")));
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("this is a test document"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("this is a test document"), HighlightsMatch.MATCHER);
       assertEquals(4, matches.getQueriesRun());
       assertEquals(2, matches.getMatchCount());
       assertEquals(1, matches.getErrors().size());
@@ -134,7 +134,8 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
       monitor.register(new MonitorQuery("1", new RegexpQuery(new Term(FIELD, "he.*"))));
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("hello world"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("hello world"), HighlightsMatch.MATCHER);
       assertEquals(1, matches.getQueriesRun());
       assertEquals(1, matches.getMatchCount());
       assertEquals(1, matches.matches("1").getHitCount());
@@ -143,76 +144,79 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
   public void testWildcardCombinations() throws Exception {
 
-    final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
-        .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "term3")), BooleanClause.Occur.MUST_NOT)
-        .build();
+    final BooleanQuery bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
+            .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term(FIELD, "term3")), BooleanClause.Occur.MUST_NOT)
+            .build();
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", bq));
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("term1 term22 term4"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("term1 term22 term4"), HighlightsMatch.MATCHER);
       HighlightsMatch m = matches.matches("1");
       assertNotNull(m);
       assertEquals(2, m.getHitCount());
     }
-
   }
 
   public void testDisjunctionMaxQuery() throws IOException {
-    final DisjunctionMaxQuery query = new DisjunctionMaxQuery(Arrays.asList(
-        new TermQuery(new Term(FIELD, "term1")), new PrefixQuery(new Term(FIELD, "term2"))
-    ), 1.0f);
+    final DisjunctionMaxQuery query =
+        new DisjunctionMaxQuery(
+            Arrays.asList(
+                new TermQuery(new Term(FIELD, "term1")), new PrefixQuery(new Term(FIELD, "term2"))),
+            1.0f);
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", query));
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("term1 term2 term3"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("term1 term2 term3"), HighlightsMatch.MATCHER);
       HighlightsMatch m = matches.matches("1");
       assertNotNull(m);
       assertEquals(2, m.getHitCount());
     }
-
   }
 
   public void testIdenticalMatches() throws Exception {
 
-    final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.SHOULD)
-        .build();
+    final BooleanQuery bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term(FIELD, "term1")), BooleanClause.Occur.SHOULD)
+            .build();
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(new MonitorQuery("1", bq));
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("term1 term2"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("term1 term2"), HighlightsMatch.MATCHER);
       HighlightsMatch m = matches.matches("1");
       assertNotNull(m);
       assertEquals(1, m.getHitCount());
     }
-
   }
 
   public void testWildcardBooleanRewrites() throws Exception {
 
     final Query wc = new PrefixQuery(new Term(FIELD, "term1"));
 
-    final Query wrapper = new BooleanQuery.Builder()
-        .add(wc, BooleanClause.Occur.MUST)
-        .build();
+    final Query wrapper = new BooleanQuery.Builder().add(wc, BooleanClause.Occur.MUST).build();
 
-    final Query wrapper2 = new BooleanQuery.Builder()
-        .add(wrapper, BooleanClause.Occur.MUST)
-        .build();
+    final Query wrapper2 =
+        new BooleanQuery.Builder().add(wrapper, BooleanClause.Occur.MUST).build();
 
-    final BooleanQuery bq = new BooleanQuery.Builder()
-        .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
-        .add(wrapper2, BooleanClause.Occur.MUST_NOT)
-        .build();
+    final BooleanQuery bq =
+        new BooleanQuery.Builder()
+            .add(new PrefixQuery(new Term(FIELD, "term2")), BooleanClause.Occur.MUST)
+            .add(wrapper2, BooleanClause.Occur.MUST_NOT)
+            .build();
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
 
       monitor.register(new MonitorQuery("1", bq));
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("term2 term"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("term2 term"), HighlightsMatch.MATCHER);
       HighlightsMatch m = matches.matches("1");
       assertNotNull(m);
       assertEquals(1, m.getHitCount());
@@ -225,16 +229,18 @@ public class TestHighlightingMatcher extends MonitorTestBase {
   }
 
   public void testWildcardProximityRewrites() throws Exception {
-    final SpanNearQuery snq = SpanNearQuery.newOrderedNearQuery(FIELD)
-        .addClause(new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term(FIELD, "term*"))))
-        .addClause(new SpanTermQuery(new Term(FIELD, "foo")))
-        .build();
+    final SpanNearQuery snq =
+        SpanNearQuery.newOrderedNearQuery(FIELD)
+            .addClause(new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term(FIELD, "term*"))))
+            .addClause(new SpanTermQuery(new Term(FIELD, "foo")))
+            .build();
 
     try (Monitor monitor = newMonitor()) {
 
       monitor.register(new MonitorQuery("1", snq));
 
-      MatchingQueries<HighlightsMatch> matches = monitor.match(buildDoc("term1 foo"), HighlightsMatch.MATCHER);
+      MatchingQueries<HighlightsMatch> matches =
+          monitor.match(buildDoc("term1 foo"), HighlightsMatch.MATCHER);
       HighlightsMatch m = matches.matches("1");
       assertNotNull(m);
       assertEquals(2, m.getHitCount());
@@ -243,18 +249,22 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
   public void testDisjunctionWithOrderedNearSpans() throws Exception {
 
-    final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newOrderedNearQuery(FIELD)
-            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
-            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
-            .setSlop(1)
-            .build(), BooleanClause.Occur.SHOULD)
-        .build();
-    final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
-        .add(bq, BooleanClause.Occur.MUST)
-        .build();
+    final Query bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+            .add(
+                SpanNearQuery.newOrderedNearQuery(FIELD)
+                    .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+                    .addClause(new SpanTermQuery(new Term(FIELD, "c")))
+                    .setSlop(1)
+                    .build(),
+                BooleanClause.Occur.SHOULD)
+            .build();
+    final Query parent =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
+            .add(bq, BooleanClause.Occur.MUST)
+            .build();
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(new MonitorQuery("1", parent));
@@ -266,23 +276,26 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertNotNull(m);
       assertEquals(1, m.getHitCount());
     }
-
   }
 
   public void testDisjunctionWithUnorderedNearSpans() throws Exception {
 
-    final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newUnorderedNearQuery(FIELD)
-            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
-            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
-            .setSlop(1)
-            .build(), BooleanClause.Occur.SHOULD)
-        .build();
-    final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
-        .add(bq, BooleanClause.Occur.MUST)
-        .build();
+    final Query bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+            .add(
+                SpanNearQuery.newUnorderedNearQuery(FIELD)
+                    .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+                    .addClause(new SpanTermQuery(new Term(FIELD, "c")))
+                    .setSlop(1)
+                    .build(),
+                BooleanClause.Occur.SHOULD)
+            .build();
+    final Query parent =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
+            .add(bq, BooleanClause.Occur.MUST)
+            .build();
 
     try (Monitor monitor = new Monitor(ANALYZER)) {
       monitor.register(new MonitorQuery("1", parent));
@@ -294,7 +307,6 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertNotNull(m);
       assertEquals(1, m.getHitCount());
     }
-
   }
 
   public void testEquality() {
@@ -319,22 +331,23 @@ public class TestHighlightingMatcher extends MonitorTestBase {
 
   public void testMutliValuedFieldWithNonDefaultGaps() throws IOException {
 
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      public int getPositionIncrementGap(String fieldName) {
-        return 1000;
-      }
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          public int getPositionIncrementGap(String fieldName) {
+            return 1000;
+          }
 
-      @Override
-      public int getOffsetGap(String fieldName) {
-        return 2000;
-      }
+          @Override
+          public int getOffsetGap(String fieldName) {
+            return 2000;
+          }
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new WhitespaceTokenizer());
-      }
-    };
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new WhitespaceTokenizer());
+          }
+        };
 
     MonitorQuery mq = new MonitorQuery("query", parse(FIELD + ":\"hello world\"~5"));
     try (Monitor monitor = newMonitor(analyzer)) {
@@ -368,23 +381,26 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m3.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 1, 11)));
       assertTrue(m3.getHits(FIELD).contains(new HighlightsMatch.Hit(1002, 2011, 1004, 2030)));
     }
-
   }
 
   public void testDisjunctionWithOrderedNearMatch() throws Exception {
 
-    final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
-        .add(SpanNearQuery.newOrderedNearQuery(FIELD)
-            .addClause(new SpanTermQuery(new Term(FIELD, "b")))
-            .addClause(new SpanTermQuery(new Term(FIELD, "c")))
-            .setSlop(1)
-            .build(), BooleanClause.Occur.SHOULD)
-        .build();
-    final Query parent = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
-        .add(bq, BooleanClause.Occur.MUST)
-        .build();
+    final Query bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.SHOULD)
+            .add(
+                SpanNearQuery.newOrderedNearQuery(FIELD)
+                    .addClause(new SpanTermQuery(new Term(FIELD, "b")))
+                    .addClause(new SpanTermQuery(new Term(FIELD, "c")))
+                    .setSlop(1)
+                    .build(),
+                BooleanClause.Occur.SHOULD)
+            .build();
+    final Query parent =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
+            .add(bq, BooleanClause.Occur.MUST)
+            .build();
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parent));
@@ -400,44 +416,48 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(2, 4, 2, 5)));
     }
-
   }
 
   public void testUnorderedNearWithinOrderedNear() throws Exception {
 
-    final SpanQuery spanPhrase = SpanNearQuery.newOrderedNearQuery(FIELD)
-        .addClause(new SpanTermQuery(new Term(FIELD, "time")))
-        .addClause(new SpanTermQuery(new Term(FIELD, "men")))
-        .setSlop(1)
-        .build();
+    final SpanQuery spanPhrase =
+        SpanNearQuery.newOrderedNearQuery(FIELD)
+            .addClause(new SpanTermQuery(new Term(FIELD, "time")))
+            .addClause(new SpanTermQuery(new Term(FIELD, "men")))
+            .setSlop(1)
+            .build();
 
-    final SpanQuery unorderedNear = SpanNearQuery.newUnorderedNearQuery(FIELD)
-        .addClause(spanPhrase)
-        .addClause(new SpanTermQuery(new Term(FIELD, "all")))
-        .setSlop(5)
-        .build();
+    final SpanQuery unorderedNear =
+        SpanNearQuery.newUnorderedNearQuery(FIELD)
+            .addClause(spanPhrase)
+            .addClause(new SpanTermQuery(new Term(FIELD, "all")))
+            .setSlop(5)
+            .build();
 
-    final SpanQuery orderedNear = SpanNearQuery.newOrderedNearQuery(FIELD)
-        .addClause(new SpanTermQuery(new Term(FIELD, "the")))
-        .addClause(unorderedNear)
-        .setSlop(10)
-        .build();
+    final SpanQuery orderedNear =
+        SpanNearQuery.newOrderedNearQuery(FIELD)
+            .addClause(new SpanTermQuery(new Term(FIELD, "the")))
+            .addClause(unorderedNear)
+            .setSlop(10)
+            .build();
 
-    final Query innerConjunct = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "is")), BooleanClause.Occur.MUST)
-        .add(orderedNear, BooleanClause.Occur.MUST)
-        .build();
+    final Query innerConjunct =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "is")), BooleanClause.Occur.MUST)
+            .add(orderedNear, BooleanClause.Occur.MUST)
+            .build();
 
-    final Query disjunct = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "now")), BooleanClause.Occur.SHOULD)
-        .add(innerConjunct, BooleanClause.Occur.SHOULD)
-        .build();
+    final Query disjunct =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "now")), BooleanClause.Occur.SHOULD)
+            .add(innerConjunct, BooleanClause.Occur.SHOULD)
+            .build();
 
-    final Query outerConjunct = new BooleanQuery.Builder()
-        .add(disjunct, BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "good")), BooleanClause.Occur.MUST)
-        .build();
-
+    final Query outerConjunct =
+        new BooleanQuery.Builder()
+            .add(disjunct, BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term(FIELD, "good")), BooleanClause.Occur.MUST)
+            .build();
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", outerConjunct));
@@ -449,23 +469,24 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 3)));
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(6, 24, 6, 28)));
     }
-
   }
 
   public void testMinShouldMatchQuery() throws Exception {
 
-    final Query minq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "x")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term(FIELD, "y")), BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term(FIELD, "z")), BooleanClause.Occur.SHOULD)
-        .setMinimumNumberShouldMatch(2)
-        .build();
+    final Query minq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "x")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term(FIELD, "y")), BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term(FIELD, "z")), BooleanClause.Occur.SHOULD)
+            .setMinimumNumberShouldMatch(2)
+            .build();
 
-    final Query bq = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
-        .add(new TermQuery(new Term(FIELD, "b")), BooleanClause.Occur.MUST)
-        .add(minq, BooleanClause.Occur.SHOULD)
-        .build();
+    final Query bq =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term(FIELD, "a")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term(FIELD, "b")), BooleanClause.Occur.MUST)
+            .add(minq, BooleanClause.Occur.SHOULD)
+            .build();
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", bq));
@@ -478,7 +499,6 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 1)));
       assertTrue(m.getHits(FIELD).contains(new HighlightsMatch.Hit(1, 2, 1, 3)));
     }
-
   }
 
   public void testComplexPhraseQueryParser() throws Exception {
@@ -494,7 +514,6 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertEquals(2, m.getHitCount());
       assertTrue(m.getFields().contains(FIELD));
     }
-
   }
 
   public void testHighlightBatches() throws Exception {
@@ -513,7 +532,8 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       Document doc3 = new Document();
       doc3.add(newTextField(FIELD, "biology text", Field.Store.NO));
 
-      MultiMatchingQueries<HighlightsMatch> matches = monitor.match(new Document[]{doc1, doc2, doc3}, HighlightsMatch.MATCHER);
+      MultiMatchingQueries<HighlightsMatch> matches =
+          monitor.match(new Document[] {doc1, doc2, doc3}, HighlightsMatch.MATCHER);
       assertEquals(2, matches.getMatchCount(0));
       assertEquals(0, matches.getMatchCount(1));
       assertEquals(1, matches.getMatchCount(2));
@@ -523,5 +543,4 @@ public class TestHighlightingMatcher extends MonitorTestBase {
       assertTrue(m2.getHits(FIELD).contains(new HighlightsMatch.Hit(0, 0, 0, 7)));
     }
   }
-
 }

@@ -97,6 +97,10 @@ public abstract class TransientSolrCoreCache {
   // method and return the current core descriptor.
   public abstract CoreDescriptor getTransientDescriptor(String name);
 
+  /**
+   * Gets the {@link CoreDescriptor} for all transient cores (loaded and unloaded).
+   */
+  public abstract Collection<CoreDescriptor> getTransientDescriptors();
 
   // Remove the core descriptor from your list of transient descriptors.
   public abstract CoreDescriptor removeTransientDescriptor(String name);

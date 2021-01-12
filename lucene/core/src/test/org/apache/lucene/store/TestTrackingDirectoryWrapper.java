@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -27,7 +26,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
   protected Directory getDirectory(Path path) throws IOException {
     return new TrackingDirectoryWrapper(new ByteBuffersDirectory());
   }
-  
+
   public void testTrackEmpty() throws IOException {
     TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     assertEquals(Collections.emptySet(), dir.getCreatedFiles());
@@ -38,7 +37,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
     dir.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), dir.getCreatedFiles());
   }
-  
+
   public void testTrackDelete() throws IOException {
     TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
@@ -46,7 +45,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
     dir.deleteFile("foo");
     assertEquals(Collections.emptySet(), dir.getCreatedFiles());
   }
-  
+
   public void testTrackRename() throws IOException {
     TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
@@ -54,7 +53,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
     dir.rename("foo", "bar");
     assertEquals(asSet("bar"), dir.getCreatedFiles());
   }
-  
+
   public void testTrackCopyFrom() throws IOException {
     TrackingDirectoryWrapper source = new TrackingDirectoryWrapper(new ByteBuffersDirectory());
     TrackingDirectoryWrapper dest = new TrackingDirectoryWrapper(new ByteBuffersDirectory());

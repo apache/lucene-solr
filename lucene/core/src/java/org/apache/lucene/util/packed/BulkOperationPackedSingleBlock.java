@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.util.packed;
 
-
-/**
- * Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED_SINGLE_BLOCK}.
- */
+/** Non-specialized {@link BulkOperation} for {@link PackedInts.Format#PACKED_SINGLE_BLOCK}. */
 final class BulkOperationPackedSingleBlock extends BulkOperation {
 
   private static final int BLOCK_COUNT = 1;
@@ -100,8 +97,8 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, long[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
       valuesOffset = decode(block, values, valuesOffset);
@@ -109,8 +106,8 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, long[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, long[] values, int valuesOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = readLong(blocks, blocksOffset);
       blocksOffset += 8;
@@ -119,10 +116,11 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void decode(long[] blocks, int blocksOffset, int[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      long[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     if (bitsPerValue > 32) {
-      throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
+      throw new UnsupportedOperationException(
+          "Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
     for (int i = 0; i < iterations; ++i) {
       final long block = blocks[blocksOffset++];
@@ -131,10 +129,11 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void decode(byte[] blocks, int blocksOffset, int[] values,
-      int valuesOffset, int iterations) {
+  public void decode(
+      byte[] blocks, int blocksOffset, int[] values, int valuesOffset, int iterations) {
     if (bitsPerValue > 32) {
-      throw new UnsupportedOperationException("Cannot decode " + bitsPerValue + "-bits values into an int[]");
+      throw new UnsupportedOperationException(
+          "Cannot decode " + bitsPerValue + "-bits values into an int[]");
     }
     for (int i = 0; i < iterations; ++i) {
       final long block = readLong(blocks, blocksOffset);
@@ -144,8 +143,8 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void encode(long[] values, int valuesOffset, long[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      long[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       blocks[blocksOffset++] = encode(values, valuesOffset);
       valuesOffset += valueCount;
@@ -153,8 +152,8 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void encode(int[] values, int valuesOffset, long[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      int[] values, int valuesOffset, long[] blocks, int blocksOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       blocks[blocksOffset++] = encode(values, valuesOffset);
       valuesOffset += valueCount;
@@ -162,7 +161,8 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void encode(long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
+  public void encode(
+      long[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = encode(values, valuesOffset);
       valuesOffset += valueCount;
@@ -171,13 +171,12 @@ final class BulkOperationPackedSingleBlock extends BulkOperation {
   }
 
   @Override
-  public void encode(int[] values, int valuesOffset, byte[] blocks,
-      int blocksOffset, int iterations) {
+  public void encode(
+      int[] values, int valuesOffset, byte[] blocks, int blocksOffset, int iterations) {
     for (int i = 0; i < iterations; ++i) {
       final long block = encode(values, valuesOffset);
       valuesOffset += valueCount;
       blocksOffset = writeLong(block, blocks, blocksOffset);
     }
   }
-
 }

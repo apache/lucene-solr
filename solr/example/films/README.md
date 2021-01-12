@@ -69,29 +69,6 @@ This data consists of the following fields:
      
        http://localhost:8983/solr/films/query?q=*:*&facet=true&facet.field=genre
 
-     - Browse the indexed films in a traditional browser search interface:
-     
-       http://localhost:8983/solr/films/browse
-
-       Now browse including the genre field as a facet:
-       
-       http://localhost:8983/solr/films/browse?facet.field=genre
-
-       If you want to set a facet for /browse to keep around for every request add the facet.field into the "facets"
-       param set (which the /browse handler is already configured to use):
-
-        ```
-        curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
-          "update" : {
-            "facets": {
-              "facet.field":"genre"
-            }
-          }
-        }'
-        ```
-       
-        And now http://localhost:8983/solr/films/browse will display the _genre_ facet automatically.
-
 Exploring the data further - 
 
   * Increase the MAX_ITERATIONS value, put in your freebase API_KEY and run the film_data_generator.py script using Python 3.
@@ -133,29 +110,6 @@ curl http://localhost:8983/solr/films/schema -X POST -H 'Content-type:applicatio
     }
 }'
 bin/post -c films example/films/films.json
-curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
-"update" : {
-  "facets": {
-    "facet.field":"genre"
-    }
-  }
-}'
 
 # END_OF_SCRIPT
 ```
-
-Additional fun -
-
-```
-Add highlighting:
-curl http://localhost:8983/solr/films/config/params -H 'Content-type:application/json'  -d '{
-"set" : {
-  "browse": {
-    "hl":"on",
-    "hl.fl":"name"
-    }
-  }
-}'
-```
-
-try http://localhost:8983/solr/films/browse?q=batman now, and you'll see "batman" highlighted in the results

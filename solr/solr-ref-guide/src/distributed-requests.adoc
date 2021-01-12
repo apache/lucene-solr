@@ -83,8 +83,8 @@ To add a `shardHandlerFactory` to the standard search handler, provide a configu
 <requestHandler name="/select" class="solr.SearchHandler">
   <!-- other params go here -->
   <shardHandlerFactory class="HttpShardHandlerFactory">
-    <int name="socketTimeOut">1000</int>
-    <int name="connTimeOut">5000</int>
+    <int name="socketTimeout">1000</int>
+    <int name="connTimeout">5000</int>
   </shardHandlerFactory>
 </requestHandler>
 ----
@@ -149,10 +149,6 @@ The implementation can be selected by setting `<statsCache>` in `solrconfig.xml`
 Each shard serves top-level query requests and then makes sub-requests to all of the other shards. Care should be taken to ensure that the max number of threads serving HTTP requests is greater than the possible number of requests from both top-level clients and other shards. If this is not the case, the configuration may result in a distributed deadlock.
 
 For example, a deadlock might occur in the case of two shards, each with just a single thread to service HTTP requests. Both threads could receive a top-level request concurrently, and make sub-requests to each other. Because there are no more remaining threads to service requests, the incoming requests will be blocked until the other pending requests are finished, but they will not finish since they are waiting for the sub-requests. By ensuring that Solr is configured to handle a sufficient number of threads, you can avoid deadlock situations like this.
-
-== preferLocalShards Parameter
-
-Deprecated, use `shards.preference=replica.location:local` instead (see below).
 
 == shards.preference Parameter
 

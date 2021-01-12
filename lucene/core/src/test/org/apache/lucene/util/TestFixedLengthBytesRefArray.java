@@ -21,21 +21,23 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class TestFixedLengthBytesRefArray extends LuceneTestCase {
-  
+
   public void testBasic() throws Exception {
     FixedLengthBytesRefArray a = new FixedLengthBytesRefArray(Integer.BYTES);
     int numValues = 100;
-    for(int i=0;i<numValues;i++) {      
-      byte[] bytes = {0, 0, 0, (byte) (10-i)};
+    for (int i = 0; i < numValues; i++) {
+      byte[] bytes = {0, 0, 0, (byte) (10 - i)};
       a.append(new BytesRef(bytes));
     }
 
-    BytesRefIterator iterator = a.iterator(new Comparator<BytesRef>() {
-        @Override
-        public int compare(BytesRef a, BytesRef b) {
-          return a.compareTo(b);
-        }
-      });
+    BytesRefIterator iterator =
+        a.iterator(
+            new Comparator<BytesRef>() {
+              @Override
+              public int compare(BytesRef a, BytesRef b) {
+                return a.compareTo(b);
+              }
+            });
 
     BytesRef last = null;
 
@@ -46,7 +48,8 @@ public class TestFixedLengthBytesRefArray extends LuceneTestCase {
         break;
       }
       if (last != null) {
-        assertTrue("count=" + count + " last=" + last + " bytes=" + bytes, last.compareTo(bytes) < 0);
+        assertTrue(
+            "count=" + count + " last=" + last + " bytes=" + bytes, last.compareTo(bytes) < 0);
       }
       last = BytesRef.deepCopyOf(bytes);
       count++;
@@ -61,7 +64,7 @@ public class TestFixedLengthBytesRefArray extends LuceneTestCase {
     BytesRef[] values = new BytesRef[count];
 
     FixedLengthBytesRefArray a = new FixedLengthBytesRefArray(length);
-    for(int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       BytesRef value = new BytesRef(new byte[length]);
       random().nextBytes(value.bytes);
       values[i] = value;
@@ -69,13 +72,15 @@ public class TestFixedLengthBytesRefArray extends LuceneTestCase {
     }
 
     Arrays.sort(values);
-    BytesRefIterator iterator = a.iterator(new Comparator<BytesRef>() {
-        @Override
-        public int compare(BytesRef a, BytesRef b) {
-          return a.compareTo(b);
-        }
-      });
-    for(int i=0;i<count;i++) {
+    BytesRefIterator iterator =
+        a.iterator(
+            new Comparator<BytesRef>() {
+              @Override
+              public int compare(BytesRef a, BytesRef b) {
+                return a.compareTo(b);
+              }
+            });
+    for (int i = 0; i < count; i++) {
       BytesRef next = iterator.next();
       assertNotNull(next);
       assertEquals(values[i], next);

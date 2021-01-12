@@ -19,11 +19,13 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Utils;
@@ -113,6 +115,27 @@ public class ClusterProperties {
       zkJson = convertCollectionDefaultsToNestedFormat(zkJson);
       boolean modified = Utils.mergeJson(zkJson, convertCollectionDefaultsToNestedFormat(properties));
       return modified ? Utils.toJSON(zkJson) : null;
+    });
+  }
+
+
+  /**Set this object at the json path
+   *
+   * @param obj the Object to be set
+   * @param path the json path
+   */
+  @SuppressWarnings("unchecked")
+  public void update(MapWriter obj, String... path) throws KeeperException, InterruptedException{
+    client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
+      Map<String, Object> zkJson;
+      if (bytes == null) {
+        // no previous properties - initialize
+        zkJson = new LinkedHashMap<>();
+      } else {
+        zkJson = (Map<String, Object>) Utils.fromJSON(bytes);
+      }
+      Utils.setObjectByPath(zkJson, Arrays.asList(path), obj);
+      return Utils.toJSON(zkJson);
     });
   }
 

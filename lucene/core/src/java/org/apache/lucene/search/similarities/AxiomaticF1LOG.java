@@ -19,8 +19,8 @@ package org.apache.lucene.search.similarities;
 import org.apache.lucene.search.Explanation;
 
 /**
- * F1LOG is defined as Sum(tf(term_doc_freq)*ln(docLen)*IDF(term))
- * where IDF(t) = ln((N+1)/df(t)) N=total num of docs, df=doc freq
+ * F1LOG is defined as Sum(tf(term_doc_freq)*ln(docLen)*IDF(term)) where IDF(t) = ln((N+1)/df(t))
+ * N=total num of docs, df=doc freq
  *
  * @lucene.experimental
  */
@@ -35,9 +35,7 @@ public class AxiomaticF1LOG extends Axiomatic {
     super(s);
   }
 
-  /**
-   * Default constructor
-   */
+  /** Default constructor */
   public AxiomaticF1LOG() {
     super();
   }
@@ -47,76 +45,72 @@ public class AxiomaticF1LOG extends Axiomatic {
     return "F1LOG";
   }
 
-  /**
-   * compute the term frequency component
-   */
+  /** compute the term frequency component */
   @Override
   protected double tf(BasicStats stats, double freq, double docLen) {
     freq += 1; // otherwise gives negative scores for freqs < 1
     return 1 + Math.log(1 + Math.log(freq));
   }
 
-  /**
-   * compute the document length component
-   */
+  /** compute the document length component */
   @Override
   protected double ln(BasicStats stats, double freq, double docLen) {
     return (stats.getAvgFieldLength() + this.s) / (stats.getAvgFieldLength() + docLen * this.s);
   }
 
-  /**
-   * compute the mixed term frequency and document length component
-   */
+  /** compute the mixed term frequency and document length component */
   @Override
   protected double tfln(BasicStats stats, double freq, double docLen) {
     return 1.0;
   }
 
-  /**
-   * compute the inverted document frequency component
-   */
+  /** compute the inverted document frequency component */
   @Override
   protected double idf(BasicStats stats, double freq, double docLen) {
     return Math.log((stats.getNumberOfDocuments() + 1.0) / stats.getDocFreq());
   }
 
-  /**
-   * compute the gamma component
-   */
+  /** compute the gamma component */
   @Override
   protected double gamma(BasicStats stats, double freq, double docLen) {
     return 0.0;
   }
 
   @Override
-  protected Explanation tfExplain(BasicStats stats, double freq, double docLen){
-    return Explanation.match((float) tf(stats, freq, docLen),
+  protected Explanation tfExplain(BasicStats stats, double freq, double docLen) {
+    return Explanation.match(
+        (float) tf(stats, freq, docLen),
         "tf, term frequency computed as 1 + log(1 + log(freq)) from:",
-        Explanation.match((float) freq,
-            "freq, number of occurrences of term in the document"));
-  };
+        Explanation.match((float) freq, "freq, number of occurrences of term in the document"));
+  }
+  ;
 
   @Override
-  protected Explanation lnExplain(BasicStats stats, double freq, double docLen){
-    return Explanation.match((float) ln(stats, freq, docLen),
+  protected Explanation lnExplain(BasicStats stats, double freq, double docLen) {
+    return Explanation.match(
+        (float) ln(stats, freq, docLen),
         "ln, document length computed as (avgdl + s) / (avgdl + dl * s) from:",
-        Explanation.match((float) stats.getAvgFieldLength(),
+        Explanation.match(
+            (float) stats.getAvgFieldLength(),
             "avgdl, average length of field across all documents"),
-        Explanation.match((float) docLen,
-            "dl, length of field"));
-  };
+        Explanation.match((float) docLen, "dl, length of field"));
+  }
+  ;
 
-  protected Explanation tflnExplain(BasicStats stats, double freq, double docLen){
-    return Explanation.match((float) tfln(stats, freq, docLen),
+  protected Explanation tflnExplain(BasicStats stats, double freq, double docLen) {
+    return Explanation.match(
+        (float) tfln(stats, freq, docLen),
         "tfln, mixed term frequency and document length, equals to 1");
-  };
+  }
+  ;
 
-  protected Explanation idfExplain(BasicStats stats, double freq, double docLen){
-    return Explanation.match((float) idf(stats, freq, docLen),
+  protected Explanation idfExplain(BasicStats stats, double freq, double docLen) {
+    return Explanation.match(
+        (float) idf(stats, freq, docLen),
         "idf, inverted document frequency computed as log((N + 1) / n) from:",
-        Explanation.match((float) stats.getNumberOfDocuments(),
-            "N, total number of documents with field"),
-        Explanation.match((float) stats.getDocFreq(),
-            "n, number of documents containing term"));
-  };
+        Explanation.match(
+            (float) stats.getNumberOfDocuments(), "N, total number of documents with field"),
+        Explanation.match((float) stats.getDocFreq(), "n, number of documents containing term"));
+  }
+  ;
 }

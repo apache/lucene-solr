@@ -16,11 +16,12 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
@@ -29,23 +30,20 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.suggest.Lookup;
 
-import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
-
 /**
- * {@link org.apache.lucene.search.Collector} that collects completion and
- * score, along with document id
- * <p>
- * Non scoring collector that collect completions in order of their
- * pre-computed scores.
- * <p>
- * NOTE: One document can be collected multiple times if a document
- * is matched for multiple unique completions for a given query
- * <p>
- * Subclasses should only override
- * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}.
- * <p>
- * NOTE: {@link #setScorer(org.apache.lucene.search.Scorable)} and
- * {@link #collect(int)} is not used
+ * {@link org.apache.lucene.search.Collector} that collects completion and score, along with
+ * document id
+ *
+ * <p>Non scoring collector that collect completions in order of their pre-computed scores.
+ *
+ * <p>NOTE: One document can be collected multiple times if a document is matched for multiple
+ * unique completions for a given query
+ *
+ * <p>Subclasses should only override {@link TopSuggestDocsCollector#collect(int, CharSequence,
+ * CharSequence, float)}.
+ *
+ * <p>NOTE: {@link #setScorer(org.apache.lucene.search.Scorable)} and {@link #collect(int)} is not
+ * used
  *
  * @lucene.experimental
  */
@@ -54,10 +52,16 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   private final SuggestScoreDocPriorityQueue priorityQueue;
   private final int num;
 
-  /** Only set if we are deduplicating hits: holds all per-segment hits until the end, when we dedup them */
+  /**
+   * Only set if we are deduplicating hits: holds all per-segment hits until the end, when we dedup
+   * them
+   */
   private final List<SuggestScoreDoc> pendingResults;
 
-  /** Only set if we are deduplicating hits: holds all surface forms seen so far in the current segment */
+  /**
+   * Only set if we are deduplicating hits: holds all surface forms seen so far in the current
+   * segment
+   */
   final CharArraySet seenSurfaceForms;
 
   /** Document base offset for the current Leaf */
@@ -66,8 +70,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   /**
    * Sole constructor
    *
-   * Collects at most <code>num</code> completions
-   * with corresponding document and weight
+   * <p>Collects at most <code>num</code> completions with corresponding document and weight
    */
   public TopSuggestDocsCollector(int num, boolean skipDuplicates) {
     if (num <= 0) {
@@ -89,9 +92,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     return seenSurfaceForms != null;
   }
 
-  /**
-   * Returns the number of results to be collected
-   */
+  /** Returns the number of results to be collected */
   public int getCountToCollect() {
     return num;
   }
@@ -109,14 +110,13 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   }
 
   /**
-   * Called for every matched completion,
-   * similar to {@link org.apache.lucene.search.LeafCollector#collect(int)}
-   * but for completions.
+   * Called for every matched completion, similar to {@link
+   * org.apache.lucene.search.LeafCollector#collect(int)} but for completions.
    *
-   * NOTE: collection at the leaf level is guaranteed to be in
-   * descending order of score
+   * <p>NOTE: collection at the leaf level is guaranteed to be in descending order of score
    */
-  public void collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+  public void collect(int docID, CharSequence key, CharSequence context, float score)
+      throws IOException {
     SuggestScoreDoc current = new SuggestScoreDoc(docBase + docID, key, context, score);
     if (current == priorityQueue.insertWithOverflow(current)) {
       // if the current SuggestScoreDoc has overflown from pq,
@@ -128,12 +128,13 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   }
 
   /**
-   * Returns at most <code>num</code> Top scoring {@link org.apache.lucene.search.suggest.document.TopSuggestDocs}s
+   * Returns at most <code>num</code> Top scoring {@link
+   * org.apache.lucene.search.suggest.document.TopSuggestDocs}s
    */
   public TopSuggestDocs get() throws IOException {
 
     SuggestScoreDoc[] suggestScoreDocs;
-    
+
     if (seenSurfaceForms != null) {
       // NOTE: this also clears the priorityQueue:
       for (SuggestScoreDoc hit : priorityQueue.getResults()) {
@@ -144,10 +145,13 @@ public class TopSuggestDocsCollector extends SimpleCollector {
       // truncating the FST top paths search, but across segments there may still be dups:
       seenSurfaceForms.clear();
 
-      // TODO: we could use a priority queue here to make cost O(N * log(num)) instead of O(N * log(N)), where N = O(num *
-      // numSegments), but typically numSegments is smallish and num is smallish so this won't matter much in practice:
+      // TODO: we could use a priority queue here to make cost O(N * log(num)) instead of O(N *
+      // log(N)), where N = O(num *
+      // numSegments), but typically numSegments is smallish and num is smallish so this won't
+      // matter much in practice:
 
-      Collections.sort(pendingResults,
+      Collections.sort(
+          pendingResults,
           (a, b) -> {
             // sort by higher score
             int cmp = Float.compare(b.score, a.score);
@@ -163,7 +167,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
           });
 
       List<SuggestScoreDoc> hits = new ArrayList<>();
-      
+
       for (SuggestScoreDoc hit : pendingResults) {
         if (seenSurfaceForms.contains(hit.key) == false) {
           seenSurfaceForms.add(hit.key);
@@ -179,24 +183,21 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     }
 
     if (suggestScoreDocs.length > 0) {
-      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO), suggestScoreDocs);
+      return new TopSuggestDocs(
+          new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO), suggestScoreDocs);
     } else {
       return TopSuggestDocs.EMPTY;
     }
   }
 
-  /**
-   * Ignored
-   */
+  /** Ignored */
   @Override
   public void collect(int doc) throws IOException {
     // {@link #collect(int, CharSequence, CharSequence, long)} is used
     // instead
   }
 
-  /**
-   * Ignored
-   */
+  /** Ignored */
   @Override
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE;

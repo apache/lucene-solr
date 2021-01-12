@@ -46,6 +46,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,16 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   private static final List<String> AUTH_METRICS_TO_COMPARE = Arrays.asList("requests", "authenticated", "passThrough", "failWrongCredentials", "failMissingCredentials", "errors");
   private static final List<String> AUDIT_METRICS_TO_COMPARE = Arrays.asList("count");
 
+  @BeforeClass
+  public static void enableMetrics() {
+    System.setProperty("metricsEnabled", "true");
+  }
+
+  @AfterClass
+  public static void disableMetrics() {
+    System.clearProperty("metricsEnabled");
+
+  }
   /**
    * Used to check metric counts for PKI auth
    */

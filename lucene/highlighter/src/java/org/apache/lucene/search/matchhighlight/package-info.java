@@ -16,13 +16,13 @@
  */
 
 /**
- * This package contains several components useful to build a highlighter
- * on top of the {@link org.apache.lucene.search.Matches} API.
+ * This package contains several components useful to build a highlighter on top of the {@link
+ * org.apache.lucene.search.Matches} API.
  *
- * {@link org.apache.lucene.search.matchhighlight.MatchRegionRetriever} can be
- * used to retrieve hit areas for a given {@link org.apache.lucene.search.Query}
- * and one (or more) indexed documents. These hit areas can be then passed to
- * {@link org.apache.lucene.search.matchhighlight.PassageSelector} and formatted
- * with {@link org.apache.lucene.search.matchhighlight.PassageFormatter}.
+ * <p>{@link org.apache.lucene.search.matchhighlight.MatchRegionRetriever} can be used to retrieve
+ * hit areas for a given {@link org.apache.lucene.search.Query} and one (or more) indexed documents.
+ * These hit areas can be then passed to {@link
+ * org.apache.lucene.search.matchhighlight.PassageSelector} and formatted with {@link
+ * org.apache.lucene.search.matchhighlight.PassageFormatter}.
  */
 package org.apache.lucene.search.matchhighlight;

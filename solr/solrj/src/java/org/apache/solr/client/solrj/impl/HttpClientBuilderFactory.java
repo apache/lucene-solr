@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.Closeable;
-import java.util.Optional;
 
 /**
  * Factory interface for configuring {@linkplain SolrHttpClientBuilder}. This
@@ -36,7 +35,7 @@ public interface HttpClientBuilderFactory extends Closeable {
    *                by configured (optional).
    * @return the {@linkplain SolrHttpClientBuilder}
    */
-  public SolrHttpClientBuilder getHttpClientBuilder(Optional<SolrHttpClientBuilder> builder);
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder);
 
   public default void setup(Http2SolrClient client) {
 

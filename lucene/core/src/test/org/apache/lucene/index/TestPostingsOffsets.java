@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -49,7 +47,7 @@ import org.apache.lucene.util.TestUtil;
 // TODO: fix sep codec to index offsets so we can greatly reduce this list!
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -58,7 +56,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = newDirectory();
-    
+
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
 
@@ -69,12 +67,13 @@ public class TestPostingsOffsets extends LuceneTestCase {
       ft.setStoreTermVectorPositions(random().nextBoolean());
       ft.setStoreTermVectorOffsets(random().nextBoolean());
     }
-    Token[] tokens = new Token[] {
-      makeToken("a", 1, 0, 6),
-      makeToken("b", 1, 8, 9),
-      makeToken("a", 1, 9, 17),
-      makeToken("c", 1, 19, 50),
-    };
+    Token[] tokens =
+        new Token[] {
+          makeToken("a", 1, 0, 6),
+          makeToken("b", 1, 8, 9),
+          makeToken("a", 1, 9, 17),
+          makeToken("c", 1, 19, 50),
+        };
     doc.add(new Field("content", new CannedTokenStream(tokens), ft));
 
     w.addDocument(doc);
@@ -114,22 +113,22 @@ public class TestPostingsOffsets extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
   public void testSkipping() throws Exception {
     doTestNumbers(false);
   }
-  
+
   public void testPayloads() throws Exception {
     doTestNumbers(true);
   }
-  
+
   public void doTestNumbers(boolean withPayloads) throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = withPayloads ? new MockPayloadAnalyzer() : new MockAnalyzer(random());
     iwc = newIndexWriterConfig(analyzer);
     iwc.setMergePolicy(newLogMergePolicy()); // will rely on docids a bit for skipping
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
-    
+
     FieldType ft = new FieldType(TextField.TYPE_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     if (random().nextBoolean()) {
@@ -137,7 +136,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       ft.setStoreTermVectorOffsets(random().nextBoolean());
       ft.setStoreTermVectorPositions(random().nextBoolean());
     }
-    
+
     int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -146,16 +145,18 @@ public class TestPostingsOffsets extends LuceneTestCase {
       doc.add(new StringField("id", "" + i, Field.Store.NO));
       w.addDocument(doc);
     }
-    
+
     IndexReader reader = w.getReader();
     w.close();
-    
-    String terms[] = { "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred" };
-    
+
+    String terms[] = {
+      "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred"
+    };
+
     for (String term : terms) {
       PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "numbers", new BytesRef(term));
       int doc;
-      while((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      while ((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         String storedNumbers = reader.document(doc).get("numbers");
         int freq = dp.freq();
         for (int i = 0; i < freq; i++) {
@@ -175,10 +176,10 @@ public class TestPostingsOffsets extends LuceneTestCase {
         }
       }
     }
-    
+
     // check we can skip correctly
     int numSkippingTests = atLeast(50);
-    
+
     for (int j = 0; j < numSkippingTests; j++) {
       int num = TestUtil.nextInt(random(), 100, Math.min(numDocs - 1, 999));
       PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "numbers", new BytesRef("hundred"));
@@ -202,28 +203,28 @@ public class TestPostingsOffsets extends LuceneTestCase {
         } // note: withPayloads=false doesnt necessarily mean we dont have them from MockAnalyzer!
       }
     }
-    
+
     // check that other fields (without offsets) work correctly
-    
+
     for (int i = 0; i < numDocs; i++) {
       PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "id", new BytesRef("" + i), 0);
       assertEquals(i, dp.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
     }
-    
+
     reader.close();
     dir.close();
   }
 
   public void testRandom() throws Exception {
     // token -> docID -> tokens
-    final Map<String,Map<Integer,List<Token>>> actualTokens = new HashMap<>();
+    final Map<String, Map<Integer, List<Token>>> actualTokens = new HashMap<>();
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     final int numDocs = atLeast(20);
-    //final int numDocs = atLeast(5);
+    // final int numDocs = atLeast(5);
 
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
 
@@ -236,16 +237,16 @@ public class TestPostingsOffsets extends LuceneTestCase {
       ft.setStoreTermVectorPositions(random().nextBoolean());
     }
 
-    for(int docCount=0;docCount<numDocs;docCount++) {
+    for (int docCount = 0; docCount < numDocs; docCount++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("id", docCount));
       List<Token> tokens = new ArrayList<>();
       final int numTokens = atLeast(100);
-      //final int numTokens = atLeast(20);
+      // final int numTokens = atLeast(20);
       int pos = -1;
       int offset = 0;
-      //System.out.println("doc id=" + docCount);
-      for(int tokenCount=0;tokenCount<numTokens;tokenCount++) {
+      // System.out.println("doc id=" + docCount);
+      for (int tokenCount = 0; tokenCount < numTokens; tokenCount++) {
         final String text;
         if (random().nextBoolean()) {
           text = "a";
@@ -255,8 +256,8 @@ public class TestPostingsOffsets extends LuceneTestCase {
           text = "c";
         } else {
           text = "d";
-        }       
-        
+        }
+
         int posIncr = random().nextBoolean() ? 1 : random().nextInt(5);
         if (tokenCount == 0 && posIncr == 0) {
           posIncr = 1;
@@ -264,11 +265,12 @@ public class TestPostingsOffsets extends LuceneTestCase {
         final int offIncr = random().nextBoolean() ? 0 : random().nextInt(5);
         final int tokenOffset = random().nextInt(5);
 
-        final Token token = makeToken(text, posIncr, offset+offIncr, offset+offIncr+tokenOffset);
+        final Token token =
+            makeToken(text, posIncr, offset + offIncr, offset + offIncr + tokenOffset);
         if (!actualTokens.containsKey(text)) {
-          actualTokens.put(text, new HashMap<Integer,List<Token>>());
+          actualTokens.put(text, new HashMap<Integer, List<Token>>());
         }
-        final Map<Integer,List<Token>> postingsByDoc = actualTokens.get(text);
+        final Map<Integer, List<Token>> postingsByDoc = actualTokens.get(text);
         if (!postingsByDoc.containsKey(docCount)) {
           postingsByDoc.put(docCount, new ArrayList<Token>());
         }
@@ -276,42 +278,47 @@ public class TestPostingsOffsets extends LuceneTestCase {
         tokens.add(token);
         pos += posIncr;
         // stuff abs position into type:
-        token.setType(""+pos);
+        token.setType("" + pos);
         offset += offIncr + tokenOffset;
-        //System.out.println("  " + token + " posIncr=" + token.getPositionIncrement() + " pos=" + pos + " off=" + token.startOffset() + "/" + token.endOffset() + " (freq=" + postingsByDoc.get(docCount).size() + ")");
+        // System.out.println("  " + token + " posIncr=" + token.getPositionIncrement() + " pos=" +
+        // pos + " off=" + token.startOffset() + "/" + token.endOffset() + " (freq=" +
+        // postingsByDoc.get(docCount).size() + ")");
       }
-      doc.add(new Field("content", new CannedTokenStream(tokens.toArray(new Token[tokens.size()])), ft));
+      doc.add(
+          new Field(
+              "content", new CannedTokenStream(tokens.toArray(new Token[tokens.size()])), ft));
       w.addDocument(doc);
     }
     final DirectoryReader r = w.getReader();
     w.close();
 
     final String[] terms = new String[] {"a", "b", "c", "d"};
-    for(LeafReaderContext ctx : r.leaves()) {
+    for (LeafReaderContext ctx : r.leaves()) {
       // TODO: improve this
       LeafReader sub = ctx.reader();
-      //System.out.println("\nsub=" + sub);
+      // System.out.println("\nsub=" + sub);
       final TermsEnum termsEnum = sub.terms("content").iterator();
       PostingsEnum docs = null;
       PostingsEnum docsAndPositions = null;
       PostingsEnum docsAndPositionsAndOffsets = null;
       int[] docIDToID = new int[sub.maxDoc()];
       NumericDocValues values = DocValues.getNumeric(sub, "id");
-      for(int i=0;i<sub.maxDoc();i++) {
+      for (int i = 0; i < sub.maxDoc(); i++) {
         assertEquals(i, values.nextDoc());
         docIDToID[i] = (int) values.longValue();
       }
-      
-      for(String term : terms) {
-        //System.out.println("  term=" + term);
+
+      for (String term : terms) {
+        // System.out.println("  term=" + term);
         if (termsEnum.seekExact(new BytesRef(term))) {
           docs = termsEnum.postings(docs);
           assertNotNull(docs);
           int doc;
-          //System.out.println("    doc/freq");
-          while((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          // System.out.println("    doc/freq");
+          while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " docID=" + doc + " " + expected.size() + " freq");
+            // System.out.println("      doc=" + docIDToID[doc] + " docID=" + doc + " " +
+            // expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docs.freq());
           }
@@ -319,43 +326,43 @@ public class TestPostingsOffsets extends LuceneTestCase {
           // explicitly exclude offsets here
           docsAndPositions = termsEnum.postings(docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositions);
-          //System.out.println("    doc/freq/pos");
-          while((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          // System.out.println("    doc/freq/pos");
+          while ((doc = docsAndPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
+            // System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositions.freq());
-            for(Token token : expected) {
+            for (Token token : expected) {
               int pos = Integer.parseInt(token.type());
-              //System.out.println("        pos=" + pos);
+              // System.out.println("        pos=" + pos);
               assertEquals(pos, docsAndPositions.nextPosition());
             }
           }
 
           docsAndPositionsAndOffsets = termsEnum.postings(docsAndPositions, PostingsEnum.ALL);
           assertNotNull(docsAndPositionsAndOffsets);
-          //System.out.println("    doc/freq/pos/offs");
-          while((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          // System.out.println("    doc/freq/pos/offs");
+          while ((doc = docsAndPositionsAndOffsets.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
             final List<Token> expected = actualTokens.get(term).get(docIDToID[doc]);
-            //System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
+            // System.out.println("      doc=" + docIDToID[doc] + " " + expected.size() + " freq");
             assertNotNull(expected);
             assertEquals(expected.size(), docsAndPositionsAndOffsets.freq());
-            for(Token token : expected) {
+            for (Token token : expected) {
               int pos = Integer.parseInt(token.type());
-              //System.out.println("        pos=" + pos);
+              // System.out.println("        pos=" + pos);
               assertEquals(pos, docsAndPositionsAndOffsets.nextPosition());
               assertEquals(token.startOffset(), docsAndPositionsAndOffsets.startOffset());
               assertEquals(token.endOffset(), docsAndPositionsAndOffsets.endOffset());
             }
           }
         }
-      }        
+      }
       // TODO: test advance:
     }
     r.close();
     dir.close();
   }
-  
+
   public void testWithUnindexedFields() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
@@ -382,13 +389,15 @@ public class TestPostingsOffsets extends LuceneTestCase {
     }
     CompositeReader ir = riw.getReader();
     FieldInfos fis = FieldInfos.getMergedFieldInfos(ir);
-    assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
+    assertEquals(
+        IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
+        fis.fieldInfo("foo").getIndexOptions());
     ir.close();
     ir.close();
     riw.close();
     dir.close();
   }
-  
+
   public void testAddFieldTwice() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -396,7 +405,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);
     customType3.setStoreTermVectorPositions(true);
-    customType3.setStoreTermVectorOffsets(true);    
+    customType3.setStoreTermVectorOffsets(true);
     customType3.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
     doc.add(new Field("content3", "here is more content with aaa aaa aaa", customType3));
@@ -404,78 +413,84 @@ public class TestPostingsOffsets extends LuceneTestCase {
     iw.close();
     dir.close(); // checkindex
   }
-  
+
   // NOTE: the next two tests aren't that good as we need an EvilToken...
   public void testNegativeOffsets() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      checkTokens(new Token[] { 
-          makeToken("foo", 1, -1, -1)
-      });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          checkTokens(new Token[] {makeToken("foo", 1, -1, -1)});
+        });
   }
-  
+
   public void testIllegalOffsets() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      checkTokens(new Token[] { 
-          makeToken("foo", 1, 1, 0)
-      });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          checkTokens(new Token[] {makeToken("foo", 1, 1, 0)});
+        });
   }
-  
+
   public void testIllegalOffsetsAcrossFieldInstances() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      checkTokens(new Token[] { makeToken("use", 1, 150, 160) }, 
-                  new Token[] { makeToken("use", 1, 50, 60) });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          checkTokens(
+              new Token[] {makeToken("use", 1, 150, 160)},
+              new Token[] {makeToken("use", 1, 50, 60)});
+        });
   }
-   
+
   public void testBackwardsOffsets() throws Exception {
-    expectThrows(IllegalArgumentException.class, () -> {
-      checkTokens(new Token[] { 
-         makeToken("foo", 1, 0, 3),
-         makeToken("foo", 1, 4, 7),
-         makeToken("foo", 0, 3, 6)
-      });
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          checkTokens(
+              new Token[] {
+                makeToken("foo", 1, 0, 3), makeToken("foo", 1, 4, 7), makeToken("foo", 0, 3, 6)
+              });
+        });
   }
-  
+
   public void testStackedTokens() throws Exception {
-    checkTokens(new Token[] { 
-        makeToken("foo", 1, 0, 3),
-        makeToken("foo", 0, 0, 3),
-        makeToken("foo", 0, 0, 3)
-      });
+    checkTokens(
+        new Token[] {
+          makeToken("foo", 1, 0, 3), makeToken("foo", 0, 0, 3), makeToken("foo", 0, 0, 3)
+        });
   }
-  
+
   public void testCrazyOffsetGap() throws Exception {
     Directory dir = newDirectory();
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
-      }
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            return new TokenStreamComponents(new MockTokenizer(MockTokenizer.KEYWORD, false));
+          }
 
-      @Override
-      public int getOffsetGap(String fieldName) {
-        return -10;
-      }
-    };
+          @Override
+          public int getOffsetGap(String fieldName) {
+            return -10;
+          }
+        };
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(analyzer));
     // add good document
     Document doc = new Document();
     iw.addDocument(doc);
-    expectThrows(IllegalArgumentException.class, () -> {
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-      doc.add(new Field("foo", "bar", ft));
-      doc.add(new Field("foo", "bar", ft));
-      iw.addDocument(doc);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+          ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+          doc.add(new Field("foo", "bar", ft));
+          doc.add(new Field("foo", "bar", ft));
+          iw.addDocument(doc);
+        });
     iw.commit();
     iw.close();
 
     // make sure we see our good doc
-    DirectoryReader r = DirectoryReader.open(dir);   
+    DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.numDocs());
     r.close();
     dir.close();
@@ -485,14 +500,12 @@ public class TestPostingsOffsets extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     Document doc = new Document();
-    Token t1 = new Token("foo", 0, Integer.MAX_VALUE-500);
+    Token t1 = new Token("foo", 0, Integer.MAX_VALUE - 500);
     if (random().nextBoolean()) {
       t1.setPayload(new BytesRef("test"));
     }
-    Token t2 = new Token("foo", Integer.MAX_VALUE-500, Integer.MAX_VALUE);
-    TokenStream tokenStream = new CannedTokenStream(
-        new Token[] { t1, t2 }
-    );
+    Token t2 = new Token("foo", Integer.MAX_VALUE - 500, Integer.MAX_VALUE);
+    TokenStream tokenStream = new CannedTokenStream(new Token[] {t1, t2});
     FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     // store some term vectors for the checkindex cross-check
@@ -506,7 +519,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     dir.close();
   }
   // TODO: more tests with other possibilities
-  
+
   private void checkTokens(Token[] field1, Token[] field2) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
@@ -518,7 +531,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorPositions(true);
       ft.setStoreTermVectorOffsets(true);
-     
+
       Document doc = new Document();
       doc.add(new Field("body", new CannedTokenStream(field1), ft));
       doc.add(new Field("body", new CannedTokenStream(field2), ft));
@@ -533,7 +546,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       }
     }
   }
-  
+
   private void checkTokens(Token[] tokens) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
@@ -545,7 +558,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       ft.setStoreTermVectors(true);
       ft.setStoreTermVectorPositions(true);
       ft.setStoreTermVectorOffsets(true);
-     
+
       Document doc = new Document();
       doc.add(new Field("body", new CannedTokenStream(tokens), ft));
       riw.addDocument(doc);

@@ -19,14 +19,11 @@ package org.apache.lucene.analysis.opennlp;
 
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
-
 import opennlp.tools.util.Span;
 import org.apache.lucene.analysis.opennlp.tools.NLPSentenceDetectorOp;
 import org.apache.lucene.analysis.util.CharArrayIterator;
 
-/**
- * A {@link BreakIterator} that splits sentences using an OpenNLP sentence chunking model.
- */
+/** A {@link BreakIterator} that splits sentences using an OpenNLP sentence chunking model. */
 public final class OpenNLPSentenceBreakIterator extends BreakIterator {
 
   private CharacterIterator text;
@@ -82,7 +79,8 @@ public final class OpenNLPSentenceBreakIterator extends BreakIterator {
       text.setIndex(text.getBeginIndex());
       return DONE;
     } else if (pos >= sentenceStarts[sentenceStarts.length - 1]) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       text.setIndex(text.getEndIndex());
       currentSentence = sentenceStarts.length - 1;
@@ -143,7 +141,8 @@ public final class OpenNLPSentenceBreakIterator extends BreakIterator {
       currentSentence = 0;
       return DONE;
     } else if (pos < sentenceStarts[0]) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       text.setIndex(text.getBeginIndex());
       currentSentence = 0;
@@ -208,8 +207,12 @@ public final class OpenNLPSentenceBreakIterator extends BreakIterator {
   private String characterIteratorToString() {
     String fullText;
     if (text instanceof CharArrayIterator) {
-      CharArrayIterator charArrayIterator = (CharArrayIterator)text;
-      fullText = new String(charArrayIterator.getText(), charArrayIterator.getStart(), charArrayIterator.getLength());
+      CharArrayIterator charArrayIterator = (CharArrayIterator) text;
+      fullText =
+          new String(
+              charArrayIterator.getText(),
+              charArrayIterator.getStart(),
+              charArrayIterator.getLength());
     } else {
       // TODO: is there a better way to extract full text from arbitrary CharacterIterators?
       StringBuilder builder = new StringBuilder();

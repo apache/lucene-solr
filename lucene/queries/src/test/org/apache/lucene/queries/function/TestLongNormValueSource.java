@@ -45,7 +45,7 @@ public class TestLongNormValueSource extends LuceneTestCase {
   static IndexReader reader;
   static IndexSearcher searcher;
   static Analyzer analyzer;
-  
+
   private static Similarity sim = new ClassicSimilarity();
 
   @BeforeClass
@@ -86,9 +86,7 @@ public class TestLongNormValueSource extends LuceneTestCase {
     try {
       // no norm field (so agnostic to indexed similarity)
       searcher.setSimilarity(sim);
-      assertHits(new FunctionQuery(
-          new NormValueSource("text")),
-          new float[] { 0f, 0f });
+      assertHits(new FunctionQuery(new NormValueSource("text")), new float[] {0f, 0f});
     } finally {
       searcher.setSimilarity(saved);
     }

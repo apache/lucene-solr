@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -42,12 +40,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests against all the similarities we have
- */
+/** Tests against all the similarities we have */
 public class TestSimilarity2 extends LuceneTestCase {
   List<Similarity> sims;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -83,9 +79,10 @@ public class TestSimilarity2 extends LuceneTestCase {
       sims.add(new DFISimilarity(independence));
     }
   }
-  
-  /** because of stupid things like querynorm, it's possible we computeStats on a field that doesnt exist at all
-   *  test this against a totally empty index, to make sure sims handle it
+
+  /**
+   * because of stupid things like querynorm, it's possible we computeStats on a field that doesnt
+   * exist at all test this against a totally empty index, to make sure sims handle it
    */
   public void testEmptyIndex() throws Exception {
     Directory dir = newDirectory();
@@ -93,7 +90,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       assertEquals(0, is.search(new TermQuery(new Term("foo", "bar")), 10).totalHits.value);
@@ -101,7 +98,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** similar to the above, but ORs the query with a real field */
   public void testEmptyField() throws Exception {
     Directory dir = newDirectory();
@@ -112,7 +109,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -123,8 +120,10 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
-  /** similar to the above, however the field exists, but we query with a term that doesnt exist too */
+
+  /**
+   * similar to the above, however the field exists, but we query with a term that doesnt exist too
+   */
   public void testEmptyTerm() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
@@ -134,7 +133,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -145,7 +144,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** make sure we can retrieve when norms are disabled */
   public void testNoNorms() throws Exception {
     Directory dir = newDirectory();
@@ -159,7 +158,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -169,7 +168,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** make sure scores are not skewed by docs not containing the field */
   public void testNoFieldSkew() throws Exception {
     Directory dir = newDirectory();
@@ -181,12 +180,12 @@ public class TestSimilarity2 extends LuceneTestCase {
     iw.addDocument(doc);
     IndexReader ir = iw.getReader();
     IndexSearcher is = newSearcher(ir);
-    
+
     BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
     queryBuilder.add(new TermQuery(new Term("foo", "bar")), BooleanClause.Occur.SHOULD);
     queryBuilder.add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD);
     Query query = queryBuilder.build();
-    
+
     // collect scores
     List<Explanation> scores = new ArrayList<>();
     for (Similarity sim : sims) {
@@ -194,13 +193,13 @@ public class TestSimilarity2 extends LuceneTestCase {
       scores.add(is.explain(query, 0));
     }
     ir.close();
-    
+
     // add some additional docs without the field
     int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
     for (int i = 0; i < numExtraDocs; i++) {
       iw.addDocument(new Document());
     }
-    
+
     // check scores are the same
     ir = iw.getReader();
     is = newSearcher(ir);
@@ -208,14 +207,17 @@ public class TestSimilarity2 extends LuceneTestCase {
       is.setSimilarity(sims.get(i));
       Explanation expected = scores.get(i);
       Explanation actual = is.explain(query, 0);
-      assertEquals(sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected, expected.getValue(), actual.getValue());
+      assertEquals(
+          sims.get(i).toString() + ": actual=" + actual + ",expected=" + expected,
+          expected.getValue(),
+          actual.getValue());
     }
-    
+
     iw.close();
     ir.close();
     dir.close();
   }
-  
+
   /** make sure all sims work if TF is omitted */
   public void testOmitTF() throws Exception {
     Directory dir = newDirectory();
@@ -230,7 +232,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -240,7 +242,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** make sure all sims work if TF and norms is omitted */
   public void testOmitTFAndNorms() throws Exception {
     Directory dir = newDirectory();
@@ -256,7 +258,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       BooleanQuery.Builder query = new BooleanQuery.Builder();
@@ -266,7 +268,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     ir.close();
     dir.close();
   }
-  
+
   /** make sure all sims work with spanOR(termX, termY) where termY does not exist */
   public void testCrazySpans() throws Exception {
     // historically this was a problem, but sim's no longer have to score terms that dont exist
@@ -279,7 +281,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     IndexReader ir = iw.getReader();
     iw.close();
     IndexSearcher is = newSearcher(ir);
-    
+
     for (Similarity sim : sims) {
       is.setSimilarity(sim);
       SpanTermQuery s1 = new SpanTermQuery(new Term("foo", "bar"));

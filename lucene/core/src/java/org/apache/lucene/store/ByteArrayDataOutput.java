@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import org.apache.lucene.util.BytesRef;
 
 /**
- * DataOutput backed by a byte array.
- * <b>WARNING:</b> This class omits most low-level checks,
- * so be sure to test heavily with assertions enabled.
+ * DataOutput backed by a byte array. <b>WARNING:</b> This class omits most low-level checks, so be
+ * sure to test heavily with assertions enabled.
+ *
  * @lucene.experimental
  */
 public class ByteArrayDataOutput extends DataOutput {
@@ -46,13 +45,13 @@ public class ByteArrayDataOutput extends DataOutput {
   public void reset(byte[] bytes) {
     reset(bytes, 0, bytes.length);
   }
-  
+
   public void reset(byte[] bytes, int offset, int len) {
     this.bytes = bytes;
     pos = offset;
     limit = offset + len;
   }
-  
+
   public int getPosition() {
     return pos;
   }

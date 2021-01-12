@@ -117,7 +117,7 @@ You can also define named caches for your own application code to use. You can l
                           regenerator="org.mycompany.mypackage.MyRegenerator" />
 ----
 
-If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as`: regenerator="solr.NoOpRegenerator"`.
+If you want auto-warming of your cache, include a `regenerator` attribute with the fully qualified name of a class that implements `solr.search.CacheRegenerator`. You can also use the `NoOpRegenerator`, which simply repopulates the cache with old items. Define it with the `regenerator` parameter as `regenerator="solr.NoOpRegenerator"`.
 
 == Query Sizing and Warming
 

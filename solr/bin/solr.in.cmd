@@ -56,7 +56,7 @@ REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
-REM set ZK_CLIENT_TIMEOUT=15000
+REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state

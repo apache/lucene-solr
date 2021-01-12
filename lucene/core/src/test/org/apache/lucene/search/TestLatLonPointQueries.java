@@ -17,17 +17,18 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.document.ShapeField;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.bkd.BKDWriter;
+import org.apache.lucene.util.bkd.BKDConfig;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
@@ -37,18 +38,25 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+  protected Query newRectQuery(
+      String field, double minLat, double maxLat, double minLon, double maxLon) {
     return LatLonPoint.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
-  protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
+  protected Query newDistanceQuery(
+      String field, double centerLat, double centerLon, double radiusMeters) {
     return LatLonPoint.newDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
     return LatLonPoint.newPolygonQuery(field, polygons);
+  }
+
+  @Override
+  protected Query newGeometryQuery(String field, LatLonGeometry... geometry) {
+    return LatLonPoint.newGeometryQuery(field, ShapeField.QueryRelation.INTERSECTS, geometry);
   }
 
   @Override
@@ -62,7 +70,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   public void testDistanceQueryWithInvertedIntersection() throws IOException {
-    final int numMatchingDocs = atLeast(10 * BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    final int numMatchingDocs = atLeast(10 * BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
 
     try (Directory dir = newDirectory()) {
 

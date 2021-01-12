@@ -39,6 +39,7 @@ import org.apache.solr.pkg.PackageListeningClassLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
@@ -60,6 +61,7 @@ import static org.apache.solr.schema.IndexSchema.SchemaProps.Handler.FIELD_TYPES
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
+  private SolrRequestHandler managedResourceRequestHandler;
 
   private static final Map<String, String> level2;
 
@@ -106,6 +108,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     switch (ctx.getHttpMethod()) {
       case "GET":
         return PermissionNameProvider.Name.SCHEMA_READ_PERM;
+      case "PUT":
+      case "DELETE":
       case "POST":
         return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
       default:
@@ -257,6 +261,8 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     String prefix =  parts.get(0);
     if(subPaths.contains(prefix)) return this;
 
+    if(managedResourceRequestHandler != null) return managedResourceRequestHandler;
+
     return null;
   }
 
@@ -273,6 +279,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public void inform(SolrCore core) {
     isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
+    this.managedResourceRequestHandler =  new ManagedResourceRequestHandler(core.getRestManager());
   }
 
   @Override
@@ -289,5 +296,37 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  private  class ManagedResourceRequestHandler extends RequestHandlerBase implements PermissionNameProvider {
+
+
+    private final RestManager restManager;
+
+    private ManagedResourceRequestHandler(RestManager restManager) {
+      this.restManager = restManager;
+    }
+
+    @Override
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
+      RestManager.ManagedEndpoint me = new RestManager.ManagedEndpoint(restManager);
+      me.doInit(req, rsp);
+      me.delegateRequestToManagedResource();
+    }
+
+    @Override
+    public Name getPermissionName(AuthorizationContext ctx) {
+      return SchemaHandler.this.getPermissionName(ctx);
+    }
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public String getDescription() {
+      return null;
+    }
   }
 }

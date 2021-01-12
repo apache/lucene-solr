@@ -24,12 +24,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.Impact;
 
-/**
- * This class accumulates the (freq, norm) pairs that may produce competitive scores.
- */
+/** This class accumulates the (freq, norm) pairs that may produce competitive scores. */
 public final class CompetitiveImpactAccumulator {
 
   // We speed up accumulation for common norm values with this array that maps
@@ -44,18 +41,19 @@ public final class CompetitiveImpactAccumulator {
   /** Sole constructor. */
   public CompetitiveImpactAccumulator() {
     maxFreqs = new int[256];
-    Comparator<Impact> comparator = new Comparator<Impact>() {
-      @Override
-      public int compare(Impact o1, Impact o2) {
-        // greater freqs compare greater
-        int cmp = Integer.compare(o1.freq, o2.freq);
-        if (cmp == 0) {
-          // greater norms compare lower
-          cmp = Long.compareUnsigned(o2.norm, o1.norm);
-        }
-        return cmp;
-      }
-    };
+    Comparator<Impact> comparator =
+        new Comparator<Impact>() {
+          @Override
+          public int compare(Impact o1, Impact o2) {
+            // greater freqs compare greater
+            int cmp = Integer.compare(o1.freq, o2.freq);
+            if (cmp == 0) {
+              // greater norms compare lower
+              cmp = Long.compareUnsigned(o2.norm, o1.norm);
+            }
+            return cmp;
+          }
+        };
     otherFreqNormPairs = new TreeSet<>(comparator);
   }
 
@@ -66,12 +64,14 @@ public final class CompetitiveImpactAccumulator {
     assert assertConsistent();
   }
 
-  /** Accumulate a (freq,norm) pair, updating this structure if there is no
-   *  equivalent or more competitive entry already. */
+  /**
+   * Accumulate a (freq,norm) pair, updating this structure if there is no equivalent or more
+   * competitive entry already.
+   */
   public void add(int freq, long norm) {
     if (norm >= Byte.MIN_VALUE && norm <= Byte.MAX_VALUE) {
       int index = Byte.toUnsignedInt((byte) norm);
-      maxFreqs[index] = Math.max(maxFreqs[index], freq); 
+      maxFreqs[index] = Math.max(maxFreqs[index], freq);
     } else {
       add(new Impact(freq, norm), otherFreqNormPairs);
     }
@@ -131,7 +131,8 @@ public final class CompetitiveImpactAccumulator {
       freqNormPairs.add(newEntry);
     }
 
-    for (Iterator<Impact> it = freqNormPairs.headSet(newEntry, false).descendingIterator(); it.hasNext(); ) {
+    for (Iterator<Impact> it = freqNormPairs.headSet(newEntry, false).descendingIterator();
+        it.hasNext(); ) {
       Impact entry = it.next();
       if (Long.compareUnsigned(entry.norm, newEntry.norm) >= 0) {
         // less competitive

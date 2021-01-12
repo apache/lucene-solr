@@ -16,21 +16,18 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.List;
-
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.ConjunctionDISI;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TwoPhaseIterator;
 
-/**
- * Common super class for multiple sub spans required in a document.
- */
+/** Common super class for multiple sub spans required in a document. */
 abstract class ConjunctionSpans extends Spans {
   final Spans[] subSpans; // in query order
   final DocIdSetIterator conjunction; // use to move to next doc with all clauses
-  boolean atFirstInCurrentDoc; // a first start position is available in current doc for nextStartPosition
+  boolean atFirstInCurrentDoc; // a first start position is available in current doc for
+  // nextStartPosition
   boolean oneExhaustedInCurrentDoc; // one subspans exhausted in current doc
 
   ConjunctionSpans(List<Spans> subSpans) {
@@ -54,16 +51,12 @@ abstract class ConjunctionSpans extends Spans {
 
   @Override
   public int nextDoc() throws IOException {
-    return (conjunction.nextDoc() == NO_MORE_DOCS)
-            ? NO_MORE_DOCS
-            : toMatchDoc();
+    return (conjunction.nextDoc() == NO_MORE_DOCS) ? NO_MORE_DOCS : toMatchDoc();
   }
 
   @Override
   public int advance(int target) throws IOException {
-    return (conjunction.advance(target) == NO_MORE_DOCS)
-            ? NO_MORE_DOCS
-            : toMatchDoc();
+    return (conjunction.advance(target) == NO_MORE_DOCS) ? NO_MORE_DOCS : toMatchDoc();
   }
 
   int toMatchDoc() throws IOException {
@@ -78,12 +71,9 @@ abstract class ConjunctionSpans extends Spans {
     }
   }
 
-
   abstract boolean twoPhaseCurrentDocMatches() throws IOException;
 
-  /**
-   * Return a {@link TwoPhaseIterator} view of this ConjunctionSpans.
-   */
+  /** Return a {@link TwoPhaseIterator} view of this ConjunctionSpans. */
   @Override
   public TwoPhaseIterator asTwoPhaseIterator() {
     float totalMatchCost = 0;

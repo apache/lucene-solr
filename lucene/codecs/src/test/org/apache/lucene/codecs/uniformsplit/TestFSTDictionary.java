@@ -23,25 +23,23 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Tests {@link FSTDictionary}.
- */
+/** Tests {@link FSTDictionary}. */
 public class TestFSTDictionary extends LuceneTestCase {
 
   public void testEmptyTermSupported() throws Exception {
-    FSTDictionary indexDictionary = createFSTDictionary(Collections.singletonList(new BytesRef()), new int[]{588});
+    FSTDictionary indexDictionary =
+        createFSTDictionary(Collections.singletonList(new BytesRef()), new int[] {588});
     assertEquals(588, indexDictionary.browser().seekBlock(new BytesRef()));
   }
 
   public void testRepeatedTermNotAllowed() {
     for (BytesRef term : new BytesRef[] {new BytesRef(), new BytesRef("a")}) {
       try {
-        createFSTDictionary(Arrays.asList(term, term), new int[]{0, 1});
+        createFSTDictionary(Arrays.asList(term, term), new int[] {0, 1});
         fail("Expected exception not thrown");
       } catch (Exception e) {
         assertSame(UnsupportedOperationException.class, e.getClass());
@@ -51,17 +49,13 @@ public class TestFSTDictionary extends LuceneTestCase {
 
   public void testRepeatedOutputAllowed() throws Exception {
     BytesRef[] terms = {new BytesRef("a"), new BytesRef("b")};
-    FSTDictionary indexDictionary = createFSTDictionary(Arrays.asList(terms), new int[]{588, 588});
+    FSTDictionary indexDictionary = createFSTDictionary(Arrays.asList(terms), new int[] {588, 588});
     assertEquals(588, indexDictionary.browser().seekBlock(new BytesRef("a")));
     assertEquals(588, indexDictionary.browser().seekBlock(new BytesRef("b")));
   }
 
   public void testSerialization() throws IOException {
-    List<String> vocab = Arrays.asList(
-        "aswoon",
-        "asyl",
-        "asyla",
-        "asyllabic");
+    List<String> vocab = Arrays.asList("aswoon", "asyl", "asyla", "asyllabic");
 
     for (boolean shouldEncode : new boolean[] {false, true}) {
 
@@ -73,10 +67,12 @@ public class TestFSTDictionary extends LuceneTestCase {
       assertNotSame(-1L, fstDictionary.browser().seekBlock(new BytesRef("z")));
     }
   }
+
   public void testSerializationEmptyTerm() throws IOException {
     for (boolean shouldEncode : new boolean[] {false, true}) {
 
-      FSTDictionary srcDictionary = createFSTDictionary(Collections.singletonList(new BytesRef()), new int[1]);
+      FSTDictionary srcDictionary =
+          createFSTDictionary(Collections.singletonList(new BytesRef()), new int[1]);
       FSTDictionary fstDictionary = serializeAndReadDictionary(srcDictionary, shouldEncode);
       assertNotSame(srcDictionary, fstDictionary);
       assertEquals(0, fstDictionary.browser().seekBlock(new BytesRef()));
@@ -121,7 +117,8 @@ public class TestFSTDictionary extends LuceneTestCase {
     assertEquals(blockFPs[9], browser.seekBlock(new BytesRef("asymmetriesz")));
   }
 
-  private static FSTDictionary createFSTDictionary(List<BytesRef> blockKeys, int[] blockFPs) throws IOException {
+  private static FSTDictionary createFSTDictionary(List<BytesRef> blockKeys, int[] blockFPs)
+      throws IOException {
     FSTDictionary.Builder builder = new FSTDictionary.Builder();
     for (int i = 0; i < blockKeys.size(); i++) {
       builder.add(blockKeys.get(i), blockFPs[i]);
@@ -137,10 +134,13 @@ public class TestFSTDictionary extends LuceneTestCase {
     return builder.build();
   }
 
-  private static FSTDictionary serializeAndReadDictionary(FSTDictionary srcDictionary, boolean shouldEncrypt) throws IOException {
+  private static FSTDictionary serializeAndReadDictionary(
+      FSTDictionary srcDictionary, boolean shouldEncrypt) throws IOException {
     ByteBuffersDataOutput output = ByteBuffersDataOutput.newResettableInstance();
     srcDictionary.write(output, shouldEncrypt ? Rot13CypherTestUtil.getBlockEncoder() : null);
-    // We must load the FST on-heap since we use a ByteBuffersDataInput which is not an instance of IndexInput.
-    return FSTDictionary.read(output.toDataInput(), shouldEncrypt ? Rot13CypherTestUtil.getBlockDecoder() : null, true);
+    // We must load the FST on-heap since we use a ByteBuffersDataInput which is not an instance of
+    // IndexInput.
+    return FSTDictionary.read(
+        output.toDataInput(), shouldEncrypt ? Rot13CypherTestUtil.getBlockDecoder() : null, true);
   }
 }

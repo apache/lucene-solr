@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.bloom;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Basic tests for BloomPostingsFormat
- */
+/** Basic tests for BloomPostingsFormat */
 public class TestBloomPostingsFormat extends BasePostingsFormatTestCase {
   private final Codec codec = TestUtil.alwaysPostingsFormat(new TestBloomFilteredLucenePostings());
 

@@ -112,7 +112,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public UpdateHandler(SolrCore core)  {
     this(core, null);
   }
-  
+
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();

@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -55,8 +54,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.cloud.DocCollection.RULE;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -64,13 +61,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.common.params.CollectionAdminParams.COLOCATED_WITH;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
  * This class is experimental and subject to change.
@@ -83,12 +78,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
    * The set of modifiable collection properties
    */
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
-      RULE,
-      SNITCH,
       REPLICATION_FACTOR,
       COLL_CONF,
-      WITH_COLLECTION,
-      COLOCATED_WITH,
       READ_ONLY);
 
   protected final CollectionAction action;
@@ -568,8 +559,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
-      if (rule != null) params.set(DocCollection.RULE, rule);
-      if (snitch != null) params.set(DocCollection.SNITCH, snitch);
       params.setNonNull(ALIAS, alias);
       return params;
     }

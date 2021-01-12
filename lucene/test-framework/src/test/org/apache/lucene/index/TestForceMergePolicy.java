@@ -22,7 +22,6 @@ public class TestForceMergePolicy extends LuceneTestCase {
 
   public void testForceMergePolicy() throws Exception {
     MergePolicy mp = new ForceMergePolicy(null);
-    assertNull(mp.findMerges(null, (SegmentInfos)null, null));
+    assertNull(mp.findMerges(null, (SegmentInfos) null, null));
   }
-
 }

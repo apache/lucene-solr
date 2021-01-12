@@ -16,38 +16,40 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Basic tests for SpanOrQuery */
 public class TestSpanOrQuery extends LuceneTestCase {
-  
+
   public void testHashcodeEquals() {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field", "bar"));
     SpanTermQuery q3 = new SpanTermQuery(new Term("field", "baz"));
-    
+
     SpanOrQuery or1 = new SpanOrQuery(q1, q2);
     SpanOrQuery or2 = new SpanOrQuery(q2, q3);
     QueryUtils.check(or1);
     QueryUtils.check(or2);
     QueryUtils.checkUnequal(or1, or2);
   }
-  
+
   public void testSpanOrEmpty() throws Exception {
     SpanOrQuery a = new SpanOrQuery();
     SpanOrQuery b = new SpanOrQuery();
     assertTrue("empty should equal", a.equals(b));
   }
-  
+
   public void testDifferentField() throws Exception {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field1", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field2", "bar"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new SpanOrQuery(q1, q2);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new SpanOrQuery(q1, q2);
+            });
     assertTrue(expected.getMessage().contains("must have same field"));
   }
 }

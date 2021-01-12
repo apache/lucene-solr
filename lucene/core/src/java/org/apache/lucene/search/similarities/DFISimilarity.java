@@ -16,35 +16,38 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import org.apache.lucene.search.Explanation;
 
 /**
  * Implements the <em>Divergence from Independence (DFI)</em> model based on Chi-square statistics
  * (i.e., standardized Chi-squared distance from independence in term frequency tf).
- * <p>
- * DFI is both parameter-free and non-parametric:
+ *
+ * <p>DFI is both parameter-free and non-parametric:
+ *
  * <ul>
- * <li>parameter-free: it does not require any parameter tuning or training.</li>
- * <li>non-parametric: it does not make any assumptions about word frequency distributions on document collections.</li>
+ *   <li>parameter-free: it does not require any parameter tuning or training.
+ *   <li>non-parametric: it does not make any assumptions about word frequency distributions on
+ *       document collections.
  * </ul>
- * <p>
- * It is highly recommended <b>not</b> to remove stopwords (very common terms: the, of, and, to, a, in, for, is, on, that, etc) with this similarity.
- * <p>
- * For more information see: <a href="http://dx.doi.org/10.1007/s10791-013-9225-4">A nonparametric term weighting method for information retrieval based on measuring the divergence from independence</a>
+ *
+ * <p>It is highly recommended <b>not</b> to remove stopwords (very common terms: the, of, and, to,
+ * a, in, for, is, on, that, etc) with this similarity.
+ *
+ * <p>For more information see: <a href="http://dx.doi.org/10.1007/s10791-013-9225-4">A
+ * nonparametric term weighting method for information retrieval based on measuring the divergence
+ * from independence</a>
  *
  * @lucene.experimental
  * @see org.apache.lucene.search.similarities.IndependenceStandardized
  * @see org.apache.lucene.search.similarities.IndependenceSaturated
  * @see org.apache.lucene.search.similarities.IndependenceChiSquared
  */
-
-
 public class DFISimilarity extends SimilarityBase {
   private final Independence independence;
-  
+
   /**
    * Create DFI with the specified divergence from independence measure
+   *
    * @param independenceMeasure measure of divergence from independence
    */
   public DFISimilarity(Independence independenceMeasure) {
@@ -54,7 +57,8 @@ public class DFISimilarity extends SimilarityBase {
   @Override
   protected double score(BasicStats stats, double freq, double docLen) {
 
-    final double expected = (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
+    final double expected =
+        (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
 
     // if the observed frequency is less than or equal to the expected value, then return zero.
     if (freq <= expected) return 0;
@@ -64,42 +68,46 @@ public class DFISimilarity extends SimilarityBase {
     return stats.getBoost() * log2(measure + 1);
   }
 
-  /**
-   * Returns the measure of independence
-   */
+  /** Returns the measure of independence */
   public Independence getIndependence() {
     return independence;
   }
 
   @Override
-  protected Explanation explain(
-      BasicStats stats, Explanation freq, double docLen) {
-    final double expected = (stats.getTotalTermFreq() + 1) * docLen /
-        (stats.getNumberOfFieldTokens() + 1);
-    if (freq.getValue().doubleValue() <= expected){
-      return Explanation.match((float) 0, "score(" +
-          getClass().getSimpleName() + ", freq=" +
-          freq.getValue() +"), equals to 0");
+  protected Explanation explain(BasicStats stats, Explanation freq, double docLen) {
+    final double expected =
+        (stats.getTotalTermFreq() + 1) * docLen / (stats.getNumberOfFieldTokens() + 1);
+    if (freq.getValue().doubleValue() <= expected) {
+      return Explanation.match(
+          (float) 0,
+          "score(" + getClass().getSimpleName() + ", freq=" + freq.getValue() + "), equals to 0");
     }
-    Explanation explExpected = Explanation.match((float) expected,
-        "expected, computed as (F + 1) * dl / (T + 1) from:",
-        Explanation.match(stats.getTotalTermFreq(),
-            "F, total number of occurrences of term across all docs"),
-        Explanation.match((float) docLen, "dl, length of field"),
-        Explanation.match(stats.getNumberOfFieldTokens(),
-            "T, total number of tokens in the field"));
+    Explanation explExpected =
+        Explanation.match(
+            (float) expected,
+            "expected, computed as (F + 1) * dl / (T + 1) from:",
+            Explanation.match(
+                stats.getTotalTermFreq(), "F, total number of occurrences of term across all docs"),
+            Explanation.match((float) docLen, "dl, length of field"),
+            Explanation.match(
+                stats.getNumberOfFieldTokens(), "T, total number of tokens in the field"));
 
     final double measure = independence.score(freq.getValue().doubleValue(), expected);
-    Explanation explMeasure = Explanation.match((float) measure,
-        "measure, computed as independence.score(freq, expected) from:",
-        freq,
-        explExpected);
+    Explanation explMeasure =
+        Explanation.match(
+            (float) measure,
+            "measure, computed as independence.score(freq, expected) from:",
+            freq,
+            explExpected);
 
     return Explanation.match(
         (float) score(stats, freq.getValue().doubleValue(), docLen),
-        "score(" + getClass().getSimpleName() + ", freq=" +
-            freq.getValue() +"), computed as boost * log2(measure + 1) from:",
-        Explanation.match( (float)stats.getBoost(), "boost, query boost"),
+        "score("
+            + getClass().getSimpleName()
+            + ", freq="
+            + freq.getValue()
+            + "), computed as boost * log2(measure + 1) from:",
+        Explanation.match((float) stats.getBoost(), "boost, query boost"),
         explMeasure);
   }
 
@@ -108,4 +116,3 @@ public class DFISimilarity extends SimilarityBase {
     return "DFI(" + independence + ")";
   }
 }
-

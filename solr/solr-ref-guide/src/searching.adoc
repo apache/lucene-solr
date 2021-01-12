@@ -1,6 +1,5 @@
 = Searching
 :page-children: overview-of-searching-in-solr, +
-  velocity-search-ui, +
   relevance, +
   query-syntax-and-parsing, +
   json-request-api, +
@@ -50,7 +49,6 @@
 This section describes how Solr works with search requests. It covers the following topics:
 
 * <<overview-of-searching-in-solr.adoc#overview-of-searching-in-solr,Overview of Searching in Solr>>: An introduction to searching with Solr.
-* <<velocity-search-ui.adoc#velocity-search-ui,Velocity Search UI>>: A simple search UI using the VelocityResponseWriter.
 * <<relevance.adoc#relevance,Relevance>>: Conceptual information about understanding relevance in search results.
 * <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>>: A brief conceptual overview of query syntax and parsing. It also contains the following sub-sections:
 ** <<common-query-parameters.adoc#common-query-parameters,Common Query Parameters>>: No matter the query parser, there are several parameters that are common to all of them.

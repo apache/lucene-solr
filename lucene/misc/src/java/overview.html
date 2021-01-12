@@ -35,33 +35,32 @@ changing norms, finding high freq terms, and others.
 have to compile on your platform.
 
 <p>
-{@link org.apache.lucene.store.NativeUnixDirectory} is a Directory implementation that bypasses the
+{@link org.apache.lucene.misc.store.NativeUnixDirectory} is a Directory implementation that bypasses the
 OS's buffer cache (using direct IO) for any IndexInput and IndexOutput
 used during merging of segments larger than a specified size (default
 10 MB).  This avoids evicting hot pages that are still in-use for
 searching, keeping search more responsive while large merges run.
 
 <p>
-See <a target=_top href="http://blog.mikemccandless.com/2010/06/lucene-and-fadvisemadvise.html">this blog post</a>
+See <a target="_top" href="http://blog.mikemccandless.com/2010/06/lucene-and-fadvisemadvise.html">this blog post</a>
 for details.
 
-Steps to build:
+<p>Steps to build (from the project's root directory):
 <ul>
-  <li> <code>cd lucene/misc/</code>
-
-  <li> To compile NativePosixUtil.cpp -&gt; libNativePosixUtil.so, run<code> ant build-native-unix</code>.
+  <li>Compile both the native library part (<code>libLuceneNativeIO</code>) and Java sources with:
+    <code>./gradlew -p lucene/misc build</code>.</li>
   
-  <li><code>libNativePosixUtil.so</code> will be located in the <code>lucene/build/native/</code> folder
+  <li>The native library will be located in the <code>lucene/misc/native/build/lib/main/release/<i>your-platform</i></code> folder.</li>
 
-  <li> Make sure libNativePosixUtil.so is on your LD_LIBRARY_PATH so java can find it (something like <code>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</code>, where /path/to/dir contains libNativePosixUtil.so)
-
-  <li> <code>ant jar</code> to compile the java source and put that JAR on your CLASSPATH
+  <li>On Unix-ish systems, make sure <code>libNativePosixUtil.so</code> is on your
+    <code>LD_LIBRARY_PATH</code> so java can find it (something like <code>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</code>,
+    where /path/to/dir contains <code>libLuceneNativeIO.so</code>).</li>
 </ul>
 
 <p>
-NativePosixUtil.cpp/java also expose access to the posix_madvise,
-madvise, posix_fadvise functions, which are somewhat more cross
-platform than O_DIRECT, however, in testing (see above link), these
+The native library exposes access to the <code>posix_madvise</code>,
+<code>madvise</code>, <code>posix_fadvise</code> functions, which are somewhat more cross
+platform than <code>O_DIRECT</code>, however, in testing (see above link), these
 APIs did not seem to help prevent buffer cache eviction.
 </body>
 

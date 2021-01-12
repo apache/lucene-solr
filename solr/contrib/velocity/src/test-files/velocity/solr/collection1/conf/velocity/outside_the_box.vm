@@ -1,4 +1,0 @@
-#set($x='')
-#set($sys=$x.class.forName('java.lang.System'))
-#set($ex=$sys.getProperty('os.name'))
-$ex

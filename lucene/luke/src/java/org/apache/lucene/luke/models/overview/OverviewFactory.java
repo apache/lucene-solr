@@ -25,5 +25,4 @@ public class OverviewFactory {
   public Overview newInstance(IndexReader reader, String indexPath) {
     return new OverviewImpl(reader, indexPath);
   }
-
 }

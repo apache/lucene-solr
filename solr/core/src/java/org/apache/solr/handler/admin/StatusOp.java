@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.params.CoreAdminParams;
@@ -42,7 +43,9 @@ class StatusOp implements CoreAdminHandler.CoreAdminOp {
       failures.put(failure.getKey(), failure.getValue().exception);
     }
     if (cname == null) {
-      for (String name : it.handler.coreContainer.getAllCoreNames()) {
+      List<String> nameList = it.handler.coreContainer.getAllCoreNames();
+      nameList.sort(null);
+      for (String name : nameList) {
         status.add(name, CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
       }
       it.rsp.add("initFailures", failures);

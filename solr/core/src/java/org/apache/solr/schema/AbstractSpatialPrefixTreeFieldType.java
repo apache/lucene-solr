@@ -18,14 +18,18 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.MapListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +43,53 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   /** @see org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setDefaultFieldValuesArrayLen(int)  */
   public static final String DEFAULT_FIELD_VALUES_ARRAY_LEN = "defaultFieldValuesArrayLen";
 
+  /*
+   * A list of the properties hardcoded within PrefixTreeStrategy.FIELD_TYPE.
+   *
+   * Used primarily for validating that user-provided configurations don't disagree with these invariants.  Intentionally
+   * left out of this map is 'tokenized' which is hardcoded to 'true' in PrefixTreeStrategy.FIELD_TYPE, but triggers
+   * unwanted tokenization logic in Solr query parsing.
+   *
+   * @see PrefixTreeStrategy#FIELD_TYPE
+   */
+  public static final Map<String, String> FIELD_TYPE_INVARIANTS = new HashMap<>();
+  static {
+    FIELD_TYPE_INVARIANTS.put("omitNorms", "true");
+    FIELD_TYPE_INVARIANTS.put("termPositions", "false");
+    FIELD_TYPE_INVARIANTS.put("termOffsets", "false");
+    FIELD_TYPE_INVARIANTS.put("omitTermFreqAndPositions", "true");
+    FIELD_TYPE_INVARIANTS.put("omitPositions", "true");
+  }
+
   protected SpatialPrefixTree grid;
   private Double distErrPct;
   private Integer defaultFieldValuesArrayLen;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Override
+  public void setArgs(IndexSchema schema, Map<String, String> args) {
+    for (Map.Entry<String, String> entry : FIELD_TYPE_INVARIANTS.entrySet()) {
+      final String key = entry.getKey();
+      final String hardcodedValue = entry.getValue();
+      final String userConfiguredValue = args.get(entry.getKey());
+
+      if (args.containsKey(key)) {
+        if (userConfiguredValue.equals(hardcodedValue)) {
+          log.warn("FieldType {} does not allow {} to be specified in schema, hardcoded behavior is {}={}",
+                  getClass().getSimpleName(), key, key, hardcodedValue);
+        } else {
+          final String message = String.format(Locale.ROOT, "FieldType %s is incompatible with %s=%s; hardcoded " +
+                          "behavior is %s=%s.  Remove specification in schema",
+                  getClass().getSimpleName(), key, userConfiguredValue, key, hardcodedValue);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+        }
+      }
+    }
+    args.putAll(FIELD_TYPE_INVARIANTS);
+
+    super.setArgs(schema, args);
+  }
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -70,6 +116,27 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
     v = args.remove(DEFAULT_FIELD_VALUES_ARRAY_LEN);
     if (v != null)
       defaultFieldValuesArrayLen = Integer.valueOf(v);
+  }
+
+  /**
+   *
+   * @see #FIELD_TYPE_INVARIANTS
+   */
+  @Override
+  public void checkSchemaField(final SchemaField field) {
+    super.checkSchemaField(field);
+
+    if (! field.omitNorms()) {
+      final String message = String.format(Locale.ROOT, "%s of type %s is incompatible with omitNorms=false; hardcoded " +
+                      "behavior is omitNorms=true.  Remove specification in schema", field.getName(), getClass().getSimpleName());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+    }
+    if (field.indexOptions() != IndexOptions.DOCS) {
+      final String message = String.format(Locale.ROOT,
+              "%s of type %s is incompatible with termFreq or position storage.  Remove specification in schema.",
+              field.getName(), getClass().getSimpleName());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+    }
   }
   
   /**

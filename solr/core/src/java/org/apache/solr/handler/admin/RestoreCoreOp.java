@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import java.net.URI;
-import java.util.Optional;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -46,7 +45,7 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
     }
 
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-    BackupRepository repository = it.handler.coreContainer.newBackupRepository(Optional.ofNullable(repoName));
+    BackupRepository repository = it.handler.coreContainer.newBackupRepository(repoName);
 
     String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
     if (location == null) {

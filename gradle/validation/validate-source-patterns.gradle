@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
-import org.apache.rat.Defaults;
-import org.apache.rat.document.impl.FileDocument;
-import org.apache.rat.api.MetaData;
+import org.apache.rat.Defaults
+import org.apache.rat.document.impl.FileDocument
+import org.apache.rat.api.MetaData
+
+import javax.inject.Inject;
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import org.gradle.internal.logging.progress.ProgressLogger
 
 buildscript {
   repositories {
@@ -29,50 +33,119 @@ buildscript {
   }
 }
 
-configure(rootProject) {
-  task("validateSourcePatterns", type: ValidateSourcePatternsTask) { task ->
+def extensions = [
+    'adoc',
+    'bat',
+    'cmd',
+    'css',
+    'g4',
+    'gradle',
+    'groovy',
+    'html',
+    'java',
+    'jflex',
+    'jj',
+    'js',
+    'json',
+    'md',
+    'mdtext',
+    'pl',
+    'policy',
+    'properties',
+    'py',
+    'sh',
+    'template',
+    'vm',
+    'xml',
+    'xsl',
+]
+
+// Create source validation task local for each project's files.
+subprojects {
+  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
     group = 'Verification'
     description = 'Validate Source Patterns'
 
     // This task has no proper outputs.
     setupDummyOutputs(task)
 
-    sourceFiles = project.fileTree(project.rootDir) {
-      [
-        'java', 'jflex', 'py', 'pl', 'g4', 'jj', 'html', 'js',
-        'css', 'xml', 'xsl', 'vm', 'sh', 'cmd', 'bat', 'policy',
-        'properties', 'mdtext', 'groovy', 'gradle',
-        'template', 'adoc', 'json',
-      ].each{
-        include "lucene/**/*.${it}"
-        include "solr/**/*.${it}"
-        include "dev-tools/**/*.${it}"
-        include "gradle/**/*.${it}"
-        include "*.${it}"
+    sourceFiles = fileTree(projectDir) {
+      extensions.each{
+        include "**/*.${it}"
       }
-      // TODO: For now we don't scan txt / md files, so we
-      // check licenses in top-level folders separately:
-      include '*.txt'
-      include '*/*.txt'
-      include '*.md'
-      include '*/*.md'
-      // excludes:
-      exclude '**/build/**'
-      exclude '**/dist/**'
-      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
-      exclude 'lucene/benchmark/work/**'
-      exclude 'lucene/benchmark/temp/**'
-      exclude '**/CheckLoggingConfiguration.java'
-      exclude 'solr/core/src/test/org/apache/hadoop/**'
-      exclude '**/validate-source-patterns.gradle' // ourselves :-)
+      
+      // Don't go into child projects (scanned separately).
+      childProjects.keySet().each{
+        exclude "${it}/**"
+      }
+
+      // default excludes.
+      exclude 'build/**'
     }
+  }
+
+  // Add source validation to per-project checks as well.
+  check.dependsOn validateSourcePatterns
+}
+
+configure(project(':lucene:benchmark')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'temp/**'
+    sourceFiles.exclude 'work/**'
   }
 }
 
+configure(project(':solr:core')) {
+  project.tasks.withType(ValidateSourcePatternsTask) {
+    sourceFiles.exclude 'src/**/CheckLoggingConfiguration.java'
+    sourceFiles.exclude 'src/test/org/apache/hadoop/**'
+  }
+}
+
+configure(rootProject) {
+  task validateSourcePatterns(type: ValidateSourcePatternsTask) { task ->
+    group = 'Verification'
+    description = 'Validate Source Patterns'
+
+    // This task has no proper outputs.
+    setupDummyOutputs(task)
+
+    sourceFiles = fileTree(projectDir) {
+      extensions.each{
+        include "**/*.${it}"
+      }
+
+      // We do not scan for *.txt by default (broken files in subprojects),
+      // but in root we can do this).
+      include '**/*.txt'
+
+      // Don't go into child projects (scanned separately).
+      childProjects.keySet().each{
+        exclude "${it}/**"
+      }
+
+      // default excludes.
+      exclude '**/build/**'
+      exclude 'dev-tools/missing-doclet/src/**/*.java' // <-- TODO: remove once we allow "var" on master
+
+      // ourselves :-)
+      exclude 'gradle/validation/validate-source-patterns.gradle'
+    }
+  }
+
+  check.dependsOn validateSourcePatterns
+}
+
 class ValidateSourcePatternsTask extends DefaultTask {
+  private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
-  ConfigurableFileTree sourceFiles
+  FileTree sourceFiles
+
+  @Inject
+  ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
+    this.progressLoggerFactory = progressLoggerFactory
+  }
   
   @TaskAction
   public void check() {
@@ -99,12 +172,10 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/\n\s*var\s+/$) : 'var is not allowed in until we stop development on the 8x code line'
     ]
 
-    def baseDirLen = sourceFiles.dir.toString().length() + 1;
-
     def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
-      logger.error('{}: {}', name, f.toString().substring(baseDirLen).replace(File.separatorChar, (char)'/'));
+      logger.error('{}: {}', name, f);
       violations.add(name);
       found++;
     }
@@ -181,8 +252,13 @@ class ValidateSourcePatternsTask extends DefaultTask {
       }
     }
 
+    ProgressLogger progress = progressLoggerFactory.newOperation(this.class)
+    progress.start(this.name, this.name)
+
     sourceFiles.each{ f ->
+      progress.progress("Scanning ${f.name}")
       logger.debug('Scanning source file: {}', f);
+
       def text = f.getText('UTF-8');
       invalidPatterns.each{ pattern,name ->
         if (pattern.matcher(text).find()) {
@@ -207,7 +283,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           }
         }
         // make sure that SPI names of all tokenizers/charfilters/tokenfilters are documented
-        if (!f.name.contains("Test") && !f.name.contains("Mock") && !text.contains("abstract class") &&
+        if (!f.name.contains("Test") && !f.name.contains("Mock") && !f.name.contains("Fake") && !text.contains("abstract class") &&
             !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
             (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
                 f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
@@ -221,7 +297,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
           checkMockitoAssume(f, text);
         }
 
-        if (f.path.substring(baseDirLen).contains("solr/")
+        if (project.path.startsWith(':solr:')
             && f.name.equals("SolrTestCase.java") == false
             && f.name.equals("TestXmlQParser.java") == false) {
           if (extendsLuceneTestCasePattern.matcher(text).find()) {
@@ -234,13 +310,14 @@ class ValidateSourcePatternsTask extends DefaultTask {
           }
         }
       }
-      if (f.name.endsWith('.xml') || f.name.endsWith('.xml.template')) {
+      if (f.name.endsWith('.xml')) {
         checkLicenseHeaderPrecedes(f, '<tag>', xmlTagPattern, xmlCommentPattern, text, ratDocument);
       }
       if (f.name.endsWith('.adoc')) {
         checkForUnescapedSymbolSubstitutions(f, text);
       }
-    };
+    }
+    progress.completed()
 
     if (found) {
       throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',

@@ -21,27 +21,26 @@ import java.io.IOException;
 import java.util.Collection;
 
 /**
- * Reports the positions and optionally offsets of all matching terms in a query
- * for a single document
+ * Reports the positions and optionally offsets of all matching terms in a query for a single
+ * document
  *
- * To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}.
- * Note that you can call {@link #getMatches(String)} multiple times to retrieve new
- * iterators, but it is not thread-safe.
+ * <p>To obtain a {@link MatchesIterator} for a particular field, call {@link #getMatches(String)}.
+ * Note that you can call {@link #getMatches(String)} multiple times to retrieve new iterators, but
+ * it is not thread-safe.
  *
  * @lucene.experimental
  */
 public interface Matches extends Iterable<String> {
 
   /**
-   * Returns a {@link MatchesIterator} over the matches for a single field,
-   * or {@code null} if there are no matches in that field.
+   * Returns a {@link MatchesIterator} over the matches for a single field, or {@code null} if there
+   * are no matches in that field.
    */
   MatchesIterator getMatches(String field) throws IOException;
 
   /**
-   * Returns a collection of Matches that make up this instance; if it is not
-   * a composite, then this returns an empty list
+   * Returns a collection of Matches that make up this instance; if it is not a composite, then this
+   * returns an empty list
    */
   Collection<Matches> getSubMatches();
-
 }

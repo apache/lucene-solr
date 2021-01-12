@@ -73,13 +73,13 @@ public class TestMSBRadixSorter extends LuceneTestCase {
 
   public void testOneValue() {
     BytesRef bytes = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes }, 1);
+    test(new BytesRef[] {bytes}, 1);
   }
 
   public void testTwoValues() {
     BytesRef bytes1 = new BytesRef(TestUtil.randomSimpleString(random()));
     BytesRef bytes2 = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes1, bytes2 }, 2);
+    test(new BytesRef[] {bytes1, bytes2}, 2);
   }
 
   private void testRandom(int commonPrefixLen, int maxLen) {
@@ -131,42 +131,43 @@ public class TestMSBRadixSorter extends LuceneTestCase {
     // how many strings to make
     int stringCount = atLeast(10000);
 
-    //System.out.println("letterCount=" + letterCount + " substringCount=" + substringCount + " stringCount=" + stringCount);
-    while(substringsSet.size() < substringCount) {
+    // System.out.println("letterCount=" + letterCount + " substringCount=" + substringCount + "
+    // stringCount=" + stringCount);
+    while (substringsSet.size() < substringCount) {
       int length = TestUtil.nextInt(random(), 2, 10);
       byte[] bytes = new byte[length];
-      for(int i=0;i<length;i++) {
+      for (int i = 0; i < length; i++) {
         bytes[i] = (byte) random().nextInt(letterCount);
       }
       BytesRef br = new BytesRef(bytes);
       substringsSet.add(br);
-      //System.out.println("add substring count=" + substringsSet.size() + ": " + br);
+      // System.out.println("add substring count=" + substringsSet.size() + ": " + br);
     }
 
     BytesRef[] substrings = substringsSet.toArray(new BytesRef[substringsSet.size()]);
     double[] chance = new double[substrings.length];
     double sum = 0.0;
-    for(int i=0;i<substrings.length;i++) {
+    for (int i = 0; i < substrings.length; i++) {
       chance[i] = random().nextDouble();
       sum += chance[i];
     }
 
     // give each substring a random chance of occurring:
     double accum = 0.0;
-    for(int i=0;i<substrings.length;i++) {
-      accum += chance[i]/sum;
+    for (int i = 0; i < substrings.length; i++) {
+      accum += chance[i] / sum;
       chance[i] = accum;
     }
 
     Set<BytesRef> stringsSet = new HashSet<>();
     int iters = 0;
-    while (stringsSet.size() < stringCount && iters < stringCount*5) {
+    while (stringsSet.size() < stringCount && iters < stringCount * 5) {
       int count = TestUtil.nextInt(random(), 1, 5);
       BytesRefBuilder b = new BytesRefBuilder();
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         double v = random().nextDouble();
         accum = 0.0;
-        for(int j=0;j<substrings.length;j++) {
+        for (int j = 0; j < substrings.length; j++) {
           accum += chance[j];
           if (accum >= v) {
             b.append(substrings[j]);
@@ -176,7 +177,7 @@ public class TestMSBRadixSorter extends LuceneTestCase {
       }
       BytesRef br = b.toBytesRef();
       stringsSet.add(br);
-      //System.out.println("add string count=" + stringsSet.size() + ": " + br);
+      // System.out.println("add string count=" + stringsSet.size() + ": " + br);
       iters++;
     }
 

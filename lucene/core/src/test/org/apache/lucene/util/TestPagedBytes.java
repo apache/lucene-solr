@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.*;
-
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -32,14 +31,14 @@ public class TestPagedBytes extends LuceneTestCase {
 
   // Writes random byte/s to "normal" file in dir, then
   // copies into PagedBytes and verifies with
-  // PagedBytes.Reader: 
+  // PagedBytes.Reader:
   public void testDataInputOutput() throws Exception {
     Random random = random();
     int numIters = atLeast(1);
-    for(int iter=0;iter<numIters;iter++) {
+    for (int iter = 0; iter < numIters; iter++) {
       BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
       if (dir instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+        ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
       }
       final int blockBits = TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
@@ -55,7 +54,7 @@ public class TestPagedBytes extends LuceneTestCase {
       final byte[] answer = new byte[numBytes];
       random.nextBytes(answer);
       int written = 0;
-      while(written < numBytes) {
+      while (written < numBytes) {
         if (random.nextInt(100) == 7) {
           out.writeByte(answer[written++]);
         } else {
@@ -64,17 +63,17 @@ public class TestPagedBytes extends LuceneTestCase {
           written += chunk;
         }
       }
-      
+
       out.close();
       final IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
       final DataInput in = input.clone();
-      
+
       p.copy(input, input.length());
       final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
 
       final byte[] verify = new byte[numBytes];
       int read = 0;
-      while(read < numBytes) {
+      while (read < numBytes) {
         if (random.nextInt(100) == 7) {
           verify[read++] = in.readByte();
         } else {
@@ -86,11 +85,11 @@ public class TestPagedBytes extends LuceneTestCase {
       assertTrue(Arrays.equals(answer, verify));
 
       final BytesRef slice = new BytesRef();
-      for(int iter2=0;iter2<100;iter2++) {
-        final int pos = random.nextInt(numBytes-1);
-        final int len = random.nextInt(Math.min(blockSize+1, numBytes - pos));
+      for (int iter2 = 0; iter2 < 100; iter2++) {
+        final int pos = random.nextInt(numBytes - 1);
+        final int len = random.nextInt(Math.min(blockSize + 1, numBytes - pos));
         reader.fillSlice(slice, pos, len);
-        for(int byteUpto=0;byteUpto<len;byteUpto++) {
+        for (int byteUpto = 0; byteUpto < len; byteUpto++) {
           assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
         }
       }
@@ -101,11 +100,11 @@ public class TestPagedBytes extends LuceneTestCase {
 
   // Writes random byte/s into PagedBytes via
   // .getDataOutput(), then verifies with
-  // PagedBytes.getDataInput(): 
+  // PagedBytes.getDataInput():
   public void testDataInputOutput2() throws Exception {
     Random random = random();
     int numIters = atLeast(1);
-    for(int iter=0;iter<numIters;iter++) {
+    for (int iter = 0; iter < numIters; iter++) {
       final int blockBits = TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
@@ -120,7 +119,7 @@ public class TestPagedBytes extends LuceneTestCase {
       final byte[] answer = new byte[numBytes];
       random().nextBytes(answer);
       int written = 0;
-      while(written < numBytes) {
+      while (written < numBytes) {
         if (random().nextInt(10) == 7) {
           out.writeByte(answer[written++]);
         } else {
@@ -136,7 +135,7 @@ public class TestPagedBytes extends LuceneTestCase {
 
       final byte[] verify = new byte[numBytes];
       int read = 0;
-      while(read < numBytes) {
+      while (read < numBytes) {
         if (random().nextInt(10) == 7) {
           verify[read++] = in.readByte();
         } else {
@@ -148,11 +147,11 @@ public class TestPagedBytes extends LuceneTestCase {
       assertTrue(Arrays.equals(answer, verify));
 
       final BytesRef slice = new BytesRef();
-      for(int iter2=0;iter2<100;iter2++) {
-        final int pos = random.nextInt(numBytes-1);
-        final int len = random.nextInt(Math.min(blockSize+1, numBytes - pos));
+      for (int iter2 = 0; iter2 < 100; iter2++) {
+        final int pos = random.nextInt(numBytes - 1);
+        final int len = random.nextInt(Math.min(blockSize + 1, numBytes - pos));
         reader.fillSlice(slice, pos, len);
-        for(int byteUpto=0;byteUpto<len;byteUpto++) {
+        for (int byteUpto = 0; byteUpto < len; byteUpto++) {
           assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
         }
       }
@@ -163,7 +162,7 @@ public class TestPagedBytes extends LuceneTestCase {
   public void testOverflow() throws IOException {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     final int blockBits = TestUtil.nextInt(random(), 14, 28);
     final int blockSize = 1 << blockBits;
@@ -186,8 +185,10 @@ public class TestPagedBytes extends LuceneTestCase {
     p.copy(in, numBytes);
     final PagedBytes.Reader reader = p.freeze(random().nextBoolean());
 
-    for (long offset : new long[] {0L, Integer.MAX_VALUE, numBytes - 1,
-        TestUtil.nextLong(random(), 1, numBytes - 2)}) {
+    for (long offset :
+        new long[] {
+          0L, Integer.MAX_VALUE, numBytes - 1, TestUtil.nextLong(random(), 1, numBytes - 2)
+        }) {
       BytesRef b = new BytesRef();
       reader.fillSlice(b, offset, 1);
       assertEquals(arr[(int) (offset % arr.length)], b.bytes[b.offset]);
@@ -209,5 +210,4 @@ public class TestPagedBytes extends LuceneTestCase {
     assertEquals(RamUsageTester.sizeOf(b), b.ramBytesUsed());
     assertEquals(RamUsageTester.sizeOf(reader), reader.ramBytesUsed());
   }
-
 }

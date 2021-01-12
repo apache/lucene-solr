@@ -16,19 +16,15 @@
  */
 package org.apache.lucene.analysis.ko;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-/**
- * Simple tests for {@link org.apache.lucene.analysis.ko.KoreanNumberFilterFactory}
- */
+/** Simple tests for {@link org.apache.lucene.analysis.ko.KoreanNumberFilterFactory} */
 public class TestKoreanNumberFilterFactory extends BaseTokenStreamTestCase {
   public void testBasics() throws IOException {
 
@@ -39,23 +35,27 @@ public class TestKoreanNumberFilterFactory extends BaseTokenStreamTestCase {
 
     tokenizerFactory.inform(new StringMockResourceLoader(""));
     TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory());
-    ((Tokenizer)tokenStream).setReader(new StringReader("어제 초밥 가격은 10만 원"));
+    ((Tokenizer) tokenStream).setReader(new StringReader("어제 초밥 가격은 10만 원"));
     KoreanNumberFilterFactory factory = new KoreanNumberFilterFactory(new HashMap<>());
     tokenStream = factory.create(tokenStream);
     // Wrong analysis
     // "초밥" => "초밥" O, "초"+"밥" X
-    assertTokenStreamContents(tokenStream,
-        new String[] { "어제", " ", "초", "밥", " ", "가격", "은", " ", "100000", " ", "원" }
-    );
+    assertTokenStreamContents(
+        tokenStream, new String[] {"어제", " ", "초", "밥", " ", "가격", "은", " ", "100000", " ", "원"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
-        new KoreanNumberFilterFactory(new HashMap<>() {{
-          put("bogusArg", "bogusValue");
-        }})
-    );
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                new KoreanNumberFilterFactory(
+                    new HashMap<>() {
+                      {
+                        put("bogusArg", "bogusValue");
+                      }
+                    }));
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

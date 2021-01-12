@@ -81,17 +81,6 @@ public interface CollectionAdminParams {
   String COLL_CONF = "collection.configName";
 
   /**
-   * The name of the collection with which a collection is to be co-located
-   */
-  String WITH_COLLECTION = "withCollection";
-
-  /**
-   * The reverse-link to WITH_COLLECTION flag. It is stored in the cluster state of the `withCollection`
-   * and points to the collection on which the `withCollection` was specified.
-   */
-  String COLOCATED_WITH = "COLOCATED_WITH";
-
-  /**
    * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
    *
    * e.g. {defaults:{collection:{replicationFactor:2}}}

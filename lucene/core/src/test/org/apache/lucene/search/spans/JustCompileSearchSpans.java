@@ -16,18 +16,15 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 
 /**
- * Holds all implementations of classes in the o.a.l.s.spans package as a
- * back-compatibility test. It does not run any tests per-se, however if
- * someone adds a method to an interface or abstract method to an abstract
- * class, one of the implementations here will fail to compile and so we know
+ * Holds all implementations of classes in the o.a.l.s.spans package as a back-compatibility test.
+ * It does not run any tests per-se, however if someone adds a method to an interface or abstract
+ * method to an abstract class, one of the implementations here will fail to compile and so we know
  * back-compat policy was violated.
  */
 final class JustCompileSearchSpans {
@@ -67,9 +64,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public void collect(SpanCollector collector) throws IOException {
-
-    }
+    public void collect(SpanCollector collector) throws IOException {}
 
     @Override
     public int nextStartPosition() throws IOException {
@@ -95,7 +90,8 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -118,7 +114,5 @@ final class JustCompileSearchSpans {
     public int hashCode() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
   }
-
 }

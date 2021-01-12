@@ -35,19 +35,3 @@ allprojects {
     }
   }
 }
-
-// Remove tools source set entirely if we're running under IntelliJ. Otherwise
-// files that reference ant can't be compiled.
-if (isIdea) {
-  configure(project(":solr:solr-ref-guide")) {
-    afterEvaluate {
-      sourceSets {
-        main {
-          java {
-            srcDirs = []
-          }
-        }
-      }
-    }
-  }
-}

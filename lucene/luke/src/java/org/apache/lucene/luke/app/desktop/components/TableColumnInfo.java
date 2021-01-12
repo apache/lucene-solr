@@ -29,5 +29,4 @@ public interface TableColumnInfo {
   default int getColumnWidth() {
     return 0;
   }
-
 }

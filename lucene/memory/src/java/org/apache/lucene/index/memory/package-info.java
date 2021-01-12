@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * High-performance single-document main memory Apache Lucene fulltext search index.
- */
+/** High-performance single-document main memory Apache Lucene fulltext search index. */
 package org.apache.lucene.index.memory;

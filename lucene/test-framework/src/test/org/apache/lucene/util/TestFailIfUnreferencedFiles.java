@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Collections;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,14 +29,13 @@ import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 // LUCENE-4456: Test that we fail if there are unreferenced files
 public class TestFailIfUnreferencedFiles extends WithNestedTests {
   public TestFailIfUnreferencedFiles() {
     super(true);
   }
-  
+
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {
     public void testDummy() throws Exception {
       MockDirectoryWrapper dir = newMockDirectory();
@@ -55,17 +54,17 @@ public class TestFailIfUnreferencedFiles extends WithNestedTests {
   @Test
   public void testFailIfUnreferencedFiles() {
     Result r = JUnitCore.runClasses(Nested1.class);
-    RandomizedTest.assumeTrue("Ignoring nested test, very likely zombie threads present.", 
-        r.getIgnoreCount() == 0);
+    RandomizedTest.assumeTrue(
+        "Ignoring nested test, very likely zombie threads present.", r.getIgnoreCount() == 0);
 
     // We are suppressing output anyway so dump the failures.
     for (Failure f : r.getFailures()) {
       System.out.println(f.getTrace());
     }
 
-    Assert.assertEquals("Expected exactly one failure.", 
-        1, r.getFailureCount());
-    Assert.assertTrue("Expected unreferenced files assertion.", 
+    Assert.assertEquals("Expected exactly one failure.", 1, r.getFailureCount());
+    Assert.assertTrue(
+        "Expected unreferenced files assertion.",
         r.getFailures().get(0).getTrace().contains("unreferenced files:"));
   }
 }

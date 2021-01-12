@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.search.spans.Spans;
 
 /**
  * Wrapper used in {@link DisiPriorityQueue}.
+ *
  * @lucene.internal
  */
 public class DisiWrapper {
@@ -53,7 +53,7 @@ public class DisiWrapper {
     this.cost = iterator.cost();
     this.doc = -1;
     this.twoPhaseView = scorer.twoPhaseIterator();
-      
+
     if (twoPhaseView != null) {
       approximation = twoPhaseView.approximation();
       matchCost = twoPhaseView.matchCost();
@@ -70,7 +70,7 @@ public class DisiWrapper {
     this.cost = iterator.cost();
     this.doc = -1;
     this.twoPhaseView = spans.asTwoPhaseIterator();
-      
+
     if (twoPhaseView != null) {
       approximation = twoPhaseView.approximation();
       matchCost = twoPhaseView.matchCost();
@@ -82,4 +82,3 @@ public class DisiWrapper {
     this.lastApproxMatchDoc = -2;
   }
 }
-

@@ -17,8 +17,8 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.common.cloud.ClusterPropertiesListener;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +44,7 @@ import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM
  * rate limiting is being done for a specific request type.
  */
 @SolrThreadSafe
-public class RateLimitManager {
+public class RateLimitManager implements ClusterPropertiesListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public final static int DEFAULT_CONCURRENT_REQUESTS= (Runtime.getRuntime().availableProcessors()) * 3;
@@ -54,6 +56,23 @@ public class RateLimitManager {
   public RateLimitManager() {
     this.requestRateLimiterMap = new HashMap<>();
     this.activeRequestsMap = new ConcurrentHashMap<>();
+  }
+
+  @Override
+  public boolean onChange(Map<String, Object> properties) {
+
+    // Hack: We only support query rate limiting for now
+    QueryRateLimiter queryRateLimiter = (QueryRateLimiter) requestRateLimiterMap.get(SolrRequest.SolrRequestType.QUERY);
+
+    if (queryRateLimiter != null) {
+      try {
+        queryRateLimiter.processConfigChange(properties);
+      } catch (IOException e) {
+        throw new RuntimeException("Encountered IOException: " + e.getMessage());
+      }
+    }
+
+    return false;
   }
 
   // Handles an incoming request. The main orchestration code path, this method will
@@ -164,16 +183,16 @@ public class RateLimitManager {
   }
 
   public static class Builder {
-    protected FilterConfig config;
+    protected SolrZkClient solrZkClient;
 
-    public Builder(FilterConfig config) {
-      this.config = config;
+    public Builder(SolrZkClient solrZkClient) {
+      this.solrZkClient = solrZkClient;
     }
 
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
 
-      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(config), SolrRequest.SolrRequestType.QUERY);
+      rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
 
       return rateLimitManager;
     }

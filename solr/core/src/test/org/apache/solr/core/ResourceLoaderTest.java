@@ -33,9 +33,9 @@ import java.util.jar.JarOutputStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -50,8 +50,9 @@ import static org.hamcrest.core.Is.is;
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testInstanceDir() throws Exception {
-    try (SolrResourceLoader loader = new SolrResourceLoader()) {
-      assertThat(loader.getInstancePath(), is(Paths.get("solr").toAbsolutePath()));
+    final Path dir = createTempDir();
+    try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -213,7 +214,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   public void testCacheWrongType() throws Exception {
     clearCache();
 
-    SolrResourceLoader loader = new SolrResourceLoader();
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
     @SuppressWarnings({"rawtypes"})
     Class[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");

@@ -42,8 +42,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-
 /**
  *  Iterates over a gatherNodes() expression and scores the Tuples based on tf-idf.
  *
@@ -209,12 +207,10 @@ public class ScoreNodesStream extends TupleStream implements Expressible
     CloudSolrClient client = clientCache.getCloudSolrClient(zkHost);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.QT, "/terms");
-    params.add(TermsParams.TERMS, "true");
     params.add(TermsParams.TERMS_FIELD, field);
     params.add(TermsParams.TERMS_STATS, "true");
     params.add(TermsParams.TERMS_LIST, builder.toString());
     params.add(TermsParams.TERMS_LIMIT, Integer.toString(nodes.size()));
-    params.add(DISTRIB, "true");
 
     QueryRequest request = new QueryRequest(params);
 

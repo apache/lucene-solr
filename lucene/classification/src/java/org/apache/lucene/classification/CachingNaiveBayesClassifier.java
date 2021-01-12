@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
@@ -37,15 +36,15 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A simplistic Lucene based NaiveBayes classifier, with caching feature, see
- * <code>http://en.wikipedia.org/wiki/Naive_Bayes_classifier</code>
- * <p>
- * This is NOT an online classifier.
+ * A simplistic Lucene based NaiveBayes classifier, with caching feature, see <code>
+ * http://en.wikipedia.org/wiki/Naive_Bayes_classifier</code>
+ *
+ * <p>This is NOT an online classifier.
  *
  * @lucene.experimental
  */
 public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
-  //for caching classes this will be the classification class list
+  // for caching classes this will be the classification class list
   private final ArrayList<BytesRef> cclasses = new ArrayList<>();
   // it's a term-inmap style map, where the inmap contains class-hit pairs to the
   // upper term
@@ -56,17 +55,22 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
   private int docsWithClassSize;
 
   /**
-   * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you could call
-   * {@link #reInitCache(int, boolean) reInitCache()}.
+   * Creates a new NaiveBayes classifier with inside caching. If you want less memory usage you
+   * could call {@link #reInitCache(int, boolean) reInitCache()}.
    *
-   * @param indexReader     the reader on the index to be used for classification
-   * @param analyzer       an {@link Analyzer} used to analyze unseen text
-   * @param query          a {@link Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
+   * @param indexReader the reader on the index to be used for classification
+   * @param analyzer an {@link Analyzer} used to analyze unseen text
+   * @param query a {@link Query} to eventually filter the docs used for training the classifier, or
+   *     {@code null} if all the indexed docs should be used
    * @param classFieldName the name of the field used as the output for the classifier
    * @param textFieldNames the name of the fields used as the inputs for the classifier
    */
-  public CachingNaiveBayesClassifier(IndexReader indexReader, Analyzer analyzer, Query query, String classFieldName, String... textFieldNames) {
+  public CachingNaiveBayesClassifier(
+      IndexReader indexReader,
+      Analyzer analyzer,
+      Query query,
+      String classFieldName,
+      String... textFieldNames) {
     super(indexReader, analyzer, query, classFieldName, textFieldNames);
     // building the cache
     try {
@@ -76,9 +80,9 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     }
   }
 
-
   /** Transforms values into a range between 0 and 1 */
-  protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument) throws IOException {
+  protected List<ClassificationResult<BytesRef>> assignClassNormalizedList(String inputDocument)
+      throws IOException {
     String[] tokenizedText = tokenize(inputDocument);
 
     List<ClassificationResult<BytesRef>> assignedClasses = calculateLogLikelihood(tokenizedText);
@@ -88,7 +92,8 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     return super.normClassificationResults(assignedClasses);
   }
 
-  private List<ClassificationResult<BytesRef>> calculateLogLikelihood(String[] tokenizedText) throws IOException {
+  private List<ClassificationResult<BytesRef>> calculateLogLikelihood(String[] tokenizedText)
+      throws IOException {
     // initialize the return List
     ArrayList<ClassificationResult<BytesRef>> ret = new ArrayList<>();
     for (BytesRef cclass : cclasses) {
@@ -110,7 +115,8 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
         // num : count the no of times the word appears in documents of class c(+1)
         double num = hits + 1; // +1 is added because of add 1 smoothing
 
-        // den : for the whole dictionary, count the no of times a word appears in documents of class c (+|V|)
+        // den : for the whole dictionary, count the no of times a word appears in documents of
+        // class c (+|V|)
         double den = classTermFreq.get(cclass) + docsWithClassSize;
 
         // P(w|c) = num/den
@@ -129,10 +135,11 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
 
         if (removeIdx >= 0) {
           ClassificationResult<BytesRef> toRemove = ret.get(removeIdx);
-          ret.add(new ClassificationResult<>(toRemove.getAssignedClass(), toRemove.getScore() + Math.log(wordProbability)));
+          ret.add(
+              new ClassificationResult<>(
+                  toRemove.getAssignedClass(), toRemove.getScore() + Math.log(wordProbability)));
           ret.remove(removeIdx);
         }
-
       }
     }
 
@@ -160,10 +167,14 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
         BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
         BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
         for (String textFieldName : textFieldNames) {
-          subQuery.add(new BooleanClause(new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
+          subQuery.add(
+              new BooleanClause(
+                  new TermQuery(new Term(textFieldName, word)), BooleanClause.Occur.SHOULD));
         }
         booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
-        booleanQuery.add(new BooleanClause(new TermQuery(new Term(classFieldName, cclass)), BooleanClause.Occur.MUST));
+        booleanQuery.add(
+            new BooleanClause(
+                new TermQuery(new Term(classFieldName, cclass)), BooleanClause.Occur.MUST));
         if (query != null) {
           booleanQuery.add(query, BooleanClause.Occur.MUST);
         }
@@ -184,22 +195,20 @@ public class CachingNaiveBayesClassifier extends SimpleNaiveBayesClassifier {
     return searched;
   }
 
-
   /**
-   * This function is building the frame of the cache. The cache is storing the
-   * word occurrences to the memory after those searched once. This cache can
-   * made 2-100x speedup in proper use, but can eat lot of memory. There is an
-   * option to lower the memory consume, if a word have really low occurrence in
-   * the index you could filter it out. The other parameter is switching between
-   * the term searching, if it true, just the terms in the skeleton will be
-   * searched, but if it false the terms whoes not in the cache will be searched
-   * out too (but not cached).
+   * This function is building the frame of the cache. The cache is storing the word occurrences to
+   * the memory after those searched once. This cache can made 2-100x speedup in proper use, but can
+   * eat lot of memory. There is an option to lower the memory consume, if a word have really low
+   * occurrence in the index you could filter it out. The other parameter is switching between the
+   * term searching, if it true, just the terms in the skeleton will be searched, but if it false
+   * the terms whoes not in the cache will be searched out too (but not cached).
    *
    * @param minTermOccurrenceInCache Lower cache size with higher value.
-   * @param justCachedTerms          The switch for fully exclude low occurrence docs.
+   * @param justCachedTerms The switch for fully exclude low occurrence docs.
    * @throws IOException If there is a low-level I/O error.
    */
-  public void reInitCache(int minTermOccurrenceInCache, boolean justCachedTerms) throws IOException {
+  public void reInitCache(int minTermOccurrenceInCache, boolean justCachedTerms)
+      throws IOException {
     this.justCachedTerms = justCachedTerms;
 
     this.docsWithClassSize = countDocsWithClass();

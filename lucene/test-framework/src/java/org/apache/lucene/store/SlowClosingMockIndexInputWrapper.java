@@ -17,22 +17,20 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
- * hangs onto files a little bit longer (50ms in close).
- * MockDirectoryWrapper acts like windows: you can't delete files
- * open elsewhere. so the idea is to make race conditions for tiny
- * files (like segments) easier to reproduce.
+ * hangs onto files a little bit longer (50ms in close). MockDirectoryWrapper acts like windows: you
+ * can't delete files open elsewhere. so the idea is to make race conditions for tiny files (like
+ * segments) easier to reproduce.
  */
 class SlowClosingMockIndexInputWrapper extends MockIndexInputWrapper {
 
-  public SlowClosingMockIndexInputWrapper(MockDirectoryWrapper dir,
-      String name, IndexInput delegate) {
+  public SlowClosingMockIndexInputWrapper(
+      MockDirectoryWrapper dir, String name, IndexInput delegate) {
     super(dir, name, delegate, null);
   }
-  
+
   @Override
   public void close() throws IOException {
     try {

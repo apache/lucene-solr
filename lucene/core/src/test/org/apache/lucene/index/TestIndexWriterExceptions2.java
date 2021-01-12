@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CrankyTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -46,61 +44,63 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 
-/** 
- * Causes a bunch of non-aborting and aborting exceptions and checks that
- * no index corruption is ever created
+/**
+ * Causes a bunch of non-aborting and aborting exceptions and checks that no index corruption is
+ * ever created
  */
 @SuppressCodecs("SimpleText")
 public class TestIndexWriterExceptions2 extends LuceneTestCase {
-  
+
   // just one thread, serial merge policy, hopefully debuggable
   public void testBasics() throws Exception {
     // disable slow things: we don't rely upon sleeps here.
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
-      ((MockDirectoryWrapper)dir).setUseSlowOpenClosers(false);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setUseSlowOpenClosers(false);
     }
-    
+
     // log all exceptions we hit, in case we fail (for debugging)
     ByteArrayOutputStream exceptionLog = new ByteArrayOutputStream();
     PrintStream exceptionStream = new PrintStream(exceptionLog, true, "UTF-8");
-    //PrintStream exceptionStream = System.out;
-    
+    // PrintStream exceptionStream = System.out;
+
     // create lots of non-aborting exceptions with a broken analyzer
     final long analyzerSeed = random().nextLong();
-    Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, false);
-        tokenizer.setEnableChecks(false); // TODO: can we turn this on? our filter is probably too evil
-        TokenStream stream = tokenizer;
-        // emit some payloads
-        if (fieldName.contains("payloads")) {
-          stream = new MockVariableLengthPayloadFilter(new Random(analyzerSeed), stream);
-        }
-        stream = new CrankyTokenFilter(stream, new Random(analyzerSeed));
-        return new TokenStreamComponents(tokenizer, stream);
-      }
-    };
-    
+    Analyzer analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, false);
+            tokenizer.setEnableChecks(
+                false); // TODO: can we turn this on? our filter is probably too evil
+            TokenStream stream = tokenizer;
+            // emit some payloads
+            if (fieldName.contains("payloads")) {
+              stream = new MockVariableLengthPayloadFilter(new Random(analyzerSeed), stream);
+            }
+            stream = new CrankyTokenFilter(stream, new Random(analyzerSeed));
+            return new TokenStreamComponents(tokenizer, stream);
+          }
+        };
+
     // create lots of aborting exceptions with a broken codec
     // we don't need a random codec, as we aren't trying to find bugs in the codec here.
     Codec inner = RANDOM_MULTIPLIER > 1 ? Codec.getDefault() : new AssertingCodec();
     Codec codec = new CrankyCodec(inner, new Random(random().nextLong()));
-    
+
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     // just for now, try to keep this test reproducible
     conf.setMergeScheduler(new SerialMergeScheduler());
     conf.setCodec(codec);
 
     int numDocs = atLeast(100);
-    
+
     IndexWriter iw = new IndexWriter(dir, conf);
     try {
       boolean allowAlreadyClosed = false;
@@ -112,22 +112,26 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         doc.add(new BinaryDocValuesField("dv2", new BytesRef(Integer.toString(i))));
         doc.add(new SortedDocValuesField("dv3", new BytesRef(Integer.toString(i))));
         doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i))));
-        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i-1))));
+        doc.add(new SortedSetDocValuesField("dv4", new BytesRef(Integer.toString(i - 1))));
         doc.add(new SortedNumericDocValuesField("dv5", i));
-        doc.add(new SortedNumericDocValuesField("dv5", i-1));
-        doc.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+        doc.add(new SortedNumericDocValuesField("dv5", i - 1));
+        doc.add(
+            newTextField(
+                "text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
         // ensure we store something
         doc.add(new StoredField("stored1", "foo"));
-        doc.add(new StoredField("stored1", "bar"));    
+        doc.add(new StoredField("stored1", "bar"));
         // ensure we get some payloads
-        doc.add(newTextField("text_payloads", TestUtil.randomAnalysisString(random(), 6, true), Field.Store.NO));
+        doc.add(
+            newTextField(
+                "text_payloads", TestUtil.randomAnalysisString(random(), 6, true), Field.Store.NO));
         // ensure we get some vectors
         FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
         ft.setStoreTermVectors(true);
         doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
         doc.add(new IntPoint("point", random().nextInt()));
         doc.add(new IntPoint("point2d", random().nextInt(), random().nextInt()));
-        
+
         if (random().nextInt(10) > 0) {
           // single doc
           try {
@@ -137,9 +141,12 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             if (thingToDo == 0) {
               iw.deleteDocuments(new Term("id", Integer.toString(i)));
             } else if (thingToDo == 1) {
-              iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i+1L);
+              iw.updateNumericDocValue(new Term("id", Integer.toString(i)), "dv", i + 1L);
             } else if (thingToDo == 2) {
-              iw.updateBinaryDocValue(new Term("id", Integer.toString(i)), "dv2", new BytesRef(Integer.toString(i+1)));
+              iw.updateBinaryDocValue(
+                  new Term("id", Integer.toString(i)),
+                  "dv2",
+                  new BytesRef(Integer.toString(i + 1)));
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
@@ -150,7 +157,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             // just for now, try to keep this test reproducible
             conf.setMergeScheduler(new SerialMergeScheduler());
             conf.setCodec(codec);
-            iw = new IndexWriter(dir, conf);            
+            iw = new IndexWriter(dir, conf);
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
@@ -164,16 +171,19 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           // block docs
           Document doc2 = new Document();
           doc2.add(newStringField("id", Integer.toString(-i), Field.Store.NO));
-          doc2.add(newTextField("text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
+          doc2.add(
+              newTextField(
+                  "text1", TestUtil.randomAnalysisString(random(), 20, true), Field.Store.NO));
           doc2.add(new StoredField("stored1", "foo"));
           doc2.add(new StoredField("stored1", "bar"));
           doc2.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
-          
+
           try {
             iw.addDocuments(Arrays.asList(doc, doc2));
             // we made it, sometimes delete our docs
             if (random().nextBoolean()) {
-              iw.deleteDocuments(new Term("id", Integer.toString(i)), new Term("id", Integer.toString(-i)));
+              iw.deleteDocuments(
+                  new Term("id", Integer.toString(i)), new Term("id", Integer.toString(-i)));
             }
           } catch (AlreadyClosedException ace) {
             // OK: writer was closed by abort; we just reopen now:
@@ -184,7 +194,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             // just for now, try to keep this test reproducible
             conf.setMergeScheduler(new SerialMergeScheduler());
             conf.setCodec(codec);
-            iw = new IndexWriter(dir, conf);            
+            iw = new IndexWriter(dir, conf);
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
@@ -222,7 +232,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
             // just for now, try to keep this test reproducible
             conf.setMergeScheduler(new SerialMergeScheduler());
             conf.setCodec(codec);
-            iw = new IndexWriter(dir, conf);            
+            iw = new IndexWriter(dir, conf);
           } catch (Exception e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Fake IOException")) {
               exceptionStream.println("\nTEST: got expected fake exc:" + e.getMessage());
@@ -234,7 +244,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           }
         }
       }
-      
+
       try {
         iw.close();
       } catch (Exception e) {
@@ -243,7 +253,8 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
           e.printStackTrace(exceptionStream);
           try {
             iw.rollback();
-          } catch (Throwable t) {}
+          } catch (Throwable t) {
+          }
         } else {
           Rethrow.rethrow(e);
         }
@@ -256,7 +267,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
       System.out.flush();
       Rethrow.rethrow(t);
     }
-    
+
     if (VERBOSE) {
       System.out.println("TEST PASSED: dumping fake-exception-log:...");
       System.out.println(exceptionLog.toString("UTF-8"));

@@ -17,7 +17,7 @@
 
 package org.apache.solr.pkg;
 
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;

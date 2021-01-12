@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,12 +32,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-
 class CoreParserTestIndexData implements Closeable {
 
   final Directory dir;
@@ -40,8 +39,11 @@ class CoreParserTestIndexData implements Closeable {
   final IndexSearcher searcher;
 
   CoreParserTestIndexData(Analyzer analyzer) throws Exception {
-    BufferedReader d = new BufferedReader(new InputStreamReader(
-        TestCoreParser.class.getResourceAsStream("reuters21578.txt"), StandardCharsets.US_ASCII));
+    BufferedReader d =
+        new BufferedReader(
+            new InputStreamReader(
+                TestCoreParser.class.getResourceAsStream("reuters21578.txt"),
+                StandardCharsets.US_ASCII));
     dir = LuceneTestCase.newDirectory();
     IndexWriter writer = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(analyzer));
     String line = d.readLine();
@@ -67,6 +69,4 @@ class CoreParserTestIndexData implements Closeable {
     reader.close();
     dir.close();
   }
-
 }
-

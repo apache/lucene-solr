@@ -20,7 +20,9 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDoubleRange extends LuceneTestCase {
   public void testToString() {
-    DoubleRange range = new DoubleRange("foo", new double[] { 0.1, 1.1, 2.1, 3.1 }, new double[] { .2, 1.2, 2.2, 3.2 });
-    assertEquals("DoubleRange <foo: [0.1 : 0.2] [1.1 : 1.2] [2.1 : 2.2] [3.1 : 3.2]>", range.toString());
+    DoubleRange range =
+        new DoubleRange("foo", new double[] {0.1, 1.1, 2.1, 3.1}, new double[] {.2, 1.2, 2.2, 3.2});
+    assertEquals(
+        "DoubleRange <foo: [0.1 : 0.2] [1.1 : 1.2] [2.1 : 2.2] [3.1 : 3.2]>", range.toString());
   }
 }

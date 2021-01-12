@@ -267,7 +267,18 @@ public class PeerSync implements SolrMetricProducer {
     for (String replica : replicas) {
       requestFingerprint(replica);
     }
-    
+
+    // We only compute fingerprint during leader election. Therefore after heavy indexing,
+    // the call to compute fingerprint takes awhile and slows the leader election.
+    // So we do it in parallel with fetching the fingerprint from the other replicas
+    IndexFingerprint ourFingerprint;
+    try {
+      ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+    } catch (IOException e) {
+      log.warn("Could not confirm if we are already in sync. Continue with PeerSync");
+      return false;
+    }
+
     for (;;) {
       ShardResponse srsp = shardHandler.takeCompletedOrError();
       if (srsp == null) break;
@@ -281,19 +292,14 @@ public class PeerSync implements SolrMetricProducer {
         log.warn("Replica did not return a fingerprint - possibly an older Solr version or exception");
         continue;
       }
-      
-      try {
-        IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(replicaFingerprint);
-        IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
-        if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
-          log.info("We are already in sync. No need to do a PeerSync ");
-          return true;
-        }
-      } catch(IOException e) {
-        log.warn("Could not confirm if we are already in sync. Continue with PeerSync");
+
+      IndexFingerprint otherFingerprint = IndexFingerprint.fromObject(replicaFingerprint);
+      if(IndexFingerprint.compare(otherFingerprint, ourFingerprint) == 0) {
+        log.info("We are already in sync. No need to do a PeerSync ");
+        return true;
       }
     }
-    
+
     return false;
   }
   

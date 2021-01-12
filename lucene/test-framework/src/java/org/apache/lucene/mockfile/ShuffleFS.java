@@ -29,23 +29,22 @@ import java.util.Random;
 
 /**
  * Gives an unpredictable, but deterministic order to directory listings.
- * <p>
- * This can be useful if for instance, you have build servers on
- * linux but developers are using macs.
+ *
+ * <p>This can be useful if for instance, you have build servers on linux but developers are using
+ * macs.
  */
 public class ShuffleFS extends FilterFileSystemProvider {
   final long seed;
-  
-  /** 
-   * Create a new instance, wrapping {@code delegate}.
-   */
+
+  /** Create a new instance, wrapping {@code delegate}. */
   public ShuffleFS(FileSystem delegate, long seed) {
     super("shuffle://", delegate);
     this.seed = seed;
   }
 
   @Override
-  public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
+  public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter)
+      throws IOException {
     try (DirectoryStream<Path> stream = super.newDirectoryStream(dir, filter)) {
       // read complete directory listing
       List<Path> contents = new ArrayList<>();
@@ -53,7 +52,10 @@ public class ShuffleFS extends FilterFileSystemProvider {
         contents.add(path);
       }
       // sort first based only on filename
-      Collections.sort(contents, (path1, path2) -> path1.getFileName().toString().compareTo(path2.getFileName().toString()));
+      Collections.sort(
+          contents,
+          (path1, path2) ->
+              path1.getFileName().toString().compareTo(path2.getFileName().toString()));
       // sort based on current class seed
       Collections.shuffle(contents, new Random(seed));
       return new DirectoryStream<Path>() {
@@ -61,8 +63,9 @@ public class ShuffleFS extends FilterFileSystemProvider {
         public Iterator<Path> iterator() {
           return contents.iterator();
         }
+
         @Override
-        public void close() throws IOException {}        
+        public void close() throws IOException {}
       };
     }
   }

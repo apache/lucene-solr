@@ -17,12 +17,11 @@
 
 package org.apache.solr.servlet;
 
-import javax.servlet.FilterConfig;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.annotation.SolrThreadSafe;
+import org.apache.solr.core.RateLimiterConfig;
 
 /**
  * Handles rate limiting for a specific request type.
@@ -93,58 +92,6 @@ public class RequestRateLimiter {
 
   public RateLimiterConfig getRateLimiterConfig() {
     return rateLimiterConfig;
-  }
-
-  static long getParamAndParseLong(FilterConfig config, String parameterName, long defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Long.parseLong(tempBuffer);
-    }
-
-    return defaultValue;
-  }
-
-  static int getParamAndParseInt(FilterConfig config, String parameterName, int defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Integer.parseInt(tempBuffer);
-    }
-
-    return defaultValue;
-  }
-
-  static boolean getParamAndParseBoolean(FilterConfig config, String parameterName, boolean defaultValue) {
-    String tempBuffer = config.getInitParameter(parameterName);
-
-    if (tempBuffer != null) {
-      return Boolean.parseBoolean(tempBuffer);
-    }
-
-    return defaultValue;
-  }
-
-  /* Rate limiter config for a specific request rate limiter instance */
-  static class RateLimiterConfig {
-    public SolrRequest.SolrRequestType requestType;
-    public boolean isEnabled;
-    public long waitForSlotAcquisition;
-    public int allowedRequests;
-    public boolean isSlotBorrowingEnabled;
-    public int guaranteedSlotsThreshold;
-
-    public RateLimiterConfig() { }
-
-    public RateLimiterConfig(SolrRequest.SolrRequestType requestType, boolean isEnabled, int guaranteedSlotsThreshold,
-                             long waitForSlotAcquisition, int allowedRequests, boolean isSlotBorrowingEnabled) {
-      this.requestType = requestType;
-      this.isEnabled = isEnabled;
-      this.guaranteedSlotsThreshold = guaranteedSlotsThreshold;
-      this.waitForSlotAcquisition = waitForSlotAcquisition;
-      this.allowedRequests = allowedRequests;
-      this.isSlotBorrowingEnabled = isSlotBorrowingEnabled;
-    }
   }
 
   // Represents the metadata for a slot

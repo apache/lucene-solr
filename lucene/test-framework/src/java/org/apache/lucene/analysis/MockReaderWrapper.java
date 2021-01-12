@@ -19,14 +19,11 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Random;
-
 import org.apache.lucene.util.TestUtil;
 
-/** Wraps a Reader, and can throw random or fixed
- *  exceptions, and spoon feed read chars. */
-
+/** Wraps a Reader, and can throw random or fixed exceptions, and spoon feed read chars. */
 public class MockReaderWrapper extends Reader {
-  
+
   private final Reader in;
   private final Random random;
 
@@ -94,4 +91,4 @@ public class MockReaderWrapper extends Reader {
   public static boolean isMyEvilException(Throwable t) {
     return (t instanceof RuntimeException) && "fake exception now!".equals(t.getMessage());
   }
-};
+}

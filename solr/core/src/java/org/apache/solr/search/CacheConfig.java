@@ -25,13 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.StrUtils;
+
 import org.apache.solr.core.PluginInfo;
+
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -48,7 +50,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class CacheConfig implements MapSerializable{
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private String nodeName;
 
 
@@ -93,7 +95,7 @@ public class CacheConfig implements MapSerializable{
       Node node = nodes.item(i);
       if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
         CacheConfig config = getConfig(solrConfig, node.getNodeName(),
-                                       DOMUtil.toMap(node.getAttributes()), configPath);
+                DOMUtil.toMap(node.getAttributes()), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -127,15 +129,15 @@ public class CacheConfig implements MapSerializable{
     config.args = attrs;
 
     Map<String, String> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
-    if (map != null) {
+    if(map != null){
       HashMap<String, String> mapCopy = new HashMap<>(config.args);
       for (Map.Entry<String, String> e : map.entrySet()) {
-        mapCopy.put(e.getKey(), String.valueOf(e.getValue()));
+        mapCopy.put(e.getKey(),String.valueOf(e.getValue()));
       }
       config.args = mapCopy;
     }
     String nameAttr = config.args.get(NAME);  // OPTIONAL
-    if (nameAttr == null) {
+    if (nameAttr==null) {
       config.args.put(NAME, config.nodeName);
     }
 
@@ -159,7 +161,7 @@ public class CacheConfig implements MapSerializable{
     if (config.regenImpl != null) {
       config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
     }
-    
+
     return config;
   }
 

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -96,7 +95,8 @@ public class TestDisjunctionScoreBlockBoundaryPropagator extends LuceneTestCase 
     Scorer scorer4 = new FakeScorer(80, 3f);
     List<Scorer> scorers = Arrays.asList(scorer1, scorer2, scorer3, scorer4);
     Collections.shuffle(scorers, random());
-    DisjunctionScoreBlockBoundaryPropagator propagator = new DisjunctionScoreBlockBoundaryPropagator(scorers);
+    DisjunctionScoreBlockBoundaryPropagator propagator =
+        new DisjunctionScoreBlockBoundaryPropagator(scorers);
     assertEquals(20, propagator.advanceShallow(0));
 
     propagator.setMinCompetitiveScore(0.2f);
@@ -117,5 +117,4 @@ public class TestDisjunctionScoreBlockBoundaryPropagator extends LuceneTestCase 
     propagator.setMinCompetitiveScore(5f);
     assertEquals(80, propagator.advanceShallow(0));
   }
-
 }

@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
-/** 
- * Simple implementation of {@link ChecksumIndexInput} that wraps
- * another input and delegates calls.
+/**
+ * Simple implementation of {@link ChecksumIndexInput} that wraps another input and delegates calls.
  */
 public class BufferedChecksumIndexInput extends ChecksumIndexInput {
   final IndexInput main;
@@ -44,8 +42,7 @@ public class BufferedChecksumIndexInput extends ChecksumIndexInput {
   }
 
   @Override
-  public void readBytes(byte[] b, int offset, int len)
-    throws IOException {
+  public void readBytes(byte[] b, int offset, int len) throws IOException {
     main.readBytes(b, offset, len);
     digest.update(b, offset, len);
   }

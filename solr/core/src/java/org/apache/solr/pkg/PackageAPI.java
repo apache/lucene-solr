@@ -93,8 +93,7 @@ public class PackageAPI {
 
   private void registerListener(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
-    String path = SOLR_PKGS_PATH;
-    zkClient.exists(path,
+    zkClient.exists(SOLR_PKGS_PATH,
         new Watcher() {
 
           @Override
@@ -103,32 +102,33 @@ public class PackageAPI {
             if (Event.EventType.None.equals(event.getType())) {
               return;
             }
-            try {
-              synchronized (this) {
-                log.debug("Updating [{}] ... ", path);
-
-                // remake watch
-                final Watcher thisWatch = this;
-                final Stat stat = new Stat();
-                final byte[] data = zkClient.getData(path, thisWatch, stat, true);
-                pkgs = readPkgsFromZk(data, stat);
-                packageLoader.refreshPackageConf();
-              }
-            } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-              log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
-            } catch (KeeperException e) {
-              log.error("A ZK error has occurred", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.warn("Interrupted", e);
+            synchronized (this) {
+              log.debug("Updating [{}] ... ", SOLR_PKGS_PATH);
+              // remake watch
+              final Watcher thisWatch = this;
+              refreshPackages(thisWatch);
             }
           }
-
         }, true);
   }
 
+  public void refreshPackages(Watcher watcher)  {
+    final Stat stat = new Stat();
+    try {
+      final byte[] data = coreContainer.getZkController().getZkClient().getData(SOLR_PKGS_PATH, watcher, stat, true);
+      pkgs = readPkgsFromZk(data, stat);
+      packageLoader.refreshPackageConf();
+    } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
+      log.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: ", e);
+    } catch (KeeperException e) {
+      log.error("A ZK error has occurred", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      log.warn("Interrupted", e);
+    }
+  }
 
   private Packages readPkgsFromZk(byte[] data, Stat stat) throws KeeperException, InterruptedException {
 

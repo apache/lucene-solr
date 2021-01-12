@@ -19,7 +19,6 @@ package org.apache.lucene.search.join;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -41,12 +40,14 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestBlockJoinScorer extends LuceneTestCase {
   public void testScoreNone() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig().setMergePolicy(
-          // retain doc id order
-          newLogMergePolicy(random().nextBoolean())
-        )
-    );
+    RandomIndexWriter w =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig()
+                .setMergePolicy(
+                    // retain doc id order
+                    newLogMergePolicy(random().nextBoolean())));
     List<Document> docs = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       docs.clear();
@@ -68,12 +69,14 @@ public class TestBlockJoinScorer extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
-    BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "parent")));
+    BitSetProducer parentsFilter =
+        new QueryBitSetProducer(new TermQuery(new Term("docType", "parent")));
     CheckJoinIndex.check(reader, parentsFilter);
 
     Query childQuery = new MatchAllDocsQuery();
-    ToParentBlockJoinQuery query = new ToParentBlockJoinQuery(childQuery, parentsFilter,
-        org.apache.lucene.search.join.ScoreMode.None);
+    ToParentBlockJoinQuery query =
+        new ToParentBlockJoinQuery(
+            childQuery, parentsFilter, org.apache.lucene.search.join.ScoreMode.None);
 
     Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1);
     LeafReaderContext context = searcher.getIndexReader().leaves().get(0);

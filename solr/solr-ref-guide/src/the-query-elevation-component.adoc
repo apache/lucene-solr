@@ -61,8 +61,11 @@ Optionally, in the Query Elevation Component configuration you can also specify 
 The Query Elevation Search Component takes the following parameters:
 
 `queryFieldType`::
-Specifies which fieldType should be used to analyze the incoming text. For example, it may be appropriate to use a fieldType with a LowerCaseFilter. Other example, if you need to unescape backslash-escaped queries, then you can define the fieldType to preprocess with a PatternReplaceCharFilter. Here is the corresponding example of fieldType (traditionally in `schema.xml`):
-
+Specifies which field type should be used to analyze the incoming text. For example, it may be appropriate to use a field type with a `LowerCaseFilter`.
++
+Another example is if you need to unescape backslash-escaped queries, then you can define the field type to preprocess with a `PatternReplaceCharFilter`.
+Here is the corresponding example of field type (traditionally in `managed-schema` or `schema.xml`):
++
 [source,xml]
 ----
 <fieldType name="unescapelowercase" class="solr.TextField">
@@ -73,8 +76,9 @@ Specifies which fieldType should be used to analyze the incoming text. For examp
   </analyzer>
 </fieldType>
 ----
-
-For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p{IsAlphabetic}\p{Digit}])`.
++
+// NOTE: {IsAlphabetic} and {Digit} below are escaped with '\' so Asciidoctor does not treat them as attributes during conversion to HTML.
+For example, to unescape only non-alphanumeric, the pattern could be `\\([^\p\{IsAlphabetic}\p\{Digit}])`.
 
 `config-file`::
 Path to the file that defines query elevation. This file must exist in `<instanceDir>/conf/<config-file>` or `<dataDir>/<config-file>`. If the file exists in the `conf/` directory it will be loaded once at startup. If it exists in the `data/` directory, it will be reloaded for each IndexReader.

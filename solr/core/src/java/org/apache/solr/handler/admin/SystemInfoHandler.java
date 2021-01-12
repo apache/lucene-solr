@@ -139,8 +139,11 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
-    if (cc != null)
-      rsp.add( "solr_home", cc.getSolrHome());
+    if (cc != null) {
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+    }
+
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "security", getSecurityInfo(req) );

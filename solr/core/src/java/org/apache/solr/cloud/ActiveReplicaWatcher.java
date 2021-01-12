@@ -119,11 +119,11 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
       log.debug("-- onStateChanged@{}: replicaIds={}, solrCoreNames={} {}\ncollectionState {}"
           , Long.toHexString(hashCode()), replicaIds, solrCoreNames
           , (latch != null ? "\nlatch count=" + latch.getCount() : "")
-          , collectionState); // logOk
+          , collectionState); // nowarn
     }
     if (collectionState == null) { // collection has been deleted - don't wait
       if (log.isDebugEnabled()) {
-        log.debug("-- collection deleted, decrementing latch by {} ", replicaIds.size() + solrCoreNames.size()); // logOk
+        log.debug("-- collection deleted, decrementing latch by {} ", replicaIds.size() + solrCoreNames.size()); // nowarn
       }
       if (latch != null) {
         for (int i = 0; i < replicaIds.size() + solrCoreNames.size(); i++) {

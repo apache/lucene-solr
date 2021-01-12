@@ -17,6 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.util;
 
+import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -25,17 +30,9 @@ import javax.swing.JTable;
 import javax.swing.UIManager;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.Objects;
-
 import org.apache.lucene.luke.app.desktop.components.dialog.HelpDialogFactory;
 
-/**
- * Cell render class for table header with help dialog.
- */
+/** Cell render class for table header with help dialog. */
 public final class HelpHeaderRenderer implements TableCellRenderer {
 
   private JTable table;
@@ -52,12 +49,17 @@ public final class HelpHeaderRenderer implements TableCellRenderer {
 
   private final JDialog parent;
 
-  public HelpHeaderRenderer(String title, String desc, JComponent helpContent, HelpDialogFactory helpDialogFactory) {
+  public HelpHeaderRenderer(
+      String title, String desc, JComponent helpContent, HelpDialogFactory helpDialogFactory) {
     this(title, desc, helpContent, helpDialogFactory, null);
   }
 
-  public HelpHeaderRenderer(String title, String desc, JComponent helpContent, HelpDialogFactory helpDialogFactory,
-                            JDialog parent) {
+  public HelpHeaderRenderer(
+      String title,
+      String desc,
+      JComponent helpContent,
+      HelpDialogFactory helpDialogFactory,
+      JDialog parent) {
     this.title = title;
     this.desc = desc;
     this.helpContent = helpContent;
@@ -67,7 +69,8 @@ public final class HelpHeaderRenderer implements TableCellRenderer {
 
   @Override
   @SuppressWarnings("unchecked")
-  public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+  public Component getTableCellRendererComponent(
+      JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
     if (table != null && this.table != table) {
       this.table = table;
       final JTableHeader header = table.getTableHeader();
@@ -78,13 +81,17 @@ public final class HelpHeaderRenderer implements TableCellRenderer {
 
         // add label with mouse click listener
         // when the label is clicked, help dialog will be displayed.
-        JLabel helpLabel = new JLabel(FontUtils.elegantIconHtml("&#x74;", MessageUtils.getLocalizedMessage("label.help")));
+        JLabel helpLabel =
+            new JLabel(
+                FontUtils.elegantIconHtml(
+                    "&#x74;", MessageUtils.getLocalizedMessage("label.help")));
         helpLabel.setHorizontalAlignment(JLabel.LEFT);
         helpLabel.setIconTextGap(5);
         panel.add(FontUtils.toLinkText(helpLabel));
 
         // add mouse listener to JTableHeader object.
-        // see: https://stackoverflow.com/questions/7137786/how-can-i-put-a-control-in-the-jtableheader-of-a-jtable
+        // see:
+        // https://stackoverflow.com/questions/7137786/how-can-i-put-a-control-in-the-jtableheader-of-a-jtable
         header.addMouseListener(new HelpClickListener(column));
       }
     }
@@ -110,20 +117,28 @@ public final class HelpHeaderRenderer implements TableCellRenderer {
       if (column == this.column && e.getClickCount() == 1 && column != -1) {
         // only when the targeted column header is clicked, pop up the dialog
         if (Objects.nonNull(parent)) {
-          new DialogOpener<>(helpDialogFactory).open(parent, title, 600, 350,
-              (factory) -> {
-                factory.setDesc(desc);
-                factory.setContent(helpContent);
-              });
+          new DialogOpener<>(helpDialogFactory)
+              .open(
+                  parent,
+                  title,
+                  600,
+                  350,
+                  (factory) -> {
+                    factory.setDesc(desc);
+                    factory.setContent(helpContent);
+                  });
         } else {
-          new DialogOpener<>(helpDialogFactory).open(title, 600, 350,
-              (factory) -> {
-                factory.setDesc(desc);
-                factory.setContent(helpContent);
-              });
+          new DialogOpener<>(helpDialogFactory)
+              .open(
+                  title,
+                  600,
+                  350,
+                  (factory) -> {
+                    factory.setDesc(desc);
+                    factory.setContent(helpContent);
+                  });
         }
       }
     }
-
   }
 }

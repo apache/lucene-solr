@@ -22,50 +22,70 @@ public class TestXYPoint extends LuceneTestCase {
 
   /** point values cannot be NaN */
   public void testNaN() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(Float.NaN, 45.23f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(Float.NaN, 45.23f);
+            });
     assertTrue(expected.getMessage().contains("invalid value NaN"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(43.5f, Float.NaN);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(43.5f, Float.NaN);
+            });
     assertTrue(expected.getMessage().contains("invalid value NaN"));
   }
 
   /** point values mist be finite */
   public void testPositiveInf() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(Float.POSITIVE_INFINITY, 45.23f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(Float.POSITIVE_INFINITY, 45.23f);
+            });
     assertTrue(expected.getMessage().contains("invalid value Inf"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(43.5f, Float.POSITIVE_INFINITY);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(43.5f, Float.POSITIVE_INFINITY);
+            });
     assertTrue(expected.getMessage().contains("invalid value Inf"));
   }
 
   /** point values mist be finite */
   public void testNegativeInf() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(Float.NEGATIVE_INFINITY, 45.23f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(Float.NEGATIVE_INFINITY, 45.23f);
+            });
     assertTrue(expected.getMessage().contains("invalid value -Inf"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYPoint(43.5f, Float.NEGATIVE_INFINITY);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYPoint(43.5f, Float.NEGATIVE_INFINITY);
+            });
     assertTrue(expected.getMessage().contains("invalid value -Inf"));
   }
 
   /** equals and hashcode */
   public void testEqualsAndHashCode() {
-    XYPoint point = new XYPoint(ShapeTestUtil.nextFloat(random()), ShapeTestUtil.nextFloat(random()));
+    XYPoint point =
+        new XYPoint(ShapeTestUtil.nextFloat(random()), ShapeTestUtil.nextFloat(random()));
     XYPoint copy = new XYPoint(point.getX(), point.getY());
     assertEquals(point, copy);
     assertEquals(point.hashCode(), copy.hashCode());
-    XYPoint otherPoint = new XYPoint(ShapeTestUtil.nextFloat(random()), ShapeTestUtil.nextFloat(random()));
+    XYPoint otherPoint =
+        new XYPoint(ShapeTestUtil.nextFloat(random()), ShapeTestUtil.nextFloat(random()));
     if (point.getX() != otherPoint.getX() || point.getY() != otherPoint.getY()) {
       assertNotEquals(point, otherPoint);
       // it is possible to have hashcode collisions

@@ -26,11 +26,14 @@ Before starting an upgrade to Solr 9, please take the time to review all informa
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 8.1, you should review changes made in all subsequent 8.x releases in addition to changes for 9.0.
 
-A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
+A thorough review of the list in Major Changes in Earlier 8.x Versions as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 9.
 
 == Solr 9.0
 
 _(raw; not yet edited)_
+
+* SOLR-14912: Cleaned up solr-extraction contrib to produce solr-extraction-* jar
+  (instead of solr-cell-*). (Dawid Weiss)
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
@@ -111,7 +114,7 @@ _(raw; not yet edited)_
 * SOLR-14656: Autoscaling framework removed
   This includes:
     Autoscaling, policy, triggers etc.
-    withCollection handling
+    withCollection handling (SOLR-14964)
     UTILIZENODE command
     Sim framework
     Suggestions tab in UI
@@ -124,7 +127,23 @@ _(raw; not yet edited)_
   monitors on Solr KPIs that mention "master" or "slave" will also now be "leader" and "follower"
 
 * SOLR-14783: Data Import Handler (DIH) has been removed from Solr. The community package is available at: https://github.com/rohitbemax/dataimporthandler (Alexandre Rafalovitch)
-  
+
+* SOLR-14792: VelocityResponseWriter has been removed from Solr.  This encompasses all previous included `/browse` and
+  `wt=velocity` examples.  This feature has been migrated to an installable package at
+  https://github.com/erikhatcher/solritas
+
+* SOLR-14510: The `writeStartDocumentList` in `TextResponseWriter` now receives an extra boolean parameter representing the "exactness" of the numFound value (exact vs approximation).
+  Any custom response writer extending `TextResponseWriter` will need to implement this abstract method now (instead previous with the same name but without the new boolean parameter).
+
+* SOLR-14036: Implicit /terms handler now returns terms across all shards in SolrCloud instead of only the local core.  Users/apps may be assuming the old behavior.  A request can be modified via the standard distrib=false param to only use the local core receiving the request.
+
+* SOLR-12847: maxShardsPerNode parameter has been removed because it was broken and inconsistent with other replica placement strategies. Other relevant placement strategies
+  should be used instead, such as autoscaling policy or rules-based placement.
+
+* SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
+
+* SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

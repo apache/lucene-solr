@@ -26,12 +26,11 @@ import java.util.Locale;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
-/**
- * Utilities for accessing message resources.
- */
+/** Utilities for accessing message resources. */
 public class MessageUtils {
 
-  public static final String MESSAGE_BUNDLE_BASENAME = "org/apache/lucene/luke/app/desktop/messages/messages";
+  public static final String MESSAGE_BUNDLE_BASENAME =
+      "org/apache/lucene/luke/app/desktop/messages/messages";
 
   public static String getLocalizedMessage(String key) {
     return bundle.getString(key);
@@ -43,19 +42,23 @@ public class MessageUtils {
   }
 
   // https://stackoverflow.com/questions/4659929/how-to-use-utf-8-in-resource-properties-with-resourcebundle
-  private static ResourceBundle.Control UTF8_RESOURCEBUNDLE_CONTROL = new ResourceBundle.Control() {
-    @Override
-    public ResourceBundle newBundle(String baseName, Locale locale, String format, ClassLoader loader, boolean reload) throws IllegalAccessException, InstantiationException, IOException {
-      String bundleName = toBundleName(baseName, locale);
-      String resourceName = toResourceName(bundleName, "properties");
-      try (InputStream is = loader.getResourceAsStream(resourceName)) {
-        return new PropertyResourceBundle(new InputStreamReader(is, StandardCharsets.UTF_8));
-      }
-    }
-  };
+  private static ResourceBundle.Control UTF8_RESOURCEBUNDLE_CONTROL =
+      new ResourceBundle.Control() {
+        @Override
+        public ResourceBundle newBundle(
+            String baseName, Locale locale, String format, ClassLoader loader, boolean reload)
+            throws IllegalAccessException, InstantiationException, IOException {
+          String bundleName = toBundleName(baseName, locale);
+          String resourceName = toResourceName(bundleName, "properties");
+          try (InputStream is = loader.getResourceAsStream(resourceName)) {
+            return new PropertyResourceBundle(new InputStreamReader(is, StandardCharsets.UTF_8));
+          }
+        }
+      };
 
-  private static ResourceBundle bundle = ResourceBundle.getBundle(MESSAGE_BUNDLE_BASENAME, Locale.ENGLISH, UTF8_RESOURCEBUNDLE_CONTROL);
+  private static ResourceBundle bundle =
+      ResourceBundle.getBundle(
+          MESSAGE_BUNDLE_BASENAME, Locale.ENGLISH, UTF8_RESOURCEBUNDLE_CONTROL);
 
-  private MessageUtils() {
-  }
+  private MessageUtils() {}
 }

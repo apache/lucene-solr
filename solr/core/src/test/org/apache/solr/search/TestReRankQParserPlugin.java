@@ -671,7 +671,8 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("q", "field_t:0");
     params.add("start", "0");
     params.add("rows", "10");
-    params.add("fl", "id");
+    params.add("fl", "id,score");
+    params.add("sort", "score desc, id_p_i asc");
     assertQ(req(params),
         "*[count(//doc)=10]",
         "//result[@numFound='" + numDocs + "']",
@@ -707,23 +708,6 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         );
     
     params.add(CommonParams.MIN_EXACT_COUNT, "2");
-    assertQ(req(params),
-        "*[count(//doc)=10]",
-        "//result[@numFound<='" + numDocs + "']",
-        "//result[@numFoundExact='false']",
-        "//result/doc[1]/str[@name='id'][.='10']",
-        "//result/doc[2]/str[@name='id'][.='0']",
-        "//result/doc[3]/str[@name='id'][.='1']",
-        "//result/doc[4]/str[@name='id'][.='2']",
-        "//result/doc[5]/str[@name='id'][.='3']",
-        "//result/doc[6]/str[@name='id'][.='4']",
-        "//result/doc[7]/str[@name='id'][.='5']",
-        "//result/doc[8]/str[@name='id'][.='6']",
-        "//result/doc[9]/str[@name='id'][.='7']",
-        "//result/doc[10]/str[@name='id'][.='8']"
-        );
-    
-    params.add("sort", "score desc, id_p_i asc");
     assertQ(req(params),
         "*[count(//doc)=10]",
         "//result[@numFound<='" + numDocs + "']",

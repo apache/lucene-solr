@@ -50,8 +50,6 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed for test of IOUtils.spins (maybe it can be avoided)
-  permission java.lang.RuntimePermission "getFileStoreAttributes";
   // analyzers/uima: needed by lucene expressions' JavascriptCompiler
   permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
@@ -64,6 +62,13 @@ grant {
   permission java.lang.RuntimePermission "getClassLoader";
   permission java.lang.RuntimePermission "setContextClassLoader";
 
+  // Needed for loading native library (lucene:misc:native) in lucene:misc
+  permission java.lang.RuntimePermission "loadLibrary.LuceneNativeIO";
+  permission java.lang.RuntimePermission "writeFileDescriptor";
+
+  // TestLockFactoriesMultiJVM opens a random port on 127.0.0.1 (port 0 = ephemeral port range):
+  permission java.net.SocketPermission "127.0.0.1:0", "accept,listen,resolve";
+
   // read access to all system properties:
   permission java.util.PropertyPermission "*", "read";
   // write access to only these:
@@ -74,7 +79,6 @@ grant {
 
   // CMS randomization
   permission java.util.PropertyPermission "lucene.cms.override_core_count", "write";
-  permission java.util.PropertyPermission "lucene.cms.override_spins", "write";
 
   // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
   permission java.util.PropertyPermission "tests.runnested", "write";

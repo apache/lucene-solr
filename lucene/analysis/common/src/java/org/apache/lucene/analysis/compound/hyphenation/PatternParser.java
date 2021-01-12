@@ -16,25 +16,21 @@
  */
 package org.apache.lucene.analysis.compound.hyphenation;
 
-// SAX
-import org.xml.sax.XMLReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import javax.xml.parsers.SAXParserFactory;
+import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
+import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
-import org.xml.sax.Attributes;
-
-// Java
-import java.io.IOException;
-import java.util.ArrayList;
-
-import javax.xml.parsers.SAXParserFactory;
 
 /**
- * A SAX document handler to read and parse hyphenation patterns from a XML
- * file.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified. 
+ * A SAX document handler to read and parse hyphenation patterns from a XML file.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
 public class PatternParser extends DefaultHandler {
 
@@ -67,7 +63,6 @@ public class PatternParser extends DefaultHandler {
     parser.setErrorHandler(this);
     parser.setEntityResolver(this);
     hyphenChar = '-'; // default
-
   }
 
   public PatternParser(PatternConsumer consumer) {
@@ -81,7 +76,7 @@ public class PatternParser extends DefaultHandler {
 
   /**
    * Parses a hyphenation pattern file.
-   * 
+   *
    * @param filename the filename
    * @throws IOException In case of an exception while parsing
    */
@@ -91,7 +86,7 @@ public class PatternParser extends DefaultHandler {
 
   /**
    * Parses a hyphenation pattern file.
-   * 
+   *
    * @param source the InputSource for the file
    * @throws IOException In case of an exception while parsing
    */
@@ -105,7 +100,7 @@ public class PatternParser extends DefaultHandler {
 
   /**
    * Creates a SAX parser using JAXP
-   * 
+   *
    * @return the created SAX parser
    */
   static XMLReader createParser() {
@@ -242,10 +237,8 @@ public class PatternParser extends DefaultHandler {
   @Override
   public InputSource resolveEntity(String publicId, String systemId) {
     // supply the internal hyphenation.dtd if possible
-    if (
-      (systemId != null && systemId.matches("(?i).*\\bhyphenation.dtd\\b.*")) ||
-      ("hyphenation-info".equals(publicId))
-    ) {
+    if ((systemId != null && systemId.matches("(?i).*\\bhyphenation.dtd\\b.*"))
+        || ("hyphenation-info".equals(publicId))) {
       // System.out.println(this.getClass().getResource("hyphenation.dtd").toExternalForm());
       return new InputSource(this.getClass().getResource("hyphenation.dtd").toExternalForm());
     }
@@ -257,12 +250,11 @@ public class PatternParser extends DefaultHandler {
   //
 
   /**
-   * @see org.xml.sax.ContentHandler#startElement(java.lang.String,
-   *      java.lang.String, java.lang.String, org.xml.sax.Attributes)
+   * @see org.xml.sax.ContentHandler#startElement(java.lang.String, java.lang.String,
+   *     java.lang.String, org.xml.sax.Attributes)
    */
   @Override
-  public void startElement(String uri, String local, String raw,
-      Attributes attrs) {
+  public void startElement(String uri, String local, String raw, Attributes attrs) {
     if (local.equals("hyphen-char")) {
       String h = attrs.getValue("value");
       if (h != null && h.length() == 1) {
@@ -279,16 +271,16 @@ public class PatternParser extends DefaultHandler {
       if (token.length() > 0) {
         exception.add(token.toString());
       }
-      exception.add(new Hyphen(attrs.getValue("pre"), attrs.getValue("no"),
-          attrs.getValue("post")));
+      exception.add(
+          new Hyphen(attrs.getValue("pre"), attrs.getValue("no"), attrs.getValue("post")));
       currElement = ELEM_HYPHEN;
     }
     token.setLength(0);
   }
 
   /**
-   * @see org.xml.sax.ContentHandler#endElement(java.lang.String,
-   *      java.lang.String, java.lang.String)
+   * @see org.xml.sax.ContentHandler#endElement(java.lang.String, java.lang.String,
+   *     java.lang.String)
    */
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -303,8 +295,7 @@ public class PatternParser extends DefaultHandler {
         case ELEM_EXCEPTIONS:
           exception.add(word);
           exception = normalizeException(exception);
-          consumer.addException(getExceptionWord(exception), 
-              (ArrayList) exception.clone());
+          consumer.addException(getExceptionWord(exception), (ArrayList) exception.clone());
           break;
         case ELEM_PATTERNS:
           consumer.addPattern(getPattern(word), getInterletterValues(word));
@@ -322,12 +313,9 @@ public class PatternParser extends DefaultHandler {
     } else {
       currElement = 0;
     }
-
   }
 
-  /**
-   * @see org.xml.sax.ContentHandler#characters(char[], int, int)
-   */
+  /** @see org.xml.sax.ContentHandler#characters(char[], int, int) */
   @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
   public void characters(char ch[], int start, int length) {
@@ -343,8 +331,7 @@ public class PatternParser extends DefaultHandler {
         case ELEM_EXCEPTIONS:
           exception.add(word);
           exception = normalizeException(exception);
-          consumer.addException(getExceptionWord(exception),
-              (ArrayList) exception.clone());
+          consumer.addException(getExceptionWord(exception), (ArrayList) exception.clone());
           exception.clear();
           break;
         case ELEM_PATTERNS:
@@ -353,12 +340,9 @@ public class PatternParser extends DefaultHandler {
       }
       word = readToken(chars);
     }
-
   }
 
-  /**
-   * Returns a string of the location.
-   */
+  /** Returns a string of the location. */
   private String getLocationString(SAXParseException ex) {
     StringBuilder str = new StringBuilder();
 
@@ -376,6 +360,5 @@ public class PatternParser extends DefaultHandler {
     str.append(ex.getColumnNumber());
 
     return str.toString();
-
   } // getLocationString(SAXParseException):String
 }

@@ -20,14 +20,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
-
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.junit.Ignore;
 
-/**
- * Base test case for BitSets.
- */
+/** Base test case for BitSets. */
 @Ignore
 public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCase {
 
@@ -158,7 +155,9 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
         return new BitDocIdSet(copyOf(set, numBits), set.cardinality());
       case 2:
         final RoaringDocIdSet.Builder builder = new RoaringDocIdSet.Builder(numBits);
-        for (int i = set.nextSetBit(0); i != DocIdSetIterator.NO_MORE_DOCS; i = i + 1 >= numBits ? DocIdSetIterator.NO_MORE_DOCS : set.nextSetBit(i + 1)) {
+        for (int i = set.nextSetBit(0);
+            i != DocIdSetIterator.NO_MORE_DOCS;
+            i = i + 1 >= numBits ? DocIdSetIterator.NO_MORE_DOCS : set.nextSetBit(i + 1)) {
           builder.add(i);
         }
         return builder.build();
@@ -180,10 +179,11 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     final int numBits = 1 + random().nextInt(100000);
     BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits); // empty
     T set2 = copyOf(set1, numBits);
-    
+
     final int iterations = atLeast(10);
     for (int iter = 0; iter < iterations; ++iter) {
-      DocIdSet otherSet = randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
+      DocIdSet otherSet =
+          randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
       DocIdSetIterator otherIterator = otherSet.iterator();
       if (otherIterator != null) {
         set1.or(otherIterator);
@@ -274,7 +274,5 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
       }
       return next;
     }
-
   }
-
 }

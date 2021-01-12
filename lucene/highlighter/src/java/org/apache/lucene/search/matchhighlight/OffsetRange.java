@@ -18,9 +18,7 @@ package org.apache.lucene.search.matchhighlight;
 
 import java.util.Objects;
 
-/**
- * A non-empty range of offset positions.
- */
+/** A non-empty range of offset positions. */
 public class OffsetRange {
   /** Start index, inclusive. */
   public final int from;
@@ -61,5 +59,15 @@ public class OffsetRange {
   @Override
   public int hashCode() {
     return Objects.hash(from, to);
+  }
+
+  /**
+   * Returns a sub-range of this range (a copy). Subclasses should override and return an
+   * appropriate type covariant so that payloads are not lost.
+   */
+  public OffsetRange slice(int from, int to) {
+    assert from >= this.from;
+    assert to <= this.to;
+    return new OffsetRange(from, to);
   }
 }

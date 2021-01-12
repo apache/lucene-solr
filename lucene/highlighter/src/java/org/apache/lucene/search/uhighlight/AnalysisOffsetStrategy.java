@@ -17,7 +17,6 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,9 +24,8 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * Provides a base class for analysis based offset strategies to extend from.
- * Requires an Analyzer and provides an override-able method for altering how
- * the TokenStream is created.
+ * Provides a base class for analysis based offset strategies to extend from. Requires an Analyzer
+ * and provides an override-able method for altering how the TokenStream is created.
  *
  * @lucene.internal
  */
@@ -56,25 +54,34 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
       return analyzer.tokenStream(getField(), content);
     }
 
-    TokenStream subTokenStream = analyzer.tokenStream(getField(), content.substring(0, splitCharIdx));
+    TokenStream subTokenStream =
+        analyzer.tokenStream(getField(), content.substring(0, splitCharIdx));
 
-    return new MultiValueTokenStream(subTokenStream, getField(), analyzer, content, UnifiedHighlighter.MULTIVAL_SEP_CHAR, splitCharIdx);
+    return new MultiValueTokenStream(
+        subTokenStream,
+        getField(),
+        analyzer,
+        content,
+        UnifiedHighlighter.MULTIVAL_SEP_CHAR,
+        splitCharIdx);
   }
 
   /**
-   * Wraps an {@link Analyzer} and string text that represents multiple values delimited by a specified character. This
-   * exposes a TokenStream that matches what would get indexed considering the
-   * {@link Analyzer#getPositionIncrementGap(String)}. Currently this assumes {@link Analyzer#getOffsetGap(String)} is
-   * 1; an exception will be thrown if it isn't.
-   * <br />
-   * It would be more orthogonal for this to be an Analyzer since we're wrapping an Analyzer but doing so seems like
-   * more work.  The underlying components see a Reader not a String -- and the String is easy to
-   * split up without redundant buffering.
+   * Wraps an {@link Analyzer} and string text that represents multiple values delimited by a
+   * specified character. This exposes a TokenStream that matches what would get indexed considering
+   * the {@link Analyzer#getPositionIncrementGap(String)}. Currently this assumes {@link
+   * Analyzer#getOffsetGap(String)} is 1; an exception will be thrown if it isn't.
+   *
+   * <p>It would be more orthogonal for this to be an Analyzer since we're wrapping an Analyzer but
+   * doing so seems like more work. The underlying components see a Reader not a String -- and the
+   * String is easy to split up without redundant buffering.
    *
    * @lucene.internal
    */
-  // TODO we could make this go away.  MemoryIndexOffsetStrategy could simply split and analyze each value into the
-  //   MemoryIndex. TokenStreamOffsetStrategy's hack TokenStreamPostingsEnum could incorporate this logic,
+  // TODO we could make this go away.  MemoryIndexOffsetStrategy could simply split and analyze each
+  // value into the
+  //   MemoryIndex. TokenStreamOffsetStrategy's hack TokenStreamPostingsEnum could incorporate this
+  // logic,
   //   albeit with less code, less hack.
   private static final class MultiValueTokenStream extends TokenFilter {
 
@@ -83,15 +90,21 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
     private final String content;
     private final char splitChar;
 
-    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    private final PositionIncrementAttribute posIncAtt =
+        addAttribute(PositionIncrementAttribute.class);
     private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
     private int startValIdx = 0;
     private int endValIdx;
     private int remainingPosInc = 0;
 
-    private MultiValueTokenStream(TokenStream subTokenStream, String fieldName, Analyzer indexAnalyzer,
-                                  String content, char splitChar, int splitCharIdx) {
+    private MultiValueTokenStream(
+        TokenStream subTokenStream,
+        String fieldName,
+        Analyzer indexAnalyzer,
+        String content,
+        char splitChar,
+        int splitCharIdx) {
       super(subTokenStream); // subTokenStream is already initialized to operate on the first value
       this.fieldName = fieldName;
       this.indexAnalyzer = indexAnalyzer;
@@ -115,19 +128,18 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
 
         if (input.incrementToken()) {
           // Position tracking:
-          if (remainingPosInc > 0) {//usually true first token of additional values (not first val)
+          if (remainingPosInc > 0) {
+            // usually true first token of additional values (not first val)
             posIncAtt.setPositionIncrement(remainingPosInc + posIncAtt.getPositionIncrement());
-            remainingPosInc = 0;//reset
+            remainingPosInc = 0; // reset
           }
           // Offset tracking:
           offsetAtt.setOffset(
-              startValIdx + offsetAtt.startOffset(),
-              startValIdx + offsetAtt.endOffset()
-          );
+              startValIdx + offsetAtt.startOffset(), startValIdx + offsetAtt.endOffset());
           return true;
         }
 
-        if (endValIdx == content.length()) {//no more
+        if (endValIdx == content.length()) { // no more
           return false;
         }
 
@@ -139,20 +151,27 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
         // Get new tokenStream based on next segment divided by the splitChar
         startValIdx = endValIdx + 1;
         endValIdx = content.indexOf(splitChar, startValIdx);
-        if (endValIdx == -1) {//EOF
+        if (endValIdx == -1) { // EOF
           endValIdx = content.length();
         }
-        TokenStream tokenStream = indexAnalyzer.tokenStream(fieldName, content.substring(startValIdx, endValIdx));
-        if (tokenStream != input) {// (input is defined in TokenFilter set in the constructor)
-          // This is a grand trick we do -- knowing that the analyzer's re-use strategy is going to produce the
-          // very same tokenStream instance and thus have the same AttributeSource as this wrapping TokenStream
+        TokenStream tokenStream =
+            indexAnalyzer.tokenStream(fieldName, content.substring(startValIdx, endValIdx));
+        if (tokenStream != input) { // (input is defined in TokenFilter set in the constructor)
+          // This is a grand trick we do -- knowing that the analyzer's re-use strategy is going to
+          // produce the
+          // very same tokenStream instance and thus have the same AttributeSource as this wrapping
+          // TokenStream
           // since we used it as our input in the constructor.
-          // Were this not the case, we'd have to copy every attribute of interest since we can't alter the
-          // AttributeSource of this wrapping TokenStream post-construction (it's all private/final).
-          // If this is a problem, we could do that instead; maybe with a custom CharTermAttribute that allows
+          // Were this not the case, we'd have to copy every attribute of interest since we can't
+          // alter the
+          // AttributeSource of this wrapping TokenStream post-construction (it's all
+          // private/final).
+          // If this is a problem, we could do that instead; maybe with a custom CharTermAttribute
+          // that allows
           // us to easily set the char[] reference without literally copying char by char.
-          throw new IllegalStateException("Require TokenStream re-use.  Unsupported re-use strategy?: " +
-              indexAnalyzer.getReuseStrategy());
+          throw new IllegalStateException(
+              "Require TokenStream re-use.  Unsupported re-use strategy?: "
+                  + indexAnalyzer.getReuseStrategy());
         }
         tokenStream.reset();
       } // while loop to increment token of this new value
@@ -163,9 +182,7 @@ public abstract class AnalysisOffsetStrategy extends FieldOffsetStrategy {
       super.end();
       // Offset tracking:
       offsetAtt.setOffset(
-          startValIdx + offsetAtt.startOffset(),
-          startValIdx + offsetAtt.endOffset());
+          startValIdx + offsetAtt.startOffset(), startValIdx + offsetAtt.endOffset());
     }
-
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.classification.utils;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
 import org.apache.lucene.document.Document;
@@ -39,38 +37,46 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NamedThreadFactory;
 
-/**
- * Utility class to generate the confusion matrix of a {@link Classifier}
- */
+/** Utility class to generate the confusion matrix of a {@link Classifier} */
 public class ConfusionMatrixGenerator {
 
-  private ConfusionMatrixGenerator() {
-
-  }
+  private ConfusionMatrixGenerator() {}
 
   /**
-   * get the {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix} of a given {@link Classifier},
-   * generated on the given {@link IndexReader}, class and text fields.
+   * get the {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
+   * of a given {@link Classifier}, generated on the given {@link IndexReader}, class and text
+   * fields.
    *
-   * @param reader              the {@link IndexReader} containing the index used for creating the {@link Classifier}
-   * @param classifier          the {@link Classifier} whose confusion matrix has to be generated
-   * @param classFieldName      the name of the Lucene field used as the classifier's output
-   * @param textFieldName       the nome the Lucene field used as the classifier's input
+   * @param reader the {@link IndexReader} containing the index used for creating the {@link
+   *     Classifier}
+   * @param classifier the {@link Classifier} whose confusion matrix has to be generated
+   * @param classFieldName the name of the Lucene field used as the classifier's output
+   * @param textFieldName the nome the Lucene field used as the classifier's input
    * @param timeoutMilliseconds timeout to wait before stopping creating the confusion matrix
-   * @param <T>                 the return type of the {@link ClassificationResult} returned by the given {@link Classifier}
-   * @return a {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
+   * @param <T> the return type of the {@link ClassificationResult} returned by the given {@link
+   *     Classifier}
+   * @return a {@link
+   *     org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
    * @throws IOException if problems occurr while reading the index or using the classifier
    */
-  public static <T> ConfusionMatrix getConfusionMatrix(IndexReader reader, Classifier<T> classifier, String classFieldName,
-                                                       String textFieldName, long timeoutMilliseconds) throws IOException {
+  public static <T> ConfusionMatrix getConfusionMatrix(
+      IndexReader reader,
+      Classifier<T> classifier,
+      String classFieldName,
+      String textFieldName,
+      long timeoutMilliseconds)
+      throws IOException {
 
-    ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("confusion-matrix-gen-"));
+    ExecutorService executorService =
+        Executors.newFixedThreadPool(1, new NamedThreadFactory("confusion-matrix-gen-"));
 
     try {
 
       Map<String, Map<String, Long>> counts = new HashMap<>();
       IndexSearcher indexSearcher = new IndexSearcher(reader);
-      TopDocs topDocs = indexSearcher.search(new TermRangeQuery(classFieldName, null, null, true, true), Integer.MAX_VALUE);
+      TopDocs topDocs =
+          indexSearcher.search(
+              new TermRangeQuery(classFieldName, null, null, true, true), Integer.MAX_VALUE);
       double time = 0d;
 
       int counter = 0;
@@ -91,7 +97,10 @@ public class ConfusionMatrixGenerator {
             try {
               // fail if classification takes more than 5s
               long start = System.currentTimeMillis();
-              result = executorService.submit(() -> classifier.assignClass(text)).get(5, TimeUnit.SECONDS);
+              result =
+                  executorService
+                      .submit(() -> classifier.assignClass(text))
+                      .get(5, TimeUnit.SECONDS);
               long end = System.currentTimeMillis();
               time += end - start;
 
@@ -99,7 +108,10 @@ public class ConfusionMatrixGenerator {
                 T assignedClass = result.getAssignedClass();
                 if (assignedClass != null) {
                   counter++;
-                  String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
+                  String classified =
+                      assignedClass instanceof BytesRef
+                          ? ((BytesRef) assignedClass).utf8ToString()
+                          : assignedClass.toString();
 
                   String correctAnswer;
                   if (Arrays.binarySearch(correctAnswers, classified) >= 0) {
@@ -121,7 +133,6 @@ public class ConfusionMatrixGenerator {
                     stringLongMap.put(classified, 1L);
                     counts.put(correctAnswer, stringLongMap);
                   }
-
                 }
               }
             } catch (TimeoutException timeoutException) {
@@ -130,7 +141,6 @@ public class ConfusionMatrixGenerator {
             } catch (ExecutionException | InterruptedException executionException) {
               throw new RuntimeException(executionException);
             }
-
           }
         }
       }
@@ -140,9 +150,7 @@ public class ConfusionMatrixGenerator {
     }
   }
 
-  /**
-   * a confusion matrix, backed by a {@link Map} representing the linearized matrix
-   */
+  /** a confusion matrix, backed by a {@link Map} representing the linearized matrix */
   public static class ConfusionMatrix {
 
     private final Map<String, Map<String, Long>> linearizedMatrix;
@@ -150,7 +158,10 @@ public class ConfusionMatrixGenerator {
     private final int numberOfEvaluatedDocs;
     private double accuracy = -1d;
 
-    private ConfusionMatrix(Map<String, Map<String, Long>> linearizedMatrix, double avgClassificationTime, int numberOfEvaluatedDocs) {
+    private ConfusionMatrix(
+        Map<String, Map<String, Long>> linearizedMatrix,
+        double avgClassificationTime,
+        int numberOfEvaluatedDocs) {
       this.linearizedMatrix = linearizedMatrix;
       this.avgClassificationTime = avgClassificationTime;
       this.numberOfEvaluatedDocs = numberOfEvaluatedDocs;
@@ -159,8 +170,8 @@ public class ConfusionMatrixGenerator {
     /**
      * get the linearized confusion matrix as a {@link Map}
      *
-     * @return a {@link Map} whose keys are the correct classification answers and whose values are the actual answers'
-     * counts
+     * @return a {@link Map} whose keys are the correct classification answers and whose values are
+     *     the actual answers' counts
      */
     public Map<String, Map<String, Long>> getLinearizedMatrix() {
       return Collections.unmodifiableMap(linearizedMatrix);
@@ -237,8 +248,8 @@ public class ConfusionMatrixGenerator {
     }
 
     /**
-     * Calculate accuracy on this confusion matrix using the formula:
-     * {@literal accuracy = correctly-classified / (correctly-classified + wrongly-classified)}
+     * Calculate accuracy on this confusion matrix using the formula: {@literal accuracy =
+     * correctly-classified / (correctly-classified + wrongly-classified)}
      *
      * @return the accuracy
      */
@@ -264,7 +275,6 @@ public class ConfusionMatrixGenerator {
               tn++;
             }
           }
-
         }
         this.accuracy = (tp + tn) / (tfp + fn + tn);
       }
@@ -303,11 +313,14 @@ public class ConfusionMatrixGenerator {
 
     @Override
     public String toString() {
-      return "ConfusionMatrix{" +
-          "linearizedMatrix=" + linearizedMatrix +
-          ", avgClassificationTime=" + avgClassificationTime +
-          ", numberOfEvaluatedDocs=" + numberOfEvaluatedDocs +
-          '}';
+      return "ConfusionMatrix{"
+          + "linearizedMatrix="
+          + linearizedMatrix
+          + ", avgClassificationTime="
+          + avgClassificationTime
+          + ", numberOfEvaluatedDocs="
+          + numberOfEvaluatedDocs
+          + '}';
     }
 
     /**

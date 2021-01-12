@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -36,11 +35,11 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
 /**
- * A query that wraps another query, and uses a DoubleValuesSource to
- * replace or modify the wrapped query's score
+ * A query that wraps another query, and uses a DoubleValuesSource to replace or modify the wrapped
+ * query's score
  *
- * If the DoubleValuesSource doesn't return a value for a particular document,
- * then that document will be given a score of 0.
+ * <p>If the DoubleValuesSource doesn't return a value for a particular document, then that document
+ * will be given a score of 0.
  */
 public final class FunctionScoreQuery extends Query {
 
@@ -49,36 +48,33 @@ public final class FunctionScoreQuery extends Query {
 
   /**
    * Create a new FunctionScoreQuery
-   * @param in      the query to wrap
-   * @param source  a source of scores
+   *
+   * @param in the query to wrap
+   * @param source a source of scores
    */
   public FunctionScoreQuery(Query in, DoubleValuesSource source) {
     this.in = in;
     this.source = source;
   }
 
-  /**
-   * @return the wrapped Query
-   */
+  /** @return the wrapped Query */
   public Query getWrappedQuery() {
     return in;
   }
 
-  /**
-   * @return the underlying value source
-   */
+  /** @return the underlying value source */
   public DoubleValuesSource getSource() {
     return source;
   }
 
   /**
-   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
-   * the value of a DoubleValuesSource.
+   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by the value of
+   * a DoubleValuesSource.
    *
-   * If the source has no value for a particular document, the score for that document
-   * is preserved as-is.
+   * <p>If the source has no value for a particular document, the score for that document is
+   * preserved as-is.
    *
-   * @param in    the query to boost
+   * @param in the query to boost
    * @param boost a {@link DoubleValuesSource} containing the boost values
    */
   public static FunctionScoreQuery boostByValue(Query in, DoubleValuesSource boost) {
@@ -86,25 +82,28 @@ public final class FunctionScoreQuery extends Query {
   }
 
   /**
-   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by
-   * a boost factor if the document being scored also matches a separate boosting query.
+   * Returns a FunctionScoreQuery where the scores of a wrapped query are multiplied by a boost
+   * factor if the document being scored also matches a separate boosting query.
    *
-   * Documents that do not match the boosting query have their scores preserved.
+   * <p>Documents that do not match the boosting query have their scores preserved.
    *
-   * This may be used to 'demote' documents that match the boosting query, by passing in
-   * a boostValue between 0 and 1.
+   * <p>This may be used to 'demote' documents that match the boosting query, by passing in a
+   * boostValue between 0 and 1.
    *
-   * @param in          the query to boost
-   * @param boostMatch  the boosting query
-   * @param boostValue  the amount to boost documents which match the boosting query
+   * @param in the query to boost
+   * @param boostMatch the boosting query
+   * @param boostValue the amount to boost documents which match the boosting query
    */
   public static FunctionScoreQuery boostByQuery(Query in, Query boostMatch, float boostValue) {
-    return new FunctionScoreQuery(in,
-        new MultiplicativeBoostValuesSource(new QueryBoostValuesSource(DoubleValuesSource.fromQuery(boostMatch), boostValue)));
+    return new FunctionScoreQuery(
+        in,
+        new MultiplicativeBoostValuesSource(
+            new QueryBoostValuesSource(DoubleValuesSource.fromQuery(boostMatch), boostValue)));
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     ScoreMode sm;
     if (scoreMode.needsScores() && source.needsScores()) {
       sm = ScoreMode.COMPLETE;
@@ -112,16 +111,18 @@ public final class FunctionScoreQuery extends Query {
       sm = ScoreMode.COMPLETE_NO_SCORES;
     }
     Weight inner = in.createWeight(searcher, sm, 1f);
-    if (scoreMode.needsScores() == false)
+    if (scoreMode.needsScores() == false) {
       return inner;
+    }
     return new FunctionScoreWeight(this, inner, source.rewrite(searcher), boost);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = in.rewrite(reader);
-    if (rewritten == in)
+    if (rewritten == in) {
       return this;
+    }
     return new FunctionScoreQuery(rewritten, source);
   }
 
@@ -140,8 +141,7 @@ public final class FunctionScoreQuery extends Query {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     FunctionScoreQuery that = (FunctionScoreQuery) o;
-    return Objects.equals(in, that.in) &&
-        Objects.equals(source, that.source);
+    return Objects.equals(in, that.in) && Objects.equals(source, that.source);
   }
 
   @Override
@@ -186,11 +186,16 @@ public final class FunctionScoreQuery extends Query {
         expl = valueSource.explain(context, doc, scoreExplanation);
         if (value < 0) {
           value = 0;
-          expl = Explanation.match(0, "truncated score, max of:",
-              Explanation.match(0f, "minimum score"), expl);
+          expl =
+              Explanation.match(
+                  0, "truncated score, max of:", Explanation.match(0f, "minimum score"), expl);
         } else if (Double.isNaN(value)) {
           value = 0;
-          expl = Explanation.match(0, "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:", expl);
+          expl =
+              Explanation.match(
+                  0,
+                  "score, computed as (score == NaN ? 0 : score) since NaN is an illegal score from:",
+                  expl);
         }
       } else {
         value = 0;
@@ -198,12 +203,24 @@ public final class FunctionScoreQuery extends Query {
       }
 
       if (expl.isMatch() == false) {
-        expl = Explanation.match(0f, "weight(" + getQuery().toString() + ") using default score of 0 because the function produced no value:", expl);
+        expl =
+            Explanation.match(
+                0f,
+                "weight("
+                    + getQuery().toString()
+                    + ") using default score of 0 because the function produced no value:",
+                expl);
       } else if (boost != 1f) {
-        expl = Explanation.match((float) (value * boost), "weight(" + getQuery().toString() + "), product of:",
-            Explanation.match(boost, "boost"), expl);
+        expl =
+            Explanation.match(
+                (float) (value * boost),
+                "weight(" + getQuery().toString() + "), product of:",
+                Explanation.match(boost, "boost"),
+                expl);
       } else {
-        expl = Explanation.match(expl.getValue(), "weight(" + getQuery().toString() + "), result of:", expl);
+        expl =
+            Explanation.match(
+                expl.getValue(), "weight(" + getQuery().toString() + "), result of:", expl);
       }
 
       return expl;
@@ -212,8 +229,9 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
       Scorer in = inner.scorer(context);
-      if (in == null)
+      if (in == null) {
         return null;
+      }
       DoubleValues scores = valueSource.getValues(context, DoubleValuesSource.fromScorer(in));
       return new FilterScorer(in) {
         @Override
@@ -227,6 +245,7 @@ public final class FunctionScoreQuery extends Query {
           // default: missing value, negative value or NaN
           return 0;
         }
+
         @Override
         public float getMaxScore(int upTo) throws IOException {
           return Float.POSITIVE_INFINITY;
@@ -238,7 +257,6 @@ public final class FunctionScoreQuery extends Query {
     public boolean isCacheable(LeafReaderContext ctx) {
       return inner.isCacheable(ctx) && valueSource.isCacheable(ctx);
     }
-
   }
 
   static class MultiplicativeBoostValuesSource extends DoubleValuesSource {
@@ -284,7 +302,8 @@ public final class FunctionScoreQuery extends Query {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+        throws IOException {
       if (scoreExplanation.isMatch() == false) {
         return scoreExplanation;
       }
@@ -292,8 +311,11 @@ public final class FunctionScoreQuery extends Query {
       if (boostExpl.isMatch() == false) {
         return scoreExplanation;
       }
-      return Explanation.match(scoreExplanation.getValue().doubleValue() * boostExpl.getValue().doubleValue(),
-          "product of:", scoreExplanation, boostExpl);
+      return Explanation.match(
+          scoreExplanation.getValue().doubleValue() * boostExpl.getValue().doubleValue(),
+          "product of:",
+          scoreExplanation,
+          boostExpl);
     }
 
     @Override
@@ -325,17 +347,19 @@ public final class FunctionScoreQuery extends Query {
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       DoubleValues in = query.getValues(ctx, null);
-      return DoubleValues.withDefault(new DoubleValues() {
-        @Override
-        public double doubleValue() {
-          return boost;
-        }
+      return DoubleValues.withDefault(
+          new DoubleValues() {
+            @Override
+            public double doubleValue() {
+              return boost;
+            }
 
-        @Override
-        public boolean advanceExact(int doc) throws IOException {
-          return in.advanceExact(doc);
-        }
-      }, 1);
+            @Override
+            public boolean advanceExact(int doc) throws IOException {
+              return in.advanceExact(doc);
+            }
+          },
+          1);
     }
 
     @Override
@@ -353,8 +377,7 @@ public final class FunctionScoreQuery extends Query {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       QueryBoostValuesSource that = (QueryBoostValuesSource) o;
-      return Float.compare(that.boost, boost) == 0 &&
-          Objects.equals(query, that.query);
+      return Float.compare(that.boost, boost) == 0 && Objects.equals(query, that.query);
     }
 
     @Override
@@ -373,7 +396,8 @@ public final class FunctionScoreQuery extends Query {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+        throws IOException {
       Explanation inner = query.explain(ctx, docId, scoreExplanation);
       if (inner.isMatch() == false) {
         return inner;

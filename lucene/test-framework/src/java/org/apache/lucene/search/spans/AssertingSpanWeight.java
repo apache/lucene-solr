@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
@@ -26,15 +25,14 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafSimScorer;
 
-/**
- * Wraps a SpanWeight with additional asserts
- */
+/** Wraps a SpanWeight with additional asserts */
 public class AssertingSpanWeight extends SpanWeight {
 
   final SpanWeight in;
 
   /**
    * Create an AssertingSpanWeight
+   *
    * @param in the SpanWeight to wrap
    * @throws IOException on error
    */
@@ -51,8 +49,7 @@ public class AssertingSpanWeight extends SpanWeight {
   @Override
   public Spans getSpans(LeafReaderContext context, Postings requiredPostings) throws IOException {
     Spans spans = in.getSpans(context, requiredPostings);
-    if (spans == null)
-      return null;
+    if (spans == null) return null;
     return new AssertingSpans(spans);
   }
 
@@ -60,6 +57,7 @@ public class AssertingSpanWeight extends SpanWeight {
   public LeafSimScorer getSimScorer(LeafReaderContext context) throws IOException {
     return in.getSimScorer(context);
   }
+
   @Override
   public SpanScorer scorer(LeafReaderContext context) throws IOException {
     return in.scorer(context);

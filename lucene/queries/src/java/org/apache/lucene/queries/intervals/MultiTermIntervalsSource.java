@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -44,8 +43,12 @@ class MultiTermIntervalsSource extends IntervalsSource {
   MultiTermIntervalsSource(CompiledAutomaton automaton, int maxExpansions, String pattern) {
     this.automaton = automaton;
     if (maxExpansions > IndexSearcher.getMaxClauseCount()) {
-      throw new IllegalArgumentException("maxExpansions [" + maxExpansions
-          + "] cannot be greater than BooleanQuery.getMaxClauseCount [" + IndexSearcher.getMaxClauseCount() + "]");
+      throw new IllegalArgumentException(
+          "maxExpansions ["
+              + maxExpansions
+              + "] cannot be greater than BooleanQuery.getMaxClauseCount ["
+              + IndexSearcher.getMaxClauseCount()
+              + "]");
     }
     this.maxExpansions = maxExpansions;
     this.pattern = pattern;
@@ -64,7 +67,12 @@ class MultiTermIntervalsSource extends IntervalsSource {
     while ((term = te.next()) != null) {
       subSources.add(TermIntervalsSource.intervals(term, te));
       if (++count > maxExpansions) {
-        throw new IllegalStateException("Automaton [" + this.pattern + "] expanded to too many terms (limit " + maxExpansions + ")");
+        throw new IllegalStateException(
+            "Automaton ["
+                + this.pattern
+                + "] expanded to too many terms (limit "
+                + maxExpansions
+                + ")");
       }
     }
     if (subSources.size() == 0) {
@@ -74,7 +82,8 @@ class MultiTermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null) {
       return null;
@@ -88,7 +97,8 @@ class MultiTermIntervalsSource extends IntervalsSource {
       if (mi != null) {
         subMatches.add(mi);
         if (count++ > maxExpansions) {
-          throw new IllegalStateException("Automaton " + term + " expanded to too many terms (limit " + maxExpansions + ")");
+          throw new IllegalStateException(
+              "Automaton " + term + " expanded to too many terms (limit " + maxExpansions + ")");
         }
       }
     }
@@ -164,9 +174,9 @@ class MultiTermIntervalsSource extends IntervalsSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MultiTermIntervalsSource that = (MultiTermIntervalsSource) o;
-    return maxExpansions == that.maxExpansions &&
-        Objects.equals(automaton, that.automaton) &&
-        Objects.equals(pattern, that.pattern);
+    return maxExpansions == that.maxExpansions
+        && Objects.equals(automaton, that.automaton)
+        && Objects.equals(pattern, that.pattern);
   }
 
   @Override

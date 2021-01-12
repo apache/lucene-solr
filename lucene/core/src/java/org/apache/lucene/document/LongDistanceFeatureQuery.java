@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -55,14 +54,13 @@ final class LongDistanceFeatureQuery extends Query {
 
   @Override
   public final boolean equals(Object o) {
-    return sameClassAs(o) &&
-        equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(LongDistanceFeatureQuery other) {
-    return Objects.equals(field, other.field) &&
-        origin == other.origin &&
-        pivotDistance == other.pivotDistance;
+    return Objects.equals(field, other.field)
+        && origin == other.origin
+        && pivotDistance == other.pivotDistance;
   }
 
   @Override
@@ -83,11 +81,19 @@ final class LongDistanceFeatureQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return getClass().getSimpleName() + "(field=" + field + ",origin=" + origin + ",pivotDistance=" + pivotDistance + ")";
+    return getClass().getSimpleName()
+        + "(field="
+        + field
+        + ",origin="
+        + origin
+        + ",pivotDistance="
+        + pivotDistance
+        + ")";
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
 
       @Override
@@ -99,7 +105,8 @@ final class LongDistanceFeatureQuery extends Query {
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         SortedNumericDocValues multiDocValues = DocValues.getSortedNumeric(context.reader(), field);
         if (multiDocValues.advanceExact(doc) == false) {
-          return Explanation.noMatch("Document " + doc + " doesn't have a value for field " + field);
+          return Explanation.noMatch(
+              "Document " + doc + " doesn't have a value for field " + field);
         }
         long value = selectValue(multiDocValues);
         long distance = Math.max(value, origin) - Math.min(value, origin);
@@ -108,7 +115,9 @@ final class LongDistanceFeatureQuery extends Query {
           distance = Long.MAX_VALUE;
         }
         float score = (float) (boost * (pivotDistance / (pivotDistance + (double) distance)));
-        return Explanation.match(score, "Distance score, computed as weight * pivotDistance / (pivotDistance + abs(value - origin)) from:",
+        return Explanation.match(
+            score,
+            "Distance score, computed as weight * pivotDistance / (pivotDistance + abs(value - origin)) from:",
             Explanation.match(boost, "weight"),
             Explanation.match(pivotDistance, "pivotDistance"),
             Explanation.match(origin, "origin"),
@@ -145,7 +154,7 @@ final class LongDistanceFeatureQuery extends Query {
         if (singleton != null) {
           return singleton;
         }
-        return  new NumericDocValues() {
+        return new NumericDocValues() {
 
           long value;
 
@@ -183,7 +192,6 @@ final class LongDistanceFeatureQuery extends Query {
           public long cost() {
             return multiDocValues.cost();
           }
-
         };
       }
 
@@ -194,7 +202,8 @@ final class LongDistanceFeatureQuery extends Query {
           // No data on this segment
           return null;
         }
-        final SortedNumericDocValues multiDocValues = DocValues.getSortedNumeric(context.reader(), field);
+        final SortedNumericDocValues multiDocValues =
+            DocValues.getSortedNumeric(context.reader(), field);
         final NumericDocValues docValues = selectValues(multiDocValues);
 
         final Weight weight = this;
@@ -202,7 +211,8 @@ final class LongDistanceFeatureQuery extends Query {
 
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return new DistanceScorer(weight, context.reader().maxDoc(), leadCost, boost, pointValues, docValues);
+            return new DistanceScorer(
+                weight, context.reader().maxDoc(), leadCost, boost, pointValues, docValues);
           }
 
           @Override
@@ -220,7 +230,6 @@ final class LongDistanceFeatureQuery extends Query {
         }
         return scorerSupplier.get(Long.MAX_VALUE);
       }
-
     };
   }
 
@@ -235,8 +244,13 @@ final class LongDistanceFeatureQuery extends Query {
     private final NumericDocValues docValues;
     private long maxDistance = Long.MAX_VALUE;
 
-    protected DistanceScorer(Weight weight, int maxDoc, long leadCost, float boost,
-        PointValues pointValues, NumericDocValues docValues) {
+    protected DistanceScorer(
+        Weight weight,
+        int maxDoc,
+        long leadCost,
+        float boost,
+        PointValues pointValues,
+        NumericDocValues docValues) {
       super(weight);
       this.maxDoc = maxDoc;
       this.leadCost = leadCost;
@@ -258,8 +272,8 @@ final class LongDistanceFeatureQuery extends Query {
     }
 
     /**
-     * Inverting the score computation is very hard due to all potential
-     * rounding errors, so we binary search the maximum distance.
+     * Inverting the score computation is very hard due to all potential rounding errors, so we
+     * binary search the maximum distance.
      */
     private long computeMaxDistance(float minScore, long previousMaxDistance) {
       assert score(0) >= minScore;
@@ -323,7 +337,7 @@ final class LongDistanceFeatureQuery extends Query {
 
         @Override
         public int advance(int target) throws IOException {
-        return doc = it.advance(target);
+          return doc = it.advance(target);
         }
       };
     }
@@ -372,62 +386,74 @@ final class LongDistanceFeatureQuery extends Query {
 
       DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
       final int doc = docID();
-      IntersectVisitor visitor = new IntersectVisitor() {
+      IntersectVisitor visitor =
+          new IntersectVisitor() {
 
-        DocIdSetBuilder.BulkAdder adder;
+            DocIdSetBuilder.BulkAdder adder;
 
-        @Override
-        public void grow(int count) {
-          adder = result.grow(count);
-        }
+            @Override
+            public void grow(int count) {
+              adder = result.grow(count);
+            }
 
-        @Override
-        public void visit(int docID) {
-          if (docID <= doc) {
-            // Already visited or skipped
-            return;
-          }
-          adder.add(docID);
-        }
+            @Override
+            public void visit(int docID) {
+              if (docID <= doc) {
+                // Already visited or skipped
+                return;
+              }
+              adder.add(docID);
+            }
 
-        @Override
-        public void visit(int docID, byte[] packedValue) {
-          if (docID <= doc) {
-            // Already visited or skipped
-            return;
-          }
-          if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0) {
-            // Doc's value is too low, in this dimension
-            return;
-          }
-          if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0) {
-            // Doc's value is too high, in this dimension
-            return;
-          }
+            @Override
+            public void visit(int docID, byte[] packedValue) {
+              if (docID <= doc) {
+                // Already visited or skipped
+                return;
+              }
+              if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES)
+                  < 0) {
+                // Doc's value is too low, in this dimension
+                return;
+              }
+              if (Arrays.compareUnsigned(packedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES)
+                  > 0) {
+                // Doc's value is too high, in this dimension
+                return;
+              }
 
-          // Doc is in-bounds
-          adder.add(docID);
-        }
+              // Doc is in-bounds
+              adder.add(docID);
+            }
 
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          if (Arrays.compareUnsigned(minPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0 ||
-              Arrays.compareUnsigned(maxPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0) {
-            return Relation.CELL_OUTSIDE_QUERY;
-          }
+            @Override
+            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+              if (Arrays.compareUnsigned(
+                          minPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES)
+                      > 0
+                  || Arrays.compareUnsigned(
+                          maxPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES)
+                      < 0) {
+                return Relation.CELL_OUTSIDE_QUERY;
+              }
 
-          if (Arrays.compareUnsigned(minPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES) < 0 ||
-              Arrays.compareUnsigned(maxPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES) > 0) {
-            return Relation.CELL_CROSSES_QUERY;
-          }
+              if (Arrays.compareUnsigned(
+                          minPackedValue, 0, Long.BYTES, minValueAsBytes, 0, Long.BYTES)
+                      < 0
+                  || Arrays.compareUnsigned(
+                          maxPackedValue, 0, Long.BYTES, maxValueAsBytes, 0, Long.BYTES)
+                      > 0) {
+                return Relation.CELL_CROSSES_QUERY;
+              }
 
-          return Relation.CELL_INSIDE_QUERY;
-        }
-      };
+              return Relation.CELL_INSIDE_QUERY;
+            }
+          };
 
       final long currentQueryCost = Math.min(leadCost, it.cost());
       final long threshold = currentQueryCost >>> 3;
-      long estimatedNumberOfMatches = pointValues.estimatePointCount(visitor); // runs in O(log(numPoints))
+      long estimatedNumberOfMatches =
+          pointValues.estimatePointCount(visitor); // runs in O(log(numPoints))
       // TODO: what is the right factor compared to the current disi? Is 8 optimal?
       if (estimatedNumberOfMatches >= threshold) {
         // the new range is not selective enough to be worth materializing
@@ -436,6 +462,5 @@ final class LongDistanceFeatureQuery extends Query {
       pointValues.intersect(visitor);
       it = result.build().iterator();
     }
-
   }
 }

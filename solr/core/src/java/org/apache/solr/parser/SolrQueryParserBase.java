@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import com.google.common.base.Strings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -66,6 +66,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SyntaxError;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 import static org.apache.solr.parser.SolrQueryParserBase.SynonymQueryStyle.AS_SAME_TERM;
 

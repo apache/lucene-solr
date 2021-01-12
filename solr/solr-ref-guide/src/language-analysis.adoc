@@ -2218,7 +2218,7 @@ Solr provides support for Polish stemming with the `solr.StempelPolishStemFilter
 
 *Out:* "student", "student"
 
-More information about the Stempel stemmer is available in {lucene-javadocs}/analyzers-stempel/index.html[the Lucene javadocs].
+More information about the Stempel stemmer is available in {lucene-javadocs}/analysis/stempel/index.html[the Lucene javadocs].
 
 Note the lower case filter is applied _after_ the Morfologik stemmer; this is because the Polish dictionary contains proper names and then proper term case may be important to resolve disambiguities (or even lookup the correct lemma at all).
 

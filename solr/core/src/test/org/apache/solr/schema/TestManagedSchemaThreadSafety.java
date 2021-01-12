@@ -17,9 +17,6 @@
 
 package org.apache.solr.schema;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +46,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
@@ -180,7 +180,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
         ManagedIndexSchemaFactory factory = new ManagedIndexSchemaFactory();
         factory.init(new NamedList());
-        factory.create("schema.xml", solrConfig);
+        factory.create("schema.xml", solrConfig, null);
       }
       catch (Exception e) {
         throw new RuntimeException(e);

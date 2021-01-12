@@ -1,9 +1,9 @@
 /*
  * dk.brics.automaton
- * 
+ *
  * Copyright (c) 2001-2009 Anders Moeller
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -14,7 +14,7 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. The name of the author may not be used to endorse or promote products
  *    derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -29,18 +29,18 @@
 
 /**
  * Finite-state automaton for regular expressions.
- * <p>
- * This package contains a full DFA/NFA implementation with Unicode
- * alphabet and support for all standard (and a number of non-standard)
- * regular expression operations.
- * <p>
- * The most commonly used functionality is located in the classes
- * <code>{@link org.apache.lucene.util.automaton.Automaton}</code> and
- * <code>{@link org.apache.lucene.util.automaton.RegExp}</code>.
- * <p>
- * For more information, go to the package home page at 
- * <code><a href="http://www.brics.dk/automaton/" 
+ *
+ * <p>This package contains a full DFA/NFA implementation with Unicode alphabet and support for all
+ * standard (and a number of non-standard) regular expression operations.
+ *
+ * <p>The most commonly used functionality is located in the classes <code>
+ * {@link org.apache.lucene.util.automaton.Automaton}</code> and <code>
+ * {@link org.apache.lucene.util.automaton.RegExp}</code>.
+ *
+ * <p>For more information, go to the package home page at <code>
+ * <a href="http://www.brics.dk/automaton/"
  * target="_top">http://www.brics.dk/automaton/</a></code>.
+ *
  * @lucene.experimental
  */
 package org.apache.lucene.util.automaton;

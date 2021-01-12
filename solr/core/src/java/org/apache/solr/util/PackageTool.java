@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
@@ -45,6 +42,9 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 public class PackageTool extends SolrCLI.ToolBase {
 
@@ -192,6 +192,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                 printGreen("./solr package add-repo <repository-name> <repository-url>");
                 print("Add a repository to Solr.");
                 print("");
+                printGreen("./solr package add-key <file-containing-trusted-key>");
+                print("Add a trusted key to Solr.");
+                print("");
                 printGreen("./solr package install <package-name>[:<version>] ");
                 print("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
                 print("");
@@ -212,6 +215,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                 print("");
                 printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
                 print("Undeploys a package from specified collection(s)");
+                print("");
+                printGreen("./solr package uninstall <package-name>:<version>");
+                print("Uninstall an unused package with specified version from Solr. Both package name and version are required.");
                 print("\n");
                 print("Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
                 print("      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");

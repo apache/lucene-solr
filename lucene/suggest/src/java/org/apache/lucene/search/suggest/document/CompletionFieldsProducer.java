@@ -16,6 +16,11 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_CODEC_VERSION;
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.INDEX_EXTENSION;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,7 +29,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -39,25 +43,15 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_CODEC_VERSION;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.INDEX_EXTENSION;
-
 /**
- * <p>
  * Completion index (.cmp) is opened and read at instantiation to read in {@link SuggestField}
  * numbers and their FST offsets in the Completion dictionary (.lkp).
- * </p>
- * <p>
- * Completion dictionary (.lkp) is opened at instantiation and a field's FST is loaded
- * into memory the first time it is requested via {@link #terms(String)}.
- * </p>
- * <p>
- * NOTE: Only the footer is validated for Completion dictionary (.lkp) and not the checksum due
- * to random access pattern and checksum validation being too costly at instantiation
- * </p>
  *
+ * <p>Completion dictionary (.lkp) is opened at instantiation and a field's FST is loaded into
+ * memory the first time it is requested via {@link #terms(String)}.
+ *
+ * <p>NOTE: Only the footer is validated for Completion dictionary (.lkp) and not the checksum due
+ * to random access pattern and checksum validation being too costly at instantiation
  */
 final class CompletionFieldsProducer extends FieldsProducer {
 
@@ -66,26 +60,44 @@ final class CompletionFieldsProducer extends FieldsProducer {
   private IndexInput dictIn;
 
   // copy ctr for merge instance
-  private CompletionFieldsProducer(FieldsProducer delegateFieldsProducer, Map<String, CompletionsTermsReader> readers) {
+  private CompletionFieldsProducer(
+      FieldsProducer delegateFieldsProducer, Map<String, CompletionsTermsReader> readers) {
     this.delegateFieldsProducer = delegateFieldsProducer;
     this.readers = readers;
   }
 
-  CompletionFieldsProducer(String codecName, SegmentReadState state, FSTLoadMode fstLoadMode) throws IOException {
-    String indexFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
+  CompletionFieldsProducer(String codecName, SegmentReadState state, FSTLoadMode fstLoadMode)
+      throws IOException {
+    String indexFile =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
     delegateFieldsProducer = null;
     boolean success = false;
 
     try (ChecksumIndexInput index = state.directory.openChecksumInput(indexFile, state.context)) {
       // open up dict file containing all fsts
-      String dictFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
+      String dictFile =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
       dictIn = state.directory.openInput(dictFile, state.context);
-      CodecUtil.checkIndexHeader(dictIn, codecName, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checkIndexHeader(
+          dictIn,
+          codecName,
+          COMPLETION_CODEC_VERSION,
+          COMPLETION_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
       // just validate the footer for the dictIn
       CodecUtil.retrieveChecksum(dictIn);
 
       // open up index file (fieldNumber, offset)
-      CodecUtil.checkIndexHeader(index, codecName, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checkIndexHeader(
+          index,
+          codecName,
+          COMPLETION_CODEC_VERSION,
+          COMPLETION_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
       // load delegate PF
       PostingsFormat delegatePostingsFormat = PostingsFormat.forName(index.readString());
       delegateFieldsProducer = delegatePostingsFormat.fieldsProducer(state);
@@ -101,7 +113,9 @@ final class CompletionFieldsProducer extends FieldsProducer {
         byte type = index.readByte();
         FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNumber);
         // we don't load the FST yet
-        readers.put(fieldInfo.name, new CompletionsTermsReader(dictIn, offset, minWeight, maxWeight, type, fstLoadMode));
+        readers.put(
+            fieldInfo.name,
+            new CompletionsTermsReader(dictIn, offset, minWeight, maxWeight, type, fstLoadMode));
       }
       CodecUtil.checkFooter(index);
       success = true;
@@ -150,7 +164,8 @@ final class CompletionFieldsProducer extends FieldsProducer {
   public Collection<Accountable> getChildResources() {
     List<Accountable> accountableList = new ArrayList<>();
     for (Map.Entry<String, CompletionsTermsReader> readerEntry : readers.entrySet()) {
-      accountableList.add(Accountables.namedAccountable(readerEntry.getKey(), readerEntry.getValue()));
+      accountableList.add(
+          Accountables.namedAccountable(readerEntry.getKey(), readerEntry.getValue()));
     }
     return Collections.unmodifiableCollection(accountableList);
   }
@@ -162,7 +177,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
 
   @Override
   public Terms terms(String field) throws IOException {
-    Terms terms = delegateFieldsProducer.terms(field) ;
+    Terms terms = delegateFieldsProducer.terms(field);
     if (terms == null) {
       return null;
     }
@@ -173,5 +188,4 @@ final class CompletionFieldsProducer extends FieldsProducer {
   public int size() {
     return readers.size();
   }
-
 }

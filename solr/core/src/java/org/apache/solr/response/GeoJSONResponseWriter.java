@@ -294,13 +294,6 @@ class GeoJSONWriter extends JSONWriter {
     }
   }
 
-  @Deprecated
-  @Override
-  public void writeStartDocumentList(String name, 
-      long start, int size, long numFound, Float maxScore) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-  
   @Override
   public void writeStartDocumentList(String name, 
       long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException

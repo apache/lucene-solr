@@ -18,18 +18,15 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
-/**
- * Delegates all methods to a wrapped {@link SortedDocValues}.
- */
+/** Delegates all methods to a wrapped {@link SortedDocValues}. */
 public abstract class FilterSortedDocValues extends SortedDocValues {
 
   /** Wrapped values */
   protected final SortedDocValues in;
-  
+
   /** Sole constructor */
   public FilterSortedDocValues(SortedDocValues in) {
     Objects.requireNonNull(in);

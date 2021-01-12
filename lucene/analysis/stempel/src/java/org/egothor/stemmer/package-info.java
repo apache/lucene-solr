@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Egothor stemmer API.
- */
+/** Egothor stemmer API. */
 package org.egothor.stemmer;

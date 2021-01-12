@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.util.BitSet;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -40,11 +39,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * Simple base class for checking search equivalence.
- * Extend it, and write tests that create {@link #randomTerm()}s
- * (all terms are single characters a-z), and use 
- * {@link #assertSameSet(Query, Query)} and 
- * {@link #assertSubsetOf(Query, Query)}
+ * Simple base class for checking search equivalence. Extend it, and write tests that create {@link
+ * #randomTerm()}s (all terms are single characters a-z), and use {@link #assertSameSet(Query,
+ * Query)} and {@link #assertSubsetOf(Query, Query)}
  */
 @SuppressCodecs("SimpleText")
 public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
@@ -53,7 +50,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   protected static IndexReader reader;
   protected static Analyzer analyzer;
   protected static String stopword; // we always pick a character as a stopword
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Random random = random();
@@ -67,7 +64,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     Field field = new TextField("field", "", Field.Store.NO);
     doc.add(id);
     doc.add(field);
-    
+
     // index some docs
     int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     for (int i = 0; i < numDocs; i++) {
@@ -75,9 +72,9 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       field.setStringValue(randomFieldContents());
       iw.addDocument(doc);
     }
-    
+
     // delete some docs
-    int numDeletes = numDocs/20;
+    int numDeletes = numDocs / 20;
     for (int i = 0; i < numDeletes; i++) {
       Term toDelete = new Term("id", Integer.toString(random.nextInt(numDocs)));
       if (random.nextBoolean()) {
@@ -86,13 +83,13 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
         iw.deleteDocuments(new TermQuery(toDelete));
       }
     }
-    
+
     reader = iw.getReader();
     s1 = newSearcher(reader);
     s2 = newSearcher(reader);
     iw.close();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
@@ -103,10 +100,9 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     analyzer = null;
     s1 = s2 = null;
   }
-  
+
   /**
-   * populate a field with random contents.
-   * terms should be single characters in lowercase (a-z)
+   * populate a field with random contents. terms should be single characters in lowercase (a-z)
    * tokenization can be assumed to be on whitespace.
    */
   static String randomFieldContents() {
@@ -122,24 +118,17 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     return sb.toString();
   }
 
-  /**
-   * returns random character (a-z)
-   */
+  /** returns random character (a-z) */
   static char randomChar() {
     return (char) TestUtil.nextInt(random(), 'a', 'z');
   }
 
-  /**
-   * returns a term suitable for searching.
-   * terms are single characters in lowercase (a-z)
-   */
+  /** returns a term suitable for searching. terms are single characters in lowercase (a-z) */
   protected Term randomTerm() {
     return new Term("field", "" + randomChar());
   }
-  
-  /**
-   * Returns a random filter over the document set
-   */
+
+  /** Returns a random filter over the document set */
   protected Query randomFilter() {
     final Query query;
     if (random().nextBoolean()) {
@@ -153,22 +142,22 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   }
 
   /**
-   * Asserts that the documents returned by <code>q1</code>
-   * are the same as of those returned by <code>q2</code>
+   * Asserts that the documents returned by <code>q1</code> are the same as of those returned by
+   * <code>q2</code>
    */
   public void assertSameSet(Query q1, Query q2) throws Exception {
     assertSubsetOf(q1, q2);
     assertSubsetOf(q2, q1);
   }
-  
+
   /**
-   * Asserts that the documents returned by <code>q1</code>
-   * are a subset of those returned by <code>q2</code>
+   * Asserts that the documents returned by <code>q1</code> are a subset of those returned by <code>
+   * q2</code>
    */
-  public void assertSubsetOf(Query q1, Query q2) throws Exception {   
+  public void assertSubsetOf(Query q1, Query q2) throws Exception {
     // test without a filter
     assertSubsetOf(q1, q2, null);
-    
+
     // test with some filters (this will sometimes cause advance'ing enough to test it)
     int numFilters = TEST_NIGHTLY ? atLeast(10) : atLeast(3);
     for (int i = 0; i < numFilters; i++) {
@@ -178,40 +167,36 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       assertSubsetOf(filteredQuery(q1, filter), filteredQuery(q2, filter), null);
     }
   }
-  
+
   /**
-   * Asserts that the documents returned by <code>q1</code>
-   * are a subset of those returned by <code>q2</code>.
-   * 
-   * Both queries will be filtered by <code>filter</code>
+   * Asserts that the documents returned by <code>q1</code> are a subset of those returned by <code>
+   * q2</code>.
+   *
+   * <p>Both queries will be filtered by <code>filter</code>
    */
   protected void assertSubsetOf(Query q1, Query q2, Query filter) throws Exception {
     QueryUtils.check(q1);
     QueryUtils.check(q2);
 
     if (filter != null) {
-      q1 = new BooleanQuery.Builder()
-          .add(q1, Occur.MUST)
-          .add(filter, Occur.FILTER)
-          .build();
-      q2 = new BooleanQuery.Builder()
-          .add(q2, Occur.MUST)
-          .add(filter, Occur.FILTER)
-          .build();
+      q1 = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filter, Occur.FILTER).build();
+      q2 = new BooleanQuery.Builder().add(q2, Occur.MUST).add(filter, Occur.FILTER).build();
     }
     // we test both INDEXORDER and RELEVANCE because we want to test needsScores=true/false
-    for (Sort sort : new Sort[] { Sort.INDEXORDER, Sort.RELEVANCE }) {
+    for (Sort sort : new Sort[] {Sort.INDEXORDER, Sort.RELEVANCE}) {
       // not efficient, but simple!
       TopDocs td1 = s1.search(q1, reader.maxDoc(), sort);
       TopDocs td2 = s2.search(q2, reader.maxDoc(), sort);
-      assertTrue("too many hits: " + td1.totalHits.value + " > " + td2.totalHits.value, td1.totalHits.value <= td2.totalHits.value);
-      
+      assertTrue(
+          "too many hits: " + td1.totalHits.value + " > " + td2.totalHits.value,
+          td1.totalHits.value <= td2.totalHits.value);
+
       // fill the superset into a bitset
       BitSet bitset = new BitSet();
       for (int i = 0; i < td2.scoreDocs.length; i++) {
         bitset.set(td2.scoreDocs[i].doc);
       }
-      
+
       // check in the subset, that every bit was set by the super
       for (int i = 0; i < td1.scoreDocs.length; i++) {
         assertTrue(bitset.get(td1.scoreDocs[i].doc));
@@ -219,9 +204,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
     }
   }
 
-  /**
-   * Assert that two queries return the same documents and with the same scores.
-   */
+  /** Assert that two queries return the same documents and with the same scores. */
   protected void assertSameScores(Query q1, Query q2) throws Exception {
     assertSameSet(q1, q2);
 
@@ -239,14 +222,8 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   protected void assertSameScores(Query q1, Query q2, Query filter) throws Exception {
     // not efficient, but simple!
     if (filter != null) {
-      q1 = new BooleanQuery.Builder()
-          .add(q1, Occur.MUST)
-          .add(filter, Occur.FILTER)
-          .build();
-      q2 = new BooleanQuery.Builder()
-          .add(q2, Occur.MUST)
-          .add(filter, Occur.FILTER)
-          .build();
+      q1 = new BooleanQuery.Builder().add(q1, Occur.MUST).add(filter, Occur.FILTER).build();
+      q2 = new BooleanQuery.Builder().add(q2, Occur.MUST).add(filter, Occur.FILTER).build();
     }
     TopDocs td1 = s1.search(q1, reader.maxDoc());
     TopDocs td2 = s2.search(q2, reader.maxDoc());
@@ -256,11 +233,8 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
       assertEquals(td1.scoreDocs[i].score, td2.scoreDocs[i].score, 10e-5);
     }
   }
-  
+
   protected Query filteredQuery(Query query, Query filter) {
-    return new BooleanQuery.Builder()
-        .add(query, Occur.MUST)
-        .add(filter, Occur.FILTER)
-        .build();
+    return new BooleanQuery.Builder().add(query, Occur.MUST).add(filter, Occur.FILTER).build();
   }
 }

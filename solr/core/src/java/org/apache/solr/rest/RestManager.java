@@ -18,13 +18,17 @@ package org.apache.solr.rest;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -36,22 +40,15 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.restlet.Request;
-import org.restlet.data.MediaType;
-import org.restlet.data.Method;
-import org.restlet.data.Status;
-import org.restlet.representation.Representation;
-import org.restlet.resource.ResourceException;
-import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.Utils.fromJSONString;
+import static org.apache.solr.common.util.Utils.fromJSON;
 
 /**
  * Supports runtime mapping of REST API endpoints to ManagedResource 
@@ -122,11 +119,6 @@ public class RestManager {
 
     public Registry() {
       reservedEndpoints.add(SCHEMA_BASE_PATH + MANAGED_ENDPOINT);
-
-      for (String reservedEndpoint : SolrSchemaRestApi.getReservedEndpoints()) {
-        reservedEndpoints.add(reservedEndpoint);
-      }
-
       reservedEndpointsPattern = getReservedEndpointsPattern();
     }
 
@@ -210,7 +202,7 @@ public class RestManager {
       // it's ok to re-register the same class for an existing path
       ManagedResourceRegistration reg = registered.get(resourceId);
       if (reg != null) {
-        if (!reg.implClass.equals(implClass)) {
+        if (!implClass.equals(reg.implClass)) {
           String errMsg = String.format(Locale.ROOT,
               "REST API path %s already registered to instances of %s",
               resourceId, reg.implClass.getName());
@@ -240,45 +232,41 @@ public class RestManager {
   }  
 
   /**
-   * Locates the RestManager using ThreadLocal SolrRequestInfo.
+   * Request handling needs a lightweight object to delegate a request to.
+   * ManagedResource implementations are heavy-weight objects that live for the duration of
+   * a SolrCore, so this class acts as the proxy between the request handler and a
+   * ManagedResource when doing request processing.
    */
-  public static RestManager getRestManager(SolrRequestInfo solrRequestInfo) {
-    if (solrRequestInfo == null)
-      throw new ResourceException(Status.SERVER_ERROR_INTERNAL, 
-          "No SolrRequestInfo in this Thread!");
+  public static class ManagedEndpoint extends BaseSolrResource {
 
-    SolrQueryRequest req = solrRequestInfo.getReq();
-    RestManager restManager = 
-        (req != null) ? req.getCore().getRestManager() : null;
-    
-    if (restManager == null)
-      throw new ResourceException(Status.SERVER_ERROR_INTERNAL, 
-          "No RestManager found!");
-    
-    return restManager;
-  }
-  
-  /**
-   * The Restlet router needs a lightweight extension of ServerResource to delegate a request
-   * to. ManagedResource implementations are heavy-weight objects that live for the duration of
-   * a SolrCore, so this class acts as the proxy between Restlet and a ManagedResource when
-   * doing request processing.
-   *
-   */
-  public static class ManagedEndpoint extends BaseSolrResource
-      implements GETable, PUTable, POSTable, DELETEable
-  {
+    final RestManager restManager;
+
+    public ManagedEndpoint(RestManager restManager) {
+      this.restManager = restManager;
+    }
+
     /**
-     * Determines the ManagedResource resourceId from the Restlet request.
+     * Determines the ManagedResource resourceId from the request path.
      */
-    public static String resolveResourceId(Request restletReq)  {
-      String resourceId = restletReq.getResourceRef().
-          getRelativeRef(restletReq.getRootRef().getParentRef()).getPath(DECODE);
-      
+    public static String resolveResourceId(final String path)  {
+      String resourceId;
+      try {
+        resourceId = URLDecoder.decode(path, "UTF-8");
+      } catch (UnsupportedEncodingException e) {
+        throw new RuntimeException(e); // shouldn't happen
+      }
+
+      int at = resourceId.indexOf("/schema");
+      if (at == -1) {
+        at = resourceId.indexOf("/config");
+      }
+      if (at > 0) {
+        resourceId = resourceId.substring(at);
+      }
+
       // all resources are registered with the leading slash
       if (!resourceId.startsWith("/"))
         resourceId = "/"+resourceId;
-
 
       return resourceId;
     }
@@ -292,18 +280,11 @@ public class RestManager {
      * dynamically locate the ManagedResource associated with the request URI.
      */
     @Override
-    public void doInit() throws ResourceException {
-      super.doInit();      
-      
-      // get the relative path to the requested resource, which is
-      // needed to locate ManagedResource impls at runtime
-      String resourceId = resolveResourceId(getRequest());
+    public void doInit(SolrQueryRequest solrRequest, SolrQueryResponse solrResponse) {
+      super.doInit(solrRequest, solrResponse);
 
-      // supports a request for a registered resource or its child
-      RestManager restManager = 
-          RestManager.getRestManager(SolrRequestInfo.getRequestInfo());
-      
-      managedResource = restManager.getManagedResourceOrNull(resourceId);      
+      final String resourceId = resolveResourceId(solrRequest.getPath());
+      managedResource = restManager.getManagedResourceOrNull(resourceId);
       if (managedResource == null) {
         // see if we have a registered endpoint one-level up ...
         int lastSlashAt = resourceId.lastIndexOf('/');
@@ -317,7 +298,7 @@ public class RestManager {
             if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
               String errMsg = String.format(Locale.ROOT,
                   "%s does not support child resources!", managedResource.getResourceId());
-              throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, errMsg);
+              throw new SolrException(ErrorCode.BAD_REQUEST, errMsg);
             }
             
             childId = resourceId.substring(lastSlashAt+1);
@@ -326,44 +307,46 @@ public class RestManager {
           }
         }
       }    
-      
+
       if (managedResource == null) {
-        if (Method.PUT.equals(getMethod()) || Method.POST.equals(getMethod())) {
+        final String method = getSolrRequest().getHttpMethod();
+        if ("PUT".equals(method) || "POST".equals(method)) {
           // delegate create requests to the RestManager
           managedResource = restManager.endpoint;
-        } else {        
-          throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, 
+        } else {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
               "No REST managed resource registered for path "+resourceId);
         }
       }
-      
-      log.info("Found ManagedResource [{}] for {}", managedResource, resourceId);
-    }    
-    
-    @Override
-    public Representation put(Representation entity) {
-      try {
-        managedResource.doPut(this, entity, parseJsonFromRequestBody(entity));
-      } catch (Exception e) {
-        getSolrResponse().setException(e);        
-      }
-      handlePostExecution(log);
-      return new SolrOutputRepresentation();    
-    }
-    
-    @Override
-    public Representation post(Representation entity) {
-      try {
-        managedResource.doPost(this, entity, parseJsonFromRequestBody(entity));
-      } catch (Exception e) {
-        getSolrResponse().setException(e);        
-      }
-      handlePostExecution(log);
-      return new SolrOutputRepresentation();    
-    }    
 
-    @Override
-    public Representation delete() {
+      log.info("Found ManagedResource [{}] for {}", managedResource, resourceId);
+    }
+
+    public void delegateRequestToManagedResource() {
+      SolrQueryRequest req = getSolrRequest();
+      final String method = req.getHttpMethod();
+      try {
+        switch (method) {
+          case "GET":
+            managedResource.doGet(this, childId);
+            break;
+          case "PUT":
+            managedResource.doPut(this, parseJsonFromRequestBody(req));
+            break;
+          case "POST":
+            managedResource.doPost(this, parseJsonFromRequestBody(req));
+            break;
+          case "DELETE":
+            doDelete();
+            break;
+        }
+      } catch (Exception e) {
+        getSolrResponse().setException(e);
+      }
+      handlePostExecution(log);
+    }
+
+    protected void doDelete() {
       // only delegate delete child resources to the ManagedResource
       // as deleting the actual resource is best handled by the
       // RestManager
@@ -375,68 +358,24 @@ public class RestManager {
         }
       } else {
         try {
-          RestManager restManager = 
-              RestManager.getRestManager(SolrRequestInfo.getRequestInfo());
           restManager.deleteManagedResource(managedResource);
         } catch (Exception e) {
           getSolrResponse().setException(e);        
         }
       }
       handlePostExecution(log);
-      return new SolrOutputRepresentation();    
-    }    
-        
-    @Override
-    public Representation get() { 
-      try {
-        managedResource.doGet(this, childId);
-      } catch (Exception e) {
-        getSolrResponse().setException(e);        
-      }
-      handlePostExecution(log);
-      return new SolrOutputRepresentation();    
-    }     
-    
-    /**
-     * Parses and validates the JSON passed from the to the ManagedResource. 
-     */
-    protected Object parseJsonFromRequestBody(Representation entity) {
-      if (entity.getMediaType() == null) {
-        entity.setMediaType(MediaType.APPLICATION_JSON);
-      }
-      
-      if (!entity.getMediaType().equals(MediaType.APPLICATION_JSON, true)) {
-        String errMsg = String.format(Locale.ROOT,
-            "Invalid content type %s; only %s is supported.",
-            entity.getMediaType(), MediaType.APPLICATION_JSON.toString());
-        log.error(errMsg);
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, errMsg);
-      }
-      
-      String text = null;
-      try {
-        text = entity.getText();
-      } catch (IOException ioExc) {
-        String errMsg = "Failed to read entity text due to: "+ioExc;
-        log.error(errMsg, ioExc);
-        throw new ResourceException(Status.SERVER_ERROR_INTERNAL, errMsg, ioExc);
-      }
-      
-      if (text == null || text.trim().length() == 0) {
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Empty request body!");      
-      }
+    }
 
-      Object parsedJson = null;
-      try {
-        parsedJson = fromJSONString(text);
-      } catch (Exception ioExc) {
-        String errMsg = String.format(Locale.ROOT,
-            "Failed to parse request [%s] into JSON due to: %s",
-            text, ioExc.toString());
-        log.error(errMsg, ioExc);
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, errMsg, ioExc);
+    protected Object parseJsonFromRequestBody(SolrQueryRequest req) {
+      Iterator<ContentStream> iter = req.getContentStreams().iterator();
+      if (iter.hasNext()) {
+        try (Reader reader = iter.next().getReader()) {
+          return fromJSON(reader);
+        } catch (IOException ioExc) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, ioExc);
+        }
       }
-      return parsedJson;
+      throw new SolrException(ErrorCode.BAD_REQUEST, "No JSON body found in request!");
     }
 
     @Override
@@ -518,16 +457,16 @@ public class RestManager {
      */
     @SuppressWarnings("unchecked")
     @Override
-    public synchronized void doPut(BaseSolrResource endpoint, Representation entity, Object json) {      
+    public synchronized void doPut(BaseSolrResource endpoint, Object json) {
       if (json instanceof Map) {
-        String resourceId = ManagedEndpoint.resolveResourceId(endpoint.getRequest());
+        String resourceId = ManagedEndpoint.resolveResourceId(endpoint.getSolrRequest().getPath());
         Map<String,String> info = (Map<String,String>)json;
         info.put("resourceId", resourceId);
         storeManagedData(applyUpdatesToManagedData(json));
       } else {
-        throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, 
+        throw new SolrException(ErrorCode.BAD_REQUEST,
             "Expected Map to create a new ManagedResource but received a "+json.getClass().getName());
-      }          
+      }
       // PUT just returns success status code with an empty body
     }
 
@@ -539,15 +478,15 @@ public class RestManager {
     @SuppressWarnings("unchecked")
     @Override
     protected Object applyUpdatesToManagedData(Object updates) {
-      Map<String,String> info = (Map<String,String>)updates;      
+      Map<String,String> info = (Map<String,String>)updates;
       // this is where we'd register a new ManagedResource
       String implClass = info.get("class");
       String resourceId = info.get("resourceId");
-      log.info("Creating a new ManagedResource of type {} at path {}", 
+      log.info("Creating a new ManagedResource of type {} at path {}",
           implClass, resourceId);
-      Class<? extends ManagedResource> clazz = 
+      Class<? extends ManagedResource> clazz =
           solrResourceLoader.findClass(implClass, ManagedResource.class);
-      
+
       // add this new resource to the RestManager
       restManager.addManagedResource(resourceId, clazz);
 
@@ -558,7 +497,7 @@ public class RestManager {
         if (reg.observers.isEmpty()) {
           managedList.add(reg.getInfo());
         }
-      }          
+      }
       return managedList;
     }
 
@@ -567,18 +506,18 @@ public class RestManager {
      */
     @Override
     public void doDeleteChild(BaseSolrResource endpoint, String childId) {
-      throw new ResourceException(Status.SERVER_ERROR_NOT_IMPLEMENTED);
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Delete child resource not supported!");
     }
 
     @Override
     public void doGet(BaseSolrResource endpoint, String childId) {
       
       // filter results by /schema or /config
-      String path = ManagedEndpoint.resolveResourceId(endpoint.getRequest());
+      String path = ManagedEndpoint.resolveResourceId(endpoint.getSolrRequest().getPath());
       Matcher resourceIdMatcher = resourceIdRegex.matcher(path);
       if (!resourceIdMatcher.matches()) {
         // extremely unlikely but didn't want to squelch it either
-        throw new ResourceException(Status.SERVER_ERROR_NOT_IMPLEMENTED, path);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Requests to path "+path+" not supported!");
       }
       
       String filter = resourceIdMatcher.group(1);
@@ -603,11 +542,7 @@ public class RestManager {
   protected Map<String,ManagedResource> managed = new TreeMap<>();
   protected RestManagerManagedResource endpoint;
   protected SolrResourceLoader loader;
-  
-  // refs to these are needed to bind new ManagedResources created using the API
-  protected Router schemaRouter;
-  protected Router configRouter;
-  
+
   /**
    * Initializes the RestManager with the storageIO being optionally created outside of this implementation
    * such as to use ZooKeeper instead of the local FS. 
@@ -625,7 +560,7 @@ public class RestManager {
     
     this.storageIO = storageIO;
     this.loader = loader;
-    
+
     registry = loader.getManagedResourceRegistry();
     
     // the RestManager provides metadata about managed resources via the /managed endpoint
@@ -651,8 +586,7 @@ public class RestManager {
 
   /**
    * If not already registered, registers the given {@link ManagedResource} subclass
-   * at the given resourceId, creates an instance, and attaches it to the appropriate
-   * Restlet router.  Returns the corresponding instance.
+   * at the given resourceId, creates an instance. Returns the corresponding instance.
    */
   public synchronized ManagedResource addManagedResource(String resourceId, Class<? extends ManagedResource> clazz) {
     final ManagedResource res;
@@ -665,30 +599,15 @@ public class RestManager {
     }
     return res;
   }
-  
-  // used internally to create and attach a ManagedResource to the Restlet router
-  // the registry also uses this method directly, which is slightly hacky but necessary
-  // in order to support dynamic adding of new fieldTypes using the managed-schema API
+
+  // cache a mapping of path to ManagedResource
   private synchronized ManagedResource addRegisteredResource(ManagedResourceRegistration reg) {
     String resourceId = reg.resourceId;
     ManagedResource res = createManagedResource(reg);
     managed.put(resourceId, res);
     log.info("Registered new managed resource {}", resourceId);
-    
-    // attach this new resource to the Restlet router
-    Matcher resourceIdValidator = resourceIdRegex.matcher(resourceId);
-    boolean validated = resourceIdValidator.matches();
-    assert validated : "managed resourceId '" + resourceId
-                     + "' should already be validated by registerManagedResource()";
-    String routerPath = resourceIdValidator.group(1);      
-    String path = resourceIdValidator.group(2);
-    Router router = SCHEMA_BASE_PATH.equals(routerPath) ? schemaRouter : configRouter;
-    if (router != null) {
-      attachManagedResource(res, path, router);
-    }
     return res;
   }
-
 
   /**
    * Creates a ManagedResource using registration information. 
@@ -714,14 +633,13 @@ public class RestManager {
    * Returns the {@link ManagedResource} subclass instance corresponding
    * to the given resourceId from the registry.
    *
-   * @throws ResourceException if no managed resource is registered with
+   * @throws SolrException if no managed resource is registered with
    *  the given resourceId.
    */
   public ManagedResource getManagedResource(String resourceId) {
     ManagedResource res = getManagedResourceOrNull(resourceId);
     if (res == null) {
-      throw new ResourceException(Status.SERVER_ERROR_INTERNAL, 
-          "No ManagedResource registered for path: "+resourceId);
+      throw new SolrException(ErrorCode.NOT_FOUND, "No ManagedResource registered for path: "+resourceId);
     }
     return res;
   }
@@ -759,48 +677,5 @@ public class RestManager {
       log.error("Error when trying to clean-up after deleting {}",resourceId, e);
     }
   }
-      
-  /**
-   * Attach managed resource paths to the given Restlet Router. 
-   * @param router - Restlet Router
-   */
-  public synchronized void attachManagedResources(String routerPath, Router router) {
-    if (SCHEMA_BASE_PATH.equals(routerPath)) {
-      this.schemaRouter = router;
-    } else {
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-          routerPath+" not supported by the RestManager");
-    }      
-    
-    int numAttached = 0;
-    for (Map.Entry<String, ManagedResource> entry : managed.entrySet()) {
-      String resourceId = entry.getKey();
-      if (resourceId.startsWith(routerPath)) {
-        // the way restlet works is you attach a path w/o the routerPath
-        String path = resourceId.substring(routerPath.length());
-        attachManagedResource(entry.getValue(), path, router);
-        ++numAttached;
-      }
-    }
-    
-    log.info("Attached {} ManagedResource endpoints to Restlet router: {}", 
-        numAttached, routerPath);
-  }
-  
-  /**
-   * Attaches a ManagedResource and optionally a path for child resources
-   * to the given Restlet Router.
-   */
-  protected void attachManagedResource(ManagedResource res, String path, Router router) {
-    router.attach(path, res.getServerResourceClass());
-    log.info("Attached managed resource at path: {}",path);
-    
-    // Determine if we should also route requests for child resources
-    // ManagedResource.ChildResourceSupport is a marker interface that
-    // indicates the ManagedResource also manages child resources at
-    // a path one level down from the main resourceId
-    if (ManagedResource.ChildResourceSupport.class.isAssignableFrom(res.getClass())) {
-      router.attach(path+"/{child}", res.getServerResourceClass());
-    }    
-  }
+
 }

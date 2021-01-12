@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Rectangle;
@@ -43,7 +42,6 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 
-
 final class LatLonPointDistanceFeatureQuery extends Query {
 
   private final String field;
@@ -51,7 +49,8 @@ final class LatLonPointDistanceFeatureQuery extends Query {
   private final double originLon;
   private final double pivotDistance;
 
-  LatLonPointDistanceFeatureQuery(String field, double originLat, double originLon, double pivotDistance) {
+  LatLonPointDistanceFeatureQuery(
+      String field, double originLat, double originLon, double pivotDistance) {
     this.field = Objects.requireNonNull(field);
     GeoUtils.checkLatitude(originLat);
     GeoUtils.checkLongitude(originLon);
@@ -72,15 +71,14 @@ final class LatLonPointDistanceFeatureQuery extends Query {
 
   @Override
   public final boolean equals(Object o) {
-    return sameClassAs(o) &&
-        equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(LatLonPointDistanceFeatureQuery other) {
-    return Objects.equals(field, other.field) &&
-        originLon == other.originLon &&
-        originLat == other.originLat &&
-        pivotDistance == other.pivotDistance;
+    return Objects.equals(field, other.field)
+        && originLon == other.originLon
+        && originLat == other.originLat
+        && pivotDistance == other.pivotDistance;
   }
 
   @Override
@@ -95,11 +93,21 @@ final class LatLonPointDistanceFeatureQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return getClass().getSimpleName() + "(field=" + field + ",originLat=" + originLat + ",originLon=" + originLon + ",pivotDistance=" + pivotDistance + ")";
+    return getClass().getSimpleName()
+        + "(field="
+        + field
+        + ",originLat="
+        + originLat
+        + ",originLon="
+        + originLon
+        + ",pivotDistance="
+        + pivotDistance
+        + ")";
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
 
       @Override
@@ -111,16 +119,19 @@ final class LatLonPointDistanceFeatureQuery extends Query {
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
         SortedNumericDocValues multiDocValues = DocValues.getSortedNumeric(context.reader(), field);
         if (multiDocValues.advanceExact(doc) == false) {
-          return Explanation.noMatch("Document " + doc + " doesn't have a value for field " + field);
+          return Explanation.noMatch(
+              "Document " + doc + " doesn't have a value for field " + field);
         }
         long encoded = selectValue(multiDocValues);
-        int latitudeBits = (int)(encoded >> 32);
-        int longitudeBits = (int)(encoded & 0xFFFFFFFF);
+        int latitudeBits = (int) (encoded >> 32);
+        int longitudeBits = (int) (encoded & 0xFFFFFFFF);
         double lat = GeoEncodingUtils.decodeLatitude(latitudeBits);
         double lon = GeoEncodingUtils.decodeLongitude(longitudeBits);
         double distance = SloppyMath.haversinMeters(originLat, originLon, lat, lon);
         float score = (float) (boost * (pivotDistance / (pivotDistance + distance)));
-        return Explanation.match(score, "Distance score, computed as weight * pivotDistance / (pivotDistance + abs(distance)) from:",
+        return Explanation.match(
+            score,
+            "Distance score, computed as weight * pivotDistance / (pivotDistance + abs(distance)) from:",
             Explanation.match(boost, "weight"),
             Explanation.match(pivotDistance, "pivotDistance"),
             Explanation.match(originLat, "originLat"),
@@ -154,7 +165,7 @@ final class LatLonPointDistanceFeatureQuery extends Query {
         if (singleton != null) {
           return singleton;
         }
-        return  new NumericDocValues() {
+        return new NumericDocValues() {
 
           long value;
 
@@ -192,7 +203,6 @@ final class LatLonPointDistanceFeatureQuery extends Query {
           public long cost() {
             return multiDocValues.cost();
           }
-
         };
       }
 
@@ -203,7 +213,8 @@ final class LatLonPointDistanceFeatureQuery extends Query {
           // No data on this segment
           return null;
         }
-        final SortedNumericDocValues multiDocValues = DocValues.getSortedNumeric(context.reader(), field);
+        final SortedNumericDocValues multiDocValues =
+            DocValues.getSortedNumeric(context.reader(), field);
         final NumericDocValues docValues = selectValues(multiDocValues);
 
         final Weight weight = this;
@@ -211,7 +222,8 @@ final class LatLonPointDistanceFeatureQuery extends Query {
 
           @Override
           public Scorer get(long leadCost) throws IOException {
-            return new DistanceScorer(weight, context.reader().maxDoc(), leadCost, boost, pointValues, docValues);
+            return new DistanceScorer(
+                weight, context.reader().maxDoc(), leadCost, boost, pointValues, docValues);
           }
 
           @Override
@@ -229,7 +241,6 @@ final class LatLonPointDistanceFeatureQuery extends Query {
         }
         return scorerSupplier.get(Long.MAX_VALUE);
       }
-
     };
   }
 
@@ -238,8 +249,8 @@ final class LatLonPointDistanceFeatureQuery extends Query {
   }
 
   private double getDistanceKeyFromEncoded(long encoded) {
-    int latitudeBits = (int)(encoded >> 32);
-    int longitudeBits = (int)(encoded & 0xFFFFFFFF);
+    int latitudeBits = (int) (encoded >> 32);
+    int longitudeBits = (int) (encoded & 0xFFFFFFFF);
     double lat = GeoEncodingUtils.decodeLatitude(latitudeBits);
     double lon = GeoEncodingUtils.decodeLongitude(longitudeBits);
     return SloppyMath.haversinSortKey(originLat, originLon, lat, lon);
@@ -256,8 +267,13 @@ final class LatLonPointDistanceFeatureQuery extends Query {
     private final NumericDocValues docValues;
     private double maxDistance = GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI;
 
-    protected DistanceScorer(Weight weight, int maxDoc, long leadCost, float boost,
-        PointValues pointValues, NumericDocValues docValues) {
+    protected DistanceScorer(
+        Weight weight,
+        int maxDoc,
+        long leadCost,
+        float boost,
+        PointValues pointValues,
+        NumericDocValues docValues) {
       super(weight);
       this.maxDoc = maxDoc;
       this.leadCost = leadCost;
@@ -279,9 +295,8 @@ final class LatLonPointDistanceFeatureQuery extends Query {
     }
 
     /**
-     * Inverting the score computation is very hard due to all potential
-     * rounding errors, so we binary search the maximum distance. The limit
-     * is set to 1 meter.
+     * Inverting the score computation is very hard due to all potential rounding errors, so we
+     * binary search the maximum distance. The limit is set to 1 meter.
      */
     private double computeMaxDistance(float minScore, double previousMaxDistance) {
       assert score(0) >= minScore;
@@ -337,7 +352,7 @@ final class LatLonPointDistanceFeatureQuery extends Query {
 
         @Override
         public int advance(int target) throws IOException {
-        return doc = it.advance(target);
+          return doc = it.advance(target);
         }
       };
     }
@@ -348,7 +363,6 @@ final class LatLonPointDistanceFeatureQuery extends Query {
     }
 
     private int setMinCompetitiveScoreCounter = 0;
-
 
     @Override
     public void setMinCompetitiveScore(float minScore) throws IOException {
@@ -370,15 +384,14 @@ final class LatLonPointDistanceFeatureQuery extends Query {
         return;
       }
 
-      //Ideally we would be doing a distance query but that is too expensive so we approximate
-      //with a box query which performs better.
+      // Ideally we would be doing a distance query but that is too expensive so we approximate
+      // with a box query which performs better.
       Rectangle box = Rectangle.fromPointDistance(originLat, originLon, maxDistance);
       final byte minLat[] = new byte[LatLonPoint.BYTES];
       final byte maxLat[] = new byte[LatLonPoint.BYTES];
       final byte minLon[] = new byte[LatLonPoint.BYTES];
       final byte maxLon[] = new byte[LatLonPoint.BYTES];
       final boolean crossDateLine = box.crossesDateline();
-
 
       NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLatitude(box.minLat), minLat, 0);
       NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLatitude(box.maxLat), maxLat, 0);
@@ -387,89 +400,190 @@ final class LatLonPointDistanceFeatureQuery extends Query {
 
       DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
       final int doc = docID();
-      IntersectVisitor visitor = new IntersectVisitor() {
+      IntersectVisitor visitor =
+          new IntersectVisitor() {
 
-        DocIdSetBuilder.BulkAdder adder;
+            DocIdSetBuilder.BulkAdder adder;
 
-        @Override
-        public void grow(int count) {
-          adder = result.grow(count);
-        }
-
-        @Override
-        public void visit(int docID) {
-          if (docID <= doc) {
-            // Already visited or skipped
-            return;
-          }
-          adder.add(docID);
-        }
-
-        @Override
-        public void visit(int docID, byte[] packedValue) {
-          if (docID <= doc) {
-            // Already visited or skipped
-            return;
-          }
-          if (Arrays.compareUnsigned(packedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES) > 0 ||
-              Arrays.compareUnsigned(packedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES) < 0) {
-            //Latitude out of range
-            return;
-          }
-          if (crossDateLine) {
-            if (Arrays.compareUnsigned(packedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) < 0 &&
-                Arrays.compareUnsigned(packedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES)  > 0) {
-              //Longitude out of range
-              return;
+            @Override
+            public void grow(int count) {
+              adder = result.grow(count);
             }
 
-          } else {
-            if (Arrays.compareUnsigned(packedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES) > 0 ||
-                Arrays.compareUnsigned(packedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) < 0) {
-              //Longitude out of range
-              return;
+            @Override
+            public void visit(int docID) {
+              if (docID <= doc) {
+                // Already visited or skipped
+                return;
+              }
+              adder.add(docID);
             }
-          }
-          adder.add(docID);
-        }
 
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            @Override
+            public void visit(int docID, byte[] packedValue) {
+              if (docID <= doc) {
+                // Already visited or skipped
+                return;
+              }
+              if (Arrays.compareUnsigned(
+                          packedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES)
+                      > 0
+                  || Arrays.compareUnsigned(
+                          packedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES)
+                      < 0) {
+                // Latitude out of range
+                return;
+              }
+              if (crossDateLine) {
+                if (Arrays.compareUnsigned(
+                            packedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            minLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        < 0
+                    && Arrays.compareUnsigned(
+                            packedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            maxLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        > 0) {
+                  // Longitude out of range
+                  return;
+                }
 
-          if (Arrays.compareUnsigned(minPackedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES) > 0 ||
-              Arrays.compareUnsigned(maxPackedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES) < 0) {
-            return Relation.CELL_OUTSIDE_QUERY;
-          }
-          boolean crosses = Arrays.compareUnsigned(minPackedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES) < 0 ||
-              Arrays.compareUnsigned(maxPackedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES) > 0;
-
-          if (crossDateLine) {
-            if (Arrays.compareUnsigned(minPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES) > 0 &&
-                Arrays.compareUnsigned(maxPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) < 0) {
-              return Relation.CELL_OUTSIDE_QUERY;
+              } else {
+                if (Arrays.compareUnsigned(
+                            packedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            maxLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        > 0
+                    || Arrays.compareUnsigned(
+                            packedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            minLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        < 0) {
+                  // Longitude out of range
+                  return;
+                }
+              }
+              adder.add(docID);
             }
-            crosses |= Arrays.compareUnsigned(minPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES) < 0 ||
-                Arrays.compareUnsigned(maxPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) > 0;
 
-          } else {
-            if (Arrays.compareUnsigned(minPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES) > 0 ||
-                Arrays.compareUnsigned(maxPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) < 0) {
-              return Relation.CELL_OUTSIDE_QUERY;
+            @Override
+            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+
+              if (Arrays.compareUnsigned(
+                          minPackedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES)
+                      > 0
+                  || Arrays.compareUnsigned(
+                          maxPackedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES)
+                      < 0) {
+                return Relation.CELL_OUTSIDE_QUERY;
+              }
+              boolean crosses =
+                  Arrays.compareUnsigned(
+                              minPackedValue, 0, LatLonPoint.BYTES, minLat, 0, LatLonPoint.BYTES)
+                          < 0
+                      || Arrays.compareUnsigned(
+                              maxPackedValue, 0, LatLonPoint.BYTES, maxLat, 0, LatLonPoint.BYTES)
+                          > 0;
+
+              if (crossDateLine) {
+                if (Arrays.compareUnsigned(
+                            minPackedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            maxLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        > 0
+                    && Arrays.compareUnsigned(
+                            maxPackedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            minLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        < 0) {
+                  return Relation.CELL_OUTSIDE_QUERY;
+                }
+                crosses |=
+                    Arrays.compareUnsigned(
+                                minPackedValue,
+                                LatLonPoint.BYTES,
+                                2 * LatLonPoint.BYTES,
+                                maxLon,
+                                0,
+                                LatLonPoint.BYTES)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                maxPackedValue,
+                                LatLonPoint.BYTES,
+                                2 * LatLonPoint.BYTES,
+                                minLon,
+                                0,
+                                LatLonPoint.BYTES)
+                            > 0;
+
+              } else {
+                if (Arrays.compareUnsigned(
+                            minPackedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            maxLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        > 0
+                    || Arrays.compareUnsigned(
+                            maxPackedValue,
+                            LatLonPoint.BYTES,
+                            2 * LatLonPoint.BYTES,
+                            minLon,
+                            0,
+                            LatLonPoint.BYTES)
+                        < 0) {
+                  return Relation.CELL_OUTSIDE_QUERY;
+                }
+                crosses |=
+                    Arrays.compareUnsigned(
+                                minPackedValue,
+                                LatLonPoint.BYTES,
+                                2 * LatLonPoint.BYTES,
+                                minLon,
+                                0,
+                                LatLonPoint.BYTES)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                maxPackedValue,
+                                LatLonPoint.BYTES,
+                                2 * LatLonPoint.BYTES,
+                                maxLon,
+                                0,
+                                LatLonPoint.BYTES)
+                            > 0;
+              }
+              if (crosses) {
+                return Relation.CELL_CROSSES_QUERY;
+              } else {
+                return Relation.CELL_INSIDE_QUERY;
+              }
             }
-            crosses |= Arrays.compareUnsigned(minPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, minLon, 0, LatLonPoint.BYTES) < 0 ||
-                Arrays.compareUnsigned(maxPackedValue, LatLonPoint.BYTES, 2 * LatLonPoint.BYTES, maxLon, 0, LatLonPoint.BYTES) > 0;
-          }
-          if (crosses) {
-            return Relation.CELL_CROSSES_QUERY;
-          } else {
-            return Relation.CELL_INSIDE_QUERY;
-          }
-        }
-      };
+          };
 
       final long currentQueryCost = Math.min(leadCost, it.cost());
       final long threshold = currentQueryCost >>> 3;
-      long estimatedNumberOfMatches = pointValues.estimatePointCount(visitor); // runs in O(log(numPoints))
+      long estimatedNumberOfMatches =
+          pointValues.estimatePointCount(visitor); // runs in O(log(numPoints))
       // TODO: what is the right factor compared to the current disi? Is 8 optimal?
       if (estimatedNumberOfMatches >= threshold) {
         // the new range is not selective enough to be worth materializing
@@ -478,6 +592,5 @@ final class LatLonPointDistanceFeatureQuery extends Query {
       pointValues.intersect(visitor);
       it = result.build().iterator();
     }
-
   }
 }

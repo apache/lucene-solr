@@ -19,13 +19,10 @@ package org.apache.lucene.luke.models.documents;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Holder for doc values.
- */
+/** Holder for doc values. */
 public final class DocValues {
 
   private final DocValuesType dvType;
@@ -36,6 +33,7 @@ public final class DocValues {
 
   /**
    * Returns a new doc values entry representing the specified doc values type and values.
+   *
    * @param dvType - doc values type
    * @param values - (string) values
    * @param numericValues numeric values
@@ -51,34 +49,33 @@ public final class DocValues {
     this.numericValues = numericValues;
   }
 
-  /**
-   * Returns the type of this doc values.
-   */
+  /** Returns the type of this doc values. */
   public DocValuesType getDvType() {
     return dvType;
   }
 
-  /**
-   * Returns the list of (string) values.
-   */
+  /** Returns the list of (string) values. */
   public List<BytesRef> getValues() {
     return values;
   }
 
-  /**
-   * Returns the list of numeric values.
-   */
+  /** Returns the list of numeric values. */
   public List<Long> getNumericValues() {
     return numericValues;
   }
 
   @Override
   public String toString() {
-    String numValuesStr = numericValues.stream().map(String::valueOf).collect(Collectors.joining(","));
-    return "DocValues{" +
-        "dvType=" + dvType +
-        ", values=" + values +
-        ", numericValues=[" + numValuesStr + "]" +
-        '}';
+    String numValuesStr =
+        numericValues.stream().map(String::valueOf).collect(Collectors.joining(","));
+    return "DocValues{"
+        + "dvType="
+        + dvType
+        + ", values="
+        + values
+        + ", numericValues=["
+        + numValuesStr
+        + "]"
+        + '}';
   }
 }

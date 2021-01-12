@@ -18,7 +18,7 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;

@@ -104,6 +104,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -427,6 +428,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
     formatter.printHelp("export", getToolOptions(new ExportTool()));
+    formatter.printHelp("package", getToolOptions(new PackageTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -1666,7 +1668,7 @@ public class SolrCLI implements CLIO {
 
       String systemInfoUrl = solrUrl+"admin/info/system";
       CloseableHttpClient httpClient = getHttpClient();
-      String solrHome = null;
+      String coreRootDirectory = null; //usually same as solr home, but not always
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -1675,9 +1677,11 @@ public class SolrCLI implements CLIO {
         }
 
         // convert raw JSON into user-friendly output
-        solrHome = (String)systemInfo.get("solr_home");
-        if (solrHome == null)
-          solrHome = configsetsDir.getParentFile().getAbsolutePath();
+        coreRootDirectory = (String)systemInfo.get("core_root");
+
+        //Fall back to solr_home, in case we are running against older server that does not return the property
+        if (coreRootDirectory == null)  coreRootDirectory = (String)systemInfo.get("solr_home");
+        if (coreRootDirectory == null)  coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
 
       } finally {
         closeHttpClient(httpClient);
@@ -1689,7 +1693,7 @@ public class SolrCLI implements CLIO {
             "' already exists!\nChecked core existence using Core API command:\n"+coreStatusUrl);
       }
 
-      File coreInstanceDir = new File(solrHome, coreName);
+      File coreInstanceDir = new File(coreRootDirectory, coreName);
       File confDir = new File(configSetDir,"conf");
       if (!coreInstanceDir.isDirectory()) {
         coreInstanceDir.mkdirs();
@@ -2714,6 +2718,7 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       this.urlScheme = cli.getOptionValue("urlScheme", "http");
+      UrlScheme.INSTANCE.setUrlScheme(this.urlScheme);
 
       serverDir = new File(cli.getOptionValue("serverDir"));
       if (!serverDir.isDirectory())

@@ -18,29 +18,26 @@ package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
 import java.util.LinkedList;
-
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-/**
- * Filter for DoubleMetaphone (supporting secondary codes)
- */
+/** Filter for DoubleMetaphone (supporting secondary codes) */
 public final class DoubleMetaphoneFilter extends TokenFilter {
 
   private static final String TOKEN_TYPE = "DoubleMetaphone";
-  
+
   private final LinkedList<State> remainingTokens = new LinkedList<>();
   private final DoubleMetaphone encoder = new DoubleMetaphone();
   private final boolean inject;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
-  /** Creates a DoubleMetaphoneFilter with the specified maximum code length, 
-   *  and either adding encoded forms as synonyms (<code>inject=true</code>) or
-   *  replacing them.
+  /**
+   * Creates a DoubleMetaphoneFilter with the specified maximum code length, and either adding
+   * encoded forms as synonyms (<code>inject=true</code>) or replacing them.
    */
   public DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
     super(input);
@@ -50,7 +47,7 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-    for(;;) {
+    for (; ; ) {
 
       if (!remainingTokens.isEmpty()) {
         // clearAttributes();  // not currently necessary
@@ -61,8 +58,8 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
       if (!input.incrementToken()) return false;
 
       int len = termAtt.length();
-      if (len==0) return true; // pass through zero length terms
-      
+      if (len == 0) return true; // pass through zero length terms
+
       int firstAlternativeIncrement = inject ? 0 : posAtt.getPositionIncrement();
 
       String v = termAtt.toString();
@@ -71,26 +68,29 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
 
       // a flag to lazily save state if needed... this avoids a save/restore when only
       // one token will be generated.
-      boolean saveState=inject;
+      boolean saveState = inject;
 
-      if (primaryPhoneticValue!=null && primaryPhoneticValue.length() > 0 && !primaryPhoneticValue.equals(v)) {
+      if (primaryPhoneticValue != null
+          && primaryPhoneticValue.length() > 0
+          && !primaryPhoneticValue.equals(v)) {
         if (saveState) {
           remainingTokens.addLast(captureState());
         }
-        posAtt.setPositionIncrement( firstAlternativeIncrement );
+        posAtt.setPositionIncrement(firstAlternativeIncrement);
         firstAlternativeIncrement = 0;
         termAtt.setEmpty().append(primaryPhoneticValue);
         saveState = true;
       }
 
-      if (alternatePhoneticValue!=null && alternatePhoneticValue.length() > 0
-              && !alternatePhoneticValue.equals(primaryPhoneticValue)
-              && !primaryPhoneticValue.equals(v)) {
+      if (alternatePhoneticValue != null
+          && alternatePhoneticValue.length() > 0
+          && !alternatePhoneticValue.equals(primaryPhoneticValue)
+          && !primaryPhoneticValue.equals(v)) {
         if (saveState) {
           remainingTokens.addLast(captureState());
           saveState = false;
         }
-        posAtt.setPositionIncrement( firstAlternativeIncrement );
+        posAtt.setPositionIncrement(firstAlternativeIncrement);
         termAtt.setEmpty().append(alternatePhoneticValue);
         saveState = true;
       }

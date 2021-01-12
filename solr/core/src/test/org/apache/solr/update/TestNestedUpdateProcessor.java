@@ -127,7 +127,7 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testNumberInName() throws Exception {
     // child named "grandChild99"  (has a number in it)
     indexSampleData(jDoc.replace("grandChild", "grandChild99"));
-    //assertQ(req("qt", "/terms", "terms", "true", "terms.fl", IndexSchema.NEST_PATH_FIELD_NAME), "false"); // for debugging
+    //assertQ(req("qt", "/terms", "terms.fl", IndexSchema.NEST_PATH_FIELD_NAME), "false"); // for debugging
 
     // find it
     assertJQ(req("q", "{!field f=" + IndexSchema.NEST_PATH_FIELD_NAME + "}/children/grandChild99"),

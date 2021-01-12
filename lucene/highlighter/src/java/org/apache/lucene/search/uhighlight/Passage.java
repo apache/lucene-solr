@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.search.uhighlight;
 
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Represents a passage (typically a sentence of the document).
- * <p>
- * A passage contains {@link #getNumMatches} highlights from the query,
- * and the offsets and query terms that correspond with each match.
+ *
+ * <p>A passage contains {@link #getNumMatches} highlights from the query, and the offsets and query
+ * terms that correspond with each match.
  *
  * @lucene.experimental
  */
@@ -73,7 +72,7 @@ public class Passage {
     numMatches = 0;
   }
 
-  /** For debugging.  ex: Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213 */
+  /** For debugging. ex: Passage[0-22]{yin[0-3],yang[4-8],yin[10-13]}score=2.4964213 */
   @Override
   public String toString() {
     StringBuilder buf = new StringBuilder();
@@ -84,7 +83,11 @@ public class Passage {
         buf.append(',');
       }
       buf.append(matchTerms[i].utf8ToString());
-      buf.append('[').append(matchStarts[i] - startOffset).append('-').append(matchEnds[i] - startOffset).append(']');
+      buf.append('[')
+          .append(matchStarts[i] - startOffset)
+          .append('-')
+          .append(matchEnds[i] - startOffset)
+          .append(']');
     }
     buf.append('}');
     buf.append("score=").append(score);
@@ -94,8 +97,7 @@ public class Passage {
   /**
    * Start offset of this passage.
    *
-   * @return start index (inclusive) of the passage in the
-   * original content: always &gt;= 0.
+   * @return start index (inclusive) of the passage in the original content: always &gt;= 0.
    */
   public int getStartOffset() {
     return startOffset;
@@ -104,8 +106,8 @@ public class Passage {
   /**
    * End offset of this passage.
    *
-   * @return end index (exclusive) of the passage in the
-   * original content: always &gt;= {@link #getStartOffset()}
+   * @return end index (exclusive) of the passage in the original content: always &gt;= {@link
+   *     #getStartOffset()}
    */
   public int getEndOffset() {
     return endOffset;
@@ -115,9 +117,7 @@ public class Passage {
     return endOffset - startOffset;
   }
 
-  /**
-   * Passage's score.
-   */
+  /** Passage's score. */
   public float getScore() {
     return score;
   }
@@ -127,9 +127,8 @@ public class Passage {
   }
 
   /**
-   * Number of term matches available in
-   * {@link #getMatchStarts}, {@link #getMatchEnds},
-   * {@link #getMatchTerms}
+   * Number of term matches available in {@link #getMatchStarts}, {@link #getMatchEnds}, {@link
+   * #getMatchTerms}
    */
   public int getNumMatches() {
     return numMatches;
@@ -137,9 +136,9 @@ public class Passage {
 
   /**
    * Start offsets of the term matches, in increasing order.
-   * <p>
-   * Only {@link #getNumMatches} are valid. Note that these
-   * offsets are absolute (not relative to {@link #getStartOffset()}).
+   *
+   * <p>Only {@link #getNumMatches} are valid. Note that these offsets are absolute (not relative to
+   * {@link #getStartOffset()}).
    */
   public int[] getMatchStarts() {
     return matchStarts;
@@ -147,28 +146,28 @@ public class Passage {
 
   /**
    * End offsets of the term matches, corresponding with {@link #getMatchStarts}.
-   * <p>
-   * Only {@link #getNumMatches} are valid. Note that its possible that an end offset
-   * could exceed beyond the bounds of the passage ({@link #getEndOffset()}), if the
-   * Analyzer produced a term which spans a passage boundary.
+   *
+   * <p>Only {@link #getNumMatches} are valid. Note that its possible that an end offset could
+   * exceed beyond the bounds of the passage ({@link #getEndOffset()}), if the Analyzer produced a
+   * term which spans a passage boundary.
    */
   public int[] getMatchEnds() {
     return matchEnds;
   }
 
   /**
-   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}.  The primary purpose of this
-   * method is to expose the number of unique terms per passage for use in passage scoring.
-   * The actual term byte content is not well defined by this highlighter, and thus use of it is more subject to
-   * change.
-   * <p>
-   * The term might be simply the analyzed term at this position.
-   * Depending on the highlighter's configuration, the match term may be a phrase (instead of a word), and in such
-   * a case might be a series of space-separated analyzed terms.
-   * If the match is from a {@link org.apache.lucene.search.MultiTermQuery} then the match term may be the toString() of
-   * that query.
-   * <p>
-   * Only {@link #getNumMatches()} are valid.
+   * BytesRef (term text) of the matches, corresponding with {@link #getMatchStarts()}. The primary
+   * purpose of this method is to expose the number of unique terms per passage for use in passage
+   * scoring. The actual term byte content is not well defined by this highlighter, and thus use of
+   * it is more subject to change.
+   *
+   * <p>The term might be simply the analyzed term at this position. Depending on the highlighter's
+   * configuration, the match term may be a phrase (instead of a word), and in such a case might be
+   * a series of space-separated analyzed terms. If the match is from a {@link
+   * org.apache.lucene.search.MultiTermQuery} then the match term may be the toString() of that
+   * query.
+   *
+   * <p>Only {@link #getNumMatches()} are valid.
    */
   public BytesRef[] getMatchTerms() {
     return matchTerms;
@@ -188,5 +187,4 @@ public class Passage {
     assert startOffset <= endOffset;
     this.endOffset = endOffset;
   }
-
 }

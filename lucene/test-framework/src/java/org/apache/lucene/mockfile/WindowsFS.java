@@ -26,36 +26,36 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Map;
 
-/** 
- * FileSystem that (imperfectly) acts like windows. 
- * <p>
- * Currently this filesystem only prevents deletion of open files.
+/**
+ * FileSystem that (imperfectly) acts like windows.
+ *
+ * <p>Currently this filesystem only prevents deletion of open files.
  */
 public class WindowsFS extends HandleTrackingFS {
   // This map also supports fileKey -> Path -> counts
   // which is important to effectively support renames etc.
-  // in the rename case we have to transfer ownership but need to make sure we only transfer ownership for
+  // in the rename case we have to transfer ownership but need to make sure we only transfer
+  // ownership for
   // the path we rename ie. hardlinks will still resolve to the same key
-  final Map<Object,Map<Path, Integer>> openFiles = new HashMap<>();
+  final Map<Object, Map<Path, Integer>> openFiles = new HashMap<>();
   // TODO: try to make this as realistic as possible... it depends e.g. how you
   // open files, if you map them, etc, if you can delete them (Uwe knows the rules)
-  
+
   // TODO: add case-insensitivity
-  
+
   /**
-   * Create a new instance, wrapping the delegate filesystem to
-   * act like Windows.
+   * Create a new instance, wrapping the delegate filesystem to act like Windows.
+   *
    * @param delegate delegate filesystem to wrap.
    */
   public WindowsFS(FileSystem delegate) {
     super("windows://", delegate);
   }
-  
-  /** 
-   * Returns file "key" (e.g. inode) for the specified path 
-   */
+
+  /** Returns file "key" (e.g. inode) for the specified path */
   private Object getKey(Path existing) throws IOException {
-    BasicFileAttributeView view = Files.getFileAttributeView(existing, BasicFileAttributeView.class);
+    BasicFileAttributeView view =
+        Files.getFileAttributeView(existing, BasicFileAttributeView.class);
     BasicFileAttributes attributes = view.readAttributes();
     return attributes.fileKey();
   }
@@ -67,7 +67,7 @@ public class WindowsFS extends HandleTrackingFS {
       // we have to read the key under the lock otherwise me might leak the openFile handle
       // if we concurrently delete or move this file.
       Map<Path, Integer> pathMap = openFiles.computeIfAbsent(key, k -> new HashMap<>());
-      pathMap.put(path, pathMap.computeIfAbsent(path, p -> 0).intValue() +1);
+      pathMap.put(path, pathMap.computeIfAbsent(path, p -> 0).intValue() + 1);
     }
   }
 
@@ -83,7 +83,7 @@ public class WindowsFS extends HandleTrackingFS {
         if (v.intValue() == 1) {
           pathMap.remove(path);
         } else {
-          v = Integer.valueOf(v.intValue()-1);
+          v = Integer.valueOf(v.intValue() - 1);
           pathMap.put(path, v);
         }
       }
@@ -101,15 +101,15 @@ public class WindowsFS extends HandleTrackingFS {
     }
     return null;
   }
-  
-  /** 
-   * Checks that it's ok to delete {@code Path}. If the file
-   * is still open, it throws IOException("access denied").
+
+  /**
+   * Checks that it's ok to delete {@code Path}. If the file is still open, it throws
+   * IOException("access denied").
    */
   private void checkDeleteAccess(Path path) throws IOException {
     Object key = getKeyOrNull(path);
     if (key != null) {
-      synchronized(openFiles) {
+      synchronized (openFiles) {
         if (openFiles.containsKey(key)) {
           throw new IOException("access denied: " + path);
         }
@@ -134,14 +134,17 @@ public class WindowsFS extends HandleTrackingFS {
       if (key != null) {
         Object newKey = getKey(target);
         if (newKey.equals(key) == false) {
-          // we need to transfer ownership here if we have open files on this file since the getKey() method will
-          // return a different i-node next time we call it with the target path and our onClose method will
+          // we need to transfer ownership here if we have open files on this file since the
+          // getKey() method will
+          // return a different i-node next time we call it with the target path and our onClose
+          // method will
           // trip an assert
           Map<Path, Integer> map = openFiles.get(key);
           if (map != null) {
             Integer v = map.remove(target);
             if (v != null) {
-              Map<Path, Integer> pathIntegerMap = openFiles.computeIfAbsent(newKey, k -> new HashMap<>());
+              Map<Path, Integer> pathIntegerMap =
+                  openFiles.computeIfAbsent(newKey, k -> new HashMap<>());
               Integer existingValue = pathIntegerMap.getOrDefault(target, 0);
               pathIntegerMap.put(target, existingValue + v);
             }

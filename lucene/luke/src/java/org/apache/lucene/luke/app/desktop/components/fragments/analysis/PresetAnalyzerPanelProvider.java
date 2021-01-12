@@ -17,18 +17,17 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.event.ActionEvent;
+import java.util.Collection;
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.util.Collection;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
@@ -86,11 +85,10 @@ public final class PresetAnalyzerPanelProvider implements PresetAnalyzerPanelOpe
   private class ListenerFunctions {
 
     void setAnalyzer(ActionEvent e) {
-      operatorRegistry.get(AnalysisTabOperator.class).ifPresent(operator ->
-          operator.setAnalyzerByType((String) analyzersCB.getSelectedItem())
-      );
+      operatorRegistry
+          .get(AnalysisTabOperator.class)
+          .ifPresent(
+              operator -> operator.setAnalyzerByType((String) analyzersCB.getSelectedItem()));
     }
-
   }
-
 }

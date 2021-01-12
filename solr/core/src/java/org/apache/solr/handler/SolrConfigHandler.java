@@ -60,6 +60,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
@@ -76,7 +77,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -547,7 +547,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId, false);
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
@@ -598,26 +598,23 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @SuppressWarnings({"unchecked"})
     private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
-        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
-        //this is not dynamically loaded so we can verify the class right away
-        try {
-          if(expected == Expressible.class) {
-            @SuppressWarnings("resource")
-            SolrResourceLoader resourceLoader = info.pkgName == null ?
-                req.getCore().getResourceLoader() :
-                req.getCore().getResourceLoader(info.pkgName);
-            resourceLoader.findClass(info.className, expected);
-          } else {
-            req.getCore().createInitInstance(info, expected, clz, "");
-          }
-        } catch (Exception e) {
-          log.error("Error checking plugin : ", e);
-          op.addError(e.getMessage());
-          return false;
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
+      try {
+        if (expected == Expressible.class) {
+          @SuppressWarnings("resource")
+          SolrResourceLoader resourceLoader = info.pkgName == null ?
+              req.getCore().getResourceLoader() :
+              req.getCore().getResourceLoader(info.pkgName);
+          resourceLoader.findClass(info.className, expected);
+        } else {
+          req.getCore().createInitInstance(info, expected, clz, "");
         }
-
+      } catch (Exception e) {
+        log.error("Error checking plugin : ", e);
+        op.addError(e.getMessage());
+        return false;
       }
+
       return true;
     }
 

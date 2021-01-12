@@ -16,19 +16,16 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * Holds all implementations of classes in the o.a.l.search package as a
- * back-compatibility test. It does not run any tests per-se, however if
- * someone adds a method to an interface or abstract method to an abstract
- * class, one of the implementations here will fail to compile and so we know
+ * Holds all implementations of classes in the o.a.l.search package as a back-compatibility test. It
+ * does not run any tests per-se, however if someone adds a method to an interface or abstract
+ * method to an abstract class, one of the implementations here will fail to compile and so we know
  * back-compat policy was violated.
  */
 final class JustCompileSearch {
@@ -120,11 +117,10 @@ final class JustCompileSearch {
   static final class JustCompileFieldComparatorSource extends FieldComparatorSource {
 
     @Override
-    public FieldComparator<?> newComparator(String fieldname, int numHits,
-        int sortPos, boolean reversed) {
+    public FieldComparator<?> newComparator(
+        String fieldname, int numHits, int sortPos, boolean reversed) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
   }
 
   static final class JustCompileFilteredDocIdSetIterator extends FilteredDocIdSetIterator {
@@ -197,7 +193,8 @@ final class JustCompileSearch {
   static final class JustCompileSimilarity extends Similarity {
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -215,27 +212,27 @@ final class JustCompileSearch {
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
     public TopDocs topDocs() {
-        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public TopDocs topDocs( int start ) {
-        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    public TopDocs topDocs(int start) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
-    public TopDocs topDocs( int start, int end ) {
-        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    public TopDocs topDocs(int start, int end) {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     @Override
     public ScoreMode scoreMode() {
-      throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }
 
@@ -259,7 +256,5 @@ final class JustCompileSearch {
     public boolean isCacheable(LeafReaderContext ctx) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
   }
-
 }

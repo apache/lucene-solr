@@ -21,31 +21,35 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDefaultPassageFormatter extends LuceneTestCase {
   public void testBasic() throws Exception {
-    String text = "Test customization & <div class=\"xy\">&quot;escaping&quot;</div> of this very formatter. Unrelated part. It's not very N/A!";
+    String text =
+        "Test customization & <div class=\"xy\">&quot;escaping&quot;</div> of this very formatter. Unrelated part. It's not very N/A!";
     // fabricate passages with matches to format
     Passage[] passages = new Passage[2];
     passages[0] = new Passage();
     passages[0].setStartOffset(0);
-    passages[0].setEndOffset(text.indexOf(".")+1);
-    passages[0].addMatch(text.indexOf("very"), text.indexOf("very")+4, null, 2);
+    passages[0].setEndOffset(text.indexOf(".") + 1);
+    passages[0].addMatch(text.indexOf("very"), text.indexOf("very") + 4, null, 2);
     passages[1] = new Passage();
-    passages[1].setStartOffset(text.indexOf(".", passages[0].getEndOffset()+1) + 2);
+    passages[1].setStartOffset(text.indexOf(".", passages[0].getEndOffset() + 1) + 2);
     passages[1].setEndOffset(text.length());
     passages[1].addMatch(
         text.indexOf("very", passages[0].getEndOffset()),
-        text.indexOf("very", passages[0].getEndOffset())+4, null, 2);
+        text.indexOf("very", passages[0].getEndOffset()) + 4,
+        null,
+        2);
 
     // test default
     DefaultPassageFormatter formatter = new DefaultPassageFormatter();
     assertEquals(
-        "Test customization & <div class=\"xy\">&quot;escaping&quot;</div> of this <b>very</b> formatter." +
-            "... It's not <b>very</b> N/A!", formatter.format(passages, text));
+        "Test customization & <div class=\"xy\">&quot;escaping&quot;</div> of this <b>very</b> formatter."
+            + "... It's not <b>very</b> N/A!",
+        formatter.format(passages, text));
 
     // test customization and encoding
     formatter = new DefaultPassageFormatter("<u>", "</u>", "\u2026 ", true);
     assertEquals(
-        "Test customization &amp; &lt;div class=&quot;xy&quot;&gt;&amp;quot;escaping&amp;quot;" +
-            "&lt;&#x2F;div&gt; of this <u>very</u> formatter.\u2026 It&#x27;s not <u>very</u> N&#x2F;A!",
+        "Test customization &amp; &lt;div class=&quot;xy&quot;&gt;&amp;quot;escaping&amp;quot;"
+            + "&lt;&#x2F;div&gt; of this <u>very</u> formatter.\u2026 It&#x27;s not <u>very</u> N&#x2F;A!",
         formatter.format(passages, text));
   }
 }

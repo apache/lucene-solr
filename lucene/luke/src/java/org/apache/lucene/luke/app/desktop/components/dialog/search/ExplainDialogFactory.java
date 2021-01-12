@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.search;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTree;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -39,7 +30,15 @@ import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.stream.IntStream;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -60,11 +59,11 @@ public final class ExplainDialogFactory implements DialogOpener.DialogFactory {
 
   private Explanation explanation;
 
-  public synchronized static ExplainDialogFactory getInstance() throws IOException {
+  public static synchronized ExplainDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new ExplainDialogFactory();
     }
-    return  instance;
+    return instance;
   }
 
   private ExplainDialogFactory() throws IOException {
@@ -112,13 +111,16 @@ public final class ExplainDialogFactory implements DialogOpener.DialogFactory {
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING, 5, 5));
     footer.setOpaque(false);
 
-    JButton copyBtn = new JButton(FontUtils.elegantIconHtml("&#xe0e6;", MessageUtils.getLocalizedMessage("button.copy")));
+    JButton copyBtn =
+        new JButton(
+            FontUtils.elegantIconHtml("&#xe0e6;", MessageUtils.getLocalizedMessage("button.copy")));
     copyBtn.setMargin(new Insets(3, 3, 3, 3));
-    copyBtn.addActionListener(e -> {
-      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-      StringSelection selection = new StringSelection(explanationToString());
-      clipboard.setContents(selection, null);
-    });
+    copyBtn.addActionListener(
+        e -> {
+          Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+          StringSelection selection = new StringSelection(explanationToString());
+          clipboard.setContents(selection, null);
+        });
     footer.add(copyBtn);
 
     JButton closeBtn = new JButton(MessageUtils.getLocalizedMessage("button.close"));

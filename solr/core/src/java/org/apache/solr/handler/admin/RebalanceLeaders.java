@@ -318,7 +318,7 @@ class RebalanceLeaders {
 
   // Put the replica in at the head of the queue and send all nodes with the same sequence number to the back of the list
   // There can be "ties", i.e. replicas in the queue with the same sequence number. Sorting doesn't necessarily sort
-  // the one we most care about first. So put the node we _don't care about at the end of the election queuel
+  // the one we most care about first. So put the node we _don't care about at the end of the election queue_
 
   void makeReplicaFirstWatcher(Slice slice, Replica replica)
       throws KeeperException, InterruptedException {
@@ -409,7 +409,7 @@ class RebalanceLeaders {
     propMap.put(QUEUE_OPERATION, REBALANCELEADERS.toLower());
     propMap.put(CORE_NAME_PROP, core);
     propMap.put(CORE_NODE_NAME_PROP, replica.getName());
-    propMap.put(ZkStateReader.BASE_URL_PROP, replica.getProperties().get(ZkStateReader.BASE_URL_PROP));
+    propMap.put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
     propMap.put(REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
     propMap.put(ELECTION_NODE_PROP, electionNode);
     String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());

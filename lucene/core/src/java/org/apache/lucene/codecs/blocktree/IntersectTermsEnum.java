@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.codecs.blocktree;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -36,24 +34,24 @@ import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 
-/** This is used to implement efficient {@link Terms#intersect} for
- *  block-tree.  Note that it cannot seek, except for the initial term on
- *  init.  It just "nexts" through the intersection of the automaton and
- *  the terms.  It does not use the terms index at all: on init, it
- *  loads the root block, and scans its way to the initial term.
- *  Likewise, in next it scans until it finds a term that matches the
- *  current automaton transition. */
-
+/**
+ * This is used to implement efficient {@link Terms#intersect} for block-tree. Note that it cannot
+ * seek, except for the initial term on init. It just "nexts" through the intersection of the
+ * automaton and the terms. It does not use the terms index at all: on init, it loads the root
+ * block, and scans its way to the initial term. Likewise, in next it scans until it finds a term
+ * that matches the current automaton transition.
+ */
 final class IntersectTermsEnum extends BaseTermsEnum {
 
-  //static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  // static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
 
   final IndexInput in;
-  final static Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
+  static final Outputs<BytesRef> fstOutputs = ByteSequenceOutputs.getSingleton();
 
   IntersectTermsEnumFrame[] stack;
-      
-  @SuppressWarnings({"rawtypes","unchecked"}) private FST.Arc<BytesRef>[] arcs = new FST.Arc[5];
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private FST.Arc<BytesRef>[] arcs = new FST.Arc[5];
 
   final RunAutomaton runAutomaton;
   final Automaton automaton;
@@ -72,7 +70,13 @@ final class IntersectTermsEnum extends BaseTermsEnum {
 
   // TODO: in some cases we can filter by length?  eg
   // regexp foo*bar must be at least length 6 bytes
-  public IntersectTermsEnum(FieldReader fr, Automaton automaton, RunAutomaton runAutomaton, BytesRef commonSuffix, BytesRef startTerm) throws IOException {
+  public IntersectTermsEnum(
+      FieldReader fr,
+      Automaton automaton,
+      RunAutomaton runAutomaton,
+      BytesRef commonSuffix,
+      BytesRef startTerm)
+      throws IOException {
     this.fr = fr;
 
     assert automaton != null;
@@ -84,14 +88,13 @@ final class IntersectTermsEnum extends BaseTermsEnum {
 
     in = fr.parent.termsIn.clone();
     stack = new IntersectTermsEnumFrame[5];
-    for(int idx=0;idx<stack.length;idx++) {
+    for (int idx = 0; idx < stack.length; idx++) {
       stack[idx] = new IntersectTermsEnumFrame(this, idx);
     }
-    for(int arcIdx=0;arcIdx<arcs.length;arcIdx++) {
+    for (int arcIdx = 0; arcIdx < arcs.length; arcIdx++) {
       arcs[arcIdx] = new FST.Arc<>();
     }
 
-    
     fstReader = fr.index.getBytesReader();
 
     // TODO: if the automaton is "smallish" we really
@@ -138,9 +141,11 @@ final class IntersectTermsEnum extends BaseTermsEnum {
 
   private IntersectTermsEnumFrame getFrame(int ord) throws IOException {
     if (ord >= stack.length) {
-      final IntersectTermsEnumFrame[] next = new IntersectTermsEnumFrame[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      final IntersectTermsEnumFrame[] next =
+          new IntersectTermsEnumFrame
+              [ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(stack, 0, next, 0, stack.length);
-      for(int stackOrd=stack.length;stackOrd<next.length;stackOrd++) {
+      for (int stackOrd = stack.length; stackOrd < next.length; stackOrd++) {
         next[stackOrd] = new IntersectTermsEnumFrame(this, stackOrd);
       }
       stack = next;
@@ -151,10 +156,11 @@ final class IntersectTermsEnum extends BaseTermsEnum {
 
   private FST.Arc<BytesRef> getArc(int ord) {
     if (ord >= arcs.length) {
-      @SuppressWarnings({"rawtypes","unchecked"}) final FST.Arc<BytesRef>[] next =
-      new FST.Arc[ArrayUtil.oversize(1+ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+      @SuppressWarnings({"rawtypes", "unchecked"})
+      final FST.Arc<BytesRef>[] next =
+          new FST.Arc[ArrayUtil.oversize(1 + ord, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       System.arraycopy(arcs, 0, next, 0, arcs.length);
-      for(int arcOrd=arcs.length;arcOrd<next.length;arcOrd++) {
+      for (int arcOrd = arcs.length; arcOrd < next.length; arcOrd++) {
         next[arcOrd] = new FST.Arc<>();
       }
       arcs = next;
@@ -165,8 +171,8 @@ final class IntersectTermsEnum extends BaseTermsEnum {
   private IntersectTermsEnumFrame pushFrame(int state) throws IOException {
     assert currentFrame != null;
 
-    final IntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1+currentFrame.ord);
-        
+    final IntersectTermsEnumFrame f = getFrame(currentFrame == null ? 0 : 1 + currentFrame.ord);
+
     f.fp = f.fpOrig = currentFrame.lastSubFP;
     f.prefix = currentFrame.prefix + currentFrame.suffix;
     f.setState(state);
@@ -184,7 +190,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
       // TODO: we could be more efficient for the next()
       // case by using current arc as starting point,
       // passed to findTargetArc
-      arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
+      arc = fr.index.findTargetArc(target, arc, getArc(1 + idx), fstReader);
       assert arc != null;
       output = fstOutputs.add(output, arc.output());
       idx++;
@@ -228,8 +234,10 @@ final class IntersectTermsEnum extends BaseTermsEnum {
 
   private int getState() {
     int state = currentFrame.state;
-    for(int idx=0;idx<currentFrame.suffix;idx++) {
-      state = runAutomaton.step(state,  currentFrame.suffixBytes[currentFrame.startBytePos+idx] & 0xff);
+    for (int idx = 0; idx < currentFrame.suffix; idx++) {
+      state =
+          runAutomaton.step(
+              state, currentFrame.suffixBytes[currentFrame.startBytePos + idx] & 0xff);
       assert state != -1;
     }
     return state;
@@ -247,7 +255,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     FST.Arc<BytesRef> arc = arcs[0];
     assert arc == currentFrame.arc;
 
-    for(int idx=0;idx<=target.length;idx++) {
+    for (int idx = 0; idx <= target.length; idx++) {
 
       while (true) {
         final int savNextEnt = currentFrame.nextEnt;
@@ -264,7 +272,12 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         if (term.bytes.length < term.length) {
           term.bytes = ArrayUtil.grow(term.bytes, term.length);
         }
-        System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+        System.arraycopy(
+            currentFrame.suffixBytes,
+            currentFrame.startBytePos,
+            term.bytes,
+            currentFrame.prefix,
+            currentFrame.suffix);
 
         if (isSubBlock && StringHelper.startsWith(target, term)) {
           // Recurse
@@ -297,7 +310,12 @@ final class IntersectTermsEnum extends BaseTermsEnum {
             currentFrame.suffixesReader.setPosition(savePos);
             currentFrame.suffixLengthsReader.setPosition(saveLengthPos);
             currentFrame.termState.termBlockOrd = saveTermBlockOrd;
-            System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+            System.arraycopy(
+                currentFrame.suffixBytes,
+                currentFrame.startBytePos,
+                term.bytes,
+                currentFrame.prefix,
+                currentFrame.suffix);
             term.length = currentFrame.prefix + currentFrame.suffix;
             // If the last entry was a block we don't
             // need to bother recursing and pushing to
@@ -324,7 +342,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
           throw NoMoreTermsException.INSTANCE;
         }
         final long lastFP = currentFrame.fpOrig;
-        currentFrame = stack[currentFrame.ord-1];
+        currentFrame = stack[currentFrame.ord - 1];
         currentTransition = currentFrame.transition;
         assert currentFrame.lastSubFP == lastFP;
       }
@@ -339,14 +357,13 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     // Only used internally when there are no more terms in next():
     public static final NoMoreTermsException INSTANCE = new NoMoreTermsException();
 
-    private NoMoreTermsException() {
-    }
+    private NoMoreTermsException() {}
 
     @Override
     public Throwable fillInStackTrace() {
       // Do nothing:
       return this;
-    }    
+    }
   }
 
   @Override
@@ -365,7 +382,6 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     boolean isSubBlock = popPushNext();
 
     nextTerm:
-
     while (true) {
       assert currentFrame.transition == currentTransition;
 
@@ -402,7 +418,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         // Advance where we are in the automaton to match this label:
 
         while (label > currentTransition.max) {
-          if (currentFrame.transitionIndex >= currentFrame.transitionCount-1) {
+          if (currentFrame.transitionIndex >= currentFrame.transitionCount - 1) {
             // Pop this frame: no further matches are possible because
             // we've moved beyond what the max transition will allow
             if (currentFrame.ord == 0) {
@@ -410,7 +426,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
               currentFrame = null;
               return null;
             }
-            currentFrame = stack[currentFrame.ord-1];
+            currentFrame = stack[currentFrame.ord - 1];
             currentTransition = currentFrame.transition;
             isSubBlock = popPushNext();
             continue nextTerm;
@@ -492,7 +508,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         state = currentTransition.dest;
 
         int end = currentFrame.startBytePos + currentFrame.suffix;
-        for (int idx=currentFrame.startBytePos+1;idx<end;idx++) {
+        for (int idx = currentFrame.startBytePos + 1; idx < end; idx++) {
           lastState = state;
           state = runAutomaton.step(state, suffixBytes[idx] & 0xff);
           if (state == -1) {
@@ -514,7 +530,8 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         currentFrame.lastState = lastState;
       } else if (runAutomaton.isAccept(state)) {
         copyTerm();
-        assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
+        assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0
+            : "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
         // This term is a prefix of a term accepted by the automaton, but is not itself accepted
@@ -542,7 +559,12 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     if (term.bytes.length < len) {
       term.bytes = ArrayUtil.grow(term.bytes, len);
     }
-    System.arraycopy(currentFrame.suffixBytes, currentFrame.startBytePos, term.bytes, currentFrame.prefix, currentFrame.suffix);
+    System.arraycopy(
+        currentFrame.suffixBytes,
+        currentFrame.startBytePos,
+        term.bytes,
+        currentFrame.prefix,
+        currentFrame.suffix);
     term.length = len;
   }
 

@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -28,16 +27,14 @@ import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Sorts using the value of a specified feature name from a {@link FeatureField}.
- */
+/** Sorts using the value of a specified feature name from a {@link FeatureField}. */
 final class FeatureSortField extends SortField {
 
   private final String featureName;
 
   /**
-   * Creates a {@link FeatureSortField} that can be used to sort hits by
-   * the value of a particular feature in a {@link FeatureField}.
+   * Creates a {@link FeatureSortField} that can be used to sort hits by the value of a particular
+   * feature in a {@link FeatureField}.
    *
    * @param featureName The name of the feature to use for the sort value
    */
@@ -45,17 +42,17 @@ final class FeatureSortField extends SortField {
     super(Objects.requireNonNull(field), SortField.Type.CUSTOM, true);
     this.featureName = Objects.requireNonNull(featureName);
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
     return new FeatureComparator(numHits, getField(), featureName);
   }
-  
+
   @Override
   public void setMissingValue(Object missingValue) {
     throw new IllegalArgumentException("Missing value not supported for FeatureSortField");
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -112,14 +109,17 @@ final class FeatureSortField extends SortField {
         if (termsEnum.seekExact(featureName) == false) {
           currentReaderPostingsValues = null;
         } else {
-          currentReaderPostingsValues = termsEnum.postings(currentReaderPostingsValues, PostingsEnum.FREQS);
+          currentReaderPostingsValues =
+              termsEnum.postings(currentReaderPostingsValues, PostingsEnum.FREQS);
         }
       }
     }
 
     private float getValueForDoc(int doc) throws IOException {
-      if (currentReaderPostingsValues != null && doc >= currentReaderPostingsValues.docID()
-          && (currentReaderPostingsValues.docID() == doc || currentReaderPostingsValues.advance(doc) == doc)) {
+      if (currentReaderPostingsValues != null
+          && doc >= currentReaderPostingsValues.docID()
+          && (currentReaderPostingsValues.docID() == doc
+              || currentReaderPostingsValues.advance(doc) == doc)) {
         return FeatureField.decodeFeatureValue(currentReaderPostingsValues.freq());
       } else {
         return 0.0f;

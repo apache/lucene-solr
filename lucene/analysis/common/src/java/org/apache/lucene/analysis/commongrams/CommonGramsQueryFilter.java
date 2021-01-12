@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.analysis.commongrams;
 
-import java.io.IOException;
+import static org.apache.lucene.analysis.commongrams.CommonGramsFilter.GRAM_TYPE;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-import static org.apache.lucene.analysis.commongrams.CommonGramsFilter.GRAM_TYPE;
-
 /**
- * Wrap a CommonGramsFilter optimizing phrase queries by only returning single
- * words when they are not a member of a bigram.
- * 
- * Example:
+ * Wrap a CommonGramsFilter optimizing phrase queries by only returning single words when they are
+ * not a member of a bigram.
+ *
+ * <p>Example:
+ *
  * <ul>
- * <li>query input to CommonGramsFilter: "the rain in spain falls mainly"
- * <li>output of CommomGramsFilter/input to CommonGramsQueryFilter:
- * |"the, "the-rain"|"rain" "rain-in"|"in, "in-spain"|"spain"|"falls"|"mainly"
- * <li>output of CommonGramsQueryFilter:"the-rain", "rain-in" ,"in-spain",
- * "falls", "mainly"
+ *   <li>query input to CommonGramsFilter: "the rain in spain falls mainly"
+ *   <li>output of CommomGramsFilter/input to CommonGramsQueryFilter: |"the, "the-rain"|"rain"
+ *       "rain-in"|"in, "in-spain"|"spain"|"falls"|"mainly"
+ *   <li>output of CommonGramsQueryFilter:"the-rain", "rain-in" ,"in-spain", "falls", "mainly"
  * </ul>
  */
 
@@ -46,16 +45,18 @@ import static org.apache.lucene.analysis.commongrams.CommonGramsFilter.GRAM_TYPE
 public final class CommonGramsQueryFilter extends TokenFilter {
 
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
-  private final PositionLengthAttribute posLengthAttribute = addAttribute(PositionLengthAttribute.class);
-  
+  private final PositionIncrementAttribute posIncAttribute =
+      addAttribute(PositionIncrementAttribute.class);
+  private final PositionLengthAttribute posLengthAttribute =
+      addAttribute(PositionLengthAttribute.class);
+
   private State previous;
   private String previousType;
   private boolean exhausted;
 
   /**
-   * Constructs a new CommonGramsQueryFilter based on the provided CommomGramsFilter 
-   * 
+   * Constructs a new CommonGramsQueryFilter based on the provided CommomGramsFilter
+   *
    * @param input CommonGramsFilter the QueryFilter will use
    */
   public CommonGramsQueryFilter(CommonGramsFilter input) {
@@ -69,13 +70,14 @@ public final class CommonGramsQueryFilter extends TokenFilter {
     previousType = null;
     exhausted = false;
   }
-  
+
   /**
-   * Output bigrams whenever possible to optimize queries. Only output unigrams
-   * when they are not a member of a bigram. Example:
+   * Output bigrams whenever possible to optimize queries. Only output unigrams when they are not a
+   * member of a bigram. Example:
+   *
    * <ul>
-   * <li>input: "the rain in spain falls mainly"
-   * <li>output:"the-rain", "rain-in" ,"in-spain", "falls", "mainly"
+   *   <li>input: "the rain in spain falls mainly"
+   *   <li>output:"the-rain", "rain-in" ,"in-spain", "falls", "mainly"
    * </ul>
    */
   @Override
@@ -87,10 +89,11 @@ public final class CommonGramsQueryFilter extends TokenFilter {
         restoreState(previous);
         previous = current;
         previousType = typeAttribute.type();
-        
+
         if (isGramType()) {
           posIncAttribute.setPositionIncrement(1);
-          // We must set this back to 1 (from e.g. 2 or higher) otherwise the token graph is disconnected:
+          // We must set this back to 1 (from e.g. 2 or higher) otherwise the token graph is
+          // disconnected:
           posLengthAttribute.setPositionLength(1);
         }
         return true;
@@ -104,23 +107,22 @@ public final class CommonGramsQueryFilter extends TokenFilter {
     if (previous == null || GRAM_TYPE.equals(previousType)) {
       return false;
     }
-    
+
     restoreState(previous);
     previous = null;
-    
+
     if (isGramType()) {
       posIncAttribute.setPositionIncrement(1);
-      // We must set this back to 1 (from e.g. 2 or higher) otherwise the token graph is disconnected:
+      // We must set this back to 1 (from e.g. 2 or higher) otherwise the token graph is
+      // disconnected:
       posLengthAttribute.setPositionLength(1);
     }
     return true;
   }
 
-  // ================================================= Helper Methods ================================================
-
   /**
    * Convenience method to check if the current type is a gram type
-   * 
+   *
    * @return {@code true} if the current type is a gram type, {@code false} otherwise
    */
   public boolean isGramType() {

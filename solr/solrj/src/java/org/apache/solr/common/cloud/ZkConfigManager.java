@@ -138,11 +138,7 @@ public class ZkConfigManager {
       for (String file : files) {
         List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
         if (children.size() == 0) {
-          final String toZkFilePath = toZkPath + "/" + file;
-          log.info("Copying zk node {}/{} to {}", fromZkPath, file, toZkFilePath);
-          byte[] data = zkClient.getData(fromZkPath + "/" + file, null, null, true);
-          zkClient.makePath(toZkFilePath, data, true);
-          if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
+          copyData(copiedToZkPaths, fromZkPath + "/" + file, toZkPath + "/" + file);
         } else {
           copyConfigDirFromZk(fromZkPath + "/" + file, toZkPath + "/" + file, copiedToZkPaths);
         }
@@ -151,6 +147,13 @@ public class ZkConfigManager {
       throw new IOException("Error copying nodes from zookeeper path " + fromZkPath + " to " + toZkPath,
           SolrZkClient.checkInterrupted(e));
     }
+  }
+
+  private void copyData(Set<String> copiedToZkPaths, String fromZkFilePath, String toZkFilePath) throws KeeperException, InterruptedException {
+    log.info("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
+    byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
+    zkClient.makePath(toZkFilePath, data, true);
+    if (copiedToZkPaths != null) copiedToZkPaths.add(toZkFilePath);
   }
 
   /**
@@ -174,7 +177,15 @@ public class ZkConfigManager {
    * @throws IOException if an I/O error occurs
    */
   public void copyConfigDir(String fromConfig, String toConfig, Set<String> copiedToZkPaths) throws IOException {
-    copyConfigDirFromZk(CONFIGS_ZKNODE + "/" + fromConfig, CONFIGS_ZKNODE + "/" + toConfig, copiedToZkPaths);
+    String fromConfigPath = CONFIGS_ZKNODE + "/" + fromConfig;
+    String toConfigPath = CONFIGS_ZKNODE + "/" + toConfig;
+    try {
+      copyData(copiedToZkPaths, fromConfigPath, toConfigPath);
+    } catch (KeeperException | InterruptedException e) {
+      throw new IOException("Error config " + fromConfig + " to " + toConfig,
+              SolrZkClient.checkInterrupted(e));
+    }
+    copyConfigDirFromZk(fromConfigPath, toConfigPath, copiedToZkPaths);
   }
 
   // This method is used by configSetUploadTool and CreateTool to resolve the configset directory.

@@ -14,12 +14,12 @@
 # limitations under the License.
 
 #-----------------------------------------------------------------------
-# a couple of test stopwords to test that the words are really being
+# A couple of test stopwords to test that the words are really being
 # configured from this file:
 stopworda
 stopwordb
 
-#Standard english stop words taken from Lucene's StopAnalyzer
+# Standard english stop words taken from Lucene's StopAnalyzer
 a
 an
 and
@@ -56,4 +56,3 @@ was
 will
 with
 solrownstopword
-

@@ -38,6 +38,8 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QParser;
 
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
 
 public class QueryParser extends SolrQueryParserBase {
   /** The default operator for parsing queries.

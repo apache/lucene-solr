@@ -16,22 +16,19 @@
  */
 package org.apache.lucene.search;
 
-
 /**
  * Provides a {@link FieldComparator} for custom field sorting.
  *
  * @lucene.experimental
- *
  */
 public abstract class FieldComparatorSource {
 
   /**
    * Creates a comparator for the field in the given index.
-   * 
-   * @param fieldname
-   *          Name of the field to create comparator for.
+   *
+   * @param fieldname Name of the field to create comparator for.
    * @return FieldComparator.
    */
-  public abstract FieldComparator<?> newComparator(String fieldname, int numHits, int sortPos, boolean reversed);
-
+  public abstract FieldComparator<?> newComparator(
+      String fieldname, int numHits, int sortPos, boolean reversed);
 }

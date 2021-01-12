@@ -16,6 +16,24 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -38,8 +56,6 @@ import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.cloud.rule.ReplicaAssigner;
-import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -83,25 +99,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
@@ -121,8 +118,6 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.DocCollection.RULE;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
@@ -141,7 +136,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_NAME;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_VALUE;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
@@ -224,17 +218,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     // Make sure the cores is enabled
-    CoreContainer cores = getCoreContainer();
-    if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Core container instance missing");
-    }
-
-    // Make sure that the core is ZKAware
-    if (!cores.isZooKeeperAware()) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          "Solr instance is not running in SolrCloud mode.");
-    }
+    CoreContainer cores = checkErrors();
 
     // Pick the action
     SolrParams params = req.getParams();
@@ -245,8 +229,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
       CollectionOperation operation = CollectionOperation.get(action);
-      if (log.isInfoEnabled()) {
-        log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
+      if (log.isDebugEnabled()) {
+        log.debug("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
             , action.toLower(), req.getParamString(), operation.sendToOCPQueue);
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
@@ -255,6 +239,21 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
     }
     rsp.setHttpCaching(false);
+  }
+
+  protected CoreContainer checkErrors() {
+    CoreContainer cores = getCoreContainer();
+    if (cores == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Core container instance missing");
+    }
+
+    // Make sure that the core is ZKAware
+    if (!cores.isZooKeeperAware()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Solr instance is not running in SolrCloud mode.");
+    }
+    return cores;
   }
 
   @SuppressWarnings({"unchecked"})
@@ -459,13 +458,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           CREATE_NODE_SET,
           CREATE_NODE_SET_SHUFFLE,
           SHARDS_PROP,
-          RULE,
-          SNITCH,
           PULL_REPLICAS,
           TLOG_REPLICAS,
           NRT_REPLICAS,
           WAIT_FOR_FINAL_STATE,
-          WITH_COLLECTION,
           ALIAS);
 
       if (props.get(REPLICATION_FACTOR) != null && props.get(NRT_REPLICAS) != null) {
@@ -483,9 +479,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         props.put(REPLICATION_FACTOR, props.get(NRT_REPLICAS));
       }
 
-      addMapObject(props, RULE);
-      addMapObject(props, SNITCH);
-      verifyRuleParams(h.coreContainer, props);
       final String collectionName = SolrIdentifierValidator.validateCollectionName((String) props.get(NAME));
       final String shardsParam = (String) props.get(SHARDS_PROP);
       if (StringUtils.isNotEmpty(shardsParam)) {
@@ -1032,8 +1025,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             formatString("no supported values provided {0}", CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES.toString()));
       }
       copy(req.getParams().required(), m, COLLECTION_PROP);
-      addMapObject(m, RULE);
-      addMapObject(m, SNITCH);
       for (Map.Entry<String, Object> entry : m.entrySet()) {
         String prop = entry.getKey();
         if ("".equals(entry.getValue())) {
@@ -1042,7 +1033,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
         DocCollection.verifyProp(m, prop);
       }
-      verifyRuleParams(h.coreContainer, m);
       if (m.get(REPLICATION_FACTOR) != null) {
         m.put(NRT_REPLICAS, m.get(REPLICATION_FACTOR));
       }
@@ -1062,7 +1052,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       CoreContainer cc = h.coreContainer;
       String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
@@ -1114,7 +1104,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
       final CoreContainer cc = h.coreContainer;
       final String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
-      final BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+      final BackupRepository repository = cc.newBackupRepository(repo);
 
       String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
       if (location == null) {
@@ -1331,6 +1321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         //TODO only increase terms of replicas less out-of-sync
         liveReplicas.stream()
             .filter(rep -> zkShardTerms.registered(rep.getName()))
+            // TODO should this all be done at once instead of increasing each replica individually?
             .forEach(rep -> zkShardTerms.setTermEqualsToLeader(rep.getName()));
       }
 
@@ -1345,7 +1336,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           success = true;
           break;
         }
-        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice); //logok
+        log.warn("Force leader attempt {}. Waiting 5 secs for an active leader. State of the slice: {}", (i + 1), slice); //nowarn
       }
 
       if (success) {
@@ -1431,44 +1422,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   }
 
-  public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
-    @SuppressWarnings({"rawtypes"})
-    List l = (List) m.get(RULE);
-    if (l != null) {
-      for (Object o : l) {
-        @SuppressWarnings({"rawtypes"})
-        Map map = (Map) o;
-        try {
-          new Rule(map);
-        } catch (Exception e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error in rule " + m, e);
-        }
-      }
-    }
-    if (cc != null && cc.isZooKeeperAware())
-      ReplicaAssigner.verifySnitchConf(cc.getZkController().getSolrCloudManager(), (List) m.get(SNITCH));
-  }
-
-  /**
-   * Converts a String of the form a:b,c:d to a Map
-   */
-  private static Map<String, Object> addMapObject(Map<String, Object> props, String key) {
-    Object v = props.get(key);
-    if (v == null) return props;
-    List<String> val = new ArrayList<>();
-    if (v instanceof String[]) {
-      val.addAll(Arrays.asList((String[]) v));
-    } else {
-      val.add(v.toString());
-    }
-    if (val.size() > 0) {
-      @SuppressWarnings({"rawtypes"})
-      ArrayList<Map> l = new ArrayList<>();
-      for (String rule : val) l.add(Rule.parseRule(rule));
-      props.put(key, l);
-    }
-    return props;
-  }
 
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {

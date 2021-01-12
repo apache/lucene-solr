@@ -30,6 +30,7 @@ import org.junit.Test;
 public class TestJsonRangeFacets extends SolrTestCaseHS {
 
   private static SolrInstances servers;  // for distributed testing
+  private static String cache;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
@@ -41,6 +42,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     initCore("solrconfig-tlog.xml","schema_latest.xml");
+    cache = Boolean.toString(random().nextBoolean());
   }
 
   /**
@@ -87,7 +89,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   public void testRangeOtherWhiteboxDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
   }
 
   public void testRangeOtherWhitebox() throws Exception {
@@ -99,6 +101,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
    * will cause the correct "actual_end" to be returned
    */
   private void doRangeOtherWhitebox(Client client) throws Exception {
+    client.queryDefaults().set("cache", cache);
     indexSimple(client);
 
     // false is default, but randomly check explicit false as well
@@ -167,7 +170,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   public void testDateFacetsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doDateFacets(client);
   }
 
@@ -177,6 +180,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doDateFacets(Client client) throws Exception {
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     boolean multiValue = random().nextBoolean();
     String dateField = multiValue? "b_dts": "b_dt";
@@ -234,7 +238,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   public void testRangeFacetWithRangesDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doRangeFacetWithRanges(client);
   }
 
@@ -244,6 +248,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doRangeFacetWithRanges(Client client) throws Exception {
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     indexSimple(client);
 
@@ -304,7 +309,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   public void testRangeFacetWithRangesInNewFormatDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doRangeFacetWithRangesInNewFormat(client);
   }
 
@@ -315,6 +320,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   }
 
   private void doRangeFacetWithRangesInNewFormat(Client client) throws Exception {
+    client.queryDefaults().set("cache", cache);
     client.deleteByQuery("*:*", null);
     indexSimple(client);
     SolrParams p = params("q", "*:*", "rows", "0");
@@ -403,7 +409,7 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   public void testFacetValueTypeDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set( "shards", servers.getShards(), "debugQuery", Boolean.toString(random().nextBoolean()) );
+    client.queryDefaults().set( "shards", servers.getShards()).set("debugQuery", Boolean.toString(random().nextBoolean()) );
     doFacetValueTypeValidation(client);
   }
 

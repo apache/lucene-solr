@@ -124,7 +124,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // send directly to the leader using HttpSolrServer instead of CloudSolrServer (to test support for non-direct updates)
     UpdateRequest up = new UpdateRequest();
-    maybeAddMinRfExplicitly(2, up);
     up.add(batch);
 
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
@@ -232,13 +231,11 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // Delete the docs by ID indicated
     UpdateRequest req = new UpdateRequest();
     req.deleteById(byIdsList);
-    maybeAddMinRfExplicitly(expectedRfByIds, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfByIds, coll);
 
     //Delete the docs by query indicated.
     req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(byQueriesSet, " OR ") + ")");
-    maybeAddMinRfExplicitly(expectedRfDBQ, req);
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, coll);
 
   }
@@ -263,12 +260,6 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
       // Note that this also tests if we're wonky and return an achieved rf greater than the number of live replicas.
       assertTrue("Expected rf="+expectedRf+" for batch but got "+
           batchRf + "; clusterState: " + printClusterStateInfo(), batchRf == expectedRf);
-      if (up.getParams() != null && up.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // If "min_rf" was specified in the request, it must be in the response for back compatibility
-        assertNotNull("Expecting min_rf to be in the response, since it was explicitly set in the request", hdr.get(UpdateRequest.MIN_REPFACT));
-        assertEquals("Unexpected min_rf in the response",
-            Integer.parseInt(up.getParams().get(UpdateRequest.MIN_REPFACT)), hdr.get(UpdateRequest.MIN_REPFACT));
-      }
     }
   }
 
@@ -287,7 +278,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertTrue("Expected 2 active replicas for "+testCollectionName, replicas.size() == 2);
                 
     log.info("Indexing docId=1");
-    int rf = sendDoc(1, minRf);
+    int rf = sendDoc(1);
     assertRf(3, "all replicas should be active", rf);
 
     // Uses cloudClient to do it's work
@@ -298,7 +289,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(0)).close();
     
     log.info("Indexing docId=2");
-    rf = sendDoc(2, minRf);
+    rf = sendDoc(2);
     assertRf(2, "one replica should be down", rf);
 
     // Uses cloudClient to do it's work
@@ -322,7 +313,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     getProxyForReplica(replicas.get(1)).close();    
 
     log.info("Indexing docId=3");
-    rf = sendDoc(3, minRf);
+    rf = sendDoc(3);
     assertRf(1, "both replicas should be down", rf);
 
     doDBQWithRetry(1, 5, "deletes should have propagated to only 1 replica", 1);
@@ -338,7 +329,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, shardId, numShards, replicationFactor, 30);
     
     log.info("Indexing docId=4");
-    rf = sendDoc(4, minRf);
+    rf = sendDoc(4);
     assertRf(3, "all replicas have been healed", rf);
 
     doDBQWithRetry(3, 5, "delete should have propagated to all 3 replicas", 1);
@@ -367,7 +358,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     // send a single doc (again)
     // SOLR-13599 sanity check if problem is related to "re-closing" a port on the proxy
     log.info("Indexing docId=5");
-    rf = sendDoc(5, minRf);
+    rf = sendDoc(5);
     assertRf(2, "doc should have succeded, only one replica should be down", rf);
     
     // now send a batch (again)
@@ -414,7 +405,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
     if (idList.length == 1) {
-      sendDoc(idList[0], expectedRf);
+      sendDoc(idList[0]);
       return;
     }
     List<SolrInputDocument> batch = new ArrayList<SolrInputDocument>(10);
@@ -432,8 +423,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteByQuery("id:(" + StringUtils.join(docIds, " OR ") + ")");
-    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
-    doDelete(req, msg, expectedRf, retries, minRfExplicit);
+    doDelete(req, msg, expectedRf, retries);
   }
 
   protected void doDBIdWithRetry(int expectedRf, int retries, String msg, int docsToAdd) throws Exception {
@@ -441,17 +431,13 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     addDocs(docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
     req.deleteById(StringUtils.join(docIds, ","));
-    boolean minRfExplicit = maybeAddMinRfExplicitly(expectedRf, req);
-    doDelete(req, msg, expectedRf, retries, minRfExplicit);
+    doDelete(req, msg, expectedRf, retries);
   }
 
-  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries, boolean minRfExplicit) throws IOException, SolrServerException, InterruptedException {
+  protected void doDelete(UpdateRequest req, String msg, int expectedRf, int retries) throws IOException, SolrServerException, InterruptedException {
     int achievedRf = -1;
     for (int idx = 0; idx < retries; ++idx) {
       NamedList<Object> response = cloudClient.request(req);
-      if (minRfExplicit) {
-        assertMinRfInResponse(expectedRf, response);
-      }
       achievedRf = cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
       if (achievedRf == expectedRf) return;
       Thread.sleep(1000);
@@ -459,40 +445,20 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     assertEquals(msg, expectedRf, achievedRf);
   }
 
-  protected int sendDoc(int docId, int minRf) throws Exception {
+  protected int sendDoc(int docId) throws Exception {
     UpdateRequest up = new UpdateRequest();
-    boolean minRfExplicit = maybeAddMinRfExplicitly(minRf, up);
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField(id, String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     up.add(doc);
-    return runAndGetAchievedRf(up, minRfExplicit, minRf);
+    return runAndGetAchievedRf(up);
   }
   
-  private int runAndGetAchievedRf(UpdateRequest up, boolean minRfExplicit, int minRf) throws SolrServerException, IOException {
+  private int runAndGetAchievedRf(UpdateRequest up) throws SolrServerException, IOException {
     NamedList<Object> response = cloudClient.request(up);
-    if (minRfExplicit) {
-      assertMinRfInResponse(minRf, response);
-    }
     return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), response);
   }
 
-  private void assertMinRfInResponse(int minRf, NamedList<Object> response) {
-    Object minRfFromResponse = response.findRecursive("responseHeader", UpdateRequest.MIN_REPFACT);
-    assertNotNull("Expected min_rf header in the response", minRfFromResponse);
-    assertEquals("Unexpected min_rf in response", ((Integer)minRfFromResponse).intValue(), minRf);
-  }
-
-  private boolean maybeAddMinRfExplicitly(int minRf, UpdateRequest up) {
-    boolean minRfExplicit = false;
-    if (rarely()) {
-      // test back compat behavior. Remove in Solr 9
-      up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
-      minRfExplicit = true;
-    }
-    return minRfExplicit;
-  }
-  
   protected void assertRf(int expected, String explain, int actual) throws Exception {
     if (actual != expected) {
       String assertionFailedMessage = 

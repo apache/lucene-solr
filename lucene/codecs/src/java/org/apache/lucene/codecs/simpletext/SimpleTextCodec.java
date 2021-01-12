@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -28,11 +27,13 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.VectorFormat;
 
 /**
  * plain text index format.
- * <p>
- * <b>FOR RECREATIONAL USE ONLY</b>
+ *
+ * <p><b>FOR RECREATIONAL USE ONLY</b>
+ *
  * @lucene.experimental
  */
 public final class SimpleTextCodec extends Codec {
@@ -46,7 +47,8 @@ public final class SimpleTextCodec extends Codec {
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
   private final PointsFormat pointsFormat = new SimpleTextPointsFormat();
-  
+  private final VectorFormat vectorFormat = new SimpleTextVectorFormat();
+
   public SimpleTextCodec() {
     super("SimpleText");
   }
@@ -60,12 +62,12 @@ public final class SimpleTextCodec extends Codec {
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFields;
   }
-  
+
   @Override
   public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
   }
-  
+
   @Override
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
@@ -80,7 +82,7 @@ public final class SimpleTextCodec extends Codec {
   public NormsFormat normsFormat() {
     return normsFormat;
   }
-  
+
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return liveDocs;
@@ -90,7 +92,7 @@ public final class SimpleTextCodec extends Codec {
   public DocValuesFormat docValuesFormat() {
     return dvFormat;
   }
-  
+
   @Override
   public CompoundFormat compoundFormat() {
     return compoundFormat;
@@ -99,5 +101,10 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public PointsFormat pointsFormat() {
     return pointsFormat;
+  }
+
+  @Override
+  public VectorFormat vectorFormat() {
+    return vectorFormat;
   }
 }

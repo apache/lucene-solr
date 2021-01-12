@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.FieldInfo;
@@ -37,25 +36,24 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Tests the {@link TermBytes} comparator.
- */
+/** Tests the {@link TermBytes} comparator. */
 public class TestTermBytesComparator extends LuceneTestCase {
 
   public void testComparison() throws IOException {
-    TermBytes[] vocab = new TermBytes[]{
-        termBytes(1, "abaco"),
-        termBytes(2, "amiga"),
-        termBytes(5, "amigo"),
-        termBytes(2, "arco"),
-        termBytes(1, "bloom"),
-        termBytes(1, "frien"),
-        termBytes(6, "frienchies"),
-        termBytes(6, "friend"),
-        termBytes(7, "friendalan"),
-        termBytes(7, "friende"),
-        termBytes(8, "friendez"),
-    };
+    TermBytes[] vocab =
+        new TermBytes[] {
+          termBytes(1, "abaco"),
+          termBytes(2, "amiga"),
+          termBytes(5, "amigo"),
+          termBytes(2, "arco"),
+          termBytes(1, "bloom"),
+          termBytes(1, "frien"),
+          termBytes(6, "frienchies"),
+          termBytes(6, "friend"),
+          termBytes(7, "friendalan"),
+          termBytes(7, "friende"),
+          termBytes(8, "friendez"),
+        };
     List<BlockLine> lines = generateBlockLines(vocab);
     Directory directory = new ByteBuffersDirectory();
     try (IndexOutput indexOutput = directory.createOutput("temp.bin", IOContext.DEFAULT)) {
@@ -73,19 +71,23 @@ public class TestTermBytesComparator extends LuceneTestCase {
     assertGreaterUntil(2, blockReader, new BytesRef("amigas"));
 
     assertGreaterUntil(10, blockReader, new BytesRef("friendez"));
-
   }
 
-  private TermsEnum.SeekStatus assertGreaterUntil(int expectedPosition, MockBlockReader blockReader, BytesRef lookedTerm) throws IOException {
+  private TermsEnum.SeekStatus assertGreaterUntil(
+      int expectedPosition, MockBlockReader blockReader, BytesRef lookedTerm) throws IOException {
     TermsEnum.SeekStatus seekStatus = blockReader.seekInBlock(lookedTerm);
-    assertEquals("looked Term: " + lookedTerm.utf8ToString(), expectedPosition, blockReader.lineIndexInBlock - 1);
+    assertEquals(
+        "looked Term: " + lookedTerm.utf8ToString(),
+        expectedPosition,
+        blockReader.lineIndexInBlock - 1);
 
-    //reset the state
+    // reset the state
     blockReader.reset();
     return seekStatus;
   }
 
-  private void assertAlwaysGreater(MockBlockReader blockReader, BytesRef lookedTerm) throws IOException {
+  private void assertAlwaysGreater(MockBlockReader blockReader, BytesRef lookedTerm)
+      throws IOException {
     TermsEnum.SeekStatus seekStatus = assertGreaterUntil(-1, blockReader, lookedTerm);
     assertEquals(TermsEnum.SeekStatus.END, seekStatus);
   }
@@ -103,8 +105,12 @@ public class TestTermBytesComparator extends LuceneTestCase {
     private List<BlockLine> lines;
 
     MockBlockReader(List<BlockLine> lines, Directory directory) throws IOException {
-      super(null, directory.openInput("temp.bin", IOContext.DEFAULT),
-          createMockPostingReaderBase(), new FieldMetadata(null, 1), null);
+      super(
+          null,
+          directory.openInput("temp.bin", IOContext.DEFAULT),
+          createMockPostingReaderBase(),
+          new FieldMetadata(null, 1),
+          null);
       this.lines = lines;
     }
 
@@ -124,7 +130,8 @@ public class TestTermBytesComparator extends LuceneTestCase {
     }
 
     @Override
-    protected void initializeHeader(BytesRef searchedTerm, long targetBlockStartFP) throws IOException {
+    protected void initializeHeader(BytesRef searchedTerm, long targetBlockStartFP)
+        throws IOException {
       // Force blockStartFP to an impossible value so we never trigger the optimization
       // that keeps the current block with our mock block reader.
       blockStartFP = Long.MIN_VALUE;
@@ -133,7 +140,8 @@ public class TestTermBytesComparator extends LuceneTestCase {
 
     @Override
     protected BlockHeader readHeader() {
-      return blockHeader = lineIndexInBlock >= lines.size() ? null : new BlockHeader(lines.size(), 0, 0, 0, 0, 0);
+      return blockHeader =
+          lineIndexInBlock >= lines.size() ? null : new BlockHeader(lines.size(), 0, 0, 0, 0, 0);
     }
 
     void reset() {
@@ -150,8 +158,7 @@ public class TestTermBytesComparator extends LuceneTestCase {
   private static PostingsReaderBase createMockPostingReaderBase() {
     return new PostingsReaderBase() {
       @Override
-      public void init(IndexInput termsIn, SegmentReadState state) {
-      }
+      public void init(IndexInput termsIn, SegmentReadState state) {}
 
       @Override
       public BlockTermState newTermState() {
@@ -159,11 +166,12 @@ public class TestTermBytesComparator extends LuceneTestCase {
       }
 
       @Override
-      public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {
-      }
+      public void decodeTerm(
+          DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {}
 
       @Override
-      public PostingsEnum postings(FieldInfo fieldInfo, BlockTermState state, PostingsEnum reuse, int flags) {
+      public PostingsEnum postings(
+          FieldInfo fieldInfo, BlockTermState state, PostingsEnum reuse, int flags) {
         return null;
       }
 
@@ -173,12 +181,10 @@ public class TestTermBytesComparator extends LuceneTestCase {
       }
 
       @Override
-      public void checkIntegrity() {
-      }
+      public void checkIntegrity() {}
 
       @Override
-      public void close() {
-      }
+      public void close() {}
 
       @Override
       public long ramBytesUsed() {

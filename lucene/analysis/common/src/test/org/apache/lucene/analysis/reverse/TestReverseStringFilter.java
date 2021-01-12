@@ -18,42 +18,41 @@ package org.apache.lucene.analysis.reverse;
 
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
-    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);     // 1-4 length string
-    ((Tokenizer)stream).setReader(new StringReader("Do have a nice day"));
+    TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false); // 1-4 length string
+    ((Tokenizer) stream).setReader(new StringReader("Do have a nice day"));
     ReverseStringFilter filter = new ReverseStringFilter(stream);
-    assertTokenStreamContents(filter, new String[] { "oD", "evah", "a", "ecin", "yad" });
+    assertTokenStreamContents(filter, new String[] {"oD", "evah", "a", "ecin", "yad"});
   }
-  
+
   public void testFilterWithMark() throws Exception {
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false); // 1-4 length string
-    ((Tokenizer)stream).setReader(new StringReader("Do have a nice day"));
+    ((Tokenizer) stream).setReader(new StringReader("Do have a nice day"));
     ReverseStringFilter filter = new ReverseStringFilter(stream, '\u0001');
-    assertTokenStreamContents(filter, 
-        new String[] { "\u0001oD", "\u0001evah", "\u0001a", "\u0001ecin", "\u0001yad" });
+    assertTokenStreamContents(
+        filter, new String[] {"\u0001oD", "\u0001evah", "\u0001a", "\u0001ecin", "\u0001yad"});
   }
 
   public void testReverseString() throws Exception {
-    assertEquals( "A", ReverseStringFilter.reverse( "A" ) );
-    assertEquals( "BA", ReverseStringFilter.reverse( "AB" ) );
-    assertEquals( "CBA", ReverseStringFilter.reverse( "ABC" ) );
+    assertEquals("A", ReverseStringFilter.reverse("A"));
+    assertEquals("BA", ReverseStringFilter.reverse("AB"));
+    assertEquals("CBA", ReverseStringFilter.reverse("ABC"));
   }
-  
+
   public void testReverseChar() throws Exception {
-    char[] buffer = { 'A', 'B', 'C', 'D', 'E', 'F' };
-    ReverseStringFilter.reverse( buffer, 2, 3 );
-    assertEquals( "ABEDCF", new String( buffer ) );
+    char[] buffer = {'A', 'B', 'C', 'D', 'E', 'F'};
+    ReverseStringFilter.reverse(buffer, 2, 3);
+    assertEquals("ABEDCF", new String(buffer));
   }
-  
+
   public void testReverseSupplementary() throws Exception {
     // supplementary at end
     assertEquals("𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse("瀛愯䇹鍟艱𩬅"));
@@ -89,28 +88,30 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
     ReverseStringFilter.reverse(buffer, 3, 7);
     assertEquals("abcfed𩬅愯瀛", new String(buffer));
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new ReverseStringFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(tokenizer, new ReverseStringFilter(tokenizer));
+          }
+        };
     checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new ReverseStringFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new ReverseStringFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

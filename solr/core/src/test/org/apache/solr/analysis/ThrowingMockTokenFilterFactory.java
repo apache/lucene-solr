@@ -18,7 +18,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

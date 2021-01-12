@@ -20,13 +20,15 @@ package org.apache.lucene.geo;
 import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
 
 /**
- * Represents a point on the earth's surface.  You can construct the point directly with {@code double}
- * coordinates.
- * <p>
- * NOTES:
+ * Represents a point on the earth's surface. You can construct the point directly with {@code
+ * double} coordinates.
+ *
+ * <p>NOTES:
+ *
  * <ol>
  *   <li>latitude/longitude values must be in decimal degrees.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras}
+ *       module
  * </ol>
  */
 public final class XYPoint extends XYGeometry {
@@ -36,9 +38,7 @@ public final class XYPoint extends XYGeometry {
   /** longitude coordinate */
   private final float y;
 
-  /**
-   * Creates a new Point from the supplied latitude/longitude.
-   */
+  /** Creates a new Point from the supplied latitude/longitude. */
   public XYPoint(float x, float y) {
     this.x = checkVal(x);
     this.y = checkVal(y);

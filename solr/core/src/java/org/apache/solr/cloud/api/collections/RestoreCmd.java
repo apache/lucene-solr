@@ -28,7 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -95,7 +94,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
-    BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+    BackupRepository repository = cc.newBackupRepository(repo);
 
     URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
     URI backupPath = repository.resolve(location, backupName);
@@ -230,8 +229,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             .assignPullReplicas(numPullReplicas)
             .onNodes(nodeList)
             .build();
-    Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-    Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
+        ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+        clusterState, restoreCollection);
     List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
 
     CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -34,18 +32,17 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-
 public class TestTermRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;
   private Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     dir.close();
@@ -75,18 +72,18 @@ public class TestTermRangeQuery extends LuceneTestCase {
     assertEquals("C added, still only B in range", 1, hits.length);
     reader.close();
   }
-  
+
   public void testInclusive() throws Exception {
     Query query = TermRangeQuery.newStringRange("content", "A", "C", true, true);
 
-    initializeIndex(new String[]{"A", "B", "C", "D"});
+    initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals("A,B,C,D - A,B,C in range", 3, hits.length);
     reader.close();
 
-    initializeIndex(new String[]{"A", "B", "D"});
+    initializeIndex(new String[] {"A", "B", "D"});
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
     hits = searcher.search(query, 1000).scoreDocs;
@@ -100,9 +97,9 @@ public class TestTermRangeQuery extends LuceneTestCase {
     assertEquals("C added - A, B, C in range", 3, hits.length);
     reader.close();
   }
-  
+
   public void testAllDocs() throws Exception {
-    initializeIndex(new String[]{"A", "B", "C", "D"});
+    initializeIndex(new String[] {"A", "B", "C", "D"});
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
 
@@ -121,16 +118,19 @@ public class TestTermRangeQuery extends LuceneTestCase {
     reader.close();
   }
 
-  /** This test should not be here, but it tests the fuzzy query rewrite mode (TOP_TERMS_SCORING_BOOLEAN_REWRITE)
-   * with constant score and checks, that only the lower end of terms is put into the range */
+  /**
+   * This test should not be here, but it tests the fuzzy query rewrite mode
+   * (TOP_TERMS_SCORING_BOOLEAN_REWRITE) with constant score and checks, that only the lower end of
+   * terms is put into the range
+   */
   public void testTopTermsRewrite() throws Exception {
-    initializeIndex(new String[]{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"});
+    initializeIndex(new String[] {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"});
 
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     TermRangeQuery query = TermRangeQuery.newStringRange("content", "B", "J", true, true);
     checkBooleanTerms(searcher, query, "B", "C", "D", "E", "F", "G", "H", "I", "J");
-    
+
     final int savedClauseCount = IndexSearcher.getMaxClauseCount();
     try {
       IndexSearcher.setMaxClauseCount(3);
@@ -140,8 +140,9 @@ public class TestTermRangeQuery extends LuceneTestCase {
     }
     reader.close();
   }
-  
-  private void checkBooleanTerms(IndexSearcher searcher, TermRangeQuery query, String... terms) throws IOException {
+
+  private void checkBooleanTerms(IndexSearcher searcher, TermRangeQuery query, String... terms)
+      throws IOException {
     query.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(50));
     final BooleanQuery bq = (BooleanQuery) searcher.rewrite(query);
     final Set<String> allowedTerms = asSet(terms);
@@ -150,7 +151,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
       assertTrue(c.getQuery() instanceof TermQuery);
       final TermQuery tq = (TermQuery) c.getQuery();
       final String term = tq.getTerm().text();
-      assertTrue("invalid term: "+ term, allowedTerms.contains(term));
+      assertTrue("invalid term: " + term, allowedTerms.contains(term));
       allowedTerms.remove(term); // remove to fail on double terms
     }
     assertEquals(0, allowedTerms.size());
@@ -158,12 +159,13 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
   public void testEqualsHashcode() {
     Query query = TermRangeQuery.newStringRange("content", "A", "C", true, true);
-    
+
     Query other = TermRangeQuery.newStringRange("content", "A", "C", true, true);
 
     assertEquals("query equals itself is true", query, query);
     assertEquals("equivalent queries are equal", query, other);
-    assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
+    assertEquals(
+        "hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
 
     other = TermRangeQuery.newStringRange("notcontent", "A", "C", true, true);
     assertFalse("Different fields are not equal", query.equals(other));
@@ -177,7 +179,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
     query = TermRangeQuery.newStringRange("content", null, "C", true, true);
     other = TermRangeQuery.newStringRange("content", null, "C", true, true);
     assertEquals("equivalent queries with null lowerterms are equal()", query, other);
-    assertEquals("hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
+    assertEquals(
+        "hashcode must return same value when equals is true", query.hashCode(), other.hashCode());
 
     query = TermRangeQuery.newStringRange("content", "C", null, true, true);
     other = TermRangeQuery.newStringRange("content", "C", null, true, true);
@@ -199,7 +202,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
       char[] buffer = new char[1];
       boolean done = false;
       CharTermAttribute termAtt;
-      
+
       public SingleCharTokenizer() {
         super();
         termAtt = addAttribute(CharTermAttribute.class);
@@ -207,8 +210,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
       @Override
       public boolean incrementToken() throws IOException {
-        if (done)
-          return false;
+        if (done) return false;
         else {
           int count = input.read(buffer);
           clearAttributes();
@@ -238,7 +240,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
+    IndexWriter writer =
+        new IndexWriter(dir, newIndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
     }
@@ -247,7 +250,11 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
   // shouldnt create an analyzer for every doc?
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
+                .setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
     writer.close();
   }
@@ -265,9 +272,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
   // LUCENE-38
   public void testExclusiveLowerNull() throws Exception {
     Analyzer analyzer = new SingleCharAnalyzer();
-    //http://issues.apache.org/jira/browse/LUCENE-38
-    Query query = TermRangeQuery.newStringRange("content", null, "C",
-                                 false, false);
+    // http://issues.apache.org/jira/browse/LUCENE-38
+    Query query = TermRangeQuery.newStringRange("content", null, "C", false, false);
     initializeIndex(new String[] {"A", "B", "", "C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
@@ -275,7 +281,8 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 3, numHits);
     // until Lucene-38 is fixed, use this assert:
-    //assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 2, hits.length());
+    // assertEquals("A,B,<empty string>,C,D => A, B & <empty string> are in range", 2,
+    // hits.length());
 
     reader.close();
     initializeIndex(new String[] {"A", "B", "", "D"}, analyzer);
@@ -285,7 +292,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 3, numHits);
     // until Lucene-38 is fixed, use this assert:
-    //assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 2, hits.length());
+    // assertEquals("A,B,<empty string>,D => A, B & <empty string> are in range", 2, hits.length());
     reader.close();
     addDoc("C");
     reader = DirectoryReader.open(dir);
@@ -294,32 +301,32 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("C added, still A, B & <empty string> are in range", 3, numHits);
     // until Lucene-38 is fixed, use this assert
-    //assertEquals("C added, still A, B & <empty string> are in range", 2, hits.length());
+    // assertEquals("C added, still A, B & <empty string> are in range", 2, hits.length());
     reader.close();
   }
 
   // LUCENE-38
   public void testInclusiveLowerNull() throws Exception {
-    //http://issues.apache.org/jira/browse/LUCENE-38
+    // http://issues.apache.org/jira/browse/LUCENE-38
     Analyzer analyzer = new SingleCharAnalyzer();
     Query query = TermRangeQuery.newStringRange("content", null, "C", true, true);
-    initializeIndex(new String[]{"A", "B", "","C", "D"}, analyzer);
+    initializeIndex(new String[] {"A", "B", "", "C", "D"}, analyzer);
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(reader);
     long numHits = searcher.search(query, 1000).totalHits.value;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 4, numHits);
     // until Lucene-38 is fixed, use this assert
-    //assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 3, hits.length());
+    // assertEquals("A,B,<empty string>,C,D => A,B,<empty string>,C in range", 3, hits.length());
     reader.close();
-    initializeIndex(new String[]{"A", "B", "", "D"}, analyzer);
+    initializeIndex(new String[] {"A", "B", "", "D"}, analyzer);
     reader = DirectoryReader.open(dir);
     searcher = newSearcher(reader);
     numHits = searcher.search(query, 1000).totalHits.value;
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("A,B,<empty string>,D - A, B and <empty string> in range", 3, numHits);
     // until Lucene-38 is fixed, use this assert
-    //assertEquals("A,B,<empty string>,D => A, B and <empty string> in range", 2, hits.length());
+    // assertEquals("A,B,<empty string>,D => A, B and <empty string> in range", 2, hits.length());
     reader.close();
     addDoc("C");
     reader = DirectoryReader.open(dir);
@@ -328,8 +335,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // When Lucene-38 is fixed, use the assert on the next line:
     assertEquals("C added => A,B,<empty string>,C in range", 4, numHits);
     // until Lucene-38 is fixed, use this assert
-    //assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
-     reader.close();
+    // assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
+    reader.close();
   }
-
 }

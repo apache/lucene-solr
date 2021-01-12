@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.PriorityQueue;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +23,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.PriorityQueue;
 
 /** Selects fragments of text that score best for the given set of highlight markers. */
 public class PassageSelector {
@@ -80,22 +79,16 @@ public class PassageSelector {
       int maxPassageWindow,
       int maxPassages,
       List<OffsetRange> permittedPassageRanges) {
-    assert markers instanceof RandomAccess && permittedPassageRanges instanceof RandomAccess;
+    assert markers instanceof RandomAccess;
+    assert permittedPassageRanges instanceof RandomAccess;
+    assert sortedAndNonOverlapping(permittedPassageRanges);
 
     // Handle odd special cases early.
     if (value.length() == 0 || maxPassageWindow == 0) {
       return Collections.emptyList();
     }
 
-    // Sort markers by their start offset, shortest first.
-    markers.sort(
-        (a, b) -> {
-          int v = Integer.compare(a.from, b.from);
-          return v != 0 ? v : Integer.compare(a.to, b.to);
-        });
-
-    // Determine a maximum offset window around each highlight marker and
-    // pick the best scoring passage candidates.
+    // Best passages so far.
     PriorityQueue<Passage> pq =
         new PriorityQueue<>(maxPassages) {
           @Override
@@ -104,7 +97,10 @@ public class PassageSelector {
           }
         };
 
-    assert sortedAndNonOverlapping(permittedPassageRanges);
+    markers = splitOrTruncateToWindows(markers, maxPassageWindow, permittedPassageRanges);
+
+    // Sort markers by their start offset, shortest first.
+    markers.sort(Comparator.<OffsetRange>comparingInt(r -> r.from).thenComparingInt(r -> r.to));
 
     final int max = markers.size();
     int markerIndex = 0;
@@ -180,7 +176,7 @@ public class PassageSelector {
       }
     } else {
       // Handle the default, no highlighting markers case.
-      passages = pickDefaultPassage(value, maxPassageWindow, permittedPassageRanges);
+      passages = pickDefaultPassage(value, maxPassageWindow, maxPassages, permittedPassageRanges);
     }
 
     // Correct passage boundaries from maxExclusive window. Typically shrink boundaries until we're
@@ -224,9 +220,42 @@ public class PassageSelector {
     }
 
     // Sort in the offset order again.
-    Arrays.sort(passages, (a, b) -> Integer.compare(a.from, b.from));
+    Arrays.sort(passages, Comparator.comparingInt(a -> a.from));
 
     return Arrays.asList(passages);
+  }
+
+  /** Truncate or split highlight markers that cross permitted value boundaries. */
+  private List<? extends OffsetRange> splitOrTruncateToWindows(
+      List<? extends OffsetRange> markers,
+      int maxPassageWindow,
+      List<OffsetRange> permittedPassageRanges) {
+    // Process markers overlapping with each permitted window.
+    ArrayList<OffsetRange> processedMarkers = new ArrayList<>(markers.size());
+    for (OffsetRange marker : markers) {
+      for (OffsetRange permitted : permittedPassageRanges) {
+        boolean needsNew = false;
+        int from = marker.from;
+        if (from < permitted.from) {
+          from = permitted.from;
+          needsNew = true;
+        }
+
+        int to = marker.to;
+        if (to > permitted.to) {
+          to = permitted.to;
+          needsNew = true;
+        }
+
+        if (from >= to || (to - from) > maxPassageWindow) {
+          continue;
+        }
+
+        processedMarkers.add(needsNew ? marker.slice(from, to) : marker);
+      }
+    }
+    markers = processedMarkers;
+    return markers;
   }
 
   static boolean sortedAndNonOverlapping(List<? extends OffsetRange> permittedPassageRanges) {
@@ -248,19 +277,28 @@ public class PassageSelector {
    * Invoked when no passages could be selected (due to constraints or lack of highlight markers).
    */
   protected Passage[] pickDefaultPassage(
-      CharSequence value, int maxCharacterWindow, List<OffsetRange> permittedPassageRanges) {
+      CharSequence value,
+      int maxCharacterWindow,
+      int maxPassages,
+      List<OffsetRange> permittedPassageRanges) {
     // Search for the first range that is not empty.
+    ArrayList<Passage> defaultPassages = new ArrayList<>();
     for (OffsetRange o : permittedPassageRanges) {
+      if (defaultPassages.size() >= maxPassages) {
+        break;
+      }
+
       int to = Math.min(value.length(), o.to);
       if (o.from < to) {
-        return new Passage[] {
-          new Passage(
-              o.from, o.from + Math.min(maxCharacterWindow, o.length()), Collections.emptyList())
-        };
+        defaultPassages.add(
+            new Passage(
+                o.from,
+                o.from + Math.min(maxCharacterWindow, o.length()),
+                Collections.emptyList()));
       }
     }
 
-    return new Passage[] {};
+    return defaultPassages.toArray(Passage[]::new);
   }
 
   private static boolean adjecentOrOverlapping(Passage a, Passage b) {

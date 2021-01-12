@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
@@ -29,18 +28,21 @@ public class TestMaxClauseLimit extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(new MultiReader());
 
     BooleanQuery.Builder builder1024 = new BooleanQuery.Builder();
-    for(int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 1024; i++) {
       builder1024.add(new TermQuery(new Term("foo", "bar-" + i)), BooleanClause.Occur.SHOULD);
     }
     Query inner = builder1024.build();
-    Query query = new BooleanQuery.Builder()
-        .add(inner, BooleanClause.Occur.SHOULD)
-        .add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD)
-        .build();
+    Query query =
+        new BooleanQuery.Builder()
+            .add(inner, BooleanClause.Occur.SHOULD)
+            .add(new TermQuery(new Term("foo", "baz")), BooleanClause.Occur.SHOULD)
+            .build();
 
-    expectThrows(IndexSearcher.TooManyClauses.class, () -> {
-      searcher.rewrite(query);
-    });
+    expectThrows(
+        IndexSearcher.TooManyClauses.class,
+        () -> {
+          searcher.rewrite(query);
+        });
   }
 
   public void testLargeTermsNestedFirst() throws IOException {
@@ -49,12 +51,12 @@ public class TestMaxClauseLimit extends LuceneTestCase {
 
     nestedBuilder.setMinimumNumberShouldMatch(5);
 
-    for(int i = 0; i < 600; i++) {
+    for (int i = 0; i < 600; i++) {
       nestedBuilder.add(new TermQuery(new Term("foo", "bar-" + i)), BooleanClause.Occur.SHOULD);
     }
     Query inner = nestedBuilder.build();
-    BooleanQuery.Builder builderMixed = new BooleanQuery.Builder()
-        .add(inner, BooleanClause.Occur.SHOULD);
+    BooleanQuery.Builder builderMixed =
+        new BooleanQuery.Builder().add(inner, BooleanClause.Occur.SHOULD);
 
     builderMixed.setMinimumNumberShouldMatch(5);
 
@@ -64,9 +66,11 @@ public class TestMaxClauseLimit extends LuceneTestCase {
 
     Query query = builderMixed.build();
 
-    expectThrows(IndexSearcher.TooManyClauses.class, () -> {
-      searcher.rewrite(query);
-    });
+    expectThrows(
+        IndexSearcher.TooManyClauses.class,
+        () -> {
+          searcher.rewrite(query);
+        });
   }
 
   public void testLargeTermsNestedLast() throws IOException {
@@ -75,7 +79,7 @@ public class TestMaxClauseLimit extends LuceneTestCase {
 
     nestedBuilder.setMinimumNumberShouldMatch(5);
 
-    for(int i = 0; i < 600; i++) {
+    for (int i = 0; i < 600; i++) {
       nestedBuilder.add(new TermQuery(new Term("foo", "bar-" + i)), BooleanClause.Occur.SHOULD);
     }
     Query inner = nestedBuilder.build();
@@ -91,16 +95,18 @@ public class TestMaxClauseLimit extends LuceneTestCase {
 
     Query query = builderMixed.build();
 
-    expectThrows(IndexSearcher.TooManyClauses.class, () -> {
-      searcher.rewrite(query);
-    });
+    expectThrows(
+        IndexSearcher.TooManyClauses.class,
+        () -> {
+          searcher.rewrite(query);
+        });
   }
 
   public void testLargeDisjunctionMaxQuery() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
     Query[] clausesQueryArray = new Query[1050];
 
-    for(int i = 0; i < 1049; i++) {
+    for (int i = 0; i < 1049; i++) {
       clausesQueryArray[i] = new TermQuery(new Term("field", "a"));
     }
 
@@ -108,25 +114,27 @@ public class TestMaxClauseLimit extends LuceneTestCase {
 
     clausesQueryArray[1049] = pq;
 
-    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(
-        Arrays.asList(clausesQueryArray),
-        0.5f);
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(Arrays.asList(clausesQueryArray), 0.5f);
 
-    expectThrows(IndexSearcher.TooManyClauses.class, () -> {
-      searcher.rewrite(dmq);
-    });
+    expectThrows(
+        IndexSearcher.TooManyClauses.class,
+        () -> {
+          searcher.rewrite(dmq);
+        });
   }
 
   public void testMultiExactWithRepeats() throws IOException {
     IndexSearcher searcher = newSearcher(new MultiReader());
     MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
 
-    for (int i = 0;i < 1050; i++) {
-      qb.add(new Term[]{new Term("foo", "bar-" + i), new Term("foo", "bar+" + i)}, 0);
+    for (int i = 0; i < 1050; i++) {
+      qb.add(new Term[] {new Term("foo", "bar-" + i), new Term("foo", "bar+" + i)}, 0);
     }
 
-    expectThrows(IndexSearcher.TooManyClauses.class, () -> {
-      searcher.rewrite(qb.build());
-    });
+    expectThrows(
+        IndexSearcher.TooManyClauses.class,
+        () -> {
+          searcher.rewrite(qb.build());
+        });
   }
 }

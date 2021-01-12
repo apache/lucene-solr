@@ -331,11 +331,23 @@ limitations under the License.
 
                     <form>
 
-                      <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
-                      <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
-                          <option value="">No specified node</option>
-                      </select>
-                          node: {{shard.replicaNodeName}}
+                      <p id="node-name" class="clearfix">
+                        <p>
+                         <label for="node-name">Node:</label>
+                         <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
+                             <option value="">No specified node</option>
+                         </select>
+                        </p>
+                        <p>
+                            <label for="node-name">Type:</label>
+                            <select chosen ng-model="shard.replicaType" ng-init="shard.replicaType='NRT'" ng-options="node for node in ['NRT', 'TLOG', 'PULL']" class="other">
+
+                            </select>
+                        </p>
+
+
+                        <div ng-if="shard.replicaNodeName">node: {{shard.replicaNodeName}}</div>
+                        <div ng-if="shard.replicaNodeName">node: {{shard.replicaType}}</div>
                       </p>
 
                       <p class="clearfix note error" ng-show="createReplicaMessage">

@@ -45,8 +45,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
-  public static final String RULE = "rule";
-  public static final String SNITCH = "snitch";
 
   private final int znodeVersion;
 
@@ -91,8 +89,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
     
-    verifyProp(props, RULE);
-    verifyProp(props, SNITCH);
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
     while (iter.hasNext()) {
@@ -143,8 +139,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
-      case "rule":
-        return (List) o;
       default:
         return o;
     }

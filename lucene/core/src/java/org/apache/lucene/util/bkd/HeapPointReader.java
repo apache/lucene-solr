@@ -22,25 +22,23 @@ import org.apache.lucene.util.BytesRef;
  * Utility class to read buffered points from in-heap arrays.
  *
  * @lucene.internal
- * */
+ */
 public final class HeapPointReader implements PointReader {
   private int curRead;
   final byte[] block;
-  final int packedBytesLength;
-  final int packedBytesDocIDLength;
+  final BKDConfig config;
   final int end;
   private final HeapPointValue pointValue;
 
-  public HeapPointReader(byte[] block, int packedBytesLength, int start, int end) {
+  public HeapPointReader(BKDConfig config, byte[] block, int start, int end) {
     this.block = block;
-    curRead = start-1;
+    curRead = start - 1;
     this.end = end;
-    this.packedBytesLength = packedBytesLength;
-    this.packedBytesDocIDLength = packedBytesLength + Integer.BYTES;
+    this.config = config;
     if (start < end) {
-      this.pointValue = new HeapPointValue(block, packedBytesLength);
+      this.pointValue = new HeapPointValue(config, block);
     } else {
-      //no values
+      // no values
       this.pointValue = null;
     }
   }
@@ -53,32 +51,27 @@ public final class HeapPointReader implements PointReader {
 
   @Override
   public PointValue pointValue() {
-    pointValue.setOffset(curRead * packedBytesDocIDLength);
+    pointValue.setOffset(curRead * config.bytesPerDoc);
     return pointValue;
   }
 
   @Override
-  public void close() {
-  }
+  public void close() {}
 
-  /**
-   * Reusable implementation for a point value on-heap
-   */
+  /** Reusable implementation for a point value on-heap */
   static class HeapPointValue implements PointValue {
 
     final BytesRef packedValue;
     final BytesRef packedValueDocID;
     final int packedValueLength;
 
-    HeapPointValue(byte[] value, int packedValueLength) {
-      this.packedValueLength = packedValueLength;
+    HeapPointValue(BKDConfig config, byte[] value) {
+      this.packedValueLength = config.packedBytesLength;
       this.packedValue = new BytesRef(value, 0, packedValueLength);
-      this.packedValueDocID = new BytesRef(value, 0, packedValueLength + Integer.BYTES);
+      this.packedValueDocID = new BytesRef(value, 0, config.bytesPerDoc);
     }
 
-    /**
-     * Sets a new value by changing the offset.
-     */
+    /** Sets a new value by changing the offset. */
     public void setOffset(int offset) {
       packedValue.offset = offset;
       packedValueDocID.offset = offset;
@@ -92,8 +85,10 @@ public final class HeapPointReader implements PointReader {
     @Override
     public int docID() {
       int position = packedValueDocID.offset + packedValueLength;
-      return ((packedValueDocID.bytes[position] & 0xFF) << 24) | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
-          | ((packedValueDocID.bytes[++position] & 0xFF) <<  8) |  (packedValueDocID.bytes[++position] & 0xFF);
+      return ((packedValueDocID.bytes[position] & 0xFF) << 24)
+          | ((packedValueDocID.bytes[++position] & 0xFF) << 16)
+          | ((packedValueDocID.bytes[++position] & 0xFF) << 8)
+          | (packedValueDocID.bytes[++position] & 0xFF);
     }
 
     @Override

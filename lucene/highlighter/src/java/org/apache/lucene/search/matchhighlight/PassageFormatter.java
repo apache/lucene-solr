@@ -21,16 +21,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.RandomAccess;
 import java.util.function.Function;
 
 /**
- * Formats a collection of {@linkplain Passage passages} over a given string, cleaning up
- * and resolving restrictions concerning overlaps, allowed sub-ranges over the
- * input string and length restrictions.
+ * Formats a collection of {@linkplain Passage passages} over a given string, cleaning up and
+ * resolving restrictions concerning overlaps, allowed sub-ranges over the input string and length
+ * restrictions.
  *
- * Passages are demarcated with constructor-provided ellipsis and start/end marker
- * sequences.
+ * <p>Passages are demarcated with constructor-provided ellipsis and start/end marker sequences.
  */
 public class PassageFormatter {
   private final String ellipsis;
@@ -55,6 +55,7 @@ public class PassageFormatter {
   public List<String> format(CharSequence value, List<Passage> passages, List<OffsetRange> ranges) {
     assert PassageSelector.sortedAndNonOverlapping(passages);
     assert PassageSelector.sortedAndNonOverlapping(ranges);
+    assert withinRange(new OffsetRange(0, value.length()), passages);
     assert ranges instanceof RandomAccess;
 
     if (ranges.isEmpty()) {
@@ -89,6 +90,21 @@ public class PassageFormatter {
       result.add(buf.toString());
     }
     return result;
+  }
+
+  private boolean withinRange(OffsetRange limits, List<? extends OffsetRange> contained) {
+    contained.forEach(
+        r -> {
+          if (r.from < limits.from || r.to > limits.to) {
+            throw new AssertionError(
+                String.format(
+                    Locale.ROOT,
+                    "Range outside of the permitted limit (limit = %s): %s",
+                    limits,
+                    r));
+          }
+        });
+    return true;
   }
 
   public StringBuilder format(StringBuilder buf, CharSequence value, final Passage passage) {

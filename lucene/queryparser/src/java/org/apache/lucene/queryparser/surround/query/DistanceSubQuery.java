@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
+
 import java.io.IOException;
 
-/**
- * Interface for queries that can be nested as subqueries
- * into a span near.
- */
+/** Interface for queries that can be nested as subqueries into a span near. */
 public interface DistanceSubQuery {
-  /** When distanceSubQueryNotAllowed() returns non null, the reason why the subquery
-   * is not allowed as a distance subquery is returned.
-   * <br>When distanceSubQueryNotAllowed() returns null addSpanNearQueries() can be used
-   * in the creation of the span near clause for the subquery.
+  /**
+   * When distanceSubQueryNotAllowed() returns non null, the reason why the subquery is not allowed
+   * as a distance subquery is returned. <br>
+   * When distanceSubQueryNotAllowed() returns null addSpanNearQueries() can be used in the creation
+   * of the span near clause for the subquery.
    */
   String distanceSubQueryNotAllowed();
-    
+
   void addSpanQueries(SpanNearClauseFactory sncf) throws IOException;
 }
-

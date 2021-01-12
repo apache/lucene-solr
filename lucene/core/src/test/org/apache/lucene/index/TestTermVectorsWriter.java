@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -206,11 +204,16 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     r.close();
     dir.close();
   }
-  
+
   // LUCENE-1448
   public void testEndOffsetPositionStopFilter() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(
+                new MockAnalyzer(
+                    random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET)));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setStoreTermVectors(true);
@@ -362,21 +365,23 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     assertEquals(6, dpEnum.startOffset());
     assertEquals(12, dpEnum.endOffset());
 
-
     r.close();
     dir.close();
   }
-  
+
   // LUCENE-1168
   public void testTermVectorCorruption() throws IOException {
 
     Directory dir = newDirectory();
-    for(int iter=0;iter<2;iter++) {
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-          .setMaxBufferedDocs(2)
-          .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-          .setMergeScheduler(new SerialMergeScheduler())
-          .setMergePolicy(new LogDocMergePolicy()));
+    for (int iter = 0; iter < 2; iter++) {
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(2)
+                  .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                  .setMergeScheduler(new SerialMergeScheduler())
+                  .setMergePolicy(new LogDocMergePolicy()));
 
       Document document = new Document();
       FieldType customType = new FieldType();
@@ -401,17 +406,20 @@ public class TestTermVectorsWriter extends LuceneTestCase {
       writer.close();
 
       IndexReader reader = DirectoryReader.open(dir);
-      for(int i=0;i<reader.numDocs();i++) {
+      for (int i = 0; i < reader.numDocs(); i++) {
         reader.document(i);
         reader.getTermVectors(i);
       }
       reader.close();
 
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-          .setMaxBufferedDocs(2)
-          .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-          .setMergeScheduler(new SerialMergeScheduler())
-          .setMergePolicy(new LogDocMergePolicy()));
+      writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(2)
+                  .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                  .setMergeScheduler(new SerialMergeScheduler())
+                  .setMergePolicy(new LogDocMergePolicy()));
 
       Directory[] indexDirs = {new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(dir))};
       writer.addIndexes(indexDirs);
@@ -424,12 +432,15 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1168
   public void testTermVectorCorruption2() throws IOException {
     Directory dir = newDirectory();
-    for(int iter=0;iter<2;iter++) {
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-          .setMaxBufferedDocs(2)
-          .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-          .setMergeScheduler(new SerialMergeScheduler())
-          .setMergePolicy(new LogDocMergePolicy()));
+    for (int iter = 0; iter < 2; iter++) {
+      IndexWriter writer =
+          new IndexWriter(
+              dir,
+              newIndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(2)
+                  .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                  .setMergeScheduler(new SerialMergeScheduler())
+                  .setMergePolicy(new LogDocMergePolicy()));
 
       Document document = new Document();
 
@@ -465,11 +476,14 @@ public class TestTermVectorsWriter extends LuceneTestCase {
   // LUCENE-1168
   public void testTermVectorCorruption3() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(2)
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setMergeScheduler(new SerialMergeScheduler())
-        .setMergePolicy(new LogDocMergePolicy()));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setMergeScheduler(new SerialMergeScheduler())
+                .setMergePolicy(new LogDocMergePolicy()));
 
     Document document = new Document();
     FieldType customType = new FieldType();
@@ -483,30 +497,31 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     customType2.setStoreTermVectorOffsets(true);
     Field termVectorField = newField("termVector", "termVector", customType2);
     document.add(termVectorField);
-    for(int i=0;i<10;i++)
-      writer.addDocument(document);
+    for (int i = 0; i < 10; i++) writer.addDocument(document);
     writer.close();
 
-    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(2)
-        .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setMergeScheduler(new SerialMergeScheduler())
-        .setMergePolicy(new LogDocMergePolicy()));
-    for(int i=0;i<6;i++)
-      writer.addDocument(document);
+    writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                .setMergeScheduler(new SerialMergeScheduler())
+                .setMergePolicy(new LogDocMergePolicy()));
+    for (int i = 0; i < 6; i++) writer.addDocument(document);
 
     writer.forceMerge(1);
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
-    for(int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++) {
       reader.getTermVectors(i);
       reader.document(i);
     }
     reader.close();
     dir.close();
   }
-  
+
   // LUCENE-1008
   public void testNoTermVectorAfterTermVector() throws IOException {
     Directory dir = newDirectory();
@@ -568,37 +583,35 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     iw.close();
     dir.close();
   }
-  
-  /** 
-   * In a single doc, for the same field, mix the term vectors up 
-   */
+
+  /** In a single doc, for the same field, mix the term vectors up */
   public void testInconsistentTermVectorOptions() throws IOException {
     FieldType a, b;
-    
+
     // no vectors + vectors
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a = new FieldType(TextField.TYPE_NOT_STORED);
     b = new FieldType(TextField.TYPE_NOT_STORED);
     b.setStoreTermVectors(true);
     doTestMixup(a, b);
-    
+
     // vectors + vectors with pos
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a = new FieldType(TextField.TYPE_NOT_STORED);
     a.setStoreTermVectors(true);
     b = new FieldType(TextField.TYPE_NOT_STORED);
     b.setStoreTermVectors(true);
     b.setStoreTermVectorPositions(true);
     doTestMixup(a, b);
-    
+
     // vectors + vectors with off
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a = new FieldType(TextField.TYPE_NOT_STORED);
     a.setStoreTermVectors(true);
     b = new FieldType(TextField.TYPE_NOT_STORED);
     b.setStoreTermVectors(true);
     b.setStoreTermVectorOffsets(true);
     doTestMixup(a, b);
-    
+
     // vectors with pos + vectors with pos + off
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a = new FieldType(TextField.TYPE_NOT_STORED);
     a.setStoreTermVectors(true);
     a.setStoreTermVectorPositions(true);
     b = new FieldType(TextField.TYPE_NOT_STORED);
@@ -606,9 +619,9 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     b.setStoreTermVectorPositions(true);
     b.setStoreTermVectorOffsets(true);
     doTestMixup(a, b);
-    
+
     // vectors with pos + vectors with pos + pay
-    a = new FieldType(TextField.TYPE_NOT_STORED);   
+    a = new FieldType(TextField.TYPE_NOT_STORED);
     a.setStoreTermVectors(true);
     a.setStoreTermVectorPositions(true);
     b = new FieldType(TextField.TYPE_NOT_STORED);
@@ -617,34 +630,41 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     b.setStoreTermVectorPayloads(true);
     doTestMixup(a, b);
   }
-  
+
   private void doTestMixup(FieldType ft1, FieldType ft2) throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
+
     // add 3 good docs
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       iw.addDocument(doc);
     }
-    
+
     // add broken doc
     Document doc = new Document();
     doc.add(new Field("field", "value1", ft1));
     doc.add(new Field("field", "value2", ft2));
-    
+
     // ensure broken doc hits exception
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      iw.addDocument(doc);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              iw.addDocument(doc);
+            });
     assertNotNull(expected.getMessage());
-    assertTrue(expected.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
-    
+    assertTrue(
+        expected
+            .getMessage()
+            .startsWith(
+                "all instances of a given field name must have the same term vectors settings"));
+
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
     assertEquals(3, ir.numDocs());
-    
+
     ir.close();
     iw.close();
     dir.close();
@@ -664,9 +684,11 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     ft.freeze();
     doc.add(new Field("field", "value", ft));
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      iw.addDocument(doc);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          iw.addDocument(doc);
+        });
 
     IndexReader r = DirectoryReader.open(iw);
 

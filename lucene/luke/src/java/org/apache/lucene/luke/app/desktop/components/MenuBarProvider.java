@@ -17,12 +17,11 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
+import java.awt.event.ActionEvent;
+import java.io.IOException;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import java.awt.event.ActionEvent;
-import java.io.IOException;
-
 import org.apache.lucene.luke.app.DirectoryHandler;
 import org.apache.lucene.luke.app.DirectoryObserver;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -135,7 +134,6 @@ public final class MenuBarProvider {
     createIndexMItem.addActionListener(listeners::showCreateIndexDialog);
     fileMenu.add(createIndexMItem);
 
-
     closeIndexMItem.setText(MessageUtils.getLocalizedMessage("menu.item.close_index"));
     closeIndexMItem.setEnabled(false);
     closeIndexMItem.addActionListener(listeners::closeIndex);
@@ -197,13 +195,21 @@ public final class MenuBarProvider {
   private class ListenerFunctions {
 
     void showOpenIndexDialog(ActionEvent e) {
-      new DialogOpener<>(openIndexDialogFactory).open(MessageUtils.getLocalizedMessage("openindex.dialog.title"), 600, 420,
-          (factory) -> {});
+      new DialogOpener<>(openIndexDialogFactory)
+          .open(
+              MessageUtils.getLocalizedMessage("openindex.dialog.title"),
+              600,
+              420,
+              (factory) -> {});
     }
 
     void showCreateIndexDialog(ActionEvent e) {
-      new DialogOpener<>(createIndexDialogFactory).open(MessageUtils.getLocalizedMessage("createindex.dialog.title"), 600, 360,
-          (factory) -> {});
+      new DialogOpener<>(createIndexDialogFactory)
+          .open(
+              MessageUtils.getLocalizedMessage("createindex.dialog.title"),
+              600,
+              360,
+              (factory) -> {});
     }
 
     void reopenIndex(ActionEvent e) {
@@ -233,7 +239,9 @@ public final class MenuBarProvider {
     private void changeTheme(Preferences.ColorTheme theme) {
       try {
         prefs.setColorTheme(theme);
-        operatorRegistry.get(LukeWindowOperator.class).ifPresent(operator -> operator.setColorTheme(theme));
+        operatorRegistry
+            .get(LukeWindowOperator.class)
+            .ifPresent(operator -> operator.setColorTheme(theme));
       } catch (IOException e) {
         throw new LukeException("Failed to set color theme : " + theme.name(), e);
       }
@@ -250,30 +258,22 @@ public final class MenuBarProvider {
     }
 
     void showOptimizeIndexDialog(ActionEvent e) {
-      new DialogOpener<>(optimizeIndexDialogFactory).open("Optimize index", 600, 600,
-          factory -> {
-          });
+      new DialogOpener<>(optimizeIndexDialogFactory)
+          .open("Optimize index", 600, 600, factory -> {});
     }
 
     void showCheckIndexDialog(ActionEvent e) {
-      new DialogOpener<>(checkIndexDialogFactory).open("Check index", 600, 600,
-          factory -> {
-          });
+      new DialogOpener<>(checkIndexDialogFactory).open("Check index", 600, 600, factory -> {});
     }
 
     void showAboutDialog(ActionEvent e) {
       final String title = "About Luke v" + Version.LATEST.toString();
-      new DialogOpener<>(aboutDialogFactory).open(title, 800, 480,
-          factory -> {
-          });
+      new DialogOpener<>(aboutDialogFactory).open(title, 800, 480, factory -> {});
     }
 
     void showExportTermsDialog(ActionEvent e) {
-      new DialogOpener<>(exportTermsDialogFactory).open("Export terms", 600, 450,
-          factory -> {
-          });
+      new DialogOpener<>(exportTermsDialogFactory).open("Export terms", 600, 450, factory -> {});
     }
-
   }
 
   private class Observer implements IndexObserver, DirectoryObserver {
@@ -317,6 +317,5 @@ public final class MenuBarProvider {
       checkIndexMItem.setEnabled(false);
       exportTermsMItem.setEnabled(false);
     }
-
   }
 }

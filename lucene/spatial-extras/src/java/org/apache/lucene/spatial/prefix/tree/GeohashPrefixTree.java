@@ -19,26 +19,23 @@ package org.apache.lucene.spatial.prefix.tree;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
+import org.apache.lucene.util.BytesRef;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.io.GeohashUtils;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
-import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link SpatialPrefixTree} based on
- * <a href="http://en.wikipedia.org/wiki/Geohash">Geohashes</a>.
- * Uses {@link GeohashUtils} to do all the geohash work.
+ * A {@link SpatialPrefixTree} based on <a
+ * href="http://en.wikipedia.org/wiki/Geohash">Geohashes</a>. Uses {@link GeohashUtils} to do all
+ * the geohash work.
  *
  * @lucene.experimental
  */
 public class GeohashPrefixTree extends LegacyPrefixTree {
 
-  /**
-   * Factory for creating {@link GeohashPrefixTree} instances with useful defaults
-   */
+  /** Factory for creating {@link GeohashPrefixTree} instances with useful defaults */
   public static class Factory extends SpatialPrefixTreeFactory {
 
     @Override
@@ -49,8 +46,8 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
     @Override
     protected SpatialPrefixTree newSPT() {
-      return new GeohashPrefixTree(ctx,
-          maxLevels != null ? maxLevels : GeohashPrefixTree.getMaxLevelsPossible());
+      return new GeohashPrefixTree(
+          ctx, maxLevels != null ? maxLevels : GeohashPrefixTree.getMaxLevelsPossible());
     }
   }
 
@@ -58,10 +55,11 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
     super(ctx, maxLevels);
     Rectangle bounds = ctx.getWorldBounds();
     if (bounds.getMinX() != -180)
-      throw new IllegalArgumentException("Geohash only supports lat-lon world bounds. Got "+bounds);
+      throw new IllegalArgumentException(
+          "Geohash only supports lat-lon world bounds. Got " + bounds);
     int MAXP = getMaxLevelsPossible();
     if (maxLevels <= 0 || maxLevels > MAXP)
-      throw new IllegalArgumentException("maxLevels must be [1-"+MAXP+"] but got "+ maxLevels);
+      throw new IllegalArgumentException("maxLevels must be [1-" + MAXP + "] but got " + maxLevels);
   }
 
   /** Any more than this and there's no point (double lat and lon are the same). */
@@ -76,19 +74,19 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
-    if (dist == 0)
-      return maxLevels;//short circuit
+    if (dist == 0) return maxLevels; // short circuit
     final int level = GeohashUtils.lookupHashLenForWidthHeight(dist, dist);
     return Math.max(Math.min(level, maxLevels), 1);
   }
 
   @Override
   protected Cell getCell(Point p, int level) {
-    return new GhCell(GeohashUtils.encodeLatLon(p.getY(), p.getX(), level));//args are lat,lon (y,x)
+    return new GhCell(
+        GeohashUtils.encodeLatLon(p.getY(), p.getX(), level)); // args are lat,lon (y,x)
   }
 
   private static byte[] stringToBytesPlus1(String token) {
-    //copy ASCII token to byte array with one extra spot for eventual LEAF_BYTE if needed
+    // copy ASCII token to byte array with one extra spot for eventual LEAF_BYTE if needed
     byte[] bytes = new byte[token.length() + 1];
     for (int i = 0; i < token.length(); i++) {
       bytes[i] = (byte) token.charAt(i);
@@ -98,13 +96,14 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
   private class GhCell extends LegacyCell {
 
-    private String geohash;//cache; never has leaf byte, simply a geohash
+    private String geohash; // cache; never has leaf byte, simply a geohash
 
     GhCell(String geohash) {
       super(stringToBytesPlus1(geohash), 0, geohash.length());
       this.geohash = geohash;
-      if (isLeaf() && getLevel() < getMaxLevels())//we don't have a leaf byte at max levels (an opt)
-        this.geohash = geohash.substring(0, geohash.length() - 1);
+      if (isLeaf()
+          && getLevel() < getMaxLevels()) // we don't have a leaf byte at max levels (an opt)
+      this.geohash = geohash.substring(0, geohash.length() - 1);
     }
 
     GhCell(byte[] bytes, int off, int len) {
@@ -112,10 +111,14 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
     }
 
     @Override
-    protected GeohashPrefixTree getGrid() { return GeohashPrefixTree.this; }
+    protected GeohashPrefixTree getGrid() {
+      return GeohashPrefixTree.this;
+    }
 
     @Override
-    protected int getMaxLevels() { return maxLevels; }
+    protected int getMaxLevels() {
+      return maxLevels;
+    }
 
     @Override
     protected void readCell(BytesRef bytesRef) {
@@ -125,7 +128,7 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
     @Override
     public Collection<Cell> getSubCells() {
-      String[] hashes = GeohashUtils.getSubGeohashes(getGeohash());//sorted
+      String[] hashes = GeohashUtils.getSubGeohashes(getGeohash()); // sorted
       List<Cell> cells = new ArrayList<>(hashes.length);
       for (String hash : hashes) {
         cells.add(new GhCell(hash));
@@ -135,12 +138,12 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
 
     @Override
     public int getSubCellsSize() {
-      return 32;//8x4
+      return 32; // 8x4
     }
 
     @Override
     protected GhCell getSubCell(Point p) {
-      return (GhCell) getGrid().getCell(p, getLevel() + 1);//not performant!
+      return (GhCell) getGrid().getCell(p, getLevel() + 1); // not performant!
     }
 
     @Override
@@ -152,11 +155,8 @@ public class GeohashPrefixTree extends LegacyPrefixTree {
     }
 
     private String getGeohash() {
-      if (geohash == null)
-        geohash = getTokenBytesNoLeaf(null).utf8ToString();
+      if (geohash == null) geohash = getTokenBytesNoLeaf(null).utf8ToString();
       return geohash;
     }
-
-  }//class GhCell
-
+  } // class GhCell
 }

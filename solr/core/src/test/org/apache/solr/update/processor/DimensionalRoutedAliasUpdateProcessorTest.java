@@ -74,7 +74,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     //log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
-      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // logOk
+      log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
     }
   }
 

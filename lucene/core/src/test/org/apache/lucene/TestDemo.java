@@ -16,11 +16,9 @@
  */
 package org.apache.lucene;
 
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,13 +37,15 @@ import org.apache.lucene.util.LuceneTestCase;
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
  *
- * Please try to keep src/java/overview.html up-to-date when making changes
- * to this class.
+ * <p>Please try to keep src/java/overview.html up-to-date when making changes to this class.
  */
 public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException {
-    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String longTerm =
+        "longtermlongtermlongtermlongtermlongtermlongtermlongtermlong"
+            + "termlongtermlongtermlongtermlongtermlongtermlongtermlongterm"
+            + "longtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
 
     Path indexPath = Files.createTempDirectory("tempIndex");

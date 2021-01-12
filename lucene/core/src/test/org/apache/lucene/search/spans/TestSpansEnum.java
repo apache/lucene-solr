@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.search.spans;
 
+import static org.apache.lucene.search.spans.SpanTestUtil.*;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,12 +34,7 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static org.apache.lucene.search.spans.SpanTestUtil.*;
-
-/**
- * Tests Spans (v2)
- *
- */
+/** Tests Spans (v2) */
 public class TestSpansEnum extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
@@ -48,10 +43,14 @@ public class TestSpansEnum extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-            .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
-    //writer.infoStream = System.out;
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
+                .setMergePolicy(newLogMergePolicy()));
+    // writer.infoStream = System.out;
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
       doc.add(newTextField("field", English.intToEnglish(i), Field.Store.YES));
@@ -81,41 +80,46 @@ public class TestSpansEnum extends LuceneTestCase {
   }
 
   public void testSpansEnumOr1() throws Exception {
-    checkHits(spanOrQuery("field", "one", "two"), 
-              new int[] {1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    checkHits(
+        spanOrQuery("field", "one", "two"),
+        new int[] {1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
   }
 
   public void testSpansEnumOr2() throws Exception {
-    checkHits(spanOrQuery("field", "one", "eleven"), 
-              new int[] {1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    checkHits(
+        spanOrQuery("field", "one", "eleven"),
+        new int[] {1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
   }
 
   public void testSpansEnumOr3() throws Exception {
-    checkHits(spanOrQuery("field", "twelve", "eleven"), 
-              new int[] {});
+    checkHits(spanOrQuery("field", "twelve", "eleven"), new int[] {});
   }
-  
+
   public SpanQuery spanTQ(String s) {
     return spanTermQuery("field", s);
   }
 
   public void testSpansEnumOrNot1() throws Exception {
-    checkHits(spanNotQuery(spanOrQuery("field", "one", "two"), spanTermQuery("field", "one")),
-              new int[] {2,12});
+    checkHits(
+        spanNotQuery(spanOrQuery("field", "one", "two"), spanTermQuery("field", "one")),
+        new int[] {2, 12});
   }
 
   public void testSpansEnumNotBeforeAfter1() throws Exception {
-    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one")), 
-              new int[] {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}); // include all "one hundred ..."
+    checkHits(
+        spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one")),
+        new int[] {10, 11, 12, 13, 14, 15, 16, 17, 18, 19}); // include all "one hundred ..."
   }
 
   public void testSpansEnumNotBeforeAfter2() throws Exception {
-    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 1, 0),
-              new int[] {}); // exclude all "one hundred ..."
+    checkHits(
+        spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 1, 0),
+        new int[] {}); // exclude all "one hundred ..."
   }
 
   public void testSpansEnumNotBeforeAfter3() throws Exception {
-    checkHits(spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 0, 1),
-              new int[] {10, 12, 13, 14, 15, 16, 17, 18, 19}); // exclude "one hundred one"
+    checkHits(
+        spanNotQuery(spanTermQuery("field", "hundred"), spanTermQuery("field", "one"), 0, 1),
+        new int[] {10, 12, 13, 14, 15, 16, 17, 18, 19}); // exclude "one hundred one"
   }
 }

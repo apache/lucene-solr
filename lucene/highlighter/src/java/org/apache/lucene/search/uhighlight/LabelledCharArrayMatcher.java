@@ -21,20 +21,17 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 
 /**
- * Associates a label with a CharArrayMatcher to distinguish different sources for terms in highlighting
+ * Associates a label with a CharArrayMatcher to distinguish different sources for terms in
+ * highlighting
  *
  * @lucene.internal
  */
 public interface LabelledCharArrayMatcher extends CharArrayMatcher {
 
-  /**
-   * @return the label for this matcher
-   */
+  /** @return the label for this matcher */
   String getLabel();
 
-  /**
-   * Associates a label with a CharArrayMatcher
-   */
+  /** Associates a label with a CharArrayMatcher */
   static LabelledCharArrayMatcher wrap(String label, CharArrayMatcher in) {
     return new LabelledCharArrayMatcher() {
       @Override
@@ -49,40 +46,39 @@ public interface LabelledCharArrayMatcher extends CharArrayMatcher {
     };
   }
 
-  /**
-   * Returns a representation of the automaton that matches char[] instead of byte[]
-   */
+  /** Returns a representation of the automaton that matches char[] instead of byte[] */
   static LabelledCharArrayMatcher wrap(String label, ByteRunAutomaton runAutomaton) {
-      return wrap(label, (chars, offset, length) -> {
-        int state = 0;
-        final int maxIdx = offset + length;
-        for (int i = offset; i < maxIdx; i++) {
-          final int code = chars[i];
-          int b;
-          // UTF16 to UTF8   (inlined logic from UnicodeUtil.UTF16toUTF8 )
-          if (code < 0x80) {
-            state = runAutomaton.step(state, code);
-            if (state == -1) return false;
-          } else if (code < 0x800) {
-            b = (0xC0 | (code >> 6));
-            state = runAutomaton.step(state, b);
-            if (state == -1) return false;
-            b = (0x80 | (code & 0x3F));
-            state = runAutomaton.step(state, b);
-            if (state == -1) return false;
-          } else {
-            // more complex
-            byte[] utf8Bytes = new byte[4 * (maxIdx - i)];
-            int utf8Len = UnicodeUtil.UTF16toUTF8(chars, i, maxIdx - i, utf8Bytes);
-            for (int utfIdx = 0; utfIdx < utf8Len; utfIdx++) {
-              state = runAutomaton.step(state, utf8Bytes[utfIdx] & 0xFF);
+    return wrap(
+        label,
+        (chars, offset, length) -> {
+          int state = 0;
+          final int maxIdx = offset + length;
+          for (int i = offset; i < maxIdx; i++) {
+            final int code = chars[i];
+            int b;
+            // UTF16 to UTF8   (inlined logic from UnicodeUtil.UTF16toUTF8 )
+            if (code < 0x80) {
+              state = runAutomaton.step(state, code);
               if (state == -1) return false;
+            } else if (code < 0x800) {
+              b = (0xC0 | (code >> 6));
+              state = runAutomaton.step(state, b);
+              if (state == -1) return false;
+              b = (0x80 | (code & 0x3F));
+              state = runAutomaton.step(state, b);
+              if (state == -1) return false;
+            } else {
+              // more complex
+              byte[] utf8Bytes = new byte[4 * (maxIdx - i)];
+              int utf8Len = UnicodeUtil.UTF16toUTF8(chars, i, maxIdx - i, utf8Bytes);
+              for (int utfIdx = 0; utfIdx < utf8Len; utfIdx++) {
+                state = runAutomaton.step(state, utf8Bytes[utfIdx] & 0xFF);
+                if (state == -1) return false;
+              }
+              break;
             }
-            break;
           }
-        }
-        return runAutomaton.isAccept(state);
-      });
+          return runAutomaton.isAccept(state);
+        });
   }
-
 }

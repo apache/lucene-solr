@@ -17,33 +17,27 @@
 package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /** Provides per-document ordinals. */
-
 public abstract class OrdinalsReader {
 
   /** Returns ordinals for documents in one segment. */
-  public static abstract class OrdinalsSegmentReader {
-    /** Get the ordinals for this document.  ordinals.offset
-     *  must always be 0! */
+  public abstract static class OrdinalsSegmentReader {
+    /** Get the ordinals for this document. ordinals.offset must always be 0! */
     public abstract void get(int doc, IntsRef ordinals) throws IOException;
 
     /** Default constructor. */
-    public OrdinalsSegmentReader() {
-    }
+    public OrdinalsSegmentReader() {}
   }
 
   /** Default constructor. */
-  public OrdinalsReader() {
-  }
+  public OrdinalsReader() {}
 
   /** Set current atomic reader. */
   public abstract OrdinalsSegmentReader getReader(LeafReaderContext context) throws IOException;
 
-  /** Returns the indexed field name this {@code
-   *  OrdinalsReader} is reading from. */
+  /** Returns the indexed field name this {@code OrdinalsReader} is reading from. */
   public abstract String getIndexFieldName();
 }

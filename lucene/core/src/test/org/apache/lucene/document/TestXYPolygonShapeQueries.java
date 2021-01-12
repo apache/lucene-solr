@@ -18,12 +18,12 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYRectangle;
 
-/** random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random indexed {@link XYPolygon}
+ * types
+ */
 public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
@@ -32,23 +32,8 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
   }
 
   @Override
-  protected XYPolygon nextShape() {
-    XYPolygon p;
-    while (true) {
-      // if we can't tessellate; then random polygon generator created a malformed shape
-      p = (XYPolygon)getShapeType().nextShape();
-      try {
-        Tessellator.tessellate(p);
-        return p;
-      } catch (IllegalArgumentException e) {
-        continue;
-      }
-    }
-  }
-
-  @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return XYShape.createIndexableFields(field, (XYPolygon)polygon);
+    return XYShape.createIndexableFields(field, (XYPolygon) polygon);
   }
 
   @Override
@@ -62,16 +47,11 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object o) {
       XYPolygon polygon = (XYPolygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", polygon))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", polygon));
     }
@@ -82,5 +62,4 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
   public void testRandomBig() throws Exception {
     doTestRandom(25000);
   }
-
 }

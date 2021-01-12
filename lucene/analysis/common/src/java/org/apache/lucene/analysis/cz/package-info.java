@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Czech.
- */
+/** Analyzer for Czech. */
 package org.apache.lucene.analysis.cz;

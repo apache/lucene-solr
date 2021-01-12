@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Some utility classes.
- */
+/** Some utility classes. */
 package org.apache.lucene.util;

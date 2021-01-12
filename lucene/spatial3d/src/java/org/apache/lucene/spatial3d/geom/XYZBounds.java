@@ -23,15 +23,15 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class XYZBounds implements Bounds {
 
-  /** A 'fudge factor', which is added to maximums and subtracted from minimums,
-   * in order to compensate for potential error deltas.  This would not be necessary
-   * except that our 'bounds' is defined as always equaling or exceeding the boundary
-   * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
-   * unacceptably large.
-   * Also, see LUCENE-7290 for a description of how geometry can magnify the bounds delta.
+  /**
+   * A 'fudge factor', which is added to maximums and subtracted from minimums, in order to
+   * compensate for potential error deltas. This would not be necessary except that our 'bounds' is
+   * defined as always equaling or exceeding the boundary of the shape, and we cannot guarantee that
+   * without making MINIMUM_RESOLUTION unacceptably large. Also, see LUCENE-7290 for a description
+   * of how geometry can magnify the bounds delta.
    */
   private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 1e3;
-  
+
   /** Minimum x */
   private Double minX = null;
   /** Maximum x */
@@ -44,7 +44,7 @@ public class XYZBounds implements Bounds {
   private Double minZ = null;
   /** Maximum z */
   private Double maxZ = null;
-  
+
   /** Set to true if no longitude bounds can be stated */
   private boolean noLongitudeBound = false;
   /** Set to true if no top latitude bound can be stated */
@@ -53,144 +53,178 @@ public class XYZBounds implements Bounds {
   private boolean noBottomLatitudeBound = false;
 
   /** Construct an empty bounds object */
-  public XYZBounds() {
-  }
+  public XYZBounds() {}
 
   // Accessor methods
-  
-  /** Return the minimum X value.
-   *@return minimum X value.
+
+  /**
+   * Return the minimum X value.
+   *
+   * @return minimum X value.
    */
   public Double getMinimumX() {
     return minX;
   }
 
-  /** Return the maximum X value.
-   *@return maximum X value.
+  /**
+   * Return the maximum X value.
+   *
+   * @return maximum X value.
    */
   public Double getMaximumX() {
     return maxX;
   }
 
-  /** Return the minimum Y value.
-   *@return minimum Y value.
+  /**
+   * Return the minimum Y value.
+   *
+   * @return minimum Y value.
    */
   public Double getMinimumY() {
     return minY;
   }
 
-  /** Return the maximum Y value.
-   *@return maximum Y value.
+  /**
+   * Return the maximum Y value.
+   *
+   * @return maximum Y value.
    */
   public Double getMaximumY() {
     return maxY;
   }
-  
-  /** Return the minimum Z value.
-   *@return minimum Z value.
+
+  /**
+   * Return the minimum Z value.
+   *
+   * @return minimum Z value.
    */
   public Double getMinimumZ() {
     return minZ;
   }
 
-  /** Return the maximum Z value.
-   *@return maximum Z value.
+  /**
+   * Return the maximum Z value.
+   *
+   * @return maximum Z value.
    */
   public Double getMaximumZ() {
     return maxZ;
   }
 
-  /** Return true if minX is as small as the planet model allows.
-   *@return true if minX has reached its bound.
+  /**
+   * Return true if minX is as small as the planet model allows.
+   *
+   * @return true if minX has reached its bound.
    */
   public boolean isSmallestMinX(final PlanetModel planetModel) {
-    if (minX == null)
+    if (minX == null) {
       return false;
+    }
     return minX - planetModel.getMinimumXValue() < Vector.MINIMUM_RESOLUTION;
   }
-  
-  /** Return true if maxX is as large as the planet model allows.
-   *@return true if maxX has reached its bound.
+
+  /**
+   * Return true if maxX is as large as the planet model allows.
+   *
+   * @return true if maxX has reached its bound.
    */
   public boolean isLargestMaxX(final PlanetModel planetModel) {
-    if (maxX == null)
+    if (maxX == null) {
       return false;
+    }
     return planetModel.getMaximumXValue() - maxX < Vector.MINIMUM_RESOLUTION;
   }
 
-  /** Return true if minY is as small as the planet model allows.
-   *@return true if minY has reached its bound.
+  /**
+   * Return true if minY is as small as the planet model allows.
+   *
+   * @return true if minY has reached its bound.
    */
   public boolean isSmallestMinY(final PlanetModel planetModel) {
-    if (minY == null)
+    if (minY == null) {
       return false;
+    }
     return minY - planetModel.getMinimumYValue() < Vector.MINIMUM_RESOLUTION;
   }
-  
-  /** Return true if maxY is as large as the planet model allows.
-   *@return true if maxY has reached its bound.
+
+  /**
+   * Return true if maxY is as large as the planet model allows.
+   *
+   * @return true if maxY has reached its bound.
    */
   public boolean isLargestMaxY(final PlanetModel planetModel) {
-    if (maxY == null)
+    if (maxY == null) {
       return false;
+    }
     return planetModel.getMaximumYValue() - maxY < Vector.MINIMUM_RESOLUTION;
   }
-  
-  /** Return true if minZ is as small as the planet model allows.
-   *@return true if minZ has reached its bound.
+
+  /**
+   * Return true if minZ is as small as the planet model allows.
+   *
+   * @return true if minZ has reached its bound.
    */
   public boolean isSmallestMinZ(final PlanetModel planetModel) {
-    if (minZ == null)
+    if (minZ == null) {
       return false;
+    }
     return minZ - planetModel.getMinimumZValue() < Vector.MINIMUM_RESOLUTION;
   }
-  
-  /** Return true if maxZ is as large as the planet model allows.
-   *@return true if maxZ has reached its bound.
+
+  /**
+   * Return true if maxZ is as large as the planet model allows.
+   *
+   * @return true if maxZ has reached its bound.
    */
   public boolean isLargestMaxZ(final PlanetModel planetModel) {
-    if (maxZ == null)
+    if (maxZ == null) {
       return false;
+    }
     return planetModel.getMaximumZValue() - maxZ < Vector.MINIMUM_RESOLUTION;
   }
 
   // Modification methods
-  
+
   @Override
-  public Bounds addPlane(final PlanetModel planetModel, final Plane plane, final Membership... bounds) {
+  public Bounds addPlane(
+      final PlanetModel planetModel, final Plane plane, final Membership... bounds) {
     plane.recordBounds(planetModel, this, bounds);
     return this;
   }
 
-  /** Add a horizontal plane to the bounds description.
-   * This method should EITHER use the supplied latitude, OR use the supplied
-   * plane, depending on what is most efficient.
-   *@param planetModel is the planet model.
-   *@param latitude is the latitude.
-   *@param horizontalPlane is the plane.
-   *@param bounds are the constraints on the plane.
-   *@return updated Bounds object.
+  /**
+   * Add a horizontal plane to the bounds description. This method should EITHER use the supplied
+   * latitude, OR use the supplied plane, depending on what is most efficient.
+   *
+   * @param planetModel is the planet model.
+   * @param latitude is the latitude.
+   * @param horizontalPlane is the plane.
+   * @param bounds are the constraints on the plane.
+   * @return updated Bounds object.
    */
-  public Bounds addHorizontalPlane(final PlanetModel planetModel,
-    final double latitude,
-    final Plane horizontalPlane,
-    final Membership... bounds) {
+  public Bounds addHorizontalPlane(
+      final PlanetModel planetModel,
+      final double latitude,
+      final Plane horizontalPlane,
+      final Membership... bounds) {
     return addPlane(planetModel, horizontalPlane, bounds);
   }
-    
-  /** Add a vertical plane to the bounds description.
-   * This method should EITHER use the supplied longitude, OR use the supplied
-   * plane, depending on what is most efficient.
-   *@param planetModel is the planet model.
-   *@param longitude is the longitude.
-   *@param verticalPlane is the plane.
-   *@param bounds are the constraints on the plane.
-   *@return updated Bounds object.
+
+  /**
+   * Add a vertical plane to the bounds description. This method should EITHER use the supplied
+   * longitude, OR use the supplied plane, depending on what is most efficient.
+   *
+   * @param planetModel is the planet model.
+   * @param longitude is the longitude.
+   * @param verticalPlane is the plane.
+   * @param bounds are the constraints on the plane.
+   * @return updated Bounds object.
    */
-  public Bounds addVerticalPlane(final PlanetModel planetModel,
-    final double longitude,
-    final Plane verticalPlane,
-    final Membership... bounds) {
+  public Bounds addVerticalPlane(
+      final PlanetModel planetModel,
+      final double longitude,
+      final Plane verticalPlane,
+      final Membership... bounds) {
     return addPlane(planetModel, verticalPlane, bounds);
   }
 
@@ -198,8 +232,10 @@ public class XYZBounds implements Bounds {
   public Bounds addXValue(final GeoPoint point) {
     return addXValue(point.x);
   }
-  
-  /** Add a specific X value.
+
+  /**
+   * Add a specific X value.
+   *
    * @param x is the value to add.
    * @return the bounds object.
    */
@@ -219,8 +255,10 @@ public class XYZBounds implements Bounds {
   public Bounds addYValue(final GeoPoint point) {
     return addYValue(point.y);
   }
-  
-  /** Add a specific Y value.
+
+  /**
+   * Add a specific Y value.
+   *
    * @param y is the value to add.
    * @return the bounds object.
    */
@@ -240,8 +278,10 @@ public class XYZBounds implements Bounds {
   public Bounds addZValue(final GeoPoint point) {
     return addZValue(point.z);
   }
-  
-  /** Add a specific Z value.
+
+  /**
+   * Add a specific Z value.
+   *
    * @param z is the value to add.
    * @return the bounds object.
    */
@@ -258,7 +298,11 @@ public class XYZBounds implements Bounds {
   }
 
   @Override
-  public Bounds addIntersection(final PlanetModel planetModel, final Plane plane1, final Plane plane2, final Membership... bounds) {
+  public Bounds addIntersection(
+      final PlanetModel planetModel,
+      final Plane plane1,
+      final Plane plane2,
+      final Membership... bounds) {
     plane1.recordBounds(planetModel, this, plane2, bounds);
     return this;
   }
@@ -305,7 +349,18 @@ public class XYZBounds implements Bounds {
 
   @Override
   public String toString() {
-    return "XYZBounds: [xmin="+minX+" xmax="+maxX+" ymin="+minY+" ymax="+maxY+" zmin="+minZ+" zmax="+maxZ+"]";
+    return "XYZBounds: [xmin="
+        + minX
+        + " xmax="
+        + maxX
+        + " ymin="
+        + minY
+        + " ymax="
+        + maxY
+        + " zmin="
+        + minZ
+        + " zmax="
+        + maxZ
+        + "]";
   }
-  
 }

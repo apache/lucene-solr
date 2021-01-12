@@ -34,7 +34,7 @@ File:: Returns content of files in `${solr.home}/conf/`. This handler must have 
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/file` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
+|`solr/<collection>/admin/file` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[ShowFileRequestHandler] |`_ADMIN_FILE`
 |===
 
 Health:: Reporting the health of the node (_available only in SolrCloud mode_)
@@ -44,10 +44,10 @@ Health:: Reporting the health of the node (_available only in SolrCloud mode_)
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/health`
 
-v2: `api/node/health` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
+v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
 |===
 +
-This endpoint also accepts additional request parameters. Please see {solr-javadocs}/solr-core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
+This endpoint also accepts additional request parameters. Please see {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[Javadocs] for details.
 
 Logging:: Retrieve and modify registered loggers.
 +
@@ -56,7 +56,7 @@ Logging:: Retrieve and modify registered loggers.
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/logging`
 
-v2: `api/node/logging` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
+v2: `api/node/logging` |{solr-javadocs}/core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
 |===
 
 Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
@@ -66,18 +66,18 @@ Luke:: Expose the internal Lucene index. This handler must have a collection nam
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/luke` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
+|`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
 
 
-MBeans:: Provide info about all registered {solr-javadocs}/solr-core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans]. This handler must have a collection name in the path to the endpoint.
+MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans]. This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>>
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/mbeans` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/SolrInfoMBeanHandler.html[SolrInfoMBeanHandler] |`_ADMIN_MBEANS`
+|`solr/<collection>/admin/mbeans` |{solr-javadocs}/core/org/apache/solr/handler/admin/SolrInfoMBeanHandler.html[SolrInfoMBeanHandler] |`_ADMIN_MBEANS`
 |===
 
 Ping:: Health check. This handler must have a collection name in the path to the endpoint.
@@ -87,7 +87,7 @@ Ping:: Health check. This handler must have a collection name in the path to the
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/ping` |{solr-javadocs}/solr-core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
+|`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
 |===
 
 Plugins:: Return info about all registered plugins. This handler must have a collection name in the path to the endpoint.
@@ -95,7 +95,7 @@ Plugins:: Return info about all registered plugins. This handler must have a col
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/plugins` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/PluginInfoHandler.html[PluginInfoHandler] | None.
+|`solr/<collection>/admin/plugins` |{solr-javadocs}/core/org/apache/solr/handler/admin/PluginInfoHandler.html[PluginInfoHandler] | None.
 |===
 
 System Properties:: Return JRE system properties.
@@ -105,7 +105,7 @@ System Properties:: Return JRE system properties.
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/properties`
 
-v2: `api/node/properties` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler] |`_ADMIN_PROPERTIES`
+v2: `api/node/properties` |{solr-javadocs}/core/org/apache/solr/handler/admin/PropertiesRequestHandler.html[PropertiesRequestHandler] |`_ADMIN_PROPERTIES`
 |===
 
 Segments:: Return info on last commit generation Lucene index segments.
@@ -113,7 +113,7 @@ Segments:: Return info on last commit generation Lucene index segments.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/segments` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
+|`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
 System Settings:: Return server statistics and settings.
@@ -123,7 +123,7 @@ System Settings:: Return server statistics and settings.
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/system`
 
-v2: `api/node/system` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/SystemInfoHandler.html[SystemInfoHandler] |`_ADMIN_SYSTEM`
+v2: `api/node/system` |{solr-javadocs}/core/org/apache/solr/handler/admin/SystemInfoHandler.html[SystemInfoHandler] |`_ADMIN_SYSTEM`
 |===
 +
 This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/system` or `solr/<core>/admin/system`) which will include all of the system-level information and additional information about the specific core that served the request.
@@ -135,7 +135,7 @@ Threads:: Return info on all JVM threads.
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/threads`
 
-v2: `api/node/threads` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
+v2: `api/node/threads` |{solr-javadocs}/core/org/apache/solr/handler/admin/ThreadDumpHandler.html[ThreadDumpHandler] |`_ADMIN_THREADS`
 |===
 
 === Analysis Handlers
@@ -148,7 +148,7 @@ Document Analysis:: Return a breakdown of the analysis process of the given docu
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/analysis/document` |{solr-javadocs}/solr-core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
+|`solr/<collection>/analysis/document` |{solr-javadocs}/core/org/apache/solr/handler/DocumentAnalysisRequestHandler.html[DocumentAnalysisRequestHandler] |`_ANALYSIS_DOCUMENT`
 |===
 
 Field Analysis:: Return index- and query-time analysis over the given field(s)/field type(s). This handler drives the <<analysis-screen.adoc#analysis-screen,Analysis screen>> in Solr's Admin UI.
@@ -156,7 +156,7 @@ Field Analysis:: Return index- and query-time analysis over the given field(s)/f
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/analysis/field` |{solr-javadocs}/solr-core/org/apache/solr/handler/FieldAnalysisRequestHandler.html[FieldAnalysisRequestHandler] |`_ANALYSIS_FIELD`
+|`solr/<collection>/analysis/field` |{solr-javadocs}/core/org/apache/solr/handler/FieldAnalysisRequestHandler.html[FieldAnalysisRequestHandler] |`_ANALYSIS_FIELD`
 |===
 
 === Handlers for Configuration
@@ -171,7 +171,7 @@ Config API:: Retrieve and modify Solr configuration.
 |API Endpoint |Class & Javadocs |Paramset
 |v1: `solr/<collection>/config`
 
-v2: `api/collections/<collection>/config` |{solr-javadocs}/solr-core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG`
+v2: `api/collections/<collection>/config` |{solr-javadocs}/core/org/apache/solr/handler/SolrConfigHandler.html[SolrConfigHandler] |`_CONFIG`
 |===
 
 Dump:: Echo the request contents back to the client.
@@ -179,7 +179,7 @@ Dump:: Echo the request contents back to the client.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/debug/dump` |{solr-javadocs}/solr-core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
+|`solr/debug/dump` |{solr-javadocs}/core/org/apache/solr/handler/DumpRequestHandler.html[DumpRequestHandler] |`_DEBUG_DUMP`
 |===
 
 Replication:: Replicate indexes for SolrCloud recovery and Leader/Follower index distribution. This handler must have a core name in the path to the endpoint.
@@ -187,7 +187,7 @@ Replication:: Replicate indexes for SolrCloud recovery and Leader/Follower index
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<core>/replication` |{solr-javadocs}/solr-core/org/apache/solr/handler/ReplicationHandler.html[ReplicationHandler] |`_REPLICATION`
+|`solr/<core>/replication` |{solr-javadocs}/core/org/apache/solr/handler/ReplicationHandler.html[ReplicationHandler] |`_REPLICATION`
 |===
 
 Schema API:: Retrieve and modify the Solr schema.
@@ -199,7 +199,7 @@ Schema API:: Retrieve and modify the Solr schema.
 |API Endpoint |Class & Javadocs |Paramset
 |v1: `solr/<collection>/schema`, `solr/<core>/schema`
 
-v2: `api/collections/<collection>/schema`, `api/cores/<core>/schema` |{solr-javadocs}/solr-core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA`
+v2: `api/collections/<collection>/schema`, `api/cores/<core>/schema` |{solr-javadocs}/core/org/apache/solr/handler/SchemaHandler.html[SchemaHandler] |`_SCHEMA`
 |===
 
 === Query Handlers
@@ -212,7 +212,7 @@ Export:: Export full sorted result sets.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/export` |{solr-javadocs}/solr-core/org/apache/solr/handler/ExportHandler.html[ExportHandler] |`_EXPORT`
+|`solr/<collection>/export` |{solr-javadocs}/core/org/apache/solr/handler/ExportHandler.html[ExportHandler] |`_EXPORT`
 |===
 
 RealTimeGet:: Low-latency retrieval of the latest version of a document.
@@ -222,7 +222,7 @@ RealTimeGet:: Low-latency retrieval of the latest version of a document.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/get` |{solr-javadocs}/solr-core/org/apache/solr/handler/RealTimeGetHandler.html[RealTimeGetHandler] |`_GET`
+|`solr/<collection>/get` |{solr-javadocs}/core/org/apache/solr/handler/RealTimeGetHandler.html[RealTimeGetHandler] |`_GET`
 |===
 
 Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted output from a `gatherNodes` streaming expression.
@@ -232,7 +232,7 @@ Graph Traversal:: Return http://graphml.graphdrawing.org/[GraphML] formatted out
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/graph` |{solr-javadocs}/solr-core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
+|`solr/<collection>/graph` |{solr-javadocs}/core/org/apache/solr/handler/GraphHandler.html[GraphHandler] |`_ADMIN_GRAPH`
 |===
 
 SQL:: Front end of the Parallel SQL interface.
@@ -242,7 +242,7 @@ SQL:: Front end of the Parallel SQL interface.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/sql` |{solr-javadocs}/solr-core/org/apache/solr/handler/SQLHandler.html[SQLHandler] |`_SQL`
+|`solr/<collection>/sql` |{solr-javadocs}/core/org/apache/solr/handler/SQLHandler.html[SQLHandler] |`_SQL`
 |===
 
 Streaming Expressions:: Distributed stream processing.
@@ -252,7 +252,7 @@ Streaming Expressions:: Distributed stream processing.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/stream` |{solr-javadocs}/solr-core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM`
+|`solr/<collection>/stream` |{solr-javadocs}/core/org/apache/solr/handler/StreamHandler.html[StreamHandler] |`_STREAM`
 |===
 
 Terms:: Return a field's indexed terms and the number of documents containing each term.
@@ -262,7 +262,7 @@ Terms:: Return a field's indexed terms and the number of documents containing ea
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/terms` |{solr-javadocs}/solr-core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS`
+|`solr/<collection>/terms` |{solr-javadocs}/core/org/apache/solr/handler/component/SearchHandler.html[SearchHandler] |`_TERMS`
 |===
 
 === Update Handlers
@@ -275,7 +275,7 @@ Update:: Add, delete and update indexed documents formatted as SolrXML, CSV, Sol
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update` |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE`
+|`solr/<collection>/update` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE`
 |===
 
 CSV Updates:: Add and update CSV-formatted documents.
@@ -285,7 +285,7 @@ CSV Updates:: Add and update CSV-formatted documents.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/csv` |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV`
+|`solr/<collection>/update/csv` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_CSV`
 |===
 
 JSON Updates:: Add, delete and update SolrJSON-formatted documents.
@@ -295,7 +295,7 @@ JSON Updates:: Add, delete and update SolrJSON-formatted documents.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/json` |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON`
+|`solr/<collection>/update/json` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON`
 |===
 
 Custom JSON Updates:: Add and update custom JSON-formatted documents.
@@ -305,7 +305,7 @@ Custom JSON Updates:: Add and update custom JSON-formatted documents.
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/update/json/docs` |{solr-javadocs}/solr-core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS`
+|`solr/<collection>/update/json/docs` |{solr-javadocs}/core/org/apache/solr/handler/UpdateRequestHandler.html[UpdateRequestHandler] |`_UPDATE_JSON_DOCS`
 |===
 
 == How to View Implicit Handler Paramsets

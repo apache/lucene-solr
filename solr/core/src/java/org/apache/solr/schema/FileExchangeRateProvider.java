@@ -29,7 +29,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.SafeXMLParsing;
 import org.slf4j.Logger;

@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
@@ -46,7 +47,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.Filter;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -78,6 +78,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.MetricRegistry;
+
+import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
@@ -117,7 +119,8 @@ public class MiniSolrCloudCluster {
       "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
       "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
       "  </solrcloud>\n" +
-      "  <metrics>\n" +
+      // NOTE: this turns off the metrics collection unless overriden by a sysprop
+      "  <metrics enabled=\"${metricsEnabled:false}\">\n" +
       "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n" +
       "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n" +
       "    </reporter>\n" +
@@ -294,10 +297,7 @@ public class MiniSolrCloudCluster {
         zkClient.makePath("/solr/security.json", securityJson.get().getBytes(Charset.defaultCharset()), true);
       }
     }
-
-    // tell solr to look in zookeeper for solr.xml
-    System.setProperty("zkHost", zkServer.getZkAddress());
-
+    
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
       startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
@@ -465,12 +465,16 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner(String name, String hostContext, JettyConfig config) throws Exception {
+    // tell solr node to look in zookeeper for solr.xml
+    final Properties nodeProps = new Properties();
+    nodeProps.setProperty("zkHost", zkServer.getZkAddress());
+
     Path runnerPath = createInstancePath(name);
     String context = getHostContextSuitableForServletContext(hostContext);
     JettyConfig newConfig = JettyConfig.builder(config).setContext(context).build();
     JettySolrRunner jetty = !trackJettyMetrics 
-        ? new JettySolrRunner(runnerPath.toString(), newConfig)
-         :new JettySolrRunnerWithMetrics(runnerPath.toString(), newConfig);
+      ? new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig)
+      : new JettySolrRunnerWithMetrics(runnerPath.toString(), nodeProps, newConfig);
     jetty.start();
     jettys.add(jetty);
     return jetty;
@@ -587,7 +591,7 @@ public class MiniSolrCloudCluster {
 
   }
   
-  public void deleteAllConfigSets() throws SolrServerException, IOException {
+  public void deleteAllConfigSets() throws Exception {
 
     List<String> configSetNames = new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
 
@@ -595,6 +599,10 @@ public class MiniSolrCloudCluster {
       if (configSet.equals("_default")) {
         continue;
       }
+      try {
+        // cleanup any property before removing the configset
+        getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1, true);
+      } catch (KeeperException.NoNodeException nne) { }
       new ConfigSetAdminRequest.Delete()
           .setConfigSetName(configSet)
           .process(solrClient);
@@ -621,12 +629,8 @@ public class MiniSolrCloudCluster {
         throw shutdownError;
       }
     } finally {
-      try {
-        if (!externalZkServer) {
-          zkServer.shutdown();
-        }
-      } finally {
-        System.clearProperty("zkHost");
+      if (!externalZkServer) {
+        zkServer.shutdown();
       }
     }
   }
@@ -820,8 +824,8 @@ public class MiniSolrCloudCluster {
   
   /** @lucene.experimental */
   public static final class JettySolrRunnerWithMetrics extends JettySolrRunner {
-    public JettySolrRunnerWithMetrics(String solrHome, JettyConfig config) {
-      super(solrHome, config);
+    public JettySolrRunnerWithMetrics(String solrHome, Properties nodeProps, JettyConfig config) {
+      super(solrHome, nodeProps, config);
     }
 
     private volatile MetricRegistry metricRegistry;
