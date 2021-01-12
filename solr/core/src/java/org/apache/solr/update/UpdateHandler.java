@@ -21,9 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Vector;
 
 import org.apache.solr.core.*;
-import org.apache.solr.core.PluginBag.PluginHolder;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
