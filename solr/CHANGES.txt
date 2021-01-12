@@ -330,6 +330,9 @@ Bug Fixes
 
 * SOLR-15070: Suggester requests made with SolrJ can now use XMLResponseParser (Jason Gerlowski)
 
+* SOLR-15071: Fix ArrayIndexOutOfBoundsException in contrib/ltr SolrFeatureScorer.
+  (Florin Babes, Ovidiu Mihalcea, David Smiley, Christine Poerschke)
+
 Other Changes
 ---------------------
 
