@@ -19,7 +19,7 @@ package org.apache.lucene.search.similarities;
 import java.util.Random;
 
 public class TestIndriDirichletSimilarity extends BaseSimilarityTestCase {
-  
+
   @Override
   protected Similarity getSimilarity(Random random) {
     // smoothing parameter mu, unbounded
@@ -46,5 +46,4 @@ public class TestIndriDirichletSimilarity extends BaseSimilarityTestCase {
     }
     return new IndriDirichletSimilarity(mu);
   }
-  
 }
