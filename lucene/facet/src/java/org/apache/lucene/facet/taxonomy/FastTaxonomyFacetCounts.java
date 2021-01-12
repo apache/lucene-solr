@@ -19,9 +19,8 @@ package org.apache.lucene.facet.taxonomy;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.IndexReader;
@@ -32,48 +31,53 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-/** Computes facets counts, assuming the default encoding
- *  into DocValues was used.
+/**
+ * Computes facets counts, assuming the default encoding into DocValues was used.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
 
-  /** Create {@code FastTaxonomyFacetCounts}, which also
-   *  counts all facet labels. */
-  public FastTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+  /** Create {@code FastTaxonomyFacetCounts}, which also counts all facet labels. */
+  public FastTaxonomyFacetCounts(TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc)
+      throws IOException {
     this(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, taxoReader, config, fc);
   }
 
-  /** Create {@code FastTaxonomyFacetCounts}, using the
-   *  specified {@code indexFieldName} for ordinals.  Use
-   *  this if you had set {@link
-   *  FacetsConfig#setIndexFieldName} to change the index
-   *  field name for certain dimensions. */
-  public FastTaxonomyFacetCounts(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+  /**
+   * Create {@code FastTaxonomyFacetCounts}, using the specified {@code indexFieldName} for
+   * ordinals. Use this if you had set {@link FacetsConfig#setIndexFieldName} to change the index
+   * field name for certain dimensions.
+   */
+  public FastTaxonomyFacetCounts(
+      String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc)
+      throws IOException {
     super(indexFieldName, taxoReader, config, fc);
     count(fc.getMatchingDocs());
   }
 
-  /** Create {@code FastTaxonomyFacetCounts}, using the
-   *  specified {@code indexFieldName} for ordinals, and
-   *  counting all non-deleted documents in the index.  This is 
-   *  the same result as searching on {@link MatchAllDocsQuery},
-   *  but faster */
-  public FastTaxonomyFacetCounts(String indexFieldName, IndexReader reader, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
+  /**
+   * Create {@code FastTaxonomyFacetCounts}, using the specified {@code indexFieldName} for
+   * ordinals, and counting all non-deleted documents in the index. This is the same result as
+   * searching on {@link MatchAllDocsQuery}, but faster
+   */
+  public FastTaxonomyFacetCounts(
+      String indexFieldName, IndexReader reader, TaxonomyReader taxoReader, FacetsConfig config)
+      throws IOException {
     super(indexFieldName, taxoReader, config, null);
     countAll(reader);
   }
 
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
-    for(MatchingDocs hits : matchingDocs) {
+    for (MatchingDocs hits : matchingDocs) {
       BinaryDocValues dv = hits.context.reader().getBinaryDocValues(indexFieldName);
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;
       }
 
-      DocIdSetIterator it = ConjunctionDISI.intersectIterators(Arrays.asList(
-          hits.bits.iterator(), dv));
-      
+      DocIdSetIterator it =
+          ConjunctionDISI.intersectIterators(Arrays.asList(hits.bits.iterator(), dv));
+
       for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
         final BytesRef bytesRef = dv.binaryValue();
         byte[] bytes = bytesRef.bytes;
@@ -98,7 +102,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
   }
 
   private final void countAll(IndexReader reader) throws IOException {
-    for(LeafReaderContext context : reader.leaves()) {
+    for (LeafReaderContext context : reader.leaves()) {
       BinaryDocValues dv = context.reader().getBinaryDocValues(indexFieldName);
       if (dv == null) { // this reader does not have DocValues for the requested category list
         continue;

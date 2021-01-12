@@ -16,25 +16,22 @@
  */
 package org.apache.lucene.util;
 
-import java.util.stream.Collectors;
-
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
-/**
- * @see TestRuleLimitSysouts
- */
+/** @see TestRuleLimitSysouts */
 public class TestSysoutsLimits extends WithNestedTests {
   public TestSysoutsLimits() {
     super(false);
   }
 
   public static class ParentNestedTest extends LuceneTestCase
-    implements TestRuleIgnoreTestSuites.NestedTestSuite {
+      implements TestRuleIgnoreTestSuites.NestedTestSuite {
     @BeforeClass
     public static void onlyWhenNested() {
       assumeTrue("Only runs when nested", TestRuleIgnoreTestSuites.isRunningNested());
@@ -53,9 +50,10 @@ public class TestSysoutsLimits extends WithNestedTests {
     JUnitCore core = new JUnitCore();
     Result result = core.run(OverSoftLimit.class);
 
-    String msg = result.getFailures().stream()
-        .map(failure -> failure.getMessage())
-        .collect(Collectors.joining("\n"));
+    String msg =
+        result.getFailures().stream()
+            .map(failure -> failure.getMessage())
+            .collect(Collectors.joining("\n"));
 
     Assert.assertTrue(msg, msg.contains("The test or suite printed 10 bytes"));
   }
@@ -72,9 +70,10 @@ public class TestSysoutsLimits extends WithNestedTests {
     JUnitCore core = new JUnitCore();
     Result result = core.run(UnderLimit.class);
 
-    String msg = result.getFailures().stream()
-        .map(failure -> failure.getMessage())
-        .collect(Collectors.joining("\n"));
+    String msg =
+        result.getFailures().stream()
+            .map(failure -> failure.getMessage())
+            .collect(Collectors.joining("\n"));
 
     Assert.assertTrue(msg, msg.isEmpty());
   }
@@ -84,9 +83,12 @@ public class TestSysoutsLimits extends WithNestedTests {
     public void testWrite() {
       System.out.print("1234567890");
       System.out.print("-marker1-");
-      System.out.print("-marker2-"); System.out.flush();
-      System.out.print("-marker3-"); System.out.flush();
-      System.out.print("-marker4-"); System.out.flush();
+      System.out.print("-marker2-");
+      System.out.flush();
+      System.out.print("-marker3-");
+      System.out.flush();
+      System.out.print("-marker4-");
+      System.out.flush();
     }
   }
 
@@ -95,9 +97,10 @@ public class TestSysoutsLimits extends WithNestedTests {
     JUnitCore core = new JUnitCore();
     Result result = core.run(OverHardLimit.class);
 
-    String msg = result.getFailures().stream()
-        .map(failure -> failure.getMessage())
-        .collect(Collectors.joining("\n"));
+    String msg =
+        result.getFailures().stream()
+            .map(failure -> failure.getMessage())
+            .collect(Collectors.joining("\n"));
 
     Assert.assertTrue(msg, msg.contains("Hard limit was enforced"));
     Assert.assertTrue(msg, msg.contains("The test or suite printed 46 bytes"));

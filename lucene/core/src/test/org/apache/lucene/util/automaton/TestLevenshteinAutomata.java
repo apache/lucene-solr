@@ -16,42 +16,41 @@
  */
 package org.apache.lucene.util.automaton;
 
+import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZED_STATES;
-
 public class TestLevenshteinAutomata extends LuceneTestCase {
- 
+
   public void testLev0() throws Exception {
     assertLev("", 0);
     assertCharVectors(0);
   }
-  
+
   public void testLev1() throws Exception {
     assertLev("", 1);
     assertCharVectors(1);
   }
-  
+
   public void testLev2() throws Exception {
     assertLev("", 2);
     assertCharVectors(2);
   }
-  
+
   // LUCENE-3094
   public void testNoWastedStates() throws Exception {
-    assertFalse(Operations.hasDeadStatesFromInitial(new LevenshteinAutomata("abc", false).toAutomaton(1)));
+    assertFalse(
+        Operations.hasDeadStatesFromInitial(new LevenshteinAutomata("abc", false).toAutomaton(1)));
   }
-  
-  /** 
-   * Tests all possible characteristic vectors for some n
-   * This exhaustively tests the parametric transitions tables.
+
+  /**
+   * Tests all possible characteristic vectors for some n This exhaustively tests the parametric
+   * transitions tables.
    */
   private void assertCharVectors(int n) {
-    int k = 2*n + 1;
+    int k = 2 * n + 1;
     // use k + 2 as the exponent: the formula generates different transitions
     // for w, w-1, w-2
     int limit = (int) Math.pow(2, k + 2);
@@ -61,10 +60,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     }
   }
 
-  /**
-   * Builds a DFA for some string, and checks all Lev automata
-   * up to some maximum distance.
-   */
+  /** Builds a DFA for some string, and checks all Lev automata up to some maximum distance. */
   private void assertLev(String s, int maxDistance) {
     LevenshteinAutomata builder = new LevenshteinAutomata(s, false);
     LevenshteinAutomata tbuilder = new LevenshteinAutomata(s, true);
@@ -83,30 +79,45 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       assertFalse(Operations.hasDeadStatesFromInitial(tautomata[n]));
       // check that the dfa for n-1 accepts a subset of the dfa for n
       if (n > 0) {
-        assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n-1]),
-                                       Operations.removeDeadStates(automata[n])));
-        assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n-1]),
-                                       Operations.removeDeadStates(tautomata[n])));
-        assertTrue(Operations.subsetOf(Operations.removeDeadStates(tautomata[n-1]),
-                                       Operations.removeDeadStates(automata[n])));
-        assertTrue(Operations.subsetOf(Operations.removeDeadStates(tautomata[n-1]),
-                                       Operations.removeDeadStates(tautomata[n])));
-        assertNotSame(automata[n-1], automata[n]);
+        assertTrue(
+            Operations.subsetOf(
+                Operations.removeDeadStates(automata[n - 1]),
+                Operations.removeDeadStates(automata[n])));
+        assertTrue(
+            Operations.subsetOf(
+                Operations.removeDeadStates(automata[n - 1]),
+                Operations.removeDeadStates(tautomata[n])));
+        assertTrue(
+            Operations.subsetOf(
+                Operations.removeDeadStates(tautomata[n - 1]),
+                Operations.removeDeadStates(automata[n])));
+        assertTrue(
+            Operations.subsetOf(
+                Operations.removeDeadStates(tautomata[n - 1]),
+                Operations.removeDeadStates(tautomata[n])));
+        assertNotSame(automata[n - 1], automata[n]);
       }
       // check that Lev(N) is a subset of LevT(N)
-      assertTrue(Operations.subsetOf(Operations.removeDeadStates(automata[n]),
-                                     Operations.removeDeadStates(tautomata[n])));
+      assertTrue(
+          Operations.subsetOf(
+              Operations.removeDeadStates(automata[n]), Operations.removeDeadStates(tautomata[n])));
       // special checks for specific n
-      switch(n) {
+      switch (n) {
         case 0:
           // easy, matches the string itself
-          assertTrue(Operations.sameLanguage(Automata.makeString(s), Operations.removeDeadStates(automata[0])));
-          assertTrue(Operations.sameLanguage(Automata.makeString(s), Operations.removeDeadStates(tautomata[0])));
+          assertTrue(
+              Operations.sameLanguage(
+                  Automata.makeString(s), Operations.removeDeadStates(automata[0])));
+          assertTrue(
+              Operations.sameLanguage(
+                  Automata.makeString(s), Operations.removeDeadStates(tautomata[0])));
           break;
         case 1:
           // generate a lev1 naively, and check the accepted lang is the same.
-          assertTrue(Operations.sameLanguage(naiveLev1(s), Operations.removeDeadStates(automata[1])));
-          assertTrue(Operations.sameLanguage(naiveLev1T(s), Operations.removeDeadStates(tautomata[1])));
+          assertTrue(
+              Operations.sameLanguage(naiveLev1(s), Operations.removeDeadStates(automata[1])));
+          assertTrue(
+              Operations.sameLanguage(naiveLev1T(s), Operations.removeDeadStates(tautomata[1])));
           break;
         default:
           assertBruteForce(s, automata[n], n);
@@ -115,10 +126,9 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       }
     }
   }
-  
+
   /**
-   * Return an automaton that accepts all 1-character insertions, deletions, and
-   * substitutions of s.
+   * Return an automaton that accepts all 1-character insertions, deletions, and substitutions of s.
    */
   private Automaton naiveLev1(String s) {
     Automaton a = Automata.makeString(s);
@@ -128,13 +138,13 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     a = Operations.union(a, substitutionsOf(s));
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
-    
+
     return a;
   }
-  
+
   /**
-   * Return an automaton that accepts all 1-character insertions, deletions,
-   * substitutions, and transpositions of s.
+   * Return an automaton that accepts all 1-character insertions, deletions, substitutions, and
+   * transpositions of s.
    */
   private Automaton naiveLev1T(String s) {
     Automaton a = naiveLev1(s);
@@ -142,78 +152,70 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
-  
-  /**
-   * Return an automaton that accepts all 1-character insertions of s (inserting
-   * one character)
-   */
+
+  /** Return an automaton that accepts all 1-character insertions of s (inserting one character) */
   private Automaton insertionsOf(String s) {
     List<Automaton> list = new ArrayList<>();
-    
+
     for (int i = 0; i <= s.length(); i++) {
       Automaton a = Automata.makeString(s.substring(0, i));
       a = Operations.concatenate(a, Automata.makeAnyChar());
       a = Operations.concatenate(a, Automata.makeString(s.substring(i)));
       list.add(a);
     }
-    
+
     Automaton a = Operations.union(list);
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
-  
-  /**
-   * Return an automaton that accepts all 1-character deletions of s (deleting
-   * one character).
-   */
+
+  /** Return an automaton that accepts all 1-character deletions of s (deleting one character). */
   private Automaton deletionsOf(String s) {
     List<Automaton> list = new ArrayList<>();
-    
+
     for (int i = 0; i < s.length(); i++) {
       Automaton a = Automata.makeString(s.substring(0, i));
       a = Operations.concatenate(a, Automata.makeString(s.substring(i + 1)));
       list.add(a);
     }
-    
+
     Automaton a = Operations.union(list);
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
-  
+
   /**
-   * Return an automaton that accepts all 1-character substitutions of s
-   * (replacing one character)
+   * Return an automaton that accepts all 1-character substitutions of s (replacing one character)
    */
   private Automaton substitutionsOf(String s) {
     List<Automaton> list = new ArrayList<>();
-    
+
     for (int i = 0; i < s.length(); i++) {
       Automaton a = Automata.makeString(s.substring(0, i));
       a = Operations.concatenate(a, Automata.makeAnyChar());
       a = Operations.concatenate(a, Automata.makeString(s.substring(i + 1)));
       list.add(a);
     }
-    
+
     Automaton a = Operations.union(list);
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
-  
+
   /**
-   * Return an automaton that accepts all transpositions of s
-   * (transposing two adjacent characters)
+   * Return an automaton that accepts all transpositions of s (transposing two adjacent characters)
    */
   private Automaton transpositionsOf(String s) {
     if (s.length() < 2) {
       return Automata.makeEmpty();
     }
     List<Automaton> list = new ArrayList<>();
-    for (int i = 0; i < s.length()-1; i++) {
+    for (int i = 0; i < s.length() - 1; i++) {
       StringBuilder sb = new StringBuilder();
       sb.append(s.substring(0, i));
-      sb.append(s.charAt(i+1));
+      sb.append(s.charAt(i + 1));
       sb.append(s.charAt(i));
-      sb.append(s.substring(i+2, s.length()));
+      sb.append(s.substring(i + 2, s.length()));
       String st = sb.toString();
       if (!st.equals(s)) {
         list.add(Automata.makeString(st));
@@ -223,7 +225,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
     a = MinimizationOperations.minimize(a, DEFAULT_MAX_DETERMINIZED_STATES);
     return a;
   }
-  
+
   private void assertBruteForce(String input, Automaton dfa, int distance) {
     CharacterRunAutomaton ra = new CharacterRunAutomaton(dfa);
     int maxLen = input.length() + distance + 1;
@@ -238,7 +240,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       }
     }
   }
-  
+
   private void assertBruteForceT(String input, Automaton dfa, int distance) {
     CharacterRunAutomaton ra = new CharacterRunAutomaton(dfa);
     int maxLen = input.length() + distance + 1;
@@ -253,101 +255,48 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       }
     }
   }
-  
-  //*****************************
-  // Compute Levenshtein distance: see org.apache.commons.lang.StringUtils#getLevenshteinDistance(String, String)
-  //*****************************
-  private int getDistance (String target, String other) {
+
+  // *****************************
+  // Compute Levenshtein distance: see
+  // org.apache.commons.lang.StringUtils#getLevenshteinDistance(String, String)
+  // *****************************
+  private int getDistance(String target, String other) {
     char[] sa;
     int n;
-    int p[]; //'previous' cost array, horizontally
+    int p[]; // 'previous' cost array, horizontally
     int d[]; // cost array, horizontally
-    int _d[]; //placeholder to assist in swapping p and d
-    
-      /*
-         The difference between this impl. and the previous is that, rather
-         than creating and retaining a matrix of size s.length()+1 by t.length()+1,
-         we maintain two single-dimensional arrays of length s.length()+1.  The first, d,
-         is the 'current working' distance array that maintains the newest distance cost
-         counts as we iterate through the characters of String s.  Each time we increment
-         the index of String t we are comparing, d is copied to p, the second int[].  Doing so
-         allows us to retain the previous cost counts as required by the algorithm (taking
-         the minimum of the cost count to the left, up one, and diagonally up and to the left
-         of the current cost count being calculated).  (Note that the arrays aren't really
-         copied anymore, just switched...this is clearly much better than cloning an array
-         or doing a System.arraycopy() each time  through the outer loop.)
+    int _d[]; // placeholder to assist in swapping p and d
 
-         Effectively, the difference between the two implementations is this one does not
-         cause an out of memory condition when calculating the LD over two very large strings.
-       */
+    /*
+      The difference between this impl. and the previous is that, rather
+      than creating and retaining a matrix of size s.length()+1 by t.length()+1,
+      we maintain two single-dimensional arrays of length s.length()+1.  The first, d,
+      is the 'current working' distance array that maintains the newest distance cost
+      counts as we iterate through the characters of String s.  Each time we increment
+      the index of String t we are comparing, d is copied to p, the second int[].  Doing so
+      allows us to retain the previous cost counts as required by the algorithm (taking
+      the minimum of the cost count to the left, up one, and diagonally up and to the left
+      of the current cost count being calculated).  (Note that the arrays aren't really
+      copied anymore, just switched...this is clearly much better than cloning an array
+      or doing a System.arraycopy() each time  through the outer loop.)
 
-      sa = target.toCharArray();
-      n = sa.length;
-      p = new int[n+1]; 
-      d = new int[n+1]; 
-    
-      final int m = other.length();
-      if (n == 0 || m == 0) {
-        if (n == m) {
-          return 0;
-        }
-        else {
-          return Math.max(n, m);
-        }
-      } 
-
-
-      // indexes into strings s and t
-      int i; // iterates through s
-      int j; // iterates through t
-
-      char t_j; // jth character of t
-
-      int cost; // cost
-
-      for (i = 0; i<=n; i++) {
-          p[i] = i;
-      }
-
-      for (j = 1; j<=m; j++) {
-          t_j = other.charAt(j-1);
-          d[0] = j;
-
-          for (i=1; i<=n; i++) {
-              cost = sa[i-1]==t_j ? 0 : 1;
-              // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
-              d[i] = Math.min(Math.min(d[i-1]+1, p[i]+1),  p[i-1]+cost);
-          }
-
-          // copy current distance counts to 'previous row' distance counts
-          _d = p;
-          p = d;
-          d = _d;
-      }
-
-      // our last action in the above loop was to switch d and p, so p now
-      // actually has the most recent cost counts
-      return Math.abs(p[n]);
-  }
-  
-  private int getTDistance(String target, String other) {
-    char[] sa;
-    int n;
-    int d[][]; // cost array
+      Effectively, the difference between the two implementations is this one does not
+      cause an out of memory condition when calculating the LD over two very large strings.
+    */
 
     sa = target.toCharArray();
     n = sa.length;
+    p = new int[n + 1];
+    d = new int[n + 1];
+
     final int m = other.length();
-    d = new int[n+1][m+1];
-    
     if (n == 0 || m == 0) {
       if (n == m) {
         return 0;
-      }
-      else {
+      } else {
         return Math.max(n, m);
       }
-    } 
+    }
 
     // indexes into strings s and t
     int i; // iterates through s
@@ -357,30 +306,84 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
 
     int cost; // cost
 
-    for (i = 0; i<=n; i++) {
+    for (i = 0; i <= n; i++) {
+      p[i] = i;
+    }
+
+    for (j = 1; j <= m; j++) {
+      t_j = other.charAt(j - 1);
+      d[0] = j;
+
+      for (i = 1; i <= n; i++) {
+        cost = sa[i - 1] == t_j ? 0 : 1;
+        // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
+        d[i] = Math.min(Math.min(d[i - 1] + 1, p[i] + 1), p[i - 1] + cost);
+      }
+
+      // copy current distance counts to 'previous row' distance counts
+      _d = p;
+      p = d;
+      d = _d;
+    }
+
+    // our last action in the above loop was to switch d and p, so p now
+    // actually has the most recent cost counts
+    return Math.abs(p[n]);
+  }
+
+  private int getTDistance(String target, String other) {
+    char[] sa;
+    int n;
+    int d[][]; // cost array
+
+    sa = target.toCharArray();
+    n = sa.length;
+    final int m = other.length();
+    d = new int[n + 1][m + 1];
+
+    if (n == 0 || m == 0) {
+      if (n == m) {
+        return 0;
+      } else {
+        return Math.max(n, m);
+      }
+    }
+
+    // indexes into strings s and t
+    int i; // iterates through s
+    int j; // iterates through t
+
+    char t_j; // jth character of t
+
+    int cost; // cost
+
+    for (i = 0; i <= n; i++) {
       d[i][0] = i;
     }
-    
-    for (j = 0; j<=m; j++) {
+
+    for (j = 0; j <= m; j++) {
       d[0][j] = j;
     }
 
-      for (j = 1; j<=m; j++) {
-          t_j = other.charAt(j-1);
+    for (j = 1; j <= m; j++) {
+      t_j = other.charAt(j - 1);
 
-          for (i=1; i<=n; i++) {
-              cost = sa[i-1]==t_j ? 0 : 1;
-              // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
-              d[i][j] = Math.min(Math.min(d[i-1][j]+1, d[i][j-1]+1), d[i-1][j-1]+cost);
-              // transposition
-              if (i > 1 && j > 1 && target.charAt(i-1) == other.charAt(j-2) && target.charAt(i-2) == other.charAt(j-1)) {
-                d[i][j] = Math.min(d[i][j], d[i-2][j-2] + cost);
-              }
-          }
+      for (i = 1; i <= n; i++) {
+        cost = sa[i - 1] == t_j ? 0 : 1;
+        // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
+        d[i][j] = Math.min(Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1), d[i - 1][j - 1] + cost);
+        // transposition
+        if (i > 1
+            && j > 1
+            && target.charAt(i - 1) == other.charAt(j - 2)
+            && target.charAt(i - 2) == other.charAt(j - 1)) {
+          d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
+        }
       }
+    }
 
-      // our last action in the above loop was to switch d and p, so p now
-      // actually has the most recent cost counts
-      return Math.abs(d[n][m]);
+    // our last action in the above loop was to switch d and p, so p now
+    // actually has the most recent cost counts
+    return Math.abs(d[n][m]);
   }
 }

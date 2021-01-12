@@ -17,14 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.documents;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -35,7 +27,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.components.TableColumnInfo;
@@ -58,7 +57,7 @@ public final class TermVectorDialogFactory implements DialogOpener.DialogFactory
 
   private List<TermVectorEntry> tvEntries;
 
-  public synchronized static TermVectorDialogFactory getInstance() throws IOException {
+  public static synchronized TermVectorDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new TermVectorDialogFactory();
     }
@@ -98,12 +97,20 @@ public final class TermVectorDialogFactory implements DialogOpener.DialogFactory
 
     JPanel header = new JPanel(new FlowLayout(FlowLayout.LEADING, 5, 5));
     header.setOpaque(false);
-    header.add(new JLabel(MessageUtils.getLocalizedMessage("documents.termvector.label.term_vector")));
+    header.add(
+        new JLabel(MessageUtils.getLocalizedMessage("documents.termvector.label.term_vector")));
     header.add(new JLabel(field));
     panel.add(header, BorderLayout.PAGE_START);
 
     JTable tvTable = new JTable();
-    TableUtils.setupTable(tvTable, ListSelectionModel.SINGLE_SELECTION, new TermVectorTableModel(tvEntries), null, 100, 50, 100);
+    TableUtils.setupTable(
+        tvTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new TermVectorTableModel(tvEntries),
+        null,
+        100,
+        50,
+        100);
     JScrollPane scrollPane = new JScrollPane(tvTable);
     panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -121,7 +128,6 @@ public final class TermVectorDialogFactory implements DialogOpener.DialogFactory
   static final class TermVectorTableModel extends TableModelBase<TermVectorTableModel.Column> {
 
     enum Column implements TableColumnInfo {
-
       TERM("Term", 0, String.class),
       FREQ("Freq", 1, Long.class),
       POSITIONS("Positions", 2, String.class),
@@ -165,20 +171,27 @@ public final class TermVectorDialogFactory implements DialogOpener.DialogFactory
 
         String termText = entry.getTermText();
         long freq = tvEntries.get(i).getFreq();
-        String positions = String.join(",",
-            entry.getPositions().stream()
-                .map(pos -> Integer.toString(pos.getPosition()))
-                .collect(Collectors.toList()));
-        String offsets = String.join(",",
-            entry.getPositions().stream()
-                .filter(pos -> pos.getStartOffset().isPresent() && pos.getEndOffset().isPresent())
-                .map(pos -> Integer.toString(pos.getStartOffset().orElse(-1)) + "-" + Integer.toString(pos.getEndOffset().orElse(-1)))
-                .collect(Collectors.toList())
-        );
+        String positions =
+            String.join(
+                ",",
+                entry.getPositions().stream()
+                    .map(pos -> Integer.toString(pos.getPosition()))
+                    .collect(Collectors.toList()));
+        String offsets =
+            String.join(
+                ",",
+                entry.getPositions().stream()
+                    .filter(
+                        pos -> pos.getStartOffset().isPresent() && pos.getEndOffset().isPresent())
+                    .map(
+                        pos ->
+                            Integer.toString(pos.getStartOffset().orElse(-1))
+                                + "-"
+                                + Integer.toString(pos.getEndOffset().orElse(-1)))
+                    .collect(Collectors.toList()));
 
-        data[i] = new Object[]{termText, freq, positions, offsets};
+        data[i] = new Object[] {termText, freq, positions, offsets};
       }
-
     }
 
     @Override

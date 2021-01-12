@@ -22,39 +22,42 @@ import java.util.Arrays;
 /** Utilities for handling numeric values */
 public class NumericUtils {
 
-  public static int[] convertToIntArray(String value, boolean ignoreException) throws NumberFormatException {
+  public static int[] convertToIntArray(String value, boolean ignoreException)
+      throws NumberFormatException {
     if (StringUtils.isNullOrEmpty(value)) {
-      return new int[]{0};
+      return new int[] {0};
     }
     try {
       return Arrays.stream(value.trim().split(",")).mapToInt(Integer::parseInt).toArray();
     } catch (NumberFormatException e) {
       if (ignoreException) {
-        return new int[]{0};
+        return new int[] {0};
       } else {
         throw e;
       }
     }
   }
 
-  public static long[] convertToLongArray(String value, boolean ignoreException) throws NumberFormatException {
+  public static long[] convertToLongArray(String value, boolean ignoreException)
+      throws NumberFormatException {
     if (StringUtils.isNullOrEmpty(value)) {
-      return new long[]{0};
+      return new long[] {0};
     }
     try {
       return Arrays.stream(value.trim().split(",")).mapToLong(Long::parseLong).toArray();
     } catch (NumberFormatException e) {
       if (ignoreException) {
-        return new long[]{0};
+        return new long[] {0};
       } else {
         throw e;
       }
     }
   }
 
-  public static float[] convertToFloatArray(String value, boolean ignoreException) throws NumberFormatException {
+  public static float[] convertToFloatArray(String value, boolean ignoreException)
+      throws NumberFormatException {
     if (StringUtils.isNullOrEmpty(value)) {
-      return new float[]{0};
+      return new float[] {0};
     }
     try {
       String[] strVals = value.trim().split(",");
@@ -65,22 +68,23 @@ public class NumericUtils {
       return values;
     } catch (NumberFormatException e) {
       if (ignoreException) {
-        return new float[]{0};
+        return new float[] {0};
       } else {
         throw e;
       }
     }
   }
 
-  public static double[] convertToDoubleArray(String value, boolean ignoreException) throws NumberFormatException {
+  public static double[] convertToDoubleArray(String value, boolean ignoreException)
+      throws NumberFormatException {
     if (StringUtils.isNullOrEmpty(value)) {
-      return new double[]{0};
+      return new double[] {0};
     }
     try {
       return Arrays.stream(value.trim().split(",")).mapToDouble(Double::parseDouble).toArray();
     } catch (NumberFormatException e) {
       if (ignoreException) {
-        return new double[]{0};
+        return new double[] {0};
       } else {
         throw e;
       }
@@ -98,6 +102,5 @@ public class NumericUtils {
     }
   }
 
-  private NumericUtils() {
-  }
+  private NumericUtils() {}
 }

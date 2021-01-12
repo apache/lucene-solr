@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Random;
-
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.junit.Test;
 
@@ -28,11 +26,11 @@ public class TestSetOnce extends LuceneTestCase {
     SetOnce<Integer> set;
     boolean success = false;
     final Random RAND;
-    
+
     public SetOnceThread(Random random) {
       RAND = new Random(random.nextLong());
     }
-    
+
     @Override
     public void run() {
       try {
@@ -48,21 +46,21 @@ public class TestSetOnce extends LuceneTestCase {
       }
     }
   }
-  
+
   @Test
   public void testEmptyCtor() throws Exception {
     SetOnce<Integer> set = new SetOnce<>();
     assertNull(set.get());
   }
-  
-  @Test(expected=AlreadySetException.class)
+
+  @Test(expected = AlreadySetException.class)
   public void testSettingCtor() throws Exception {
     SetOnce<Integer> set = new SetOnce<>(5);
     assertEquals(5, set.get().intValue());
     set.set(7);
   }
-  
-  @Test(expected=AlreadySetException.class)
+
+  @Test(expected = AlreadySetException.class)
   public void testSetOnce() throws Exception {
     SetOnce<Integer> set = new SetOnce<>();
     set.set(5);
@@ -78,17 +76,17 @@ public class TestSetOnce extends LuceneTestCase {
     assertFalse(set.trySet(7));
     assertEquals(5, set.get().intValue());
   }
-  
+
   @Test
   public void testSetMultiThreaded() throws Exception {
     final SetOnce<Integer> set = new SetOnce<>();
     SetOnceThread[] threads = new SetOnceThread[10];
     for (int i = 0; i < threads.length; i++) {
       threads[i] = new SetOnceThread(random());
-      threads[i].setName("t-" + (i+1));
+      threads[i].setName("t-" + (i + 1));
       threads[i].set = set;
     }
-    
+
     for (Thread t : threads) {
       t.start();
     }
@@ -96,7 +94,7 @@ public class TestSetOnce extends LuceneTestCase {
     for (Thread t : threads) {
       t.join();
     }
-    
+
     for (SetOnceThread t : threads) {
       if (t.success) {
         int expectedVal = Integer.parseInt(t.getName().substring(2));
@@ -104,5 +102,4 @@ public class TestSetOnce extends LuceneTestCase {
       }
     }
   }
-  
 }

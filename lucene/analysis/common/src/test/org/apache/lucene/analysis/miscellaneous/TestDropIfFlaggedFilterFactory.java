@@ -23,18 +23,24 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 
-/**
- * This test just ensures the factory works, detailed tests in {@link TestDropIfFlaggedFilter}
- */
+/** This test just ensures the factory works, detailed tests in {@link TestDropIfFlaggedFilter} */
 public class TestDropIfFlaggedFilterFactory extends BaseTokenStreamFactoryTestCase {
 
-  private static final Token[] TOKENS =  { token("foo",1,0,2), token("bar",3, 4,6) };
+  private static final Token[] TOKENS = {token("foo", 1, 0, 2), token("bar", 3, 4, 6)};
 
   public void testFactory() throws Exception {
     TokenStream stream = new CannedTokenStream(TOKENS);
     TokenFilterFactory tokenFilterFactory = tokenFilterFactory("dropIfFlagged", "flags", "2");
     stream = tokenFilterFactory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "foo" }, null, null, new String[] { "word",}, new int[] { 1 });
+    assertTokenStreamContents(
+        stream,
+        new String[] {"foo"},
+        null,
+        null,
+        new String[] {
+          "word",
+        },
+        new int[] {1});
   }
 
   private static Token token(String term, int flags, int soff, int eoff) {
@@ -42,7 +48,7 @@ public class TestDropIfFlaggedFilterFactory extends BaseTokenStreamFactoryTestCa
     token.setEmpty();
     token.append(term);
     token.setFlags(flags);
-    token.setOffset(soff,eoff);
+    token.setOffset(soff, eoff);
     return token;
   }
 }

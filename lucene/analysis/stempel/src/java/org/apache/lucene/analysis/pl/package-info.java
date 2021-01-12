@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Polish.
- */
+/** Analyzer for Polish. */
 package org.apache.lucene.analysis.pl;

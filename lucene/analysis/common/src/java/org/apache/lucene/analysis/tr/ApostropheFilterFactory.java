@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.TokenFilterFactory;
-
 import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link ApostropheFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_tr_lower_apostrophes" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import java.util.Map;
  *     &lt;filter class="solr.TurkishLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 4.8.0
  * @lucene.spi {@value #NAME}
  */

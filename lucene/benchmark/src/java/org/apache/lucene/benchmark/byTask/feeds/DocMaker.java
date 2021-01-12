@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -32,56 +31,52 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 
 /**
- * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
- * {@link DocData} objects. Supports the following parameters:
+ * Creates {@link Document} objects. Uses a {@link ContentSource} to generate {@link DocData}
+ * objects. Supports the following parameters:
+ *
  * <ul>
- * <li><b>content.source</b> - specifies the {@link ContentSource} class to use
- * (default <b>SingleDocSource</b>).
- * <li><b>doc.stored</b> - specifies whether fields should be stored (default
- * <b>false</b>).
- * <li><b>doc.body.stored</b> - specifies whether the body field should be stored (default
- * = <b>doc.stored</b>).
- * <li><b>doc.tokenized</b> - specifies whether fields should be tokenized
- * (default <b>true</b>).
- * <li><b>doc.body.tokenized</b> - specifies whether the
- * body field should be tokenized (default = <b>doc.tokenized</b>).
- * <li><b>doc.body.offsets</b> - specifies whether to add offsets into the postings index
- *  for the body field.  It is useful for highlighting.  (default <b>false</b>)
- * <li><b>doc.tokenized.norms</b> - specifies whether norms should be stored in
- * the index or not. (default <b>false</b>).
- * <li><b>doc.body.tokenized.norms</b> - specifies whether norms should be
- * stored in the index for the body field. This can be set to true, while
- * <code>doc.tokenized.norms</code> is set to false, to allow norms storing just
- * for the body field. (default <b>true</b>).
- * <li><b>doc.term.vector</b> - specifies whether term vectors should be stored
- * for fields (default <b>false</b>).
- * <li><b>doc.term.vector.positions</b> - specifies whether term vectors should
- * be stored with positions (default <b>false</b>).
- * <li><b>doc.term.vector.offsets</b> - specifies whether term vectors should be
- * stored with offsets (default <b>false</b>).
- * <li><b>doc.store.body.bytes</b> - specifies whether to store the raw bytes of
- * the document's content in the document (default <b>false</b>).
- * <li><b>doc.reuse.fields</b> - specifies whether Field and Document objects
- * should be reused (default <b>true</b>).
- * <li><b>doc.index.props</b> - specifies whether the properties returned by
- * <li><b>doc.random.id.limit</b> - if specified, docs will be assigned random
- * IDs from 0 to this limit.  This is useful with UpdateDoc
- * for testing performance of IndexWriter.updateDocument.
- * {@link DocData#getProps()} will be indexed. (default <b>false</b>).
+ *   <li><b>content.source</b> - specifies the {@link ContentSource} class to use (default
+ *       <b>SingleDocSource</b>).
+ *   <li><b>doc.stored</b> - specifies whether fields should be stored (default <b>false</b>).
+ *   <li><b>doc.body.stored</b> - specifies whether the body field should be stored (default =
+ *       <b>doc.stored</b>).
+ *   <li><b>doc.tokenized</b> - specifies whether fields should be tokenized (default <b>true</b>).
+ *   <li><b>doc.body.tokenized</b> - specifies whether the body field should be tokenized (default =
+ *       <b>doc.tokenized</b>).
+ *   <li><b>doc.body.offsets</b> - specifies whether to add offsets into the postings index for the
+ *       body field. It is useful for highlighting. (default <b>false</b>)
+ *   <li><b>doc.tokenized.norms</b> - specifies whether norms should be stored in the index or not.
+ *       (default <b>false</b>).
+ *   <li><b>doc.body.tokenized.norms</b> - specifies whether norms should be stored in the index for
+ *       the body field. This can be set to true, while <code>doc.tokenized.norms</code> is set to
+ *       false, to allow norms storing just for the body field. (default <b>true</b>).
+ *   <li><b>doc.term.vector</b> - specifies whether term vectors should be stored for fields
+ *       (default <b>false</b>).
+ *   <li><b>doc.term.vector.positions</b> - specifies whether term vectors should be stored with
+ *       positions (default <b>false</b>).
+ *   <li><b>doc.term.vector.offsets</b> - specifies whether term vectors should be stored with
+ *       offsets (default <b>false</b>).
+ *   <li><b>doc.store.body.bytes</b> - specifies whether to store the raw bytes of the document's
+ *       content in the document (default <b>false</b>).
+ *   <li><b>doc.reuse.fields</b> - specifies whether Field and Document objects should be reused
+ *       (default <b>true</b>).
+ *   <li><b>doc.index.props</b> - specifies whether the properties returned by
+ *   <li><b>doc.random.id.limit</b> - if specified, docs will be assigned random IDs from 0 to this
+ *       limit. This is useful with UpdateDoc for testing performance of IndexWriter.updateDocument.
+ *       {@link DocData#getProps()} will be indexed. (default <b>false</b>).
  * </ul>
  */
 public class DocMaker implements Closeable {
@@ -95,25 +90,25 @@ public class DocMaker implements Closeable {
   private int updateDocIDLimit;
 
   /**
-   * Document state, supports reuse of field instances
-   * across documents (see <code>reuseFields</code> parameter).
+   * Document state, supports reuse of field instances across documents (see <code>reuseFields
+   * </code> parameter).
    */
   protected static class DocState {
-    
-    private final Map<String,Field> fields;
-    private final Map<String,Field> numericFields;
+
+    private final Map<String, Field> fields;
+    private final Map<String, Field> numericFields;
     private final boolean reuseFields;
     final Document doc;
     DocData docData = new DocData();
-    
+
     public DocState(boolean reuseFields, FieldType ft, FieldType bodyFt) {
 
       this.reuseFields = reuseFields;
-      
+
       if (reuseFields) {
-        fields =  new HashMap<>();
+        fields = new HashMap<>();
         numericFields = new HashMap<>();
-        
+
         // Initialize the map with the default fields.
         fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyFt));
         fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", ft));
@@ -123,7 +118,7 @@ public class DocMaker implements Closeable {
 
         numericFields.put(DATE_MSEC_FIELD, new LongPoint(DATE_MSEC_FIELD, 0L));
         numericFields.put(TIME_SEC_FIELD, new IntPoint(TIME_SEC_FIELD, 0));
-        
+
         doc = new Document();
       } else {
         numericFields = null;
@@ -133,15 +128,15 @@ public class DocMaker implements Closeable {
     }
 
     /**
-     * Returns a field corresponding to the field name. If
-     * <code>reuseFields</code> was set to true, then it attempts to reuse a
-     * Field instance. If such a field does not exist, it creates a new one.
+     * Returns a field corresponding to the field name. If <code>reuseFields</code> was set to true,
+     * then it attempts to reuse a Field instance. If such a field does not exist, it creates a new
+     * one.
      */
     Field getField(String name, FieldType ft) {
       if (!reuseFields) {
         return new Field(name, "", ft);
       }
-      
+
       Field f = fields.get(name);
       if (f == null) {
         f = new Field(name, "", ft);
@@ -157,7 +152,7 @@ public class DocMaker implements Closeable {
       } else {
         f = null;
       }
-      
+
       if (f == null) {
         if (numericType.equals(Integer.class)) {
           f = new IntPoint(name, 0);
@@ -177,13 +172,14 @@ public class DocMaker implements Closeable {
       return f;
     }
   }
-  
+
   private boolean storeBytes = false;
 
   private static class DateUtil {
     public SimpleDateFormat parser = new SimpleDateFormat("dd-MMM-yyyy HH:mm:ss", Locale.ENGLISH);
     public Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
     public ParsePosition pos = new ParsePosition(0);
+
     public DateUtil() {
       parser.setLenient(true);
     }
@@ -207,25 +203,25 @@ public class DocMaker implements Closeable {
 
   protected FieldType valType;
   protected FieldType bodyValType;
-    
+
   protected ContentSource source;
   protected boolean reuseFields;
   protected boolean indexProperties;
-  
+
   private final AtomicInteger numDocsCreated = new AtomicInteger();
 
-  public DocMaker() {
-  }
-  
+  public DocMaker() {}
+
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
-  private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
+  private Document createDocument(DocData docData, int size, int cnt)
+      throws UnsupportedEncodingException {
 
     final DocState ds = getDocState();
     final Document doc = reuseFields ? ds.doc : new Document();
     doc.clear();
-    
+
     // Set ID_FIELD
     FieldType ft = new FieldType(valType);
     ft.setStored(true);
@@ -242,7 +238,7 @@ public class DocMaker implements Closeable {
     }
     idField.setStringValue(Integer.toString(id));
     doc.add(idField);
-    
+
     // Set NAME_FIELD
     String name = docData.getName();
     if (name == null) name = "";
@@ -250,7 +246,7 @@ public class DocMaker implements Closeable {
     Field nameField = ds.getField(NAME_FIELD, valType);
     nameField.setStringValue(name);
     doc.add(nameField);
-    
+
     // Set DATE_FIELD
     DateUtil util = dateParsers.get();
     if (util == null) {
@@ -262,7 +258,7 @@ public class DocMaker implements Closeable {
     if (dateString != null) {
       util.pos.setIndex(0);
       date = util.parser.parse(dateString, util.pos);
-      //System.out.println(dateString + " parsed to " + date);
+      // System.out.println(dateString + " parsed to " + date);
     } else {
       dateString = "";
     }
@@ -280,18 +276,21 @@ public class DocMaker implements Closeable {
     doc.add(dateField);
 
     util.cal.setTime(date);
-    final int sec = util.cal.get(Calendar.HOUR_OF_DAY)*3600 + util.cal.get(Calendar.MINUTE)*60 + util.cal.get(Calendar.SECOND);
+    final int sec =
+        util.cal.get(Calendar.HOUR_OF_DAY) * 3600
+            + util.cal.get(Calendar.MINUTE) * 60
+            + util.cal.get(Calendar.SECOND);
 
     Field timeSecField = ds.getNumericField(TIME_SEC_FIELD, Integer.class);
     timeSecField.setIntValue(sec);
     doc.add(timeSecField);
-    
+
     // Set TITLE_FIELD
     String title = docData.getTitle();
     Field titleField = ds.getField(TITLE_FIELD, valType);
     titleField.setStringValue(title == null ? "" : title);
     doc.add(titleField);
-    
+
     String body = docData.getBody();
     if (body != null && body.length() > 0) {
       String bdy;
@@ -312,7 +311,7 @@ public class DocMaker implements Closeable {
       Field bodyField = ds.getField(BODY_FIELD, bodyValType);
       bodyField.setStringValue(bdy);
       doc.add(bodyField);
-      
+
       if (storeBytes) {
         Field bytesField = ds.getField(BYTES_FIELD, StringField.TYPE_STORED);
         bytesField.setBytesValue(bdy.getBytes(StandardCharsets.UTF_8));
@@ -323,7 +322,7 @@ public class DocMaker implements Closeable {
     if (indexProperties) {
       Properties props = docData.getProps();
       if (props != null) {
-        for (final Map.Entry<Object,Object> entry : props.entrySet()) {
+        for (final Map.Entry<Object, Object> entry : props.entrySet()) {
           Field f = ds.getField((String) entry.getKey(), valType);
           f.setStringValue((String) entry.getValue());
           doc.add(f);
@@ -331,8 +330,8 @@ public class DocMaker implements Closeable {
         docData.setProps(null);
       }
     }
-    
-    //System.out.println("============== Created doc "+numDocsCreated+" :\n"+doc+"\n==========");
+
+    // System.out.println("============== Created doc "+numDocsCreated+" :\n"+doc+"\n==========");
     return doc;
   }
 
@@ -350,21 +349,19 @@ public class DocMaker implements Closeable {
   }
 
   /**
-   * Closes the {@link DocMaker}. The base implementation closes the
-   * {@link ContentSource}, and it can be overridden to do more work (but make
-   * sure to call super.close()).
+   * Closes the {@link DocMaker}. The base implementation closes the {@link ContentSource}, and it
+   * can be overridden to do more work (but make sure to call super.close()).
    */
   @Override
   public void close() throws IOException {
     source.close();
   }
-  
+
   /**
-   * Creates a {@link Document} object ready for indexing. This method uses the
-   * {@link ContentSource} to get the next document from the source, and creates
-   * a {@link Document} object from the returned fields. If
-   * <code>reuseFields</code> was set to true, it will reuse {@link Document}
-   * and {@link Field} instances.
+   * Creates a {@link Document} object ready for indexing. This method uses the {@link
+   * ContentSource} to get the next document from the source, and creates a {@link Document} object
+   * from the returned fields. If <code>reuseFields</code> was set to true, it will reuse {@link
+   * Document} and {@link Field} instances.
    */
   public Document makeDocument() throws Exception {
     resetLeftovers();
@@ -374,12 +371,14 @@ public class DocMaker implements Closeable {
   }
 
   /**
-   * Same as {@link #makeDocument()}, only this method creates a document of the
-   * given size input by <code>size</code>.
+   * Same as {@link #makeDocument()}, only this method creates a document of the given size input by
+   * <code>size</code>.
    */
   public Document makeDocument(int size) throws Exception {
     LeftOver lvr = leftovr.get();
-    if (lvr == null || lvr.docdata == null || lvr.docdata.getBody() == null
+    if (lvr == null
+        || lvr.docdata == null
+        || lvr.docdata.getBody() == null
         || lvr.docdata.getBody().length() == 0) {
       resetLeftovers();
     }
@@ -405,7 +404,7 @@ public class DocMaker implements Closeable {
     }
     return doc;
   }
-  
+
   /** Reset inputs so that the test run would behave, input wise, as if it just started. */
   public synchronized void resetInputs() throws IOException {
     source.printStatistics("docs");
@@ -415,7 +414,7 @@ public class DocMaker implements Closeable {
     numDocsCreated.set(0);
     resetLeftovers();
   }
-  
+
   /** Set the configuration parameters of this doc maker. */
   public void setConfig(Config config, ContentSource source) {
     this.config = config;
@@ -431,7 +430,7 @@ public class DocMaker implements Closeable {
     boolean termVec = config.get("doc.term.vector", false);
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
-    
+
     valType = new FieldType(TextField.TYPE_NOT_STORED);
     valType.setStored(stored);
     valType.setTokenized(tokenized);
@@ -454,14 +453,14 @@ public class DocMaker implements Closeable {
     bodyValType.freeze();
 
     storeBytes = config.get("doc.store.body.bytes", false);
-    
+
     reuseFields = config.get("doc.reuse.fields", true);
 
     // In a multi-rounds run, it is important to reset DocState since settings
     // of fields may change between rounds, and this is the only way to reset
     // the cache of all threads.
     docState = new ThreadLocal<>();
-    
+
     indexProperties = config.get("doc.index.props", false);
 
     updateDocIDLimit = config.get("doc.random.id.limit", -1);
@@ -469,5 +468,4 @@ public class DocMaker implements Closeable {
       r = new Random(179);
     }
   }
-
 }

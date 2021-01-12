@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.analysis.fr;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,41 +28,38 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-
-/**
- * Simple tests for {@link FrenchMinimalStemFilter}
- */
+/** Simple tests for {@link FrenchMinimalStemFilter} */
 public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new FrenchMinimalStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new FrenchMinimalStemFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /** Test some examples from the paper */
   public void testExamples() throws IOException {
     checkOneTerm(analyzer, "chevaux", "cheval");
     checkOneTerm(analyzer, "hiboux", "hibou");
-    
+
     checkOneTerm(analyzer, "chantés", "chant");
     checkOneTerm(analyzer, "chanter", "chant");
     checkOneTerm(analyzer, "chante", "chant");
-    
+
     checkOneTerm(analyzer, "baronnes", "baron");
     checkOneTerm(analyzer, "barons", "baron");
     checkOneTerm(analyzer, "baron", "baron");
@@ -86,37 +83,39 @@ public class TestFrenchMinimalStemFilter extends BaseTokenStreamTestCase {
   }
 
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("chevaux"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer( MockTokenizer.WHITESPACE, false);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new FrenchMinimalStemFilter(sink));
-      }
-    };
+    final CharArraySet exclusionSet = new CharArraySet(asSet("chevaux"), false);
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new FrenchMinimalStemFilter(sink));
+          }
+        };
     checkOneTerm(a, "chevaux", "chevaux");
     a.close();
   }
-  
+
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataPath("frminimaltestdata.zip"), "frminimal.txt");
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new FrenchMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new FrenchMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

@@ -19,13 +19,12 @@ package org.apache.lucene.analysis.opennlp;
 
 import java.io.IOException;
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.opennlp.tools.NLPChunkerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
  * Factory for {@link OpenNLPChunkerFilter}.
@@ -38,6 +37,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.OpenNLPChunkerFilterFactory" chunkerModel="filename"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 7.3.0
  * @lucene.spi {@value #NAME}
  */
@@ -50,7 +50,7 @@ public class OpenNLPChunkerFilterFactory extends TokenFilterFactory implements R
 
   private final String chunkerModelFile;
 
-  public OpenNLPChunkerFilterFactory(Map<String,String> args) {
+  public OpenNLPChunkerFilterFactory(Map<String, String> args) {
     super(args);
     chunkerModelFile = get(args, CHUNKER_MODEL);
     if (!args.isEmpty()) {

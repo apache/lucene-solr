@@ -16,9 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
-/** Used by {@link BulkScorer}s that need to pass a {@link
- *  Scorable} to {@link LeafCollector#setScorer}. */
+/**
+ * Used by {@link BulkScorer}s that need to pass a {@link Scorable} to {@link
+ * LeafCollector#setScorer}.
+ */
 final class ScoreAndDoc extends Scorable {
   float score;
   int doc = -1;

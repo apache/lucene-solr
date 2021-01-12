@@ -17,8 +17,10 @@
 
 package org.apache.lucene.index;
 
-import java.io.IOException;
+import static org.apache.lucene.util.VectorUtil.dotProduct;
+import static org.apache.lucene.util.VectorUtil.squareDistance;
 
+import java.io.IOException;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
@@ -37,37 +39,36 @@ public abstract class VectorValues extends DocIdSetIterator {
   /** Sole constructor */
   protected VectorValues() {}
 
-  /**
-   * Return the dimension of the vectors
-   */
+  /** Return the dimension of the vectors */
   public abstract int dimension();
 
   /**
-   * TODO: should we use cost() for this? We rely on its always being exactly the number
-   * of documents having a value for this field, which is not guaranteed by the cost() contract,
-   * but in all the implementations so far they are the same.
+   * TODO: should we use cost() for this? We rely on its always being exactly the number of
+   * documents having a value for this field, which is not guaranteed by the cost() contract, but in
+   * all the implementations so far they are the same.
+   *
    * @return the number of vectors returned by this iterator
    */
   public abstract int size();
 
-  /**
-   * Return the score function used to compare these vectors
-   */
-  public abstract ScoreFunction scoreFunction();
+  /** Return the search strategy used to compare these vectors */
+  public abstract SearchStrategy searchStrategy();
 
   /**
-   * Return the vector value for the current document ID.
-   * It is illegal to call this method when the iterator is not positioned: before advancing, or after failing to advance.
-   * The returned array may be shared across calls, re-used, and modified as the iterator advances.
+   * Return the vector value for the current document ID. It is illegal to call this method when the
+   * iterator is not positioned: before advancing, or after failing to advance. The returned array
+   * may be shared across calls, re-used, and modified as the iterator advances.
+   *
    * @return the vector value
    */
   public abstract float[] vectorValue() throws IOException;
 
   /**
    * Return the binary encoded vector value for the current document ID. These are the bytes
-   * corresponding to the float array return by {@link #vectorValue}.  It is illegal to call this
-   * method when the iterator is not positioned: before advancing, or after failing to advance.  The
+   * corresponding to the float array return by {@link #vectorValue}. It is illegal to call this
+   * method when the iterator is not positioned: before advancing, or after failing to advance. The
    * returned storage may be shared across calls, re-used and modified as the iterator advances.
+   *
    * @return the binary value
    */
   public BytesRef binaryValue() throws IOException {
@@ -75,202 +76,133 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
-   * Return a random access interface over this iterator's vectors. Calling the RandomAccess methods will
-   * have no effect on the progress of the iteration or the values returned by this iterator. Successive calls
-   * will retrieve independent copies that do not overwrite each others' returned values.
-   */
-  public abstract RandomAccess randomAccess();
-
-  /**
-   * Provides random access to vectors by dense ordinal.
+   * Return the k nearest neighbor documents as determined by comparison of their vector values for
+   * this field, to the given vector, by the field's search strategy. If the search strategy is
+   * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
+   * vectors. Unlike relevance scores, vector scores may be negative.
    *
-   * @lucene.experimental
+   * @param target the vector-valued query
+   * @param k the number of docs to return
+   * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher
+   *     cost
+   * @return the k nearest neighbor documents, along with their (searchStrategy-specific) scores.
    */
-  public interface RandomAccess {
-
-    /**
-     * Return the number of vector values
-     */
-    int size();
-
-    /**
-     * Return the dimension of the returned vector values
-     */
-    int dimension();
-
-    /**
-     * Return the score function used to compare these vectors
-     */
-    ScoreFunction scoreFunction();
-
-    /**
-     * Return the vector value indexed at the given ordinal. The provided floating point array may
-     * be shared and overwritten by subsequent calls to this method and {@link #binaryValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    float[] vectorValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the vector indexed at the given ordinal value as an array of bytes in a BytesRef;
-     * these are the bytes corresponding to the float array. The provided bytes may be shared and overwritten 
-     * by subsequent calls to this method and {@link #vectorValue(int)}.
-     * @param targetOrd a valid ordinal, &ge; 0 and &lt; {@link #size()}.
-     */
-    BytesRef binaryValue(int targetOrd) throws IOException;
-
-    /**
-     * Return the k nearest neighbor documents as determined by comparison of their vector values
-     * for this field, to the given vector, by the field's score function. If the score function is
-     * reversed, lower values indicate nearer vectors, otherwise higher scores indicate nearer
-     * vectors. Unlike relevance scores, vector scores may be negative.
-     * @param target the vector-valued query
-     * @param k      the number of docs to return
-     * @param fanout control the accuracy/speed tradeoff - larger values give better recall at higher cost
-     * @return the k nearest neighbor documents, along with their (scoreFunction-specific) scores.
-     */
-    TopDocs search(float[] target, int k, int fanout) throws IOException;
-  }
+  public abstract TopDocs search(float[] target, int k, int fanout) throws IOException;
 
   /**
-   * Score function. This is used during indexing and searching of the vectors to determine the nearest neighbors.
-   * Score values may be negative. By default high scores indicate nearer documents, unless the function is reversed.
+   * Search strategy. This is a label describing the method used during indexing and searching of
+   * the vectors in order to determine the nearest neighbors.
    */
-  public enum ScoreFunction {
-    /** No distance function is used. Note: {@link VectorValues.RandomAccess#search(float[], int, int)}
-     * is not supported for fields specifying this score function. */
+  public enum SearchStrategy {
+
+    /**
+     * No search strategy is provided. Note: {@link VectorValues#search(float[], int, int)} is not
+     * supported for fields specifying this strategy.
+     */
     NONE,
 
-    /** Euclidean distance */
-    EUCLIDEAN(true) {
-      @Override
-      public float score(float[] v1, float[] v2) {
-        assert v1.length == v2.length;
-        float squareSum = 0.0f;
-        int dim = v1.length;
-        for (int i = 0; i < dim; i++) {
-          float diff = v1[i] - v2[i];
-          squareSum += diff * diff;
-        }
-        return squareSum;
-      }
-    },
+    /** HNSW graph built using Euclidean distance */
+    EUCLIDEAN_HNSW(true),
 
-    /** dot product - note, may be negative; larger values are better */
-    DOT_PRODUCT() {
-      @Override
-      public float score(float[] a, float[] b) {
-        float res = 0f;
-        /*
-         * If length of vector is larger than 8, we use unrolled dot product to accelerate the
-         * calculation.
-         */
-        int i;
-        for (i = 0; i < a.length % 8; i++) {
-            res += b[i] * a[i];
-        }
-        if (a.length < 8) {
-            return res;
-        }
-        float s0 = 0f;
-        float s1 = 0f;
-        float s2 = 0f;
-        float s3 = 0f;
-        float s4 = 0f;
-        float s5 = 0f;
-        float s6 = 0f;
-        float s7 = 0f;
-        for (; i + 7 < a.length; i += 8) {
-            s0 += b[i] * a[i];
-            s1 += b[i + 1] * a[i + 1];
-            s2 += b[i + 2] * a[i + 2];
-            s3 += b[i + 3] * a[i + 3];
-            s4 += b[i + 4] * a[i + 4];
-            s5 += b[i + 5] * a[i + 5];
-            s6 += b[i + 6] * a[i + 6];
-            s7 += b[i + 7] * a[i + 7];
-        }
-        res += s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7;
-        return res;
-      }
-    };
+    /** HNSW graph buit using dot product */
+    DOT_PRODUCT_HNSW;
 
-    /** If reversed, smaller values are better */
-    final public boolean reversed;
+    /**
+     * If true, the scores associated with vector comparisons in this strategy are in reverse order;
+     * that is, lower scores represent more similar vectors. Otherwise, if false, higher scores
+     * represent more similar vectors.
+     */
+    public final boolean reversed;
 
-    ScoreFunction(boolean reversed) {
+    SearchStrategy(boolean reversed) {
       this.reversed = reversed;
     }
 
-    ScoreFunction() {
-      this(false);
+    SearchStrategy() {
+      reversed = false;
     }
 
     /**
-     * Calculates the score between the specified two vectors.
+     * Calculates a similarity score between the two vectors with a specified function.
+     *
+     * @param v1 a vector
+     * @param v2 another vector, of the same dimension
+     * @return the value of the strategy's score function applied to the two vectors
      */
-    public float score(float[] v1, float[] v2) {
-      throw new UnsupportedOperationException();
+    public float compare(float[] v1, float[] v2) {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+          return squareDistance(v1, v2);
+        case DOT_PRODUCT_HNSW:
+          return dotProduct(v1, v2);
+        default:
+          throw new IllegalStateException("Incomparable search strategy: " + this);
+      }
     }
 
-  }
-
-   /**
-   * Calculates a similarity score between the two vectors with specified function.
-   */
-  public static float compare(float[] v1, float[] v2, ScoreFunction scoreFunction) {
-    assert v1.length == v2.length : "attempt to compare vectors of lengths: " + v1.length + " " + v2.length;
-    return scoreFunction.score(v1, v2);
+    /** Return true if vectors indexed using this strategy will be indexed using an HNSW graph */
+    public boolean isHnsw() {
+      switch (this) {
+        case EUCLIDEAN_HNSW:
+        case DOT_PRODUCT_HNSW:
+          return true;
+        default:
+          return false;
+      }
+    }
   }
 
   /**
-   * Represents the lack of vector values. It is returned by providers that do not
-   * support VectorValues.
+   * Represents the lack of vector values. It is returned by providers that do not support
+   * VectorValues.
    */
-  public static final VectorValues EMPTY = new VectorValues() {
+  public static final VectorValues EMPTY =
+      new VectorValues() {
 
-    @Override
-    public int size() {
-      return 0;
-    }
+        @Override
+        public int size() {
+          return 0;
+        }
 
-    @Override
-    public int dimension() {
-      return 0;
-    }
+        @Override
+        public int dimension() {
+          return 0;
+        }
 
-    @Override
-    public ScoreFunction scoreFunction() {
-      return ScoreFunction.NONE;
-    }
+        @Override
+        public SearchStrategy searchStrategy() {
+          return SearchStrategy.NONE;
+        }
 
-    @Override
-    public float[] vectorValue() {
-      throw new IllegalStateException("Attempt to get vectors from EMPTY values (which was not advanced)");
-    }
+        @Override
+        public float[] vectorValue() {
+          throw new IllegalStateException(
+              "Attempt to get vectors from EMPTY values (which was not advanced)");
+        }
 
-    @Override
-    public RandomAccess randomAccess() {
-      throw new UnsupportedOperationException();
-    }
+        @Override
+        public TopDocs search(float[] target, int k, int fanout) {
+          throw new UnsupportedOperationException();
+        }
 
-    @Override
-    public int docID() {
-      throw new IllegalStateException("VectorValues is EMPTY, and not positioned on a doc");
-    }
+        @Override
+        public int docID() {
+          throw new IllegalStateException("VectorValues is EMPTY, and not positioned on a doc");
+        }
 
-    @Override
-    public int nextDoc() {
-      return NO_MORE_DOCS;
-    }
+        @Override
+        public int nextDoc() {
+          return NO_MORE_DOCS;
+        }
 
-    @Override
-    public int advance(int target) {
-      return NO_MORE_DOCS;
-    }
+        @Override
+        public int advance(int target) {
+          return NO_MORE_DOCS;
+        }
 
-    @Override
-    public long cost() {
-      return 0;
-    }
-  };
+        @Override
+        public long cost() {
+          return 0;
+        }
+      };
 }

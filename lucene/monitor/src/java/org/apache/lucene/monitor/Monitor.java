@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
@@ -42,8 +41,8 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
- * A Monitor contains a set of {@link Query} objects with associated IDs, and efficiently
- * matches them against sets of {@link Document} objects.
+ * A Monitor contains a set of {@link Query} objects with associated IDs, and efficiently matches
+ * them against sets of {@link Document} objects.
  */
 public class Monitor implements Closeable {
 
@@ -83,7 +82,7 @@ public class Monitor implements Closeable {
    * Create a new Monitor instance with a specific configuration
    *
    * @param analyzer to analyze {@link Document}s at match time
-   * @param config   the configuration
+   * @param config the configuration
    */
   public Monitor(Analyzer analyzer, MonitorConfiguration config) throws IOException {
     this(analyzer, new TermFilteredPresearcher(), config);
@@ -92,33 +91,38 @@ public class Monitor implements Closeable {
   /**
    * Create a new Monitor instance
    *
-   * @param analyzer      to analyze {@link Document}s at match time
-   * @param presearcher   the presearcher to use
+   * @param analyzer to analyze {@link Document}s at match time
+   * @param presearcher the presearcher to use
    * @param configuration the configuration
    */
-  public Monitor(Analyzer analyzer, Presearcher presearcher,
-                 MonitorConfiguration configuration) throws IOException {
+  public Monitor(Analyzer analyzer, Presearcher presearcher, MonitorConfiguration configuration)
+      throws IOException {
 
     this.analyzer = analyzer;
     this.presearcher = presearcher;
     this.queryIndex = new QueryIndex(configuration, presearcher);
 
     long purgeFrequency = configuration.getPurgeFrequency();
-    this.purgeExecutor = Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("cache-purge"));
-    this.purgeExecutor.scheduleAtFixedRate(() -> {
-      try {
-        purgeCache();
-      } catch (Throwable e) {
-        listeners.forEach(l -> l.onPurgeError(e));
-      }
-    }, purgeFrequency, purgeFrequency, configuration.getPurgeFrequencyUnits());
+    this.purgeExecutor =
+        Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory("cache-purge"));
+    this.purgeExecutor.scheduleAtFixedRate(
+        () -> {
+          try {
+            purgeCache();
+          } catch (Throwable e) {
+            listeners.forEach(l -> l.onPurgeError(e));
+          }
+        },
+        purgeFrequency,
+        purgeFrequency,
+        configuration.getPurgeFrequencyUnits());
 
     this.commitBatchSize = configuration.getQueryUpdateBufferSize();
   }
 
   /**
-   * Register a {@link MonitorUpdateListener} that will be notified whenever changes
-   * are made to the Monitor's queryindex
+   * Register a {@link MonitorUpdateListener} that will be notified whenever changes are made to the
+   * Monitor's queryindex
    *
    * @param listener listener to register
    */
@@ -126,31 +130,21 @@ public class Monitor implements Closeable {
     listeners.add(listener);
   }
 
-  /**
-   * @return Statistics for the internal query index and cache
-   */
+  /** @return Statistics for the internal query index and cache */
   public QueryCacheStats getQueryCacheStats() {
     return new QueryCacheStats(queryIndex.numDocs(), queryIndex.cacheSize(), lastPurged);
   }
 
-  /**
-   * Statistics for the query cache and query index
-   */
+  /** Statistics for the query cache and query index */
   public static class QueryCacheStats {
 
-    /**
-     * Total number of queries in the query index
-     */
+    /** Total number of queries in the query index */
     public final int queries;
 
-    /**
-     * Total number of queries int the query cache
-     */
+    /** Total number of queries int the query cache */
     public final int cachedQueries;
 
-    /**
-     * Time the query cache was last purged
-     */
+    /** Time the query cache was last purged */
     public final long lastPurged;
 
     public QueryCacheStats(int queries, int cachedQueries, long lastPurged) {
@@ -162,8 +156,8 @@ public class Monitor implements Closeable {
 
   /**
    * Remove unused queries from the query cache.
-   * <p>
-   * This is normally called from a background thread at a rate set by configurePurgeFrequency().
+   *
+   * <p>This is normally called from a background thread at a rate set by configurePurgeFrequency().
    *
    * @throws IOException on IO errors
    */
@@ -205,7 +199,7 @@ public class Monitor implements Closeable {
    * Add new queries to the monitor
    *
    * @param queries the MonitorQueries to add
-   * @throws IOException     on IO errors
+   * @throws IOException on IO errors
    */
   public void register(MonitorQuery... queries) throws IOException {
     register(Arrays.asList(queries));
@@ -243,16 +237,18 @@ public class Monitor implements Closeable {
   }
 
   /**
-   * Match an array of {@link Document}s against the queryindex, calling a {@link CandidateMatcher} produced by the
-   * supplied {@link MatcherFactory} for each possible matching query.
+   * Match an array of {@link Document}s against the queryindex, calling a {@link CandidateMatcher}
+   * produced by the supplied {@link MatcherFactory} for each possible matching query.
    *
-   * @param docs    the DocumentBatch to match
-   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
-   * @param <T>     the type of {@link QueryMatch} to return
+   * @param docs the DocumentBatch to match
+   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the
+   *     match run
+   * @param <T> the type of {@link QueryMatch} to return
    * @return a {@link MatchingQueries} object summarizing the match run.
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> MultiMatchingQueries<T> match(Document[] docs, MatcherFactory<T> factory) throws IOException {
+  public <T extends QueryMatch> MultiMatchingQueries<T> match(
+      Document[] docs, MatcherFactory<T> factory) throws IOException {
     try (DocumentBatch batch = DocumentBatch.of(analyzer, docs)) {
       LeafReader reader = batch.get();
       CandidateMatcher<T> matcher = factory.createMatcher(new IndexSearcher(batch.get()));
@@ -263,17 +259,19 @@ public class Monitor implements Closeable {
   }
 
   /**
-   * Match a single {@link Document} against the queryindex, calling a {@link CandidateMatcher} produced by the
-   * supplied {@link MatcherFactory} for each possible matching query.
+   * Match a single {@link Document} against the queryindex, calling a {@link CandidateMatcher}
+   * produced by the supplied {@link MatcherFactory} for each possible matching query.
    *
-   * @param doc     the InputDocument to match
-   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
-   * @param <T>     the type of {@link QueryMatch} to return
+   * @param doc the InputDocument to match
+   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the
+   *     match run
+   * @param <T> the type of {@link QueryMatch} to return
    * @return a {@link MatchingQueries} object summarizing the match run.
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> MatchingQueries<T> match(Document doc, MatcherFactory<T> factory) throws IOException {
-    return match(new Document[]{ doc }, factory).singleton();
+  public <T extends QueryMatch> MatchingQueries<T> match(Document doc, MatcherFactory<T> factory)
+      throws IOException {
+    return match(new Document[] {doc}, factory).singleton();
   }
 
   /**
@@ -281,16 +279,14 @@ public class Monitor implements Closeable {
    *
    * @param queryId the id of the query to get
    * @return the MonitorQuery stored for this id, or null if not found
-   * @throws IOException           on IO errors
+   * @throws IOException on IO errors
    * @throws IllegalStateException if queries are not stored in the queryindex
    */
   public MonitorQuery getQuery(final String queryId) throws IOException {
     return queryIndex.getQuery(queryId);
   }
 
-  /**
-   * @return the number of queries (after decomposition) stored in this Monitor
-   */
+  /** @return the number of queries (after decomposition) stored in this Monitor */
   public int getDisjunctCount() {
     return queryIndex.numDocs();
   }
@@ -314,7 +310,8 @@ public class Monitor implements Closeable {
   }
 
   // For each query selected by the presearcher, pass on to a CandidateMatcher
-  private static class StandardQueryCollector<T extends QueryMatch> implements QueryIndex.QueryCollector {
+  private static class StandardQueryCollector<T extends QueryMatch>
+      implements QueryIndex.QueryCollector {
 
     final CandidateMatcher<T> matcher;
     int queryCount = 0;
@@ -324,9 +321,9 @@ public class Monitor implements Closeable {
     }
 
     @Override
-    public void matchQuery(String id, QueryCacheEntry query, QueryIndex.DataValues dataValues) throws IOException {
-      if (query == null)
-        return;
+    public void matchQuery(String id, QueryCacheEntry query, QueryIndex.DataValues dataValues)
+        throws IOException {
+      if (query == null) return;
       try {
         queryCount++;
         matcher.matchQuery(id, query.matchQuery, query.metadata);
@@ -334,43 +331,48 @@ public class Monitor implements Closeable {
         matcher.reportError(id, e);
       }
     }
-
   }
 
   /**
    * Match a DocumentBatch against the queries stored in the Monitor, also returning information
    * about which queries were selected by the presearcher, and why.
    *
-   * @param docs    a DocumentBatch to match against the index
-   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
-   * @param <T>     the type of QueryMatch produced by the CandidateMatcher
+   * @param docs a DocumentBatch to match against the index
+   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the
+   *     match run
+   * @param <T> the type of QueryMatch produced by the CandidateMatcher
    * @return a {@link PresearcherMatches} object containing debug information
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> PresearcherMatches<T> debug(Document[] docs, MatcherFactory<T> factory)
-      throws IOException {
+  public <T extends QueryMatch> PresearcherMatches<T> debug(
+      Document[] docs, MatcherFactory<T> factory) throws IOException {
     try (DocumentBatch batch = DocumentBatch.of(analyzer, docs)) {
       LeafReader reader = batch.get();
       IndexSearcher searcher = new IndexSearcher(reader);
       searcher.setQueryCache(null);
-      PresearcherQueryCollector<T> collector = new PresearcherQueryCollector<>(factory.createMatcher(searcher));
-      long buildTime = queryIndex.search(t -> new ForceNoBulkScoringQuery(presearcher.buildQuery(reader, t)), collector);
+      PresearcherQueryCollector<T> collector =
+          new PresearcherQueryCollector<>(factory.createMatcher(searcher));
+      long buildTime =
+          queryIndex.search(
+              t -> new ForceNoBulkScoringQuery(presearcher.buildQuery(reader, t)), collector);
       return collector.getMatches(buildTime);
     }
   }
 
   /**
-   * Match a single {@link Document} against the queries stored in the Monitor, also returning information
-   * about which queries were selected by the presearcher, and why.
+   * Match a single {@link Document} against the queries stored in the Monitor, also returning
+   * information about which queries were selected by the presearcher, and why.
    *
-   * @param doc     an InputDocument to match against the index
-   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the match run
-   * @param <T>     the type of QueryMatch produced by the CandidateMatcher
+   * @param doc an InputDocument to match against the index
+   * @param factory a {@link MatcherFactory} to use to create a {@link CandidateMatcher} for the
+   *     match run
+   * @param <T> the type of QueryMatch produced by the CandidateMatcher
    * @return a {@link PresearcherMatches} object containing debug information
    * @throws IOException on IO errors
    */
-  public <T extends QueryMatch> PresearcherMatches<T> debug(Document doc, MatcherFactory<T> factory) throws IOException {
-    return debug(new Document[]{doc}, factory);
+  public <T extends QueryMatch> PresearcherMatches<T> debug(Document doc, MatcherFactory<T> factory)
+      throws IOException {
+    return debug(new Document[] {doc}, factory);
   }
 
   private class PresearcherQueryCollector<T extends QueryMatch> extends StandardQueryCollector<T> {
@@ -391,19 +393,20 @@ public class Monitor implements Closeable {
     }
 
     @Override
-    public void matchQuery(final String id, QueryCacheEntry query, QueryIndex.DataValues dataValues) throws IOException {
-      Weight w = ((Scorer)dataValues.scorer).getWeight();
+    public void matchQuery(final String id, QueryCacheEntry query, QueryIndex.DataValues dataValues)
+        throws IOException {
+      Weight w = ((Scorer) dataValues.scorer).getWeight();
       Matches matches = w.matches(dataValues.ctx, dataValues.scorer.docID());
       for (String field : matches) {
         MatchesIterator mi = matches.getMatches(field);
         while (mi.next()) {
-          matchingTerms.computeIfAbsent(id, i -> new StringBuilder())
-              .append(" ").append(mi.getQuery());
+          matchingTerms
+              .computeIfAbsent(id, i -> new StringBuilder())
+              .append(" ")
+              .append(mi.getQuery());
         }
       }
       super.matchQuery(id, query, dataValues);
     }
-
   }
-
 }

@@ -19,32 +19,28 @@ package org.apache.lucene.codecs.memory;
 import org.apache.lucene.index.SortedNumericDocValues;
 
 /**
- * A list of per-document numeric values, sorted 
- * according to {@link Long#compare(long, long)}.
+ * A list of per-document numeric values, sorted according to {@link Long#compare(long, long)}.
  *
  * @deprecated Use {@link SortedNumericDocValues} instead.
  */
 @Deprecated
 abstract class LegacySortedNumericDocValues {
-  
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   protected LegacySortedNumericDocValues() {}
 
-  /** 
-   * Positions to the specified document 
-   */
+  /** Positions to the specified document */
   public abstract void setDocument(int doc);
-  
-  /** 
-   * Retrieve the value for the current document at the specified index. 
-   * An index ranges from {@code 0} to {@code count()-1}. 
+
+  /**
+   * Retrieve the value for the current document at the specified index. An index ranges from {@code
+   * 0} to {@code count()-1}.
    */
   public abstract long valueAt(int index);
-  
-  /** 
-   * Retrieves the count of values for the current document. 
-   * This may be zero if a document has no values.
+
+  /**
+   * Retrieves the count of values for the current document. This may be zero if a document has no
+   * values.
    */
   public abstract int count();
 }

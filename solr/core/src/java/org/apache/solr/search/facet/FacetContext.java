@@ -38,6 +38,7 @@ public class FacetContext {
   Query filter;  // TODO: keep track of as a DocSet or as a Query?
   DocSet base;
   FacetContext parent;
+  boolean cache = true;
   int flags;
   FacetDebugInfo debugInfo;
 
@@ -53,6 +54,42 @@ public class FacetContext {
     return (flags & IS_SHARD) != 0;
   }
 
+  public FacetProcessor<?> getFacetProcessor() {
+    return processor;
+  }
+
+  public Map<String, Object> getFacetInfo() {
+    return facetInfo;
+  }
+
+  public QueryContext getQueryContext() {
+    return qcontext;
+  }
+
+  public SolrQueryRequest getRequest() {
+    return req;
+  }
+
+  public SolrIndexSearcher getSearcher() {
+    return searcher;
+  }
+
+  public Query getFilter() {
+    return filter;
+  }
+
+  public DocSet getBase() {
+    return base;
+  }
+
+  public FacetContext getParent() {
+    return parent;
+  }
+
+  public int getFlags() {
+    return flags;
+  }
+
   /**
    * @param filter The filter for the bucket that resulted in this context/domain.  Can be null if this is the root context.
    * @param domain The resulting set of documents for this facet.
@@ -64,6 +101,7 @@ public class FacetContext {
     ctx.filter = filter;
 
     // carry over from parent
+    ctx.cache = cache;
     ctx.flags = flags;
     ctx.qcontext = qcontext;
     ctx.req = req;

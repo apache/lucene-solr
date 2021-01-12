@@ -19,7 +19,6 @@ package org.apache.lucene.queryparser.classic;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,72 +27,58 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 
-/**
- * A QueryParser which constructs queries to search multiple fields.
- *
- */
-public class MultiFieldQueryParser extends QueryParser
-{
+/** A QueryParser which constructs queries to search multiple fields. */
+public class MultiFieldQueryParser extends QueryParser {
   protected String[] fields;
-  protected Map<String,Float> boosts;
+  protected Map<String, Float> boosts;
 
   /**
-   * Creates a MultiFieldQueryParser. 
-   * Allows passing of a map with term to Boost, and the boost to apply to each term.
+   * Creates a MultiFieldQueryParser. Allows passing of a map with term to Boost, and the boost to
+   * apply to each term.
    *
-   * <p>It will, when parse(String query)
-   * is called, construct a query like this (assuming the query consists of
-   * two terms and you specify the two fields <code>title</code> and <code>body</code>):</p>
-   * 
+   * <p>It will, when parse(String query) is called, construct a query like this (assuming the query
+   * consists of two terms and you specify the two fields <code>title</code> and <code>body</code>):
    * <code>
    * (title:term1 body:term1) (title:term2 body:term2)
    * </code>
    *
-   * <p>When setDefaultOperator(AND_OPERATOR) is set, the result will be:</p>
-   *  
-   * <code>
+   * <p>When setDefaultOperator(AND_OPERATOR) is set, the result will be: <code>
    * +(title:term1 body:term1) +(title:term2 body:term2)
    * </code>
-   * 
-   * <p>When you pass a boost (title=&gt;5 body=&gt;10) you can get </p>
-   * 
-   * <code>
+   *
+   * <p>When you pass a boost (title=&gt;5 body=&gt;10) you can get <code>
    * +(title:term1^5.0 body:term1^10.0) +(title:term2^5.0 body:term2^10.0)
    * </code>
    *
-   * <p>In other words, all the query's terms must appear, but it doesn't matter in
-   * what fields they appear.</p>
+   * <p>In other words, all the query's terms must appear, but it doesn't matter in what fields they
+   * appear.
    */
-  public MultiFieldQueryParser(String[] fields, Analyzer analyzer, Map<String,Float> boosts) {
+  public MultiFieldQueryParser(String[] fields, Analyzer analyzer, Map<String, Float> boosts) {
     this(fields, analyzer);
     this.boosts = boosts;
   }
-  
+
   /**
    * Creates a MultiFieldQueryParser.
    *
-   * <p>It will, when parse(String query)
-   * is called, construct a query like this (assuming the query consists of
-   * two terms and you specify the two fields <code>title</code> and <code>body</code>):</p>
-   * 
+   * <p>It will, when parse(String query) is called, construct a query like this (assuming the query
+   * consists of two terms and you specify the two fields <code>title</code> and <code>body</code>):
    * <code>
    * (title:term1 body:term1) (title:term2 body:term2)
    * </code>
    *
-   * <p>When setDefaultOperator(AND_OPERATOR) is set, the result will be:</p>
-   *  
-   * <code>
+   * <p>When setDefaultOperator(AND_OPERATOR) is set, the result will be: <code>
    * +(title:term1 body:term1) +(title:term2 body:term2)
    * </code>
-   * 
-   * <p>In other words, all the query's terms must appear, but it doesn't matter in
-   * what fields they appear.</p>
+   *
+   * <p>In other words, all the query's terms must appear, but it doesn't matter in what fields they
+   * appear.
    */
   public MultiFieldQueryParser(String[] fields, Analyzer analyzer) {
     super(null, analyzer);
     this.fields = fields;
   }
-  
+
   @Override
   protected Query getFieldQuery(String field, String queryText, int slop) throws ParseException {
     if (field == null) {
@@ -101,24 +86,24 @@ public class MultiFieldQueryParser extends QueryParser
       for (int i = 0; i < fields.length; i++) {
         Query q = super.getFieldQuery(fields[i], queryText, true);
         if (q != null) {
-          //If the user passes a map of boosts
+          // If the user passes a map of boosts
           if (boosts != null) {
-            //Get the boost from the map and apply them
+            // Get the boost from the map and apply them
             Float boost = boosts.get(fields[i]);
             if (boost != null) {
               q = new BoostQuery(q, boost.floatValue());
             }
           }
-          q = applySlop(q,slop);
+          q = applySlop(q, slop);
           clauses.add(q);
         }
       }
-      if (clauses.size() == 0)  // happens for stopwords
-        return null;
+      if (clauses.size() == 0) // happens for stopwords
+      return null;
       return getMultiFieldQuery(clauses);
     }
     Query q = super.getFieldQuery(field, queryText, true);
-    q = applySlop(q,slop);
+    q = applySlop(q, slop);
     return q;
   }
 
@@ -134,18 +119,18 @@ public class MultiFieldQueryParser extends QueryParser
       }
       q = builder.build();
     } else if (q instanceof MultiPhraseQuery) {
-      MultiPhraseQuery mpq = (MultiPhraseQuery)q;
-      
+      MultiPhraseQuery mpq = (MultiPhraseQuery) q;
+
       if (slop != mpq.getSlop()) {
         q = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
       }
     }
     return q;
   }
-  
 
   @Override
-  protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted)
+      throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       Query[] fieldQueries = new Query[fields.length];
@@ -154,7 +139,7 @@ public class MultiFieldQueryParser extends QueryParser
         Query q = super.getFieldQuery(fields[i], queryText, quoted);
         if (q != null) {
           if (q instanceof BooleanQuery) {
-            maxTerms = Math.max(maxTerms, ((BooleanQuery)q).clauses().size());
+            maxTerms = Math.max(maxTerms, ((BooleanQuery) q).clauses().size());
           } else {
             maxTerms = Math.max(1, maxTerms);
           }
@@ -167,7 +152,7 @@ public class MultiFieldQueryParser extends QueryParser
           if (fieldQueries[i] != null) {
             Query q = null;
             if (fieldQueries[i] instanceof BooleanQuery) {
-              List<BooleanClause> nestedClauses = ((BooleanQuery)fieldQueries[i]).clauses();
+              List<BooleanClause> nestedClauses = ((BooleanQuery) fieldQueries[i]).clauses();
               if (termNum < nestedClauses.size()) {
                 q = nestedClauses.get(termNum).getQuery();
               }
@@ -176,7 +161,7 @@ public class MultiFieldQueryParser extends QueryParser
             }
             if (q != null) {
               if (boosts != null) {
-                //Get the boost from the map and apply them
+                // Get the boost from the map and apply them
                 Float boost = boosts.get(fields[i]);
                 if (boost != null) {
                   q = new BoostQuery(q, boost);
@@ -198,18 +183,17 @@ public class MultiFieldQueryParser extends QueryParser
           clauses.addAll(termClauses);
         }
       }
-      if (clauses.size() == 0)  // happens for stopwords
-        return null;
+      if (clauses.size() == 0) // happens for stopwords
+      return null;
       return getMultiFieldQuery(clauses);
     }
     Query q = super.getFieldQuery(field, queryText, quoted);
     return q;
   }
 
-
   @Override
-  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
-  {
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)
+      throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
@@ -221,8 +205,7 @@ public class MultiFieldQueryParser extends QueryParser
   }
 
   @Override
-  protected Query getPrefixQuery(String field, String termStr) throws ParseException
-  {
+  protected Query getPrefixQuery(String field, String termStr) throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
@@ -245,9 +228,10 @@ public class MultiFieldQueryParser extends QueryParser
     return super.getWildcardQuery(field, termStr);
   }
 
- 
   @Override
-  protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
+  protected Query getRangeQuery(
+      String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
+      throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
@@ -257,12 +241,9 @@ public class MultiFieldQueryParser extends QueryParser
     }
     return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
-  
-  
 
   @Override
-  protected Query getRegexpQuery(String field, String termStr)
-      throws ParseException {
+  protected Query getRegexpQuery(String field, String termStr) throws ParseException {
     if (field == null) {
       List<Query> clauses = new ArrayList<>();
       for (int i = 0; i < fields.length; i++) {
@@ -272,7 +253,7 @@ public class MultiFieldQueryParser extends QueryParser
     }
     return super.getRegexpQuery(field, termStr);
   }
-  
+
   /** Creates a multifield query */
   // TODO: investigate more general approach by default, e.g. DisjunctionMaxQuery?
   protected Query getMultiFieldQuery(List<Query> queries) throws ParseException {
@@ -288,30 +269,33 @@ public class MultiFieldQueryParser extends QueryParser
 
   /**
    * Parses a query which searches on the fields specified.
-   * <p>
-   * If x fields are specified, this effectively constructs:
+   *
+   * <p>If x fields are specified, this effectively constructs:
+   *
    * <pre>
    * <code>
    * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
    * </code>
    * </pre>
+   *
    * @param queries Queries strings to parse
    * @param fields Fields to search on
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws IllegalArgumentException if the length of the queries array differs
-   *  from the length of the fields array
+   * @throws IllegalArgumentException if the length of the queries array differs from the length of
+   *     the fields array
    */
-  public static Query parse(String[] queries, String[] fields, Analyzer analyzer) throws ParseException {
+  public static Query parse(String[] queries, String[] fields, Analyzer analyzer)
+      throws ParseException {
     if (queries.length != fields.length)
       throw new IllegalArgumentException("queries.length != fields.length");
     BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
-    for (int i = 0; i < fields.length; i++)
-    {
+    for (int i = 0; i < fields.length; i++) {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(queries[i]);
-      if (q!=null && // q never null, just being defensive
-          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).clauses().size()>0)) {
+      if (q != null
+          && // q never null, just being defensive
+          (!(q instanceof BooleanQuery) || ((BooleanQuery) q).clauses().size() > 0)) {
         bQuery.add(q, BooleanClause.Occur.SHOULD);
       }
     }
@@ -319,11 +303,11 @@ public class MultiFieldQueryParser extends QueryParser
   }
 
   /**
-   * Parses a query, searching on the fields specified.
-   * Use this if you need to specify certain fields as required,
-   * and others as prohibited.
-   * <p>
-   * Usage:
+   * Parses a query, searching on the fields specified. Use this if you need to specify certain
+   * fields as required, and others as prohibited.
+   *
+   * <p>Usage:
+   *
    * <pre class="prettyprint">
    * <code>
    * String[] fields = {"filename", "contents", "description"};
@@ -333,8 +317,9 @@ public class MultiFieldQueryParser extends QueryParser
    * MultiFieldQueryParser.parse("query", fields, flags, analyzer);
    * </code>
    * </pre>
-   *<p>
-   * The code above would construct a query:
+   *
+   * <p>The code above would construct a query:
+   *
    * <pre>
    * <code>
    * (filename:query) +(contents:query) -(description:query)
@@ -346,19 +331,21 @@ public class MultiFieldQueryParser extends QueryParser
    * @param flags Flags describing the fields
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws IllegalArgumentException if the length of the fields array differs
-   *  from the length of the flags array
+   * @throws IllegalArgumentException if the length of the fields array differs from the length of
+   *     the flags array
    */
-  public static Query parse(String query, String[] fields,
-      BooleanClause.Occur[] flags, Analyzer analyzer) throws ParseException {
+  public static Query parse(
+      String query, String[] fields, BooleanClause.Occur[] flags, Analyzer analyzer)
+      throws ParseException {
     if (fields.length != flags.length)
       throw new IllegalArgumentException("fields.length != flags.length");
     BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
     for (int i = 0; i < fields.length; i++) {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(query);
-      if (q!=null && // q never null, just being defensive 
-          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).clauses().size()>0)) {
+      if (q != null
+          && // q never null, just being defensive
+          (!(q instanceof BooleanQuery) || ((BooleanQuery) q).clauses().size() > 0)) {
         bQuery.add(q, flags[i]);
       }
     }
@@ -366,11 +353,11 @@ public class MultiFieldQueryParser extends QueryParser
   }
 
   /**
-   * Parses a query, searching on the fields specified.
-   * Use this if you need to specify certain fields as required,
-   * and others as prohibited.
-   * <p>
-   * Usage:
+   * Parses a query, searching on the fields specified. Use this if you need to specify certain
+   * fields as required, and others as prohibited.
+   *
+   * <p>Usage:
+   *
    * <pre class="prettyprint">
    * <code>
    * String[] query = {"query1", "query2", "query3"};
@@ -381,8 +368,9 @@ public class MultiFieldQueryParser extends QueryParser
    * MultiFieldQueryParser.parse(query, fields, flags, analyzer);
    * </code>
    * </pre>
-   *<p>
-   * The code above would construct a query:
+   *
+   * <p>The code above would construct a query:
+   *
    * <pre>
    * <code>
    * (filename:query1) +(contents:query2) -(description:query3)
@@ -394,25 +382,24 @@ public class MultiFieldQueryParser extends QueryParser
    * @param flags Flags describing the fields
    * @param analyzer Analyzer to use
    * @throws ParseException if query parsing fails
-   * @throws IllegalArgumentException if the length of the queries, fields,
-   *  and flags array differ
+   * @throws IllegalArgumentException if the length of the queries, fields, and flags array differ
    */
-  public static Query parse(String[] queries, String[] fields, BooleanClause.Occur[] flags,
-      Analyzer analyzer) throws ParseException
-  {
+  public static Query parse(
+      String[] queries, String[] fields, BooleanClause.Occur[] flags, Analyzer analyzer)
+      throws ParseException {
     if (!(queries.length == fields.length && queries.length == flags.length))
-      throw new IllegalArgumentException("queries, fields, and flags array have have different length");
+      throw new IllegalArgumentException(
+          "queries, fields, and flags array have have different length");
     BooleanQuery.Builder bQuery = new BooleanQuery.Builder();
-    for (int i = 0; i < fields.length; i++)
-    {
+    for (int i = 0; i < fields.length; i++) {
       QueryParser qp = new QueryParser(fields[i], analyzer);
       Query q = qp.parse(queries[i]);
-      if (q!=null && // q never null, just being defensive
-          (!(q instanceof BooleanQuery) || ((BooleanQuery)q).clauses().size()>0)) {
+      if (q != null
+          && // q never null, just being defensive
+          (!(q instanceof BooleanQuery) || ((BooleanQuery) q).clauses().size() > 0)) {
         bQuery.add(q, flags[i]);
       }
     }
     return bQuery.build();
   }
-
 }

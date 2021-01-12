@@ -17,16 +17,19 @@
 
 package org.apache.lucene.codecs.simpletext;
 
+import static org.apache.lucene.codecs.simpletext.SimpleTextVectorWriter.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.RandomAccessVectorValues;
+import org.apache.lucene.index.RandomAccessVectorValuesProducer;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.TopDocs;
@@ -38,12 +41,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextVectorWriter.*;
-
 /**
- * Reads vector values from a simple text format. All vectors are read up front and cached in RAM in order to support
- * random access.
- * <b>FOR RECREATIONAL USE ONLY</b>
+ * Reads vector values from a simple text format. All vectors are read up front and cached in RAM in
+ * order to support random access. <b>FOR RECREATIONAL USE ONLY</b>
+ *
  * @lucene.experimental
  */
 public class SimpleTextVectorReader extends VectorReader {
@@ -57,13 +58,19 @@ public class SimpleTextVectorReader extends VectorReader {
 
   SimpleTextVectorReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
-    String metaFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextVectorFormat.META_EXTENSION);
-    try (ChecksumIndexInput in = readState.directory.openChecksumInput(metaFileName, IOContext.DEFAULT)) {
+    String metaFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextVectorFormat.META_EXTENSION);
+    try (ChecksumIndexInput in =
+        readState.directory.openChecksumInput(metaFileName, IOContext.DEFAULT)) {
       int fieldNumber = readInt(in, FIELD_NUMBER);
       while (fieldNumber != -1) {
         String fieldName = readString(in, FIELD_NAME);
         String scoreFunctionName = readString(in, SCORE_FUNCTION);
-        VectorValues.ScoreFunction scoreFunction = VectorValues.ScoreFunction.valueOf(scoreFunctionName);
+        VectorValues.SearchStrategy searchStrategy =
+            VectorValues.SearchStrategy.valueOf(scoreFunctionName);
         long vectorDataOffset = readLong(in, VECTOR_DATA_OFFSET);
         long vectorDataLength = readLong(in, VECTOR_DATA_LENGTH);
         int dimension = readInt(in, VECTOR_DIMENSION);
@@ -73,13 +80,19 @@ public class SimpleTextVectorReader extends VectorReader {
           docIds[i] = readInt(in, EMPTY);
         }
         assert fieldEntries.containsKey(fieldName) == false;
-        fieldEntries.put(fieldName, new FieldEntry(dimension, scoreFunction, vectorDataOffset, vectorDataLength, docIds));
+        fieldEntries.put(
+            fieldName,
+            new FieldEntry(dimension, searchStrategy, vectorDataOffset, vectorDataLength, docIds));
         fieldNumber = readInt(in, FIELD_NUMBER);
       }
       SimpleTextUtil.checkFooter(in);
     }
 
-    String vectorFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextVectorFormat.VECTOR_EXTENSION);
+    String vectorFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextVectorFormat.VECTOR_EXTENSION);
     dataIn = readState.directory.openInput(vectorFileName, IOContext.DEFAULT);
   }
 
@@ -98,9 +111,16 @@ public class SimpleTextVectorReader extends VectorReader {
       throw new IllegalStateException("No entry found for vector field=\"" + field + "\"");
     }
     if (dimension != fieldEntry.dimension) {
-      throw new IllegalStateException("Inconsistent vector dimension for field=\"" + field + "\"; " + dimension + " != " + fieldEntry.dimension);
+      throw new IllegalStateException(
+          "Inconsistent vector dimension for field=\""
+              + field
+              + "\"; "
+              + dimension
+              + " != "
+              + fieldEntry.dimension);
     }
-    IndexInput bytesSlice = dataIn.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
+    IndexInput bytesSlice =
+        dataIn.slice("vector-data", fieldEntry.vectorDataOffset, fieldEntry.vectorDataLength);
     return new SimpleTextVectorValues(fieldEntry, bytesSlice);
   }
 
@@ -109,7 +129,8 @@ public class SimpleTextVectorReader extends VectorReader {
     IndexInput clone = dataIn.clone();
     clone.seek(0);
 
-    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included in SimpleTextUtil.CHECKSUM):
+    // checksum is fixed-width encoded with 20 bytes, plus 1 byte for newline (the space is included
+    // in SimpleTextUtil.CHECKSUM):
     long footerStartPos = dataIn.length() - (SimpleTextUtil.CHECKSUM.length + 21);
     ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
     while (true) {
@@ -117,7 +138,12 @@ public class SimpleTextVectorReader extends VectorReader {
       if (input.getFilePointer() >= footerStartPos) {
         // Make sure we landed at precisely the right location:
         if (input.getFilePointer() != footerStartPos) {
-          throw new CorruptIndexException("SimpleText failure: footer does not start at expected position current=" + input.getFilePointer() + " vs expected=" + footerStartPos, input);
+          throw new CorruptIndexException(
+              "SimpleText failure: footer does not start at expected position current="
+                  + input.getFilePointer()
+                  + " vs expected="
+                  + footerStartPos,
+              input);
         }
         SimpleTextUtil.checkFooter(input);
         break;
@@ -138,16 +164,20 @@ public class SimpleTextVectorReader extends VectorReader {
   private static class FieldEntry {
 
     final int dimension;
-    final VectorValues.ScoreFunction scoreFunction;
+    final VectorValues.SearchStrategy searchStrategy;
 
     final long vectorDataOffset;
     final long vectorDataLength;
     final int[] ordToDoc;
 
-    FieldEntry(int dimension, VectorValues.ScoreFunction scoreFunction,
-               long vectorDataOffset, long vectorDataLength, int[] ordToDoc) {
+    FieldEntry(
+        int dimension,
+        VectorValues.SearchStrategy searchStrategy,
+        long vectorDataOffset,
+        long vectorDataLength,
+        int[] ordToDoc) {
       this.dimension = dimension;
-      this.scoreFunction = scoreFunction;
+      this.searchStrategy = searchStrategy;
       this.vectorDataOffset = vectorDataOffset;
       this.vectorDataLength = vectorDataLength;
       this.ordToDoc = ordToDoc;
@@ -158,7 +188,8 @@ public class SimpleTextVectorReader extends VectorReader {
     }
   }
 
-  private static class SimpleTextVectorValues extends VectorValues implements VectorValues.RandomAccess {
+  private static class SimpleTextVectorValues extends VectorValues
+      implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     private final BytesRefBuilder scratch = new BytesRefBuilder();
     private final FieldEntry entry;
@@ -189,8 +220,8 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     @Override
-    public ScoreFunction scoreFunction() {
-      return entry.scoreFunction;
+    public SearchStrategy searchStrategy() {
+      return entry.searchStrategy;
     }
 
     @Override
@@ -205,7 +236,7 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     @Override
-    public RandomAccess randomAccess() {
+    public RandomAccessVectorValues randomAccess() {
       return this;
     }
 
@@ -236,17 +267,18 @@ public class SimpleTextVectorReader extends VectorReader {
     }
 
     private void readAllVectors() throws IOException {
-      for (int i = 0; i < values.length; i++) {
-        readVector(values[i]);
+      for (float[] value : values) {
+        readVector(value);
       }
     }
 
     private void readVector(float[] value) throws IOException {
       SimpleTextUtil.readLine(in, scratch);
-      // skip leading " [" and strip trailing "]"
-      String s = new BytesRef(scratch.bytes(), 2, scratch.length() - 3).utf8ToString();
+      // skip leading "[" and strip trailing "]"
+      String s = new BytesRef(scratch.bytes(), 1, scratch.length() - 2).utf8ToString();
       String[] floatStrings = s.split(",");
-      assert floatStrings.length == value.length : " read " + s + " when expecting " + value.length + " floats";
+      assert floatStrings.length == value.length
+          : " read " + s + " when expecting " + value.length + " floats";
       for (int i = 0; i < floatStrings.length; i++) {
         value[i] = Float.parseFloat(floatStrings[i]);
       }
@@ -299,6 +331,7 @@ public class SimpleTextVectorReader extends VectorReader {
 
   private String stripPrefix(BytesRef prefix) {
     int prefixLen = prefix.length;
-    return new String(scratch.bytes(), prefixLen, scratch.length() - prefixLen, StandardCharsets.UTF_8);
+    return new String(
+        scratch.bytes(), prefixLen, scratch.length() - prefixLen, StandardCharsets.UTF_8);
   }
 }

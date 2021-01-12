@@ -22,14 +22,10 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-
-/**
- * Testcase for {@link RecyclingIntBlockAllocator}
- */
+/** Testcase for {@link RecyclingIntBlockAllocator} */
 public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
 
-  /**
-   */
+  /** */
   @Override
   @Before
   public void setUp() throws Exception {
@@ -37,8 +33,8 @@ public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
   }
 
   private RecyclingIntBlockAllocator newAllocator() {
-    return new RecyclingIntBlockAllocator(1 << (2 + random().nextInt(15)),
-        random().nextInt(97), Counter.newCounter());
+    return new RecyclingIntBlockAllocator(
+        1 << (2 + random().nextInt(15)), random().nextInt(97), Counter.newCounter());
   }
 
   @Test
@@ -79,8 +75,8 @@ public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
         assertNotNull(block);
         assertEquals(size, block.length);
         assertTrue("block is returned twice", allocated.add(block));
-        assertEquals(4 * size * (allocated.size() +  allocator.numBufferedBlocks()), allocator
-            .bytesUsed());
+        assertEquals(
+            4 * size * (allocated.size() + allocator.numBufferedBlocks()), allocator.bytesUsed());
       }
       int[][] array = allocated.toArray(new int[0][]);
       int begin = random().nextInt(array.length);
@@ -117,7 +113,11 @@ public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
         assertNotNull(block);
         assertEquals(size, block.length);
         assertTrue("block is returned twice", allocated.add(block));
-        assertEquals("" + (4 * size * (allocated.size() + allocator.numBufferedBlocks()) - allocator.bytesUsed()), 4 * size * (allocated.size() + allocator.numBufferedBlocks()),
+        assertEquals(
+            ""
+                + (4 * size * (allocated.size() + allocator.numBufferedBlocks())
+                    - allocator.bytesUsed()),
+            4 * size * (allocated.size() + allocator.numBufferedBlocks()),
             allocator.bytesUsed());
       }
 
@@ -134,8 +134,7 @@ public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
       }
       // randomly free blocks
       int numFreeBlocks = allocator.numBufferedBlocks();
-      int freeBlocks = allocator.freeBlocks(random().nextInt(7 + allocator
-          .maxBufferedBlocks()));
+      int freeBlocks = allocator.freeBlocks(random().nextInt(7 + allocator.maxBufferedBlocks()));
       assertEquals(allocator.numBufferedBlocks(), numFreeBlocks - freeBlocks);
     }
   }

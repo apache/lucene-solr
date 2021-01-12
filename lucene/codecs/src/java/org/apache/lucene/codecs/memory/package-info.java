@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Term dictionary, DocValues or Postings formats that are read 
- * entirely into memory.
- */
+/** Term dictionary, DocValues or Postings formats that are read entirely into memory. */
 package org.apache.lucene.codecs.memory;

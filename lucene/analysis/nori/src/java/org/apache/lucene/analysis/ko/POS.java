@@ -19,240 +19,153 @@ package org.apache.lucene.analysis.ko;
 import java.util.Locale;
 
 /**
- * Part of speech classification for Korean based on Sejong corpus classification.
- * The list of tags and their meanings is available here:
+ * Part of speech classification for Korean based on Sejong corpus classification. The list of tags
+ * and their meanings is available here:
  * https://docs.google.com/spreadsheets/d/1-9blXKjtjeKZqsf4NzHeYJCrr49-nXeRF6D80udfcwY
  */
 public class POS {
 
-  /**
-   * The type of the token.
-   */
+  /** The type of the token. */
   public enum Type {
-    /**
-     * A simple morpheme.
-     */
+    /** A simple morpheme. */
     MORPHEME,
 
-    /**
-     * Compound noun.
-     */
+    /** Compound noun. */
     COMPOUND,
 
-    /**
-     * Inflected token.
-     */
+    /** Inflected token. */
     INFLECT,
 
-    /**
-     * Pre-analysis token.
-     */
+    /** Pre-analysis token. */
     PREANALYSIS,
   }
 
-  /**
-   * Part of speech tag for Korean based on Sejong corpus classification.
-   */
+  /** Part of speech tag for Korean based on Sejong corpus classification. */
   public enum Tag {
-    /**
-     * Verbal endings
-     */
+    /** Verbal endings */
     E(100, "Verbal endings"),
 
-    /**
-     * Interjection
-     */
+    /** Interjection */
     IC(110, "Interjection"),
 
-    /**
-     * Ending Particle
-     */
+    /** Ending Particle */
     J(120, "Ending Particle"),
 
-    /**
-     * General Adverb
-     */
+    /** General Adverb */
     MAG(130, "General Adverb"),
 
-    /**
-     * Conjunctive adverb
-     */
+    /** Conjunctive adverb */
     MAJ(131, "Conjunctive adverb"),
 
-    /**
-     * Determiner
-     **/
+    /** Determiner */
     MM(140, "Modifier"),
 
-    /**
-     * General Noun
-     **/
+    /** General Noun */
     NNG(150, "General Noun"),
 
-    /**
-     * Proper Noun
-     **/
+    /** Proper Noun */
     NNP(151, "Proper Noun"),
 
-    /**
-     * Dependent noun (following nouns)
-     **/
+    /** Dependent noun (following nouns) */
     NNB(152, "Dependent noun"),
 
-    /**
-     * Dependent noun
-     **/
+    /** Dependent noun */
     NNBC(153, "Dependent noun"),
 
-    /**
-     * Pronoun
-     **/
+    /** Pronoun */
     NP(154, "Pronoun"),
 
-    /**
-     * Numeral
-     **/
+    /** Numeral */
     NR(155, "Numeral"),
 
-    /**
-     * Terminal punctuation (? ! .)
-     **/
+    /** Terminal punctuation (? ! .) */
     SF(160, "Terminal punctuation"),
 
-    /**
-     * Chinese character
-     **/
+    /** Chinese character */
     SH(161, "Chinese Characeter"),
 
-    /**
-     * Foreign language
-     **/
+    /** Foreign language */
     SL(162, "Foreign language"),
 
-    /**
-     * Number
-     **/
+    /** Number */
     SN(163, "Number"),
 
-    /**
-     * Space
-     **/
+    /** Space */
     SP(164, "Space"),
 
-    /**
-     * Closing brackets
-     **/
+    /** Closing brackets */
     SSC(165, "Closing brackets"),
 
-    /**
-     * Opening brackets
-     **/
+    /** Opening brackets */
     SSO(166, "Opening brackets"),
 
-    /**
-     * Separator (· / :)
-     **/
+    /** Separator (· / :) */
     SC(167, "Separator"),
 
-    /**
-     * Other symbol
-     **/
+    /** Other symbol */
     SY(168, "Other symbol"),
 
-    /**
-     * Ellipsis
-     **/
+    /** Ellipsis */
     SE(169, "Ellipsis"),
 
-    /**
-     * Adjective
-     **/
+    /** Adjective */
     VA(170, "Adjective"),
 
-    /**
-     * Negative designator
-     **/
+    /** Negative designator */
     VCN(171, "Negative designator"),
 
-    /**
-     * Positive designator
-     **/
+    /** Positive designator */
     VCP(172, "Positive designator"),
 
-    /**
-     * Verb
-     **/
+    /** Verb */
     VV(173, "Verb"),
 
-    /**
-     * Auxiliary Verb or Adjective
-     **/
+    /** Auxiliary Verb or Adjective */
     VX(174, "Auxiliary Verb or Adjective"),
 
-    /**
-     * Prefix
-     **/
+    /** Prefix */
     XPN(181, "Prefix"),
 
-    /**
-     * Root
-     **/
+    /** Root */
     XR(182, "Root"),
 
-    /**
-     * Adjective Suffix
-     **/
+    /** Adjective Suffix */
     XSA(183, "Adjective Suffix"),
 
-    /**
-     * Noun Suffix
-     **/
+    /** Noun Suffix */
     XSN(184, "Noun Suffix"),
 
-    /**
-     * Verb Suffix
-     **/
+    /** Verb Suffix */
     XSV(185, "Verb Suffix"),
 
-    /**
-     * Unknown
-     */
+    /** Unknown */
     UNKNOWN(999, "Unknown"),
 
-    /**
-     * Unknown
-     */
+    /** Unknown */
     UNA(-1, "Unknown"),
 
-    /**
-     * Unknown
-     */
+    /** Unknown */
     NA(-1, "Unknown"),
 
-    /**
-     * Unknown
-     */
+    /** Unknown */
     VSV(-1, "Unknown");
 
     private final int code;
     private final String desc;
 
-    /**
-     * Returns the code associated with the tag (as defined in pos-id.def).
-     */
+    /** Returns the code associated with the tag (as defined in pos-id.def). */
     public int code() {
       return code;
     }
 
-    /**
-     * Returns the description associated with the tag.
-     */
+    /** Returns the description associated with the tag. */
     public String description() {
       return desc;
     }
 
     /**
      * Returns a new part of speech tag.
+     *
      * @param code The code for the tag.
      * @param desc The description of the tag.
      */
@@ -262,9 +175,7 @@ public class POS {
     }
   }
 
-  /**
-   * Returns the {@link Tag} of the provided <code>name</code>.
-   */
+  /** Returns the {@link Tag} of the provided <code>name</code>. */
   public static Tag resolveTag(String name) {
     String tagUpper = name.toUpperCase(Locale.ENGLISH);
     if (tagUpper.startsWith("J")) {
@@ -276,17 +187,13 @@ public class POS {
     }
   }
 
-  /**
-   * Returns the {@link Tag} of the provided <code>tag</code>.
-   */
+  /** Returns the {@link Tag} of the provided <code>tag</code>. */
   public static Tag resolveTag(byte tag) {
     assert tag < Tag.values().length;
     return Tag.values()[tag];
   }
 
-  /**
-   * Returns the {@link Type} of the provided <code>name</code>.
-   */
+  /** Returns the {@link Type} of the provided <code>name</code>. */
   public static Type resolveType(String name) {
     if ("*".equals(name)) {
       return Type.MORPHEME;
@@ -294,9 +201,7 @@ public class POS {
     return Type.valueOf(name.toUpperCase(Locale.ENGLISH));
   }
 
-  /**
-   * Returns the {@link Type} of the provided <code>type</code>.
-   */
+  /** Returns the {@link Type} of the provided <code>type</code>. */
   public static Type resolveType(byte type) {
     assert type < Type.values().length;
     return Type.values()[type];

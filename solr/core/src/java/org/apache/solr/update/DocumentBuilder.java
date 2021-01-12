@@ -135,6 +135,13 @@ public class DocumentBuilder {
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
 
+      // when in-place update, don't process the id & _root_; they won't change
+      if (forInPlaceUpdate) {
+        if (field.getName().equals(uniqueKeyFieldName) || field.getName().equals(IndexSchema.ROOT_FIELD_NAME)) {
+          continue;
+        }
+      }
+
       if (field.getFirstValue() instanceof SolrDocumentBase) {
         if (ignoreNestedDocs) {
           continue;
@@ -169,8 +176,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v,
-                     name.equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+            addField(out, sfield, v, forInPlaceUpdate);
             // record the field as having a value
             usedFields.add(sfield.getName());
           }
@@ -178,34 +184,31 @@ public class DocumentBuilder {
           // Check if we should copy this field value to any other fields.
           // This could happen whether it is explicit or not.
           if (copyFields != null) {
-            // Do not copy this field if this document is to be used for an in-place update,
-            // and this is the uniqueKey field (because the uniqueKey can't change so no need to "update" the copyField).
-            if ( ! (forInPlaceUpdate && name.equals(uniqueKeyFieldName)) ) {
-              for (CopyField cf : copyFields) {
-                SchemaField destinationField = cf.getDestination();
+            for (CopyField cf : copyFields) {
+              SchemaField destinationField = cf.getDestination();
 
-                final boolean destHasValues = usedFields.contains(destinationField.getName());
+              final boolean destHasValues = usedFields.contains(destinationField.getName());
 
-                // check if the copy field is a multivalued or not
-                if (!destinationField.multiValued() && destHasValues) {
-                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                      "Multiple values encountered for non multiValued copy field " +
-                      destinationField.getName() + ": " + v);
-                }
-
-                used = true;
-
-                // Perhaps trim the length of a copy field
-                Object val = v;
-                if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
-                    val = cf.getLimitedValue(val.toString());
-                }
-
-                addField(out, destinationField, val,
-                         destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
-                // record the field as having a value
-                usedFields.add(destinationField.getName());
+              // check if the copy field is a multivalued or not
+              if (!destinationField.multiValued() && destHasValues) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                    "Multiple values encountered for non multiValued copy field " +
+                    destinationField.getName() + ": " + v);
               }
+
+              used = true;
+
+              // Perhaps trim the length of a copy field
+              Object val = v;
+              if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
+                  val = cf.getLimitedValue(val.toString());
+              }
+
+              // TODO ban copyField populating uniqueKeyField; too problematic to support
+              addField(out, destinationField, val,
+                       destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
+              // record the field as having a value
+              usedFields.add(destinationField.getName());
             }
           }
         }

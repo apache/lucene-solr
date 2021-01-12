@@ -16,25 +16,24 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.fr.FrenchAnalyzer;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
  * Factory for {@link ElisionFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_elsn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
- *     &lt;filter class="solr.ElisionFilterFactory" 
+ *     &lt;filter class="solr.ElisionFilterFactory"
  *       articles="stopwordarticles.txt" ignoreCase="true"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
@@ -52,7 +51,7 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
   private CharArraySet articles;
 
   /** Creates a new ElisionFilterFactory */
-  public ElisionFilterFactory(Map<String,String> args) {
+  public ElisionFilterFactory(Map<String, String> args) {
     super(args);
     articlesFile = get(args, "articles");
     ignoreCase = getBoolean(args, "ignoreCase", false);
@@ -85,4 +84,3 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
     return create(input);
   }
 }
-

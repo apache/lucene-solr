@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
+/**
  * Factory for {@link TurkishLowerCaseFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_trlwr" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,6 +30,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.TurkishLowerCaseFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.1.0
  * @lucene.spi {@value #NAME}
  */
@@ -38,15 +38,15 @@ public class TurkishLowerCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "turkishLowercase";
-  
+
   /** Creates a new TurkishLowerCaseFilterFactory */
-  public TurkishLowerCaseFilterFactory(Map<String,String> args) {
+  public TurkishLowerCaseFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public TurkishLowerCaseFilterFactory() {
     throw defaultCtorException();

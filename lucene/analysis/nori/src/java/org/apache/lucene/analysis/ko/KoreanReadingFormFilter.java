@@ -17,15 +17,15 @@
 package org.apache.lucene.analysis.ko;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
- * Replaces term text with the {@link ReadingAttribute} which is
- * the Hangul transcription of Hanja characters.
+ * Replaces term text with the {@link ReadingAttribute} which is the Hangul transcription of Hanja
+ * characters.
+ *
  * @lucene.experimental
  */
 public final class KoreanReadingFormFilter extends TokenFilter {

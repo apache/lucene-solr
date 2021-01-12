@@ -229,7 +229,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
             .assignPullReplicas(numPullReplicas)
             .onNodes(nodeList)
             .build();
-    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.cloudManager, clusterState, restoreCollection);
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
+        ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+        clusterState, restoreCollection);
     List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
 
     CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());

@@ -21,12 +21,13 @@
 
 def hasDefaults = rootProject.file("gradle.properties").exists()
 
-// If we don't have the defaults yet, create them.
-
-if (!hasDefaults) {
-  configure(rootProject) {
-    task localSettings() {
-      doFirst {
+configure(rootProject) {
+  task localSettings() {
+    doFirst {
+      // If we don't have the defaults yet, create them.
+      if (hasDefaults) {
+        logger.lifecycle("Local settings already exist, skipping generation.")
+      } else {
         // Approximate a common-sense default for running gradle/tests with parallel
         // workers: half the count of available cpus but not more than 12.
         def cpus = Runtime.runtime.availableProcessors()
@@ -62,7 +63,9 @@ if (!hasDefaults) {
       }
     }
   }
+}
 
+if (!hasDefaults) {
   // Make all tasks depend on local setup to make sure it'll run.
   allprojects {
     tasks.all { task ->

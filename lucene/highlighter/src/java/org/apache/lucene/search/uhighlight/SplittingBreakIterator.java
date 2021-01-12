@@ -21,12 +21,11 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
 /**
- * Virtually slices the text on both sides of every occurrence of the specified character. If the slice is 0-length
- * which happens for adjacent slice characters or when they are at the beginning or end, that character is reported
- * as a boundary.
- * For every slice between the specified characters, it is further processed with a specified
- * BreakIterator. A consequence is that the enclosed BreakIterator will never "see" the splitting character.
- * <br>
+ * Virtually slices the text on both sides of every occurrence of the specified character. If the
+ * slice is 0-length which happens for adjacent slice characters or when they are at the beginning
+ * or end, that character is reported as a boundary. For every slice between the specified
+ * characters, it is further processed with a specified BreakIterator. A consequence is that the
+ * enclosed BreakIterator will never "see" the splitting character. <br>
  * <em>Note: {@link #setText(CharacterIterator)} is unsupported. Use the string version.</em>
  *
  * @lucene.experimental
@@ -81,7 +80,8 @@ public class SplittingBreakIterator extends BreakIterator {
       return current = sliceStartIdx;
     }
     baseIter.setText(text.substring(sliceStartIdx, sliceEndIdx));
-    return current = sliceStartIdx + baseIter.current();// since setText() sets to first(), just grab current()
+    // since setText() sets to first(), just grab current()
+    return current = sliceStartIdx + baseIter.current();
   }
 
   @Override
@@ -91,7 +91,7 @@ public class SplittingBreakIterator extends BreakIterator {
     if (sliceStartIdx == -1) {
       sliceStartIdx = 0;
     } else {
-      sliceStartIdx++;//past sliceChar
+      sliceStartIdx++; // past sliceChar
     }
     if (sliceEndIdx == sliceStartIdx) {
       return current = sliceEndIdx;
@@ -108,7 +108,7 @@ public class SplittingBreakIterator extends BreakIterator {
       return current = current + sliceStartIdx;
     }
     if (sliceEndIdx >= text.length()) {
-      current = prevCurrent;//keep current where it is
+      current = prevCurrent; // keep current where it is
       return DONE;
     }
     sliceStartIdx = sliceEndIdx + 1;
@@ -120,7 +120,7 @@ public class SplittingBreakIterator extends BreakIterator {
       return current = sliceStartIdx;
     }
     baseIter.setText(text.substring(sliceStartIdx, sliceEndIdx));
-    return current = sliceStartIdx + baseIter.current();//use current() since at first() already
+    return current = sliceStartIdx + baseIter.current(); // use current() since at first() already
   }
 
   @Override
@@ -131,7 +131,7 @@ public class SplittingBreakIterator extends BreakIterator {
       return current = current + sliceStartIdx;
     }
     if (sliceStartIdx == 0) {
-      current = prevCurrent;//keep current where it is
+      current = prevCurrent; // keep current where it is
       return DONE;
     }
     sliceEndIdx = sliceStartIdx - 1;
@@ -139,7 +139,7 @@ public class SplittingBreakIterator extends BreakIterator {
     if (sliceStartIdx == -1) {
       sliceStartIdx = 0;
     } else {
-      sliceStartIdx++;//past sliceChar
+      sliceStartIdx++; // past sliceChar
     }
     if (sliceStartIdx == sliceEndIdx) {
       return current = sliceStartIdx;
@@ -156,17 +156,17 @@ public class SplittingBreakIterator extends BreakIterator {
         last(); // because https://bugs.openjdk.java.net/browse/JDK-8015110
         return DONE;
       }
-      sliceStartIdx = text.lastIndexOf(sliceChar, offset);//no +1
+      sliceStartIdx = text.lastIndexOf(sliceChar, offset); // no +1
       if (sliceStartIdx == -1) {
         sliceStartIdx = 0;
       } else {
-        sliceStartIdx++;//move past separator
+        sliceStartIdx++; // move past separator
       }
       sliceEndIdx = text.indexOf(sliceChar, Math.max(offset + 1, sliceStartIdx));
       if (sliceEndIdx == -1) {
         sliceEndIdx = text.length();
       }
-      if (sliceStartIdx != sliceEndIdx) {//otherwise, adjacent separator or separator at end
+      if (sliceStartIdx != sliceEndIdx) { // otherwise, adjacent separator or separator at end
         baseIter.setText(text.substring(sliceStartIdx, sliceEndIdx));
       }
     }
@@ -175,7 +175,8 @@ public class SplittingBreakIterator extends BreakIterator {
     if (sliceStartIdx == sliceEndIdx) {
       return current = offset + 1;
     } else {
-      // note: following() can never be first() if the first character is a boundary (it usually is).
+      // note: following() can never be first() if the first character is a boundary (it usually
+      // is).
       //   So we have to check if we should call first() instead of following():
       if (offset == sliceStartIdx - 1) {
         // the first boundary following this offset is the very first boundary in this slice
@@ -193,7 +194,7 @@ public class SplittingBreakIterator extends BreakIterator {
         first(); // because https://bugs.openjdk.java.net/browse/JDK-8015110
         return DONE;
       }
-      sliceEndIdx = text.indexOf(sliceChar, offset);//no -1
+      sliceEndIdx = text.indexOf(sliceChar, offset); // no -1
       if (sliceEndIdx == -1) {
         sliceEndIdx = text.length();
       }
@@ -203,7 +204,7 @@ public class SplittingBreakIterator extends BreakIterator {
       } else {
         sliceStartIdx = Math.min(sliceStartIdx + 1, sliceEndIdx);
       }
-      if (sliceStartIdx != sliceEndIdx) {//otherwise, adjacent separator or separator at end
+      if (sliceStartIdx != sliceEndIdx) { // otherwise, adjacent separator or separator at end
         baseIter.setText(text.substring(sliceStartIdx, sliceEndIdx));
       }
     }
@@ -239,6 +240,4 @@ public class SplittingBreakIterator extends BreakIterator {
     }
     return current();
   }
-
-
 }

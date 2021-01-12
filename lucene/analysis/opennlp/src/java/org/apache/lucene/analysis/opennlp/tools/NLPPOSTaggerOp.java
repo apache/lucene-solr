@@ -18,16 +18,14 @@
 package org.apache.lucene.analysis.opennlp.tools;
 
 import java.io.IOException;
-
 import opennlp.tools.postag.POSModel;
 import opennlp.tools.postag.POSTagger;
 import opennlp.tools.postag.POSTaggerME;
 
 /**
- * Supply OpenNLP Parts-Of-Speech Tagging tool
- * Requires binary models from OpenNLP project on SourceForge.
+ * Supply OpenNLP Parts-Of-Speech Tagging tool Requires binary models from OpenNLP project on
+ * SourceForge.
  */
-
 public class NLPPOSTaggerOp {
   private POSTagger tagger = null;
 

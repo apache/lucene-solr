@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.index.Impact;
@@ -31,22 +29,21 @@ import org.apache.lucene.store.IndexOutput;
 /**
  * Write skip lists with multiple levels, and support skip within block ints.
  *
- * Assume that docFreq = 28, skipInterval = blockSize = 12
+ * <p>Assume that docFreq = 28, skipInterval = blockSize = 12
  *
+ * <pre>
  *  |       block#0       | |      block#1        | |vInts|
  *  d d d d d d d d d d d d d d d d d d d d d d d d d d d d (posting list)
  *                          ^                       ^       (level 0 skip point)
+ * </pre>
  *
- * Note that skipWriter will ignore first document in block#0, since 
- * it is useless as a skip point.  Also, we'll never skip into the vInts
- * block, only record skip data at the start its start point(if it exist).
+ * Note that skipWriter will ignore first document in block#0, since it is useless as a skip point.
+ * Also, we'll never skip into the vInts block, only record skip data at the start its start
+ * point(if it exist).
  *
- * For each skip point, we will record: 
- * 1. docID in former position, i.e. for position 12, record docID[11], etc.
- * 2. its related file points(position, payload), 
- * 3. related numbers or uptos(position, payload).
- * 4. start offset.
- *
+ * <p>For each skip point, we will record: 1. docID in former position, i.e. for position 12, record
+ * docID[11], etc. 2. its related file points(position, payload), 3. related numbers or
+ * uptos(position, payload). 4. start offset.
  */
 final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   private int[] lastSkipDoc;
@@ -70,12 +67,18 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  public Lucene50SkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
+  public Lucene50SkipWriter(
+      int maxSkipLevels,
+      int blockSize,
+      int docCount,
+      IndexOutput docOut,
+      IndexOutput posOut,
+      IndexOutput payOut) {
     super(blockSize, 8, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;
     this.payOut = payOut;
-    
+
     lastSkipDoc = new int[maxSkipLevels];
     lastSkipDocPointer = new long[maxSkipLevels];
     if (posOut != null) {
@@ -91,15 +94,19 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     }
   }
 
-  public void setField(boolean fieldHasPositions, boolean fieldHasOffsets, boolean fieldHasPayloads) {
+  public void setField(
+      boolean fieldHasPositions, boolean fieldHasOffsets, boolean fieldHasPayloads) {
     this.fieldHasPositions = fieldHasPositions;
     this.fieldHasOffsets = fieldHasOffsets;
     this.fieldHasPayloads = fieldHasPayloads;
   }
-  
-  // tricky: we only skip data for blocks (terms with more than 128 docs), but re-init'ing the skipper 
-  // is pretty slow for rare terms in large segments as we have to fill O(log #docs in segment) of junk.
-  // this is the vast majority of terms (worst case: ID field or similar).  so in resetSkip() we save 
+
+  // tricky: we only skip data for blocks (terms with more than 128 docs), but re-init'ing the
+  // skipper
+  // is pretty slow for rare terms in large segments as we have to fill O(log #docs in segment) of
+  // junk.
+  // this is the vast majority of terms (worst case: ID field or similar).  so in resetSkip() we
+  // save
   // away the previous pointers, and lazy-init only if we need to buffer skip data for the term.
   private boolean initialized;
   long lastDocFP;
@@ -122,7 +129,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
     }
     initialized = false;
   }
-  
+
   private void initSkip() {
     if (!initialized) {
       super.resetSkip();
@@ -139,18 +146,24 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
       }
       // sets of competitive freq,norm pairs should be empty at this point
       assert Arrays.stream(curCompetitiveFreqNorms)
-          .map(CompetitiveImpactAccumulator::getCompetitiveFreqNormPairs)
-          .mapToInt(Collection::size)
-          .sum() == 0;
+              .map(CompetitiveImpactAccumulator::getCompetitiveFreqNormPairs)
+              .mapToInt(Collection::size)
+              .sum()
+          == 0;
       initialized = true;
     }
   }
 
-  /**
-   * Sets the values for the current skip data. 
-   */
-  public void bufferSkip(int doc, CompetitiveImpactAccumulator competitiveFreqNorms,
-      int numDocs, long posFP, long payFP, int posBufferUpto, int payloadByteUpto) throws IOException {
+  /** Sets the values for the current skip data. */
+  public void bufferSkip(
+      int doc,
+      CompetitiveImpactAccumulator competitiveFreqNorms,
+      int numDocs,
+      long posFP,
+      long payFP,
+      int posBufferUpto,
+      int payloadByteUpto)
+      throws IOException {
     initSkip();
     this.curDoc = doc;
     this.curDocPointer = docOut.getFilePointer();

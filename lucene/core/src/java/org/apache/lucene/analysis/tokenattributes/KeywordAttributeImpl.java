@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
 /** Default implementation of {@link KeywordAttribute}. */
-public final class KeywordAttributeImpl extends AttributeImpl implements
-    KeywordAttribute {
+public final class KeywordAttributeImpl extends AttributeImpl implements KeywordAttribute {
   private boolean keyword;
-  
+
   /** Initialize this attribute with the keyword value as false. */
   public KeywordAttributeImpl() {}
 
@@ -46,10 +44,8 @@ public final class KeywordAttributeImpl extends AttributeImpl implements
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (getClass() != obj.getClass())
-      return false;
+    if (this == obj) return true;
+    if (getClass() != obj.getClass()) return false;
     final KeywordAttributeImpl other = (KeywordAttributeImpl) obj;
     return keyword == other.keyword;
   }

@@ -18,10 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-/**
- * A {@link DirectoryReader} that wraps all its subreaders with
- * {@link AssertingLeafReader}
- */
+/** A {@link DirectoryReader} that wraps all its subreaders with {@link AssertingLeafReader} */
 public class AssertingDirectoryReader extends FilterDirectoryReader {
 
   static class AssertingSubReaderWrapper extends SubReaderWrapper {
@@ -44,5 +41,4 @@ public class AssertingDirectoryReader extends FilterDirectoryReader {
   public CacheHelper getReaderCacheHelper() {
     return in.getReaderCacheHelper();
   }
-
 }

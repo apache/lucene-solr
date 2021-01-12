@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.search.vectorhighlight;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * FieldFragList has a list of "frag info" that is used by FragmentsBuilder class
- * to create fragments (snippets).
+ * FieldFragList has a list of "frag info" that is used by FragmentsBuilder class to create
+ * fragments (snippets).
  */
 public abstract class FieldFragList {
 
@@ -32,33 +31,30 @@ public abstract class FieldFragList {
 
   /**
    * a constructor.
-   * 
+   *
    * @param fragCharSize the length (number of chars) of a fragment
    */
-  public FieldFragList( int fragCharSize ){
-  }
+  public FieldFragList(int fragCharSize) {}
 
   /**
    * convert the list of WeightedPhraseInfo to WeightedFragInfo, then add it to the fragInfos
-   * 
+   *
    * @param startOffset start offset of the fragment
    * @param endOffset end offset of the fragment
    * @param phraseInfoList list of WeightedPhraseInfo objects
    */
-  public abstract void add( int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList );
-  
+  public abstract void add(int startOffset, int endOffset, List<WeightedPhraseInfo> phraseInfoList);
+
   /**
    * return the list of WeightedFragInfos.
-   * 
+   *
    * @return fragInfos.
-   */ 
+   */
   public List<WeightedFragInfo> getFragInfos() {
     return fragInfos;
   }
 
-  /**
-   * List of term offsets + weight for a frag info
-   */
+  /** List of term offsets + weight for a frag info */
   public static class WeightedFragInfo {
 
     private List<SubInfo> subInfos;
@@ -66,79 +62,83 @@ public abstract class FieldFragList {
     private int startOffset;
     private int endOffset;
 
-    public WeightedFragInfo( int startOffset, int endOffset, List<SubInfo> subInfos, float totalBoost ){
+    public WeightedFragInfo(
+        int startOffset, int endOffset, List<SubInfo> subInfos, float totalBoost) {
       this.startOffset = startOffset;
       this.endOffset = endOffset;
       this.totalBoost = totalBoost;
       this.subInfos = subInfos;
     }
-    
-    public List<SubInfo> getSubInfos(){
+
+    public List<SubInfo> getSubInfos() {
       return subInfos;
     }
-    
-    public float getTotalBoost(){
+
+    public float getTotalBoost() {
       return totalBoost;
     }
-    
-    public int getStartOffset(){
+
+    public int getStartOffset() {
       return startOffset;
     }
-    
-    public int getEndOffset(){
+
+    public int getEndOffset() {
       return endOffset;
     }
-    
+
     @Override
-    public String toString(){
+    public String toString() {
       StringBuilder sb = new StringBuilder();
-      sb.append( "subInfos=(" );
-      for( SubInfo si : subInfos )
-        sb.append( si.toString() );
-      sb.append( ")/" ).append( totalBoost ).append( '(' ).append( startOffset ).append( ',' ).append( endOffset ).append( ')' );
+      sb.append("subInfos=(");
+      for (SubInfo si : subInfos) sb.append(si.toString());
+      sb.append(")/")
+          .append(totalBoost)
+          .append('(')
+          .append(startOffset)
+          .append(',')
+          .append(endOffset)
+          .append(')');
       return sb.toString();
     }
-    
-    /**
-     * Represents the list of term offsets for some text
-     */
+
+    /** Represents the list of term offsets for some text */
     public static class SubInfo {
-      private final String text;  // unnecessary member, just exists for debugging purpose
-      private final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
-                              // but if position-gap > 1 and slop > 0 then size() could be greater than 1
+      private final String text; // unnecessary member, just exists for debugging purpose
+      // usually termsOffsets.size() == 1,
+      // but if position-gap > 1 and slop > 0 then size() could be greater than 1
+      private final List<Toffs> termsOffsets;
       private final int seqnum;
       private final float boost; // used for scoring split WeightedPhraseInfos.
 
-      public SubInfo( String text, List<Toffs> termsOffsets, int seqnum, float boost ){
+      public SubInfo(String text, List<Toffs> termsOffsets, int seqnum, float boost) {
         this.text = text;
         this.termsOffsets = termsOffsets;
         this.seqnum = seqnum;
         this.boost = boost;
       }
-      
-      public List<Toffs> getTermsOffsets(){
+
+      public List<Toffs> getTermsOffsets() {
         return termsOffsets;
       }
-      
-      public int getSeqnum(){
+
+      public int getSeqnum() {
         return seqnum;
       }
 
-      public String getText(){
+      public String getText() {
         return text;
       }
 
-      public float getBoost(){
+      public float getBoost() {
         return boost;
       }
 
       @Override
-      public String toString(){
+      public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append( text ).append( '(' );
-        for( Toffs to : termsOffsets )
-          sb.append( to.toString() );
-        sb.append( ')' );
+        sb.append(text).append('(');
+        for (Toffs to : termsOffsets) sb.append(to.toString());
+        sb.append(')');
         return sb.toString();
       }
     }

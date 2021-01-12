@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 /** Simple tests to ensure this factory is working */
 public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public static Token tok(int pos, String t, int start, int end) {
-    Token tok = new Token(t,start,end);
+    Token tok = new Token(t, start, end);
     tok.setPositionIncrement(pos);
     return tok;
   }
@@ -34,25 +33,28 @@ public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenStreamFacto
   public void testDups(final String expected, final Token... tokens) throws Exception {
     TokenStream stream = new CannedTokenStream(tokens);
     stream = tokenFilterFactory("RemoveDuplicates").create(stream);
-    assertTokenStreamContents(stream, expected.split("\\s"));   
+    assertTokenStreamContents(stream, expected.split("\\s"));
   }
- 
+
   public void testSimpleDups() throws Exception {
-    testDups("A B C D E"
-             ,tok(1,"A", 0,  4)
-             ,tok(1,"B", 5, 10)
-             ,tok(0,"B",11, 15)
-             ,tok(1,"C",16, 20)
-             ,tok(0,"D",16, 20)
-             ,tok(1,"E",21, 25)
-             ); 
+    testDups(
+        "A B C D E",
+        tok(1, "A", 0, 4),
+        tok(1, "B", 5, 10),
+        tok(0, "B", 11, 15),
+        tok(1, "C", 16, 20),
+        tok(0, "D", 16, 20),
+        tok(1, "E", 21, 25));
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("RemoveDuplicates", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("RemoveDuplicates", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

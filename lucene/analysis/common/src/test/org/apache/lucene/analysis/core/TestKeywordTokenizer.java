@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
@@ -31,7 +30,7 @@ public class TestKeywordTokenizer extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
     KeywordTokenizer tokenizer = new KeywordTokenizer();
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"Tokenizer \ud801\udc1ctest"});
+    assertTokenStreamContents(tokenizer, new String[] {"Tokenizer \ud801\udc1ctest"});
   }
 
   public void testFactory() {
@@ -52,21 +51,31 @@ public class TestKeywordTokenizer extends BaseTokenStreamTestCase {
 
   public void testParamsFactory() throws IOException {
     // negative maxTokenLen
-    IllegalArgumentException iae = expectThrows(IllegalArgumentException.class, () ->
-        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "-1")));
-    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: -1", iae.getMessage());
+    IllegalArgumentException iae =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> new KeywordTokenizerFactory(makeArgs("maxTokenLen", "-1")));
+    assertEquals(
+        "maxTokenLen must be greater than 0 and less than 1048576 passed: -1", iae.getMessage());
 
     // zero maxTokenLen
-    iae = expectThrows(IllegalArgumentException.class, () ->
-        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "0")));
-    assertEquals("maxTokenLen must be greater than 0 and less than 1048576 passed: 0", iae.getMessage());
+    iae =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> new KeywordTokenizerFactory(makeArgs("maxTokenLen", "0")));
+    assertEquals(
+        "maxTokenLen must be greater than 0 and less than 1048576 passed: 0", iae.getMessage());
 
     // Added random param, should throw illegal error
-    iae = expectThrows(IllegalArgumentException.class, () ->
-        new KeywordTokenizerFactory(makeArgs("maxTokenLen", "255", "randomParam", "rValue")));
+    iae =
+        expectThrows(
+            IllegalArgumentException.class,
+            () ->
+                new KeywordTokenizerFactory(
+                    makeArgs("maxTokenLen", "255", "randomParam", "rValue")));
     assertEquals("Unknown parameters: {randomParam=rValue}", iae.getMessage());
 
-    // tokeniser will never split, no matter what is passed, 
+    // tokeniser will never split, no matter what is passed,
     // but the buffer will not be more than length of the token
 
     KeywordTokenizerFactory factory = new KeywordTokenizerFactory(makeArgs("maxTokenLen", "5"));
@@ -74,15 +83,15 @@ public class TestKeywordTokenizer extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = factory.create(attributeFactory);
     StringReader reader = new StringReader("Tokenizertest");
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"Tokenizertest"});
+    assertTokenStreamContents(tokenizer, new String[] {"Tokenizertest"});
 
-    // tokeniser will never split, no matter what is passed, 
+    // tokeniser will never split, no matter what is passed,
     // but the buffer will not be more than length of the token
     factory = new KeywordTokenizerFactory(makeArgs("maxTokenLen", "2"));
     attributeFactory = newAttributeFactory();
     tokenizer = factory.create(attributeFactory);
     reader = new StringReader("Tokenizer\u00A0test");
     tokenizer.setReader(reader);
-    assertTokenStreamContents(tokenizer, new String[]{"Tokenizer\u00A0test"});
+    assertTokenStreamContents(tokenizer, new String[] {"Tokenizer\u00A0test"});
   }
 }

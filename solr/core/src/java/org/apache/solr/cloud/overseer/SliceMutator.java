@@ -77,7 +77,6 @@ public class SliceMutator {
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
-            ZkStateReader.BASE_URL_PROP, message.getStr(ZkStateReader.BASE_URL_PROP),
             ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
             ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP), 
             ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
@@ -87,7 +86,6 @@ public class SliceMutator {
   public ZkWriteCommand removeReplica(ClusterState clusterState, ZkNodeProps message) {
     final String cnn = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-    final String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
 
     DocCollection coll = clusterState.getCollectionOrNull(collection);
@@ -97,10 +95,10 @@ public class SliceMutator {
     }
 
     Map<String, Slice> newSlices = new LinkedHashMap<>();
-
+    final String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
     for (Slice slice : coll.getSlices()) {
       Replica replica = slice.getReplica(cnn);
-      if (replica != null && (baseUrl == null || baseUrl.equals(replica.getBaseUrl()))) {
+      if (replica != null && (nodeName == null || nodeName.equals(replica.getNodeName()))) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(cnn);
         slice = new Slice(slice.getName(), newReplicas, slice.getProperties(),collection);
@@ -112,15 +110,7 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
-    StringBuilder sb = new StringBuilder();
-    String baseUrl = message.getStr(ZkStateReader.BASE_URL_PROP);
-    String coreName = message.getStr(ZkStateReader.CORE_NAME_PROP);
-    sb.append(baseUrl);
-    if (baseUrl != null && !baseUrl.endsWith("/")) sb.append("/");
-    sb.append(coreName == null ? "" : coreName);
-    if (!(sb.substring(sb.length() - 1).equals("/"))) sb.append("/");
-    String leaderUrl = sb.length() > 0 ? sb.toString() : null;
-
+    String leaderUrl = ZkCoreNodeProps.getCoreUrl(message);
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
@@ -137,7 +127,7 @@ public class SliceMutator {
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?
-      String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getStr(ZkStateReader.BASE_URL_PROP), replica.getStr(ZkStateReader.CORE_NAME_PROP));
+      String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
       if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
         replica = new ReplicaMutator(cloudManager).unsetLeader(replica);

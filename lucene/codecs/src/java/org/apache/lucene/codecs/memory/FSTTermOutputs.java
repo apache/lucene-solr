@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.DataInput;
@@ -29,8 +27,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.Outputs;
 
 /**
- * An FST {@link Outputs} implementation for 
- * {@link FSTTermsWriter}.
+ * An FST {@link Outputs} implementation for {@link FSTTermsWriter}.
  *
  * @lucene.experimental
  */
@@ -38,25 +35,27 @@ import org.apache.lucene.util.fst.Outputs;
 // NOTE: outputs should be per-field, since
 // longsSize is fixed for each field
 class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
-  private final static TermData NO_OUTPUT = new TermData();
-  //private static boolean TEST = false;
+  private static final TermData NO_OUTPUT = new TermData();
+  // private static boolean TEST = false;
   private final boolean hasPos;
 
-  /** 
-   * Represents the metadata for one term.
-   * On an FST, only long[] part is 'shared' and pushed towards root.
-   * byte[] and term stats will be kept on deeper arcs.
+  /**
+   * Represents the metadata for one term. On an FST, only long[] part is 'shared' and pushed
+   * towards root. byte[] and term stats will be kept on deeper arcs.
    */
   static class TermData implements Accountable {
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermData.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(TermData.class);
     byte[] bytes;
     int docFreq;
     long totalTermFreq;
+
     TermData() {
       this.bytes = null;
       this.docFreq = 0;
       this.totalTermFreq = -1;
     }
+
     TermData(byte[] bytes, int docFreq, long totalTermFreq) {
       this.bytes = bytes;
       this.docFreq = docFreq;
@@ -71,9 +70,9 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       }
       return ramBytesUsed;
     }
-    
-    // NOTE: actually, FST nodes are seldom 
-    // identical when outputs on their arcs 
+
+    // NOTE: actually, FST nodes are seldom
+    // identical when outputs on their arcs
     // aren't NO_OUTPUTs.
     @Override
     public int hashCode() {
@@ -90,7 +89,12 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
     @Override
     public String toString() {
-      return "FSTTermOutputs$TermData bytes=" + Arrays.toString(bytes) + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq;
+      return "FSTTermOutputs$TermData bytes="
+          + Arrays.toString(bytes)
+          + " docFreq="
+          + docFreq
+          + " totalTermFreq="
+          + totalTermFreq;
     }
 
     @Override
@@ -101,12 +105,10 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
         return false;
       }
       TermData other = (TermData) other_;
-      return statsEqual(this, other) && 
-             bytesEqual(this, other);
-
+      return statsEqual(this, other) && bytesEqual(this, other);
     }
   }
-  
+
   protected FSTTermOutputs(FieldInfo fieldInfo) {
     this.hasPos = fieldInfo.getIndexOptions() != IndexOptions.DOCS;
   }
@@ -118,15 +120,15 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
   @Override
   //
-  // The return value will be the smaller one, when these two are 
-  // 'comparable', i.e. 
+  // The return value will be the smaller one, when these two are
+  // 'comparable', i.e.
   // 1. every value in t1 is not larger than in t2, or
   // 2. every value in t1 is not smaller than t2.
   //
   public TermData common(TermData t1, TermData t2) {
-    //if (TEST) System.out.print("common("+t1+", "+t2+") = ");
+    // if (TEST) System.out.print("common("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT || t2 == NO_OUTPUT) {
-      //if (TEST) System.out.println("ret:"+NO_OUTPUT);
+      // if (TEST) System.out.println("ret:"+NO_OUTPUT);
       return NO_OUTPUT;
     }
 
@@ -137,15 +139,15 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     } else {
       ret = NO_OUTPUT;
     }
-    //if (TEST) System.out.println("ret:"+ret);
+    // if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
   @Override
   public TermData subtract(TermData t1, TermData t2) {
-    //if (TEST) System.out.print("subtract("+t1+", "+t2+") = ");
+    // if (TEST) System.out.print("subtract("+t1+", "+t2+") = ");
     if (t2 == NO_OUTPUT) {
-      //if (TEST) System.out.println("ret:"+t1);
+      // if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
 
@@ -155,21 +157,21 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     } else {
       ret = new TermData(t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    //if (TEST) System.out.println("ret:"+ret);
+    // if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
   // TODO: if we refactor a 'addSelf(TermData other)',
-  // we can gain about 5~7% for fuzzy queries, however this also 
+  // we can gain about 5~7% for fuzzy queries, however this also
   // means we are putting too much stress on FST Outputs decoding?
   @Override
   public TermData add(TermData t1, TermData t2) {
-    //if (TEST) System.out.print("add("+t1+", "+t2+") = ");
+    // if (TEST) System.out.print("add("+t1+", "+t2+") = ");
     if (t1 == NO_OUTPUT) {
-      //if (TEST) System.out.println("ret:"+t2);
+      // if (TEST) System.out.println("ret:"+t2);
       return t2;
     } else if (t2 == NO_OUTPUT) {
-      //if (TEST) System.out.println("ret:"+t1);
+      // if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
 
@@ -179,7 +181,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     } else {
       ret = new TermData(t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
-    //if (TEST) System.out.println("ret:"+ret);
+    // if (TEST) System.out.println("ret:"+ret);
     return ret;
   }
 
@@ -187,23 +189,23 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   public void write(TermData data, DataOutput out) throws IOException {
     assert hasPos || data.totalTermFreq == -1;
     int bit0 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1);
-    int bit1 = ((data.docFreq == 0)  ? 0 : 1) << 1;
+    int bit1 = ((data.docFreq == 0) ? 0 : 1) << 1;
     int bits = bit0 | bit1;
-    if (bit0 > 0) {  // determine extra length
+    if (bit0 > 0) { // determine extra length
       if (data.bytes.length < 32) {
         bits |= (data.bytes.length << 2);
-        out.writeByte((byte)bits);
+        out.writeByte((byte) bits);
       } else {
-        out.writeByte((byte)bits);
+        out.writeByte((byte) bits);
         out.writeVInt(data.bytes.length);
       }
     } else {
-      out.writeByte((byte)bits);
+      out.writeByte((byte) bits);
     }
-    if (bit0 > 0) {  // bytes exists
+    if (bit0 > 0) { // bytes exists
       out.writeBytes(data.bytes, 0, data.bytes.length);
     }
-    if (bit1 > 0) {  // stats exist
+    if (bit1 > 0) { // stats exist
       if (hasPos) {
         if (data.docFreq == data.totalTermFreq) {
           out.writeVInt((data.docFreq << 1) | 1);
@@ -226,14 +228,14 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     int bit0 = bits & 1;
     int bit1 = bits & 2;
     int bytesSize = (bits >>> 2);
-    if (bit0 > 0 && bytesSize == 0) {  // determine extra length
+    if (bit0 > 0 && bytesSize == 0) { // determine extra length
       bytesSize = in.readVInt();
     }
-    if (bit0 > 0) {  // bytes exists
+    if (bit0 > 0) { // bytes exists
       bytes = new byte[bytesSize];
       in.readBytes(bytes, 0, bytesSize);
     }
-    if (bit1 > 0) {  // stats exist
+    if (bit1 > 0) { // stats exist
       int code = in.readVInt();
       if (hasPos) {
         totalTermFreq = docFreq = code >>> 1;
@@ -246,7 +248,6 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     }
     return new TermData(bytes, docFreq, totalTermFreq);
   }
-  
 
   @Override
   public void skipOutput(DataInput in) throws IOException {
@@ -254,13 +255,13 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     int bit0 = bits & 1;
     int bit1 = bits & 2;
     int bytesSize = (bits >>> 2);
-    if (bit0 > 0 && bytesSize == 0) {  // determine extra length
+    if (bit0 > 0 && bytesSize == 0) { // determine extra length
       bytesSize = in.readVInt();
     }
-    if (bit0 > 0) {  // bytes exists
+    if (bit0 > 0) { // bytes exists
       in.skipBytes(bytesSize);
     }
-    if (bit1 > 0) {  // stats exist
+    if (bit1 > 0) { // stats exist
       int code = in.readVInt();
       if (hasPos && (code & 1) == 0) {
         in.readVLong();
@@ -281,6 +282,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   static boolean statsEqual(final TermData t1, final TermData t2) {
     return t1.docFreq == t2.docFreq && t1.totalTermFreq == t2.totalTermFreq;
   }
+
   static boolean bytesEqual(final TermData t1, final TermData t2) {
     if (t1.bytes == null && t2.bytes == null) {
       return true;

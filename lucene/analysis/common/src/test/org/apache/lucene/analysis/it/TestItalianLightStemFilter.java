@@ -16,59 +16,57 @@
  */
 package org.apache.lucene.analysis.it;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-
-/**
- * Simple tests for {@link ItalianLightStemFilter}
- */
+/** Simple tests for {@link ItalianLightStemFilter} */
 public class TestItalianLightStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new ItalianLightStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new ItalianLightStemFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataPath("itlighttestdata.zip"), "itlight.txt");
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new ItalianLightStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new ItalianLightStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

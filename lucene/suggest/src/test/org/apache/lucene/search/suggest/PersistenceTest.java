@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
@@ -30,22 +29,24 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class PersistenceTest extends LuceneTestCase {
-  public final String[] keys = new String[] {
-      "one", 
-      "two", 
-      "three", 
-      "four",
-      "oneness", 
-      "onerous", 
-      "onesimus", 
-      "twofold", 
-      "twonk", 
-      "thrive",
-      "through", 
-      "threat", 
-      "foundation", 
-      "fourier", 
-      "fourty"};
+  public final String[] keys =
+      new String[] {
+        "one",
+        "two",
+        "three",
+        "four",
+        "oneness",
+        "onerous",
+        "onesimus",
+        "twofold",
+        "twonk",
+        "thrive",
+        "through",
+        "threat",
+        "foundation",
+        "fourier",
+        "fourty"
+      };
 
   public void testTSTPersistence() throws Exception {
     runTest(TSTLookup.class, true);
@@ -60,11 +61,12 @@ public class PersistenceTest extends LuceneTestCase {
     runTest(FSTCompletionLookup.class, false);
   }
 
-  private Directory getDirectory() {     
+  private Directory getDirectory() {
     return newDirectory();
   }
 
-  private void runTest(Class<? extends Lookup> lookupClass, boolean supportsExactWeights) throws Exception {
+  private void runTest(Class<? extends Lookup> lookupClass, boolean supportsExactWeights)
+      throws Exception {
 
     // Add all input keys.
     Lookup lookup;
@@ -77,8 +79,9 @@ public class PersistenceTest extends LuceneTestCase {
       lookup = lookupClass.getConstructor().newInstance();
     }
     Input[] keys = new Input[this.keys.length];
-    for (int i = 0; i < keys.length; i++)
+    for (int i = 0; i < keys.length; i++) {
       keys[i] = new Input(this.keys[i], i);
+    }
     lookup.build(new InputArrayIterator(keys));
 
     // Store the suggester.
@@ -93,12 +96,13 @@ public class PersistenceTest extends LuceneTestCase {
     Random random = random();
     long previous = Long.MIN_VALUE;
     for (Input k : keys) {
-      List<LookupResult> list = lookup.lookup(TestUtil.bytesToCharSequence(k.term, random), false, 1);
+      List<LookupResult> list =
+          lookup.lookup(TestUtil.bytesToCharSequence(k.term, random), false, 1);
       assertEquals(1, list.size());
       LookupResult lookupResult = list.get(0);
       assertNotNull(k.term.utf8ToString(), lookupResult.key);
 
-      if (supportsExactWeights) { 
+      if (supportsExactWeights) {
         assertEquals(k.term.utf8ToString(), k.v, lookupResult.value);
       } else {
         assertTrue(lookupResult.value + ">=" + previous, lookupResult.value >= previous);

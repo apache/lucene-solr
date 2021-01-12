@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
 
-/** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+/**
+ * Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
+ *
+ * @lucene.internal
  */
-final class TermScorer extends Scorer {
+public final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;
   private final ImpactsEnum impactsEnum;
   private final DocIdSetIterator iterator;
   private final LeafSimScorer docScorer;
   private final ImpactsDISI impactsDisi;
 
-  /**
-   * Construct a {@link TermScorer} that will iterate all documents.
-   */
-  TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
+  /** Construct a {@link TermScorer} that will iterate all documents. */
+  public TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
     super(weight);
     iterator = this.postingsEnum = postingsEnum;
     impactsEnum = new SlowImpactsEnum(postingsEnum);
@@ -44,8 +43,8 @@ final class TermScorer extends Scorer {
   }
 
   /**
-   * Construct a {@link TermScorer} that will use impacts to skip blocks of
-   * non-competitive documents.
+   * Construct a {@link TermScorer} that will use impacts to skip blocks of non-competitive
+   * documents.
    */
   TermScorer(Weight weight, ImpactsEnum impactsEnum, LeafSimScorer docScorer) {
     super(weight);
@@ -60,7 +59,8 @@ final class TermScorer extends Scorer {
     return postingsEnum.docID();
   }
 
-  final int freq() throws IOException {
+  /** Returns term frequency in the current document. */
+  public final int freq() throws IOException {
     return postingsEnum.freq();
   }
 
@@ -92,6 +92,7 @@ final class TermScorer extends Scorer {
 
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
-  public String toString() { return "scorer(" + weight + ")[" + super.toString() + "]"; }
-
+  public String toString() {
+    return "scorer(" + weight + ")[" + super.toString() + "]";
+  }
 }

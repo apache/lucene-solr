@@ -17,20 +17,18 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * All bounding box shapes can derive from this base class, which furnishes
- * some common code
+ * All bounding box shapes can derive from this base class, which furnishes some common code
  *
  * @lucene.internal
  */
 abstract class GeoBaseBBox extends GeoBaseAreaShape implements GeoBBox {
 
-  /** Construct, given planet model.
-   *@param planetModel is the planet model.
+  /**
+   * Construct, given planet model.
+   *
+   * @param planetModel is the planet model.
    */
   public GeoBaseBBox(final PlanetModel planetModel) {
     super(planetModel);
   }
-
-
 }
-

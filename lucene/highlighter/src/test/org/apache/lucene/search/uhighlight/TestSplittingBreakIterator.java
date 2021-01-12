@@ -21,11 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSplittingBreakIterator extends LuceneTestCase {
-
 
   private static final BreakIterator LINE_BI = BreakIterator.getLineInstance(Locale.ROOT);
   private static final BreakIterator SPLIT_BI = new SplittingBreakIterator(LINE_BI, '|');
@@ -36,15 +34,9 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
 
   private void testWithoutSplits(BreakIterator bi) {
     // these tests have no '|'
-    testBreakIterator(bi,
-        " a",
-        "^^^");
-    testBreakIterator(bi,
-        "aa",
-        "^ ^");
-    testBreakIterator(bi,
-        "aa a",
-        "^  ^^");
+    testBreakIterator(bi, " a", "^^^");
+    testBreakIterator(bi, "aa", "^ ^");
+    testBreakIterator(bi, "aa a", "^  ^^");
   }
 
   public void testWithoutSplits() {
@@ -52,57 +44,45 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
   }
 
   public void testOnlySingleSplitChar() {
-    testBreakIterator(SPLIT_BI,
-        "|",
-        "^^");
+    testBreakIterator(SPLIT_BI, "|", "^^");
   }
 
   public void testSplitThenValue() {
-    testBreakIterator(SPLIT_BI,
-        "|a",
-        "^^^");
+    testBreakIterator(SPLIT_BI, "|a", "^^^");
   }
 
   public void testValueThenSplit() {
-    testBreakIterator(SPLIT_BI,
-        "a|",
-        "^^^");
+    testBreakIterator(SPLIT_BI, "a|", "^^^");
   }
 
   public void testValueThenSplitThenValue() {
-    testBreakIterator(SPLIT_BI,
-        "aa|aa",
-        "^ ^^ ^");
+    testBreakIterator(SPLIT_BI, "aa|aa", "^ ^^ ^");
   }
 
   public void testValueThenDoubleSplitThenValue() {
-    testBreakIterator(SPLIT_BI,
-        "aa||aa",
-        "^ ^^^ ^");
+    testBreakIterator(SPLIT_BI, "aa||aa", "^ ^^^ ^");
   }
 
   public void testValueThenSplitThenDoubleValueThenSplitThenValue() {
-    testBreakIterator(SPLIT_BI,
-        "a|bb cc|d",
-        "^^^  ^ ^^^");
+    testBreakIterator(SPLIT_BI, "a|bb cc|d", "^^^  ^ ^^^");
   }
 
   private void testBreakIterator(BreakIterator bi, String text, String boundaries) {
     bi.setText(text);
 
-    //Test first & last
+    // Test first & last
     testFirstAndLast(bi, text, boundaries);
 
-    //Test if expected boundaries are consistent with reading them from next() in a loop:
+    // Test if expected boundaries are consistent with reading them from next() in a loop:
     assertEquals(boundaries, readBoundariesToString(bi, text));
 
-    //Test following() and preceding():
+    // Test following() and preceding():
     // get each index, randomized in case their is a sequencing bug:
     List<Integer> indexes = randomIntsBetweenInclusive(text.length() + 1);
     testFollowing(bi, text, boundaries, indexes);
     testPreceding(bi, text, boundaries, indexes);
 
-    //Test previous():
+    // Test previous():
     testPrevious(bi, text, boundaries);
   }
 
@@ -117,7 +97,8 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
     assertEquals(message, current, bi.current());
   }
 
-  private void testFollowing(BreakIterator bi, String text, String boundaries, List<Integer> indexes) {
+  private void testFollowing(
+      BreakIterator bi, String text, String boundaries, List<Integer> indexes) {
     String message = "Text: " + text;
     for (Integer index : indexes) {
       int got = bi.following(index);
@@ -130,7 +111,8 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
     }
   }
 
-  private void testPreceding(BreakIterator bi, String text, String boundaries, List<Integer> indexes) {
+  private void testPreceding(
+      BreakIterator bi, String text, String boundaries, List<Integer> indexes) {
     String message = "Text: " + text;
     for (Integer index : indexes) {
       int got = bi.preceding(index);
@@ -139,9 +121,9 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
         assertEquals(boundaries.indexOf('^'), bi.current());
         continue;
       }
-//            if (index == text.length() && got == BreakIterator.DONE) {
-//                continue;//hack to accept faulty default impl of BreakIterator.preceding()
-//            }
+      //            if (index == text.length() && got == BreakIterator.DONE) {
+      //                continue;//hack to accept faulty default impl of BreakIterator.preceding()
+      //            }
       assertEquals(message + " index:" + index, boundaries.lastIndexOf('^', index - 1), got);
     }
   }
@@ -159,7 +141,7 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
     String message = "Text: " + text;
 
     bi.setText(text);
-    int idx = bi.last();//position at the end
+    int idx = bi.last(); // position at the end
     while (true) {
       idx = boundaries.lastIndexOf('^', idx - 1);
       if (idx == -1) {
@@ -168,12 +150,10 @@ public class TestSplittingBreakIterator extends LuceneTestCase {
       }
       assertEquals(message, idx, bi.previous());
     }
-    assertEquals(message, boundaries.indexOf('^'), bi.current());//finishes at first
+    assertEquals(message, boundaries.indexOf('^'), bi.current()); // finishes at first
   }
 
-  /**
-   * Returns a string comprised of spaces and '^' only at the boundaries.
-   */
+  /** Returns a string comprised of spaces and '^' only at the boundaries. */
   private String readBoundariesToString(BreakIterator bi, String text) {
     // init markers to spaces
     StringBuilder markers = new StringBuilder();

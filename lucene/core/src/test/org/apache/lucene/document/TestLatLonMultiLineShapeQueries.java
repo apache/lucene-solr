@@ -18,12 +18,14 @@ package org.apache.lucene.document;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line;
 
-/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Line} types */
+/**
+ * random bounding box, line, and polygon query tests for random indexed arrays of {@link Line}
+ * types
+ */
 public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
@@ -35,7 +37,7 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
   protected Line[] nextShape() {
     int n = random().nextInt(4) + 1;
     Line[] lines = new Line[n];
-    for (int i =0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       lines[i] = nextLine();
     }
     return lines;
@@ -61,6 +63,7 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
 
   protected class MultiLineValidator extends Validator {
     TestLatLonLineShapeQueries.LineValidator LINEVALIDATOR;
+
     MultiLineValidator(Encoder encoder) {
       super(encoder);
       LINEVALIDATOR = new TestLatLonLineShapeQueries.LineValidator(encoder);
@@ -74,26 +77,8 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      Line[] lines = (Line[])shape;
+      Line[] lines = (Line[]) shape;
       for (Line l : lines) {
         boolean b = LINEVALIDATOR.testComponentQuery(query, l);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {

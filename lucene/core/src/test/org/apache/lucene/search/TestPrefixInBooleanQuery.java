@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -27,15 +26,14 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
  *
- * represent the bug of 
- * 
- *    BooleanScorer.score(Collector collector, int max, int firstDocID)
- * 
- * Line 273, end=8192, subScorerDocID=11378, then more got false?
+ * <p>represent the bug of
+ *
+ * <p>BooleanScorer.score(Collector collector, int max, int firstDocID)
+ *
+ * <p>Line 273, end=8192, subScorerDocID=11378, then more got false?
  */
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
@@ -52,11 +50,11 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     Document doc = new Document();
     Field field = newStringField(FIELD, "meaninglessnames", Field.Store.NO);
     doc.add(field);
-    
+
     for (int i = 0; i < 5137; ++i) {
       writer.addDocument(doc);
     }
-    
+
     field.setStringValue("tangfulin");
     writer.addDocument(doc);
 
@@ -64,15 +62,15 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     for (int i = 5138; i < 11377; ++i) {
       writer.addDocument(doc);
     }
-    
+
     field.setStringValue("tangfulin");
     writer.addDocument(doc);
-    
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
   }
-  
+
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
@@ -81,34 +79,30 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
     directory.close();
     directory = null;
   }
-  
+
   public void testPrefixQuery() throws Exception {
     Query query = new PrefixQuery(new Term(FIELD, "tang"));
-    assertEquals("Number of matched documents", 2,
-                 searcher.search(query, 1000).totalHits.value);
+    assertEquals("Number of matched documents", 2, searcher.search(query, 1000).totalHits.value);
   }
+
   public void testTermQuery() throws Exception {
     Query query = new TermQuery(new Term(FIELD, "tangfulin"));
-    assertEquals("Number of matched documents", 2,
-                 searcher.search(query, 1000).totalHits.value);
+    assertEquals("Number of matched documents", 2, searcher.search(query, 1000).totalHits.value);
   }
+
   public void testTermBooleanQuery() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.add(new TermQuery(new Term(FIELD, "tangfulin")),
-              BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term(FIELD, "notexistnames")),
-              BooleanClause.Occur.SHOULD);
-    assertEquals("Number of matched documents", 2,
-                 searcher.search(query.build(), 1000).totalHits.value);
-
+    query.add(new TermQuery(new Term(FIELD, "tangfulin")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(FIELD, "notexistnames")), BooleanClause.Occur.SHOULD);
+    assertEquals(
+        "Number of matched documents", 2, searcher.search(query.build(), 1000).totalHits.value);
   }
+
   public void testPrefixBooleanQuery() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
-    query.add(new PrefixQuery(new Term(FIELD, "tang")),
-              BooleanClause.Occur.SHOULD);
-    query.add(new TermQuery(new Term(FIELD, "notexistnames")),
-              BooleanClause.Occur.SHOULD);
-    assertEquals("Number of matched documents", 2,
-                 searcher.search(query.build(), 1000).totalHits.value);
+    query.add(new PrefixQuery(new Term(FIELD, "tang")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term(FIELD, "notexistnames")), BooleanClause.Occur.SHOULD);
+    assertEquals(
+        "Number of matched documents", 2, searcher.search(query.build(), 1000).totalHits.value);
   }
 }

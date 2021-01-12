@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.spatial.prefix.tree;
 
+import java.util.Iterator;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
 
-import java.util.Iterator;
-
 /**
- * A filtering iterator of Cells. Those not matching the provided shape (disjoint) are
- * skipped. If {@code shapeFilter} is null then all cells are returned.
+ * A filtering iterator of Cells. Those not matching the provided shape (disjoint) are skipped. If
+ * {@code shapeFilter} is null then all cells are returned.
  *
  * @lucene.internal
  */
@@ -39,8 +38,8 @@ class FilterCellIterator extends CellIterator {
   @Override
   public boolean hasNext() {
     thisCell = null;
-    if (nextCell != null)//calling hasNext twice in a row
-      return true;
+    if (nextCell != null) // calling hasNext twice in a row
+    return true;
     while (baseIter.hasNext()) {
       nextCell = baseIter.next();
       if (shapeFilter == null) {
@@ -49,13 +48,11 @@ class FilterCellIterator extends CellIterator {
         SpatialRelation rel = nextCell.getShape().relate(shapeFilter);
         if (rel.intersects()) {
           nextCell.setShapeRel(rel);
-          if (rel == SpatialRelation.WITHIN)
-            nextCell.setLeaf();
+          if (rel == SpatialRelation.WITHIN) nextCell.setLeaf();
           return true;
         }
       }
     }
     return false;
   }
-
 }

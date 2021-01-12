@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.vector;
 
 import java.io.IOException;
 import java.text.ParseException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -76,26 +75,38 @@ public class TestPointVectorStrategy extends StrategyTestCase {
     commit();
     SearchResults results = executeQuery(new MatchAllDocsQuery(), 1);
     Document document = results.results.get(0).document;
-    assertNull("not stored", document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_X));
-    assertNull("not stored", document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_Y));
+    assertNull(
+        "not stored", document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_X));
+    assertNull(
+        "not stored", document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_Y));
     deleteAll();
 
     // Now we mark it stored.  We also disable pointvalues...
     FieldType fieldType = new FieldType(PointVectorStrategy.DEFAULT_FIELDTYPE);
     fieldType.setStored(true);
-    fieldType.setDimensions(0, 0);//disable point values
+    fieldType.setDimensions(0, 0); // disable point values
     this.strategy = new PointVectorStrategy(ctx, getClass().getSimpleName(), fieldType);
     adoc("99", "POINT(-5.0 8.2)");
     commit();
     results = executeQuery(new MatchAllDocsQuery(), 1);
     document = results.results.get(0).document;
-    assertEquals("stored", -5.0, document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_X).numericValue());
-    assertEquals("stored", 8.2,  document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_Y).numericValue());
+    assertEquals(
+        "stored",
+        -5.0,
+        document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_X).numericValue());
+    assertEquals(
+        "stored",
+        8.2,
+        document.getField(strategy.getFieldName() + PointVectorStrategy.SUFFIX_Y).numericValue());
 
     // Test a query fails without point values
-    expectThrows(UnsupportedOperationException.class, () -> {
-      SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, ctx.makeRectangle(-10.0, 10.0, -5.0, 5.0));
-      this.strategy.makeQuery(args);
-    });
+    expectThrows(
+        UnsupportedOperationException.class,
+        () -> {
+          SpatialArgs args =
+              new SpatialArgs(
+                  SpatialOperation.Intersects, ctx.makeRectangle(-10.0, 10.0, -5.0, 5.0));
+          this.strategy.makeQuery(args);
+        });
   }
 }

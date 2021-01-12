@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.analysis.ngram;
 
-
+import java.util.Map;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.util.Map;
-
 /**
  * Creates new instances of {@link EdgeNGramTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_edgngrm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -52,7 +51,7 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public EdgeNGramTokenizerFactory() {
     throw defaultCtorException();

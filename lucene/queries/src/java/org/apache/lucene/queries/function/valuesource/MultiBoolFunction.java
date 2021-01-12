@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -27,9 +26,9 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
 /**
- * Abstract {@link ValueSource} implementation which wraps multiple ValueSources
- * and applies an extendible boolean function to their values.
- **/
+ * Abstract {@link ValueSource} implementation which wraps multiple ValueSources and applies an
+ * extendible boolean function to their values.
+ */
 public abstract class MultiBoolFunction extends BoolFunction {
   protected final List<ValueSource> sources;
 
@@ -42,9 +41,10 @@ public abstract class MultiBoolFunction extends BoolFunction {
   protected abstract boolean func(int doc, FunctionValues[] vals) throws IOException;
 
   @Override
-  public BoolDocValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues[] vals =  new FunctionValues[sources.size()];
-    int i=0;
+  public BoolDocValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    final FunctionValues[] vals = new FunctionValues[sources.size()];
+    int i = 0;
     for (ValueSource source : sources) {
       vals[i++] = source.getValues(context, readerContext);
     }
@@ -99,7 +99,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    MultiBoolFunction other = (MultiBoolFunction)o;
+    MultiBoolFunction other = (MultiBoolFunction) o;
     return this.sources.equals(other.sources);
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.expressions;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -39,45 +38,47 @@ public class TestExpressionRescorer extends LuceneTestCase {
   IndexSearcher searcher;
   DirectoryReader reader;
   Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setSimilarity(new ClassicSimilarity()));
-    
+    RandomIndexWriter iw =
+        new RandomIndexWriter(
+            random(), dir, newIndexWriterConfig().setSimilarity(new ClassicSimilarity()));
+
     Document doc = new Document();
     doc.add(newStringField("id", "1", Field.Store.YES));
     doc.add(newTextField("body", "some contents and more contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 5));
     iw.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(newStringField("id", "2", Field.Store.YES));
     doc.add(newTextField("body", "another document with different contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 20));
     iw.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(newStringField("id", "3", Field.Store.YES));
     doc.add(newTextField("body", "crappy contents", Field.Store.NO));
     doc.add(new NumericDocValuesField("popularity", 2));
     iw.addDocument(doc);
-    
+
     reader = iw.getReader();
     searcher = new IndexSearcher(reader);
     // TODO: fix this test to not be so flaky and use newSearcher
     searcher.setSimilarity(new ClassicSimilarity());
     iw.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
     dir.close();
     super.tearDown();
   }
-  
+
   public void testBasic() throws Exception {
 
     // create a sort field and sort by it (reverse order)
@@ -105,9 +106,11 @@ public class TestExpressionRescorer extends LuceneTestCase {
     assertEquals("1", r.document(hits.scoreDocs[1].doc).get("id"));
     assertEquals("3", r.document(hits.scoreDocs[2].doc).get("id"));
 
-    String expl = rescorer.explain(searcher,
-                                   searcher.explain(query, hits.scoreDocs[0].doc),
-                                   hits.scoreDocs[0].doc).toString();
+    String expl =
+        rescorer
+            .explain(
+                searcher, searcher.explain(query, hits.scoreDocs[0].doc), hits.scoreDocs[0].doc)
+            .toString();
 
     // Confirm the explanation breaks out the individual
     // variables:

@@ -20,12 +20,12 @@ package org.apache.lucene.replicator.nrt;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.PriorityQueue;
-
 import org.apache.lucene.store.AlreadyClosedException;
 
-/** Runs CopyJob(s) in background thread; each ReplicaNode has an instance of this
- *  running.  At a given there could be one NRT copy job running, and multiple
- *  pre-warm merged segments jobs. */
+/**
+ * Runs CopyJob(s) in background thread; each ReplicaNode has an instance of this running. At a
+ * given there could be one NRT copy job running, and multiple pre-warm merged segments jobs.
+ */
 class Jobs extends Thread implements Closeable {
 
   private final PriorityQueue<CopyJob> queue = new PriorityQueue<>();
@@ -38,7 +38,10 @@ class Jobs extends Thread implements Closeable {
 
   private boolean finish;
 
-  /** Returns null if we are closing, else, returns the top job or waits for one to arrive if the queue is empty. */
+  /**
+   * Returns null if we are closing, else, returns the top job or waits for one to arrive if the
+   * queue is empty.
+   */
   private synchronized SimpleCopyJob getNextJob() {
     while (true) {
       if (finish) {
@@ -111,7 +114,7 @@ class Jobs extends Thread implements Closeable {
 
     node.message("top: jobs now exit run thread");
 
-    synchronized(this) {
+    synchronized (this) {
       // Gracefully cancel any jobs we didn't finish:
       while (queue.isEmpty() == false) {
         SimpleCopyJob job = (SimpleCopyJob) queue.poll();
@@ -145,7 +148,8 @@ class Jobs extends Thread implements Closeable {
   public synchronized void cancelConflictingJobs(CopyJob newJob) throws IOException {
     for (CopyJob job : queue) {
       if (job.conflicts(newJob)) {
-        node.message("top: now cancel existing conflicting job=" + job + " due to newJob=" + newJob);
+        node.message(
+            "top: now cancel existing conflicting job=" + job + " due to newJob=" + newJob);
         job.cancel("conflicts with new job", null);
       }
     }

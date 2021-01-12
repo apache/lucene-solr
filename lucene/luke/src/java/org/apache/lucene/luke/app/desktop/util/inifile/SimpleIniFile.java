@@ -46,7 +46,9 @@ public class SimpleIniFile implements IniFile {
   public synchronized void put(String section, String option, Object value) {
     if (checkString(section) && checkString(option) && Objects.nonNull(value)) {
       sections.putIfAbsent(section, new OptionMap());
-      sections.get(section).put(option, (value instanceof String) ? (String) value : String.valueOf(value));
+      sections
+          .get(section)
+          .put(option, (value instanceof String) ? (String) value : String.valueOf(value));
     }
   }
 

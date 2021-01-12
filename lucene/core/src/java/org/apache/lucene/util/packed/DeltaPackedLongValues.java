@@ -16,18 +16,19 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
 class DeltaPackedLongValues extends PackedLongValues {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DeltaPackedLongValues.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(DeltaPackedLongValues.class);
 
   final long[] mins;
 
-  DeltaPackedLongValues(int pageShift, int pageMask, Reader[] values, long[] mins, long size, long ramBytesUsed) {
+  DeltaPackedLongValues(
+      int pageShift, int pageMask, Reader[] values, long[] mins, long size, long ramBytesUsed) {
     super(pageShift, pageMask, values, size, ramBytesUsed);
     assert values.length == mins.length;
     this.mins = mins;
@@ -50,7 +51,8 @@ class DeltaPackedLongValues extends PackedLongValues {
 
   static class Builder extends PackedLongValues.Builder {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Builder.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(Builder.class);
 
     long[] mins;
 
@@ -71,8 +73,10 @@ class DeltaPackedLongValues extends PackedLongValues {
       pending = null;
       final PackedInts.Reader[] values = ArrayUtil.copyOfSubArray(this.values, 0, valuesOff);
       final long[] mins = ArrayUtil.copyOfSubArray(this.mins, 0, valuesOff);
-      final long ramBytesUsed = DeltaPackedLongValues.BASE_RAM_BYTES_USED
-          + RamUsageEstimator.sizeOf(values) + RamUsageEstimator.sizeOf(mins);
+      final long ramBytesUsed =
+          DeltaPackedLongValues.BASE_RAM_BYTES_USED
+              + RamUsageEstimator.sizeOf(values)
+              + RamUsageEstimator.sizeOf(mins);
       return new DeltaPackedLongValues(pageShift, pageMask, values, mins, size, ramBytesUsed);
     }
 
@@ -96,7 +100,5 @@ class DeltaPackedLongValues extends PackedLongValues {
       mins = ArrayUtil.growExact(mins, newBlockCount);
       ramBytesUsed += RamUsageEstimator.sizeOf(mins);
     }
-
   }
-
 }

@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.Reader;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
  * Factory for {@link org.apache.lucene.analysis.ja.JapaneseIterationMarkCharFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ja" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="false"&gt;
  *   &lt;analyzer&gt;
@@ -45,12 +44,16 @@ public class JapaneseIterationMarkCharFilterFactory extends CharFilterFactory {
 
   private final boolean normalizeKanji;
   private final boolean normalizeKana;
-  
+
   /** Creates a new JapaneseIterationMarkCharFilterFactory */
-  public JapaneseIterationMarkCharFilterFactory(Map<String,String> args) {
+  public JapaneseIterationMarkCharFilterFactory(Map<String, String> args) {
     super(args);
-    normalizeKanji = getBoolean(args, NORMALIZE_KANJI_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANJI_DEFAULT);
-    normalizeKana = getBoolean(args, NORMALIZE_KANA_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANA_DEFAULT);
+    normalizeKanji =
+        getBoolean(
+            args, NORMALIZE_KANJI_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANJI_DEFAULT);
+    normalizeKana =
+        getBoolean(
+            args, NORMALIZE_KANA_PARAM, JapaneseIterationMarkCharFilter.NORMALIZE_KANA_DEFAULT);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }

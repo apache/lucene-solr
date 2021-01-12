@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -36,21 +35,18 @@ import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 
 /**
- * Instantiates {@link FunctionValues} for a particular reader.
- * <br>
+ * Instantiates {@link FunctionValues} for a particular reader. <br>
  * Often used when creating a {@link FunctionQuery}.
- *
- *
  */
 public abstract class ValueSource {
 
   /**
-   * Gets the values for this reader and the context that was previously
-   * passed to createWeight().  The values must be consumed in a forward
-   * docID manner, and you must call this method again to iterate through
-   * the values again.
+   * Gets the values for this reader and the context that was previously passed to createWeight().
+   * The values must be consumed in a forward docID manner, and you must call this method again to
+   * iterate through the values again.
    */
-  public abstract FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException;
+  public abstract FunctionValues getValues(
+      Map<Object, Object> context, LeafReaderContext readerContext) throws IOException;
 
   @Override
   public abstract boolean equals(Object o);
@@ -58,9 +54,7 @@ public abstract class ValueSource {
   @Override
   public abstract int hashCode();
 
-  /**
-   * description of field, used in explain()
-   */
+  /** description of field, used in explain() */
   public abstract String description();
 
   @Override
@@ -68,18 +62,15 @@ public abstract class ValueSource {
     return description();
   }
 
-
   /**
    * Implementations should propagate createWeight to sub-ValueSources which can optionally store
-   * weight info in the context. The context object will be passed to getValues()
-   * where this info can be retrieved.
+   * weight info in the context. The context object will be passed to getValues() where this info
+   * can be retrieved.
    */
-  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-  }
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher)
+      throws IOException {}
 
-  /**
-   * Returns a new non-threadsafe context map.
-   */
+  /** Returns a new non-threadsafe context map. */
   public static Map<Object, Object> newContext(IndexSearcher searcher) {
     Map<Object, Object> context = new IdentityHashMap<>();
     context.put("searcher", searcher);
@@ -102,9 +93,7 @@ public abstract class ValueSource {
     }
   }
 
-  /**
-   * Expose this ValueSource as a LongValuesSource
-   */
+  /** Expose this ValueSource as a LongValuesSource */
   public LongValuesSource asLongValuesSource() {
     return new WrappedLongValuesSource(this);
   }
@@ -133,10 +122,11 @@ public abstract class ValueSource {
         @Override
         public boolean advanceExact(int doc) throws IOException {
           scorer.current = doc;
-          if (scores != null && scores.advanceExact(doc))
+          if (scores != null && scores.advanceExact(doc)) {
             scorer.score = (float) scores.doubleValue();
-          else
+          } else {
             scorer.score = 0;
+          }
           return fv.exists(doc);
         }
       };
@@ -174,12 +164,9 @@ public abstract class ValueSource {
     public LongValuesSource rewrite(IndexSearcher searcher) throws IOException {
       return this;
     }
-
   }
 
-  /**
-   * Expose this ValueSource as a DoubleValuesSource
-   */
+  /** Expose this ValueSource as a DoubleValuesSource */
   public DoubleValuesSource asDoubleValuesSource() {
     return new WrappedDoubleValuesSource(this, null);
   }
@@ -213,9 +200,9 @@ public abstract class ValueSource {
           scorer.current = doc;
           if (scores != null && scores.advanceExact(doc)) {
             scorer.score = (float) scores.doubleValue();
-          }
-          else
+          } else {
             scorer.score = 0;
+          }
           // ValueSource will return values even if exists() is false, generally a default
           // of some kind.  To preserve this behaviour with the iterator, we need to always
           // return 'true' here.
@@ -226,7 +213,7 @@ public abstract class ValueSource {
 
     @Override
     public boolean needsScores() {
-      return true;  // be on the safe side
+      return true; // be on the safe side
     }
 
     @Override
@@ -235,7 +222,8 @@ public abstract class ValueSource {
     }
 
     @Override
-    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+    public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+        throws IOException {
       Map<Object, Object> context = new HashMap<>();
       ScoreAndDoc scorer = new ScoreAndDoc();
       scorer.score = scoreExplanation.getValue().floatValue();
@@ -267,7 +255,6 @@ public abstract class ValueSource {
     public String toString() {
       return in.toString();
     }
-
   }
 
   public static ValueSource fromDoubleValuesSource(DoubleValuesSource in) {
@@ -283,16 +270,18 @@ public abstract class ValueSource {
     }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
       Scorable scorer = (Scorable) context.get("scorer");
       DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
 
       IndexSearcher searcher = (IndexSearcher) context.get("searcher");
       DoubleValues inner;
-      if (searcher != null)
+      if (searcher != null) {
         inner = in.rewrite(searcher).getValues(readerContext, scores);
-      else
+      } else {
         inner = in.getValues(readerContext, scores);
+      }
 
       return new FunctionValues() {
         @Override
@@ -302,15 +291,17 @@ public abstract class ValueSource {
 
         @Override
         public float floatVal(int doc) throws IOException {
-          if (inner.advanceExact(doc) == false)
+          if (inner.advanceExact(doc) == false) {
             return 0;
+          }
           return (float) inner.doubleValue();
         }
 
         @Override
         public double doubleVal(int doc) throws IOException {
-          if (inner.advanceExact(doc) == false)
+          if (inner.advanceExact(doc) == false) {
             return 0;
+          }
           return inner.doubleValue();
         }
 
@@ -338,7 +329,6 @@ public abstract class ValueSource {
     public String description() {
       return in.toString();
     }
-
   }
 
   //
@@ -347,9 +337,9 @@ public abstract class ValueSource {
 
   /**
    * EXPERIMENTAL: This method is subject to change.
-   * <p>
-   * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, org.apache.lucene.index.LeafReaderContext)}
-   * to populate the SortField.
+   *
+   * <p>Get the SortField for this ValueSource. Uses the {@link #getValues(java.util.Map,
+   * org.apache.lucene.index.LeafReaderContext)} to populate the SortField.
    *
    * @param reverse true if this is a reverse sort.
    * @return The {@link org.apache.lucene.search.SortField} for the ValueSource
@@ -379,16 +369,16 @@ public abstract class ValueSource {
     }
 
     @Override
-    public FieldComparator<Double> newComparator(String fieldname, int numHits,
-                                         int sortPos, boolean reversed) {
+    public FieldComparator<Double> newComparator(
+        String fieldname, int numHits, int sortPos, boolean reversed) {
       return new ValueSourceComparator(context, numHits);
     }
   }
 
   /**
-   * Implement a {@link org.apache.lucene.search.FieldComparator} that works
-   * off of the {@link FunctionValues} for a ValueSource
-   * instead of the normal Lucene FieldComparator that works off of a FieldCache.
+   * Implement a {@link org.apache.lucene.search.FieldComparator} that works off of the {@link
+   * FunctionValues} for a ValueSource instead of the normal Lucene FieldComparator that works off
+   * of a FieldCache.
    */
   class ValueSourceComparator extends SimpleFieldComparator<Double> {
     private final double[] values;

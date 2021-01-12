@@ -18,7 +18,6 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.util.TestUtil;
@@ -27,14 +26,13 @@ import org.apache.lucene.util.TestUtil;
 // a MockRemovesTokensTF, ideally subclassing FilteringTF
 // (in modules/analysis)
 
-/** 
- * Randomly injects holes (similar to what a stopfilter would do)
- */
+/** Randomly injects holes (similar to what a stopfilter would do) */
 public final class MockHoleInjectingTokenFilter extends TokenFilter {
 
   private final long randomSeed;
   private Random random;
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private int maxPos;
   private int pos;
@@ -43,7 +41,7 @@ public final class MockHoleInjectingTokenFilter extends TokenFilter {
     super(in);
     randomSeed = random.nextLong();
   }
-  
+
   @Override
   public void reset() throws IOException {
     super.reset();

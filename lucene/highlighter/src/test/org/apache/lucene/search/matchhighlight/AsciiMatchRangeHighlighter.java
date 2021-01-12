@@ -16,17 +16,14 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 
-/**
- * A simple ASCII match range highlighter for tests.
- */
+/** A simple ASCII match range highlighter for tests. */
 final class AsciiMatchRangeHighlighter {
   private final Analyzer analyzer;
   private final PassageFormatter passageFormatter;
@@ -41,7 +38,8 @@ final class AsciiMatchRangeHighlighter {
     this.analyzer = analyzer;
   }
 
-  public Map<String, List<String>> apply(Document document, Map<String, List<OffsetRange>> fieldHighlights) {
+  public Map<String, List<String>> apply(
+      Document document, Map<String, List<OffsetRange>> fieldHighlights) {
     ArrayList<OffsetRange> valueRanges = new ArrayList<>();
     Map<String, List<String>> fieldSnippets = new LinkedHashMap<>();
 

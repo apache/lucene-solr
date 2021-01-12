@@ -23,12 +23,12 @@ package org.apache.lucene.spatial3d.geom;
  */
 abstract class GeoBasePath extends GeoBaseDistanceShape implements GeoPath {
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model to use.
    */
   public GeoBasePath(final PlanetModel planetModel) {
     super(planetModel);
   }
-
 }
-

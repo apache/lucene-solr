@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.ro;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new RomanianAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new RomanianAnalyzer();
@@ -40,17 +37,16 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "îl", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("absenţa"), false);
-    Analyzer a = new RomanianAnalyzer( 
-        RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("absenţa"), false);
+    Analyzer a = new RomanianAnalyzer(RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "absenţa", "absenţa");
     checkOneTerm(a, "absenţi", "absenţ");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new RomanianAnalyzer();

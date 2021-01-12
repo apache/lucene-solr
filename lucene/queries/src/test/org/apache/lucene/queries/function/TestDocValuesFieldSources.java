@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.queries.function;
 
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -25,10 +25,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
@@ -40,9 +40,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
 
 public class TestDocValuesFieldSources extends LuceneTestCase {
 
@@ -88,7 +85,8 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           break;
         case NUMERIC:
         case SORTED_NUMERIC:
-          final int bitsPerValue = RandomNumbers.randomIntBetween(random(), 1, 31); // keep it an int
+          final int bitsPerValue =
+              RandomNumbers.randomIntBetween(random(), 1, 31); // keep it an int
           vals[i] = (long) random().nextInt((int) PackedInts.maxValue(bitsPerValue));
           f.setLongValue((Long) vals[i]);
           break;
@@ -116,7 +114,10 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
           break;
         case SORTED_NUMERIC:
           // Since we are not indexing multiple values, MIN and MAX should work the same way
-          vs = random().nextBoolean()? new MultiValuedLongFieldSource("dv", Type.MIN): new MultiValuedLongFieldSource("dv", Type.MAX);
+          vs =
+              random().nextBoolean()
+                  ? new MultiValuedLongFieldSource("dv", Type.MIN)
+                  : new MultiValuedLongFieldSource("dv", Type.MAX);
           break;
         default:
           throw new AssertionError();
@@ -133,7 +134,7 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
         } else {
           throw new AssertionError();
         }
-        
+
         Object expected = vals[ids.intVal(i)];
         switch (type) {
           case SORTED:
@@ -168,5 +169,4 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
       }
     }
   }
-
 }

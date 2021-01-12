@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestKeepCase extends StemmerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     init("keepcase.aff", "keepcase.dic");
   }
-  
+
   public void testPossibilities() {
-    assertStemsTo("drink",   "drink");
-    assertStemsTo("Drink",   "drink");
-    assertStemsTo("DRINK",   "drink");
-    assertStemsTo("drinks",  "drink");
-    assertStemsTo("Drinks",  "drink");
-    assertStemsTo("DRINKS",  "drink");
-    assertStemsTo("walk",    "walk");
-    assertStemsTo("walks",   "walk");
+    assertStemsTo("drink", "drink");
+    assertStemsTo("Drink", "drink");
+    assertStemsTo("DRINK", "drink");
+    assertStemsTo("drinks", "drink");
+    assertStemsTo("Drinks", "drink");
+    assertStemsTo("DRINKS", "drink");
+    assertStemsTo("walk", "walk");
+    assertStemsTo("walks", "walk");
     assertStemsTo("Walk");
     assertStemsTo("Walks");
     assertStemsTo("WALKS");
-    assertStemsTo("test",    "test");
+    assertStemsTo("test", "test");
     assertStemsTo("Test");
     assertStemsTo("TEST");
   }

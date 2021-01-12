@@ -29,31 +29,24 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 
-/**  
- * A {@code FilterFileSystem} contains another 
- * {@code FileSystem}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterFileSystem} contains another {@code FileSystem}, which it uses as its basic source
+ * of data, possibly transforming the data along the way or providing additional functionality.
  */
 public class FilterFileSystem extends FileSystem {
-  
-  /**
-   * FileSystemProvider that created this FilterFileSystem
-   */
+
+  /** FileSystemProvider that created this FilterFileSystem */
   protected final FilterFileSystemProvider parent;
-  
-  /** 
-   * The underlying {@code FileSystem} instance. 
-   */
+
+  /** The underlying {@code FileSystem} instance. */
   protected final FileSystem delegate;
-  
+
   /**
-   * Construct a {@code FilterFileSystem} based on 
-   * the specified base filesystem.
-   * <p>
-   * Note that base filesystem is closed if this filesystem is closed,
-   * however the default filesystem provider will never be closed, it doesn't
-   * support that.
+   * Construct a {@code FilterFileSystem} based on the specified base filesystem.
+   *
+   * <p>Note that base filesystem is closed if this filesystem is closed, however the default
+   * filesystem provider will never be closed, it doesn't support that.
+   *
    * @param delegate specified base channel.
    */
   public FilterFileSystem(FilterFileSystemProvider parent, FileSystem delegate) {
@@ -109,7 +102,7 @@ public class FilterFileSystem extends FileSystem {
         public Path next() {
           return new FilterPath(iterator.next(), FilterFileSystem.this);
         }
-        
+
         @Override
         public void remove() {
           iterator.remove();
@@ -133,7 +126,7 @@ public class FilterFileSystem extends FileSystem {
         public FileStore next() {
           return new FilterFileStore(iterator.next(), parent.getScheme()) {};
         }
-        
+
         @Override
         public void remove() {
           iterator.remove();
@@ -157,7 +150,7 @@ public class FilterFileSystem extends FileSystem {
     final PathMatcher matcher = delegate.getPathMatcher(syntaxAndPattern);
     return path -> {
       if (path instanceof FilterPath) {
-        return matcher.matches(((FilterPath)path).delegate);
+        return matcher.matches(((FilterPath) path).delegate);
       }
       return false;
     };

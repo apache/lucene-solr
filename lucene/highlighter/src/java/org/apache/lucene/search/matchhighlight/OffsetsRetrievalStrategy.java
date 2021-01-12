@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.search.MatchesIterator;
-
 import java.io.IOException;
 import java.util.List;
+import org.apache.lucene.search.MatchesIterator;
 
 /**
  * Determines how match offset regions are computed from {@link MatchesIterator}. Several
- * possibilities exist, ranging from retrieving offsets directly from a match instance
- * to re-evaluating the document's field and recomputing offsets from there.
+ * possibilities exist, ranging from retrieving offsets directly from a match instance to
+ * re-evaluating the document's field and recomputing offsets from there.
  */
 public interface OffsetsRetrievalStrategy {
-  /**
-   * Return value offsets (match ranges) acquired from the given {@link MatchesIterator}.
-   */
-  List<OffsetRange> get(MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
+  /** Return value offsets (match ranges) acquired from the given {@link MatchesIterator}. */
+  List<OffsetRange> get(
+      MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
       throws IOException;
 
-  /**
-   * Whether this strategy requires document field access.
-   */
+  /** Whether this strategy requires document field access. */
   default boolean requiresDocument() {
     return false;
   }

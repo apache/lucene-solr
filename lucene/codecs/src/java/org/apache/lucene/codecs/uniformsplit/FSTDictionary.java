@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataInput;
@@ -36,26 +35,24 @@ import org.apache.lucene.util.fst.Util;
 
 /**
  * Immutable stateless {@link FST}-based index dictionary kept in memory.
- * <p>
- * Use {@link IndexDictionary.Builder} to build the {@link IndexDictionary}.
- * <p>
- * Create a stateful {@link IndexDictionary.Browser} to seek a term in this
- * {@link IndexDictionary} and get its corresponding block file pointer to
- * the terms block file.
- * <p>
- * Its greatest advantage is to be very compact in memory thanks to both
- * the compaction of the {@link FST} as a byte array, and the incremental
- * encoding of the leaves block pointer values, which are long integers in
- * increasing order, with {@link PositiveIntOutputs}.<br>
- * With a compact dictionary in memory we can increase the number of blocks.
- * This allows us to reduce the average block size, which means faster scan
- * inside a block.
+ *
+ * <p>Use {@link IndexDictionary.Builder} to build the {@link IndexDictionary}.
+ *
+ * <p>Create a stateful {@link IndexDictionary.Browser} to seek a term in this {@link
+ * IndexDictionary} and get its corresponding block file pointer to the terms block file.
+ *
+ * <p>Its greatest advantage is to be very compact in memory thanks to both the compaction of the
+ * {@link FST} as a byte array, and the incremental encoding of the leaves block pointer values,
+ * which are long integers in increasing order, with {@link PositiveIntOutputs}.<br>
+ * With a compact dictionary in memory we can increase the number of blocks. This allows us to
+ * reduce the average block size, which means faster scan inside a block.
  *
  * @lucene.experimental
  */
 public class FSTDictionary implements IndexDictionary {
 
-  private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(FSTDictionary.class);
+  private static final long BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(FSTDictionary.class);
 
   protected final FST<Long> fst;
 
@@ -75,7 +72,8 @@ public class FSTDictionary implements IndexDictionary {
     } else {
       ByteBuffersDataOutput bytesDataOutput = ByteBuffersDataOutput.newResettableInstance();
       fst.save(bytesDataOutput, bytesDataOutput);
-      BlockEncoder.WritableBytes encodedBytes = blockEncoder.encode(bytesDataOutput.toDataInput(), bytesDataOutput.size());
+      BlockEncoder.WritableBytes encodedBytes =
+          blockEncoder.encode(bytesDataOutput.toDataInput(), bytesDataOutput.size());
       output.writeVLong(encodedBytes.size());
       encodedBytes.writeTo(output);
     }
@@ -83,9 +81,11 @@ public class FSTDictionary implements IndexDictionary {
 
   /**
    * Reads a {@link FSTDictionary} from the provided input.
+   *
    * @param blockDecoder The {@link BlockDecoder} to use for specific decoding; or null if none.
    */
-  protected static FSTDictionary read(DataInput input, BlockDecoder blockDecoder, boolean isFSTOnHeap) throws IOException {
+  protected static FSTDictionary read(
+      DataInput input, BlockDecoder blockDecoder, boolean isFSTOnHeap) throws IOException {
     DataInput fstDataInput;
     if (blockDecoder == null) {
       fstDataInput = input;
@@ -98,8 +98,10 @@ public class FSTDictionary implements IndexDictionary {
       isFSTOnHeap = true;
     }
     PositiveIntOutputs fstOutputs = PositiveIntOutputs.getSingleton();
-    FST<Long> fst = isFSTOnHeap ? new FST<>(fstDataInput, fstDataInput, fstOutputs)
-        : new FST<>(fstDataInput, fstDataInput, fstOutputs, new OffHeapFSTStore());
+    FST<Long> fst =
+        isFSTOnHeap
+            ? new FST<>(fstDataInput, fstDataInput, fstOutputs)
+            : new FST<>(fstDataInput, fstDataInput, fstOutputs, new OffHeapFSTStore());
     return new FSTDictionary(fst);
   }
 
@@ -109,8 +111,8 @@ public class FSTDictionary implements IndexDictionary {
   }
 
   /**
-   * Stateful {@link Browser} to seek a term in this {@link FSTDictionary}
-   * and get its corresponding block file pointer in the block file.
+   * Stateful {@link Browser} to seek a term in this {@link FSTDictionary} and get its corresponding
+   * block file pointer in the block file.
    */
   protected class Browser implements IndexDictionary.Browser {
 
@@ -135,12 +137,17 @@ public class FSTDictionary implements IndexDictionary {
     protected final boolean isFSTOnHeap;
 
     /**
-     * Lazy loaded immutable index dictionary FST.
-     * The FST is either kept off-heap, or hold in RAM on-heap.
+     * Lazy loaded immutable index dictionary FST. The FST is either kept off-heap, or hold in RAM
+     * on-heap.
      */
     protected IndexDictionary dictionary;
 
-    public BrowserSupplier(IndexInput dictionaryInput, long dictionaryStartFP, BlockDecoder blockDecoder, boolean isFSTOnHeap) throws IOException {
+    public BrowserSupplier(
+        IndexInput dictionaryInput,
+        long dictionaryStartFP,
+        BlockDecoder blockDecoder,
+        boolean isFSTOnHeap)
+        throws IOException {
       this.dictionaryInput = dictionaryInput.clone();
       this.dictionaryInput.seek(dictionaryStartFP);
       this.blockDecoder = blockDecoder;

@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -205,21 +206,22 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   public void testBasic() throws Exception {
     LeaderElector elector = new LeaderElector(zkClient);
     ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "");
+        UrlScheme.INSTANCE.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
         "shard2", "collection1", "dummynode1", props, zkController);
     elector.setup(context);
     elector.joinElection(context, false);
-    assertEquals("http://127.0.0.1/solr/",
+    assertEquals(UrlScheme.INSTANCE.getUrlScheme() + "://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
 
   @Test
   public void testCancelElection() throws Exception {
+    UrlScheme u = UrlScheme.INSTANCE;
     LeaderElector first = new LeaderElector(zkClient);
     ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "1");
+        u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "1");
     ZkController zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
         "slice1", "collection2", "dummynode1", props, zkController);
@@ -227,21 +229,25 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     first.joinElection(firstContext, false);
 
     Thread.sleep(1000);
-    assertEquals("original leader was not registered", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+
+    String url1 = u.applyUrlScheme("http://127.0.0.1/solr/1/");
+    String url2 = u.applyUrlScheme("http://127.0.0.1/solr/2/");
+
+    assertEquals("original leader was not registered", url1, getLeaderUrl("collection2", "slice1"));
 
     LeaderElector second = new LeaderElector(zkClient);
     props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-        "http://127.0.0.1/solr/", ZkStateReader.CORE_NAME_PROP, "2");
+        u.applyUrlScheme("http://127.0.0.1/solr/"), ZkStateReader.CORE_NAME_PROP, "2");
     zkController = MockSolrSource.makeSimpleMock(null, null, zkClient);
     ElectionContext context = new ShardLeaderElectionContextBase(second,
         "slice1", "collection2", "dummynode2", props, zkController);
     second.setup(context);
     second.joinElection(context, false);
     Thread.sleep(1000);
-    assertEquals("original leader should have stayed leader", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
+    assertEquals("original leader should have stayed leader", url1, getLeaderUrl("collection2", "slice1"));
     firstContext.cancelElection();
     Thread.sleep(1000);
-    assertEquals("new leader was not registered", "http://127.0.0.1/solr/2/", getLeaderUrl("collection2", "slice1"));
+    assertEquals("new leader was not registered", url2, getLeaderUrl("collection2", "slice1"));
   }
 
   private String getLeaderUrl(final String collection, final String slice)
@@ -384,7 +390,12 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       for (int i = 1; i <= numShards; i ++) {
         // if this test fails, getLeaderUrl will more likely throw an exception and fail the test,
         // but add an assertEquals as well for good measure
-        assertEquals("2/", getLeaderUrl("collection1", "parshard" + i));
+        String leaderUrl = getLeaderUrl("collection1", "parshard" + i);
+        int at = leaderUrl.indexOf("://");
+        if (at != -1) {
+          leaderUrl = leaderUrl.substring(at + 3);
+        }
+        assertEquals("2/", leaderUrl);
       }
     } finally {
       // cleanup any threads still running
@@ -414,6 +425,11 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
   private int getLeaderThread() throws KeeperException, InterruptedException {
     String leaderUrl = getLeaderUrl("collection1", "shard1");
+    // strip off the scheme
+    final int at = leaderUrl.indexOf("://");
+    if (at != -1) {
+      leaderUrl = leaderUrl.substring(at + 3);
+    }
     return Integer.parseInt(leaderUrl.replaceAll("/", ""));
   }
 

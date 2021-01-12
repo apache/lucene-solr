@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -29,13 +27,13 @@ import org.apache.lucene.util.automaton.Automaton;
 
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
 
-/** Consumes a TokenStream and creates an {@link Automaton}
- *  where the transition labels are UTF8 bytes (or Unicode 
- *  code points if unicodeArcs is true) from the {@link
- *  TermToBytesRefAttribute}.  Between tokens we insert
- *  POS_SEP and for holes we insert HOLE.
+/**
+ * Consumes a TokenStream and creates an {@link Automaton} where the transition labels are UTF8
+ * bytes (or Unicode code points if unicodeArcs is true) from the {@link TermToBytesRefAttribute}.
+ * Between tokens we insert POS_SEP and for holes we insert HOLE.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class TokenStreamToAutomaton {
 
   private boolean preservePositionIncrements;
@@ -47,7 +45,9 @@ public class TokenStreamToAutomaton {
     this.preservePositionIncrements = true;
   }
 
-  /** Whether to generate holes in the automaton for missing positions, <code>true</code> by default. */
+  /**
+   * Whether to generate holes in the automaton for missing positions, <code>true</code> by default.
+   */
   public void setPreservePositionIncrements(boolean enablePositionIncrements) {
     this.preservePositionIncrements = enablePositionIncrements;
   }
@@ -57,8 +57,10 @@ public class TokenStreamToAutomaton {
     this.finalOffsetGapAsHole = finalOffsetGapAsHole;
   }
 
-  /** Whether to make transition labels Unicode code points instead of UTF8 bytes, 
-   *  <code>false</code> by default */
+  /**
+   * Whether to make transition labels Unicode code points instead of UTF8 bytes, <code>false</code>
+   * by default
+   */
   public void setUnicodeArcs(boolean unicodeArcs) {
     this.unicodeArcs = unicodeArcs;
   }
@@ -84,9 +86,10 @@ public class TokenStreamToAutomaton {
     }
   }
 
-  /** Subclass and implement this if you need to change the
-   *  token (such as escaping certain bytes) before it's
-   *  turned into a graph. */ 
+  /**
+   * Subclass and implement this if you need to change the token (such as escaping certain bytes)
+   * before it's turned into a graph.
+   */
   protected BytesRef changeToken(BytesRef in) {
     return in;
   }
@@ -97,11 +100,11 @@ public class TokenStreamToAutomaton {
   /** We add this arc to represent a hole. */
   public static final int HOLE = 0x001e;
 
-  /** Pulls the graph (including {@link
-   *  PositionLengthAttribute}) from the provided {@link
-   *  TokenStream}, and creates the corresponding
-   *  automaton where arcs are bytes (or Unicode code points 
-   *  if unicodeArcs = true) from each term. */
+  /**
+   * Pulls the graph (including {@link PositionLengthAttribute}) from the provided {@link
+   * TokenStream}, and creates the corresponding automaton where arcs are bytes (or Unicode code
+   * points if unicodeArcs = true) from each term.
+   */
   public Automaton toAutomaton(TokenStream in) throws IOException {
     final Automaton.Builder builder = new Automaton.Builder();
     builder.createState();
@@ -191,8 +194,8 @@ public class TokenStreamToAutomaton {
 
       int state = posData.leaving;
 
-      for(int byteIDX=0;byteIDX<termLen;byteIDX++) {
-        final int nextState = byteIDX == termLen-1 ? endPosData.arriving : builder.createState();
+      for (int byteIDX = 0; byteIDX < termLen; byteIDX++) {
+        final int nextState = byteIDX == termLen - 1 ? endPosData.arriving : builder.createState();
         int c;
         if (unicodeArcs) {
           c = termUnicode[byteIDX];
@@ -211,7 +214,7 @@ public class TokenStreamToAutomaton {
     int endPosInc = posIncAtt.getPositionIncrement();
     if (endPosInc == 0 && finalOffsetGapAsHole && offsetAtt.endOffset() > maxOffset) {
       endPosInc = 1;
-    } else if (endPosInc > 0 && preservePositionIncrements==false) {
+    } else if (endPosInc > 0 && preservePositionIncrements == false) {
       endPosInc = 0;
     }
 
@@ -250,7 +253,7 @@ public class TokenStreamToAutomaton {
       }
       pos++;
     }
-    
+
     return builder.finish();
   }
 
@@ -265,11 +268,12 @@ public class TokenStreamToAutomaton {
   }
   */
 
-  private static void addHoles(Automaton.Builder builder, RollingBuffer<Position> positions, int pos) {
+  private static void addHoles(
+      Automaton.Builder builder, RollingBuffer<Position> positions, int pos) {
     Position posData = positions.get(pos);
-    Position prevPosData = positions.get(pos-1);
+    Position prevPosData = positions.get(pos - 1);
 
-    while(posData.arriving == -1 || prevPosData.leaving == -1) {
+    while (posData.arriving == -1 || prevPosData.leaving == -1) {
       if (posData.arriving == -1) {
         posData.arriving = builder.createState();
         builder.addTransition(posData.arriving, posData.leaving, POS_SEP);
@@ -290,7 +294,7 @@ public class TokenStreamToAutomaton {
         break;
       }
       posData = prevPosData;
-      prevPosData = positions.get(pos-1);
+      prevPosData = positions.get(pos - 1);
     }
   }
 }

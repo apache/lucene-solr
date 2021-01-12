@@ -25,12 +25,11 @@ import java.nio.file.Path;
 
 class ConnectionCostsBuilder {
 
-  private ConnectionCostsBuilder() {
-  }
+  private ConnectionCostsBuilder() {}
 
   public static ConnectionCostsWriter build(Path path) throws IOException {
     try (Reader reader = Files.newBufferedReader(path, StandardCharsets.US_ASCII);
-         LineNumberReader lineReader = new LineNumberReader(reader)) {
+        LineNumberReader lineReader = new LineNumberReader(reader)) {
 
       String line = lineReader.readLine();
       String[] dimensions = line.split("\\s+");

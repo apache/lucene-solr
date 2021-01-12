@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.analysis.Analyzer;
-
 import java.io.Reader;
+import org.apache.lucene.analysis.Analyzer;
 
 /** An {@link Analyzer} that throws a runtime exception when used for anything. */
 final class MissingAnalyzer extends Analyzer {

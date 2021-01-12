@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +54,7 @@ public class SolrClientCache implements Serializable {
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
+    Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
     CloudSolrClient client;
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);

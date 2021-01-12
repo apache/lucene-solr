@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 final class IntArrayDocIdSet extends DocIdSet {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(IntArrayDocIdSet.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(IntArrayDocIdSet.class);
 
   private final int[] docs;
   private final int length;
@@ -73,8 +72,8 @@ final class IntArrayDocIdSet extends DocIdSet {
     @Override
     public int advance(int target) throws IOException {
       int bound = 1;
-      //given that we use this for small arrays only, this is very unlikely to overflow
-      while(i + bound < length && docs[i + bound] < target) {
+      // given that we use this for small arrays only, this is very unlikely to overflow
+      while (i + bound < length && docs[i + bound] < target) {
         bound *= 2;
       }
       i = Arrays.binarySearch(docs, i + bound / 2, Math.min(i + bound + 1, length), target);
@@ -88,7 +87,5 @@ final class IntArrayDocIdSet extends DocIdSet {
     public long cost() {
       return length;
     }
-
   }
-
 }

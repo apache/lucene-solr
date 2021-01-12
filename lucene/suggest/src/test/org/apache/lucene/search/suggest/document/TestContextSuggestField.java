@@ -16,8 +16,12 @@
  */
 package org.apache.lucene.search.suggest.document;
 
-import java.io.ByteArrayOutputStream;
+import static org.apache.lucene.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
 
+import java.io.ByteArrayOutputStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -36,11 +40,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.lucene.analysis.BaseTokenStreamTestCase.assertTokenStreamContents;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
-
 public class TestContextSuggestField extends LuceneTestCase {
 
   public Directory dir;
@@ -57,9 +56,12 @@ public class TestContextSuggestField extends LuceneTestCase {
 
   @Test
   public void testEmptySuggestion() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new ContextSuggestField("suggest_field", "", 1, "type1");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new ContextSuggestField("suggest_field", "", 1, "type1");
+            });
     assertTrue(expected.getMessage().contains("value"));
   }
 
@@ -71,24 +73,34 @@ public class TestContextSuggestField extends LuceneTestCase {
 
     Analyzer analyzer = new MockAnalyzer(random());
     Document document = new Document();
-    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
+    try (RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
       // exception should be thrown for context value containing CONTEXT_SEPARATOR
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        document.add(new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString()));
-        iw.addDocument(document);
-        iw.commit();
-      });
+      IllegalArgumentException expected =
+          expectThrows(
+              IllegalArgumentException.class,
+              () -> {
+                document.add(
+                    new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString()));
+                iw.addDocument(document);
+                iw.commit();
+              });
       assertTrue(expected.getMessage().contains("[0x1d]"));
     }
     document.clear();
 
-    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
+    try (RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
       // exception should be thrown for context value containing CONTEXT_SEPARATOR
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
-        iw.addDocument(document);
-        iw.commit(false);
-      });
+      IllegalArgumentException expected =
+          expectThrows(
+              IllegalArgumentException.class,
+              () -> {
+                document.add(
+                    new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
+                iw.addDocument(document);
+                iw.commit(false);
+              });
       assertTrue(expected.getMessage().contains("[0x1d]"));
     }
   }
@@ -96,7 +108,8 @@ public class TestContextSuggestField extends LuceneTestCase {
   @Test
   public void testTokenStream() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    ContextSuggestField field = new ContextSuggestField("field", "input", 1, "context1", "context2");
+    ContextSuggestField field =
+        new ContextSuggestField("field", "input", 1, "context1", "context2");
     BytesRef surfaceForm = new BytesRef("input");
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     try (OutputStreamDataOutput output = new OutputStreamDataOutput(byteArrayOutputStream)) {
@@ -119,12 +132,31 @@ public class TestContextSuggestField extends LuceneTestCase {
     builder.append((char) ConcatenateGraphFilter.SEP_LABEL);
     builder.append("input");
     expectedOutputs[1] = builder.toCharsRef().toString();
-    TokenStream stream = new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 0}, null, null);
+    TokenStream stream =
+        new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(analyzer, null));
+    assertTokenStreamContents(
+        stream,
+        expectedOutputs,
+        null,
+        null,
+        new String[] {payload.utf8ToString(), payload.utf8ToString()},
+        new int[] {1, 0},
+        null,
+        null);
 
     CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(analyzer);
-    stream = new TestSuggestField.PayloadAttrToTypeAttrFilter(field.tokenStream(completionAnalyzer, null));
-    assertTokenStreamContents(stream, expectedOutputs, null, null, new String[]{payload.utf8ToString(), payload.utf8ToString()}, new int[]{1, 0}, null, null);
+    stream =
+        new TestSuggestField.PayloadAttrToTypeAttrFilter(
+            field.tokenStream(completionAnalyzer, null));
+    assertTokenStreamContents(
+        stream,
+        expectedOutputs,
+        null,
+        null,
+        new String[] {payload.utf8ToString(), payload.utf8ToString()},
+        new int[] {1, 0},
+        null,
+        null);
   }
 
   @Test
@@ -134,13 +166,16 @@ public class TestContextSuggestField extends LuceneTestCase {
     document.add(new SuggestField("suggest_field", "suggestion1", 4));
     document.add(new ContextSuggestField("suggest_field", "suggestion2", 3));
 
-    try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
-        iwcWithSuggestField(analyzer, "suggest_field"))) {
+    try (RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"))) {
       // mixing suggest field types for same field name should error out
-      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-        iw.addDocument(document);
-        iw.commit(false);
-      });
+      IllegalArgumentException expected =
+          expectThrows(
+              IllegalArgumentException.class,
+              () -> {
+                iw.addDocument(document);
+                iw.commit(false);
+              });
       assertTrue(expected.getMessage().contains("mixed types"));
     }
   }
@@ -148,8 +183,9 @@ public class TestContextSuggestField extends LuceneTestCase {
   @Test
   public void testWithSuggestFields() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
-        iwcWithSuggestField(analyzer, "suggest_field", "context_suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(
+            random(), dir, iwcWithSuggestField(analyzer, "suggest_field", "context_suggest_field"));
     Document document = new Document();
 
     document.add(new SuggestField("suggest_field", "suggestion1", 4));
@@ -174,7 +210,8 @@ public class TestContextSuggestField extends LuceneTestCase {
 
     CompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 10, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", 4),
         new Entry("suggestion2", 3),
         new Entry("suggestion3", 2),
@@ -182,7 +219,8 @@ public class TestContextSuggestField extends LuceneTestCase {
 
     query = new PrefixCompletionQuery(analyzer, new Term("context_suggest_field", "sugg"));
     suggest = suggestIndexSearcher.suggest(query, 10, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
@@ -194,8 +232,11 @@ public class TestContextSuggestField extends LuceneTestCase {
 
   @Test
   public void testCompletionAnalyzer() throws Exception {
-    CompletionAnalyzer completionAnalyzer = new CompletionAnalyzer(new StandardAnalyzer(), true, true);
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(completionAnalyzer, "suggest_field"));
+    CompletionAnalyzer completionAnalyzer =
+        new CompletionAnalyzer(new StandardAnalyzer(), true, true);
+    RandomIndexWriter iw =
+        new RandomIndexWriter(
+            random(), dir, iwcWithSuggestField(completionAnalyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "suggestion1", 4, "type1"));
@@ -212,17 +253,19 @@ public class TestContextSuggestField extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    ContextQuery query = new ContextQuery(new PrefixCompletionQuery(completionAnalyzer, new Term("suggest_field", "sugg")));
+    ContextQuery query =
+        new ContextQuery(
+            new PrefixCompletionQuery(completionAnalyzer, new Term("suggest_field", "sugg")));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggestion1", "type1", 4),
         new Entry("suggestion2", "type2", 3),
         new Entry("suggestion3", "type3", 2),
         new Entry("suggestion4", "type4", 1));
     query.addContext("type1");
     suggest = suggestIndexSearcher.suggest(query, 4, false);
-    assertSuggestions(suggest,
-        new Entry("suggestion1", "type1", 4));
+    assertSuggestions(suggest, new Entry("suggestion1", "type1", 4));
     reader.close();
     iw.close();
   }

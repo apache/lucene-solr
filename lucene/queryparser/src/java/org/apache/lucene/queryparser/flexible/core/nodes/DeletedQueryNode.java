@@ -17,13 +17,11 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
-
 import org.apache.lucene.queryparser.flexible.core.processors.RemoveDeletedQueryNodesProcessor;
 
 /**
- * A {@link DeletedQueryNode} represents a node that was deleted from the query
- * node tree. It can be removed from the tree using the
- * {@link RemoveDeletedQueryNodesProcessor} processor.
+ * A {@link DeletedQueryNode} represents a node that was deleted from the query node tree. It can be
+ * removed from the tree using the {@link RemoveDeletedQueryNodesProcessor} processor.
  */
 public class DeletedQueryNode extends QueryNodeImpl {
 
@@ -46,7 +44,5 @@ public class DeletedQueryNode extends QueryNodeImpl {
     DeletedQueryNode clone = (DeletedQueryNode) super.cloneTree();
 
     return clone;
-
   }
-
 }

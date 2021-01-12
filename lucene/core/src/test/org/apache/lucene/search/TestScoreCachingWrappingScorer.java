@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -30,36 +28,45 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
   private static final class SimpleScorer extends Scorer {
     private int idx = 0;
     private int doc = -1;
-    
+
     public SimpleScorer(Weight weight) {
       super(weight);
     }
-    
-    @Override public float score() {
+
+    @Override
+    public float score() {
       // advance idx on purpose, so that consecutive calls to score will get
       // different results. This is to emulate computation of a score. If
       // ScoreCachingWrappingScorer is used, this should not be called more than
       // once per document.
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
-    
+
     @Override
     public float getMaxScore(int upTo) throws IOException {
       return Float.POSITIVE_INFINITY;
     }
 
-    @Override public int docID() { return doc; }
+    @Override
+    public int docID() {
+      return doc;
+    }
 
     @Override
     public DocIdSetIterator iterator() {
       return new DocIdSetIterator() {
-        @Override public int docID() { return doc; }
+        @Override
+        public int docID() {
+          return doc;
+        }
 
-        @Override public int nextDoc() {
+        @Override
+        public int nextDoc() {
           return ++doc < scores.length ? doc : NO_MORE_DOCS;
         }
-        
-        @Override public int advance(int target) {
+
+        @Override
+        public int advance(int target) {
           doc = target;
           return doc < scores.length ? doc : NO_MORE_DOCS;
         }
@@ -71,23 +78,24 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       };
     }
   }
-  
+
   private static final class ScoreCachingCollector extends SimpleCollector {
 
     private int idx = 0;
     private Scorable scorer;
     float[] mscores;
-    
+
     public ScoreCachingCollector(int numToCollect) {
       mscores = new float[numToCollect];
     }
-    
-    @Override public void collect(int doc) throws IOException {
+
+    @Override
+    public void collect(int doc) throws IOException {
       // just a sanity check to avoid IOOB.
       if (idx == mscores.length) {
-        return; 
+        return;
       }
-      
+
       // just call score() a couple of times and record the score.
       mscores[idx] = scorer.score();
       mscores[idx] = scorer.score();
@@ -95,21 +103,34 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    @Override public void setScorer(Scorable scorer) {
+    @Override
+    public void setScorer(Scorable scorer) {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
-    
+
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE;
     }
-
   }
 
-  private static final float[] scores = new float[] { 0.7767749f, 1.7839992f,
-      8.9925785f, 7.9608946f, 0.07948637f, 2.6356435f, 7.4950366f, 7.1490803f,
-      8.108544f, 4.961808f, 2.2423935f, 7.285586f, 4.6699767f };
-  
+  private static final float[] scores =
+      new float[] {
+        0.7767749f,
+        1.7839992f,
+        8.9925785f,
+        7.9608946f,
+        0.07948637f,
+        2.6356435f,
+        7.4950366f,
+        7.1490803f,
+        8.108544f,
+        4.961808f,
+        2.2423935f,
+        7.285586f,
+        4.6699767f
+      };
+
   public void testGetScores() throws Exception {
     Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
@@ -117,22 +138,22 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     IndexReader ir = writer.getReader();
     writer.close();
     IndexSearcher searcher = newSearcher(ir);
-    Weight fake = new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, 1f);
+    Weight fake =
+        new TermQuery(new Term("fake", "weight")).createWeight(searcher, ScoreMode.COMPLETE, 1f);
     Scorer s = new SimpleScorer(fake);
     ScoreCachingCollector scc = new ScoreCachingCollector(scores.length);
     scc.setScorer(s);
-    
+
     // We need to iterate on the scorer so that its doc() advances.
     int doc;
     while ((doc = s.iterator().nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       scc.collect(doc);
     }
-    
+
     for (int i = 0; i < scores.length; i++) {
       assertEquals(scores[i], scc.mscores[i], 0f);
     }
     ir.close();
     directory.close();
   }
-  
 }

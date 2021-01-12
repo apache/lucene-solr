@@ -16,36 +16,36 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.util.InfoStream;
 
-/** <p>Expert: {@link IndexWriter} uses an instance
- *  implementing this interface to execute the merges
- *  selected by a {@link MergePolicy}.  The default
- *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
+/**
+ * Expert: {@link IndexWriter} uses an instance implementing this interface to execute the merges
+ * selected by a {@link MergePolicy}. The default MergeScheduler is {@link
+ * ConcurrentMergeScheduler}.
+ *
  * @lucene.experimental
-*/
+ */
 public abstract class MergeScheduler implements Closeable {
 
-  /** Sole constructor. (For invocation by subclass
-   *  constructors, typically implicit.) */
-  protected MergeScheduler() {
-  }
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected MergeScheduler() {}
 
-  /** Run the merges provided by {@link MergeSource#getNextMerge()}.
+  /**
+   * Run the merges provided by {@link MergeSource#getNextMerge()}.
+   *
    * @param mergeSource the {@link IndexWriter} to obtain the merges from.
-   * @param trigger the {@link MergeTrigger} that caused this merge to happen */
+   * @param trigger the {@link MergeTrigger} that caused this merge to happen
+   */
   public abstract void merge(MergeSource mergeSource, MergeTrigger trigger) throws IOException;
 
-  /** 
-   * Wraps the incoming {@link Directory} so that we can merge-throttle it
-   * using {@link RateLimitedIndexOutput}. 
+  /**
+   * Wraps the incoming {@link Directory} so that we can merge-throttle it using {@link
+   * RateLimitedIndexOutput}.
    */
   public Directory wrapForMerge(OneMerge merge, Directory in) {
     // A no-op by default.
@@ -65,9 +65,9 @@ public abstract class MergeScheduler implements Closeable {
   }
 
   /**
-   * Returns true if infoStream messages are enabled. This method is usually used in
-   * conjunction with {@link #message(String)}:
-   * 
+   * Returns true if infoStream messages are enabled. This method is usually used in conjunction
+   * with {@link #message(String)}:
+   *
    * <pre class="prettyprint">
    * if (verbose()) {
    *   message(&quot;your message&quot;);
@@ -77,10 +77,10 @@ public abstract class MergeScheduler implements Closeable {
   protected boolean verbose() {
     return infoStream != null && infoStream.isEnabled("MS");
   }
- 
+
   /**
-   * Outputs the given message - this method assumes {@link #verbose()} was
-   * called and returned true.
+   * Outputs the given message - this method assumes {@link #verbose()} was called and returned
+   * true.
    */
   protected void message(String message) {
     infoStream.message("MS", message);
@@ -88,29 +88,23 @@ public abstract class MergeScheduler implements Closeable {
 
   /**
    * Provides access to new merges and executes the actual merge
+   *
    * @lucene.experimental
    */
   public interface MergeSource {
     /**
-     * The {@link MergeScheduler} calls this method to retrieve the next
-     * merge requested by the MergePolicy
+     * The {@link MergeScheduler} calls this method to retrieve the next merge requested by the
+     * MergePolicy
      */
     MergePolicy.OneMerge getNextMerge();
 
-    /**
-     * Does finishing for a merge.
-     */
+    /** Does finishing for a merge. */
     void onMergeFinished(MergePolicy.OneMerge merge);
 
-    /**
-     * Expert: returns true if there are merges waiting to be scheduled.
-     */
+    /** Expert: returns true if there are merges waiting to be scheduled. */
     boolean hasPendingMerges();
 
-    /**
-     * Merges the indicated segments, replacing them in the stack with a
-     * single segment.
-     */
+    /** Merges the indicated segments, replacing them in the stack with a single segment. */
     void merge(MergePolicy.OneMerge merge) throws IOException;
   }
 }

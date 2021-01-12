@@ -16,9 +16,10 @@
  */
 package org.apache.lucene.codecs.asserting;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -38,14 +39,10 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/**
- * Just like the default but with additional asserts.
- */
+/** Just like the default but with additional asserts. */
 public class AssertingDocValuesFormat extends DocValuesFormat {
   private final DocValuesFormat in = TestUtil.getDefaultDocValuesFormat();
-  
+
   public AssertingDocValuesFormat() {
     super("Asserting");
   }
@@ -64,18 +61,19 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     assert producer != null;
     return new AssertingDocValuesProducer(producer, state.segmentInfo.maxDoc(), false);
   }
-  
+
   static class AssertingDocValuesConsumer extends DocValuesConsumer {
     private final DocValuesConsumer in;
     private final int maxDoc;
-    
+
     AssertingDocValuesConsumer(DocValuesConsumer in, int maxDoc) {
       this.in = in;
       this.maxDoc = maxDoc;
     }
 
     @Override
-    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       NumericDocValues values = valuesProducer.getNumeric(field);
 
       int docID;
@@ -86,14 +84,15 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         lastDocID = docID;
         long value = values.longValue();
       }
-      
+
       in.addNumericField(field, valuesProducer);
     }
-    
+
     @Override
-    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       BinaryDocValues values = valuesProducer.getBinary(field);
-      
+
       int docID;
       int lastDocID = -1;
       while ((docID = values.nextDoc()) != NO_MORE_DOCS) {
@@ -106,15 +105,16 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
 
       in.addBinaryField(field, valuesProducer);
     }
-    
+
     @Override
-    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       SortedDocValues values = valuesProducer.getSorted(field);
 
       int valueCount = values.getValueCount();
       assert valueCount <= maxDoc;
       BytesRef lastValue = null;
-      for (int ord=0;ord<valueCount;ord++) {
+      for (int ord = 0; ord < valueCount; ord++) {
         BytesRef b = values.lookupOrd(ord);
         assert b != null;
         assert b.isValid();
@@ -123,9 +123,9 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         }
         lastValue = BytesRef.deepCopyOf(b);
       }
-      
+
       FixedBitSet seenOrds = new FixedBitSet(valueCount);
-      
+
       int docID;
       int lastDocID = -1;
       while ((docID = values.nextDoc()) != NO_MORE_DOCS) {
@@ -136,13 +136,14 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         assert ord >= 0 && ord < valueCount;
         seenOrds.set(ord);
       }
-      
+
       assert seenOrds.cardinality() == valueCount;
       in.addSortedField(field, valuesProducer);
     }
-    
+
     @Override
-    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       SortedNumericDocValues values = valuesProducer.getSortedNumeric(field);
 
       long valueCount = 0;
@@ -166,14 +167,15 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       }
       in.addSortedNumericField(field, valuesProducer);
     }
-    
+
     @Override
-    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer)
+        throws IOException {
       SortedSetDocValues values = valuesProducer.getSortedSet(field);
 
       long valueCount = values.getValueCount();
       BytesRef lastValue = null;
-      for (long i=0;i<valueCount;i++) {
+      for (long i = 0; i < valueCount; i++) {
         BytesRef b = values.lookupOrd(i);
         assert b != null;
         assert b.isValid();
@@ -182,7 +184,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
         }
         lastValue = BytesRef.deepCopyOf(b);
       }
-      
+
       int docCount = 0;
       LongBitSet seenOrds = new LongBitSet(valueCount);
       while (true) {
@@ -191,37 +193,38 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
           break;
         }
         docCount++;
-        
+
         long lastOrd = -1;
         while (true) {
           long ord = values.nextOrd();
           if (ord == SortedSetDocValues.NO_MORE_ORDS) {
             break;
           }
-          assert ord >= 0 && ord < valueCount: "ord=" + ord + " is not in bounds 0 .." + (valueCount-1);
+          assert ord >= 0 && ord < valueCount
+              : "ord=" + ord + " is not in bounds 0 .." + (valueCount - 1);
           assert ord > lastOrd : "ord=" + ord + ",lastOrd=" + lastOrd;
           seenOrds.set(ord);
           lastOrd = ord;
         }
       }
-      
+
       assert seenOrds.cardinality() == valueCount;
       in.addSortedSetField(field, valuesProducer);
     }
-    
+
     @Override
     public void close() throws IOException {
       in.close();
       in.close(); // close again
     }
   }
-  
+
   static class AssertingDocValuesProducer extends DocValuesProducer {
     private final DocValuesProducer in;
     private final int maxDoc;
     private final boolean merging;
     private final Thread creationThread;
-    
+
     AssertingDocValuesProducer(DocValuesProducer in, int maxDoc, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -265,7 +268,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert values != null;
       return new AssertingLeafReader.AssertingSortedDocValues(values, maxDoc);
     }
-    
+
     @Override
     public SortedNumericDocValues getSortedNumeric(FieldInfo field) throws IOException {
       if (merging) {
@@ -276,7 +279,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert values != null;
       return AssertingLeafReader.AssertingSortedNumericDocValues.create(values, maxDoc);
     }
-    
+
     @Override
     public SortedSetDocValues getSortedSet(FieldInfo field) throws IOException {
       if (merging) {
@@ -287,7 +290,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
       assert values != null;
       return AssertingLeafReader.AssertingSortedSetDocValues.create(values, maxDoc);
     }
-    
+
     @Override
     public void close() throws IOException {
       in.close();
@@ -312,7 +315,7 @@ public class AssertingDocValuesFormat extends DocValuesFormat {
     public void checkIntegrity() throws IOException {
       in.checkIntegrity();
     }
-    
+
     @Override
     public DocValuesProducer getMergeInstance() {
       return new AssertingDocValuesProducer(in.getMergeInstance(), maxDoc, true);

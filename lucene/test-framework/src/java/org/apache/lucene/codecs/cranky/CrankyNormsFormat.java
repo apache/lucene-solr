@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.cranky;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.NormsProducer;
@@ -29,7 +28,7 @@ import org.apache.lucene.index.SegmentWriteState;
 class CrankyNormsFormat extends NormsFormat {
   final NormsFormat delegate;
   final Random random;
-  
+
   CrankyNormsFormat(NormsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
@@ -47,16 +46,16 @@ class CrankyNormsFormat extends NormsFormat {
   public NormsProducer normsProducer(SegmentReadState state) throws IOException {
     return delegate.normsProducer(state);
   }
-  
+
   static class CrankyNormsConsumer extends NormsConsumer {
     final NormsConsumer delegate;
     final Random random;
-    
+
     CrankyNormsConsumer(NormsConsumer delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
     }
-    
+
     @Override
     public void close() throws IOException {
       delegate.close();

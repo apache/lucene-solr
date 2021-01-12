@@ -883,13 +883,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : parentContext.nullString()),
         true, "indexSize", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : parentContext.nullString()),
          true, "indexVersion", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : parentContext.nullNumber()),
         true, GENERATION, getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : parentContext.nullString()),
         true, "indexPath", getCategory().toString(), scope);
     solrMetricsContext.gauge(() -> isLeader,
          true, "isLeader", getCategory().toString(), scope);
@@ -1372,55 +1372,55 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return Boolean.TRUE.equals( enable );
   }
 
+  private final CloseHook startShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      if (executorService != null)
+        executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+      if (pollingIndexFetcher != null) {
+        pollingIndexFetcher.destroy();
+      }
+      if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
+        currentIndexFetcher.destroy();
+      }
+    }
+  };
+  private final CloseHook finishShutdownHook = new CloseHook() {
+    @Override
+    public void preClose(SolrCore core) {
+      ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
+      if (restoreFuture != null) {
+        restoreFuture.cancel(false);
+      }
+    }
+
+    @Override
+    public void postClose(SolrCore core) {
+    }
+  };
+
   /**
    * register a closehook
    */
   private void registerCloseHook() {
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
-      }
-
-      @Override
-      public void postClose(SolrCore core) {
-        if (pollingIndexFetcher != null) {
-          pollingIndexFetcher.destroy();
-        }
-        if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-          currentIndexFetcher.destroy();
-        }
-      }
-    });
-
-    core.addCloseHook(new CloseHook() {
-      @Override
-      public void preClose(SolrCore core) {
-        ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-        if (restoreFuture != null) {
-          restoreFuture.cancel(false);
-        }
-      }
-
-      @Override
-      public void postClose(SolrCore core) {}
-    });
+    core.addCloseHook(startShutdownHook);
+    core.addCloseHook(finishShutdownHook);
   }
 
   public void shutdown() {
-    if (executorService != null) executorService.shutdown();
-    if (pollingIndexFetcher != null) {
-      pollingIndexFetcher.destroy();
-    }
-    if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
-      currentIndexFetcher.destroy();
-    }
-    ExecutorUtil.shutdownAndAwaitTermination(restoreExecutor);
-    if (restoreFuture != null) {
-      restoreFuture.cancel(false);
-    }
-    
+    startShutdownHook.preClose(core);
+    startShutdownHook.postClose(core);
+    finishShutdownHook.preClose(core);
+    finishShutdownHook.postClose(core);
+
     ExecutorUtil.shutdownAndAwaitTermination(executorService);
+
+    core.removeCloseHook(startShutdownHook);
+    core.removeCloseHook(finishShutdownHook);
   }
 
   /**

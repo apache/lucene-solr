@@ -23,25 +23,27 @@ public class TestLongsRef extends LuceneTestCase {
     assertEquals(0, i.offset);
     assertEquals(0, i.length);
   }
-  
+
   public void testFromLongs() {
-    long longs[] = new long[] { 1, 2, 3, 4 };
+    long longs[] = new long[] {1, 2, 3, 4};
     LongsRef i = new LongsRef(longs, 0, 4);
     assertEquals(longs, i.longs);
     assertEquals(0, i.offset);
     assertEquals(4, i.length);
-    
+
     LongsRef i2 = new LongsRef(longs, 1, 3);
-    assertEquals(new LongsRef(new long[] { 2, 3, 4 }, 0, 3), i2);
-    
+    assertEquals(new LongsRef(new long[] {2, 3, 4}, 0, 3), i2);
+
     assertFalse(i.equals(i2));
   }
-  
+
   public void testInvalidDeepCopy() {
-    LongsRef from = new LongsRef(new long[] { 1, 2 }, 0, 2);
+    LongsRef from = new LongsRef(new long[] {1, 2}, 0, 2);
     from.offset += 1; // now invalid
-    expectThrows(IndexOutOfBoundsException.class, () -> {
-      LongsRef.deepCopyOf(from);
-    });
+    expectThrows(
+        IndexOutOfBoundsException.class,
+        () -> {
+          LongsRef.deepCopyOf(from);
+        });
   }
 }

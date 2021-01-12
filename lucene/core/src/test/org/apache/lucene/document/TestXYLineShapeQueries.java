@@ -17,17 +17,16 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-
 import java.util.Random;
-
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
-import org.apache.lucene.geo.XYGeometry;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYRectangle;
 
-/** random cartesian bounding box, line, and polygon query tests for random generated cartesian {@link XYLine} types */
+/**
+ * random cartesian bounding box, line, and polygon query tests for random generated cartesian
+ * {@link XYLine} types
+ */
 public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
   @Override
@@ -39,8 +38,9 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
   protected XYLine randomQueryLine(Object... shapes) {
     Random random = random();
     if (random.nextInt(100) == 42) {
-      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
-      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      // we want to ensure some cross, so randomly generate lines that share vertices with the
+      // indexed point set
+      int maxBound = (int) Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
@@ -64,7 +64,7 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object line) {
-    return XYShape.createIndexableFields(field, (XYLine)line);
+    return XYShape.createIndexableFields(field, (XYLine) line);
   }
 
   @Override
@@ -78,16 +78,11 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      Component2D rectangle2D = XYGeometry.create(new XYRectangle((float) minX, (float) maxX, (float) minY, (float) maxY));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       XYLine line = (XYLine) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, XYShape.createIndexableFields("dummy", line)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, XYShape.createIndexableFields("dummy", line))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, XYShape.createIndexableFields("dummy", line));
     }

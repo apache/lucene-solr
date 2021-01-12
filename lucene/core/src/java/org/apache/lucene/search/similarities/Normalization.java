@@ -16,51 +16,51 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import org.apache.lucene.search.Explanation;
 
 /**
- * This class acts as the base class for the implementations of the term
- * frequency normalization methods in the DFR framework.
- * 
+ * This class acts as the base class for the implementations of the term frequency normalization
+ * methods in the DFR framework.
+ *
  * @see DFRSimilarity
  * @lucene.experimental
  */
 public abstract class Normalization {
-  
-  /**
-   * Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.)
-   */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   public Normalization() {}
 
-  /** Returns the normalized term frequency.
-   * @param len the field length. */
+  /**
+   * Returns the normalized term frequency.
+   *
+   * @param len the field length.
+   */
   public abstract double tfn(BasicStats stats, double tf, double len);
-  
-  /** Returns an explanation for the normalized term frequency.
-   * <p>The default normalization methods use the field length of the document
-   * and the average field length to compute the normalized term frequency.
-   * This method provides a generic explanation for such methods.
-   * Subclasses that use other statistics must override this method.</p>
+
+  /**
+   * Returns an explanation for the normalized term frequency.
+   *
+   * <p>The default normalization methods use the field length of the document and the average field
+   * length to compute the normalized term frequency. This method provides a generic explanation for
+   * such methods. Subclasses that use other statistics must override this method.
    */
   public Explanation explain(BasicStats stats, double tf, double len) {
     return Explanation.match(
         (float) tfn(stats, tf, len),
         getClass().getSimpleName() + ", computed from:",
-        Explanation.match((float) tf,
-            "tf, number of occurrences of term in the document"),
-        Explanation.match((float) stats.getAvgFieldLength(),
+        Explanation.match((float) tf, "tf, number of occurrences of term in the document"),
+        Explanation.match(
+            (float) stats.getAvgFieldLength(),
             "avgfl, average length of field across all documents"),
         Explanation.match((float) len, "fl, field length of the document"));
   }
 
   /** Implementation used when there is no normalization. */
   public static final class NoNormalization extends Normalization {
-    
+
     /** Sole constructor: parameter-free */
     public NoNormalization() {}
-    
+
     @Override
     public double tfn(BasicStats stats, double tf, double len) {
       return tf;
@@ -70,16 +70,16 @@ public abstract class Normalization {
     public Explanation explain(BasicStats stats, double tf, double len) {
       return Explanation.match(1, "no normalization");
     }
-    
+
     @Override
     public String toString() {
       return "";
     }
   }
-  
+
   /**
-   * Subclasses must override this method to return the code of the
-   * normalization formula. Refer to the original paper for the list. 
+   * Subclasses must override this method to return the code of the normalization formula. Refer to
+   * the original paper for the list.
    */
   @Override
   public abstract String toString();

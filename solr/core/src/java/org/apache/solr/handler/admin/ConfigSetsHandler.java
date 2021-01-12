@@ -68,6 +68,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.DELETE;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.LIST;
+import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.UPLOAD;
 
 /**
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
@@ -193,10 +194,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         fixedSingleFilePath = fixedSingleFilePath.substring(1);
       }
       if (fixedSingleFilePath.isEmpty()) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The filePath provided for upload, '" + singleFilePath + "', is not valid.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "The file path provided for upload, '" + singleFilePath + "', is not valid.");
       } else if (cleanup) {
         // Cleanup is not allowed while using singleFilePath upload
-        throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when filePath is used.");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet uploads do not allow cleanup=true when file path is used.");
       } else {
         try {
           // Create a node for the configuration in zookeeper
@@ -206,7 +207,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
           zkClient.makePath(filePathInZk, IOUtils.toByteArray(inputStream), CreateMode.PERSISTENT, null, !allowOverwrite, true);
         } catch(KeeperException.NodeExistsException nodeExistsException) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
-                  "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true.");
+                  "The path " + singleFilePath + " for configSet " + configSetName + " already exists. In order to overwrite, provide overwrite=true or use an HTTP PUT with the V2 API.");
         }
       }
       return;
@@ -230,7 +231,9 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
     ZipInputStream zis = new ZipInputStream(inputStream, StandardCharsets.UTF_8);
     ZipEntry zipEntry = null;
+    boolean hasEntry = false;
     while ((zipEntry = zis.getNextEntry()) != null) {
+      hasEntry = true;
       String filePathInZk = configPathInZk + "/" + zipEntry.getName();
       if (filePathInZk.endsWith("/")) {
         filesToDelete.remove(filePathInZk.substring(0, filePathInZk.length() -1));
@@ -245,6 +248,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       }
     }
     zis.close();
+    if (!hasEntry) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Either empty zipped data, or non-zipped data was uploaded. In order to upload a configSet, you must zip a non-empty directory to upload.");
+    }
     deleteUnusedFiles(zkClient, filesToDelete);
 
     // If the request is doing a full trusted overwrite of an untrusted configSet (overwrite=true, cleanup=true), then trust the configSet.
@@ -400,6 +407,13 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   }
 
   public enum ConfigSetOperation {
+    UPLOAD_OP(UPLOAD) {
+      @Override
+      public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {
+        h.handleConfigUploadRequest(req, rsp);
+        return null;
+      }
+    },
     CREATE_OP(CREATE) {
       @Override
       public Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, ConfigSetsHandler h) throws Exception {

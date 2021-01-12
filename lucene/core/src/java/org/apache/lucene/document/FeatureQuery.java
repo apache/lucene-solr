@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.document.FeatureField.FeatureFunction;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -65,9 +64,9 @@ final class FeatureQuery extends Query {
       return false;
     }
     FeatureQuery that = (FeatureQuery) obj;
-    return Objects.equals(fieldName, that.fieldName) &&
-        Objects.equals(featureName, that.featureName) &&
-        Objects.equals(function, that.function);
+    return Objects.equals(fieldName, that.fieldName)
+        && Objects.equals(featureName, that.featureName)
+        && Objects.equals(function, that.function);
   }
 
   @Override
@@ -80,7 +79,8 @@ final class FeatureQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new Weight(this) {
 
       @Override
@@ -157,7 +157,6 @@ final class FeatureQuery extends Query {
           }
         };
       }
-
     };
   }
 
@@ -170,7 +169,12 @@ final class FeatureQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return "FeatureQuery(field=" + fieldName + ", feature=" + featureName + ", function=" + function + ")";
+    return "FeatureQuery(field="
+        + fieldName
+        + ", feature="
+        + featureName
+        + ", function="
+        + function
+        + ")";
   }
-
 }

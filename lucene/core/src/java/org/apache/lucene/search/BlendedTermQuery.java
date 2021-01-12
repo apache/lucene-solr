@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,17 +30,18 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**
- * A {@link Query} that blends index statistics across multiple terms.
- * This is particularly useful when several terms should produce identical
- * scores, regardless of their index statistics.
- * <p>For instance imagine that you are resolving synonyms at search time,
- * all terms should produce identical scores instead of the default behavior,
- * which tends to give higher scores to rare terms.
- * <p>An other useful use-case is cross-field search: imagine that you would
- * like to search for {@code john} on two fields: {@code first_name} and
- * {@code last_name}. You might not want to give a higher weight to matches
- * on the field where {@code john} is rarer, in which case
- * {@link BlendedTermQuery} would help as well.
+ * A {@link Query} that blends index statistics across multiple terms. This is particularly useful
+ * when several terms should produce identical scores, regardless of their index statistics.
+ *
+ * <p>For instance imagine that you are resolving synonyms at search time, all terms should produce
+ * identical scores instead of the default behavior, which tends to give higher scores to rare
+ * terms.
+ *
+ * <p>An other useful use-case is cross-field search: imagine that you would like to search for
+ * {@code john} on two fields: {@code first_name} and {@code last_name}. You might not want to give
+ * a higher weight to matches on the field where {@code john} is rarer, in which case {@link
+ * BlendedTermQuery} would help as well.
+ *
  * @lucene.experimental
  */
 public final class BlendedTermQuery extends Query {
@@ -59,31 +58,37 @@ public final class BlendedTermQuery extends Query {
     /** Sole constructor. */
     public Builder() {}
 
-    /** Set the {@link RewriteMethod}. Default is to use
-     *  {@link BlendedTermQuery#DISJUNCTION_MAX_REWRITE}.
-     *  @see RewriteMethod */
+    /**
+     * Set the {@link RewriteMethod}. Default is to use {@link
+     * BlendedTermQuery#DISJUNCTION_MAX_REWRITE}.
+     *
+     * @see RewriteMethod
+     */
     public Builder setRewriteMethod(RewriteMethod rewiteMethod) {
       this.rewriteMethod = rewiteMethod;
       return this;
     }
 
-    /** Add a new {@link Term} to this builder, with a default boost of {@code 1}.
-     *  @see #add(Term, float) */
+    /**
+     * Add a new {@link Term} to this builder, with a default boost of {@code 1}.
+     *
+     * @see #add(Term, float)
+     */
     public Builder add(Term term) {
       return add(term, 1f);
     }
 
-    /** Add a {@link Term} with the provided boost. The higher the boost, the
-     *  more this term will contribute to the overall score of the
-     *  {@link BlendedTermQuery}. */
+    /**
+     * Add a {@link Term} with the provided boost. The higher the boost, the more this term will
+     * contribute to the overall score of the {@link BlendedTermQuery}.
+     */
     public Builder add(Term term, float boost) {
       return add(term, boost, null);
     }
 
     /**
-     * Expert: Add a {@link Term} with the provided boost and context.
-     * This method is useful if you already have a {@link TermStates}
-     * object constructed for the given term.
+     * Expert: Add a {@link Term} with the provided boost and context. This method is useful if you
+     * already have a {@link TermStates} object constructed for the given term.
      */
     public Builder add(Term term, float boost, TermStates context) {
       if (numTerms >= IndexSearcher.getMaxClauseCount()) {
@@ -107,53 +112,56 @@ public final class BlendedTermQuery extends Query {
           ArrayUtil.copyOfSubArray(contexts, 0, numTerms),
           rewriteMethod);
     }
-
   }
 
-  /** A {@link RewriteMethod} defines how queries for individual terms should
-   *  be merged.
-   *  @lucene.experimental
-   *  @see BlendedTermQuery#BOOLEAN_REWRITE
-   *  @see BlendedTermQuery.DisjunctionMaxRewrite */
-  public static abstract class RewriteMethod {
+  /**
+   * A {@link RewriteMethod} defines how queries for individual terms should be merged.
+   *
+   * @lucene.experimental
+   * @see BlendedTermQuery#BOOLEAN_REWRITE
+   * @see BlendedTermQuery.DisjunctionMaxRewrite
+   */
+  public abstract static class RewriteMethod {
 
     /** Sole constructor */
     protected RewriteMethod() {}
 
     /** Merge the provided sub queries into a single {@link Query} object. */
     public abstract Query rewrite(Query[] subQueries);
-
   }
 
   /**
-   * A {@link RewriteMethod} that adds all sub queries to a {@link BooleanQuery}.
-   * This {@link RewriteMethod} is useful when matching on several fields is
-   * considered better than having a good match on a single field.
+   * A {@link RewriteMethod} that adds all sub queries to a {@link BooleanQuery}. This {@link
+   * RewriteMethod} is useful when matching on several fields is considered better than having a
+   * good match on a single field.
    */
-  public static final RewriteMethod BOOLEAN_REWRITE = new RewriteMethod() {
-    @Override
-    public Query rewrite(Query[] subQueries) {
-      BooleanQuery.Builder merged = new BooleanQuery.Builder();
-      for (Query query : subQueries) {
-        merged.add(query, Occur.SHOULD);
-      }
-      return merged.build();
-    }
-  };
+  public static final RewriteMethod BOOLEAN_REWRITE =
+      new RewriteMethod() {
+        @Override
+        public Query rewrite(Query[] subQueries) {
+          BooleanQuery.Builder merged = new BooleanQuery.Builder();
+          for (Query query : subQueries) {
+            merged.add(query, Occur.SHOULD);
+          }
+          return merged.build();
+        }
+      };
 
   /**
-   * A {@link RewriteMethod} that creates a {@link DisjunctionMaxQuery} out
-   * of the sub queries. This {@link RewriteMethod} is useful when having a
-   * good match on a single field is considered better than having average
-   * matches on several fields.
+   * A {@link RewriteMethod} that creates a {@link DisjunctionMaxQuery} out of the sub queries. This
+   * {@link RewriteMethod} is useful when having a good match on a single field is considered better
+   * than having average matches on several fields.
    */
   public static class DisjunctionMaxRewrite extends RewriteMethod {
 
     private final float tieBreakerMultiplier;
 
-    /** This {@link RewriteMethod} will create {@link DisjunctionMaxQuery}
-     *  instances that have the provided tie breaker.
-     *  @see DisjunctionMaxQuery */
+    /**
+     * This {@link RewriteMethod} will create {@link DisjunctionMaxQuery} instances that have the
+     * provided tie breaker.
+     *
+     * @see DisjunctionMaxQuery
+     */
     public DisjunctionMaxRewrite(float tieBreakerMultiplier) {
       this.tieBreakerMultiplier = tieBreakerMultiplier;
     }
@@ -176,7 +184,6 @@ public final class BlendedTermQuery extends Query {
     public int hashCode() {
       return 31 * getClass().hashCode() + Float.floatToIntBits(tieBreakerMultiplier);
     }
-
   }
 
   /** {@link DisjunctionMaxRewrite} instance with a tie-breaker of {@code 0.01}. */
@@ -187,8 +194,8 @@ public final class BlendedTermQuery extends Query {
   private final TermStates[] contexts;
   private final RewriteMethod rewriteMethod;
 
-  private BlendedTermQuery(Term[] terms, float[] boosts, TermStates[] contexts,
-      RewriteMethod rewriteMethod) {
+  private BlendedTermQuery(
+      Term[] terms, float[] boosts, TermStates[] contexts, RewriteMethod rewriteMethod) {
     assert terms.length == boosts.length;
     assert terms.length == contexts.length;
     this.terms = terms;
@@ -223,15 +230,14 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(BlendedTermQuery other) {
-    return Arrays.equals(terms, other.terms) && 
-           Arrays.equals(contexts, other.contexts) && 
-           Arrays.equals(boosts, other.boosts) && 
-           rewriteMethod.equals(other.rewriteMethod);
+    return Arrays.equals(terms, other.terms)
+        && Arrays.equals(contexts, other.contexts)
+        && Arrays.equals(boosts, other.boosts)
+        && rewriteMethod.equals(other.rewriteMethod);
   }
 
   @Override
@@ -296,15 +302,17 @@ public final class BlendedTermQuery extends Query {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    Term[] termsToVisit = Arrays.stream(terms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    Term[] termsToVisit =
+        Arrays.stream(terms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
     if (termsToVisit.length > 0) {
       QueryVisitor v = visitor.getSubVisitor(Occur.SHOULD, this);
       v.consumeTerms(this, termsToVisit);
     }
   }
 
-  private static TermStates adjustFrequencies(IndexReaderContext readerContext,
-                                              TermStates ctx, int artificialDf, long artificialTtf) throws IOException {
+  private static TermStates adjustFrequencies(
+      IndexReaderContext readerContext, TermStates ctx, int artificialDf, long artificialTtf)
+      throws IOException {
     List<LeafReaderContext> leaves = readerContext.leaves();
     final int len;
     if (leaves == null) {
@@ -323,5 +331,4 @@ public final class BlendedTermQuery extends Query {
     newCtx.accumulateStatistics(artificialDf, artificialTtf);
     return newCtx;
   }
-
 }

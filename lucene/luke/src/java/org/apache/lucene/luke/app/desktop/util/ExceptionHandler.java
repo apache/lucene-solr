@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.app.desktop.util;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.models.LukeException;
@@ -40,5 +39,4 @@ public final class ExceptionHandler {
       messageBroker.showUnknownErrorMessage();
     }
   }
-
 }

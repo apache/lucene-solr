@@ -1605,7 +1605,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } else {
         hitsRelation = topDocs.totalHits.relation;
       }
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -1714,7 +1714,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size()) || qr.isPartialResults();
 
       TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && query instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && (cmd.getFlags() & GET_SCORES) != 0) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -2277,12 +2277,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
     parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(rgauge(-1, () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(rgauge(-1, () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(rgauge(-1, () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(rgauge(-1, () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(rgauge("", () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(rgauge(-1, () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.numDocs()), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc()), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.maxDoc() - reader.numDocs()), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullString(), () -> reader.toString()), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullString(), () -> reader.directory().toString()), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(rgauge(parentContext.nullNumber(), () -> reader.getVersion()), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
     parentContext.gauge(() -> {
       try {
@@ -2293,7 +2293,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
         return total;
       } catch (Exception e) {
-        return -1;
+        return parentContext.nullNumber();
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics

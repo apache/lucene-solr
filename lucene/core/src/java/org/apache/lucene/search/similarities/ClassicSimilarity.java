@@ -16,25 +16,24 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
 
 /**
- * Expert: Historical scoring implementation. You might want to consider using
- * {@link BM25Similarity} instead, which is generally considered superior to
- * TF-IDF.
+ * Expert: Historical scoring implementation. You might want to consider using {@link
+ * BM25Similarity} instead, which is generally considered superior to TF-IDF.
  */
 public class ClassicSimilarity extends TFIDFSimilarity {
 
   /** Sole constructor: parameter-free */
   public ClassicSimilarity() {}
 
-  /** Implemented as
-   *  <code>1/sqrt(length)</code>.
+  /**
+   * Implemented as <code>1/sqrt(length)</code>.
    *
-   *  @lucene.experimental */
+   * @lucene.experimental
+   */
   @Override
   public float lengthNorm(int numTerms) {
     return (float) (1.0 / Math.sqrt(numTerms));
@@ -43,15 +42,17 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   /** Implemented as <code>sqrt(freq)</code>. */
   @Override
   public float tf(float freq) {
-    return (float)Math.sqrt(freq);
+    return (float) Math.sqrt(freq);
   }
-  
+
   @Override
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
     final long docCount = collectionStats.docCount();
     final float idf = idf(df, docCount);
-    return Explanation.match(idf, "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
+    return Explanation.match(
+        idf,
+        "idf, computed as log((docCount+1)/(docFreq+1)) + 1 from:",
         Explanation.match(df, "docFreq, number of documents containing term"),
         Explanation.match(docCount, "docCount, total number of documents with field"));
   }
@@ -59,7 +60,7 @@ public class ClassicSimilarity extends TFIDFSimilarity {
   /** Implemented as <code>log((docCount+1)/(docFreq+1)) + 1</code>. */
   @Override
   public float idf(long docFreq, long docCount) {
-    return (float)(Math.log((docCount+1)/(double)(docFreq+1)) + 1.0);
+    return (float) (Math.log((docCount + 1) / (double) (docFreq + 1)) + 1.0);
   }
 
   @Override

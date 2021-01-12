@@ -26,18 +26,17 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * SmartChineseAnalyzer Bigram dictionary.
+ *
  * @lucene.experimental
  */
 class BigramDictionary extends AbstractDictionary {
 
-  private BigramDictionary() {
-  }
+  private BigramDictionary() {}
 
   public static final char WORD_SEGMENT_CHAR = '@';
 
@@ -46,7 +45,7 @@ class BigramDictionary extends AbstractDictionary {
   public static final int PRIME_BIGRAM_LENGTH = 402137;
 
   /*
-   * The word associations are stored as FNV1 hashcodes, which have a small probability of collision, but save memory.  
+   * The word associations are stored as FNV1 hashcodes, which have a small probability of collision, but save memory.
    */
   private long[] bigramHashTable;
 
@@ -58,7 +57,7 @@ class BigramDictionary extends AbstractDictionary {
 
   // static Logger log = Logger.getLogger(BigramDictionary.class);
 
-  public synchronized static BigramDictionary getInstance() {
+  public static synchronized BigramDictionary getInstance() {
     if (singleInstance == null) {
       singleInstance = new BigramDictionary();
       try {
@@ -86,7 +85,8 @@ class BigramDictionary extends AbstractDictionary {
     }
   }
 
-  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
+  @SuppressForbidden(
+      reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void loadFromInputStream(InputStream serialObjectInputStream)
       throws IOException, ClassNotFoundException {
     try (ObjectInputStream input = new ObjectInputStream(serialObjectInputStream)) {
@@ -96,10 +96,10 @@ class BigramDictionary extends AbstractDictionary {
     }
   }
 
-  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
+  @SuppressForbidden(
+      reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void saveToObj(Path serialObj) throws IOException {
-    try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(
-        serialObj))) {
+    try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(serialObj))) {
       output.writeObject(bigramHashTable);
       output.writeObject(frequencyTable);
       // log.info("serialize bigram dict.");
@@ -137,14 +137,14 @@ class BigramDictionary extends AbstractDictionary {
 
   /**
    * Load the datafile into this BigramDictionary
-   * 
+   *
    * @param dctFilePath path to the Bigramdictionary (bigramdict.dct)
    * @throws IOException If there is a low-level I/O error
    */
   public void loadFromFile(String dctFilePath) throws IOException {
 
     int i, cnt, length, total = 0;
-    // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.  
+    // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.
     // The 3756th is used (as a header) to store information.
     int[] buffer = new int[3];
     byte[] intBuffer = new byte[4];
@@ -167,11 +167,9 @@ class BigramDictionary extends AbstractDictionary {
       int j = 0;
       while (j < cnt) {
         dctFile.read(intBuffer);
-        buffer[0] = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN)
-            .getInt();// frequency
+        buffer[0] = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN).getInt(); // frequency
         dctFile.read(intBuffer);
-        buffer[1] = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN)
-            .getInt();// length
+        buffer[1] = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN).getInt(); // length
         dctFile.read(intBuffer);
         // buffer[2] = ByteBuffer.wrap(intBuffer).order(
         // ByteOrder.LITTLE_ENDIAN).getInt();// handle
@@ -205,13 +203,12 @@ class BigramDictionary extends AbstractDictionary {
   private int getAvaliableIndex(long hashId, char carray[]) {
     int hash1 = (int) (hashId % PRIME_BIGRAM_LENGTH);
     int hash2 = hash2(carray) % PRIME_BIGRAM_LENGTH;
-    if (hash1 < 0)
-      hash1 = PRIME_BIGRAM_LENGTH + hash1;
-    if (hash2 < 0)
-      hash2 = PRIME_BIGRAM_LENGTH + hash2;
+    if (hash1 < 0) hash1 = PRIME_BIGRAM_LENGTH + hash1;
+    if (hash2 < 0) hash2 = PRIME_BIGRAM_LENGTH + hash2;
     int index = hash1;
     int i = 1;
-    while (bigramHashTable[index] != 0 && bigramHashTable[index] != hashId
+    while (bigramHashTable[index] != 0
+        && bigramHashTable[index] != hashId
         && i < PRIME_BIGRAM_LENGTH) {
       index = (hash1 + i * hash2) % PRIME_BIGRAM_LENGTH;
       i++;
@@ -221,8 +218,7 @@ class BigramDictionary extends AbstractDictionary {
     if (i < PRIME_BIGRAM_LENGTH
         && (bigramHashTable[index] == 0 || bigramHashTable[index] == hashId)) {
       return index;
-    } else
-      return -1;
+    } else return -1;
   }
 
   /*
@@ -232,34 +228,29 @@ class BigramDictionary extends AbstractDictionary {
     long hashId = hash1(carray);
     int hash1 = (int) (hashId % PRIME_BIGRAM_LENGTH);
     int hash2 = hash2(carray) % PRIME_BIGRAM_LENGTH;
-    if (hash1 < 0)
-      hash1 = PRIME_BIGRAM_LENGTH + hash1;
-    if (hash2 < 0)
-      hash2 = PRIME_BIGRAM_LENGTH + hash2;
+    if (hash1 < 0) hash1 = PRIME_BIGRAM_LENGTH + hash1;
+    if (hash2 < 0) hash2 = PRIME_BIGRAM_LENGTH + hash2;
     int index = hash1;
     int i = 1;
     repeat++;
-    while (bigramHashTable[index] != 0 && bigramHashTable[index] != hashId
+    while (bigramHashTable[index] != 0
+        && bigramHashTable[index] != hashId
         && i < PRIME_BIGRAM_LENGTH) {
       index = (hash1 + i * hash2) % PRIME_BIGRAM_LENGTH;
       i++;
       repeat++;
-      if (i > max)
-        max = i;
+      if (i > max) max = i;
     }
     // System.out.println(i - 1);
 
     if (i < PRIME_BIGRAM_LENGTH && bigramHashTable[index] == hashId) {
       return index;
-    } else
-      return -1;
+    } else return -1;
   }
 
   public int getFrequency(char[] carray) {
     int index = getBigramItemIndex(carray);
-    if (index != -1)
-      return frequencyTable[index];
+    if (index != -1) return frequencyTable[index];
     return 0;
   }
-
 }

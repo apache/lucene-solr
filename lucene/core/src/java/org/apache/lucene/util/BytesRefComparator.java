@@ -18,24 +18,30 @@ package org.apache.lucene.util;
 
 import java.util.Comparator;
 
-/** Specialized {@link BytesRef} comparator that
- * {@link FixedLengthBytesRefArray#iterator(Comparator)} has optimizations
- * for.
- * @lucene.internal */
+/**
+ * Specialized {@link BytesRef} comparator that {@link
+ * FixedLengthBytesRefArray#iterator(Comparator)} has optimizations for.
+ *
+ * @lucene.internal
+ */
 public abstract class BytesRefComparator implements Comparator<BytesRef> {
 
   final int comparedBytesCount;
 
-  /** Sole constructor.
-   * @param comparedBytesCount the maximum number of bytes to compare. */
+  /**
+   * Sole constructor.
+   *
+   * @param comparedBytesCount the maximum number of bytes to compare.
+   */
   protected BytesRefComparator(int comparedBytesCount) {
     this.comparedBytesCount = comparedBytesCount;
   }
 
-  /** Return the unsigned byte to use for comparison at index {@code i}, or
-   * {@code -1} if all bytes that are useful for comparisons are exhausted.
-   * This may only be called with a value of {@code i} between {@code 0}
-   * included and {@code comparedBytesCount} excluded. */
+  /**
+   * Return the unsigned byte to use for comparison at index {@code i}, or {@code -1} if all bytes
+   * that are useful for comparisons are exhausted. This may only be called with a value of {@code
+   * i} between {@code 0} included and {@code comparedBytesCount} excluded.
+   */
   protected abstract int byteAt(BytesRef ref, int i);
 
   @Override
@@ -51,5 +57,4 @@ public abstract class BytesRefComparator implements Comparator<BytesRef> {
     }
     return 0;
   }
-
 }

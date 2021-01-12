@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -53,9 +52,7 @@ import org.apache.lucene.util.Bits;
 /**
  * Utilities for various raw index operations.
  *
- * <p>
- * This is for internal uses, DO NOT call from UI components or applications.
- * </p>
+ * <p>This is for internal uses, DO NOT call from UI components or applications.
  */
 public final class IndexUtils {
 
@@ -69,32 +66,39 @@ public final class IndexUtils {
    * @return index reader
    * @throws Exception - if there is a low level IO error.
    */
-  public static IndexReader openIndex(String indexPath, String dirImpl)
-      throws Exception {
+  public static IndexReader openIndex(String indexPath, String dirImpl) throws Exception {
     final Path root = FileSystems.getDefault().getPath(Objects.requireNonNull(indexPath));
     final List<DirectoryReader> readers = new ArrayList<>();
 
     // find all valid index directories in this directory
-    Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) throws IOException {
-        Directory dir = openDirectory(path, dirImpl);
-        try {
-          DirectoryReader dr = DirectoryReader.open(dir);
-          readers.add(dr);
-        } catch (IOException e) {
-          log.warn("Error opening directory", e);
-        }
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    Files.walkFileTree(
+        root,
+        new SimpleFileVisitor<Path>() {
+          @Override
+          public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs)
+              throws IOException {
+            Directory dir = openDirectory(path, dirImpl);
+            try {
+              DirectoryReader dr = DirectoryReader.open(dir);
+              readers.add(dr);
+            } catch (IOException e) {
+              log.warn("Error opening directory", e);
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
 
     if (readers.isEmpty()) {
       throw new RuntimeException("No valid directory at the location: " + indexPath);
     }
 
     if (log.isInfoEnabled()) {
-      log.info(String.format(Locale.ENGLISH, "IndexReaders (%d leaf readers) successfully opened. Index path=%s", readers.size(), indexPath));
+      log.info(
+          String.format(
+              Locale.ENGLISH,
+              "IndexReaders (%d leaf readers) successfully opened. Index path=%s",
+              readers.size(),
+              indexPath));
     }
 
     if (readers.size() == 1) {
@@ -107,7 +111,7 @@ public final class IndexUtils {
   /**
    * Opens an index directory for given index path.
    *
-   * <p>This can be used to open/repair corrupted indexes.</p>
+   * <p>This can be used to open/repair corrupted indexes.
    *
    * @param dirPath - index directory path
    * @param dirImpl - class name for the specific directory implementation
@@ -118,7 +122,9 @@ public final class IndexUtils {
     final Path path = FileSystems.getDefault().getPath(Objects.requireNonNull(dirPath));
     Directory dir = openDirectory(path, dirImpl);
     if (log.isInfoEnabled()) {
-      log.info(String.format(Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
+      log.info(
+          String.format(
+              Locale.ENGLISH, "DirectoryReader successfully opened. Directory path=%s", dirPath));
     }
     return dir;
   }
@@ -196,7 +202,9 @@ public final class IndexUtils {
    * @return new index writer
    * @throws IOException - if there is a low level IO error.
    */
-  public static IndexWriter createWriter(Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits) throws IOException {
+  public static IndexWriter createWriter(
+      Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits)
+      throws IOException {
     return createWriter(Objects.requireNonNull(dir), analyzer, useCompound, keepAllCommits, null);
   }
 
@@ -211,11 +219,13 @@ public final class IndexUtils {
    * @return new index writer
    * @throws IOException - if there is a low level IO error.
    */
-  public static IndexWriter createWriter(Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits,
-                                         PrintStream ps) throws IOException {
+  public static IndexWriter createWriter(
+      Directory dir, Analyzer analyzer, boolean useCompound, boolean keepAllCommits, PrintStream ps)
+      throws IOException {
     Objects.requireNonNull(dir);
 
-    IndexWriterConfig config = new IndexWriterConfig(analyzer == null ? new WhitespaceAnalyzer() : analyzer);
+    IndexWriterConfig config =
+        new IndexWriterConfig(analyzer == null ? new WhitespaceAnalyzer() : analyzer);
     config.setUseCompoundFile(useCompound);
     if (ps != null) {
       config.setInfoStream(ps);
@@ -237,7 +247,8 @@ public final class IndexUtils {
    * @param maxNumSegments - max number of segments
    * @throws IOException - if there is a low level IO error.
    */
-  public static void optimizeIndex(IndexWriter writer, boolean expunge, int maxNumSegments) throws IOException {
+  public static void optimizeIndex(IndexWriter writer, boolean expunge, int maxNumSegments)
+      throws IOException {
     Objects.requireNonNull(writer);
     if (expunge) {
       writer.forceMergeDeletes(true);
@@ -273,7 +284,8 @@ public final class IndexUtils {
    * @param ps - information stream
    * @throws IOException - if there is a low level IO error.
    */
-  public static void tryRepairIndex(Directory dir, CheckIndex.Status st, PrintStream ps) throws IOException {
+  public static void tryRepairIndex(Directory dir, CheckIndex.Status st, PrintStream ps)
+      throws IOException {
     Objects.requireNonNull(dir);
     Objects.requireNonNull(st);
 
@@ -300,7 +312,9 @@ public final class IndexUtils {
         String format = "unknown";
         try (IndexInput in = dir.openInput(segmentFileName, IOContext.READ)) {
           if (CodecUtil.CODEC_MAGIC == in.readInt()) {
-            int actualVersion = CodecUtil.checkHeaderNoMagic(in, "segments", SegmentInfos.VERSION_70, Integer.MAX_VALUE);
+            int actualVersion =
+                CodecUtil.checkHeaderNoMagic(
+                    in, "segments", SegmentInfos.VERSION_70, Integer.MAX_VALUE);
             if (actualVersion == SegmentInfos.VERSION_70) {
               format = "Lucene 7.0 or later";
             } else if (actualVersion == SegmentInfos.VERSION_72) {
@@ -344,7 +358,8 @@ public final class IndexUtils {
    * @return a map contains terms and their occurrence frequencies
    * @throws IOException - if there is a low level IO error.
    */
-  public static Map<String, Long> countTerms(IndexReader reader, Collection<String> fields) throws IOException {
+  public static Map<String, Long> countTerms(IndexReader reader, Collection<String> fields)
+      throws IOException {
     Map<String, Long> res = new HashMap<>();
     for (String field : fields) {
       if (!res.containsKey(field)) {
@@ -430,7 +445,8 @@ public final class IndexUtils {
    * @param field - field name
    * @throws IOException - if there is a low level IO error.
    */
-  public static BinaryDocValues getBinaryDocValues(IndexReader reader, String field) throws IOException {
+  public static BinaryDocValues getBinaryDocValues(IndexReader reader, String field)
+      throws IOException {
     if (reader instanceof LeafReader) {
       return ((LeafReader) reader).getBinaryDocValues(field);
     } else {
@@ -445,7 +461,8 @@ public final class IndexUtils {
    * @param field - field name
    * @throws IOException - if there is a low level IO error.
    */
-  public static NumericDocValues getNumericDocValues(IndexReader reader, String field) throws IOException {
+  public static NumericDocValues getNumericDocValues(IndexReader reader, String field)
+      throws IOException {
     if (reader instanceof LeafReader) {
       return ((LeafReader) reader).getNumericDocValues(field);
     } else {
@@ -460,7 +477,8 @@ public final class IndexUtils {
    * @param field - field name
    * @throws IOException - if there is a low level IO error.
    */
-  public static SortedNumericDocValues getSortedNumericDocValues(IndexReader reader, String field) throws IOException {
+  public static SortedNumericDocValues getSortedNumericDocValues(IndexReader reader, String field)
+      throws IOException {
     if (reader instanceof LeafReader) {
       return ((LeafReader) reader).getSortedNumericDocValues(field);
     } else {
@@ -475,7 +493,8 @@ public final class IndexUtils {
    * @param field - field name
    * @throws IOException - if there is a low level IO error.
    */
-  public static SortedDocValues getSortedDocValues(IndexReader reader, String field) throws IOException {
+  public static SortedDocValues getSortedDocValues(IndexReader reader, String field)
+      throws IOException {
     if (reader instanceof LeafReader) {
       return ((LeafReader) reader).getSortedDocValues(field);
     } else {
@@ -490,7 +509,8 @@ public final class IndexUtils {
    * @param field - field name
    * @throws IOException - if there is a low level IO error.
    */
-  public static SortedSetDocValues getSortedSetDocvalues(IndexReader reader, String field) throws IOException {
+  public static SortedSetDocValues getSortedSetDocvalues(IndexReader reader, String field)
+      throws IOException {
     if (reader instanceof LeafReader) {
       return ((LeafReader) reader).getSortedSetDocValues(field);
     } else {
@@ -498,6 +518,5 @@ public final class IndexUtils {
     }
   }
 
-  private IndexUtils() {
-  }
+  private IndexUtils() {}
 }

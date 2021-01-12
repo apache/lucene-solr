@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.compound;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
@@ -25,14 +24,14 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.xml.sax.InputSource;
 
 /**
- * A {@link org.apache.lucene.analysis.TokenFilter} that decomposes compound words found in many Germanic languages.
+ * A {@link org.apache.lucene.analysis.TokenFilter} that decomposes compound words found in many
+ * Germanic languages.
  *
- * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
- * "Donaudampfschiff" even when you only enter "schiff". It uses a hyphenation
- * grammar and a word dictionary to achieve this.
+ * <p>"Donaudampfschiff" becomes Donau, dampf, schiff so that you can find "Donaudampfschiff" even
+ * when you only enter "schiff". It uses a hyphenation grammar and a word dictionary to achieve
+ * this.
  */
-public class HyphenationCompoundWordTokenFilter extends
-    CompoundWordTokenFilterBase {
+public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
   private HyphenationTree hyphenator;
   private boolean noSubMatches;
   private boolean noOverlappingMatches;
@@ -41,72 +40,70 @@ public class HyphenationCompoundWordTokenFilter extends
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
-   * @param input
-   *          the {@link org.apache.lucene.analysis.TokenStream} to process
-   * @param hyphenator
-   *          the hyphenation pattern tree to use for hyphenation
-   * @param dictionary
-   *          the word dictionary to match against.
+   * @param input the {@link org.apache.lucene.analysis.TokenStream} to process
+   * @param hyphenator the hyphenation pattern tree to use for hyphenation
+   * @param dictionary the word dictionary to match against.
    */
-  public HyphenationCompoundWordTokenFilter(TokenStream input,
-                                            HyphenationTree hyphenator, CharArraySet dictionary) {
-    this(input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
-        DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false, false, false);
+  public HyphenationCompoundWordTokenFilter(
+      TokenStream input, HyphenationTree hyphenator, CharArraySet dictionary) {
+    this(
+        input,
+        hyphenator,
+        dictionary,
+        DEFAULT_MIN_WORD_SIZE,
+        DEFAULT_MIN_SUBWORD_SIZE,
+        DEFAULT_MAX_SUBWORD_SIZE,
+        false,
+        false,
+        false);
   }
 
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
-   * @param input
-   *          the {@link org.apache.lucene.analysis.TokenStream} to process
-   * @param hyphenator
-   *          the hyphenation pattern tree to use for hyphenation
-   * @param dictionary
-   *          the word dictionary to match against.
-   * @param minWordSize
-   *          only words longer than this get processed
-   * @param minSubwordSize
-   *          only subwords longer than this get to the output stream
-   * @param maxSubwordSize
-   *          only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch
-   *          Add only the longest matching subword for each hyphenation to the stream
+   * @param input the {@link org.apache.lucene.analysis.TokenStream} to process
+   * @param hyphenator the hyphenation pattern tree to use for hyphenation
+   * @param dictionary the word dictionary to match against.
+   * @param minWordSize only words longer than this get processed
+   * @param minSubwordSize only subwords longer than this get to the output stream
+   * @param maxSubwordSize only subwords shorter than this get to the output stream
+   * @param onlyLongestMatch Add only the longest matching subword to the stream
    */
-  public HyphenationCompoundWordTokenFilter(TokenStream input,
-      HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
-      int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(input, hyphenator, dictionary, minWordSize, minSubwordSize,
-        maxSubwordSize, onlyLongestMatch, false, false);
+  public HyphenationCompoundWordTokenFilter(
+      TokenStream input,
+      HyphenationTree hyphenator,
+      CharArraySet dictionary,
+      int minWordSize,
+      int minSubwordSize,
+      int maxSubwordSize,
+      boolean onlyLongestMatch) {
+    this(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch, false, false);
   }
   
   /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    *
-   * @param input
-   *          the {@link org.apache.lucene.analysis.TokenStream} to process
-   * @param hyphenator
-   *          the hyphenation pattern tree to use for hyphenation
-   * @param dictionary
-   *          the word dictionary to match against.
-   * @param minWordSize
-   *          only words longer than this get processed
-   * @param minSubwordSize
-   *          only subwords longer than this get to the output stream
-   * @param maxSubwordSize
-   *          only subwords shorter than this get to the output stream
-   * @param onlyLongestMatch
-   *          Add only the longest matching subword for each hyphenation to the stream
-   * @param noSubMatches
-   *          Excludes subwords that are enclosed by an other token
-   * @param noOverlappingMatches
-   *          Excludes subwords that overlap with an other subword
+   * @param input the {@link org.apache.lucene.analysis.TokenStream} to process
+   * @param hyphenator the hyphenation pattern tree to use for hyphenation
+   * @param dictionary the word dictionary to match against.
+   * @param minWordSize only words longer than this get processed
+   * @param minSubwordSize only subwords longer than this get to the output stream
+   * @param maxSubwordSize only subwords shorter than this get to the output stream
+   * @param onlyLongestMatch Add only the longest matching subword for each hyphenation to the stream
+   * @param noSubMatches Excludes subwords that are enclosed by an other token
+   * @param noOverlappingMatches Excludes subwords that overlap with an other subword
    */
-  public HyphenationCompoundWordTokenFilter(TokenStream input,
-                                            HyphenationTree hyphenator, CharArraySet dictionary, int minWordSize,
-                                            int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch,
-                                            boolean noSubMatches, boolean noOverlappingMatches) {
-    super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
-        onlyLongestMatch);
+  public HyphenationCompoundWordTokenFilter(
+      TokenStream input,
+      HyphenationTree hyphenator,
+      CharArraySet dictionary, 
+      int minWordSize,
+      int minSubwordSize,
+      int maxSubwordSize,
+      boolean onlyLongestMatch,
+      boolean noSubMatches,
+      boolean noOverlappingMatches) {
+    super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
 
     this.hyphenator = hyphenator;
     this.noSubMatches = noSubMatches;
@@ -116,28 +113,36 @@ public class HyphenationCompoundWordTokenFilter extends
 
   /**
    * Create a HyphenationCompoundWordTokenFilter with no dictionary.
-   * <p>
-   * Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream, org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, org.apache.lucene.analysis.CharArraySet, int, int, int, boolean, boolean, boolean)
-   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator,
-   * null, minWordSize, minSubwordSize, maxSubwordSize }
+   *
+   * <p>Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream,
+   * org.apache.lucene.analysis.compound.hyphenation.HyphenationTree,
+   * org.apache.lucene.analysis.CharArraySet, int, int, int, boolean)
+   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator, null, minWordSize,
+   * minSubwordSize, maxSubwordSize }
    */
-  public HyphenationCompoundWordTokenFilter(TokenStream input,
-                                            HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
-                                            int maxSubwordSize) {
-    this(input, hyphenator, null, minWordSize, minSubwordSize,
-        maxSubwordSize, false, false, false);
+  public HyphenationCompoundWordTokenFilter(
+      TokenStream input,
+      HyphenationTree hyphenator,
+      int minWordSize,
+      int minSubwordSize,
+      int maxSubwordSize) {
+    this(input, hyphenator, null, minWordSize, minSubwordSize, maxSubwordSize, false, false, false);
   }
 
   /**
    * Create a HyphenationCompoundWordTokenFilter with no dictionary.
-   * <p>
-   * Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream, org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, int, int, int)
-   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator,
-   * DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE }
+   *
+   * <p>Calls {@link #HyphenationCompoundWordTokenFilter(org.apache.lucene.analysis.TokenStream,
+   * org.apache.lucene.analysis.compound.hyphenation.HyphenationTree, int, int, int)
+   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator, DEFAULT_MIN_WORD_SIZE,
+   * DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE }
    */
-  public HyphenationCompoundWordTokenFilter(TokenStream input,
-                                            HyphenationTree hyphenator) {
-    this(input, hyphenator, DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE,
+  public HyphenationCompoundWordTokenFilter(TokenStream input, HyphenationTree hyphenator) {
+    this(
+        input,
+        hyphenator,
+        DEFAULT_MIN_WORD_SIZE,
+        DEFAULT_MIN_SUBWORD_SIZE,
         DEFAULT_MAX_SUBWORD_SIZE);
   }
 
@@ -148,8 +153,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @return An object representing the hyphenation patterns
    * @throws java.io.IOException If there is a low-level I/O error.
    */
-  public static HyphenationTree getHyphenationTree(String hyphenationFilename)
-      throws IOException {
+  public static HyphenationTree getHyphenationTree(String hyphenationFilename) throws IOException {
     return getHyphenationTree(new InputSource(hyphenationFilename));
   }
 
@@ -210,7 +214,7 @@ public class HyphenationCompoundWordTokenFilter extends
         // we only put subwords to the token stream
         // that are longer than minPartSize
         if (partLength < this.minSubwordSize) {
-          // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the 
+          // BOGUS/BROKEN/FUNKY/WACKO: somehow we have negative 'parts' according to the
           // calculation above, and we rely upon minSubwordSize being >=0 to filter them out...
           break;
         }
@@ -232,6 +236,9 @@ public class HyphenationCompoundWordTokenFilter extends
             break; //do not search for shorter matches
           }
         } //else dictionary is present but does not contain the part
+      }
+      if (this.onlyLongestMatch && longestMatchToken != null) {
+        tokens.add(longestMatchToken);
       }
     }
   }

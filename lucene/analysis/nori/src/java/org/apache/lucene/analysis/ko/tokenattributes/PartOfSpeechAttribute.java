@@ -24,31 +24,22 @@ import org.apache.lucene.util.Attribute;
 
 /**
  * Part of Speech attributes for Korean.
+ *
  * @lucene.experimental
  */
 public interface PartOfSpeechAttribute extends Attribute {
-  /**
-   * Get the {@link Type} of the token.
-   */
+  /** Get the {@link Type} of the token. */
   Type getPOSType();
 
-  /**
-   * Get the left part of speech of the token.
-   */
+  /** Get the left part of speech of the token. */
   Tag getLeftPOS();
 
-  /**
-   * Get the right part of speech of the token.
-   */
+  /** Get the right part of speech of the token. */
   Tag getRightPOS();
 
-  /**
-   * Get the {@link Morpheme} decomposition of the token.
-   */
+  /** Get the {@link Morpheme} decomposition of the token. */
   Morpheme[] getMorphemes();
 
-  /**
-   * Set the current token.
-   */
+  /** Set the current token. */
   void setToken(Token token);
 }

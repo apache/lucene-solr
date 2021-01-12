@@ -24,7 +24,7 @@ These notes highlight the biggest changes that may impact the largest number of
 implementations. It is not a comprehensive list of all changes to Solr in any release.
 
 When planning your Solr upgrade, consider the customizations you have made to
-your system and review the {solr-javadocs}/changes//Changes.html[`CHANGES.txt`]
+your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
 file found in your Solr package. That file includes all the changes and updates
 that may effect your existing implementation.
 
@@ -38,12 +38,34 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.8
+
+*Nested Documents*
+
+** When doing atomic/partial updates to a child document:
+*** Supply the `\_root_` field (the ID of the root document) so that Solr understands you are manipulating a child document and not a root document.
+In its absence, Solr looks at the `\_route_` parameter but that may go away because it's not an ideal substitute.
+If neither are present, Solr assumes you are updating a root document.
+If this assumption is false, Solr will do a cheap check that usually detects the problem and will
+throw an exception to alert you of the need to specify the Root ID.
+This backwards incompatible change was done to increase performance and robustness.
+*** This feature no longer requires stored=true or docValues=true on the `\_root_` field.  You might
+have it for other purposes though (e.g. for `uniqueBlock(...)`)
+*** This feature no longer requires the `\_nest_path_` field, although you probably ought to
+continue to define it as it's useful for other things.
+
+*Removed Contribs*
+
+* The search results clustering contrib has been removed from 8.x Solr line due to lack
+  of Java 1.8 compatibility in the dependency providing on-line clustering of search results.
+  See SOLR-14981 for more details.
+
 === Solr 8.7
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]
 for an overview of the main new features of Solr 8.7.
 
-When upgrading to 8.6.x users should be aware of the following major changes from 8.6.
+When upgrading to 8.7.x users should be aware of the following major changes from 8.6.
 
 *Autoscaling*
 
@@ -53,7 +75,13 @@ If you are already on 8.6.1 or higher, you can ignore these instructions.
 *Deprecations*
 
 * The autoscaling framework is now formally deprecated and will be removed in Solr 9.0.
-The Solr community is working on a plugin to replace this functionality, with the goal for it to be ready by the time 9.0 is released.
+The Solr community is working on pluggable API to replace this functionality, with the goal for it to be ready by the time 9.0 is released. Deprecations include: autoscaling policy, triggers, `withCollection` support, simulation framework, autoscaling suggestions tab in the UI, `autoAddReplicas` and `UTILIZENODE` command.
+
+* Similarly, rule-based replica placement strategy has been deprecated and will be replaced
+  in Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+
+* Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
+`spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
 
 *Legacy Scaling (non-SolrCloud) Terminology Updated*
 
@@ -122,9 +150,8 @@ If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*,
 +
 Replace `localhost:8983` with your Solr endpoint.
 +
-```
+[source,text]
 curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
-```
 +
 This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version to 8.6.1+, this warning can be ignored.
 
@@ -154,7 +181,9 @@ More information about this new feature is available in the section <<common-que
 
 *Autoscaling*
 
-* Solr now includes a default autoscaling policy.
+* **NOTE: The default autoscaling policy has been removed as of 8.6.1**
++
+Solr now includes a default autoscaling policy.
 This policy can be overridden with your custom rules or by specifying an empty policy to replace the default.
 
 * The ComputePlan action now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
@@ -337,6 +366,7 @@ The system is currently considered experimental, so use with caution. It must
 be enabled with a system parameter passed at start up before it can be used.
 For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
 
+With this feature Solr's Blob Store functionality is now deprecated and will likely be removed in 9.0.
 
 *Security*
 
@@ -567,7 +597,7 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 
 == Upgrading from Pre-7.x Versions
 
-Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes//Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
 The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
 

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -45,18 +44,18 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
   public void testDistanceSort() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
+
     // add some docs
     Document doc = new Document();
     doc.add(new XYDocValuesField("location", 40.759011f, -73.9844722f));
     iw.addDocument(doc);
     double d1 = cartesianDistance(40.759011f, -73.9844722f, 40.7143528f, -74.0059731f);
-    
+
     doc = new Document();
     doc.add(new XYDocValuesField("location", 40.718266f, -74.007819f));
     iw.addDocument(doc);
     double d2 = cartesianDistance(40.718266f, -74.007819f, 40.7143528f, -74.0059731f);
-    
+
     doc = new Document();
     doc.add(new XYDocValuesField("location", 40.7051157f, -74.0088305f));
     iw.addDocument(doc);
@@ -68,39 +67,38 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
 
     Sort sort = new Sort(XYDocValuesField.newDistanceSort("location", 40.7143528f, -74.0059731f));
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
-    
+
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(d2, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(d2, (Double) d.fields[0], 0.0D);
+
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(d3, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(d3, (Double) d.fields[0], 0.0D);
+
     d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(d1, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(d1, (Double) d.fields[0], 0.0D);
+
     reader.close();
     dir.close();
   }
-  
+
   /** Add two points (one doc missing) and sort by distance */
   public void testMissingLast() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
+
     // missing
     Document doc = new Document();
     iw.addDocument(doc);
-    
+
     doc = new Document();
     doc.add(new XYDocValuesField("location", 40.718266f, -74.007819f));
     iw.addDocument(doc);
     double d2 = cartesianDistance(40.718266f, -74.007819f, 40.7143528f, -74.0059731f);
-    
+
     doc = new Document();
     doc.add(new XYDocValuesField("location", 40.7051157f, -74.0088305f));
     iw.addDocument(doc);
     double d3 = cartesianDistance(40.7051157f, -74.0088305f, 40.7143528f, -74.0059731f);
-
 
     IndexReader reader = iw.getReader();
     IndexSearcher searcher = newSearcher(reader);
@@ -108,16 +106,16 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
 
     Sort sort = new Sort(XYDocValuesField.newDistanceSort("location", 40.7143528f, -74.0059731f));
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
-    
+
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(d2, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(d2, (Double) d.fields[0], 0.0D);
+
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(d3, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(d3, (Double) d.fields[0], 0.0D);
+
     d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(Double.POSITIVE_INFINITY, (Double)d.fields[0], 0.0D);
-    
+    assertEquals(Double.POSITIVE_INFINITY, (Double) d.fields[0], 0.0D);
+
     reader.close();
     dir.close();
   }
@@ -128,7 +126,7 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
       doRandomTest(10, 100);
     }
   }
-  
+
   /** Runs with thousands of docs */
   @Nightly
   public void testRandomHuge() throws Exception {
@@ -142,7 +140,7 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
   static class Result implements Comparable<Result> {
     int id;
     double distance;
-    
+
     Result(int id, double distance) {
       this.id = id;
       this.distance = distance;
@@ -174,7 +172,8 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       Result other = (Result) obj;
-      if (Double.doubleToLongBits(distance) != Double.doubleToLongBits(other.distance)) return false;
+      if (Double.doubleToLongBits(distance) != Double.doubleToLongBits(other.distance))
+        return false;
       if (id != other.id) return false;
       return true;
     }
@@ -184,9 +183,9 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
       return "Result [id=" + id + ", distance=" + distance + "]";
     }
   }
-  
+
   private void doRandomTest(int numDocs, int numQueries) throws IOException {
-    Directory dir = newDirectory();    
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     // else seeds may not to reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -215,7 +214,7 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
       double missingValue = Double.POSITIVE_INFINITY;
 
       Result expected[] = new Result[reader.maxDoc()];
-      
+
       for (int doc = 0; doc < reader.maxDoc(); doc++) {
         Document targetDoc = reader.document(doc);
         final double distance;
@@ -229,16 +228,15 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
         int id = targetDoc.getField("id").numericValue().intValue();
         expected[doc] = new Result(id, distance);
       }
-      
+
       Arrays.sort(expected);
-      
+
       // randomize the topN a bit
       int topN = TestUtil.nextInt(random(), 1, reader.maxDoc());
       // sort by distance, then ID
       SortField distanceSort = XYDocValuesField.newDistanceSort("field", x, y);
       distanceSort.setMissingValue(missingValue);
-      Sort sort = new Sort(distanceSort, 
-                           new SortField("id", SortField.Type.INT));
+      Sort sort = new Sort(distanceSort, new SortField("id", SortField.Type.INT));
 
       TopDocs topDocs = searcher.search(new MatchAllDocsQuery(), topN, sort);
       for (int resultNumber = 0; resultNumber < topN; resultNumber++) {
@@ -250,7 +248,8 @@ public class TestXYPointDistanceSort extends LuceneTestCase {
       // get page2 with searchAfter()
       if (topN < reader.maxDoc()) {
         int page2 = TestUtil.nextInt(random(), 1, reader.maxDoc() - topN);
-        TopDocs topDocs2 = searcher.searchAfter(topDocs.scoreDocs[topN - 1], new MatchAllDocsQuery(), page2, sort);
+        TopDocs topDocs2 =
+            searcher.searchAfter(topDocs.scoreDocs[topN - 1], new MatchAllDocsQuery(), page2, sort);
         for (int resultNumber = 0; resultNumber < page2; resultNumber++) {
           FieldDoc fieldDoc = (FieldDoc) topDocs2.scoreDocs[resultNumber];
           Result actual = new Result((Integer) fieldDoc.fields[1], (Double) fieldDoc.fields[0]);

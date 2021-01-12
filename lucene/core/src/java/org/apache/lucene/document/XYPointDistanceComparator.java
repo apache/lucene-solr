@@ -17,7 +17,6 @@
 package org.apache.lucene.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.index.DocValues;
@@ -32,9 +31,9 @@ import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Compares documents by distance from an origin point
- * <p>
- * When the least competitive item on the priority queue changes (setBottom), we recompute
- * a bounding box representing competitive distance to the top-N. Then in compareBottom, we can
+ *
+ * <p>When the least competitive item on the priority queue changes (setBottom), we recompute a
+ * bounding box representing competitive distance to the top-N. Then in compareBottom, we can
  * quickly reject hits based on bounding box alone without computing distance for every element.
  */
 class XYPointDistanceComparator extends FieldComparator<Double> implements LeafFieldComparator {
@@ -70,7 +69,7 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
     this.y = y;
     this.values = new double[numHits];
   }
-  
+
   @Override
   public void setScorer(Scorable scorer) {}
 
@@ -78,14 +77,15 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
   public int compare(int slot1, int slot2) {
     return Double.compare(values[slot1], values[slot2]);
   }
-  
+
   @Override
   public void setBottom(int slot) {
     bottom = values[slot];
     // make bounding box(es) to exclude non-competitive hits, but start
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
-    if (bottom < Float.MAX_VALUE && (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F)) {
+    if (bottom < Float.MAX_VALUE
+        && (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F)) {
 
       XYRectangle rectangle = XYRectangle.fromPointDistance((float) x, (float) y, (float) bottom);
       // pre-encode our box to our integer encoding, so we don't have to decode
@@ -97,7 +97,7 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
     }
     setBottomCounter++;
   }
-  
+
   @Override
   public void setTopValue(Double value) {
     topValue = value.doubleValue();
@@ -105,18 +105,19 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
 
   private void setValues() throws IOException {
     if (valuesDocID != currentDocs.docID()) {
-      assert valuesDocID < currentDocs.docID(): " valuesDocID=" + valuesDocID + " vs " + currentDocs.docID();
+      assert valuesDocID < currentDocs.docID()
+          : " valuesDocID=" + valuesDocID + " vs " + currentDocs.docID();
       valuesDocID = currentDocs.docID();
       int count = currentDocs.docValueCount();
       if (count > currentValues.length) {
         currentValues = new long[ArrayUtil.oversize(count, Long.BYTES)];
       }
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         currentValues[i] = currentDocs.nextValue();
       }
     }
   }
-  
+
   @Override
   public int compareBottom(int doc) throws IOException {
     if (doc > currentDocs.docID()) {
@@ -135,11 +136,11 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
       long encoded = currentValues[i];
 
       // test bounding box
-      int xBits = (int)(encoded >> 32);
+      int xBits = (int) (encoded >> 32);
       if (xBits < minX || xBits > maxX) {
         continue;
       }
-      int yBits = (int)(encoded & 0xFFFFFFFF);
+      int yBits = (int) (encoded & 0xFFFFFFFF);
       if (yBits < minY || yBits > maxY) {
         continue;
       }
@@ -149,7 +150,7 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
       double docY = XYEncodingUtils.decode(yBits);
       final double diffX = x - docX;
       final double diffY = y - docY;
-      double distance =  Math.sqrt(diffX * diffX + diffY * diffY);
+      double distance = Math.sqrt(diffX * diffX + diffY * diffY);
       cmp = Math.max(cmp, Double.compare(bottom, distance));
       // once we compete in the PQ, no need to continue.
       if (cmp > 0) {
@@ -158,12 +159,12 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
     }
     return cmp;
   }
-  
+
   @Override
   public void copy(int slot, int doc) throws IOException {
     values[slot] = sortKey(doc);
   }
-  
+
   @Override
   public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
     LeafReader reader = context.reader();
@@ -175,12 +176,12 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
     valuesDocID = -1;
     return this;
   }
-  
+
   @Override
   public Double value(int slot) {
     return values[slot];
   }
-  
+
   @Override
   public int compareTop(int doc) throws IOException {
     return Double.compare(topValue, sortKey(doc));
@@ -196,11 +197,11 @@ class XYPointDistanceComparator extends FieldComparator<Double> implements LeafF
       int numValues = currentDocs.docValueCount();
       for (int i = 0; i < numValues; i++) {
         long encoded = currentValues[i];
-        double docX = XYEncodingUtils.decode((int)(encoded >> 32));
-        double docY = XYEncodingUtils.decode((int)(encoded & 0xFFFFFFFF));
+        double docX = XYEncodingUtils.decode((int) (encoded >> 32));
+        double docY = XYEncodingUtils.decode((int) (encoded & 0xFFFFFFFF));
         final double diffX = x - docX;
         final double diffY = y - docY;
-        double distance =  Math.sqrt(diffX * diffX + diffY * diffY);
+        double distance = Math.sqrt(diffX * diffX + diffY * diffY);
         minValue = Math.min(minValue, distance);
       }
     }

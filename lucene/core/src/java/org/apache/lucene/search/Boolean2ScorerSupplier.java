@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-
 import org.apache.lucene.search.BooleanClause.Occur;
 
 final class Boolean2ScorerSupplier extends ScorerSupplier {
@@ -36,20 +35,28 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
   private final int minShouldMatch;
   private long cost = -1;
 
-  Boolean2ScorerSupplier(Weight weight,
+  Boolean2ScorerSupplier(
+      Weight weight,
       Map<Occur, Collection<ScorerSupplier>> subs,
-      ScoreMode scoreMode, int minShouldMatch) {
+      ScoreMode scoreMode,
+      int minShouldMatch) {
     if (minShouldMatch < 0) {
-      throw new IllegalArgumentException("minShouldMatch must be positive, but got: " + minShouldMatch);
+      throw new IllegalArgumentException(
+          "minShouldMatch must be positive, but got: " + minShouldMatch);
     }
     if (minShouldMatch != 0 && minShouldMatch >= subs.get(Occur.SHOULD).size()) {
-      throw new IllegalArgumentException("minShouldMatch must be strictly less than the number of SHOULD clauses");
+      throw new IllegalArgumentException(
+          "minShouldMatch must be strictly less than the number of SHOULD clauses");
     }
-    if (scoreMode.needsScores() == false && minShouldMatch == 0 && subs.get(Occur.SHOULD).size() > 0
+    if (scoreMode.needsScores() == false
+        && minShouldMatch == 0
+        && subs.get(Occur.SHOULD).size() > 0
         && subs.get(Occur.MUST).size() + subs.get(Occur.FILTER).size() > 0) {
-      throw new IllegalArgumentException("Cannot pass purely optional clauses if scores are not needed");
+      throw new IllegalArgumentException(
+          "Cannot pass purely optional clauses if scores are not needed");
     }
-    if (subs.get(Occur.SHOULD).size() + subs.get(Occur.MUST).size() + subs.get(Occur.FILTER).size() == 0) {
+    if (subs.get(Occur.SHOULD).size() + subs.get(Occur.MUST).size() + subs.get(Occur.FILTER).size()
+        == 0) {
       throw new IllegalArgumentException("There should be at least one positive clause");
     }
     this.weight = weight;
@@ -59,18 +66,19 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
   }
 
   private long computeCost() {
-    OptionalLong minRequiredCost = Stream.concat(
-        subs.get(Occur.MUST).stream(),
-        subs.get(Occur.FILTER).stream())
-        .mapToLong(ScorerSupplier::cost)
-        .min();
+    OptionalLong minRequiredCost =
+        Stream.concat(subs.get(Occur.MUST).stream(), subs.get(Occur.FILTER).stream())
+            .mapToLong(ScorerSupplier::cost)
+            .min();
     if (minRequiredCost.isPresent() && minShouldMatch == 0) {
       return minRequiredCost.getAsLong();
     } else {
       final Collection<ScorerSupplier> optionalScorers = subs.get(Occur.SHOULD);
-      final long shouldCost = MinShouldMatchSumScorer.cost(
-          optionalScorers.stream().mapToLong(ScorerSupplier::cost),
-          optionalScorers.size(), minShouldMatch);
+      final long shouldCost =
+          ScorerUtil.costWithMinShouldMatch(
+              optionalScorers.stream().mapToLong(ScorerSupplier::cost),
+              optionalScorers.size(),
+              minShouldMatch);
       return Math.min(minRequiredCost.orElse(Long.MAX_VALUE), shouldCost);
     }
   }
@@ -86,13 +94,14 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
   @Override
   public Scorer get(long leadCost) throws IOException {
     Scorer scorer = getInternal(leadCost);
-    if (scoreMode == ScoreMode.TOP_SCORES &&
-          subs.get(Occur.SHOULD).isEmpty() && subs.get(Occur.MUST).isEmpty()) {
+    if (scoreMode == ScoreMode.TOP_SCORES
+        && subs.get(Occur.SHOULD).isEmpty()
+        && subs.get(Occur.MUST).isEmpty()) {
       // no scoring clauses but scores are needed so we wrap the scorer in
       // a constant score in order to allow early termination
-      return scorer.twoPhaseIterator() != null ?
-          new ConstantScoreScorer(weight, 0f, scoreMode, scorer.twoPhaseIterator()) :
-            new ConstantScoreScorer(weight, 0f, scoreMode, scorer.iterator());
+      return scorer.twoPhaseIterator() != null
+          ? new ConstantScoreScorer(weight, 0f, scoreMode, scorer.twoPhaseIterator())
+          : new ConstantScoreScorer(weight, 0f, scoreMode, scorer.iterator());
     }
     return scorer;
   }
@@ -103,12 +112,18 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
 
     // pure conjunction
     if (subs.get(Occur.SHOULD).isEmpty()) {
-      return excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost);
+      return excl(
+          req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost),
+          subs.get(Occur.MUST_NOT),
+          leadCost);
     }
 
     // pure disjunction
     if (subs.get(Occur.FILTER).isEmpty() && subs.get(Occur.MUST).isEmpty()) {
-      return excl(opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), subs.get(Occur.MUST_NOT), leadCost);
+      return excl(
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost),
+          subs.get(Occur.MUST_NOT),
+          leadCost);
     }
 
     // conjunction-disjunction mix:
@@ -117,23 +132,40 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     // optional side must match. otherwise it's required + optional
 
     if (minShouldMatch > 0) {
-      Scorer req = excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost);
+      Scorer req =
+          excl(
+              req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost),
+              subs.get(Occur.MUST_NOT),
+              leadCost);
       Scorer opt = opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost);
       return new ConjunctionScorer(weight, Arrays.asList(req, opt), Arrays.asList(req, opt));
     } else {
       assert scoreMode.needsScores();
       return new ReqOptSumScorer(
-          excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), scoreMode);
+          excl(
+              req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost),
+              subs.get(Occur.MUST_NOT),
+              leadCost),
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost),
+          scoreMode);
     }
   }
 
-  /** Create a new scorer for the given required clauses. Note that
-   *  {@code requiredScoring} is a subset of {@code required} containing
-   *  required clauses that should participate in scoring. */
-  private Scorer req(Collection<ScorerSupplier> requiredNoScoring, Collection<ScorerSupplier> requiredScoring, long leadCost) throws IOException {
+  /**
+   * Create a new scorer for the given required clauses. Note that {@code requiredScoring} is a
+   * subset of {@code required} containing required clauses that should participate in scoring.
+   */
+  private Scorer req(
+      Collection<ScorerSupplier> requiredNoScoring,
+      Collection<ScorerSupplier> requiredScoring,
+      long leadCost)
+      throws IOException {
     if (requiredNoScoring.size() + requiredScoring.size() == 1) {
-      Scorer req = (requiredNoScoring.isEmpty() ? requiredScoring : requiredNoScoring).iterator().next().get(leadCost);
+      Scorer req =
+          (requiredNoScoring.isEmpty() ? requiredScoring : requiredNoScoring)
+              .iterator()
+              .next()
+              .get(leadCost);
 
       if (scoreMode.needsScores() == false) {
         return req;
@@ -148,6 +180,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
           public float score() throws IOException {
             return 0f;
           }
+
           @Override
           public float getMaxScore(int upTo) throws IOException {
             return 0f;
@@ -178,7 +211,8 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     }
   }
 
-  private Scorer excl(Scorer main, Collection<ScorerSupplier> prohibited, long leadCost) throws IOException {
+  private Scorer excl(Scorer main, Collection<ScorerSupplier> prohibited, long leadCost)
+      throws IOException {
     if (prohibited.isEmpty()) {
       return main;
     } else {
@@ -186,8 +220,9 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     }
   }
 
-  private Scorer opt(Collection<ScorerSupplier> optional, int minShouldMatch,
-      ScoreMode scoreMode, long leadCost) throws IOException {
+  private Scorer opt(
+      Collection<ScorerSupplier> optional, int minShouldMatch, ScoreMode scoreMode, long leadCost)
+      throws IOException {
     if (optional.size() == 1) {
       return optional.iterator().next().get(leadCost);
     } else {
@@ -195,14 +230,14 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       for (ScorerSupplier scorer : optional) {
         optionalScorers.add(scorer.get(leadCost));
       }
-      if (minShouldMatch > 1) {
+
+      if (scoreMode == ScoreMode.TOP_SCORES) {
+        return new WANDScorer(weight, optionalScorers, minShouldMatch);
+      } else if (minShouldMatch > 1) {
         return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
-      } else if (scoreMode == ScoreMode.TOP_SCORES) {
-        return new WANDScorer(weight, optionalScorers);
       } else {
         return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
     }
   }
-
 }

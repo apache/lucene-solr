@@ -16,59 +16,62 @@
  */
 package org.apache.lucene.util.fst;
 
+import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import java.io.IOException;
-
-/** Provides off heap storage of finite state machine (FST),
- *  using underlying index input instead of byte store on heap
+/**
+ * Provides off heap storage of finite state machine (FST), using underlying index input instead of
+ * byte store on heap
  *
  * @lucene.experimental
  */
 public final class OffHeapFSTStore implements FSTStore {
 
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(OffHeapFSTStore.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(OffHeapFSTStore.class);
 
-    private IndexInput in;
-    private long offset;
-    private long numBytes;
+  private IndexInput in;
+  private long offset;
+  private long numBytes;
 
-    @Override
-    public void init(DataInput in, long numBytes) throws IOException {
-        if (in instanceof IndexInput) {
-            this.in = (IndexInput) in;
-            this.numBytes = numBytes;
-            this.offset = this.in.getFilePointer();
-        } else {
-            throw new IllegalArgumentException("parameter:in should be an instance of IndexInput for using OffHeapFSTStore, not a "
-                                               + in.getClass().getName());
-        }
+  @Override
+  public void init(DataInput in, long numBytes) throws IOException {
+    if (in instanceof IndexInput) {
+      this.in = (IndexInput) in;
+      this.numBytes = numBytes;
+      this.offset = this.in.getFilePointer();
+    } else {
+      throw new IllegalArgumentException(
+          "parameter:in should be an instance of IndexInput for using OffHeapFSTStore, not a "
+              + in.getClass().getName());
     }
+  }
 
-    @Override
-    public long ramBytesUsed() {
-        return BASE_RAM_BYTES_USED;
-    }
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES_USED;
+  }
 
-    @Override
-    public long size() {
-        return numBytes;
-    }
+  @Override
+  public long size() {
+    return numBytes;
+  }
 
-    @Override
-    public FST.BytesReader getReverseBytesReader() {
-        try {
-            return new ReverseRandomAccessReader(in.randomAccessSlice(offset, numBytes));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+  @Override
+  public FST.BytesReader getReverseBytesReader() {
+    try {
+      return new ReverseRandomAccessReader(in.randomAccessSlice(offset, numBytes));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    @Override
-    public void writeTo(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException("writeToOutput operation is not supported for OffHeapFSTStore");
-    }
+  @Override
+  public void writeTo(DataOutput out) throws IOException {
+    throw new UnsupportedOperationException(
+        "writeToOutput operation is not supported for OffHeapFSTStore");
+  }
 }

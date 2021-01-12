@@ -19,9 +19,7 @@ package org.apache.lucene.luke.models.overview;
 
 import org.apache.lucene.luke.util.BytesRefUtils;
 
-/**
- * Holder for statistics for a term in a specific field.
- */
+/** Holder for statistics for a term in a specific field. */
 public final class TermStats {
 
   private final String decodedTermText;
@@ -31,7 +29,8 @@ public final class TermStats {
   private final int docFreq;
 
   /**
-   * Returns a TermStats instance representing the specified {@link org.apache.lucene.misc.TermStats} value.
+   * Returns a TermStats instance representing the specified {@link
+   * org.apache.lucene.misc.TermStats} value.
    */
   static TermStats of(org.apache.lucene.misc.TermStats stats) {
     String termText = BytesRefUtils.decode(stats.termtext);
@@ -44,33 +43,32 @@ public final class TermStats {
     this.docFreq = docFreq;
   }
 
-  /**
-   * Returns the string representation for this term.
-   */
+  /** Returns the string representation for this term. */
   public String getDecodedTermText() {
     return decodedTermText;
   }
 
-  /**
-   * Returns the field name.
-   */
+  /** Returns the field name. */
   public String getField() {
     return field;
   }
 
-  /**
-   * Returns the document frequency of this term.
-   */
+  /** Returns the document frequency of this term. */
   public int getDocFreq() {
     return docFreq;
   }
 
   @Override
   public String toString() {
-    return "TermStats{" +
-        "decodedTermText='" + decodedTermText + '\'' +
-        ", field='" + field + '\'' +
-        ", docFreq=" + docFreq +
-        '}';
+    return "TermStats{"
+        + "decodedTermText='"
+        + decodedTermText
+        + '\''
+        + ", field='"
+        + field
+        + '\''
+        + ", docFreq="
+        + docFreq
+        + '}';
   }
 }

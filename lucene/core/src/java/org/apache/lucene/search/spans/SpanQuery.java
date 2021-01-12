@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.search.IndexSearcher;
@@ -31,16 +29,16 @@ import org.apache.lucene.search.ScoreMode;
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
 
-  /**
-   * Returns the name of the field matched by this query.
-   */
+  /** Returns the name of the field matched by this query. */
   public abstract String getField();
 
   @Override
-  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException;
+  public abstract SpanWeight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException;
 
   /**
    * Build a map of terms to {@link TermStates}, for use in constructing SpanWeights
+   *
    * @lucene.internal
    */
   public static Map<Term, TermStates> getTermStates(SpanWeight... weights) {
@@ -53,6 +51,7 @@ public abstract class SpanQuery extends Query {
 
   /**
    * Build a map of terms to {@link TermStates}, for use in constructing SpanWeights
+   *
    * @lucene.internal
    */
   public static Map<Term, TermStates> getTermStates(Collection<SpanWeight> weights) {

@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryPoint;
@@ -44,16 +45,12 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Rethrow;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
- * Abstract class to do basic tests for a points format.
- * NOTE: This test focuses on the points impl, nothing else.
- * The [stretch] goal is for this test to be
- * so thorough in testing a new PointsFormat that if this
- * test passes, then all Lucene/Solr tests should also pass.  Ie,
- * if there is some bug in a given PointsFormat that this
- * test fails to catch then this test needs to be improved! */
+ * Abstract class to do basic tests for a points format. NOTE: This test focuses on the points impl,
+ * nothing else. The [stretch] goal is for this test to be so thorough in testing a new PointsFormat
+ * that if this test passes, then all Lucene/Solr tests should also pass. Ie, if there is some bug
+ * in a given PointsFormat that this test fails to catch then this test needs to be improved!
+ */
 public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCase {
 
   @Override
@@ -63,14 +60,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       doc.add(new IntPoint("f", random().nextInt()));
     }
   }
-  
+
   public void testBasic() throws Exception {
     Directory dir = getDirectory(20);
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
     byte[] point = new byte[4];
-    for(int i=0;i<20;i++) {
+    for (int i = 0; i < 20; i++) {
       Document doc = new Document();
       NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
@@ -86,19 +83,21 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
     values.intersect(
-                     new IntersectVisitor() {
-                       @Override
-                       public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                         return Relation.CELL_CROSSES_QUERY;
-                       }
-                       public void visit(int docID) {
-                         throw new IllegalStateException();
-                       }
-                       public void visit(int docID, byte[] packedValue) {
-                         seen.set(docID);
-                         assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
-                       }
-                     });
+        new IntersectVisitor() {
+          @Override
+          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+            return Relation.CELL_CROSSES_QUERY;
+          }
+
+          public void visit(int docID) {
+            throw new IllegalStateException();
+          }
+
+          public void visit(int docID, byte[] packedValue) {
+            seen.set(docID);
+            assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
+          }
+        });
     assertEquals(20, seen.cardinality());
     IOUtils.close(r, dir);
   }
@@ -109,7 +108,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
     byte[] point = new byte[4];
-    for(int i=0;i<20;i++) {
+    for (int i = 0; i < 20; i++) {
       Document doc = new Document();
       NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
@@ -128,19 +127,21 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
     values.intersect(
-                     new IntersectVisitor() {
-                       @Override
-                       public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                         return Relation.CELL_CROSSES_QUERY;
-                       }
-                       public void visit(int docID) {
-                         throw new IllegalStateException();
-                       }
-                       public void visit(int docID, byte[] packedValue) {
-                         seen.set(docID);
-                         assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
-                       }
-                     });
+        new IntersectVisitor() {
+          @Override
+          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+            return Relation.CELL_CROSSES_QUERY;
+          }
+
+          public void visit(int docID) {
+            throw new IllegalStateException();
+          }
+
+          public void visit(int docID, byte[] packedValue) {
+            seen.set(docID);
+            assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
+          }
+        });
     assertEquals(20, seen.cardinality());
     IOUtils.close(r, dir);
   }
@@ -150,7 +151,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
     byte[] point = new byte[4];
-    for(int i=0;i<10;i++) {
+    for (int i = 0; i < 10; i++) {
       Document doc = new Document();
       NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
@@ -168,13 +169,15 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     assertEquals(1, r.numDocs());
     Bits liveDocs = MultiBits.getLiveDocs(r);
 
-    for(LeafReaderContext ctx : r.leaves()) {
+    for (LeafReaderContext ctx : r.leaves()) {
       PointValues values = ctx.reader().getPointValues("dim");
 
       NumericDocValues idValues = ctx.reader().getNumericDocValues("id");
       if (idValues == null) {
-        // this is (surprisingly) OK, because if the random IWC flushes all 10 docs before the 11th doc is added, and force merge runs, it
-        // will drop the 100% deleted segments, and the "id" field never exists in the final single doc segment
+        // this is (surprisingly) OK, because if the random IWC flushes all 10 docs before the 11th
+        // doc is added, and force merge runs, it
+        // will drop the 100% deleted segments, and the "id" field never exists in the final single
+        // doc segment
         continue;
       }
       int[] docIDToID = new int[ctx.reader().maxDoc()];
@@ -182,25 +185,27 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       while ((docID = idValues.nextDoc()) != NO_MORE_DOCS) {
         docIDToID[docID] = (int) idValues.longValue();
       }
-      
+
       if (values != null) {
         BitSet seen = new BitSet();
         values.intersect(
-                         new IntersectVisitor() {
-                           @Override
-                           public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                             return Relation.CELL_CROSSES_QUERY;
-                           }
-                           public void visit(int docID) {
-                             throw new IllegalStateException();
-                           }
-                           public void visit(int docID, byte[] packedValue) {
-                             if (liveDocs.get(docID)) {
-                               seen.set(docID);
-                             }
-                             assertEquals(docIDToID[docID], NumericUtils.sortableBytesToInt(packedValue, 0));
-                           }
-                         });
+            new IntersectVisitor() {
+              @Override
+              public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                return Relation.CELL_CROSSES_QUERY;
+              }
+
+              public void visit(int docID) {
+                throw new IllegalStateException();
+              }
+
+              public void visit(int docID, byte[] packedValue) {
+                if (liveDocs.get(docID)) {
+                  seen.set(docID);
+                }
+                assertEquals(docIDToID[docID], NumericUtils.sortableBytesToInt(packedValue, 0));
+              }
+            });
         assertEquals(0, seen.cardinality());
       }
     }
@@ -212,13 +217,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     int numDocs = atLeast(1000);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
-    int numIndexDims = TestUtil.nextInt(random(), 1, Math.min(numDims, PointValues.MAX_INDEX_DIMENSIONS));
+    int numIndexDims =
+        TestUtil.nextInt(random(), 1, Math.min(numDims, PointValues.MAX_INDEX_DIMENSIONS));
 
     byte[][][] docValues = new byte[numDocs][][];
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       byte[][] values = new byte[numDims][];
-      for(int dim=0;dim<numDims;dim++) {
+      for (int dim = 0; dim < numDims; dim++) {
         values[dim] = new byte[numBytesPerDim];
         random().nextBytes(values[dim]);
       }
@@ -243,8 +249,11 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
             throw ae;
           }
         } catch (IllegalArgumentException iae) {
-          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
-          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/
+          // more heap
+          assertTrue(
+              iae.getMessage()
+                  .contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
         } catch (IOException ioe) {
           done = handlePossiblyFakeException(ioe);
         }
@@ -257,10 +266,12 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     Throwable ex = e;
     while (ex != null) {
       String message = ex.getMessage();
-      if (message != null && (message.contains("a random IOException") || message.contains("background merge hit exception"))) {
+      if (message != null
+          && (message.contains("a random IOException")
+              || message.contains("background merge hit exception"))) {
         return true;
       }
-      ex = ex.getCause();            
+      ex = ex.getCause();
     }
     Rethrow.rethrow(e);
 
@@ -271,18 +282,19 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   public void testMultiValued() throws Exception {
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
-    int numIndexDims = TestUtil.nextInt(random(), 1, Math.min(PointValues.MAX_INDEX_DIMENSIONS, numDims));
+    int numIndexDims =
+        TestUtil.nextInt(random(), 1, Math.min(PointValues.MAX_INDEX_DIMENSIONS, numDims));
 
     int numDocs = TEST_NIGHTLY ? atLeast(1000) : atLeast(100);
     List<byte[][]> docValues = new ArrayList<>();
     List<Integer> docIDs = new ArrayList<>();
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       int numValuesInDoc = TestUtil.nextInt(random(), 1, 5);
-      for(int ord=0;ord<numValuesInDoc;ord++) {
+      for (int ord = 0; ord < numValuesInDoc; ord++) {
         docIDs.add(docID);
         byte[][] values = new byte[numDims][];
-        for(int dim=0;dim<numDims;dim++) {
+        for (int dim = 0; dim < numDims; dim++) {
           values[dim] = new byte[numBytesPerDim];
           random().nextBytes(values[dim]);
         }
@@ -292,7 +304,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
     byte[][][] docValuesArray = docValues.toArray(new byte[docValues.size()][][]);
     int[] docIDsArray = new int[docIDs.size()];
-    for(int i=0;i<docIDsArray.length;i++) {
+    for (int i = 0; i < docIDsArray.length; i++) {
       docIDsArray[i] = docIDs.get(i);
     }
 
@@ -306,10 +318,10 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     int numDocs = atLeast(1000);
     byte[][][] docValues = new byte[numDocs][][];
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       if (docID == 0) {
         byte[][] values = new byte[numDims][];
-        for(int dim=0;dim<numDims;dim++) {
+        for (int dim = 0; dim < numDims; dim++) {
           values[dim] = new byte[numBytesPerDim];
           random().nextBytes(values[dim]);
         }
@@ -330,9 +342,9 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     int theEqualDim = random().nextInt(numDims);
     byte[][][] docValues = new byte[numDocs][][];
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       byte[][] values = new byte[numDims][];
-      for(int dim=0;dim<numDims;dim++) {
+      for (int dim = 0; dim < numDims; dim++) {
         values[dim] = new byte[numBytesPerDim];
         random().nextBytes(values[dim]);
       }
@@ -358,9 +370,9 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     random().nextBytes(value2);
     byte[][][] docValues = new byte[numDocs][][];
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       byte[][] values = new byte[numDims][];
-      for(int dim=0;dim<numDims;dim++) {
+      for (int dim = 0; dim < numDims; dim++) {
         if (dim == theDim) {
           values[dim] = random().nextBoolean() ? value1 : value2;
         } else {
@@ -387,13 +399,13 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
       BigInteger[][] docs = new BigInteger[numDocs][];
 
-      for(int docID=0;docID<numDocs;docID++) {
+      for (int docID = 0; docID < numDocs; docID++) {
         BigInteger[] values = new BigInteger[numDims];
         if (VERBOSE) {
           System.out.println("  docID=" + docID);
         }
         byte[][] bytes = new byte[numDims][];
-        for(int dim=0;dim<numDims;dim++) {
+        for (int dim = 0; dim < numDims; dim++) {
           values[dim] = randomBigInt(numBytesPerDim);
           bytes[dim] = new byte[numBytesPerDim];
           NumericUtils.bigIntToSortableBytes(values[dim], numBytesPerDim, bytes[dim], 0);
@@ -411,15 +423,15 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       w.close();
 
       int iters = atLeast(100);
-      for(int iter=0;iter<iters;iter++) {
+      for (int iter = 0; iter < iters; iter++) {
         if (VERBOSE) {
           System.out.println("\nTEST: iter=" + iter);
         }
 
         // Random N dims rect query:
         BigInteger[] queryMin = new BigInteger[numDims];
-        BigInteger[] queryMax = new BigInteger[numDims];    
-        for(int dim=0;dim<numDims;dim++) {
+        BigInteger[] queryMax = new BigInteger[numDims];
+        for (int dim = 0; dim < numDims; dim++) {
           queryMin[dim] = randomBigInt(numBytesPerDim);
           queryMax[dim] = randomBigInt(numBytesPerDim);
           if (queryMin[dim].compareTo(queryMax[dim]) > 0) {
@@ -428,69 +440,78 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
             queryMax[dim] = x;
           }
           if (VERBOSE) {
-            System.out.println("  " + dim + "\n    min=" + queryMin[dim] + "\n    max=" + queryMax[dim]);
+            System.out.println(
+                "  " + dim + "\n    min=" + queryMin[dim] + "\n    max=" + queryMax[dim]);
           }
         }
 
         final BitSet hits = new BitSet();
-        for(LeafReaderContext ctx : r.leaves()) {
+        for (LeafReaderContext ctx : r.leaves()) {
           PointValues dimValues = ctx.reader().getPointValues("field");
           if (dimValues == null) {
             continue;
           }
 
           final int docBase = ctx.docBase;
-          
-          dimValues.intersect(new IntersectVisitor() {
-              @Override
-              public void visit(int docID) {
-                hits.set(docBase+docID);
-                //System.out.println("visit docID=" + docID);
-              }
 
-              @Override
-              public void visit(int docID, byte[] packedValue) {
-                //System.out.println("visit check docID=" + docID);
-                for(int dim=0;dim<numDims;dim++) {
-                  BigInteger x = NumericUtils.sortableBytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
-                  if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
-                    //System.out.println("  no");
-                    return;
+          dimValues.intersect(
+              new IntersectVisitor() {
+                @Override
+                public void visit(int docID) {
+                  hits.set(docBase + docID);
+                  // System.out.println("visit docID=" + docID);
+                }
+
+                @Override
+                public void visit(int docID, byte[] packedValue) {
+                  // System.out.println("visit check docID=" + docID);
+                  for (int dim = 0; dim < numDims; dim++) {
+                    BigInteger x =
+                        NumericUtils.sortableBytesToBigInt(
+                            packedValue, dim * numBytesPerDim, numBytesPerDim);
+                    if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
+                      // System.out.println("  no");
+                      return;
+                    }
+                  }
+
+                  // System.out.println("  yes");
+                  hits.set(docBase + docID);
+                }
+
+                @Override
+                public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                  boolean crosses = false;
+                  for (int dim = 0; dim < numDims; dim++) {
+                    BigInteger min =
+                        NumericUtils.sortableBytesToBigInt(
+                            minPacked, dim * numBytesPerDim, numBytesPerDim);
+                    BigInteger max =
+                        NumericUtils.sortableBytesToBigInt(
+                            maxPacked, dim * numBytesPerDim, numBytesPerDim);
+                    assert max.compareTo(min) >= 0;
+
+                    if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
+                      return Relation.CELL_OUTSIDE_QUERY;
+                    } else if (min.compareTo(queryMin[dim]) < 0
+                        || max.compareTo(queryMax[dim]) > 0) {
+                      crosses = true;
+                    }
+                  }
+
+                  if (crosses) {
+                    return Relation.CELL_CROSSES_QUERY;
+                  } else {
+                    return Relation.CELL_INSIDE_QUERY;
                   }
                 }
-
-                //System.out.println("  yes");
-                hits.set(docBase+docID);
-              }
-
-              @Override
-              public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                boolean crosses = false;
-                for(int dim=0;dim<numDims;dim++) {
-                  BigInteger min = NumericUtils.sortableBytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
-                  BigInteger max = NumericUtils.sortableBytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
-                  assert max.compareTo(min) >= 0;
-
-                  if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
-                    return Relation.CELL_OUTSIDE_QUERY;
-                  } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
-                    crosses = true;
-                  }
-                }
-
-                if (crosses) {
-                  return Relation.CELL_CROSSES_QUERY;
-                } else {
-                  return Relation.CELL_INSIDE_QUERY;
-                }
-              }
-            });
+              });
         }
 
-        for(int docID=0;docID<numDocs;docID++) {
+        for (int docID = 0; docID < numDocs; docID++) {
           BigInteger[] docValues = docs[docID];
           boolean expected = true;
-          for(int dim=0;dim<numDims;dim++) {
+          for (int dim = 0; dim < numDims; dim++) {
             BigInteger x = docValues[dim];
             if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
               expected = false;
@@ -502,7 +523,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         }
       }
       r.close();
-      }
+    }
   }
 
   public void testRandomBinaryTiny() throws Exception {
@@ -520,18 +541,19 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   private void doTestRandomBinary(int count) throws Exception {
-    int numDocs = TestUtil.nextInt(random(), count, count*2);
+    int numDocs = TestUtil.nextInt(random(), count, count * 2);
     int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
     int numDataDims = TestUtil.nextInt(random(), 1, PointValues.MAX_INDEX_DIMENSIONS);
     int numIndexDims = TestUtil.nextInt(random(), 1, numDataDims);
 
     byte[][][] docValues = new byte[numDocs][][];
 
-    for(int docID=0;docID<numDocs;docID++) {
+    for (int docID = 0; docID < numDocs; docID++) {
       byte[][] values = new byte[numDataDims][];
-      for(int dim=0;dim<numDataDims;dim++) {
+      for (int dim = 0; dim < numDataDims; dim++) {
         values[dim] = new byte[numBytesPerDim];
-        // TODO: sometimes test on a "small" volume too, so we test the high density cases, higher chance of boundary, etc. cases:
+        // TODO: sometimes test on a "small" volume too, so we test the high density cases, higher
+        // chance of boundary, etc. cases:
         random().nextBytes(values[dim]);
       }
       docValues[docID] = values;
@@ -540,12 +562,18 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     verify(docValues, null, numDataDims, numIndexDims, numBytesPerDim);
   }
 
-  private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim) throws Exception {
+  private void verify(byte[][][] docValues, int[] docIDs, int numDims, int numBytesPerDim)
+      throws Exception {
     verify(docValues, docIDs, numDims, numDims, numBytesPerDim);
   }
 
-  /** docIDs can be null, for the single valued case, else it maps value to docID, but all values for one doc must be adjacent */
-  private void verify(byte[][][] docValues, int[] docIDs, int numDataDims, int numIndexDims, int numBytesPerDim) throws Exception {
+  /**
+   * docIDs can be null, for the single valued case, else it maps value to docID, but all values for
+   * one doc must be adjacent
+   */
+  private void verify(
+      byte[][][] docValues, int[] docIDs, int numDataDims, int numIndexDims, int numBytesPerDim)
+      throws Exception {
     try (Directory dir = getDirectory(docValues.length)) {
       while (true) {
         try {
@@ -554,7 +582,9 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         } catch (IllegalArgumentException iae) {
           iae.printStackTrace();
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry
-          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+          assertTrue(
+              iae.getMessage()
+                  .contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
         }
       }
     }
@@ -569,10 +599,26 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   /** test selective indexing */
-  private void verify(Directory dir, byte[][][] docValues, int[] ids, int numDims, int numIndexDims, int numBytesPerDim, boolean expectExceptions) throws Exception {
+  private void verify(
+      Directory dir,
+      byte[][][] docValues,
+      int[] ids,
+      int numDims,
+      int numIndexDims,
+      int numBytesPerDim,
+      boolean expectExceptions)
+      throws Exception {
     int numValues = docValues.length;
     if (VERBOSE) {
-      System.out.println("TEST: numValues=" + numValues + " numDims=" + numDims + " numIndexDims=" + numIndexDims + " numBytesPerDim=" + numBytesPerDim);
+      System.out.println(
+          "TEST: numValues="
+              + numValues
+              + " numDims="
+              + numDims
+              + " numIndexDims="
+              + numIndexDims
+              + " numBytesPerDim="
+              + numBytesPerDim);
     }
 
     // RandomIndexWriter is too slow:
@@ -597,8 +643,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     // Compute actual min/max values:
     byte[][] expectedMinValues = new byte[numDims][];
     byte[][] expectedMaxValues = new byte[numDims][];
-    for(int ord=0;ord<docValues.length;ord++) {
-      for(int dim=0;dim<numDims;dim++) {
+    for (int ord = 0; ord < docValues.length; ord++) {
+      for (int dim = 0; dim < numDims; dim++) {
         if (ord == 0) {
           expectedMinValues[dim] = new byte[numBytesPerDim];
           System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
@@ -606,10 +652,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
         } else {
           // TODO: it's cheating that we use StringHelper.compare for "truth": what if it's buggy?
-          if (Arrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMinValues[dim], 0, numBytesPerDim) < 0) {
+          if (Arrays.compareUnsigned(
+                  docValues[ord][dim], 0, numBytesPerDim, expectedMinValues[dim], 0, numBytesPerDim)
+              < 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMinValues[dim], 0, numBytesPerDim);
           }
-          if (Arrays.compareUnsigned(docValues[ord][dim], 0, numBytesPerDim, expectedMaxValues[dim], 0, numBytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(
+                  docValues[ord][dim], 0, numBytesPerDim, expectedMaxValues[dim], 0, numBytesPerDim)
+              > 0) {
             System.arraycopy(docValues[ord][dim], 0, expectedMaxValues[dim], 0, numBytesPerDim);
           }
         }
@@ -637,7 +687,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         }
       }
       w = new RandomIndexWriter(random(), dir, iwc);
-      addIndexesAt = TestUtil.nextInt(random(), 1, numValues-1);
+      addIndexesAt = TestUtil.nextInt(random(), 1, numValues - 1);
     } else {
       saveW = null;
       saveDir = null;
@@ -652,7 +702,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
       Document doc = null;
       int lastID = -1;
-      for(int ord=0;ord<numValues;ord++) {
+      for (int ord = 0; ord < numValues; ord++) {
         int id;
         if (ids == null) {
           id = ord;
@@ -714,7 +764,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         if (VERBOSE) {
           System.out.println("  ord=" + ord + " id=" + id);
-          for(int dim=0;dim<numDims;dim++) {
+          for (int dim = 0; dim < numDims; dim++) {
             System.out.println("    dim=" + dim + " value=" + new BytesRef(docValues[ord][dim]));
           }
         }
@@ -756,12 +806,12 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
       Bits liveDocs = MultiBits.getLiveDocs(r);
 
       // Verify min/max values are correct:
-      byte[] minValues = new byte[numIndexDims*numBytesPerDim];
+      byte[] minValues = new byte[numIndexDims * numBytesPerDim];
       Arrays.fill(minValues, (byte) 0xff);
 
-      byte[] maxValues = new byte[numIndexDims*numBytesPerDim];
+      byte[] maxValues = new byte[numIndexDims * numBytesPerDim];
 
-      for(LeafReaderContext ctx : r.leaves()) {
+      for (LeafReaderContext ctx : r.leaves()) {
         PointValues dimValues = ctx.reader().getPointValues("field");
         if (dimValues == null) {
           continue;
@@ -769,28 +819,54 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
         byte[] leafMinValues = dimValues.getMinPackedValue();
         byte[] leafMaxValues = dimValues.getMaxPackedValue();
-        for(int dim=0;dim<numIndexDims;dim++) {
-          if (Arrays.compareUnsigned(leafMinValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, minValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) < 0) {
-            System.arraycopy(leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim, numBytesPerDim);
+        for (int dim = 0; dim < numIndexDims; dim++) {
+          if (Arrays.compareUnsigned(
+                  leafMinValues,
+                  dim * numBytesPerDim,
+                  dim * numBytesPerDim + numBytesPerDim,
+                  minValues,
+                  dim * numBytesPerDim,
+                  dim * numBytesPerDim + numBytesPerDim)
+              < 0) {
+            System.arraycopy(
+                leafMinValues,
+                dim * numBytesPerDim,
+                minValues,
+                dim * numBytesPerDim,
+                numBytesPerDim);
           }
-          if (Arrays.compareUnsigned(leafMaxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, maxValues, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim) > 0) {
-            System.arraycopy(leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim, numBytesPerDim);
+          if (Arrays.compareUnsigned(
+                  leafMaxValues,
+                  dim * numBytesPerDim,
+                  dim * numBytesPerDim + numBytesPerDim,
+                  maxValues,
+                  dim * numBytesPerDim,
+                  dim * numBytesPerDim + numBytesPerDim)
+              > 0) {
+            System.arraycopy(
+                leafMaxValues,
+                dim * numBytesPerDim,
+                maxValues,
+                dim * numBytesPerDim,
+                numBytesPerDim);
           }
         }
       }
 
       byte[] scratch = new byte[numBytesPerDim];
-      for(int dim=0;dim<numIndexDims;dim++) {
-        System.arraycopy(minValues, dim*numBytesPerDim, scratch, 0, numBytesPerDim);
-        //System.out.println("dim=" + dim + " expectedMin=" + new BytesRef(expectedMinValues[dim]) + " min=" + new BytesRef(scratch));
+      for (int dim = 0; dim < numIndexDims; dim++) {
+        System.arraycopy(minValues, dim * numBytesPerDim, scratch, 0, numBytesPerDim);
+        // System.out.println("dim=" + dim + " expectedMin=" + new BytesRef(expectedMinValues[dim])
+        // + " min=" + new BytesRef(scratch));
         assertTrue(Arrays.equals(expectedMinValues[dim], scratch));
-        System.arraycopy(maxValues, dim*numBytesPerDim, scratch, 0, numBytesPerDim);
-        //System.out.println("dim=" + dim + " expectedMax=" + new BytesRef(expectedMaxValues[dim]) + " max=" + new BytesRef(scratch));
+        System.arraycopy(maxValues, dim * numBytesPerDim, scratch, 0, numBytesPerDim);
+        // System.out.println("dim=" + dim + " expectedMax=" + new BytesRef(expectedMaxValues[dim])
+        // + " max=" + new BytesRef(scratch));
         assertTrue(Arrays.equals(expectedMaxValues[dim], scratch));
       }
 
       int iters = atLeast(100);
-      for(int iter=0;iter<iters;iter++) {
+      for (int iter = 0; iter < iters; iter++) {
         if (VERBOSE) {
           System.out.println("\nTEST: iter=" + iter);
         }
@@ -798,12 +874,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         // Random N dims rect query:
         byte[][] queryMin = new byte[numIndexDims][];
         byte[][] queryMax = new byte[numIndexDims][];
-        for(int dim=0;dim<numIndexDims;dim++) {
+        for (int dim = 0; dim < numIndexDims; dim++) {
           queryMin[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMin[dim]);
           queryMax[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMax[dim]);
-          if (Arrays.compareUnsigned(queryMin[dim], 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+          if (Arrays.compareUnsigned(
+                  queryMin[dim], 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim)
+              > 0) {
             byte[] x = queryMin[dim];
             queryMin[dim] = queryMax[dim];
             queryMax[dim] = x;
@@ -811,14 +889,20 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         }
 
         if (VERBOSE) {
-          for(int dim=0;dim<numIndexDims;dim++) {
-            System.out.println("  dim=" + dim + "\n    queryMin=" + new BytesRef(queryMin[dim]) + "\n    queryMax=" + new BytesRef(queryMax[dim]));
+          for (int dim = 0; dim < numIndexDims; dim++) {
+            System.out.println(
+                "  dim="
+                    + dim
+                    + "\n    queryMin="
+                    + new BytesRef(queryMin[dim])
+                    + "\n    queryMax="
+                    + new BytesRef(queryMax[dim]));
           }
         }
 
         final BitSet hits = new BitSet();
 
-        for(LeafReaderContext ctx : r.leaves()) {
+        for (LeafReaderContext ctx : r.leaves()) {
           PointValues dimValues = ctx.reader().getPointValues("field");
           if (dimValues == null) {
             continue;
@@ -826,67 +910,112 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
           final int docBase = ctx.docBase;
 
-          dimValues.intersect(new PointValues.IntersectVisitor() {
-              @Override
-              public void visit(int docID) {
-                if (liveDocs == null || liveDocs.get(docBase+docID)) {
-                  hits.set(docIDToID[docBase+docID]);
-                }
-                //System.out.println("visit docID=" + docID);
-              }
-
-              @Override
-              public void visit(int docID, byte[] packedValue) {
-                if (liveDocs != null && liveDocs.get(docBase+docID) == false) {
-                  return;
+          dimValues.intersect(
+              new PointValues.IntersectVisitor() {
+                @Override
+                public void visit(int docID) {
+                  if (liveDocs == null || liveDocs.get(docBase + docID)) {
+                    hits.set(docIDToID[docBase + docID]);
+                  }
+                  // System.out.println("visit docID=" + docID);
                 }
 
-                for(int dim=0;dim<numIndexDims;dim++) {
-                  //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
-                  if (Arrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                      Arrays.compareUnsigned(packedValue, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
-                    //System.out.println("  no");
+                @Override
+                public void visit(int docID, byte[] packedValue) {
+                  if (liveDocs != null && liveDocs.get(docBase + docID) == false) {
                     return;
                   }
+
+                  for (int dim = 0; dim < numIndexDims; dim++) {
+                    // System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue,
+                    // dim*numBytesPerDim, numBytesPerDim));
+                    if (Arrays.compareUnsigned(
+                                packedValue,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMin[dim],
+                                0,
+                                numBytesPerDim)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                packedValue,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMax[dim],
+                                0,
+                                numBytesPerDim)
+                            > 0) {
+                      // System.out.println("  no");
+                      return;
+                    }
+                  }
+
+                  // System.out.println("  yes");
+                  hits.set(docIDToID[docBase + docID]);
                 }
 
-                //System.out.println("  yes");
-                hits.set(docIDToID[docBase+docID]);
-              }
+                @Override
+                public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                  boolean crosses = false;
+                  // System.out.println("compare");
+                  for (int dim = 0; dim < numIndexDims; dim++) {
+                    if (Arrays.compareUnsigned(
+                                maxPacked,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMin[dim],
+                                0,
+                                numBytesPerDim)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                minPacked,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMax[dim],
+                                0,
+                                numBytesPerDim)
+                            > 0) {
+                      // System.out.println("  query_outside_cell");
+                      return Relation.CELL_OUTSIDE_QUERY;
+                    } else if (Arrays.compareUnsigned(
+                                minPacked,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMin[dim],
+                                0,
+                                numBytesPerDim)
+                            < 0
+                        || Arrays.compareUnsigned(
+                                maxPacked,
+                                dim * numBytesPerDim,
+                                dim * numBytesPerDim + numBytesPerDim,
+                                queryMax[dim],
+                                0,
+                                numBytesPerDim)
+                            > 0) {
+                      crosses = true;
+                    }
+                  }
 
-              @Override
-              public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                boolean crosses = false;
-                //System.out.println("compare");
-                for(int dim=0;dim<numIndexDims;dim++) {
-                  if (Arrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                      Arrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
-                    //System.out.println("  query_outside_cell");
-                    return Relation.CELL_OUTSIDE_QUERY;
-                  } else if (Arrays.compareUnsigned(minPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                             Arrays.compareUnsigned(maxPacked, dim * numBytesPerDim, dim * numBytesPerDim + numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
-                    crosses = true;
+                  if (crosses) {
+                    // System.out.println("  query_crosses_cell");
+                    return Relation.CELL_CROSSES_QUERY;
+                  } else {
+                    // System.out.println("  cell_inside_query");
+                    return Relation.CELL_INSIDE_QUERY;
                   }
                 }
-
-                if (crosses) {
-                  //System.out.println("  query_crosses_cell");
-                  return Relation.CELL_CROSSES_QUERY;
-                } else {
-                  //System.out.println("  cell_inside_query");
-                  return Relation.CELL_INSIDE_QUERY;
-                }
-              }
-            });
+              });
         }
 
         BitSet expected = new BitSet();
-        for(int ord=0;ord<numValues;ord++) {
+        for (int ord = 0; ord < numValues; ord++) {
           boolean matches = true;
-          for(int dim=0;dim<numIndexDims;dim++) {
+          for (int dim = 0; dim < numIndexDims; dim++) {
             byte[] x = docValues[ord][dim];
-            if (Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0 ||
-                Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim) > 0) {
+            if (Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMin[dim], 0, numBytesPerDim) < 0
+                || Arrays.compareUnsigned(x, 0, numBytesPerDim, queryMax[dim], 0, numBytesPerDim)
+                    > 0) {
               matches = false;
               break;
             }
@@ -906,7 +1035,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         int limit = Math.max(expected.length(), hits.length());
         int failCount = 0;
         int successCount = 0;
-        for(int id=0;id<limit;id++) {
+        for (int id = 0; id < limit; id++) {
           if (expected.get(id) != hits.get(id)) {
             System.out.println("FAIL: id=" + id);
             failCount++;
@@ -916,7 +1045,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
         }
 
         if (failCount != 0) {
-          for(int docID=0;docID<r.maxDoc();docID++) {
+          for (int docID = 0; docID < r.maxDoc(); docID++) {
             System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
           }
 
@@ -966,7 +1095,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     dir2.close();
   }
 
-  private void switchIndex(RandomIndexWriter w, Directory dir, RandomIndexWriter saveW) throws IOException {
+  private void switchIndex(RandomIndexWriter w, Directory dir, RandomIndexWriter saveW)
+      throws IOException {
     if (random().nextBoolean()) {
       // Add via readers:
       try (DirectoryReader r = w.getReader()) {
@@ -982,7 +1112,8 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
           saveW.addIndexes(subs.toArray(new CodecReader[subs.size()]));
         } else {
           if (VERBOSE) {
-            System.out.println("TEST: now use TestUtil.addIndexesSlowly(DirectoryReader[]) to switch writers");
+            System.out.println(
+                "TEST: now use TestUtil.addIndexesSlowly(DirectoryReader[]) to switch writers");
           }
           TestUtil.addIndexesSlowly(saveW.w, r);
         }
@@ -1000,7 +1131,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   private BigInteger randomBigInt(int numBytes) {
-    BigInteger x = new BigInteger(numBytes*8-1, random());
+    BigInteger x = new BigInteger(numBytes * 8 - 1, random());
     if (random().nextBoolean()) {
       x = x.negate();
     }
@@ -1014,13 +1145,14 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     } else {
       dir = newDirectory();
     }
-    //dir = FSDirectory.open(createTempDir());
+    // dir = FSDirectory.open(createTempDir());
     return dir;
   }
 
   @Override
   protected boolean mergeIsStable() {
-    // suppress this test from base class: merges for BKD trees are not stable because the tree created by merge will have a different
+    // suppress this test from base class: merges for BKD trees are not stable because the tree
+    // created by merge will have a different
     // structure than the tree created by adding points separately
     return false;
   }
@@ -1031,19 +1163,20 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     IndexWriterConfig iwc = newIndexWriterConfig();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     iwc.setMaxBufferedDocs(2);
-    for(int i=0;i<2;i++) {
+    for (int i = 0; i < 2; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       doc.add(new IntPoint("int", i));
       w.addDocument(doc);
     }
-    // index has 1 segment now (with 2 docs) and that segment does have points, but the "id" field in particular does NOT
+    // index has 1 segment now (with 2 docs) and that segment does have points, but the "id" field
+    // in particular does NOT
 
     Document doc = new Document();
     doc.add(new IntPoint("id", 0));
     w.addDocument(doc);
     // now we write another segment where the id field does have points:
-    
+
     w.forceMerge(1);
     IOUtils.close(w, dir);
   }

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FilterMatchesIterator;
@@ -55,8 +54,9 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     List<IntervalIterator> subIntervals = new ArrayList<>();
     for (IntervalsSource source : subSources) {
       IntervalIterator it = source.intervals(field, ctx);
-      if (it == null)
+      if (it == null) {
         return null;
+      }
       subIntervals.add(it);
     }
     return combine(subIntervals);
@@ -65,7 +65,8 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
   protected abstract IntervalIterator combine(List<IntervalIterator> iterators);
 
   @Override
-  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     List<IntervalMatchesIterator> subs = new ArrayList<>();
     for (IntervalsSource source : subSources) {
       IntervalMatchesIterator mi = source.matches(field, ctx, doc);
@@ -77,14 +78,20 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
       }
       subs.add(mi);
     }
-    IntervalIterator it = combine(subs.stream().map(m -> IntervalMatches.wrapMatches(m, doc)).collect(Collectors.toList()));
+    IntervalIterator it =
+        combine(
+            subs.stream()
+                .map(m -> IntervalMatches.wrapMatches(m, doc))
+                .collect(Collectors.toList()));
     if (it.advance(doc) != doc) {
       return null;
     }
     if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
       return null;
     }
-    return isMinimizing ? new MinimizingConjunctionMatchesIterator(it, subs) : new ConjunctionMatchesIterator(it, subs);
+    return isMinimizing
+        ? new MinimizingConjunctionMatchesIterator(it, subs)
+        : new ConjunctionMatchesIterator(it, subs);
   }
 
   private static class ConjunctionMatchesIterator implements IntervalMatchesIterator {
@@ -93,7 +100,8 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     final List<IntervalMatchesIterator> subs;
     boolean cached = true;
 
-    private ConjunctionMatchesIterator(IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
+    private ConjunctionMatchesIterator(
+        IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
       this.iterator = iterator;
       this.subs = subs;
     }
@@ -180,5 +188,4 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
       return exhausted = true;
     }
   }
-
 }

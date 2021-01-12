@@ -90,6 +90,11 @@ Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
+[WARNING]
+====
+The entries in each core.properties file are vital for Solr to function correctly. Overriding entries can result in unusable collections. Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
+====
+
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
@@ -225,7 +230,6 @@ The attributes that can be modified are:
 * rule
 * snitch
 * policy
-* withCollection
 * readOnly
 * other custom properties that use a `property.` prefix
 
@@ -1214,6 +1218,9 @@ What to name the backup that is created.  This is checked to make sure it doesn'
 
 `location`::
 The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
++
+If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
+Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -1253,7 +1260,7 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
-There's a number of optional parameters that determine the target collection layout.
+There are also optional parameters that determine the target collection layout.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
 `createNodeSet`, `createNodeSet.shuffle`.
 

@@ -17,9 +17,8 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * All bounding box shapes have this interface in common.
- * This describes methods that bounding boxes have above and beyond
- * GeoMembershipShape's.
+ * All bounding box shapes have this interface in common. This describes methods that bounding boxes
+ * have above and beyond GeoMembershipShape's.
  *
  * @lucene.experimental
  */
@@ -32,5 +31,4 @@ public interface GeoBBox extends GeoAreaShape, GeoSizeable {
    * @return a new GeoBBox.
    */
   public GeoBBox expand(double angle);
-
 }

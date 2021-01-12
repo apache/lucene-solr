@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.analysis.pt;
 
+import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
@@ -28,82 +28,108 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
-import static org.apache.lucene.analysis.VocabularyAssert.*;
-
-/**
- * Simple tests for {@link PortugueseMinimalStemFilter}
- */
+/** Simple tests for {@link PortugueseMinimalStemFilter} */
 public class TestPortugueseMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.SIMPLE, true);
-        return new TokenStreamComponents(source, new PortugueseMinimalStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.SIMPLE, true);
+            return new TokenStreamComponents(source, new PortugueseMinimalStemFilter(source));
+          }
+        };
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     analyzer.close();
     super.tearDown();
   }
-  
+
   /**
-   * Test the example from the paper "Assessing the impact of stemming accuracy
-   * on information retrieval"
+   * Test the example from the paper "Assessing the impact of stemming accuracy on information
+   * retrieval"
    */
   public void testExamples() throws IOException {
     assertAnalyzesTo(
         analyzer,
-    "O debate político, pelo menos o que vem a público, parece, de modo nada "
-    + "surpreendente, restrito a temas menores. Mas há, evidentemente, "
-    + "grandes questões em jogo nas eleições que se aproximam.",
-    new String[] { 
-      "o", "debate", "político", "pelo", "menos", "o", "que", "vem", "a", 
-      "público", "parece", "de", "modo", "nada", "surpreendente", "restrito",
-      "a", "tema", "menor", "mas", "há", "evidentemente", "grande", "questão",
-      "em", "jogo", "na", "eleição", "que", "se", "aproximam"
-    });
+        "O debate político, pelo menos o que vem a público, parece, de modo nada "
+            + "surpreendente, restrito a temas menores. Mas há, evidentemente, "
+            + "grandes questões em jogo nas eleições que se aproximam.",
+        new String[] {
+          "o",
+          "debate",
+          "político",
+          "pelo",
+          "menos",
+          "o",
+          "que",
+          "vem",
+          "a",
+          "público",
+          "parece",
+          "de",
+          "modo",
+          "nada",
+          "surpreendente",
+          "restrito",
+          "a",
+          "tema",
+          "menor",
+          "mas",
+          "há",
+          "evidentemente",
+          "grande",
+          "questão",
+          "em",
+          "jogo",
+          "na",
+          "eleição",
+          "que",
+          "se",
+          "aproximam"
+        });
   }
-  
+
   /** Test against a vocabulary from the reference impl */
   public void testVocabulary() throws IOException {
     assertVocabulary(analyzer, getDataPath("ptminimaltestdata.zip"), "ptminimal.txt");
   }
-  
+
   public void testKeyword() throws IOException {
-    final CharArraySet exclusionSet = new CharArraySet( asSet("quilométricas"), false);
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
-        return new TokenStreamComponents(source, new PortugueseMinimalStemFilter(sink));
-      }
-    };
+    final CharArraySet exclusionSet = new CharArraySet(asSet("quilométricas"), false);
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            TokenStream sink = new SetKeywordMarkerFilter(source, exclusionSet);
+            return new TokenStreamComponents(source, new PortugueseMinimalStemFilter(sink));
+          }
+        };
     checkOneTerm(a, "quilométricas", "quilométricas");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), analyzer, 200 * RANDOM_MULTIPLIER);
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new PortugueseMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new PortugueseMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

@@ -19,7 +19,6 @@ package org.apache.lucene.search.join;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -69,17 +68,21 @@ public class TestParentChildrenBlockJoinQuery extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(reader);
-    BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("type", "parent")));
-    Query childQuery = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("type", "child")), BooleanClause.Occur.FILTER)
-        .add(TestJoinUtil.numericDocValuesScoreQuery("score"), BooleanClause.Occur.SHOULD)
-        .build();
+    BitSetProducer parentFilter =
+        new QueryBitSetProducer(new TermQuery(new Term("type", "parent")));
+    Query childQuery =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("type", "child")), BooleanClause.Occur.FILTER)
+            .add(TestJoinUtil.numericDocValuesScoreQuery("score"), BooleanClause.Occur.SHOULD)
+            .build();
 
     TopDocs parentDocs = searcher.search(new TermQuery(new Term("type", "parent")), numParentDocs);
     assertEquals(parentDocs.scoreDocs.length, numParentDocs);
     for (ScoreDoc parentScoreDoc : parentDocs.scoreDocs) {
-      LeafReaderContext leafReader = reader.leaves().get(ReaderUtil.subIndex(parentScoreDoc.doc, reader.leaves()));
-      NumericDocValues numericDocValuesField = leafReader.reader().getNumericDocValues("num_child_docs");
+      LeafReaderContext leafReader =
+          reader.leaves().get(ReaderUtil.subIndex(parentScoreDoc.doc, reader.leaves()));
+      NumericDocValues numericDocValuesField =
+          leafReader.reader().getNumericDocValues("num_child_docs");
       numericDocValuesField.advance(parentScoreDoc.doc - leafReader.docBase);
       long expectedChildDocs = numericDocValuesField.longValue();
 
@@ -93,11 +96,9 @@ public class TestParentChildrenBlockJoinQuery extends LuceneTestCase {
           assertEquals(expectedChildDocs - i, childScoreDoc.score, 0);
         }
       }
-
     }
 
     reader.close();
     dir.close();
   }
-
 }

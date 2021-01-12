@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
-
 import org.apache.lucene.index.IndexReader;
 
 /** Assertion-enabled query. */
@@ -39,9 +38,11 @@ public final class AssertingQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     assert boost >= 0;
-    return new AssertingWeight(new Random(random.nextLong()), in.createWeight(searcher, scoreMode, boost), scoreMode);
+    return new AssertingWeight(
+        new Random(random.nextLong()), in.createWeight(searcher, scoreMode, boost), scoreMode);
   }
 
   @Override
@@ -51,8 +52,7 @@ public final class AssertingQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           in.equals(((AssertingQuery) other).in);
+    return sameClassAs(other) && in.equals(((AssertingQuery) other).in);
   }
 
   @Override
@@ -82,5 +82,4 @@ public final class AssertingQuery extends Query {
   public void visit(QueryVisitor visitor) {
     in.visit(visitor);
   }
-
 }

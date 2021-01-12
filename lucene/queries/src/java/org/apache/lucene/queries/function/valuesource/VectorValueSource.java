@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.function.valuesource;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-
 /**
- * Converts individual ValueSource instances to leverage the FunctionValues *Val functions that work with multiple values,
- * i.e. {@link org.apache.lucene.queries.function.FunctionValues#doubleVal(int, double[])}
+ * Converts individual ValueSource instances to leverage the FunctionValues *Val functions that work
+ * with multiple values, i.e. {@link
+ * org.apache.lucene.queries.function.FunctionValues#doubleVal(int, double[])}
  */
-//Not crazy about the name, but...
+// Not crazy about the name, but...
 public class VectorValueSource extends MultiValueSource {
   protected final List<ValueSource> sources;
-
 
   public VectorValueSource(List<ValueSource> sources) {
     this.sources = sources;
@@ -52,11 +51,12 @@ public class VectorValueSource extends MultiValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     int size = sources.size();
 
     // special-case x,y and lat,lon since it's so common
-    if (size==2) {
+    if (size == 2) {
       final FunctionValues x = sources.get(0).getValues(context, readerContext);
       final FunctionValues y = sources.get(1).getValues(context, readerContext);
       return new FunctionValues() {
@@ -65,43 +65,49 @@ public class VectorValueSource extends MultiValueSource {
           vals[0] = x.byteVal(doc);
           vals[1] = y.byteVal(doc);
         }
+
         @Override
         public void shortVal(int doc, short[] vals) throws IOException {
           vals[0] = x.shortVal(doc);
           vals[1] = y.shortVal(doc);
         }
+
         @Override
         public void intVal(int doc, int[] vals) throws IOException {
           vals[0] = x.intVal(doc);
           vals[1] = y.intVal(doc);
         }
+
         @Override
         public void longVal(int doc, long[] vals) throws IOException {
           vals[0] = x.longVal(doc);
           vals[1] = y.longVal(doc);
         }
+
         @Override
         public void floatVal(int doc, float[] vals) throws IOException {
           vals[0] = x.floatVal(doc);
           vals[1] = y.floatVal(doc);
         }
+
         @Override
         public void doubleVal(int doc, double[] vals) throws IOException {
           vals[0] = x.doubleVal(doc);
           vals[1] = y.doubleVal(doc);
         }
+
         @Override
         public void strVal(int doc, String[] vals) throws IOException {
           vals[0] = x.strVal(doc);
           vals[1] = y.strVal(doc);
         }
+
         @Override
         public String toString(int doc) throws IOException {
           return name() + "(" + x.toString(doc) + "," + y.toString(doc) + ")";
         }
       };
     }
-
 
     final FunctionValues[] valsArr = new FunctionValues[size];
     for (int i = 0; i < size; i++) {
@@ -179,10 +185,10 @@ public class VectorValueSource extends MultiValueSource {
 
   @Override
   public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
-    for (ValueSource source : sources)
+    for (ValueSource source : sources) {
       source.createWeight(context, searcher);
+    }
   }
-
 
   @Override
   public String description() {
@@ -209,7 +215,6 @@ public class VectorValueSource extends MultiValueSource {
     VectorValueSource that = (VectorValueSource) o;
 
     return sources.equals(that.sources);
-
   }
 
   @Override

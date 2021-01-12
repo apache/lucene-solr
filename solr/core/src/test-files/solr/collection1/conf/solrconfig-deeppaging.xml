@@ -30,20 +30,29 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
+  <searchComponent name="delayingSearchComponent"
+                   class="org.apache.solr.search.DelayingSearchComponent"/>
+
+  <requestHandler name="/delayed" class="solr.SearchHandler">
+    <arr name="first-components">
+      <str>delayingSearchComponent</str>
+    </arr>
+  </requestHandler>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
   </updateHandler>
-  
+
   <!-- deep paging better play nice with caching -->
   <query>
-    <!-- no wautowarming, it screws up our ability to sanity check cache stats in tests -->
+    <!-- no autowarming, it screws up our ability to sanity check cache stats in tests -->
     <filterCache size="50" initialSize="50" autowarmCount="0"/>
     <queryResultCache size="50" initialSize="50" autowarmCount="0"/>
     <queryResultWindowSize>50</queryResultWindowSize>
     <queryResultMaxDocsCached>500</queryResultMaxDocsCached>
-    <!-- randomized so we excersize cursors using various paths in SolrIndexSearcher -->
+    <!-- randomized so we exercise cursors using various paths in SolrIndexSearcher -->
     <useFilterForSortedQuery>${solr.test.useFilterForSortedQuery}</useFilterForSortedQuery>
   </query>
 

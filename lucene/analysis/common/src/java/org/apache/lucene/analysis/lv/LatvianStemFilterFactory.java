@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.lv;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
-/** 
- * Factory for {@link LatvianStemFilter}. 
+/**
+ * Factory for {@link LatvianStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lvstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -32,6 +31,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.LatvianStemFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.2.0
  * @lucene.spi {@value #NAME}
  */
@@ -39,15 +39,15 @@ public class LatvianStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "latvianStem";
-  
+
   /** Creates a new LatvianStemFilterFactory */
-  public LatvianStemFilterFactory(Map<String,String> args) {
+  public LatvianStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public LatvianStemFilterFactory() {
     throw defaultCtorException();

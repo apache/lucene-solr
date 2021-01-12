@@ -1,5 +1,25 @@
 # Apache Lucene Migration Guide
 
+## Packages in misc module are renamed (LUCENE-9600)
+
+Following package names in misc module are renamed.
+
+- o.a.l.document is renamed to o.a.l.misc.document
+- o.a.l.index is renamed to o.a.l.misc.index
+- o.a.l.search is renamed to o.a.l.misc.search
+- o.a.l.store is renamed to o.a.l.misc.store
+- o.a.l.util is renamed to o.a.l.misc.util
+
+Also, o.a.l.document.InetAddressPoint and o.a.l.document.InetAddressRange are moved to core module.
+
+## Packages in sandbox module are renamed (LUCENE-9319)
+
+Following package names in sandbox module are renamed.
+
+- o.a.l.codecs is renamed to o.a.l.sandbox.codecs
+- o.a.l.document is renamed to o.a.l.sandbox.document
+- o.a.l.search is renamed to o.a.l.sandbox.search
+
 ## Backward codecs are renamed (LUCENE-9318)
 
 o.a.l.codecs package in `lucene-backward-codecs` module is renamed to o.a.l.backward_codecs.

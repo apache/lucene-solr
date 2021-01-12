@@ -40,7 +40,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put("core", "core" + counter);
       propMap.put("type", "NRT");
-      propMap.put("node_name", "node" + counter);
+      propMap.put("node_name", "node" + counter + ":8983_");
       counter++;
       replicas.add(new Replica(url, propMap, "c1", "s1"));
     }
@@ -76,7 +76,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
 
   private final void maybeAddUrl(final List<String> urls, final String url) {
     if (random().nextBoolean()) {
-      urls.add(url);
+      urls.add(url + "_");
     }
   }
 

@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentCommitInfo;
@@ -38,36 +36,39 @@ import org.apache.lucene.util.StringHelper;
 
 /**
  * reads/writes plaintext live docs
- * <p>
- * <b>FOR RECREATIONAL USE ONLY</b>
+ *
+ * <p><b>FOR RECREATIONAL USE ONLY</b>
+ *
  * @lucene.experimental
  */
 public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
 
   static final String LIVEDOCS_EXTENSION = "liv";
-  
-  final static BytesRef SIZE             = new BytesRef("size ");
-  final static BytesRef DOC              = new BytesRef("  doc ");
-  final static BytesRef END              = new BytesRef("END");
+
+  static final BytesRef SIZE = new BytesRef("size ");
+  static final BytesRef DOC = new BytesRef("  doc ");
+  static final BytesRef END = new BytesRef("END");
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context)
+      throws IOException {
     assert info.hasDeletions();
     BytesRefBuilder scratch = new BytesRefBuilder();
     CharsRefBuilder scratchUTF16 = new CharsRefBuilder();
-    
-    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
+
+    String fileName =
+        IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
     ChecksumIndexInput in = null;
     boolean success = false;
     try {
       in = dir.openChecksumInput(fileName, context);
-      
+
       SimpleTextUtil.readLine(in, scratch);
       assert StringHelper.startsWith(scratch.get(), SIZE);
       int size = parseIntAt(scratch.get(), SIZE.length, scratchUTF16);
-      
+
       BitSet bits = new BitSet(size);
-      
+
       SimpleTextUtil.readLine(in, scratch);
       while (!scratch.get().equals(END)) {
         assert StringHelper.startsWith(scratch.get(), DOC);
@@ -75,9 +76,9 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
         bits.set(docid);
         SimpleTextUtil.readLine(in, scratch);
       }
-      
+
       SimpleTextUtil.checkFooter(in);
-      
+
       success = true;
       return new SimpleTextBits(bits, size);
     } finally {
@@ -88,18 +89,22 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       }
     }
   }
-  
+
   private int parseIntAt(BytesRef bytes, int offset, CharsRefBuilder scratch) {
-    scratch.copyUTF8Bytes(bytes.bytes, bytes.offset + offset, bytes.length-offset);
+    scratch.copyUTF8Bytes(bytes.bytes, bytes.offset + offset, bytes.length - offset);
     return ArrayUtil.parseInt(scratch.chars(), 0, scratch.length());
   }
 
   @Override
-  public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(
+      Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context)
+      throws IOException {
     int size = bits.length();
     BytesRefBuilder scratch = new BytesRefBuilder();
-    
-    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
+
+    String fileName =
+        IndexFileNames.fileNameFromGeneration(
+            info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
     IndexOutput out = null;
     boolean success = false;
     try {
@@ -107,7 +112,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
       SimpleTextUtil.write(out, SIZE);
       SimpleTextUtil.write(out, Integer.toString(size), scratch);
       SimpleTextUtil.writeNewline(out);
-      
+
       for (int i = 0; i < size; ++i) {
         if (bits.get(i)) {
           SimpleTextUtil.write(out, DOC);
@@ -115,7 +120,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
           SimpleTextUtil.writeNewline(out);
         }
       }
-      
+
       SimpleTextUtil.write(out, END);
       SimpleTextUtil.writeNewline(out);
       SimpleTextUtil.writeChecksum(out, scratch);
@@ -132,20 +137,22 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   @Override
   public void files(SegmentCommitInfo info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
-      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
+      files.add(
+          IndexFileNames.fileNameFromGeneration(
+              info.info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
     }
   }
-  
+
   // read-only
   static class SimpleTextBits implements Bits {
     final BitSet bits;
     final int size;
-    
+
     SimpleTextBits(BitSet bits, int size) {
       this.bits = bits;
       this.size = size;
     }
-    
+
     @Override
     public boolean get(int index) {
       return bits.get(index);

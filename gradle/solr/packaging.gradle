@@ -76,7 +76,8 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib
             return true
           }
         }
-        return externalLibs - configurations.solrPlatformLibs
+        // libExt has logging libs, which we don't want.  Lets users decide what they want.
+        return externalLibs - configurations.solrPlatformLibs - project(':solr:server').configurations.getByName('libExt')
       }, {
         exclude "lucene-*"
         into "lib"

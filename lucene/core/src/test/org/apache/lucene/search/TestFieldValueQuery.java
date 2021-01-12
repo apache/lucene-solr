@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -59,8 +57,16 @@ public class TestFieldValueQuery extends LuceneTestCase {
       final IndexSearcher searcher = newSearcher(reader);
       iw.close();
 
-      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new DocValuesFieldExistsQuery("dv1"), false);
-      assertSameMatches(searcher, new TermQuery(new Term("has_value", "yes")), new DocValuesFieldExistsQuery("dv2"), false);
+      assertSameMatches(
+          searcher,
+          new TermQuery(new Term("has_value", "yes")),
+          new DocValuesFieldExistsQuery("dv1"),
+          false);
+      assertSameMatches(
+          searcher,
+          new TermQuery(new Term("has_value", "yes")),
+          new DocValuesFieldExistsQuery("dv2"),
+          false);
 
       reader.close();
       dir.close();
@@ -139,7 +145,9 @@ public class TestFieldValueQuery extends LuceneTestCase {
       iw.close();
 
       final float boost = random().nextFloat() * 10;
-      final Query ref = new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("has_value", "yes"))), boost);
+      final Query ref =
+          new BoostQuery(
+              new ConstantScoreQuery(new TermQuery(new Term("has_value", "yes"))), boost);
 
       final Query q1 = new BoostQuery(new DocValuesFieldExistsQuery("dv1"), boost);
       assertSameMatches(searcher, ref, q1, true);
@@ -198,7 +206,8 @@ public class TestFieldValueQuery extends LuceneTestCase {
     dir.close();
   }
 
-  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores) throws IOException {
+  private void assertSameMatches(IndexSearcher searcher, Query q1, Query q2, boolean scores)
+      throws IOException {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);

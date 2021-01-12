@@ -25,5 +25,4 @@ public class SearchFactory {
   public Search newInstance(IndexReader reader) {
     return new SearchImpl(reader);
   }
-
 }

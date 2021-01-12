@@ -19,12 +19,11 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 public class TestAsciiFoldingFilterFactory extends BaseTokenStreamFactoryTestCase {
 
@@ -32,20 +31,21 @@ public class TestAsciiFoldingFilterFactory extends BaseTokenStreamFactoryTestCas
     TokenFilterFactory factory = new ASCIIFoldingFilterFactory(Collections.emptyMap());
     TokenStream stream = new CannedTokenStream(new Token("Été", 0, 3));
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "Ete" });
+    assertTokenStreamContents(stream, new String[] {"Ete"});
 
     stream = new CannedTokenStream(new Token("Été", 0, 3));
     stream = factory.normalize(stream);
-    assertTokenStreamContents(stream, new String[] { "Ete" });
+    assertTokenStreamContents(stream, new String[] {"Ete"});
 
-    factory = new ASCIIFoldingFilterFactory(new HashMap<>(Collections.singletonMap("preserveOriginal", "true")));
+    factory =
+        new ASCIIFoldingFilterFactory(
+            new HashMap<>(Collections.singletonMap("preserveOriginal", "true")));
     stream = new CannedTokenStream(new Token("Été", 0, 3));
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "Ete", "Été" });
+    assertTokenStreamContents(stream, new String[] {"Ete", "Été"});
 
     stream = new CannedTokenStream(new Token("Été", 0, 3));
     stream = factory.normalize(stream);
-    assertTokenStreamContents(stream, new String[] { "Ete" });
+    assertTokenStreamContents(stream, new String[] {"Ete"});
   }
-
 }

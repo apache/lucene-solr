@@ -57,8 +57,7 @@ abstract class RelativeIterator extends IntervalIterator {
 
   protected void reset() throws IOException {
     int doc = a.docID();
-    bpos = b.docID() == doc ||
-        (b.docID() < doc && b.advance(doc) == doc);
+    bpos = b.docID() == doc || (b.docID() < doc && b.advance(doc) == doc);
   }
 
   @Override

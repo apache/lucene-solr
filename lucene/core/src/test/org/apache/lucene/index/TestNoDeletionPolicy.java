@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,13 +41,14 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
     assertTrue(Modifier.isFinal(NoDeletionPolicy.class.getModifiers()));
     Constructor<?>[] ctors = NoDeletionPolicy.class.getDeclaredConstructors();
     assertEquals("expected 1 private ctor only: " + Arrays.toString(ctors), 1, ctors.length);
-    assertTrue("that 1 should be private: " + ctors[0], Modifier.isPrivate(ctors[0].getModifiers()));
+    assertTrue(
+        "that 1 should be private: " + ctors[0], Modifier.isPrivate(ctors[0].getModifiers()));
   }
 
   @Test
   public void testMethodsOverridden() throws Exception {
     // Ensures that all methods of IndexDeletionPolicy are
-    // overridden/implemented. That's important to ensure that NoDeletionPolicy 
+    // overridden/implemented. That's important to ensure that NoDeletionPolicy
     // overrides everything, so that no unexpected behavior/error occurs.
     // NOTE: even though IndexDeletionPolicy is an interface today, and so all
     // methods must be implemented by NoDeletionPolicy, this test is important
@@ -69,8 +68,11 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
   @Test
   public void testAllCommitsRemain() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
       doc.add(newTextField("c", "a" + i, Field.Store.YES));
@@ -81,5 +83,4 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
 }

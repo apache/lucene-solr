@@ -21,29 +21,21 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-/**
- * Allows access to the score of a Query
- */
+/** Allows access to the score of a Query */
 public abstract class Scorable {
 
-  /**
-   * Returns the score of the current document matching the query.
-   */
+  /** Returns the score of the current document matching the query. */
   public abstract float score() throws IOException;
 
-  /**
-   * Returns the doc ID that is currently being scored.
-   */
+  /** Returns the doc ID that is currently being scored. */
   public abstract int docID();
 
   /**
-   * Optional method: Tell the scorer that its iterator may safely ignore all
-   * documents whose score is less than the given {@code minScore}. This is a
-   * no-op by default.
+   * Optional method: Tell the scorer that its iterator may safely ignore all documents whose score
+   * is less than the given {@code minScore}. This is a no-op by default.
    *
-   * This method may only be called from collectors that use
-   * {@link ScoreMode#TOP_SCORES}, and successive calls may only set increasing
-   * values of {@code minScore}.
+   * <p>This method may only be called from collectors that use {@link ScoreMode#TOP_SCORES}, and
+   * successive calls may only set increasing values of {@code minScore}.
    */
   public void setMinCompetitiveScore(float minScore) throws IOException {
     // no-op by default
@@ -51,36 +43,33 @@ public abstract class Scorable {
 
   /**
    * Returns child sub-scorers positioned on the current document
+   *
    * @lucene.experimental
    */
   public Collection<ChildScorable> getChildren() throws IOException {
     return Collections.emptyList();
   }
 
-  /** A child Scorer and its relationship to its parent.
-   * the meaning of the relationship depends upon the parent query.
-   * @lucene.experimental */
+  /**
+   * A child Scorer and its relationship to its parent. the meaning of the relationship depends upon
+   * the parent query.
+   *
+   * @lucene.experimental
+   */
   public static class ChildScorable {
-    /**
-     * Child Scorer. (note this is typically a direct child, and may
-     * itself also have children).
-     */
+    /** Child Scorer. (note this is typically a direct child, and may itself also have children). */
     public final Scorable child;
-    /**
-     * An arbitrary string relating this scorer to the parent.
-     */
+    /** An arbitrary string relating this scorer to the parent. */
     public final String relationship;
 
     /**
      * Creates a new ChildScorer node with the specified relationship.
-     * <p>
-     * The relationship can be any be any string that makes sense to
-     * the parent Scorer.
+     *
+     * <p>The relationship can be any be any string that makes sense to the parent Scorer.
      */
     public ChildScorable(Scorable child, String relationship) {
       this.child = child;
       this.relationship = relationship;
     }
   }
-
 }

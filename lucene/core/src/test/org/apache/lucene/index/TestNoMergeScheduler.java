@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.index;
 
-
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Test;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 public class TestNoMergeScheduler extends LuceneTestCase {
 
@@ -40,7 +38,8 @@ public class TestNoMergeScheduler extends LuceneTestCase {
     assertTrue(Modifier.isFinal(NoMergeScheduler.class.getModifiers()));
     Constructor<?>[] ctors = NoMergeScheduler.class.getDeclaredConstructors();
     assertEquals("expected 1 private ctor only: " + Arrays.toString(ctors), 1, ctors.length);
-    assertTrue("that 1 should be private: " + ctors[0], Modifier.isPrivate(ctors[0].getModifiers()));
+    assertTrue(
+        "that 1 should be private: " + ctors[0], Modifier.isPrivate(ctors[0].getModifiers()));
   }
 
   @Test
@@ -59,5 +58,4 @@ public class TestNoMergeScheduler extends LuceneTestCase {
       }
     }
   }
-
 }

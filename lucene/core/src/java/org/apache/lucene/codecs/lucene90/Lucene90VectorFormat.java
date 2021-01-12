@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.VectorReader;
 import org.apache.lucene.codecs.VectorWriter;
@@ -27,22 +26,23 @@ import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Lucene 9.0 vector format, which encodes dense numeric vector values.
- * TODO: add support for approximate KNN search.
+ *
+ * @lucene.experimental
  */
 public final class Lucene90VectorFormat extends VectorFormat {
 
   static final String META_CODEC_NAME = "Lucene90VectorFormatMeta";
   static final String VECTOR_DATA_CODEC_NAME = "Lucene90VectorFormatData";
-
+  static final String VECTOR_INDEX_CODEC_NAME = "Lucene90VectorFormatIndex";
   static final String META_EXTENSION = "vem";
   static final String VECTOR_DATA_EXTENSION = "vec";
+  static final String VECTOR_INDEX_EXTENSION = "vex";
 
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor */
-  public Lucene90VectorFormat() {
-  }
+  public Lucene90VectorFormat() {}
 
   @Override
   public VectorWriter fieldsWriter(SegmentWriteState state) throws IOException {
@@ -53,5 +53,4 @@ public final class Lucene90VectorFormat extends VectorFormat {
   public VectorReader fieldsReader(SegmentReadState state) throws IOException {
     return new Lucene90VectorReader(state);
   }
-
 }

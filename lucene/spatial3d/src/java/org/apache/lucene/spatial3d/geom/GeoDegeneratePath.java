@@ -16,10 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,10 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GeoShape representing a path across the surface of the globe,
- * with a specified half-width.  Path is described by a series of points.
- * Distances are measured from the starting point along the path, and then at right
- * angles to the path.
+ * GeoShape representing a path across the surface of the globe, with a specified half-width. Path
+ * is described by a series of points. Distances are measured from the starting point along the
+ * path, and then at right angles to the path.
  *
  * @lucene.internal
  */
@@ -38,7 +36,7 @@ class GeoDegeneratePath extends GeoBasePath {
 
   /** The original list of path points */
   protected final List<GeoPoint> points = new ArrayList<GeoPoint>();
-  
+
   /** A list of SegmentEndpoints */
   protected List<SegmentEndpoint> endPoints;
   /** A list of PathSegments */
@@ -49,10 +47,12 @@ class GeoDegeneratePath extends GeoBasePath {
 
   /** Set to true if path has been completely constructed */
   protected boolean isDone = false;
-  
-  /** Constructor.
-   *@param planetModel is the planet model.
-   *@param pathPoints are the points in the path.
+
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model.
+   * @param pathPoints are the points in the path.
    */
   public GeoDegeneratePath(final PlanetModel planetModel, final GeoPoint[] pathPoints) {
     this(planetModel);
@@ -60,35 +60,41 @@ class GeoDegeneratePath extends GeoBasePath {
     done();
   }
 
-  /** Piece-wise constructor.  Use in conjunction with addPoint() and done().
-   *@param planetModel is the planet model.
+  /**
+   * Piece-wise constructor. Use in conjunction with addPoint() and done().
+   *
+   * @param planetModel is the planet model.
    */
   public GeoDegeneratePath(final PlanetModel planetModel) {
     super(planetModel);
   }
 
-  /** Add a point to the path.
-   *@param lat is the latitude of the point.
-   *@param lon is the longitude of the point.
+  /**
+   * Add a point to the path.
+   *
+   * @param lat is the latitude of the point.
+   * @param lon is the longitude of the point.
    */
   public void addPoint(final double lat, final double lon) {
-    if (isDone)
+    if (isDone) {
       throw new IllegalStateException("Can't call addPoint() if done() already called");
+    }
     points.add(new GeoPoint(planetModel, lat, lon));
   }
-  
-  /** Complete the path.
-   */
+
+  /** Complete the path. */
   public void done() {
-    if (isDone)
+    if (isDone) {
       throw new IllegalStateException("Can't call done() twice");
-    if (points.size() == 0)
+    }
+    if (points.size() == 0) {
       throw new IllegalArgumentException("Path must have at least one point");
+    }
     isDone = true;
 
     endPoints = new ArrayList<>(points.size());
     segments = new ArrayList<>(points.size());
-    
+
     // First, build all segments.  We'll then go back and build corresponding segment endpoints.
     GeoPoint lastPoint = null;
     for (final GeoPoint end : points) {
@@ -101,49 +107,50 @@ class GeoDegeneratePath extends GeoBasePath {
       }
       lastPoint = end;
     }
-    
+
     if (segments.size() == 0) {
       // Simple circle
       final GeoPoint point = points.get(0);
-      
+
       final SegmentEndpoint onlyEndpoint = new SegmentEndpoint(point);
       endPoints.add(onlyEndpoint);
-      this.edgePoints = new GeoPoint[]{point};
+      this.edgePoints = new GeoPoint[] {point};
       return;
     }
-    
+
     // Create segment endpoints.  Use an appropriate constructor for the start and end of the path.
     for (int i = 0; i < segments.size(); i++) {
       final PathSegment currentSegment = segments.get(i);
-      
+
       if (i == 0) {
         // Starting endpoint
-        final SegmentEndpoint startEndpoint = new SegmentEndpoint(currentSegment.start,
-          currentSegment.startCutoffPlane);
+        final SegmentEndpoint startEndpoint =
+            new SegmentEndpoint(currentSegment.start, currentSegment.startCutoffPlane);
         endPoints.add(startEndpoint);
-        this.edgePoints = new GeoPoint[]{currentSegment.start};
+        this.edgePoints = new GeoPoint[] {currentSegment.start};
         continue;
       }
-      
-      endPoints.add(new SegmentEndpoint(currentSegment.start,
-        segments.get(i-1).endCutoffPlane,
-        currentSegment.startCutoffPlane));
+
+      endPoints.add(
+          new SegmentEndpoint(
+              currentSegment.start,
+              segments.get(i - 1).endCutoffPlane,
+              currentSegment.startCutoffPlane));
     }
     // Do final endpoint
-    final PathSegment lastSegment = segments.get(segments.size()-1);
-    endPoints.add(new SegmentEndpoint(lastSegment.end,
-      lastSegment.endCutoffPlane));
-
+    final PathSegment lastSegment = segments.get(segments.size() - 1);
+    endPoints.add(new SegmentEndpoint(lastSegment.end, lastSegment.endCutoffPlane));
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoDegeneratePath(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, 
-      SerializableObject.readPointArray(planetModel, inputStream));
+  public GeoDegeneratePath(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(planetModel, SerializableObject.readPointArray(planetModel, inputStream));
   }
 
   @Override
@@ -152,12 +159,14 @@ class GeoDegeneratePath extends GeoBasePath {
   }
 
   @Override
-  public double computePathCenterDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  public double computePathCenterDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     // Walk along path and keep track of the closest distance we find
     double closestDistance = Double.POSITIVE_INFINITY;
     // Segments first
     for (PathSegment segment : segments) {
-      final double segmentDistance = segment.pathCenterDistance(planetModel, distanceStyle, x, y, z);
+      final double segmentDistance =
+          segment.pathCenterDistance(planetModel, distanceStyle, x, y, z);
       if (segmentDistance < closestDistance) {
         closestDistance = segmentDistance;
       }
@@ -173,12 +182,13 @@ class GeoDegeneratePath extends GeoBasePath {
   }
 
   @Override
-  public double computeNearestDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  public double computeNearestDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     double currentDistance = 0.0;
     double minPathCenterDistance = Double.POSITIVE_INFINITY;
     double bestDistance = Double.POSITIVE_INFINITY;
     int segmentIndex = 0;
-    
+
     for (SegmentEndpoint endpoint : endPoints) {
       final double endpointPathCenterDistance = endpoint.pathCenterDistance(distanceStyle, x, y, z);
       if (endpointPathCenterDistance < minPathCenterDistance) {
@@ -189,28 +199,38 @@ class GeoDegeneratePath extends GeoBasePath {
       // Look at the following segment, if any
       if (segmentIndex < segments.size()) {
         final PathSegment segment = segments.get(segmentIndex++);
-        final double segmentPathCenterDistance = segment.pathCenterDistance(planetModel, distanceStyle, x, y, z);
+        final double segmentPathCenterDistance =
+            segment.pathCenterDistance(planetModel, distanceStyle, x, y, z);
         if (segmentPathCenterDistance < minPathCenterDistance) {
           minPathCenterDistance = segmentPathCenterDistance;
-          bestDistance = distanceStyle.aggregateDistances(currentDistance, segment.nearestPathDistance(planetModel, distanceStyle, x, y, z));
+          bestDistance =
+              distanceStyle.aggregateDistances(
+                  currentDistance,
+                  segment.nearestPathDistance(planetModel, distanceStyle, x, y, z));
         }
-        currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
+        currentDistance =
+            distanceStyle.aggregateDistances(
+                currentDistance, segment.fullPathDistance(distanceStyle));
       }
     }
     return bestDistance;
   }
 
   @Override
-  protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  protected double distance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     // Algorithm:
     // (1) If the point is within any of the segments along the path, return that value.
     // (2) If the point is within any of the segment end circles along the path, return that value.
     double currentDistance = 0.0;
     for (PathSegment segment : segments) {
-      double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
+      double distance = segment.pathDistance(planetModel, distanceStyle, x, y, z);
       if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
-      currentDistance = distanceStyle.aggregateDistances(currentDistance, segment.fullPathDistance(distanceStyle));
+        return distanceStyle.fromAggregationForm(
+            distanceStyle.aggregateDistances(currentDistance, distance));
+      currentDistance =
+          distanceStyle.aggregateDistances(
+              currentDistance, segment.fullPathDistance(distanceStyle));
     }
 
     int segmentIndex = 0;
@@ -218,38 +238,47 @@ class GeoDegeneratePath extends GeoBasePath {
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
       if (distance != Double.POSITIVE_INFINITY)
-        return distanceStyle.fromAggregationForm(distanceStyle.aggregateDistances(currentDistance, distance));
+        return distanceStyle.fromAggregationForm(
+            distanceStyle.aggregateDistances(currentDistance, distance));
       if (segmentIndex < segments.size())
-        currentDistance = distanceStyle.aggregateDistances(currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
+        currentDistance =
+            distanceStyle.aggregateDistances(
+                currentDistance, segments.get(segmentIndex++).fullPathDistance(distanceStyle));
     }
 
     return Double.POSITIVE_INFINITY;
   }
 
   @Override
-  protected double deltaDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    // Since this is always called when a point is within the degenerate path, delta distance is always zero by definition.
+  protected double deltaDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    // Since this is always called when a point is within the degenerate path, delta distance is
+    // always zero by definition.
     return 0.0;
   }
-  
+
   @Override
-  protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+  protected void distanceBounds(
+      final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
     // TBD: Compute actual bounds based on distance
     getBounds(bounds);
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     double minDistance = Double.POSITIVE_INFINITY;
     for (final SegmentEndpoint endpoint : endPoints) {
-      final double newDistance = endpoint.outsideDistance(distanceStyle, x,y,z);
-      if (newDistance < minDistance)
+      final double newDistance = endpoint.outsideDistance(distanceStyle, x, y, z);
+      if (newDistance < minDistance) {
         minDistance = newDistance;
+      }
     }
     for (final PathSegment segment : segments) {
       final double newDistance = segment.outsideDistance(planetModel, distanceStyle, x, y, z);
-      if (newDistance < minDistance)
+      if (newDistance < minDistance) {
         minDistance = newDistance;
+      }
     }
     return minDistance;
   }
@@ -275,7 +304,8 @@ class GeoDegeneratePath extends GeoBasePath {
   }
 
   @Override
-  public boolean intersects(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
+  public boolean intersects(
+      final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
     // We look for an intersection with any of the exterior edges of the path.
     // We also have to look for intersections with the cones described by the endpoints.
     // Return "true" if any such intersections are found.
@@ -285,8 +315,8 @@ class GeoDegeneratePath extends GeoBasePath {
     // any of the intersection points are within the bounds, then we've detected an intersection.
     // Well, sort of.  We can detect intersections also due to overlap of segments with each other.
     // But that's an edge case and we won't be optimizing for it.
-    //System.err.println(" Looking for intersection of plane "+plane+" with path "+this);
-    
+    // System.err.println(" Looking for intersection of plane " + plane + " with path " + this);
+
     // Since the endpoints are included in the path segments, we only need to do this if there are
     // no path segments
     if (endPoints.size() == 1) {
@@ -335,11 +365,13 @@ class GeoDegeneratePath extends GeoBasePath {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoDegeneratePath))
+    if (!(o instanceof GeoDegeneratePath)) {
       return false;
+    }
     GeoDegeneratePath p = (GeoDegeneratePath) o;
-    if (!super.equals(p))
+    if (!super.equals(p)) {
       return false;
+    }
     return points.equals(p.points);
   }
 
@@ -352,15 +384,20 @@ class GeoDegeneratePath extends GeoBasePath {
 
   @Override
   public String toString() {
-    return "GeoDegeneratePath: {planetmodel=" + planetModel+", points={" + points + "}}";
+    return "GeoDegeneratePath: {planetmodel=" + planetModel + ", points={" + points + "}}";
   }
 
   /**
-   * This is precalculated data for segment endpoint.  Since the path is degenerate, there are several different cases:
-   * (1) The path consists of a single endpoint.  In this case, the degenerate path consists of this one point.
-   * (2) This is the end of a path.  There is a bounding plane passed in which describes the part of the world that is considered
-   *    to belong to this endpoint.
-   * (3) Intersection.  There are two cutoff planes, one for each end of the intersection.
+   * This is precalculated data for segment endpoint. Since the path is degenerate, there are
+   * several different cases:
+   *
+   * <ol>
+   *   <li>The path consists of a single endpoint. In this case, the degenerate path consists of
+   *       this one point.
+   *   <li>This is the end of a path. There is a bounding plane passed in which describes the part
+   *       of the world that is considered to belong to this endpoint.
+   *   <li>Intersection. There are two cutoff planes, one for each end of the intersection.
+   * </ol>
    */
   private static class SegmentEndpoint {
     /** The center point of the endpoint */
@@ -370,149 +407,185 @@ class GeoDegeneratePath extends GeoBasePath {
     /** Notable points for this segment endpoint */
     public final GeoPoint[] notablePoints;
     /** No notable points from the circle itself */
-    public final static GeoPoint[] circlePoints = new GeoPoint[0];
+    public static final GeoPoint[] circlePoints = new GeoPoint[0];
     /** Null membership */
-    public final static Membership[] NO_MEMBERSHIP = new Membership[0];
-    
-    /** Constructor for case (1).
-     *@param point is the center point.
+    public static final Membership[] NO_MEMBERSHIP = new Membership[0];
+
+    /**
+     * Constructor for case (1).
+     *
+     * @param point is the center point.
      */
     public SegmentEndpoint(final GeoPoint point) {
       this.point = point;
       this.cutoffPlanes = NO_MEMBERSHIP;
       this.notablePoints = circlePoints;
     }
-    
-    /** Constructor for case (2).
-     * Generate an endpoint, given a single cutoff plane plus upper and lower edge points.
-     *@param point is the center point.
-     *@param cutoffPlane is the plane from the adjoining path segment marking the boundary between this endpoint and that segment.
+
+    /**
+     * Constructor for case (2). Generate an endpoint, given a single cutoff plane plus upper and
+     * lower edge points.
+     *
+     * @param point is the center point.
+     * @param cutoffPlane is the plane from the adjoining path segment marking the boundary between
+     *     this endpoint and that segment.
      */
     public SegmentEndpoint(final GeoPoint point, final SidedPlane cutoffPlane) {
       this.point = point;
-      this.cutoffPlanes = new Membership[]{new SidedPlane(cutoffPlane)};
-      this.notablePoints = new GeoPoint[]{point};
+      this.cutoffPlanes = new Membership[] {new SidedPlane(cutoffPlane)};
+      this.notablePoints = new GeoPoint[] {point};
     }
 
-    /** Constructor for case (3).
-     * Generate an endpoint, given two cutoff planes.
-     *@param point is the center.
-     *@param cutoffPlane1 is one adjoining path segment cutoff plane.
-     *@param cutoffPlane2 is another adjoining path segment cutoff plane.
+    /**
+     * Constructor for case (3). Generate an endpoint, given two cutoff planes.
+     *
+     * @param point is the center.
+     * @param cutoffPlane1 is one adjoining path segment cutoff plane.
+     * @param cutoffPlane2 is another adjoining path segment cutoff plane.
      */
-    public SegmentEndpoint(final GeoPoint point,
-      final SidedPlane cutoffPlane1, final SidedPlane cutoffPlane2) {
+    public SegmentEndpoint(
+        final GeoPoint point, final SidedPlane cutoffPlane1, final SidedPlane cutoffPlane2) {
       this.point = point;
-      this.cutoffPlanes = new Membership[]{new SidedPlane(cutoffPlane1), new SidedPlane(cutoffPlane2)};
-      this.notablePoints = new GeoPoint[]{point};
+      this.cutoffPlanes =
+          new Membership[] {new SidedPlane(cutoffPlane1), new SidedPlane(cutoffPlane2)};
+      this.notablePoints = new GeoPoint[] {point};
     }
-    
-    /** Check if point is within this endpoint.
-     *@param point is the point.
-     *@return true of within.
+
+    /**
+     * Check if point is within this endpoint.
+     *
+     * @param point is the point.
+     * @return true of within.
      */
     public boolean isWithin(final Vector point) {
       return this.point.isIdentical(point.x, point.y, point.z);
     }
 
-    /** Check if point is within this endpoint.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return true of within.
+    /**
+     * Check if point is within this endpoint.
+     *
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return true of within.
      */
     public boolean isWithin(final double x, final double y, final double z) {
       return this.point.isIdentical(x, y, z);
     }
 
-    /** Compute interior path distance.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric, in aggregation form.
+    /**
+     * Compute interior path distance.
+     *
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric, in aggregation form.
      */
-    public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-      if (!isWithin(x,y,z))
+    public double pathDistance(
+        final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+      if (!isWithin(x, y, z)) {
         return Double.POSITIVE_INFINITY;
+      }
       return distanceStyle.toAggregationForm(distanceStyle.computeDistance(this.point, x, y, z));
     }
 
-    /** Compute nearest path distance.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric (always value zero), in aggregation form, or POSITIVE_INFINITY
-     * if the point is not within the bounds of the endpoint.
+    /**
+     * Compute nearest path distance.
+     *
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric (always value zero), in aggregation form, or POSITIVE_INFINITY if
+     *     the point is not within the bounds of the endpoint.
      */
-    public double nearestPathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    public double nearestPathDistance(
+        final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       for (final Membership m : cutoffPlanes) {
-        if (!m.isWithin(x,y,z)) {
+        if (!m.isWithin(x, y, z)) {
           return Double.POSITIVE_INFINITY;
         }
       }
       return distanceStyle.toAggregationForm(0.0);
     }
 
-    /** Compute path center distance.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric, or POSITIVE_INFINITY
-     * if the point is not within the bounds of the endpoint.
+    /**
+     * Compute path center distance.
+     *
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric, or POSITIVE_INFINITY if the point is not within the bounds of
+     *     the endpoint.
      */
-    public double pathCenterDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    public double pathCenterDistance(
+        final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       for (final Membership m : cutoffPlanes) {
-        if (!m.isWithin(x,y,z)) {
+        if (!m.isWithin(x, y, z)) {
           return Double.POSITIVE_INFINITY;
         }
       }
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
-    /** Compute external distance.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric.
+    /**
+     * Compute external distance.
+     *
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric.
      */
-    public double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    public double outsideDistance(
+        final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
-    /** Determine if this endpoint intersects a specified plane.
-     *@param planetModel is the planet model.
-     *@param p is the plane.
-     *@param notablePoints are the points associated with the plane.
-     *@param bounds are any bounds which the intersection must lie within.
-     *@return true if there is a matching intersection.
+    /**
+     * Determine if this endpoint intersects a specified plane.
+     *
+     * @param planetModel is the planet model.
+     * @param p is the plane.
+     * @param notablePoints are the points associated with the plane.
+     * @param bounds are any bounds which the intersection must lie within.
+     * @return true if there is a matching intersection.
      */
-    public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
-    // If not on the plane, no intersection
-    if (!p.evaluateIsZero(point))
-      return false;
-
-    for (Membership m : bounds) {
-      if (!m.isWithin(point))
+    public boolean intersects(
+        final PlanetModel planetModel,
+        final Plane p,
+        final GeoPoint[] notablePoints,
+        final Membership[] bounds) {
+      // If not on the plane, no intersection
+      if (!p.evaluateIsZero(point)) {
         return false;
-    }
-    return true;
+      }
+
+      for (Membership m : bounds) {
+        if (!m.isWithin(point)) {
+          return false;
+        }
+      }
+      return true;
     }
 
-    /** Determine if this endpoint intersects a GeoShape.
-     *@param geoShape is the GeoShape.
-     *@return true if there is shape intersect this endpoint.
+    /**
+     * Determine if this endpoint intersects a GeoShape.
+     *
+     * @param geoShape is the GeoShape.
+     * @return true if there is shape intersect this endpoint.
      */
     public boolean intersects(final GeoShape geoShape) {
       return geoShape.isWithin(point);
     }
 
-    /** Get the bounds for a segment endpoint.
-     *@param planetModel is the planet model.
-     *@param bounds are the bounds to be modified.
+    /**
+     * Get the bounds for a segment endpoint.
+     *
+     * @param planetModel is the planet model.
+     * @param bounds are the bounds to be modified.
      */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       bounds.addPoint(point);
@@ -520,8 +593,9 @@ class GeoDegeneratePath extends GeoBasePath {
 
     @Override
     public boolean equals(Object o) {
-      if (!(o instanceof SegmentEndpoint))
+      if (!(o instanceof SegmentEndpoint)) {
         return false;
+      }
       SegmentEndpoint other = (SegmentEndpoint) o;
       return point.equals(other.point);
     }
@@ -537,16 +611,14 @@ class GeoDegeneratePath extends GeoBasePath {
     }
   }
 
-  /**
-   * This is the pre-calculated data for a path segment.
-   */
+  /** This is the pre-calculated data for a path segment. */
   private static class PathSegment {
     /** Starting point of the segment */
     public final GeoPoint start;
     /** End point of the segment */
     public final GeoPoint end;
     /** Place to keep any complete segment distances we've calculated so far */
-    public final Map<DistanceStyle,Double> fullDistanceCache = new HashMap<DistanceStyle,Double>();
+    public final Map<DistanceStyle, Double> fullDistanceCache = new HashMap<>();
     /** Normalized plane connecting the two points and going through world center */
     public final Plane normalizedConnectingPlane;
     /** Plane going through the center and start point, marking the start edge of the segment */
@@ -556,239 +628,329 @@ class GeoDegeneratePath extends GeoBasePath {
     /** Notable points for the connecting plane */
     public final GeoPoint[] connectingPlanePoints;
 
-    /** Construct a path segment.
-     *@param planetModel is the planet model.
-     *@param start is the starting point.
-     *@param end is the ending point.
-     *@param normalizedConnectingPlane is the connecting plane.
+    /**
+     * Construct a path segment.
+     *
+     * @param planetModel is the planet model.
+     * @param start is the starting point.
+     * @param end is the ending point.
+     * @param normalizedConnectingPlane is the connecting plane.
      */
-    public PathSegment(final PlanetModel planetModel, final GeoPoint start, final GeoPoint end,
-      final Plane normalizedConnectingPlane) {
+    public PathSegment(
+        final PlanetModel planetModel,
+        final GeoPoint start,
+        final GeoPoint end,
+        final Plane normalizedConnectingPlane) {
       this.start = start;
       this.end = end;
       this.normalizedConnectingPlane = normalizedConnectingPlane;
-      
+
       // Cutoff planes use opposite endpoints as correct side examples
       startCutoffPlane = new SidedPlane(end, normalizedConnectingPlane, start);
       endCutoffPlane = new SidedPlane(start, normalizedConnectingPlane, end);
-      connectingPlanePoints = new GeoPoint[]{start, end};
+      connectingPlanePoints = new GeoPoint[] {start, end};
     }
 
-    /** Compute the full distance along this path segment.
-     *@param distanceStyle is the distance style.
-     *@return the distance metric, in aggregation form.
+    /**
+     * Compute the full distance along this path segment.
+     *
+     * @param distanceStyle is the distance style.
+     * @return the distance metric, in aggregation form.
      */
     public double fullPathDistance(final DistanceStyle distanceStyle) {
       synchronized (fullDistanceCache) {
         Double dist = fullDistanceCache.get(distanceStyle);
         if (dist == null) {
-          dist = distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z));
+          dist =
+              distanceStyle.toAggregationForm(
+                  distanceStyle.computeDistance(start, end.x, end.y, end.z));
           fullDistanceCache.put(distanceStyle, dist);
         }
         return dist.doubleValue();
       }
     }
-  
-    /** Check if point is within this segment.
-     *@param point is the point.
-     *@return true of within.
+
+    /**
+     * Check if point is within this segment.
+     *
+     * @param point is the point.
+     * @return true of within.
      */
     public boolean isWithin(final Vector point) {
-      return startCutoffPlane.isWithin(point) &&
-          endCutoffPlane.isWithin(point) &&
-          normalizedConnectingPlane.evaluateIsZero(point);
+      return startCutoffPlane.isWithin(point)
+          && endCutoffPlane.isWithin(point)
+          && normalizedConnectingPlane.evaluateIsZero(point);
     }
 
-    /** Check if point is within this segment.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return true of within.
+    /**
+     * Check if point is within this segment.
+     *
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return true of within.
      */
     public boolean isWithin(final double x, final double y, final double z) {
-      return startCutoffPlane.isWithin(x, y, z) &&
-          endCutoffPlane.isWithin(x, y, z) &&
-          normalizedConnectingPlane.evaluateIsZero(x, y, z);
+      return startCutoffPlane.isWithin(x, y, z)
+          && endCutoffPlane.isWithin(x, y, z)
+          && normalizedConnectingPlane.evaluateIsZero(x, y, z);
     }
 
-    /** Compute path center distance.
-     *@param planetModel is the planet model.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric, or Double.POSITIVE_INFINITY if outside this segment
+    /**
+     * Compute path center distance.
+     *
+     * @param planetModel is the planet model.
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric, or Double.POSITIVE_INFINITY if outside this segment
      */
-    public double pathCenterDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    public double pathCenterDistance(
+        final PlanetModel planetModel,
+        final DistanceStyle distanceStyle,
+        final double x,
+        final double y,
+        final double z) {
       // First, if this point is outside the endplanes of the segment, return POSITIVE_INFINITY.
       if (!startCutoffPlane.isWithin(x, y, z) || !endCutoffPlane.isWithin(x, y, z)) {
         return Double.POSITIVE_INFINITY;
       }
-      // (1) Compute normalizedPerpPlane.  If degenerate, then there is no such plane, which means that the point given
-      // is insufficient to distinguish between a family of such planes.  This can happen only if the point is one of the
-      // "poles", imagining the normalized plane to be the "equator".  In that case, the distance returned should be zero.
+      // (1) Compute normalizedPerpPlane.  If degenerate, then there is no such plane, which means
+      // that the point given is insufficient to distinguish between a family of such planes.
+      // This can happen only if the point is one of the "poles", imagining the normalized plane
+      // to be the "equator".  In that case, the distance returned should be zero.
       // Want no allocations or expensive operations!  so we do this the hard way
       final double perpX = normalizedConnectingPlane.y * z - normalizedConnectingPlane.z * y;
       final double perpY = normalizedConnectingPlane.z * x - normalizedConnectingPlane.x * z;
       final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
       final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
-      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
+      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION) {
         return distanceStyle.computeDistance(start, x, y, z);
-      final double normFactor = 1.0/magnitude;
-      final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
-      
-      final GeoPoint[] intersectionPoints = normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
+      }
+      final double normFactor = 1.0 / magnitude;
+      final Plane normalizedPerpPlane =
+          new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
+
+      final GeoPoint[] intersectionPoints =
+          normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
       GeoPoint thePoint;
-      if (intersectionPoints.length == 0)
-        throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
-      else if (intersectionPoints.length == 1)
+      if (intersectionPoints.length == 0) {
+        throw new RuntimeException(
+            "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+      } else if (intersectionPoints.length == 1) {
         thePoint = intersectionPoints[0];
-      else {
-        if (startCutoffPlane.isWithin(intersectionPoints[0]) && endCutoffPlane.isWithin(intersectionPoints[0]))
+      } else {
+        if (startCutoffPlane.isWithin(intersectionPoints[0])
+            && endCutoffPlane.isWithin(intersectionPoints[0])) {
           thePoint = intersectionPoints[0];
-        else if (startCutoffPlane.isWithin(intersectionPoints[1]) && endCutoffPlane.isWithin(intersectionPoints[1]))
+        } else if (startCutoffPlane.isWithin(intersectionPoints[1])
+            && endCutoffPlane.isWithin(intersectionPoints[1])) {
           thePoint = intersectionPoints[1];
-        else
-          throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
+        } else {
+          throw new RuntimeException(
+              "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+        }
       }
       return distanceStyle.computeDistance(thePoint, x, y, z);
     }
-    
-    /** Compute nearest path distance.
-     *@param planetModel is the planet model.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric, in aggregation form, or Double.POSITIVE_INFINITY if outside this segment
+
+    /**
+     * Compute nearest path distance.
+     *
+     * @param planetModel is the planet model.
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric, in aggregation form, or Double.POSITIVE_INFINITY if outside this
+     *     segment
      */
-    public double nearestPathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    public double nearestPathDistance(
+        final PlanetModel planetModel,
+        final DistanceStyle distanceStyle,
+        final double x,
+        final double y,
+        final double z) {
       // First, if this point is outside the endplanes of the segment, return POSITIVE_INFINITY.
       if (!startCutoffPlane.isWithin(x, y, z) || !endCutoffPlane.isWithin(x, y, z)) {
         return Double.POSITIVE_INFINITY;
       }
-      // (1) Compute normalizedPerpPlane.  If degenerate, then there is no such plane, which means that the point given
-      // is insufficient to distinguish between a family of such planes.  This can happen only if the point is one of the
-      // "poles", imagining the normalized plane to be the "equator".  In that case, the distance returned should be zero.
+      // (1) Compute normalizedPerpPlane.  If degenerate, then there is no such plane, which means
+      // that the point given is insufficient to distinguish between a family of such planes.
+      // This can happen only if the point is one of the "poles", imagining the normalized plane
+      // to be the "equator".  In that case, the distance returned should be zero.
       // Want no allocations or expensive operations!  so we do this the hard way
       final double perpX = normalizedConnectingPlane.y * z - normalizedConnectingPlane.z * y;
       final double perpY = normalizedConnectingPlane.z * x - normalizedConnectingPlane.x * z;
       final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
       final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
-      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
+      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION) {
         return distanceStyle.toAggregationForm(0.0);
-      final double normFactor = 1.0/magnitude;
-      final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
-      
-      final GeoPoint[] intersectionPoints = normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
-      GeoPoint thePoint;
-      if (intersectionPoints.length == 0)
-        throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
-      else if (intersectionPoints.length == 1)
-        thePoint = intersectionPoints[0];
-      else {
-        if (startCutoffPlane.isWithin(intersectionPoints[0]) && endCutoffPlane.isWithin(intersectionPoints[0]))
-          thePoint = intersectionPoints[0];
-        else if (startCutoffPlane.isWithin(intersectionPoints[1]) && endCutoffPlane.isWithin(intersectionPoints[1]))
-          thePoint = intersectionPoints[1];
-        else
-          throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
       }
-      return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z));
+      final double normFactor = 1.0 / magnitude;
+      final Plane normalizedPerpPlane =
+          new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
+
+      final GeoPoint[] intersectionPoints =
+          normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
+      GeoPoint thePoint;
+      if (intersectionPoints.length == 0) {
+        throw new RuntimeException(
+            "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+      } else if (intersectionPoints.length == 1) {
+        thePoint = intersectionPoints[0];
+      } else {
+        if (startCutoffPlane.isWithin(intersectionPoints[0])
+            && endCutoffPlane.isWithin(intersectionPoints[0])) {
+          thePoint = intersectionPoints[0];
+        } else if (startCutoffPlane.isWithin(intersectionPoints[1])
+            && endCutoffPlane.isWithin(intersectionPoints[1])) {
+          thePoint = intersectionPoints[1];
+        } else {
+          throw new RuntimeException(
+              "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+        }
+      }
+      return distanceStyle.toAggregationForm(
+          distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z));
     }
-      
 
-    /** Compute interior path distance.
-     *@param planetModel is the planet model.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric, in aggregation form.
+    /**
+     * Compute interior path distance.
+     *
+     * @param planetModel is the planet model.
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric, in aggregation form.
      */
-    public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-      if (!isWithin(x,y,z))
-        return Double.POSITIVE_INFINITY;
+    public double pathDistance(
+        final PlanetModel planetModel,
+        final DistanceStyle distanceStyle,
+        final double x,
+        final double y,
+        final double z) {
+      if (!isWithin(x, y, z)) return Double.POSITIVE_INFINITY;
 
-      // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to point.
+      // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to
+      // point.
       // Want no allocations or expensive operations!  so we do this the hard way
       final double perpX = normalizedConnectingPlane.y * z - normalizedConnectingPlane.z * y;
       final double perpY = normalizedConnectingPlane.z * x - normalizedConnectingPlane.x * z;
       final double perpZ = normalizedConnectingPlane.x * y - normalizedConnectingPlane.y * x;
       final double magnitude = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ);
-      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION)
-        return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, x,y,z));
-      final double normFactor = 1.0/magnitude;
-      final Plane normalizedPerpPlane = new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
-      
-      // Old computation: too expensive, because it calculates the intersection point twice.
-      //return distanceStyle.computeDistance(planetModel, normalizedConnectingPlane, x, y, z, startCutoffPlane, endCutoffPlane) +
-      //  distanceStyle.computeDistance(planetModel, normalizedPerpPlane, start.x, start.y, start.z, upperConnectingPlane, lowerConnectingPlane);
-
-      final GeoPoint[] intersectionPoints = normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
-      GeoPoint thePoint;
-      if (intersectionPoints.length == 0)
-        throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
-      else if (intersectionPoints.length == 1)
-        thePoint = intersectionPoints[0];
-      else {
-        if (startCutoffPlane.isWithin(intersectionPoints[0]) && endCutoffPlane.isWithin(intersectionPoints[0]))
-          thePoint = intersectionPoints[0];
-        else if (startCutoffPlane.isWithin(intersectionPoints[1]) && endCutoffPlane.isWithin(intersectionPoints[1]))
-          thePoint = intersectionPoints[1];
-        else
-          throw new RuntimeException("Can't find world intersection for point x="+x+" y="+y+" z="+z);
+      if (Math.abs(magnitude) < Vector.MINIMUM_RESOLUTION) {
+        return distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, x, y, z));
       }
-      return distanceStyle.aggregateDistances(distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z)),
-        distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
+      final double normFactor = 1.0 / magnitude;
+      final Plane normalizedPerpPlane =
+          new Plane(perpX * normFactor, perpY * normFactor, perpZ * normFactor, 0.0);
+
+      // Old computation: too expensive, because it calculates the intersection point twice.
+      // return distanceStyle.computeDistance(planetModel, normalizedConnectingPlane, x, y, z,
+      // startCutoffPlane, endCutoffPlane) +
+      //  distanceStyle.computeDistance(planetModel, normalizedPerpPlane, start.x, start.y, start.z,
+      // upperConnectingPlane, lowerConnectingPlane);
+
+      final GeoPoint[] intersectionPoints =
+          normalizedConnectingPlane.findIntersections(planetModel, normalizedPerpPlane);
+      GeoPoint thePoint;
+      if (intersectionPoints.length == 0) {
+        throw new RuntimeException(
+            "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+      } else if (intersectionPoints.length == 1) {
+        thePoint = intersectionPoints[0];
+      } else {
+        if (startCutoffPlane.isWithin(intersectionPoints[0])
+            && endCutoffPlane.isWithin(intersectionPoints[0])) {
+          thePoint = intersectionPoints[0];
+        } else if (startCutoffPlane.isWithin(intersectionPoints[1])
+            && endCutoffPlane.isWithin(intersectionPoints[1])) {
+          thePoint = intersectionPoints[1];
+        } else {
+          throw new RuntimeException(
+              "Can't find world intersection for point x=" + x + " y=" + y + " z=" + z);
+        }
+      }
+      return distanceStyle.aggregateDistances(
+          distanceStyle.toAggregationForm(distanceStyle.computeDistance(thePoint, x, y, z)),
+          distanceStyle.toAggregationForm(
+              distanceStyle.computeDistance(start, thePoint.x, thePoint.y, thePoint.z)));
     }
 
-    /** Compute external distance.
-     *@param planetModel is the planet model.
-     *@param distanceStyle is the distance style.
-     *@param x is the point x.
-     *@param y is the point y.
-     *@param z is the point z.
-     *@return the distance metric.
+    /**
+     * Compute external distance.
+     *
+     * @param planetModel is the planet model.
+     * @param distanceStyle is the distance style.
+     * @param x is the point x.
+     * @param y is the point y.
+     * @param z is the point z.
+     * @return the distance metric.
      */
-    public double outsideDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-      final double distance = distanceStyle.computeDistance(planetModel, normalizedConnectingPlane, x,y,z, startCutoffPlane, endCutoffPlane);
-      final double startDistance = distanceStyle.computeDistance(start, x,y,z);
-      final double endDistance = distanceStyle.computeDistance(end, x,y,z);
-      return Math.min(
-        Math.min(startDistance, endDistance),
-        distance);
+    public double outsideDistance(
+        final PlanetModel planetModel,
+        final DistanceStyle distanceStyle,
+        final double x,
+        final double y,
+        final double z) {
+      final double distance =
+          distanceStyle.computeDistance(
+              planetModel, normalizedConnectingPlane, x, y, z, startCutoffPlane, endCutoffPlane);
+      final double startDistance = distanceStyle.computeDistance(start, x, y, z);
+      final double endDistance = distanceStyle.computeDistance(end, x, y, z);
+      return Math.min(Math.min(startDistance, endDistance), distance);
     }
 
-    /** Determine if this endpoint intersects a specified plane.
-     *@param planetModel is the planet model.
-     *@param p is the plane.
-     *@param notablePoints are the points associated with the plane.
-     *@param bounds are any bounds which the intersection must lie within.
-     *@return true if there is a matching intersection.
+    /**
+     * Determine if this endpoint intersects a specified plane.
+     *
+     * @param planetModel is the planet model.
+     * @param p is the plane.
+     * @param notablePoints are the points associated with the plane.
+     * @param bounds are any bounds which the intersection must lie within.
+     * @return true if there is a matching intersection.
      */
-    public boolean intersects(final PlanetModel planetModel, final Plane p, final GeoPoint[] notablePoints, final Membership[] bounds) {
-      return normalizedConnectingPlane.intersects(planetModel, p, connectingPlanePoints, notablePoints, bounds, startCutoffPlane, endCutoffPlane);
+    public boolean intersects(
+        final PlanetModel planetModel,
+        final Plane p,
+        final GeoPoint[] notablePoints,
+        final Membership[] bounds) {
+      return normalizedConnectingPlane.intersects(
+          planetModel,
+          p,
+          connectingPlanePoints,
+          notablePoints,
+          bounds,
+          startCutoffPlane,
+          endCutoffPlane);
     }
 
-    /** Determine if this endpoint intersects a specified GeoShape.
-     *@param geoShape is the GeoShape.
-     *@return true if there GeoShape intersects this endpoint.
+    /**
+     * Determine if this endpoint intersects a specified GeoShape.
+     *
+     * @param geoShape is the GeoShape.
+     * @return true if there GeoShape intersects this endpoint.
      */
     public boolean intersects(final GeoShape geoShape) {
-      return geoShape.intersects(normalizedConnectingPlane, connectingPlanePoints, startCutoffPlane, endCutoffPlane);
+      return geoShape.intersects(
+          normalizedConnectingPlane, connectingPlanePoints, startCutoffPlane, endCutoffPlane);
     }
 
-    /** Get the bounds for a segment endpoint.
-     *@param planetModel is the planet model.
-     *@param bounds are the bounds to be modified.
+    /**
+     * Get the bounds for a segment endpoint.
+     *
+     * @param planetModel is the planet model.
+     * @param bounds are the bounds to be modified.
      */
     public void getBounds(final PlanetModel planetModel, Bounds bounds) {
       // We need to do all bounding planes as well as corner points
-      bounds.addPoint(start).addPoint(end)
-        .addPlane(planetModel, normalizedConnectingPlane, startCutoffPlane, endCutoffPlane);
+      bounds
+          .addPoint(start)
+          .addPoint(end)
+          .addPlane(planetModel, normalizedConnectingPlane, startCutoffPlane, endCutoffPlane);
     }
-
   }
-
 }

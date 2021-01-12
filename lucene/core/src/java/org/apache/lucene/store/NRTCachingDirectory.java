@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -27,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
 
@@ -36,18 +34,16 @@ import org.apache.lucene.util.IOUtils;
 //   - rename to MergeCacheingDir?  NRTCachingDir
 
 /**
- * Wraps a RAM-resident directory around any provided delegate directory, to
- * be used during NRT search.
+ * Wraps a RAM-resident directory around any provided delegate directory, to be used during NRT
+ * search.
  *
- * <p>This class is likely only useful in a near-real-time
- * context, where indexing rate is lowish but reopen
- * rate is highish, resulting in many tiny files being
- * written.  This directory keeps such segments (as well as
- * the segments produced by merging them, as long as they
- * are small enough), in RAM.</p>
+ * <p>This class is likely only useful in a near-real-time context, where indexing rate is lowish
+ * but reopen rate is highish, resulting in many tiny files being written. This directory keeps such
+ * segments (as well as the segments produced by merging them, as long as they are small enough), in
+ * RAM.
  *
- * <p>This is safe to use: when your app calls {IndexWriter#commit},
- * all cached files will be flushed from the cached and sync'd.</p>
+ * <p>This is safe to use: when your app calls {IndexWriter#commit}, all cached files will be
+ * flushed from the cached and sync'd.
  *
  * <p>Here's a simple example usage:
  *
@@ -58,33 +54,27 @@ import org.apache.lucene.util.IOUtils;
  *   IndexWriter writer = new IndexWriter(cachedFSDir, conf);
  * </pre>
  *
- * <p>This will cache all newly flushed segments, all merges
- * whose expected segment size is {@code <= 5 MB}, unless the net
- * cached bytes exceeds 60 MB at which point all writes will
- * not be cached (until the net bytes falls below 60 MB).</p>
+ * <p>This will cache all newly flushed segments, all merges whose expected segment size is {@code
+ * <= 5 MB}, unless the net cached bytes exceeds 60 MB at which point all writes will not be cached
+ * (until the net bytes falls below 60 MB).
  *
  * @lucene.experimental
  */
-
 public class NRTCachingDirectory extends FilterDirectory implements Accountable {
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
-  /**
-   * Current total size of files in the cache is maintained separately for faster access.
-   */
+  /** Current total size of files in the cache is maintained separately for faster access. */
   private final AtomicLong cacheSize = new AtomicLong();
 
-  /**
-   * RAM-resident directory that updates {@link #cacheSize} when files are successfully closed.
-   */
-  private final ByteBuffersDirectory cacheDirectory = new ByteBuffersDirectory(
-      new SingleInstanceLockFactory(),
-      ByteBuffersDataOutput::new,
-      (fileName, content) -> {
-        cacheSize.addAndGet(content.size());
-        return ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE.apply(fileName, content);
-      }
-  );
+  /** RAM-resident directory that updates {@link #cacheSize} when files are successfully closed. */
+  private final ByteBuffersDirectory cacheDirectory =
+      new ByteBuffersDirectory(
+          new SingleInstanceLockFactory(),
+          ByteBuffersDataOutput::new,
+          (fileName, content) -> {
+            cacheSize.addAndGet(content.size());
+            return ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE.apply(fileName, content);
+          });
 
   private final long maxMergeSizeBytes;
   private final long maxCachedBytes;
@@ -92,20 +82,25 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   private static final boolean VERBOSE = false;
 
   /**
-   *  We will cache a newly created output if 1) it's a
-   *  flush or a merge and the estimated size of the merged segment is 
-   *  {@code <= maxMergeSizeMB}, and 2) the total cached bytes is 
-   *  {@code <= maxCachedMB} */
+   * We will cache a newly created output if 1) it's a flush or a merge and the estimated size of
+   * the merged segment is {@code <= maxMergeSizeMB}, and 2) the total cached bytes is {@code <=
+   * maxCachedMB}
+   */
   public NRTCachingDirectory(Directory delegate, double maxMergeSizeMB, double maxCachedMB) {
     super(delegate);
     maxMergeSizeBytes = (long) (maxMergeSizeMB * 1024 * 1024);
     maxCachedBytes = (long) (maxCachedMB * 1024 * 1024);
   }
 
-
   @Override
   public String toString() {
-    return "NRTCachingDirectory(" + in + "; maxCacheMB=" + (maxCachedBytes/1024/1024.) + " maxMergeSizeMB=" + (maxMergeSizeBytes/1024/1024.) + ")";
+    return "NRTCachingDirectory("
+        + in
+        + "; maxCacheMB="
+        + (maxCachedBytes / 1024 / 1024.)
+        + " maxMergeSizeMB="
+        + (maxMergeSizeBytes / 1024 / 1024.)
+        + ")";
   }
 
   @Override
@@ -171,7 +166,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     if (VERBOSE) {
       System.out.println("nrtdir.sync files=" + fileNames);
     }
-    for(String fileName : fileNames) {
+    for (String fileName : fileNames) {
       unCache(fileName);
     }
     in.sync(fileNames);
@@ -200,9 +195,11 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       return in.openInput(name, context);
     }
   }
-  
-  /** Close this directory, which flushes any cached files
-   *  to the delegate and then closes the delegate. */
+
+  /**
+   * Close this directory, which flushes any cached files to the delegate and then closes the
+   * delegate.
+   */
   @Override
   public void close() throws IOException {
     // NOTE: technically we shouldn't have to do this, ie,
@@ -213,7 +210,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     IOUtils.close(
         () -> {
           if (!closed.getAndSet(true)) {
-            for(String fileName : cacheDirectory.listAll()) {
+            for (String fileName : cacheDirectory.listAll()) {
               unCache(fileName);
             }
           }
@@ -222,10 +219,13 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         in);
   }
 
-  /** Subclass can override this to customize logic; return
-   *  true if this file should be written to the RAM-based cache first. */
+  /**
+   * Subclass can override this to customize logic; return true if this file should be written to
+   * the RAM-based cache first.
+   */
   protected boolean doCacheWrite(String name, IOContext context) {
-    //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
+    // System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + "
+    // size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
 
     long bytes = 0;
     if (context.mergeInfo != null) {
@@ -240,13 +240,15 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
     if (VERBOSE) {
       System.out.println("nrtdir.createTempOutput prefix=" + prefix + " suffix=" + suffix);
     }
     Set<String> toDelete = new HashSet<>();
 
-    // This is very ugly/messy/dangerous (can in some disastrous case maybe create too many temp files), but I don't know of a cleaner way:
+    // This is very ugly/messy/dangerous (can in some disastrous case maybe create too many temp
+    // files), but I don't know of a cleaner way:
     boolean success = false;
 
     Directory first;
@@ -285,10 +287,10 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     return out;
   }
 
-  /** Returns true if the file exists
-   *  (can be opened), false if it cannot be opened, and
-   *  (unlike Java's File.exists) throws IOException if
-   *  there's some unexpected error. */
+  /**
+   * Returns true if the file exists (can be opened), false if it cannot be opened, and (unlike
+   * Java's File.exists) throws IOException if there's some unexpected error.
+   */
   static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
       dir.fileLength(fileName);
@@ -309,7 +311,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         // Another thread beat us...
         return;
       }
-      assert slowFileExists(in, fileName) == false: "fileName=" + fileName + " exists both in cache and in delegate";
+      assert slowFileExists(in, fileName) == false
+          : "fileName=" + fileName + " exists both in cache and in delegate";
 
       in.copyFrom(cacheDirectory, fileName, fileName, IOContext.DEFAULT);
       cacheSize.addAndGet(-cacheDirectory.fileLength(fileName));

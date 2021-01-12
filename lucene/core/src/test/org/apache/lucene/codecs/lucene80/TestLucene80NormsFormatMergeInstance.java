@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.lucene80;
 
-/**
- * Test the merge instance of the Lucene80 norms format.
- */
+/** Test the merge instance of the Lucene80 norms format. */
 public class TestLucene80NormsFormatMergeInstance extends TestLucene80NormsFormat {
 
   @Override
   protected boolean shouldTestMergeInstance() {
     return true;
   }
-
 }

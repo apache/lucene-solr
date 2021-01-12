@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.models.overview;
 
 import java.util.List;
-
 import org.junit.Test;
 
 public class TopTermsTest extends OverviewTestBase {
@@ -36,5 +35,4 @@ public class TopTermsTest extends OverviewTestBase {
     assertEquals(2, result.get(1).getDocFreq());
     assertEquals("f2", result.get(1).getField());
   }
-
 }

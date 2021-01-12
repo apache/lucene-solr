@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.search.MatchesIterator;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.search.MatchesIterator;
 
-/**
- * This strategy retrieves offsets directly from {@link MatchesIterator}.
- */
+/** This strategy retrieves offsets directly from {@link MatchesIterator}. */
 public final class OffsetsFromMatchIterator implements OffsetsRetrievalStrategy {
   private final String field;
 
@@ -33,7 +30,8 @@ public final class OffsetsFromMatchIterator implements OffsetsRetrievalStrategy 
   }
 
   @Override
-  public List<OffsetRange> get(MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
+  public List<OffsetRange> get(
+      MatchesIterator matchesIterator, MatchRegionRetriever.FieldValueProvider doc)
       throws IOException {
     ArrayList<OffsetRange> ranges = new ArrayList<>();
     while (matchesIterator.next()) {

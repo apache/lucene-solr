@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.function.Function;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -29,15 +28,16 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * Allows skipping TokenFilters based on the current set of attributes.
  *
- * To use, implement the {@link #shouldFilter()} method.  If it returns {@code true},
- * then calling {@link #incrementToken()} will use the wrapped TokenFilter(s) to
- * make changes to the tokenstream.  If it returns {@code false}, then the wrapped
- * filter(s) will be skipped.
+ * <p>To use, implement the {@link #shouldFilter()} method. If it returns {@code true}, then calling
+ * {@link #incrementToken()} will use the wrapped TokenFilter(s) to make changes to the tokenstream.
+ * If it returns {@code false}, then the wrapped filter(s) will be skipped.
  */
 public abstract class ConditionalTokenFilter extends TokenFilter {
 
   private enum TokenState {
-    READING, PREBUFFERING, DELEGATING
+    READING,
+    PREBUFFERING,
+    DELEGATING
   }
 
   private final class OneTimeWrapper extends TokenStream {
@@ -68,8 +68,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
         }
         endOffset = offsetAtt.endOffset();
         bufferedState = captureState();
-      }
-      else {
+      } else {
         exhausted = true;
       }
       return false;
@@ -105,21 +104,22 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
   private State endState = null;
   private int endOffset;
 
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Create a new ConditionalTokenFilter
-   * @param input         the input TokenStream
-   * @param inputFactory  a factory function to create the wrapped filter(s)
+   *
+   * @param input the input TokenStream
+   * @param inputFactory a factory function to create the wrapped filter(s)
    */
-  protected ConditionalTokenFilter(TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
+  protected ConditionalTokenFilter(
+      TokenStream input, Function<TokenStream, TokenStream> inputFactory) {
     super(input);
     this.delegate = inputFactory.apply(new OneTimeWrapper(this.input));
   }
 
-  /**
-   * Whether or not to execute the wrapped TokenFilter(s) for the current token
-   */
+  /** Whether or not to execute the wrapped TokenFilter(s) for the current token */
   protected abstract boolean shouldFilter() throws IOException;
 
   @Override
@@ -140,8 +140,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     if (endState == null) {
       super.end();
       endState = captureState();
-    }
-    else {
+    } else {
       restoreState(endState);
     }
     endOffset = getAttribute(OffsetAttribute.class).endOffset();
@@ -191,8 +190,7 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
               posIncAtt.setPositionIncrement(posInc - 1);
             }
             adjustPosition = false;
-          }
-          else {
+          } else {
             state = TokenState.READING;
             return endDelegating();
           }
@@ -220,7 +218,8 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     delegate.end();
     int posInc = posIncAtt.getPositionIncrement();
     restoreState(bufferedState);
-    // System.out.println("Buffered posInc: " + posIncAtt.getPositionIncrement() + "   Delegated posInc: " + posInc);
+    // System.out.println("Buffered posInc: " + posIncAtt.getPositionIncrement() + "   Delegated
+    // posInc: " + posInc);
     posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() + posInc);
     if (adjustPosition) {
       posIncAtt.setPositionIncrement(posIncAtt.getPositionIncrement() - 1);
@@ -229,5 +228,4 @@ public abstract class ConditionalTokenFilter extends TokenFilter {
     bufferedState = null;
     return true;
   }
-
 }

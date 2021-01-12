@@ -28,8 +28,8 @@ import java.util.Map;
 /**
  * Parses shape geometry represented in WKT format
  *
- * complies with OGC® document: 12-063r5 and ISO/IEC 13249-3:2016 standard
- * located at http://docs.opengeospatial.org/is/12-063r5/12-063r5.html
+ * <p>complies with OGC® document: 12-063r5 and ISO/IEC 13249-3:2016 standard located at
+ * http://docs.opengeospatial.org/is/12-063r5/12-063r5.html
  */
 public class SimpleWKTShapeParser {
   public static final String EMPTY = "EMPTY";
@@ -50,7 +50,8 @@ public class SimpleWKTShapeParser {
     return parseExpectedType(wkt, null);
   }
 
-  public static Object parseExpectedType(String wkt, final ShapeType shapeType) throws IOException, ParseException {
+  public static Object parseExpectedType(String wkt, final ShapeType shapeType)
+      throws IOException, ParseException {
     try (StringReader reader = new StringReader(wkt)) {
       // setup the tokenizer; configured to read words w/o numbers
       StreamTokenizer tokenizer = new StreamTokenizer(reader);
@@ -71,11 +72,14 @@ public class SimpleWKTShapeParser {
   }
 
   /** parse geometry from the stream tokenizer */
-  private static Object parseGeometry(StreamTokenizer stream, ShapeType shapeType) throws IOException, ParseException {
+  private static Object parseGeometry(StreamTokenizer stream, ShapeType shapeType)
+      throws IOException, ParseException {
     final ShapeType type = ShapeType.forName(nextWord(stream));
     if (shapeType != null && shapeType != ShapeType.GEOMETRYCOLLECTION) {
       if (type.wktName().equals(shapeType.wktName()) == false) {
-        throw new ParseException("Expected geometry type: [" + shapeType + "], but found: [" + type + "]", stream.lineno());
+        throw new ParseException(
+            "Expected geometry type: [" + shapeType + "], but found: [" + type + "]",
+            stream.lineno());
       }
     }
     switch (type) {
@@ -105,7 +109,7 @@ public class SimpleWKTShapeParser {
     if (nextEmptyOrOpen(stream).equals(EMPTY)) {
       return null;
     }
-    double[] pt = new double[]{nextNumber(stream), nextNumber(stream)};
+    double[] pt = new double[] {nextNumber(stream), nextNumber(stream)};
     if (isNumberNext(stream) == true) {
       nextNumber(stream);
     }
@@ -114,7 +118,8 @@ public class SimpleWKTShapeParser {
   }
 
   /** Parses a list of points into latitude and longitude arraylists */
-  private static void parseCoordinates(StreamTokenizer stream, ArrayList<Double> lats, ArrayList<Double> lons)
+  private static void parseCoordinates(
+      StreamTokenizer stream, ArrayList<Double> lats, ArrayList<Double> lons)
       throws IOException, ParseException {
     boolean isOpenParen = false;
     if (isNumberNext(stream) || (isOpenParen = nextWord(stream).equals(LPAREN))) {
@@ -127,17 +132,20 @@ public class SimpleWKTShapeParser {
         parseCoordinate(stream, lats, lons);
       }
       if (isOpenParen && nextCloser(stream).equals(RPAREN) == false) {
-        throw new ParseException("expected: [" + RPAREN + "] but found: [" + tokenString(stream) + "]", stream.lineno());
+        throw new ParseException(
+            "expected: [" + RPAREN + "] but found: [" + tokenString(stream) + "]", stream.lineno());
       }
     }
 
     if (isOpenParen && nextCloser(stream).equals(RPAREN) == false) {
-      throw new ParseException("expected: [" + RPAREN + "] but found: [" + tokenString(stream) + "]", stream.lineno());
+      throw new ParseException(
+          "expected: [" + RPAREN + "] but found: [" + tokenString(stream) + "]", stream.lineno());
     }
   }
 
   /** parses a single coordinate, w/ optional 3rd dimension */
-  private static void parseCoordinate(StreamTokenizer stream, ArrayList<Double> lats, ArrayList<Double> lons)
+  private static void parseCoordinate(
+      StreamTokenizer stream, ArrayList<Double> lats, ArrayList<Double> lons)
       throws IOException, ParseException {
     lons.add(nextNumber(stream));
     lats.add(nextNumber(stream));
@@ -147,7 +155,8 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses a MULTIPOINT type */
-  private static double[][] parseMultiPoint(StreamTokenizer stream) throws IOException, ParseException {
+  private static double[][] parseMultiPoint(StreamTokenizer stream)
+      throws IOException, ParseException {
     String token = nextEmptyOrOpen(stream);
     if (token.equals(EMPTY)) {
       return null;
@@ -171,7 +180,8 @@ public class SimpleWKTShapeParser {
     ArrayList<Double> lats = new ArrayList<>();
     ArrayList<Double> lons = new ArrayList<>();
     parseCoordinates(stream, lats, lons);
-    return new Line(lats.stream().mapToDouble(i->i).toArray(), lons.stream().mapToDouble(i->i).toArray());
+    return new Line(
+        lats.stream().mapToDouble(i -> i).toArray(), lons.stream().mapToDouble(i -> i).toArray());
   }
 
   /** parses a MULTILINESTRING */
@@ -189,11 +199,13 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses the hole of a polygon */
-  private static Polygon parsePolygonHole(StreamTokenizer stream) throws IOException, ParseException {
+  private static Polygon parsePolygonHole(StreamTokenizer stream)
+      throws IOException, ParseException {
     ArrayList<Double> lats = new ArrayList<>();
     ArrayList<Double> lons = new ArrayList<>();
     parseCoordinates(stream, lats, lons);
-    return new Polygon(lats.stream().mapToDouble(i->i).toArray(), lons.stream().mapToDouble(i->i).toArray());
+    return new Polygon(
+        lats.stream().mapToDouble(i -> i).toArray(), lons.stream().mapToDouble(i -> i).toArray());
   }
 
   /** parses a POLYGON */
@@ -211,13 +223,18 @@ public class SimpleWKTShapeParser {
     }
 
     if (holes.isEmpty() == false) {
-      return new Polygon(lats.stream().mapToDouble(i->i).toArray(), lons.stream().mapToDouble(i->i).toArray(), holes.toArray(new Polygon[holes.size()]));
+      return new Polygon(
+          lats.stream().mapToDouble(i -> i).toArray(),
+          lons.stream().mapToDouble(i -> i).toArray(),
+          holes.toArray(new Polygon[holes.size()]));
     }
-    return new Polygon(lats.stream().mapToDouble(i->i).toArray(), lons.stream().mapToDouble(i->i).toArray());
+    return new Polygon(
+        lats.stream().mapToDouble(i -> i).toArray(), lons.stream().mapToDouble(i -> i).toArray());
   }
 
   /** parses a MULTIPOLYGON */
-  private static Polygon[] parseMultiPolygon(StreamTokenizer stream) throws IOException, ParseException {
+  private static Polygon[] parseMultiPolygon(StreamTokenizer stream)
+      throws IOException, ParseException {
     String token = nextEmptyOrOpen(stream);
     if (token.equals(EMPTY)) {
       return null;
@@ -247,7 +264,8 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses a GEOMETRYCOLLECTION */
-  private static Object[] parseGeometryCollection(StreamTokenizer stream) throws IOException, ParseException {
+  private static Object[] parseGeometryCollection(StreamTokenizer stream)
+      throws IOException, ParseException {
     if (nextEmptyOrOpen(stream).equals(EMPTY)) {
       return null;
     }
@@ -265,9 +283,12 @@ public class SimpleWKTShapeParser {
       case StreamTokenizer.TT_WORD:
         final String word = stream.sval;
         return word.equalsIgnoreCase(EMPTY) ? EMPTY : word;
-      case '(': return LPAREN;
-      case ')': return RPAREN;
-      case ',': return COMMA;
+      case '(':
+        return LPAREN;
+      case ')':
+        return RPAREN;
+      case ',':
+        return COMMA;
     }
     throw new ParseException("expected word but found: " + tokenString(stream), stream.lineno());
   }
@@ -291,12 +312,16 @@ public class SimpleWKTShapeParser {
   /** next token in the stream */
   private static String tokenString(StreamTokenizer stream) {
     switch (stream.ttype) {
-      case StreamTokenizer.TT_WORD: return stream.sval;
-      case StreamTokenizer.TT_EOF: return EOF;
-      case StreamTokenizer.TT_EOL: return EOL;
-      case StreamTokenizer.TT_NUMBER: return NUMBER;
+      case StreamTokenizer.TT_WORD:
+        return stream.sval;
+      case StreamTokenizer.TT_EOF:
+        return EOF;
+      case StreamTokenizer.TT_EOL:
+        return EOL;
+      case StreamTokenizer.TT_NUMBER:
+        return NUMBER;
     }
-    return "'" + (char)stream.ttype + "'";
+    return "'" + (char) stream.ttype + "'";
   }
 
   /** checks if the next token is a number */
@@ -312,8 +337,9 @@ public class SimpleWKTShapeParser {
     if (next.equals(EMPTY) || next.equals(LPAREN)) {
       return next;
     }
-    throw new ParseException("expected " + EMPTY + " or " + LPAREN
-        + " but found: " + tokenString(stream), stream.lineno());
+    throw new ParseException(
+        "expected " + EMPTY + " or " + LPAREN + " but found: " + tokenString(stream),
+        stream.lineno());
   }
 
   /** checks if next token is a closing paren */
@@ -321,7 +347,8 @@ public class SimpleWKTShapeParser {
     if (nextWord(stream).equals(RPAREN)) {
       return RPAREN;
     }
-    throw new ParseException("expected " + RPAREN + " but found: " + tokenString(stream), stream.lineno());
+    throw new ParseException(
+        "expected " + RPAREN + " but found: " + tokenString(stream), stream.lineno());
   }
 
   /** expects a comma as next token */
@@ -329,7 +356,8 @@ public class SimpleWKTShapeParser {
     if (nextWord(stream).equals(COMMA) == true) {
       return COMMA;
     }
-    throw new ParseException("expected " + COMMA + " but found: " + tokenString(stream), stream.lineno());
+    throw new ParseException(
+        "expected " + COMMA + " but found: " + tokenString(stream), stream.lineno());
   }
 
   /** expects an open RPAREN as the next toke */
@@ -337,24 +365,28 @@ public class SimpleWKTShapeParser {
     if (nextWord(stream).equals(LPAREN)) {
       return LPAREN;
     }
-    throw new ParseException("expected " + LPAREN + " but found: " + tokenString(stream), stream.lineno());
+    throw new ParseException(
+        "expected " + LPAREN + " but found: " + tokenString(stream), stream.lineno());
   }
 
   /** expects either a closing LPAREN or comma as the next token */
-  private static String nextCloserOrComma(StreamTokenizer stream) throws IOException, ParseException {
+  private static String nextCloserOrComma(StreamTokenizer stream)
+      throws IOException, ParseException {
     String token = nextWord(stream);
     if (token.equals(COMMA) || token.equals(RPAREN)) {
       return token;
     }
-    throw new ParseException("expected " + COMMA + " or " + RPAREN
-        + " but found: " + tokenString(stream), stream.lineno());
+    throw new ParseException(
+        "expected " + COMMA + " or " + RPAREN + " but found: " + tokenString(stream),
+        stream.lineno());
   }
 
   /** next word in the stream */
   private static void checkEOF(StreamTokenizer stream) throws ParseException, IOException {
     if (stream.nextToken() != StreamTokenizer.TT_EOF) {
-      throw new ParseException("expected end of WKT string but found additional text: "
-          + tokenString(stream), stream.lineno());
+      throw new ParseException(
+          "expected end of WKT string but found additional text: " + tokenString(stream),
+          stream.lineno());
     }
   }
 
@@ -396,11 +428,11 @@ public class SimpleWKTShapeParser {
     public static ShapeType forName(String shapename) {
       String typename = shapename.toLowerCase(Locale.ROOT);
       for (ShapeType type : values()) {
-        if(type.shapeName.equals(typename)) {
+        if (type.shapeName.equals(typename)) {
           return type;
         }
       }
-      throw new IllegalArgumentException("unknown geo_shape ["+shapename+"]");
+      throw new IllegalArgumentException("unknown geo_shape [" + shapename + "]");
     }
   }
 }

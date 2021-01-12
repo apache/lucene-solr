@@ -22,8 +22,8 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * Principally holds the query {@link Shape} and the {@link SpatialOperation}.
- * It's used as an argument to some methods on {@link org.apache.lucene.spatial.SpatialStrategy}.
+ * Principally holds the query {@link Shape} and the {@link SpatialOperation}. It's used as an
+ * argument to some methods on {@link org.apache.lucene.spatial.SpatialStrategy}.
  *
  * @lucene.experimental
  */
@@ -44,9 +44,8 @@ public class SpatialArgs {
   }
 
   /**
-   * Computes the distance given a shape and the {@code distErrPct}.  The
-   * algorithm is the fraction of the distance from the center of the query
-   * shape to its closest bounding box corner.
+   * Computes the distance given a shape and the {@code distErrPct}. The algorithm is the fraction
+   * of the distance from the center of the query shape to its closest bounding box corner.
    *
    * @param shape Mandatory.
    * @param distErrPct 0 to 0.5
@@ -55,13 +54,14 @@ public class SpatialArgs {
    */
   public static double calcDistanceFromErrPct(Shape shape, double distErrPct, SpatialContext ctx) {
     if (distErrPct < 0 || distErrPct > 0.5) {
-      throw new IllegalArgumentException("distErrPct " + distErrPct + " must be between [0 to 0.5]");
+      throw new IllegalArgumentException(
+          "distErrPct " + distErrPct + " must be between [0 to 0.5]");
     }
     if (distErrPct == 0 || shape instanceof Point) {
       return 0;
     }
     Rectangle bbox = shape.getBoundingBox();
-    //Compute the distance from the center to a corner.  Because the distance
+    // Compute the distance from the center to a corner.  Because the distance
     // to a bottom corner vs a top corner can vary in a geospatial scenario,
     // take the closest one (greater precision).
     Point ctr = bbox.getCenter();
@@ -71,15 +71,14 @@ public class SpatialArgs {
   }
 
   /**
-   * Gets the error distance that specifies how precise the query shape is. This
-   * looks at {@link #getDistErr()}, {@link #getDistErrPct()}, and {@code
-   * defaultDistErrPct}.
+   * Gets the error distance that specifies how precise the query shape is. This looks at {@link
+   * #getDistErr()}, {@link #getDistErrPct()}, and {@code defaultDistErrPct}.
+   *
    * @param defaultDistErrPct 0 to 0.5
    * @return {@code >= 0}
    */
   public double resolveDistErr(SpatialContext ctx, double defaultDistErrPct) {
-    if (distErr != null)
-      return distErr;
+    if (distErr != null) return distErr;
     double distErrPct = (this.distErrPct != null ? this.distErrPct : defaultDistErrPct);
     return calcDistanceFromErrPct(shape, distErrPct, ctx);
   }
@@ -95,9 +94,9 @@ public class SpatialArgs {
     return SpatialArgsParser.writeSpatialArgs(this);
   }
 
-  //------------------------------------------------
+  // ------------------------------------------------
   // Getters & Setters
-  //------------------------------------------------
+  // ------------------------------------------------
 
   public SpatialOperation getOperation() {
     return operation;
@@ -116,25 +115,24 @@ public class SpatialArgs {
   }
 
   /**
-   * A measure of acceptable error of the shape as a fraction.  This effectively
-   * inflates the size of the shape but should not shrink it.
+   * A measure of acceptable error of the shape as a fraction. This effectively inflates the size of
+   * the shape but should not shrink it.
    *
    * @return 0 to 0.5
    * @see #calcDistanceFromErrPct(org.locationtech.spatial4j.shape.Shape, double,
-   *      org.locationtech.spatial4j.context.SpatialContext)
+   *     org.locationtech.spatial4j.context.SpatialContext)
    */
   public Double getDistErrPct() {
     return distErrPct;
   }
 
   public void setDistErrPct(Double distErrPct) {
-    if (distErrPct != null)
-      this.distErrPct = distErrPct;
+    if (distErrPct != null) this.distErrPct = distErrPct;
   }
 
   /**
-   * The acceptable error of the shape.  This effectively inflates the
-   * size of the shape but should not shrink it.
+   * The acceptable error of the shape. This effectively inflates the size of the shape but should
+   * not shrink it.
    *
    * @return {@code >= 0}
    */

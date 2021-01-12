@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,9 +36,12 @@ public class TestRollback extends LuceneTestCase {
     rw.close();
 
     // If buffer size is small enough to cause a flush, errors ensue...
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                           .setMaxBufferedDocs(2)
-                                           .setOpenMode(IndexWriterConfig.OpenMode.APPEND));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(2)
+                .setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();

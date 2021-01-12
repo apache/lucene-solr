@@ -16,59 +16,52 @@
  */
 package org.apache.lucene.analysis.util;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
-/**
- * Simple tests to ensure the French elision filter factory is working.
- */
+/** Simple tests to ensure the French elision filter factory is working. */
 public class TestElisionFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually normalizes text.
-   */
+  /** Ensure the filter actually normalizes text. */
   public void testElision() throws Exception {
     Reader reader = new StringReader("l'avion");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("Elision", "articles", "frenchArticles.txt").create(stream);
-    assertTokenStreamContents(stream, new String[] { "avion" });
+    assertTokenStreamContents(stream, new String[] {"avion"});
   }
-  
-  /**
-   * Test creating an elision filter without specifying any articles
-   */
+
+  /** Test creating an elision filter without specifying any articles */
   public void testDefaultArticles() throws Exception {
     Reader reader = new StringReader("l'avion");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("Elision").create(stream);
-    assertTokenStreamContents(stream, new String[] { "avion" });
+    assertTokenStreamContents(stream, new String[] {"avion"});
   }
-  
-  /**
-   * Test setting ignoreCase=true
-   */
+
+  /** Test setting ignoreCase=true */
   public void testCaseInsensitive() throws Exception {
     Reader reader = new StringReader("L'avion");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
-    stream = tokenFilterFactory("Elision",
-        "articles", "frenchArticles.txt",
-        "ignoreCase", "true").create(stream);
-    assertTokenStreamContents(stream, new String[] { "avion" });
+    ((Tokenizer) stream).setReader(reader);
+    stream =
+        tokenFilterFactory("Elision", "articles", "frenchArticles.txt", "ignoreCase", "true")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"avion"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Elision", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Elision", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

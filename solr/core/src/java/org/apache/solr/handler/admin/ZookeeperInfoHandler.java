@@ -537,16 +537,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
           if (childDataStr != null) {
             Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
-            Object collectionState = extColl.get(collection);
+            // add the base_url to replica props
+            @SuppressWarnings("unchecked")
+            Map<String, Object> collectionState = (Map<String, Object>)extColl.get(collection);
 
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
-              if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
+              if (page.matchesStatusFilter(collectionState, liveNodes)) {
                 matchesStatusFilter.add(collection);
-                collectionStates.put(collection, collectionState);
+                collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
               }
             } else {
-              collectionStates.put(collection, collectionState);
+              collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
             }
           }
         }

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -38,7 +36,7 @@ public class TestMixedCodecs extends LuceneTestCase {
     RandomIndexWriter w = null;
 
     int docsLeftInThisSegment = 0;
-    
+
     int docUpto = 0;
     while (docUpto < NUM_DOCS) {
       if (VERBOSE) {
@@ -71,7 +69,7 @@ public class TestMixedCodecs extends LuceneTestCase {
 
     // Random delete half the docs:
     final Set<Integer> deleted = new HashSet<>();
-    while(deleted.size() < NUM_DOCS/2) {
+    while (deleted.size() < NUM_DOCS / 2) {
       final Integer toDelete = random().nextInt(NUM_DOCS);
       if (!deleted.contains(toDelete)) {
         deleted.add(toDelete);

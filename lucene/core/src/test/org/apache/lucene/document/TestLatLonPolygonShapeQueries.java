@@ -18,10 +18,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.geo.Tessellator;
 
 /** random bounding box, line, and polygon query tests for random indexed {@link Polygon} types */
 public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
@@ -32,23 +29,8 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Polygon nextShape() {
-    Polygon p;
-    while (true) {
-      // if we can't tessellate; then random polygon generator created a malformed shape
-      p = (Polygon)getShapeType().nextShape();
-      try {
-        Tessellator.tessellate(p);
-        return p;
-      } catch (IllegalArgumentException e) {
-        continue;
-      }
-    }
-  }
-
-  @Override
   protected Field[] createIndexableFields(String field, Object polygon) {
-    return LatLonShape.createIndexableFields(field, (Polygon)polygon);
+    return LatLonShape.createIndexableFields(field, (Polygon) polygon);
   }
 
   @Override
@@ -62,16 +44,11 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object o) {
       Polygon polygon = (Polygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", polygon))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", polygon));
     }

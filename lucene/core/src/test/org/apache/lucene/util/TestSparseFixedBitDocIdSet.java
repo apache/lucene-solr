@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -56,5 +55,4 @@ public class TestSparseFixedBitDocIdSet extends BaseDocIdSetTestCase<BitDocIdSet
     assertEquals(ds1.cardinality(), ds2.bits().cardinality());
     super.assertEquals(numBits, ds1, ds2);
   }
-
 }

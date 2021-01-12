@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -34,17 +32,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests {@link PrefixQuery} class.
- *
- */
+/** Tests {@link PrefixQuery} class. */
 public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
     Directory directory = newDirectory();
 
-    String[] categories = new String[] {"/Computers",
-                                        "/Computers/Mac",
-                                        "/Computers/Windows"};
+    String[] categories = new String[] {"/Computers", "/Computers/Mac", "/Computers/Windows"};
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
@@ -101,9 +94,9 @@ public class TestPrefixQuery extends LuceneTestCase {
       terms.add(new BytesRef(bytes));
     }
 
-    List<BytesRef> termsList = new ArrayList<>(terms);  
+    List<BytesRef> termsList = new ArrayList<>(terms);
     Collections.shuffle(termsList, random());
-    for(BytesRef term : termsList) {
+    for (BytesRef term : termsList) {
       Document doc = new Document();
       doc.add(newStringField("field", term, Field.Store.NO));
       w.addDocument(doc);
@@ -112,14 +105,14 @@ public class TestPrefixQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
 
-    int iters = atLeast(100);   
-    for(int iter=0;iter<iters;iter++) {
+    int iters = atLeast(100);
+    for (int iter = 0; iter < iters; iter++) {
       byte[] bytes = new byte[random().nextInt(3)];
       random().nextBytes(bytes);
       BytesRef prefix = new BytesRef(bytes);
       PrefixQuery q = new PrefixQuery(new Term("field", prefix));
       int count = 0;
-      for(BytesRef term : termsList) {
+      for (BytesRef term : termsList) {
         if (StringHelper.startsWith(term, prefix)) {
           count++;
         }

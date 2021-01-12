@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.feeds;
 
-
-import org.apache.lucene.benchmark.byTask.utils.Config;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,15 +32,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
+import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
- * A {@link ContentSource} using the Dir collection for its input. Supports
- * the following configuration parameters (on top of {@link ContentSource}):
+ * A {@link ContentSource} using the Dir collection for its input. Supports the following
+ * configuration parameters (on top of {@link ContentSource}):
+ *
  * <ul>
- * <li><b>work.dir</b> - specifies the working directory. Required if "docs.dir"
- * denotes a relative path (<b>default=work</b>).
- * <li><b>docs.dir</b> - specifies the directory the Dir collection. Can be set
- * to a relative path if "work.dir" is also specified (<b>default=dir-out</b>).
+ *   <li><b>work.dir</b> - specifies the working directory. Required if "docs.dir" denotes a
+ *       relative path (<b>default=work</b>).
+ *   <li><b>docs.dir</b> - specifies the directory the Dir collection. Can be set to a relative path
+ *       if "work.dir" is also specified (<b>default=dir-out</b>).
  * </ul>
  */
 public class DirContentSource extends ContentSource {
@@ -52,10 +51,8 @@ public class DirContentSource extends ContentSource {
     DateFormat df;
     ParsePosition pos;
   }
-  
-  /**
-   * Iterator over the files in the directory
-   */
+
+  /** Iterator over the files in the directory */
   public static class Iterator implements java.util.Iterator<Path> {
 
     static class Comparator implements java.util.Comparator<Path> {
@@ -77,7 +74,7 @@ public class DirContentSource extends ContentSource {
         }
 
         /* note it's reversed because we're going to push,
-           which reverses again */
+        which reverses again */
         return b.compareTo(a);
       }
     }
@@ -87,7 +84,7 @@ public class DirContentSource extends ContentSource {
     Stack<Path> stack = new Stack<>();
 
     /* this seems silly ... there must be a better way ...
-       not that this is good, but can it matter? */
+    not that this is good, but can it matter? */
 
     Comparator c = new Comparator();
 
@@ -128,13 +125,13 @@ public class DirContentSource extends ContentSource {
 
     void push(Path[] files) {
       Arrays.sort(files, c);
-      for(int i = 0; i < files.length; i++) {
+      for (int i = 0; i < files.length; i++) {
         // System.err.println("push " + files[i]);
         stack.push(files[i]);
       }
     }
 
-    public int getCount(){
+    public int getCount() {
       return count;
     }
 
@@ -142,7 +139,7 @@ public class DirContentSource extends ContentSource {
     public boolean hasNext() {
       return stack.size() > 0;
     }
-    
+
     @Override
     public Path next() {
       assert hasNext();
@@ -161,15 +158,14 @@ public class DirContentSource extends ContentSource {
     public void remove() {
       throw new RuntimeException("cannot");
     }
-
   }
-  
+
   private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<>();
   private Path dataDir = null;
   private int iteration = 0;
   private Iterator inputFiles = null;
 
-  // get/initiate a thread-local simple date format (must do so 
+  // get/initiate a thread-local simple date format (must do so
   // because SimpleDateFormat is not thread-safe).
   private DateFormatInfo getDateFormatInfo() {
     DateFormatInfo dfi = dateFormat.get();
@@ -183,7 +179,7 @@ public class DirContentSource extends ContentSource {
     }
     return dfi;
   }
-  
+
   private Date parseDate(String dateStr) {
     DateFormatInfo dfi = getDateFormatInfo();
     dfi.pos.setIndex(0);
@@ -195,13 +191,13 @@ public class DirContentSource extends ContentSource {
   public void close() throws IOException {
     inputFiles = null;
   }
-  
+
   @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     Path f = null;
     String name = null;
     synchronized (this) {
-      if (!inputFiles.hasNext()) { 
+      if (!inputFiles.hasNext()) {
         // exhausted files, start a new round, unless forever set to false.
         if (!forever) {
           throw new NoMoreDataException();
@@ -211,25 +207,25 @@ public class DirContentSource extends ContentSource {
       }
       f = inputFiles.next();
       // System.err.println(f);
-      name = f.toRealPath()+"_"+iteration;
+      name = f.toRealPath() + "_" + iteration;
     }
-    
+
     BufferedReader reader = Files.newBufferedReader(f, StandardCharsets.UTF_8);
     String line = null;
-    //First line is the date, 3rd is the title, rest is body
+    // First line is the date, 3rd is the title, rest is body
     String dateStr = reader.readLine();
-    reader.readLine();//skip an empty line
+    reader.readLine(); // skip an empty line
     String title = reader.readLine();
-    reader.readLine();//skip an empty line
+    reader.readLine(); // skip an empty line
     StringBuilder bodyBuf = new StringBuilder(1024);
     while ((line = reader.readLine()) != null) {
       bodyBuf.append(line).append(' ');
     }
     reader.close();
     addBytes(Files.size(f));
-    
+
     Date date = parseDate(dateStr);
-    
+
     docData.clear();
     docData.setName(name);
     docData.setBody(bodyBuf.toString());
@@ -237,7 +233,7 @@ public class DirContentSource extends ContentSource {
     docData.setDate(date);
     return docData;
   }
-  
+
   @Override
   public synchronized void resetInputs() throws IOException {
     super.resetInputs();
@@ -248,7 +244,7 @@ public class DirContentSource extends ContentSource {
   @Override
   public void setConfig(Config config) {
     super.setConfig(config);
-    
+
     Path workDir = Paths.get(config.get("work.dir", "work"));
     String d = config.get("docs.dir", "dir-out");
     dataDir = Paths.get(d);
@@ -266,5 +262,4 @@ public class DirContentSource extends ContentSource {
       throw new RuntimeException("No txt files in dataDir: " + dataDir.toAbsolutePath());
     }
   }
-
 }

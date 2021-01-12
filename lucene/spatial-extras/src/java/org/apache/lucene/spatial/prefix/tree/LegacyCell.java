@@ -17,40 +17,44 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.util.Collection;
-
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.StringHelper;
 
-/** The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
- * @lucene.internal */
-//public for RPT pruneLeafyBranches code
+/**
+ * The base for the original two SPT's: Geohash and Quad. Don't subclass this for new SPTs.
+ *
+ * @lucene.internal
+ */
+// public for RPT pruneLeafyBranches code
 public abstract class LegacyCell implements CellCanPrune {
 
   // Important: A LegacyCell doesn't share state for getNextLevelCells(), and
   //  LegacySpatialPrefixTree assumes this in its simplify tree logic.
 
-  private static final byte LEAF_BYTE = '+';//NOTE: must sort before letters & numbers
+  private static final byte LEAF_BYTE = '+'; // NOTE: must sort before letters & numbers
 
-  //Arguably we could simply use a BytesRef, using an extra Object.
-  protected byte[] bytes;//generally bigger to potentially hold a leaf
+  // Arguably we could simply use a BytesRef, using an extra Object.
+  protected byte[] bytes; // generally bigger to potentially hold a leaf
   protected int b_off;
-  protected int b_len;//doesn't reflect leaf; same as getLevel()
+  protected int b_len; // doesn't reflect leaf; same as getLevel()
 
   protected boolean isLeaf;
 
   /**
-   * When set via getSubCells(filter), it is the relationship between this cell
-   * and the given shape filter. Doesn't participate in shape equality.
+   * When set via getSubCells(filter), it is the relationship between this cell and the given shape
+   * filter. Doesn't participate in shape equality.
    */
   protected SpatialRelation shapeRel;
 
-  protected Shape shape;//cached
+  protected Shape shape; // cached
 
-  /** Warning: Refers to the same bytes (no copy). If {@link #setLeaf()} is subsequently called then it
-   * may modify bytes. */
+  /**
+   * Warning: Refers to the same bytes (no copy). If {@link #setLeaf()} is subsequently called then
+   * it may modify bytes.
+   */
   protected LegacyCell(byte[] bytes, int off, int len) {
     this.bytes = bytes;
     this.b_off = off;
@@ -69,10 +73,8 @@ public abstract class LegacyCell implements CellCanPrune {
 
   protected void readLeafAdjust() {
     isLeaf = (b_len > 0 && bytes[b_off + b_len - 1] == LEAF_BYTE);
-    if (isLeaf)
-      b_len--;
-    if (getLevel() == getMaxLevels())
-      isLeaf = true;
+    if (isLeaf) b_len--;
+    if (getLevel() == getMaxLevels()) isLeaf = true;
   }
 
   protected abstract SpatialPrefixTree getGrid();
@@ -102,8 +104,7 @@ public abstract class LegacyCell implements CellCanPrune {
   @Override
   public BytesRef getTokenBytesWithLeaf(BytesRef result) {
     result = getTokenBytesNoLeaf(result);
-    if (!isLeaf || getLevel() == getMaxLevels())
-      return result;
+    if (!isLeaf || getLevel() == getMaxLevels()) return result;
     if (result.bytes.length < result.offset + result.length + 1) {
       assert false : "Not supposed to happen; performance bug";
       byte[] copy = new byte[result.length + 1];
@@ -117,8 +118,7 @@ public abstract class LegacyCell implements CellCanPrune {
 
   @Override
   public BytesRef getTokenBytesNoLeaf(BytesRef result) {
-    if (result == null)
-      return new BytesRef(bytes, b_off, b_len);
+    if (result == null) return new BytesRef(bytes, b_off, b_len);
     result.bytes = bytes;
     result.offset = b_off;
     result.length = b_len;
@@ -143,17 +143,19 @@ public abstract class LegacyCell implements CellCanPrune {
   }
 
   /**
-   * Performant implementations are expected to implement this efficiently by
-   * considering the current cell's boundary.
-   * <p>
-   * Precondition: Never called when getLevel() == maxLevel.
-   * Precondition: this.getShape().relate(p) != DISJOINT.
+   * Performant implementations are expected to implement this efficiently by considering the
+   * current cell's boundary.
+   *
+   * <ul>
+   *   <li>Precondition: Never called when getLevel() == maxLevel.
+   *   <li>Precondition: this.getShape().relate(p) != DISJOINT.
+   * </ul>
    */
   protected abstract LegacyCell getSubCell(Point p);
 
   /**
-   * Gets the cells at the next grid cell level that covers this cell.
-   * Precondition: Never called when getLevel() == maxLevel.
+   * Gets the cells at the next grid cell level that covers this cell. Precondition: Never called
+   * when getLevel() == maxLevel.
    *
    * @return A set of cells (no dups), sorted, modifiable, not empty, not null.
    */
@@ -161,17 +163,25 @@ public abstract class LegacyCell implements CellCanPrune {
 
   @Override
   public boolean isPrefixOf(Cell c) {
-    //Note: this only works when each level uses a whole number of bytes.
-    LegacyCell cell = (LegacyCell)c;
+    // Note: this only works when each level uses a whole number of bytes.
+    LegacyCell cell = (LegacyCell) c;
     boolean result = sliceEquals(cell.bytes, cell.b_off, cell.b_len, bytes, b_off, b_len);
-    assert result == StringHelper.startsWith(c.getTokenBytesNoLeaf(null), getTokenBytesNoLeaf(null));
+    assert result
+        == StringHelper.startsWith(c.getTokenBytesNoLeaf(null), getTokenBytesNoLeaf(null));
     return result;
   }
 
-  /** Copied from {@link org.apache.lucene.util.StringHelper#startsWith(BytesRef, BytesRef)}
-   *  which calls this. This is to avoid creating a BytesRef.  */
-  private static boolean sliceEquals(byte[] sliceToTest_bytes, int sliceToTest_offset, int sliceToTest_length,
-                                     byte[] other_bytes, int other_offset, int other_length) {
+  /**
+   * Copied from {@link org.apache.lucene.util.StringHelper#startsWith(BytesRef, BytesRef)} which
+   * calls this. This is to avoid creating a BytesRef.
+   */
+  private static boolean sliceEquals(
+      byte[] sliceToTest_bytes,
+      int sliceToTest_offset,
+      int sliceToTest_length,
+      byte[] other_bytes,
+      int other_offset,
+      int other_length) {
     if (sliceToTest_length < other_length) {
       return false;
     }
@@ -194,11 +204,11 @@ public abstract class LegacyCell implements CellCanPrune {
     return compare(bytes, b_off, b_len, b.bytes, b.b_off, b.b_len);
   }
 
-  /** Copied from {@link BytesRef#compareTo(BytesRef)}.
-   * This is to avoid creating a BytesRef. */
-  protected static int compare(byte[] aBytes, int aUpto, int a_length, byte[] bBytes, int bUpto, int b_length) {
+  /** Copied from {@link BytesRef#compareTo(BytesRef)}. This is to avoid creating a BytesRef. */
+  protected static int compare(
+      byte[] aBytes, int aUpto, int a_length, byte[] bBytes, int bUpto, int b_length) {
     final int aStop = aUpto + Math.min(a_length, b_length);
-    while(aUpto < aStop) {
+    while (aUpto < aStop) {
       int aByte = aBytes[aUpto++] & 0xff;
       int bByte = bBytes[bUpto++] & 0xff;
 
@@ -214,7 +224,7 @@ public abstract class LegacyCell implements CellCanPrune {
 
   @Override
   public boolean equals(Object obj) {
-    //this method isn't "normally" called; just in asserts/tests
+    // this method isn't "normally" called; just in asserts/tests
     if (obj instanceof Cell) {
       Cell cell = (Cell) obj;
       return getTokenBytesWithLeaf(null).equals(cell.getTokenBytesWithLeaf(null));
@@ -230,8 +240,7 @@ public abstract class LegacyCell implements CellCanPrune {
 
   @Override
   public String toString() {
-    //this method isn't "normally" called; just in asserts/tests
+    // this method isn't "normally" called; just in asserts/tests
     return getTokenBytesWithLeaf(null).utf8ToString();
   }
-
 }
