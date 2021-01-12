@@ -20,6 +20,8 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,6 +57,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     testModifyField(collection);
     testReloadAndAddSimple(collection);
     testAddFieldAndDocument(collection);
+    testMultiFieldAndDocumentAdds(collection);
   }
 
   private void testReloadAndAddSimple(String collection) throws IOException, SolrServerException {
@@ -86,6 +89,38 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     doc.addField(fieldName, "val1");
     UpdateRequest ureq = new UpdateRequest().add(doc);
     cloudClient.request(ureq, collection);;
+  }
+
+  // Adding 100 field's in a batch for 100 times to reproduce a race condition reloading cores between ManagedSchema and SolrCore.getConfListener.
+  // It fails in UpdateRequest with "unknown field 'multiFieldXXX'" around field ~5000
+  private void testMultiFieldAndDocumentAdds(String collection) throws IOException, SolrServerException {
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+
+    int fieldCnt = 1;
+    for (int i = 0; i < 100; i++) {
+      List<SchemaRequest.Update> updateList = new ArrayList<>();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "doc" + i);
+      for (int j = 0; j < 100; j++) {
+        String fieldName = "multiField" + fieldCnt;
+        addStringField(updateList, fieldName);
+        doc.addField(fieldName, "val1");
+        fieldCnt++;
+      }
+      SchemaRequest.MultiUpdate multiUpdateRequest = new SchemaRequest.MultiUpdate(updateList);
+      SchemaResponse.UpdateResponse multipleUpdatesResponse = multiUpdateRequest.process(cluster.getSolrClient(), collection);
+      assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
+
+      UpdateRequest ureq = new UpdateRequest().add(doc);
+      cloudClient.request(ureq, collection);
+    }
+  }
+
+  private static void addStringField(List<SchemaRequest.Update> updateList, String fieldName) {
+    Map<String, Object> fieldAttributes = new LinkedHashMap<>();
+    fieldAttributes.put("name", fieldName);
+    fieldAttributes.put("type", "string");
+    updateList.add(new SchemaRequest.AddField(fieldAttributes));
   }
 
   private void addStringField(String fieldName, String collection, CloudSolrClient cloudClient) throws IOException, SolrServerException {
