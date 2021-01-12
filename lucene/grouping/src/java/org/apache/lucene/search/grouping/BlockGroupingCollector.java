@@ -514,10 +514,5 @@ public class BlockGroupingCollector extends SimpleCollector {
       return score;
     }
 
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return 0;
-    }
-
   }
 }

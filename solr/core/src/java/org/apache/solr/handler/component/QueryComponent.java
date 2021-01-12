@@ -1559,10 +1559,5 @@ public class QueryComponent extends SearchComponent
     public float score() throws IOException {
       return score;
     }
-
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return 0;
-    }
   }
 }

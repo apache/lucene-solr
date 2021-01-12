@@ -597,11 +597,6 @@ class DrillSidewaysScorer extends BulkScorer {
       return Collections.singletonList(new ChildScorable(baseScorer, "MUST"));
     }
 
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return 0;
-    }
-
   }
 
   static class DocsAndCost {

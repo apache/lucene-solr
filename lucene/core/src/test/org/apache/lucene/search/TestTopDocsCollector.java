@@ -270,11 +270,6 @@ public class TestTopDocsCollector extends LuceneTestCase {
     public float score() throws IOException {
       return score;
     }
-
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return 0;
-    }
   }
 
   public void testSetMinCompetitiveScore() throws Exception {

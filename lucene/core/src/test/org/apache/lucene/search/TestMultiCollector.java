@@ -184,17 +184,11 @@ public class TestMultiCollector extends LuceneTestCase {
       public float score() {
         return 0;
       }
-      
-      @Override
-      public float smoothingScore(int docId) throws IOException {
-        return 0;
-      }
 
       @Override
       public void setMinCompetitiveScore(float minScore) {
         throw new AssertionError();
       }
-
     };
 
     Collector collector = new SimpleCollector() {
@@ -391,11 +385,6 @@ public class TestMultiCollector extends LuceneTestCase {
       }
       
       @Override
-      public float smoothingScore(int docId) throws IOException {
-        return 0;
-      }
-      
-      @Override
       public int docID() {
         return 0;
       }
@@ -404,7 +393,6 @@ public class TestMultiCollector extends LuceneTestCase {
       public void setMinCompetitiveScore(float minScore) throws IOException {
         minCompetitiveScore[0] = minScore;
       }
-
     };
     Scorable s0 = new MultiCollector.MinCompetitiveScoreAwareScorable(scorer, 0, currentMinScores);
     Scorable s1 = new MultiCollector.MinCompetitiveScoreAwareScorable(scorer, 1, currentMinScores);

@@ -460,11 +460,6 @@ public class RankQueryTestPlugin extends QParserPlugin {
       public float score() {
         return score;
       }
-      
-      @Override
-      public float smoothingScore(int docId) throws IOException {
-        return 0;
-      }
     }
 
     @SuppressWarnings({"unchecked"})

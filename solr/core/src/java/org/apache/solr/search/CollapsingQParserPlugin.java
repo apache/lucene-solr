@@ -542,11 +542,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public int docID() {
       return docId;
     }
-
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return 0;
-    }
   }
 
 

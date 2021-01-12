@@ -59,11 +59,6 @@ public abstract class CachingCollector extends FilterCollector {
 
     @Override
     public final float score() { return score; }
-
-    @Override
-    public float smoothingScore(int docId) throws IOException {
-      return smoothingScore;
-    }
     
     @Override
     public int docID() {

@@ -46,7 +46,9 @@ public abstract class Scorable {
    * pp.735-750.
    * 
    */
-  public abstract float smoothingScore(int docId) throws IOException;
+  public float smoothingScore(int docId) throws IOException {
+    return 0f;
+  }
 
   /**
    * Returns the doc ID that is currently being scored.
