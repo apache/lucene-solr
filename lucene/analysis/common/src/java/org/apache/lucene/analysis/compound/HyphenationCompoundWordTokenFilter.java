@@ -77,7 +77,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
       int minSubwordSize,
       int maxSubwordSize,
       boolean onlyLongestMatch) {
-    this(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch, false, false);
+    this(input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch, false, false);
   }
   
   /**
@@ -236,9 +236,6 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
             break; //do not search for shorter matches
           }
         } //else dictionary is present but does not contain the part
-      }
-      if (this.onlyLongestMatch && longestMatchToken != null) {
-        tokens.add(longestMatchToken);
       }
     }
   }

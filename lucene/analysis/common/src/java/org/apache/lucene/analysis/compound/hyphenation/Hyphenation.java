@@ -27,7 +27,7 @@ public class Hyphenation {
   private final int[] hyphenPoints;
 
   /** rawWord as made of alternating strings and {@link Hyphen Hyphen} instances */
-  Hyphenation(int[] points) {
+  public Hyphenation(int[] points) {
     hyphenPoints = points;
   }
 
