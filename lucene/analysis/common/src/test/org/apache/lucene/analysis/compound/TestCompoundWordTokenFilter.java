@@ -437,7 +437,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
             true,
             true,
             true);
-    // NOTE: 'fußball' consumes 'ball' as possible start so 'ballpumpe' is not considered and 'pumpe' is added
+    // NOTE: 'fußball' consumes 'ball' as possible start so 'ballpumpe' is not considered and
+    // 'pumpe' is added
     assertTokenStreamContents(tf4, new String[] {"fußballpumpe", "fußball", "pumpe"});
 
     // assert that the noSub and onlyLongestMatch states do not matter
@@ -472,16 +473,14 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     // test that no subwords are added if the token is part of the dictionary and
     // onlyLongestMatch or noSub is present
     String input = "fußball";
-    Hyphenation hyphenation = new Hyphenation(new int[] {0, 3, 7}); //fuß ball
+    Hyphenation hyphenation = new Hyphenation(new int[] {0, 3, 7}); // fuß ball
     HyphenationTree hyphenator = new MockHyphenator(Collections.singletonMap(input, hyphenation));
     CharArraySet dictionary = makeDictionary("fußball", "fuß", "ball");
 
     // test the default configuration as baseline
     HyphenationCompoundWordTokenFilter tf5 =
         new HyphenationCompoundWordTokenFilter(
-            whitespaceMockTokenizer(input),
-            hyphenator,
-            dictionary);
+            whitespaceMockTokenizer(input), hyphenator, dictionary);
     assertTokenStreamContents(tf5, new String[] {"fußball", "fuß", "ball"});
 
     // when onlyLongestMatch is enabled fußball matches dictionary. So even so
@@ -499,7 +498,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
             false);
     assertTokenStreamContents(tf6, new String[] {"fußball"});
 
-    // when noSub is enabled fuß and ball MUST NOT be added as subwords as fußball is in the dictionary
+    // when noSub is enabled fuß and ball MUST NOT be added as subwords as fußball is in the
+    // dictionary
     HyphenationCompoundWordTokenFilter tf7 =
         new HyphenationCompoundWordTokenFilter(
             whitespaceMockTokenizer(input),
@@ -513,7 +513,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
             false);
     assertTokenStreamContents(tf7, new String[] {"fußball"});
 
-    // when noOverlap is enabled fuß and ball MUST NOT be added as subwords as fußball is in the dictionary
+    // when noOverlap is enabled fuß and ball MUST NOT be added as subwords as fußball is in the
+    // dictionary
     HyphenationCompoundWordTokenFilter tf8 =
         new HyphenationCompoundWordTokenFilter(
             whitespaceMockTokenizer(input),
