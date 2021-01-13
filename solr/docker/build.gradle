@@ -81,6 +81,9 @@ task dockerBuild(dependsOn: tasks.dockerTar) {
   ])
   inputs.dir(dockerBuildDistribution)
 
+  // Docker build must run after the docker context has been created & tarred
+  mustRunAfter tasks.dockerTar
+
   doLast {
     exec {
       standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
@@ -109,21 +112,24 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Tag Solr docker image'
 
+  def dockerImageIdFile = file(imageIdFile)
   // Ensure that the docker image is re-tagged if the image ID or desired tag changes
   inputs.properties([
           dockerImageName: dockerImageName,
   ])
-  inputs.file(imageIdFile)
+  inputs.file(dockerImageIdFile)
+
+  // Docker tag must run after docker build
+  mustRunAfter tasks.dockerBuild
 
   doLast {
+    def dockerImageId = dockerImageIdFile.text
+
     exec {
-      commandLine "docker", "tag", tasks.dockerBuild.outputs.files.singleFile.text, inputs.properties.dockerImageName
+      commandLine "docker", "tag", dockerImageId, inputs.properties.dockerImageName
     }
-  }
 
-  // Print information on the image after it has been created
-  doLast {
-    def dockerImageId = tasks.dockerBuild.outputs.files.singleFile.text
+    // Print information on the image after it has been created
     project.logger.lifecycle("Solr Docker Image Tagged")
     project.logger.lifecycle("\tID: \t$dockerImageId")
     project.logger.lifecycle("\tTag: \t$dockerImageName")
@@ -140,18 +146,18 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   ])
   inputs.file(imageIdFile)
 
+  // Docker push must run after docker tag
+  mustRunAfter tasks.dockerTag
+
   doLast {
     exec {
       commandLine "docker", "push", dockerImageName
     }
-  }
 
-  // Print information on the image after it has been created
-  doLast {
+    // Print information on the image after it has been created
     project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
   }
 }
-
 
 task testDocker(dependsOn: tasks.dockerBuild) {
   group = 'Docker'
@@ -167,6 +173,9 @@ task testDocker(dependsOn: tasks.dockerBuild) {
   ])
   inputs.file(imageIdFile)
   inputs.dir(inputDir)
+
+  // Docker tests can only be run once the docker image is built
+  mustRunAfter tasks.dockerBuild
 
   doLast {
     def solrImageId = tasks.dockerBuild.outputs.files.singleFile.text
@@ -195,6 +204,11 @@ task testDocker(dependsOn: tasks.dockerBuild) {
   }
 
   outputs.dir(outputDir)
+}
+
+// One task to build and tag a Solr docker image
+task docker {
+  dependsOn tasks.dockerBuild, tasks.dockerTag
 }
 
 artifacts {

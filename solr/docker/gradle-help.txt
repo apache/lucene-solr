@@ -1,6 +1,12 @@
 Docker Images for Solr
 ======================
 
+In order to build and tag a Solr docker image, merely run the following command:
+
+gradlew docker
+
+This calls the dockerBuild and dockerTag tasks, which have inputs that are described below.
+
 Building
 --------
 
