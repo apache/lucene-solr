@@ -32,17 +32,24 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     ((Tokenizer) stream).setReader(reader);
     stream =
         tokenFilterFactory(
-                "HyphenationCompoundWord",
-                "hyphenator",
-                "da_UTF8.xml",
-                "dictionary",
-                "da_compoundDictionary.txt")
-            .create(stream);
+            "HyphenationCompoundWord",
+            "hyphenator",
+            "da_UTF8.xml",
+            "dictionary",
+            "da_compoundDictionary.txt").create(stream);
 
     assertTokenStreamContents(
         stream,
         new String[] {
-          "min", "veninde", "som", "er", "lidt", "af", "en", "læsehest", "læse", "hest"
+          "min",
+          "veninde",
+          "som", "er",
+          "lidt",
+          "af",
+          "en",
+          "læsehest",
+          "læse",
+          "hest"
         },
         new int[] {1, 1, 1, 1, 1, 1, 1, 1, 0, 0});
   }
@@ -55,17 +62,24 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     Reader reader = new StringReader("basketballkurv");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     ((Tokenizer)stream).setReader(reader);
-    stream = tokenFilterFactory("HyphenationCompoundWord", 
-        "hyphenator", "da_UTF8.xml",
-        "dictionary", "compoundDictionary_lucene8183.txt",
-        "onlyLongestMatch", "false",
-        "noSubMatches", "true",
-        "noOverlappingMatches", "false").create(stream);
+    stream =
+        tokenFilterFactory(
+          "HyphenationCompoundWord", 
+          "hyphenator",
+          "da_UTF8.xml",
+          "dictionary",
+          "compoundDictionary_lucene8183.txt",
+          "onlyLongestMatch",
+          "false",
+          "noSubMatches",
+          "true",
+          "noOverlappingMatches",
+          "false").create(stream);
     
-    assertTokenStreamContents(stream, 
-        new String[] { "basketballkurv", "basketball", "kurv"},
-        new int[] { 1, 0, 0}
-    );
+    assertTokenStreamContents(
+        stream, 
+        new String[] {"basketballkurv", "basketball", "kurv"},
+        new int[] {1, 0, 0});
   }
 
   /**
@@ -79,17 +93,17 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     ((Tokenizer) stream).setReader(reader);
     stream =
         tokenFilterFactory(
-                "HyphenationCompoundWord",
-                "hyphenator",
-                "da_UTF8.xml",
-                "minSubwordSize",
-                "2",
-                "maxSubwordSize",
-                "4")
-            .create(stream);
+          "HyphenationCompoundWord",
+          "hyphenator",
+          "da_UTF8.xml",
+          "minSubwordSize",
+          "2",
+          "maxSubwordSize",
+          "4").create(stream);
 
     assertTokenStreamContents(
-        stream, new String[] {"basketballkurv", "ba", "sket", "ball", "bal", "kurv"});
+        stream,
+        new String[] {"basketballkurv", "ba", "sket", "ball", "bal", "kurv"});
   }
 
   /** Test that bogus arguments result in exception */
@@ -99,7 +113,11 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
             IllegalArgumentException.class,
             () -> {
               tokenFilterFactory(
-                  "HyphenationCompoundWord", "hyphenator", "da_UTF8.xml", "bogusArg", "bogusValue");
+                  "HyphenationCompoundWord",
+                  "hyphenator",
+                  "da_UTF8.xml",
+                  "bogusArg",
+                  "bogusValue");
             });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
