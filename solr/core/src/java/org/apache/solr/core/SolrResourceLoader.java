@@ -648,11 +648,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
     }
   }
 
-
-  /**
-   * Tell all {@link SolrCoreAware} instances about the SolrCore
-   */
-  public void inform(SolrCore core) {
+  void initCore(SolrCore core) {
     this.coreName = core.getName();
     this.config = core.getSolrConfig();
     this.coreId = core.uniqueId;
@@ -663,10 +659,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable, SolrClassL
             this, s -> config.maxPackageVersion(s), null){
       @Override
       protected void doReloadAction(Ctx ctx) {
+        log.info("Core reloading classloader issued reload for: {}/{} ", coreName, coreId);
         coreProvider.reload();
       }
     };
     core.getPackageListeners().addListener(coreReloadingClassLoader, true);
+
+  }
+
+  /**
+   * Tell all {@link SolrCoreAware} instances about the SolrCore
+   */
+  public void inform(SolrCore core) {
     if(getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to

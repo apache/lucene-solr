@@ -77,6 +77,7 @@ public class CacheConfig implements MapSerializable{
     this.clazz = () -> clazz;
     this.args = args;
     this.regenerator = regenerator;
+    this.nodeName = args.get(NAME);
   }
 
   public CacheRegenerator getRegenerator() {
@@ -180,11 +181,8 @@ public class CacheConfig implements MapSerializable{
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> toMap(Map<String, Object> map) {
-    @SuppressWarnings({"rawtypes"})
-    Map result = Collections.unmodifiableMap(args);
-    return result;
+    return new HashMap<>(args);
   }
 
   public String getNodeName() {

@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +48,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -71,6 +70,7 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -255,19 +255,24 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
               @SuppressWarnings({"rawtypes"})
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
-                Object pluginInfo = pluginNameVsPluginInfo.get(componentName);
-                val.put(parts.get(1), makeMap(componentName, pluginInfo));
+                @SuppressWarnings({"rawtypes"})
+                Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
+                       pluginNameVsPluginInfo:
+                        pluginNameVsPluginInfo.get(componentName);
+                @SuppressWarnings({"rawtypes"})
+                Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
+                val.put(parts.get(1),pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo :  makeMap(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
-                    Map<String, PackageLoader.Package.Version> infos = listener.packageDetails();
+                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
                     if(infos == null || infos.isEmpty()) continue;
                     infos.forEach((s, mapWriter) -> {
-                      if(s.equals(((Map) pluginInfo).get("class"))) {
-                        ((Map) pluginInfo).put("_packageinfo_", mapWriter);
+                      if(s.equals(pluginInfo.get("class"))) {
+                        (pluginInfo).put("_packageinfo_", mapWriter);
                       }
                     });
                   }

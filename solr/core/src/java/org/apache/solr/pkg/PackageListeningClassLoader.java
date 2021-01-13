@@ -85,7 +85,9 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public PackageLoader.Package.Version findPackageVersion(PluginInfo.ClassName cName, boolean registerListener) {
         PackageLoader.Package.Version theVersion = coreContainer.getPackageLoader().getPackage(cName.pkg).getLatest(pkgVersionSupplier.apply(cName.pkg));
         if(registerListener) {
-            packageVersions.put(cName.pkg, theVersion.getPkgVersion());
+            classNameVsPackageName.put(cName.original, cName.pkg);
+            PackageAPI.PkgVersion pkgVersion = theVersion.getPkgVersion();
+            if(pkgVersion !=null) packageVersions.put(cName.pkg, pkgVersion);
         }
         return theVersion;
     }
@@ -144,8 +146,10 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     }
 
     @Override
-    public Map<String, PackageLoader.Package.Version> packageDetails() {
-        return Collections.emptyMap();
+    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+        Map<String, PackageAPI.PkgVersion> result = new LinkedHashMap<>();
+        classNameVsPackageName.forEach((k, v) -> result.put(k, packageVersions.get(v)));
+        return result;
     }
 
     @Override

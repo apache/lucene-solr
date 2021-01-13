@@ -113,7 +113,7 @@ public class PackageListeners {
     /** fetch the package versions of class names
      *
      */
-    Map<String, PackageLoader.Package.Version> packageDetails();
+    Map<String, PackageAPI.PkgVersion> packageDetails();
 
     /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);

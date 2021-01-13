@@ -955,6 +955,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.resourceLoader.initCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
