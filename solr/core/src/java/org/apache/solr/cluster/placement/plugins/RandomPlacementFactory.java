@@ -53,14 +53,14 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
       }
     }
 
-    public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
-                                          PlacementPlanFactory placementPlanFactory) throws PlacementException {
+    @Override
+    public PlacementPlan computePlacement(PlacementRequest request, PlacementContext placementContext) throws PlacementException {
       int totalReplicasPerShard = 0;
       for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
         totalReplicasPerShard += request.getCountReplicasToCreate(rt);
       }
 
-      if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
+      if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
         throw new PlacementException("Cluster size too small for number of replicas per shard");
       }
 
@@ -69,15 +69,20 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
       // Now place randomly all replicas of all shards on available nodes
       for (String shardName : request.getShardNames()) {
         // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct yet random nodes
-        ArrayList<Node> nodesToAssign = new ArrayList<>(cluster.getLiveNodes());
+        ArrayList<Node> nodesToAssign = new ArrayList<>(placementContext.getCluster().getLiveNodes());
         Collections.shuffle(nodesToAssign, replicaPlacementRandom);
 
         for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-          placeForReplicaType(request.getCollection(), nodesToAssign, placementPlanFactory, replicaPlacements, shardName, request, rt);
+          placeForReplicaType(request.getCollection(), nodesToAssign, placementContext.getPlacementPlanFactory(), replicaPlacements, shardName, request, rt);
         }
       }
 
-      return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
+      return placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements);
+    }
+
+    @Override
+    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+      // no-op
     }
 
     private void placeForReplicaType(SolrCollection solrCollection, ArrayList<Node> nodesToAssign, PlacementPlanFactory placementPlanFactory,

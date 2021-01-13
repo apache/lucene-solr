@@ -50,15 +50,15 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
 
   static private class MinimizeCoresPlacementPlugin implements PlacementPlugin {
 
+    @Override
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-    public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
-                                          PlacementPlanFactory placementPlanFactory) throws PlacementException {
+    public PlacementPlan computePlacement(PlacementRequest request, PlacementContext placementContext) throws PlacementException {
       int totalReplicasPerShard = 0;
       for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
         totalReplicasPerShard += request.getCountReplicasToCreate(rt);
       }
 
-      if (cluster.getLiveNodes().size() < totalReplicasPerShard) {
+      if (placementContext.getCluster().getLiveNodes().size() < totalReplicasPerShard) {
         throw new PlacementException("Cluster size too small for number of replicas per shard");
       }
 
@@ -67,6 +67,7 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
 
       Set<Node> nodes = request.getTargetNodes();
 
+      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher.requestNodeMetric(NodeMetricImpl.NUM_CORES);
       attributeFetcher.fetchFrom(nodes);
       AttributeValues attrValues = attributeFetcher.fetchAttributes();
@@ -106,11 +107,16 @@ public class MinimizeCoresPlacementFactory implements PlacementPluginFactory<Pla
         }
 
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
-          placeReplicas(request.getCollection(), nodeEntriesToAssign, placementPlanFactory, replicaPlacements, shardName, request, replicaType);
+          placeReplicas(request.getCollection(), nodeEntriesToAssign, placementContext.getPlacementPlanFactory(), replicaPlacements, shardName, request, replicaType);
         }
       }
 
-      return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
+      return placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements);
+    }
+
+    @Override
+    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+      // no-op
     }
 
     private void placeReplicas(SolrCollection solrCollection, ArrayList<Map.Entry<Integer, Node>> nodeEntriesToAssign,

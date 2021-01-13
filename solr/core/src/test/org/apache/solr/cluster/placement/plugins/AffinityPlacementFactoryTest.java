@@ -98,8 +98,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
     }
 
-    Cluster cluster = clusterBuilder.build();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
 
     SolrCollection solrCollection = collectionBuilder.build();
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
@@ -109,7 +108,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         Set.of(solrCollection.shards().iterator().next().getShardName()), new HashSet<>(liveNodes),
         1, 0, 0);
 
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
     assertEquals(1, pp.getReplicaPlacements().size());
     ReplicaPlacement rp = pp.getReplicaPlacements().iterator().next();
@@ -149,7 +148,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         2, 2, 2);
 
-    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     assertEquals(18, pp.getReplicaPlacements().size()); // 3 shards, 6 replicas total each
     Set<Pair<String, Node>> placements = new HashSet<>();
@@ -162,7 +161,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // Verify that if we ask for 7 replicas, the placement will use the low free space node
     placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         7, 0, 0);
-    pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     assertEquals(21, pp.getReplicaPlacements().size()); // 3 shards, 7 replicas each
     placements = new HashSet<>();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
@@ -175,7 +174,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     try {
       placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
           8, 0, 0);
-      plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+      plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
       fail("Placing 8 replicas should not be possible given only 7 nodes have enough space");
     } catch (PlacementException e) {
       // expected
@@ -219,7 +218,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // The replicas must be placed on the most appropriate nodes, i.e. those that do not already have a replica for the
     // shard and then on the node with the lowest number of cores.
     // NRT are placed first and given the cluster state here the placement is deterministic (easier to test, only one good placement).
-    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     // Each expected placement is represented as a string "shard replica-type node"
     Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 NRT 0", "2 TLOG 4");
@@ -317,7 +316,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // Add 2 NRT and one TLOG to each shard.
     PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         2, 1, 0);
-    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: The NRT's should go to the med cores node on AZ2 and low core on az3 (even though
     // a low core node can take the replica in az1, there's already an NRT replica there and we want spreading across AZ's),
     // the TLOG to the TLOG node on AZ2 (because the tlog node on AZ1 has low free disk)
@@ -331,7 +330,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     // If we add instead 2 PULL replicas to each shard
     placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
         0, 0, 2);
-    pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     // Shard 1: Given node AZ3_TLOGPULL is taken by the TLOG replica, the PULL should go to AZ1_TLOGPULL_LOWFREEDISK and AZ2_TLOGPULL
     // Shard 2: Similarly AZ2_TLOGPULL is taken. Replicas should go to AZ1_TLOGPULL_LOWFREEDISK and AZ3_TLOGPULL
     expectedPlacements = Set.of("1 PULL " + AZ1_TLOGPULL_LOWFREEDISK, "1 PULL " + AZ2_TLOGPULL,
@@ -378,7 +377,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     for (int countNrtToPlace = 1; countNrtToPlace <= 9; countNrtToPlace++) {
       PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes),
           countNrtToPlace, 0, 0);
-      PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+      PlacementPlan pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
       verifyPlacements(placements.get(countNrtToPlace - 1), pp, collectionBuilder.getShardBuilders(), liveNodes);
     }
   }
@@ -414,7 +413,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     PlacementRequestImpl placementRequest = new PlacementRequestImpl(solrCollection, Set.of(solrCollection.iterator().next().getShardName()), new HashSet<>(liveNodes),
         0, 0, 1);
 
-    PlacementPlan pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     // Each expected placement is represented as a string "shard replica-type node"
     // Node 0 has less cores than node 1 (0 vs 1) so the placement should go there.
@@ -427,7 +426,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     it.next(); // skip first shard to do placement for the second one...
     placementRequest = new PlacementRequestImpl(solrCollection, Set.of(it.next().getShardName()), new HashSet<>(liveNodes),
         0, 0, 1);
-    pp = plugin.computePlacement(clusterBuilder.build(), placementRequest, clusterBuilder.buildAttributeFetcher(), new PlacementPlanFactoryImpl());
+    pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     expectedPlacements = Set.of("2 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
   }
@@ -510,7 +509,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
-    Cluster cluster = clusterBuilder.build();
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
 
     SolrCollection solrCollection = cluster.getCollection(collectionName);
 
@@ -519,14 +519,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             .map(Shard::getShardName).collect(Collectors.toSet()),
         cluster.getLiveNodes(), 2, 2, 2);
 
-    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     // 2 shards, 6 replicas
     assertEquals(12, pp.getReplicaPlacements().size());
     // shard -> AZ -> replica count
     Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
-    AttributeValues attributeValues = attributeFetcher.fetchAttributes();
+    AttributeValues attributeValues = placementContext.getAttributeFetcher().fetchAttributes();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       Optional<String> azOptional = attributeValues.getSystemProperty(rp.getNode(), AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP);
       if (!azOptional.isPresent()) {
@@ -570,7 +568,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
-    Cluster cluster = clusterBuilder.build();
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
 
     SolrCollection solrCollection = cluster.getCollection(collectionName);
 
@@ -579,14 +578,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             .map(Shard::getShardName).collect(Collectors.toSet()),
         cluster.getLiveNodes(), 2, 2, 2);
 
-    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     // 2 shards, 6 replicas
     assertEquals(12, pp.getReplicaPlacements().size());
     // shard -> group -> replica count
     Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
-    AttributeValues attributeValues = attributeFetcher.fetchAttributes();
+    AttributeValues attributeValues = placementContext.getAttributeFetcher().fetchAttributes();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       Optional<String> groupOptional = attributeValues.getSystemProperty(rp.getNode(), "group");
       if (!groupOptional.isPresent()) {
@@ -637,7 +634,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
-    Cluster cluster = clusterBuilder.build();
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
 
     SolrCollection solrCollection = cluster.getCollection(collectionName);
 
@@ -646,9 +644,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
             .map(Shard::getShardName).collect(Collectors.toSet()),
         cluster.getLiveNodes(), 1, 0, 1);
 
-    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(4, pp.getReplicaPlacements().size());
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertFalse("should not put any replicas on " + smallNode, rp.getNode().equals(smallNode));
@@ -667,7 +663,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
-    Cluster cluster = clusterBuilder.build();
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
 
     SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
     SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
@@ -679,9 +676,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       Set.of("shard1", "shard2"), cluster.getLiveNodes(), 1, 0, 0);
 
 
-    PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     assertEquals(2, pp.getReplicaPlacements().size());
     // verify that all placements are on nodes with the secondary replica
     pp.getReplicaPlacements().forEach(placement ->
@@ -691,7 +686,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     placementRequest = new PlacementRequestImpl(primaryCollection,
         Set.of("shard1"), cluster.getLiveNodes(), 3, 0, 0);
     try {
-      pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, placementPlanFactory);
+      pp = plugin.computePlacement(placementRequest, placementContext);
       fail("should generate 'Not enough eligible nodes' failure here");
     } catch (PlacementException pe) {
       assertTrue(pe.toString().contains("Not enough eligible nodes"));
@@ -732,9 +727,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
     collectionBuilder.initializeShardsReplicas(numShards, 0, 0, 0, List.of());
 
-    Cluster cluster = clusterBuilder.build();
-    AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();
-
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     SolrCollection solrCollection = collectionBuilder.build();
     List<Node> liveNodes = clusterBuilder.buildLiveNodes();
 
@@ -743,7 +736,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         new HashSet<>(liveNodes), nrtReplicas, tlogReplicas, pullReplicas);
 
     long start = System.nanoTime();
-    PlacementPlan pp = plugin.computePlacement(cluster, placementRequest, attributeFetcher, new PlacementPlanFactoryImpl());
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     long end = System.nanoTime();
 
     final int REPLICAS_PER_SHARD = nrtReplicas + tlogReplicas + pullReplicas;

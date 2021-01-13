@@ -190,15 +190,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
+    @Override
     @SuppressForbidden(reason = "Ordering.arbitrary() has no equivalent in Comparator class. Rather reuse than copy.")
-    public PlacementPlan computePlacement(Cluster cluster, PlacementRequest request, AttributeFetcher attributeFetcher,
-                                          PlacementPlanFactory placementPlanFactory) throws PlacementException {
+    public PlacementPlan computePlacement(PlacementRequest request, PlacementContext placementContext) throws PlacementException {
       Set<Node> nodes = request.getTargetNodes();
       SolrCollection solrCollection = request.getCollection();
 
-      nodes = filterNodesWithCollection(cluster, request, nodes);
+      nodes = filterNodesWithCollection(placementContext.getCluster(), request, nodes);
 
       // Request all needed attributes
+      AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
       attributeFetcher
           .requestNodeMetric(NodeMetricImpl.NUM_CORES)
@@ -243,11 +244,23 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         // failure. Current code does fail if placement is impossible (constraint is at most one replica of a shard on any node).
         for (Replica.ReplicaType replicaType : Replica.ReplicaType.values()) {
           makePlacementDecisions(solrCollection, shardName, availabilityZones, replicaType, request.getCountReplicasToCreate(replicaType),
-              attrValues, replicaTypeToNodes, nodesWithReplicas, coresOnNodes, placementPlanFactory, replicaPlacements);
+              attrValues, replicaTypeToNodes, nodesWithReplicas, coresOnNodes, placementContext.getPlacementPlanFactory(), replicaPlacements);
         }
       }
 
-      return placementPlanFactory.createPlacementPlan(request, replicaPlacements);
+      return placementContext.getPlacementPlanFactory().createPlacementPlan(request, replicaPlacements);
+    }
+
+    @Override
+    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+      if (modificationRequest instanceof DeleteShardsRequest) {
+        throw new UnsupportedOperationException("not implemented yet");
+      } else if (!(modificationRequest instanceof DeleteReplicasRequest)) {
+        throw new UnsupportedOperationException("unsupported request type " + modificationRequest.getClass().getName());
+      }
+      DeleteReplicasRequest request = (DeleteReplicasRequest) modificationRequest;
+
+      // XXX to be completed...
     }
 
     private Set<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {
