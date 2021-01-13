@@ -98,7 +98,7 @@ to test if a field in the record matches a specific
 regular expression. This allows for sophisticated regex matching over search results.
 
 The example below uses the `matches` function to return all records where
-the *complaint_type_s* field ends with *Commercial*.
+the `complaint_type_s` field ends with *Commercial*.
 
 image::images/math-expressions/search-matches.png[]
 

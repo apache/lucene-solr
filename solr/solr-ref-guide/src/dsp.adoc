@@ -28,7 +28,7 @@ The dot products are collected in a third vector which is the convolution of the
 
 === Moving Average Function
 
-Before looking at an example of convolution its useful to review the `movingAvg` function. The moving average
+Before looking at an example of convolution it's useful to review the `movingAvg` function. The moving average
 function computes a moving average by sliding a window across a vector and computing
 the average of the window at each shift. If that sounds similar to convolution, that's because the `movingAvg`
 function involves a sliding window approach similar to convolution.
@@ -36,7 +36,7 @@ function involves a sliding window approach similar to convolution.
 Below is an example of a moving average with a window size of 5. Notice that the original vector has 13 elements
 but the result of the moving average has only 9 elements. This is because the `movingAvg` function
 only begins generating results when it has a full window. The `ltrim` function is used to trim the
-first four elements from the original *y* array to line up with the moving average.
+first four elements from the original `y` array to line up with the moving average.
 
 image::images/math-expressions/conv1.png[]
 
@@ -70,7 +70,7 @@ The formula for computing a simple moving average using convolution is to make t
 size and make the values of the filter all the same and sum to 1. A moving average with a window size of 4
 can be computed by changing the filter to a length of 4 with each value being .25.
 
-*Changing the Weights*
+==== Changing the Weights
 
 The filter, which is sometimes called the *kernel*, can be viewed as a vector of weights. In the initial
 example all values in the filter have the same weight (.2). The weights in the filter can be changed to
@@ -125,8 +125,7 @@ image::images/math-expressions/delay.png[]
 
 The `oscillate` function generates a periodic oscillating signal which can be used to model and study sine waves.
 
-The `oscillate` function takes three parameters: *amplitude*, *angular frequency*
-and *phase* and returns a vector containing the y-axis points of a sine wave.
+The `oscillate` function takes three parameters: `amplitude`, `angular frequency`, and `phase` and returns a vector containing the y-axis points of a sine wave.
 
 The y-axis points were generated from an x-axis sequence of 0-127.
 
@@ -136,13 +135,11 @@ Below is an example of the `oscillate` function called with an amplitude of
 
 image::images/math-expressions/sinewave.png[]
 
-=== Sine Wave Interpolation, Extrapolation
+=== Sine Wave Interpolation & Extrapolation
 
 The `oscillate` function returns a function which can be used by the `predict` function to interpolate or extrapolate a sine wave.
+
 The example below extrapolates the sine wave to an x-axis sequence of 0-256.
-
-
-The extrapolated sine wave is plotted below:
 
 image::images/math-expressions/sinewave256.png[]
 
@@ -216,11 +213,11 @@ image::images/math-expressions/hidden-signal-autocorrelation.png[]
 
 == Discrete Fourier Transform
 
-The convolution based functions described above are operating on signals in the time domain. In the time
-domain the X axis is time and the Y axis is the quantity of some value at a specific point in time.
+The convolution-based functions described above are operating on signals in the time domain. In the time
+domain the x-axis is time and the y-axis is the quantity of some value at a specific point in time.
 
 The discrete Fourier Transform translates a time domain signal into the frequency domain.
-In the frequency domain the X axis is frequency, and Y axis is the accumulated power at a specific frequency.
+In the frequency domain the x-axis is frequency, and y-axis is the accumulated power at a specific frequency.
 
 The basic principle is that every time domain signal is composed of one or more signals (sine waves)
 at different frequencies. The discrete Fourier transform decomposes a time domain signal into its component
@@ -247,7 +244,7 @@ The `rowAt` function can be used to access the rows so they can be processed as 
 In the first example the `fft` function is called on the sine wave used in the autocorrelation example.
 
 The results of the `fft` function is a matrix. The `rowAt` function is used to return the first row of
-the matrix which is a vector containing the real values of the fft response.
+the matrix which is a vector containing the real values of the `fft` response.
 
 The plot of the real values of the `fft` response is shown below. Notice there are two
 peaks on opposite sides of the plot. The plot is actually showing a mirrored response. The right side

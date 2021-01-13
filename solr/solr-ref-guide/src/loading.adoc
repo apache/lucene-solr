@@ -535,7 +535,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-The example below shows the `cartesianProduct` function expanding the analyzed terms in the *term_s* field into
+The example below shows the `cartesianProduct` function expanding the analyzed terms in the `term_s` field into
 their own documents. Notice that the other fields from the document are maintained with each term. This allows each term
 to be indexed in a separate document so the relationships between terms and the other fields can be explored through
 graph expressions or aggregations.
