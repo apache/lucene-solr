@@ -64,7 +64,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     ((Tokenizer)stream).setReader(reader);
     stream =
         tokenFilterFactory(
-          "HyphenationCompoundWord", 
+          "HyphenationCompoundWord",
           "hyphenator",
           "da_UTF8.xml",
           "dictionary",
@@ -75,9 +75,9 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
           "true",
           "noOverlappingMatches",
           "false").create(stream);
-    
+
     assertTokenStreamContents(
-        stream, 
+        stream,
         new String[] {"basketballkurv", "basketball", "kurv"},
         new int[] {1, 0, 0});
   }
