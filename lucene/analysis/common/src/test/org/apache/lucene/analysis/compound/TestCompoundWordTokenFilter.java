@@ -107,7 +107,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
     // min=2, max=4
     assertTokenStreamContents(
-        tf, new String[] { "basketballkurv", "ba", "sket", "ball", "bal", "kurv" });
+        tf, new String[] {"basketballkurv", "ba", "sket", "ball", "bal", "kurv"});
 
     tf =
         new HyphenationCompoundWordTokenFilter(
@@ -375,24 +375,26 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   public void testNoSubAndNoOverlap() throws Exception { // LUCENE-8183
     String input = "fußballpumpe";
-    Hyphenation hyphenation = new Hyphenation(new int[]{ 0, 3, 7, 10, 12}); // fuß ball pum pe
+    Hyphenation hyphenation = new Hyphenation(new int[] {0, 3, 7, 10, 12}); // fuß ball pum pe
     HyphenationTree hyphenator = new MockHyphenator(Collections.singletonMap(input, hyphenation));
     CharArraySet dictionary = makeDictionary("fußball", "ballpumpe", "fuß", "ball", "pumpe");
   
     // test the default configuration
-    HyphenationCompoundWordTokenFilter tf1 = 
-        new HyphenationCompoundWordTokenFilter(whitespaceMockTokenizer(input), hyphenator, dictionary);
-    assertTokenStreamContents(tf1, new String[] {"fußballpumpe", "fußball", "fuß", "ballpumpe", "ball", "pumpe"});
+    HyphenationCompoundWordTokenFilter tf1 =
+        new HyphenationCompoundWordTokenFilter(
+            whitespaceMockTokenizer(input), hyphenator, dictionary);
+    assertTokenStreamContents(
+        tf1, new String[] {"fußballpumpe", "fußball", "fuß", "ballpumpe", "ball", "pumpe"});
       
     // test with onlyLongestMatch
     HyphenationCompoundWordTokenFilter tf2 =
         new HyphenationCompoundWordTokenFilter(
           whitespaceMockTokenizer(input),
-          hyphenator, 
+          hyphenator,
           dictionary,
           CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-          CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
-          CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, 
+          CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+          CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
           true);
     assertTokenStreamContents(tf2, new String[] {"fußballpumpe", "fußball", "ballpumpe", "pumpe"});
       
@@ -401,13 +403,13 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
       hyphenator, dictionary, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
       CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
       CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true, true, false);
-    assertTokenStreamContents(tf3, new String[] { "fußballpumpe", "fußball", "ballpumpe"});
+    assertTokenStreamContents(tf3, new String[] {"fußballpumpe", "fußball", "ballpumpe"});
     // assert that the onlyLongestMatch state does not matter if noSub is active
     HyphenationCompoundWordTokenFilter tf3b = new HyphenationCompoundWordTokenFilter(whitespaceMockTokenizer(input),
       hyphenator, dictionary, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
       CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
       CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false, true, false);
-    assertTokenStreamContents(tf3b, new String[] { "fußballpumpe", "fußball", "ballpumpe"});
+    assertTokenStreamContents(tf3b, new String[] {"fußballpumpe", "fußball", "ballpumpe"});
 
     // test with noOverlap enabled
     HyphenationCompoundWordTokenFilter tf4 = 
@@ -456,7 +458,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     // test that no subwords are added if the token is part of the dictionary and 
     // onlyLongestMatch or noSub is present
     String input = "fußball";
-    Hyphenation hyphenation = new Hyphenation(new int[]{0, 3, 7});//fuß ball
+    Hyphenation hyphenation = new Hyphenation(new int[] {0, 3, 7}); //fuß ball
     HyphenationTree hyphenator = new MockHyphenator(Collections.singletonMap(input, hyphenation));
     CharArraySet dictionary = makeDictionary("fußball", "fuß", "ball");
       

@@ -209,7 +209,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
     final int[] hyp = hyphens.getHyphenationPoints();
 
     for (int i = 0; i < hyp.length; ++i) {
-      if (noOverlappingMatches){ // if we do not want overlapping subwords
+      if (noOverlappingMatches) { // if we do not want overlapping subwords
         i = Math.max(i, consumed); // skip over consumed hyp
       }
       int start = hyp[i];
