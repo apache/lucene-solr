@@ -20,7 +20,6 @@ package org.apache.solr.pkg;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.ResourceLoaderAware;

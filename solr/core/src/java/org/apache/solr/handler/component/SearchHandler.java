@@ -16,18 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -59,10 +52,13 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.solr.common.params.CommonParams.*;
 
 
 /**

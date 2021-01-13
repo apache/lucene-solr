@@ -72,7 +72,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
