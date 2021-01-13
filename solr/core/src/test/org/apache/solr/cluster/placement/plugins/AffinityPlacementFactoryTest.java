@@ -25,6 +25,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.Builders;
+import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
@@ -652,7 +653,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWithCollectionConstraints() throws Exception {
+  public void testWithCollectionPlacement() throws Exception {
     int NUM_NODES = 3;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
@@ -690,6 +691,55 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       fail("should generate 'Not enough eligible nodes' failure here");
     } catch (PlacementException pe) {
       assertTrue(pe.toString().contains("Not enough eligible nodes"));
+    }
+  }
+
+  @Test
+  public void testWithCollectionModificationRejected() throws Exception {
+    int NUM_NODES = 2;
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(1, 4, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
+    collectionBuilder.initializeShardsReplicas(2, 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Cluster cluster = placementContext.getCluster();
+
+    SolrCollection secondaryCollection = cluster.getCollection(secondaryCollectionName);
+    SolrCollection primaryCollection = cluster.getCollection(primaryCollectionName);
+
+    Node node = cluster.getLiveNodes().iterator().next();
+    Set<Replica> secondaryReplicas = new HashSet<>();
+    secondaryCollection.shards().forEach(shard ->
+        shard.replicas().forEach(replica -> {
+          if (secondaryReplicas.size() < 1 && replica.getNode().equals(node)) {
+            secondaryReplicas.add(replica);
+          }
+        }));
+
+    DeleteReplicasRequest deleteReplicasRequest = ModificationRequestImpl.deleteReplicasRequest(secondaryCollection, secondaryReplicas);
+    try {
+      plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+    } catch (PlacementException pe) {
+      fail("should have succeeded: " + pe.toString());
+    }
+
+    secondaryCollection.shards().forEach(shard ->
+        shard.replicas().forEach(replica -> {
+          if (secondaryReplicas.size() < 2 && replica.getNode().equals(node)) {
+            secondaryReplicas.add(replica);
+          }
+        }));
+
+    deleteReplicasRequest = ModificationRequestImpl.deleteReplicasRequest(secondaryCollection, secondaryReplicas);
+    try {
+      plugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      fail("should have failed: " + deleteReplicasRequest);
+    } catch (PlacementException pe) {
     }
   }
 

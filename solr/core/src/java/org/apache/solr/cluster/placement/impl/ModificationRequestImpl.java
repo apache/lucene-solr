@@ -44,6 +44,12 @@ public class ModificationRequestImpl {
       public SolrCollection getCollection() {
         return collection;
       }
+
+      @Override
+      public String toString() {
+        return "DeleteReplicasRequest{collection=" + collection.getName() +
+            ",replicas=" + replicas;
+      }
     };
   }
 
@@ -71,6 +77,12 @@ public class ModificationRequestImpl {
       @Override
       public SolrCollection getCollection() {
         return collection;
+      }
+
+      @Override
+      public String toString() {
+        return "DeleteShardsRequest{collection=" + collection.getName() +
+            ",shards=" + shardNames;
       }
     };
   }

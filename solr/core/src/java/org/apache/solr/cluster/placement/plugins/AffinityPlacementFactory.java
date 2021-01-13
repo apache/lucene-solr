@@ -27,8 +27,10 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -252,15 +254,75 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     @Override
-    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
       if (modificationRequest instanceof DeleteShardsRequest) {
         throw new UnsupportedOperationException("not implemented yet");
       } else if (!(modificationRequest instanceof DeleteReplicasRequest)) {
         throw new UnsupportedOperationException("unsupported request type " + modificationRequest.getClass().getName());
       }
       DeleteReplicasRequest request = (DeleteReplicasRequest) modificationRequest;
-
-      // XXX to be completed...
+      SolrCollection secondaryCollection = request.getCollection();
+      if (!withCollections.values().contains(secondaryCollection.getName())) {
+        return;
+      }
+      // find the colocated-with collections
+      Cluster cluster = placementContext.getCluster();
+      Set<SolrCollection> colocatedCollections = new HashSet<>();
+      AtomicReference<IOException> exc = new AtomicReference<>();
+      withCollections.forEach((primaryName, secondaryName) -> {
+        if (exc.get() != null) { // there were errors before
+          return;
+        }
+        if (secondaryCollection.getName().equals(secondaryName)) {
+          try {
+            SolrCollection primary = cluster.getCollection(primaryName);
+            if (primary != null) { // still exists
+              colocatedCollections.add(primary);
+            }
+          } catch (IOException e) {
+            // IO error, not a missing collection - fail
+            exc.set(e);
+            return;
+          }
+        }
+      });
+      if (exc.get() != null) {
+        throw new PlacementModificationException("failed to retrieve colocated collection information", exc.get());
+      }
+      Map<Node, Set<String>> colocatingNodes = new HashMap<>();
+      colocatedCollections.forEach(coll ->
+          coll.shards().forEach(shard ->
+              shard.replicas().forEach(replica -> {
+                colocatingNodes.computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                    .add(coll.getName());
+              })));
+      PlacementModificationException exception = null;
+      for (Replica replica : request.getReplicas()) {
+        if (!colocatingNodes.containsKey(replica.getNode())) {
+          continue;
+        }
+        // check that this is the only replica of this shard on this node
+        Shard shard = replica.getShard();
+        boolean hasOtherReplicas = false;
+        for (Replica otherReplica : shard.replicas()) {
+          if (otherReplica.getNode().equals(replica.getNode())) {
+            hasOtherReplicas = true;
+            break;
+          }
+        }
+        // ok to delete when at least one remains on this node
+        if (hasOtherReplicas) {
+          return;
+        }
+        // fail - this replica cannot be removed
+        if (exception == null) {
+          exception = new PlacementModificationException("delete replica(s) rejected");
+        }
+        exception.addRejectedModification(replica.toString(), "co-located with replicas of " + colocatingNodes.get(replica.getNode()));
+      }
+      if (exception != null) {
+        throw exception;
+      }
     }
 
     private Set<String> getZonesFromNodes(Set<Node> nodes, final AttributeValues attrValues) {

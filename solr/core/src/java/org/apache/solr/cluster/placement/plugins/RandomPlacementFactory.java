@@ -81,7 +81,7 @@ public class RandomPlacementFactory implements PlacementPluginFactory<PlacementP
     }
 
     @Override
-    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementException, InterruptedException {
+    public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
       // no-op
     }
 
