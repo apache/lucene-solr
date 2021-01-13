@@ -57,6 +57,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
@@ -279,6 +280,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
+
+  public  final SolrCore.Provider coreProvider;
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -745,7 +748,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
+      indexReaderFactory = resourceLoader.newInstance(info, IndexReaderFactory.class, true);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -941,9 +944,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       setName(coreDescriptor.getName());
+      coreProvider = new Provider(coreContainer, getName(), uniqueId);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.resourceLoader.initCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
@@ -1247,7 +1252,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
     if (null != coreDescriptor.getCloudDescriptor()) {
-      // we are evidently running in cloud mode.  
+      // we are evidently running in cloud mode.
       //
       // In cloud mode, version field is required for correct consistency
       // ideally this check would be more fine grained, and individual features
@@ -1411,7 +1416,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
+      factory = resourceLoader.newInstance( info, CodecFactory.class, true);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1449,8 +1454,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
-      cache = createInitInstance(pluginInfo, StatsCache.class, null,
-          LocalStatsCache.class.getName());
+      cache = resourceLoader.newInstance( pluginInfo, StatsCache.class, true);
+      initPlugin(pluginInfo ,cache);
       if (log.isDebugEnabled()) {
         log.debug("Using statsCache impl: {}", cache.getClass().getName());
       }
@@ -2159,7 +2164,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           newReader = currentReader;
         }
 
-        // for now, turn off caches if this is for a realtime reader 
+        // for now, turn off caches if this is for a realtime reader
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
@@ -3212,7 +3217,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public void cleanupOldIndexDirectories(boolean reload) {
     final DirectoryFactory myDirFactory = getDirectoryFactory();
     final String myDataDir = getDataDir();
-    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected 
+    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
       Thread cleanupThread = new Thread(() -> {
@@ -3298,5 +3303,32 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    */
   public void runAsync(Runnable r) {
     coreAsyncTaskExecutor.submit(r);
+  }
+
+  /**Provides the core instance if the core instance is still alive.
+   * This helps to not hold on to a live {@link SolrCore} instance
+   * even after it's unloaded
+   *
+   */
+  public static class Provider {
+    private final CoreContainer coreContainer;
+    private final String coreName;
+    private final UUID coreId;
+
+    public Provider(CoreContainer coreContainer, String coreName, UUID coreId) {
+      this.coreContainer = coreContainer;
+      this.coreName = coreName;
+      this.coreId = coreId;
+    }
+    public void reload() {
+      coreContainer.reload(coreName, coreId);
+    }
+
+    public void withCore(Consumer<SolrCore> r) {
+      try(SolrCore core = coreContainer.getCore(coreName, coreId)) {
+        if(core == null) return;
+        r.accept(core);
+      }
+    }
   }
 }

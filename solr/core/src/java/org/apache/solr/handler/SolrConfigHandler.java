@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -70,6 +71,7 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -251,25 +253,28 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
               @SuppressWarnings({"rawtypes"})
-              Map map = (Map) val.get(parts.get(1));
-              if (map != null) {
-                Object o = map.get(componentName);
-                val.put(parts.get(1), makeMap(componentName, o));
+              Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
+              if (pluginNameVsPluginInfo != null) {
+                @SuppressWarnings({"rawtypes"})
+                Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
+                       pluginNameVsPluginInfo:
+                        pluginNameVsPluginInfo.get(componentName);
+                @SuppressWarnings({"rawtypes"})
+                Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
+                val.put(parts.get(1),pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo :  makeMap(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
-                    PluginInfo info = listener.pluginInfo();
-                    if(info == null) continue;
-                    if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
-                      if (o instanceof Map) {
-                        @SuppressWarnings({"rawtypes"})
-                        Map m1 = (Map) o;
-                        m1.put("_packageinfo_", listener.getPackageVersion(info.cName));
+                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+                    if(infos == null || infos.isEmpty()) continue;
+                    infos.forEach((s, mapWriter) -> {
+                      if(s.equals(pluginInfo.get("class"))) {
+                        (pluginInfo).put("_packageinfo_", mapWriter);
                       }
-                    }
+                    });
                   }
                 }
               }
