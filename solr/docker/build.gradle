@@ -162,8 +162,8 @@ task testDocker(dependsOn: tasks.dockerBuild) {
 
   // Ensure that the docker image is re-tested if the image ID changes or the test files change
   inputs.properties([
-          includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("tests", "SOLR_DOCKER_TESTS", ",").split(","))),
-          ignoreTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("ignore", "SOLR_DOCKER_TESTS_INGORE", ",").split(",")))
+          includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(","))),
+          excludeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
   ])
   inputs.file(imageIdFile)
   inputs.dir(inputDir)
@@ -183,7 +183,7 @@ task testDocker(dependsOn: tasks.dockerBuild) {
       def testCaseBuildDir = "${outputDir}/${testName}"
 
       // If specific tests are specified, only run those. Otherwise run all that are not ignored.
-      def runTest = !inputs.properties.includeTests.isEmpty() ? inputs.properties.includeTests.contains(testName) : !inputs.properties.ignoreTests.contains(testName)
+      def runTest = !inputs.properties.includeTests.isEmpty() ? inputs.properties.includeTests.contains(testName) : !inputs.properties.excludeTests.contains(testName)
       if (runTest) {
         exec {
           environment "TEST_DIR", file

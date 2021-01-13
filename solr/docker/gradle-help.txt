@@ -66,9 +66,9 @@ Both inputs are optional, and by default all tests will be run.
 Each input tasks a comma separated list of test names.
 
 Run specific tests:
-   EnvVar: SOLR_DOCKER_TESTS
-   Gradle Property: -Ptests
+   EnvVar: SOLR_DOCKER_TESTS_INCLUDE
+   Gradle Property: -Psolr.docker.tests.include
 
-Ignore specific tests:
-   EnvVar: SOLR_DOCKER_TESTS_IGNORE
-   Gradle Property: -Pignore
+Exclude specific tests:
+   EnvVar: SOLR_DOCKER_TESTS_EXCLUDE
+   Gradle Property: -Psolr.docker.tests.exclude
