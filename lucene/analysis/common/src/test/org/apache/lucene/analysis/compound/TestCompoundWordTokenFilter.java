@@ -399,28 +399,30 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tf2, new String[] {"fußballpumpe", "fußball", "ballpumpe", "pumpe"});
 
     // test with noSub enabled and noOverlap disabled
-    HyphenationCompoundWordTokenFilter tf3 = new HyphenationCompoundWordTokenFilter(
-        whitespaceMockTokenizer(input),
-        hyphenator,
-        dictionary,
-        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-        CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
-        CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
-        true,
-        true,
-        false);
+    HyphenationCompoundWordTokenFilter tf3 = 
+        new HyphenationCompoundWordTokenFilter(
+          whitespaceMockTokenizer(input),
+          hyphenator,
+          dictionary,
+          CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+          CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
+          CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
+          true,
+          true,
+          false);
     assertTokenStreamContents(tf3, new String[] {"fußballpumpe", "fußball", "ballpumpe"});
     // assert that the onlyLongestMatch state does not matter if noSub is active
-    HyphenationCompoundWordTokenFilter tf3b = new HyphenationCompoundWordTokenFilter(
-        whitespaceMockTokenizer(input),
-        hyphenator,
-        dictionary,
-        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-        CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
-        CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
-        false,
-        true,
-        false);
+    HyphenationCompoundWordTokenFilter tf3b = 
+        new HyphenationCompoundWordTokenFilter(
+          whitespaceMockTokenizer(input),
+          hyphenator,
+          dictionary,
+          CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+          CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
+          CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
+          false,
+          true,
+          false);
     assertTokenStreamContents(tf3b, new String[] {"fußballpumpe", "fußball", "ballpumpe"});
 
     // test with noOverlap enabled
