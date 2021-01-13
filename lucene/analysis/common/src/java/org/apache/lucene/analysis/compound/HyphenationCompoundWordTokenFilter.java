@@ -185,7 +185,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
   protected void decompose() {
     // if the token is in the dictionary and we are not interested in subMatches
     // we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test)
-    // NOTE: 
+    // NOTE:
     // we check against token and the token that is one character
     // shorter to avoid problems with genitive 's characters and other binding characters
     if (dictionary != null
@@ -205,11 +205,11 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
     int maxSubwordSize = Math.min(this.maxSubwordSize, termAtt.length() - 1);
 
     int consumed = -1; // hyp of the longest token added (for noSub)
-    
+
     final int[] hyp = hyphens.getHyphenationPoints();
 
     for (int i = 0; i < hyp.length; ++i) {
-      if(noOverlappingMatches){ // if we do not want overlapping subwords
+      if (noOverlappingMatches){ // if we do not want overlapping subwords
         i = Math.max(i, consumed); // skip over consumed hyp
       }
       int start = hyp[i];
@@ -234,9 +234,9 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
         // check the dictionary
         if (dictionary == null || dictionary.contains(termAtt.buffer(), start, partLength)) {
           tokens.add(new CompoundToken(start, partLength));
-          consumed = j; //mark the current hyp as consumed
-          if(!calcSubMatches){
-            break; //do not search for shorter matches
+          consumed = j; // mark the current hyp as consumed
+          if (!calcSubMatches) {
+            break; // do not search for shorter matches
           }
         } else if (dictionary.contains(termAtt.buffer(), start, partLength - 1)) {
           // check the dictionary again with a word that is one character
