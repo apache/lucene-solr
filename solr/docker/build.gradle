@@ -136,29 +136,6 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   }
 }
 
-task dockerPush(dependsOn: tasks.dockerTag) {
-  group = 'Docker'
-  description = 'Push Solr docker image'
-
-  // Ensure that the docker image is re-pushed if the image ID or tag changes
-  inputs.properties([
-          dockerImageName: dockerImageName,
-  ])
-  inputs.file(imageIdFile)
-
-  // Docker push must run after docker tag
-  mustRunAfter tasks.dockerTag
-
-  doLast {
-    exec {
-      commandLine "docker", "push", dockerImageName
-    }
-
-    // Print information on the image after it has been created
-    project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
-  }
-}
-
 task testDocker(dependsOn: tasks.dockerBuild) {
   group = 'Docker'
   description = 'Test Solr docker image'
@@ -204,6 +181,31 @@ task testDocker(dependsOn: tasks.dockerBuild) {
   }
 
   outputs.dir(outputDir)
+}
+
+task dockerPush(dependsOn: tasks.dockerTag) {
+  group = 'Docker'
+  description = 'Push Solr docker image'
+
+  // Ensure that the docker image is re-pushed if the image ID or tag changes
+  inputs.properties([
+          dockerImageName: dockerImageName,
+  ])
+  inputs.file(imageIdFile)
+
+  // Docker push must run after docker tag
+  mustRunAfter tasks.dockerTag
+  // We don't want to push a docker image unless the tests have passed
+  mustRunAfter tasks.testDocker
+
+  doLast {
+    exec {
+      commandLine "docker", "push", dockerImageName
+    }
+
+    // Print information on the image after it has been created
+    project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
+  }
 }
 
 // One task to build and tag a Solr docker image
