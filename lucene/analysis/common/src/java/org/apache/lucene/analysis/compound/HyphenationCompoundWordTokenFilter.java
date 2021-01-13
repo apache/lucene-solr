@@ -148,7 +148,12 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
    * DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE }
    */
   public HyphenationCompoundWordTokenFilter(TokenStream input, HyphenationTree hyphenator) {
-    this(input, hyphenator, DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE);
+    this(
+        input,
+        hyphenator,
+        DEFAULT_MIN_WORD_SIZE,
+        DEFAULT_MIN_SUBWORD_SIZE,
+        DEFAULT_MAX_SUBWORD_SIZE);
   }
 
   /**
@@ -178,24 +183,26 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
 
   @Override
   protected void decompose() {
-    //if the token is in the dictionary and we are not interested in subMatches
-    //we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test) 
-    //NOTE: 
-    //we check against token and the token that is one character
-    //shorter to avoid problems with genitive 's characters and other binding characters
-    if(dictionary != null && !this.calcSubMatches && 
-      (dictionary.contains(termAtt.buffer(), 0, termAtt.length()) ||
-        termAtt.length() > 1 && dictionary.contains(termAtt.buffer(), 0, termAtt.length() - 1))){
-      return; //the whole token is in the dictionary - do not decompose
+    // if the token is in the dictionary and we are not interested in subMatches
+    // we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test) 
+    // NOTE: 
+    // we check against token and the token that is one character
+    // shorter to avoid problems with genitive 's characters and other binding characters
+    if (dictionary != null
+        && !this.calcSubMatches
+        && (dictionary.contains(termAtt.buffer(), 0, termAtt.length())
+            || termAtt.length() > 1
+                && dictionary.contains(termAtt.buffer(), 0, termAtt.length() - 1))) {
+      return; // the whole token is in the dictionary - do not decompose
     }
-    
+
     // get the hyphenation points
     Hyphenation hyphens = hyphenator.hyphenate(termAtt.buffer(), 0, termAtt.length(), 1, 1);
     // No hyphen points found -> exit
     if (hyphens == null) {
       return;
     }
-    int maxSubwordSize = Math.min(this.maxSubwordSize, termAtt.length()-1);
+    int maxSubwordSize = Math.min(this.maxSubwordSize, termAtt.length() - 1);
 
     int consumed = -1; //hyp of the longest token added (for noSub)
     
