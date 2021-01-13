@@ -184,7 +184,7 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
   @Override
   protected void decompose() {
     // if the token is in the dictionary and we are not interested in subMatches
-    // we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test) 
+    // we can skip decomposing this token (see testNoSubAndTokenInDictionary unit test)
     // NOTE: 
     // we check against token and the token that is one character
     // shorter to avoid problems with genitive 's characters and other binding characters
@@ -204,13 +204,13 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
     }
     int maxSubwordSize = Math.min(this.maxSubwordSize, termAtt.length() - 1);
 
-    int consumed = -1; //hyp of the longest token added (for noSub)
+    int consumed = -1; // hyp of the longest token added (for noSub)
     
     final int[] hyp = hyphens.getHyphenationPoints();
 
     for (int i = 0; i < hyp.length; ++i) {
-      if(noOverlappingMatches){ //if we do not want overlapping subwords
-        i = Math.max(i, consumed); //skip over consumed hyp
+      if(noOverlappingMatches){ // if we do not want overlapping subwords
+        i = Math.max(i, consumed); // skip over consumed hyp
       }
       int start = hyp[i];
       int until = noSubMatches ? Math.max(consumed, i) : i;
@@ -243,11 +243,11 @@ public class HyphenationCompoundWordTokenFilter extends CompoundWordTokenFilterB
           // shorter to avoid problems with genitive 's characters and
           // other binding characters
           tokens.add(new CompoundToken(start, partLength - 1));
-          consumed = j; //mark the current hyp as consumed
-          if(!calcSubMatches){
-            break; //do not search for shorter matches
+          consumed = j; // mark the current hyp as consumed
+          if (!calcSubMatches) {
+            break; // do not search for shorter matches
           }
-        } //else dictionary is present but does not contain the part
+        } // else dictionary is present but does not contain the part
       }
     }
   }
