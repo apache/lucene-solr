@@ -529,7 +529,6 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(tf8, new String[] {"fußball"});
   }
 
-
   public static interface MockRetainAttribute extends Attribute {
     void setRetain(boolean attr);
 
@@ -596,7 +595,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     }
 
     @Override
-    public Hyphenation hyphenate(char[] w, int offset, int len, int remainCharCount, int pushCharCount) {
+    public Hyphenation hyphenate(
+        char[] w, int offset, int len, int remainCharCount, int pushCharCount) {
       return hyphenations.get(new String(w, offset, len));
     }
   }

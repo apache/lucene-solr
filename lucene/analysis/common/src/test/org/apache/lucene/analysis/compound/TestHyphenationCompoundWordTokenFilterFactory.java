@@ -32,11 +32,12 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     ((Tokenizer) stream).setReader(reader);
     stream =
         tokenFilterFactory(
-            "HyphenationCompoundWord",
-            "hyphenator",
-            "da_UTF8.xml",
-            "dictionary",
-            "da_compoundDictionary.txt").create(stream);
+                "HyphenationCompoundWord",
+                "hyphenator",
+                "da_UTF8.xml",
+                "dictionary",
+                "da_compoundDictionary.txt")
+            .create(stream);
 
     assertTokenStreamContents(
         stream,
