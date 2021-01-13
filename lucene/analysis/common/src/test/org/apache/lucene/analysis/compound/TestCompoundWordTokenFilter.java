@@ -404,8 +404,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         hyphenator,
         dictionary,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
-        CompoundWordTokenFilterBase.EFAULT_MIN_SUBWORD_SIZE, 
-        CompoundWordTokenFilterBase.EFAULT_MAX_SUBWORD_SIZE,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 
+        CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE,
         true,
         true,
         false);
