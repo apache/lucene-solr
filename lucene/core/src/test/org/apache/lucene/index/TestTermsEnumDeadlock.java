@@ -26,28 +26,28 @@ import org.apache.lucene.util.BytesRef;
 import org.junit.Assert;
 import org.junit.Test;
 
+// TODO : This test will be removed when a static checker can check classes that initialize their
+//  subclasses in their own static initializer (LUCENE-9661)
 public class TestTermsEnumDeadlock extends Assert {
   private static final int MAX_TIME_SECONDS = 15;
 
   @Test
   public void testDeadlock() throws Exception {
-    for (int i = 0; i < 20; i++) {
-      // Fork a separate JVM to reinitialize classes.
-      final Process p =
-          new ProcessBuilder(
-                  Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
-                  "-cp",
-                  System.getProperty("java.class.path"),
-                  getClass().getName())
-              .inheritIO()
-              .start();
-      long waitingTime = MAX_TIME_SECONDS * 2L;
-      if (p.waitFor(waitingTime, TimeUnit.SECONDS)) {
-        assertEquals("Process died abnormally?", 0, p.waitFor());
-      } else {
-        p.destroyForcibly().waitFor();
-        fail("Process did not exit after " + waitingTime + " secs?");
-      }
+    // Fork a separate JVM to reinitialize classes.
+    final Process p =
+        new ProcessBuilder(
+                Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp",
+                System.getProperty("java.class.path"),
+                getClass().getName())
+            .inheritIO()
+            .start();
+    long waitingTime = MAX_TIME_SECONDS * 2L;
+    if (p.waitFor(waitingTime, TimeUnit.SECONDS)) {
+      assertEquals("Process died abnormally?", 0, p.waitFor());
+    } else {
+      p.destroyForcibly().waitFor();
+      fail("Process did not exit after " + waitingTime + " secs?");
     }
   }
 
