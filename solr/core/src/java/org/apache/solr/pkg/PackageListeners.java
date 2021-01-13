@@ -47,6 +47,14 @@ public class PackageListeners {
 
   public synchronized void addListener(Listener listener) {
     listeners.add(new SoftReference<>(listener));
+  }
+
+  public synchronized void addListener(Listener listener, boolean addFirst) {
+    if(addFirst) {
+      listeners.add(0, new SoftReference<>(listener));
+    } else {
+      addListener(listener);
+    }
 
   }
 
@@ -71,7 +79,7 @@ public class PackageListeners {
         invokeListeners(pkgInfo, ctx);
       }
     } finally {
-      ctx.runLaterTasks(core::runAsync);
+      ctx.runLaterTasks(r -> core.getCoreContainer().runAsync(r));
       MDCLoggingContext.clear();
     }
   }
@@ -102,7 +110,10 @@ public class PackageListeners {
     /**Name of the package or null to listen to all package changes */
     String packageName();
 
-    PluginInfo pluginInfo();
+    /** fetch the package versions of class names
+     *
+     */
+    Map<String, PackageAPI.PkgVersion> packageDetails();
 
     /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);
