@@ -601,7 +601,6 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     }
   }
 
-
   // SOLR-2891
   // *CompoundWordTokenFilter blindly adds term length to offset, but this can take things out of
   // bounds

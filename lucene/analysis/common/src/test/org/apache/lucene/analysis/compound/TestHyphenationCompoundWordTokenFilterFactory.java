@@ -42,27 +42,19 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
     assertTokenStreamContents(
         stream,
         new String[] {
-          "min",
-          "veninde",
-          "som", "er",
-          "lidt",
-          "af",
-          "en",
-          "læsehest",
-          "læse",
-          "hest"
+          "min", "veninde", "som", "er", "lidt", "af", "en", "læsehest", "læse", "hest"
         },
         new int[] {1, 1, 1, 1, 1, 1, 1, 1, 0, 0});
   }
 
   /**
-   * just tests that the two no configuration options are correctly processed
-   * tests for the functionality are part of {@link TestCompoundWordTokenFilter}
+   * just tests that the two no configuration options are correctly processed tests for the
+   * functionality are part of {@link TestCompoundWordTokenFilter}
    */
   public void testLucene8183() throws Exception {
     Reader reader = new StringReader("basketballkurv");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream =
         tokenFilterFactory(
           "HyphenationCompoundWord",
