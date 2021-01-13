@@ -95,8 +95,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
             .create(stream);
 
     assertTokenStreamContents(
-        stream,
-        new String[] {"basketballkurv", "ba", "sket", "ball", "bal", "kurv"});
+        stream, new String[] {"basketballkurv", "ba", "sket", "ball", "bal", "kurv"});
   }
 
   /** Test that bogus arguments result in exception */
@@ -106,11 +105,7 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
             IllegalArgumentException.class,
             () -> {
               tokenFilterFactory(
-                  "HyphenationCompoundWord",
-                  "hyphenator",
-                  "da_UTF8.xml",
-                  "bogusArg",
-                  "bogusValue");
+                  "HyphenationCompoundWord", "hyphenator", "da_UTF8.xml", "bogusArg", "bogusValue");
             });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
