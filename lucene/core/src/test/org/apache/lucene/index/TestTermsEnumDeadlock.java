@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.BytesRef;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Paths;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.BytesRef;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class TestTermsEnumDeadlock extends Assert {
   private static final int MAX_TIME_SECONDS = 15;
@@ -35,13 +34,13 @@ public class TestTermsEnumDeadlock extends Assert {
     for (int i = 0; i < 20; i++) {
       // Fork a separate JVM to reinitialize classes.
       final Process p =
-              new ProcessBuilder(
-                      Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
-                      "-cp",
-                      System.getProperty("java.class.path"),
-                      getClass().getName())
-                      .inheritIO()
-                      .start();
+          new ProcessBuilder(
+                  Paths.get(System.getProperty("java.home"), "bin", "java").toString(),
+                  "-cp",
+                  System.getProperty("java.class.path"),
+                  getClass().getName())
+              .inheritIO()
+              .start();
       long waitingTime = MAX_TIME_SECONDS * 2L;
       if (p.waitFor(waitingTime, TimeUnit.SECONDS)) {
         assertEquals("Process died abnormally?", 0, p.waitFor());
@@ -64,15 +63,22 @@ public class TestTermsEnumDeadlock extends Assert {
     int delayMillis = ThreadLocalRandom.current().nextInt(100, 200);
     System.out.println("delayMillis : " + delayMillis);
 
-    new Thread(() -> {
-      System.out.println(Thread.currentThread() + " Sleeping before TermsEnum init : " + delayMillis + " ms");
-      try {
-        Thread.sleep(delayMillis);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-      System.out.println(Thread.currentThread() + " TermsEnum Created : " + TermsEnum.EMPTY);
-    }).start();
+    new Thread(
+            () -> {
+              System.out.println(
+                  Thread.currentThread()
+                      + " Sleeping before TermsEnum init : "
+                      + delayMillis
+                      + " ms");
+              try {
+                Thread.sleep(delayMillis);
+              } catch (InterruptedException e) {
+                e.printStackTrace();
+              }
+              System.out.println(
+                  Thread.currentThread() + " TermsEnum Created : " + TermsEnum.EMPTY);
+            })
+        .start();
 
     try {
       Thread.sleep(delayMillis);
@@ -92,8 +98,7 @@ public class TestTermsEnumDeadlock extends Assert {
     }
 
     @Override
-    public void seekExact(long ord) throws IOException {
-    }
+    public void seekExact(long ord) throws IOException {}
 
     @Override
     public BytesRef term() throws IOException {
