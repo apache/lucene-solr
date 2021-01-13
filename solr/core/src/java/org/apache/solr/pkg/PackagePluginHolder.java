@@ -20,6 +20,8 @@ package org.apache.solr.pkg;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
@@ -58,8 +60,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public PluginInfo pluginInfo() {
-        return info;
+      public Map<String, PackageLoader.Package.Version> packageDetails() {
+        return Collections.singletonMap(info.cName.original, pkgVersion);
       }
 
       @Override

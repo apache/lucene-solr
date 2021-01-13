@@ -110,7 +110,10 @@ public class PackageListeners {
     /**Name of the package or null to listen to all package changes */
     String packageName();
 
-    PluginInfo pluginInfo();
+    /** fetch the package versions of class names
+     *
+     */
+    Map<String, PackageLoader.Package.Version> packageDetails();
 
     /**A callback when the package is updated */
     void changed(PackageLoader.Package pkg, Ctx ctx);

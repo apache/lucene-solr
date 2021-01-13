@@ -19,11 +19,7 @@ package org.apache.solr.handler.component;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +27,7 @@ import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -162,8 +159,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         }
 
         @Override
-        public PluginInfo pluginInfo() {
-          return null;
+        public Map<String , PackageLoader.Package.Version> packageDetails() {
+          return Collections.emptyMap();
         }
 
         @Override
