@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
+
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -36,6 +38,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOSupplier;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -157,7 +160,7 @@ public final class SortingCodecReader extends FilterCodecReader {
   static CodecReader wrap(CodecReader reader, Sorter.DocMap docMap, Sort sort) {
     LeafMetaData metaData = reader.getMetaData();
     LeafMetaData newMetaData =
-        new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), sort);
+        new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), metaData.getCreatedVersionMajor(), sort);
     if (docMap == null) {
       // the reader is already sorted
       return new FilterCodecReader(reader) {

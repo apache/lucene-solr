@@ -1009,6 +1009,11 @@ public class IndexWriter
         changed();
 
       } else if (reader != null) {
+        if (reader.segmentInfos.getIndexCreatedVersionMajor() < Version.MIN_SUPPORTED_MAJOR) {
+          // second line of defence in the case somebody tries to trick us.
+          throw new IllegalArgumentException("createdVersionMajor must be >= " + Version.MIN_SUPPORTED_MAJOR
+                          + ", got: " + reader.segmentInfos.getIndexCreatedVersionMajor());
+        }
         // Init from an existing already opened NRT or non-NRT reader:
 
         if (reader.directory() != commit.getDirectory()) {

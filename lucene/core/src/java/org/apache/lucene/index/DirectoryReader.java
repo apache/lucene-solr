@@ -105,6 +105,17 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
   }
 
   /**
+   * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}.
+   *
+   * @param commit the commit point to open
+   * @param minIndexVersionCreated the minimum index version created to check before opening the index
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final IndexCommit commit, int minIndexVersionCreated) throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), minIndexVersionCreated, commit);
+  }
+
+  /**
    * If the index has changed since the provided reader was opened, open and return a new reader;
    * else, return null. The new reader, if not null, will be the same type of reader as the previous
    * one, ie an NRT reader will open a new NRT reader, a MultiReader will open a new MultiReader,

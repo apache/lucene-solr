@@ -83,6 +83,7 @@ public final class CheckIndex implements Closeable {
   private Directory dir;
   private Lock writeLock;
   private volatile boolean closed;
+  private int minIndexVersionCreated = Version.MIN_SUPPORTED_MAJOR;
 
   /**
    * Returned from {@link #checkIndex()} detailing the health and status of the index.
@@ -462,6 +463,11 @@ public final class CheckIndex implements Closeable {
     this.verbose = verbose;
   }
 
+  /** Set the minimum index version created for the index to check */
+  public void setMinIndexVersionCreated(int minIndexVersionCreated) {
+    this.minIndexVersionCreated = minIndexVersionCreated;
+  }
+
   /** Set infoStream where messages should go. See {@link #setInfoStream(PrintStream,boolean)}. */
   public void setInfoStream(PrintStream out) {
     setInfoStream(out, false);
@@ -681,7 +687,7 @@ public final class CheckIndex implements Closeable {
 
         long startOpenReaderNS = System.nanoTime();
         if (infoStream != null) infoStream.print("    test: open reader.........");
-        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), IOContext.DEFAULT);
+        reader = new SegmentReader(info, sis.getIndexCreatedVersionMajor(), minIndexVersionCreated, IOContext.DEFAULT);
         msg(
             infoStream,
             String.format(
@@ -3802,6 +3808,7 @@ public final class CheckIndex implements Closeable {
     boolean doSlowChecks = false;
     boolean verbose = false;
     boolean doChecksumsOnly = false;
+    int minIndexVersionCreated = Version.MIN_SUPPORTED_MAJOR;
     List<String> onlySegments = new ArrayList<>();
     String indexPath = null;
     String dirImpl = null;
@@ -3900,6 +3907,12 @@ public final class CheckIndex implements Closeable {
         }
         i++;
         opts.dirImpl = args[i];
+      } else if ("-min_version_created".equals(args[i])) {
+        if (i == args.length - 1) {
+          throw new IllegalArgumentException("ERROR: missing value for -min_version_created");
+        }
+        i++;
+        opts.minIndexVersionCreated = Integer.parseUnsignedInt(args[i]);
       } else {
         if (opts.indexPath != null) {
           throw new IllegalArgumentException("ERROR: unexpected extra argument '" + args[i] + "'");
@@ -3967,6 +3980,7 @@ public final class CheckIndex implements Closeable {
     setDoSlowChecks(opts.doSlowChecks);
     setChecksumsOnly(opts.doChecksumsOnly);
     setInfoStream(opts.out, opts.verbose);
+    setMinIndexVersionCreated(opts.minIndexVersionCreated);
 
     Status result = checkIndex(opts.onlySegments);
     if (result.missingSegments) {
