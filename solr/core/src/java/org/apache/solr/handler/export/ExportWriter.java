@@ -90,15 +90,16 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * bitmap identifies the smallest docs (default is {@link #DEFAULT_BATCH_SIZE}) that haven't been sent yet and stores them in a
  * Priority Queue.  They are then exported (written across the wire) and marked as sent (unset in the bitmap).
  * This process repeats until all matching documents have been sent.
- * <p>
- * This streaming approach is light on memory (only up to 2x batch size documents are ever stored in memory at
- * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
  */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String BATCH_SIZE_PARAM = "batchSize";
+  public static final String QUEUE_SIZE_PARAM = "queueSize";
+
   public static final int DEFAULT_BATCH_SIZE = 30000;
+  public static final int DEFAULT_QUEUE_SIZE = 150000;
+
 
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -106,7 +107,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final StreamContext initialStreamContext;
   final SolrMetricsContext solrMetricsContext;
   final String metricsPath;
+  //The batch size for the output writer thread.
   final int batchSize;
+  //The max combined size of the segment level priority queues.
+  final int priorityQueueSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
   FieldWriter[] fieldWriters;
@@ -126,8 +130,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
-    // may be too tricky to get this right? always use default for now
-    //this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
+    this.priorityQueueSize = req.getParams().getInt(QUEUE_SIZE_PARAM, DEFAULT_QUEUE_SIZE);
     this.batchSize = DEFAULT_BATCH_SIZE;
   }
 
@@ -662,7 +665,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       int[] sizes = new int[leaves.size()];
       for (int i = 0; i < leaves.size(); i++) {
         long maxDoc = leaves.get(i).reader().maxDoc();
-        int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * 200000), batchSize);
+        int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * this.priorityQueueSize), batchSize);
         sizes[i] = sortQueueSize;
       }
 
@@ -700,28 +703,26 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     public SortDoc next() throws IOException {
-      SortDoc sortDoc = null;
+      SortDoc _sortDoc = null;
       if (index > -1) {
-        sortDoc = outDocs[index--];
+        _sortDoc = outDocs[index--];
       } else {
         topDocs();
         if (index > -1) {
-          sortDoc = outDocs[index--];
+          _sortDoc = outDocs[index--];
         }
       }
 
-      if (sortDoc != null) {
+      if (_sortDoc != null) {
         //Clear the bit so it's not loaded again.
-        bits.clear(sortDoc.docId);
+        bits.clear(_sortDoc.docId);
 
         //Load the global ordinal (only matters for strings)
-        sortDoc.setGlobalValues(nextDoc);
+        _sortDoc.setGlobalValues(nextDoc);
 
-        //Save this doc so we don't have to lookup the global ordinal for the next doc if they have the same segment ordinal.
-        //lastDoc.setValues(sortDoc);
-        nextDoc.setValues(sortDoc);
+        nextDoc.setValues(_sortDoc);
         //We are now done with this doc.
-        sortDoc.reset();
+        _sortDoc.reset();
       } else {
         nextDoc = null;
       }
@@ -732,13 +733,13 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       try {
         queue.reset();
         SortDoc top = queue.top();
-        sortDoc.setNextReader(context);
+        this.sortDoc.setNextReader(context);
         DocIdSetIterator it = new BitSetIterator(bits, 0); // cost is not useful here
         int docId;
         while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          sortDoc.setValues(docId);
-          if (top.lessThan(sortDoc)) {
-            top.setValues(sortDoc);
+          this.sortDoc.setValues(docId);
+          if (top.lessThan(this.sortDoc)) {
+            top.setValues(this.sortDoc);
             top = queue.updateTop();
           }
         }
@@ -746,10 +747,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         //Pop the queue and load up the array.
         index = -1;
 
-        SortDoc sortDoc;
-        while ((sortDoc = queue.pop()) != null) {
-          if (sortDoc.docId > -1) {
-            outDocs[++index] = sortDoc;
+        SortDoc _sortDoc;
+        while ((_sortDoc = queue.pop()) != null) {
+          if (_sortDoc.docId > -1) {
+            outDocs[++index] = _sortDoc;
           }
         }
       } catch (Exception e) {

@@ -161,6 +161,6 @@ class StringValue implements SortValue {
   }
 
   public String toString() {
-    return "HERE:"+Integer.toString(this.currentOrd);
+    return Integer.toString(this.currentOrd);
   }
 }
