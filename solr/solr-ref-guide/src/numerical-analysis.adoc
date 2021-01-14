@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section explores the interrelated Math Expressions for Interpolation and Numerical Calculus.
+This section explores the interrelated math expressions for interpolation and numerical calculus.
 
 == Interpolation
 

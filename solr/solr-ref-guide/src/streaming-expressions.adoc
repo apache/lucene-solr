@@ -17,8 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Streaming Expressions exposes the capabilities of SolrCloud as composable functions. These functions provide a system for
-searching, transforming, analyzing and visualizing data stored in SolrCloud collections.
+Streaming expressions exposes the capabilities of SolrCloud as composable functions.
+These functions provide a system for searching, transforming, analyzing, and visualizing data stored in SolrCloud collections.
 
 At a high level there a four main capabilities that will be explored in the documentation:
 
@@ -33,9 +33,11 @@ At a high level there a four main capabilities that will be explored in the docu
 
 == Stream Language Basics
 
-Streaming Expressions are comprised of streaming functions which work with a Solr collection. They emit a stream of tuples (key/value Maps).
+Streaming expressions are comprised of streaming functions which work with a Solr collection.
+They emit a stream of tuples (key/value Maps).
 
-Some of the provided streaming functions are designed to work with entire result sets rather than the top N results like normal search. This is supported by the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>.
+Some of the provided streaming functions are designed to work with entire result sets rather than the top N results like normal search.
+This is supported by the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>.
 
 Some streaming functions act as stream sources to originate the stream flow. Other streaming functions act as stream decorators to wrap other stream functions and perform operations on the stream of tuples. Many streams functions can be parallelized across a worker collection. This can be particularly powerful for relational algebra functions.
 
@@ -99,21 +101,23 @@ A full reference to all available decorator expressions is available in <<stream
 === Math Expressions
 
 Math expressions are a vector and matrix math library that can be combined with streaming expressions to perform analysis and build mathematical models
-of the result sets. From a language standpoint Math Expressions are a sub-langauge of streaming expressions that don't return streams of tuples. Instead
-they operate on and return numbers, vectors, matrices and mathematical models. The documentation will show how to combine Streaming Expressions and Math
-Expressions.
+of the result sets.
+From a language standpoint math expressions are a sub-language of streaming expressions that don't return streams of tuples.
+Instead they operate on and return numbers, vectors, matrices and mathematical models.
+The documentation will show how to combine streaming expressions and math
+expressions.
 
-The Math Expressions user guide is available in <<>>
+The math expressions user guide is available in <<>>
 
-From a language standpoint Math Expressions are referred to as Stream Evaluators.
+From a language standpoint math expressions are referred to as *stream evaluators*.
 
 A full reference to all available evaluator expressions is available in <<stream-evaluator-reference.adoc#stream-evaluator-reference,Stream Evaluator Reference>>.
 
 === Visualization
 
 
-Visualization of both Streaming Expressions and Math Expressions is done using Apache Zeppelin and the Zeppelin-Solr Interpreter.
+Visualization of both streaming expressions and math expressions is done using Apache Zeppelin and the Zeppelin-Solr Interpreter.
 
-Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in<<>>
+Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>>.
 
-The Math Expressions user guide has in depth coverage of visualization techniques.
+The <<math-expressions.adoc,Math Expressions User Guide>> has in depth coverage of visualization techniques.

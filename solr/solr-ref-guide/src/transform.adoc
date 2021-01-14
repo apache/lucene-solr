@@ -17,8 +17,8 @@
 // under the License.
 
 
-Streaming Expressions provides a powerful set of functions for transforming result sets. This section
-of the user guide provides an overview of useful transformations applied to result sets.
+Streaming expressions provides a powerful set of functions for transforming result sets.
+This section of the user guide provides an overview of useful transformations applied to result sets.
 
 == Selecting and Adding Fields
 

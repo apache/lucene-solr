@@ -1,5 +1,5 @@
 = Streaming Expressions and Math Expressions
-:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry, logs
+:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, computational-geometry, logs
 :page-show-toc: false
 
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -25,9 +25,9 @@ image::images/math-expressions/searchiris.png[]
 
 == Table of Contents
 
-*<<visualization.adoc#visualization,Visualizations>>*: Gallery of Streaming Expressions and Math Expressions visualizations.
+*<<visualization.adoc#visualization,Visualizations>>*: Gallery of streaming expression and math expression visualizations.
 
-*<<math-start.adoc#math-start,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and visualization.
+*<<math-start.adoc#math-start,Getting Started>>*: Getting started with streaming expressions, math expressions, and visualization.
 
 *<<loading.adoc#data-loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
 

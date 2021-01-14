@@ -16,15 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Streaming Expressions has support for reading, parsing, transforming, visualizing
-and loading CSV and TSV formatted data. These functions are designed to cut down the
-time spent on data preparation and allow users to begin data exploration before the data is
-loaded into Solr.
+Streaming expressions has support for reading, parsing, transforming, visualizing and loading CSV and TSV formatted data.
+These functions are designed to cut down the time spent on data preparation and allow users to begin data exploration before the data is loaded into Solr.
 
 == Reading Files
 
 The `cat` function can be used to read files under the *userfiles* directory in
-$SOLR_HOME. The `cat` function takes two parameters.
+`$SOLR_HOME`. The `cat` function takes two parameters.
 
 The first parameter is a comma-delimited list of paths.
 If the path list contains directories, `cat` will crawl all the files in the directory and sub-directories.
@@ -187,9 +185,9 @@ image::images/math-expressions/update.png[]
 
 == Transforming Data
 
-Streaming Expressions and Math Expression provide a powerful set of functions
-for transforming data. The section below shows some useful transformations that
-can be applied while analyzing, visualizing, and loading CSV and TSV files.
+Streaming expressions and math expressions provide a powerful set of functions
+for transforming data.
+The section below shows some useful transformations that can be applied while analyzing, visualizing, and loading CSV and TSV files.
 
 === Unique IDs
 
@@ -474,7 +472,7 @@ more compute resources to be applied to the NLP indexing then is available on th
 * Using the `cartesianProduct` function the analyzed tokens can be indexed as individual documents which allows
 analyzed tokens to be searched and analyzed with Solr's aggregation and graph expressions.
 * Also using `cartesianProduct` the analyzed tokens can be aggregated, analyzed and visualized using
-Streaming Expressions directly before indexing occurs.
+streaming expressions directly before indexing occurs.
 
 
 Below is an example of the `analyze` function being applied to the *Resolution.Description*

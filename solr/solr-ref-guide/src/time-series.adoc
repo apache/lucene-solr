@@ -277,9 +277,8 @@ image::images/math-expressions/outliers.png[]
 
 == Modeling
 
-Math Expressions has a number of functions that can be used to
-model a time series. These functions include linear regression,
-polynomial and harmonic curve fitting, loess regression, and KNN regression.
+Math expressions support in Solr includes a number of functions that can be used to model a time series.
+These functions include linear regression, polynomial and harmonic curve fitting, loess regression, and KNN regression.
 
 Each of these functions can model a time series and be used for
 interpolation (predicting values within the dataset) and several
