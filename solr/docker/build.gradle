@@ -81,9 +81,6 @@ task dockerBuild(dependsOn: tasks.dockerTar) {
   ])
   inputs.dir(dockerBuildDistribution)
 
-  // Docker build must run after the docker context has been created & tarred
-  mustRunAfter tasks.dockerTar
-
   doLast {
     exec {
       standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
@@ -119,9 +116,6 @@ task dockerTag(dependsOn: tasks.dockerBuild) {
   ])
   inputs.file(dockerImageIdFile)
 
-  // Docker tag must run after docker build
-  mustRunAfter tasks.dockerBuild
-
   doLast {
     def dockerImageId = dockerImageIdFile.text
 
@@ -150,9 +144,6 @@ task testDocker(dependsOn: tasks.dockerBuild) {
   ])
   inputs.file(imageIdFile)
   inputs.dir(inputDir)
-
-  // Docker tests can only be run once the docker image is built
-  mustRunAfter tasks.dockerBuild
 
   doLast {
     def solrImageId = tasks.dockerBuild.outputs.files.singleFile.text
@@ -193,8 +184,6 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   ])
   inputs.file(imageIdFile)
 
-  // Docker push must run after docker tag
-  mustRunAfter tasks.dockerTag
   // We don't want to push a docker image unless the tests have passed
   mustRunAfter tasks.testDocker
 
