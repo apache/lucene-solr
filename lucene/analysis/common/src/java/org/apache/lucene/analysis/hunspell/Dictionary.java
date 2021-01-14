@@ -98,6 +98,7 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
+  static final String DEFAULT_ENCODING = "ISO8859-1";
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -642,10 +643,8 @@ public class Dictionary {
    * @param affix InputStream for reading the affix file
    * @return Encoding specified in the affix file
    * @throws IOException Can be thrown while reading from the InputStream
-   * @throws ParseException Thrown if the first non-empty non-comment line read from the file does
-   *     not adhere to the format {@code SET <encoding>}
    */
-  static String getDictionaryEncoding(InputStream affix) throws IOException, ParseException {
+  static String getDictionaryEncoding(InputStream affix) throws IOException {
     final StringBuilder encoding = new StringBuilder();
     for (; ; ) {
       encoding.setLength(0);
@@ -664,7 +663,7 @@ public class Dictionary {
           // this test only at the end as ineffective but would allow lines only containing spaces:
           encoding.toString().trim().length() == 0) {
         if (ch < 0) {
-          throw new ParseException("Unexpected end of affix file.", 0);
+          return DEFAULT_ENCODING;
         }
         continue;
       }
@@ -673,6 +672,7 @@ public class Dictionary {
         int last = matcher.end();
         return encoding.substring(last).trim();
       }
+      return DEFAULT_ENCODING;
     }
   }
 
