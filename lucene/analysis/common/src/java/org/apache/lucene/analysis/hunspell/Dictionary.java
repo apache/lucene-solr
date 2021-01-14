@@ -98,7 +98,7 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
-  static final String DEFAULT_ENCODING = "ISO8859-1";
+  static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
