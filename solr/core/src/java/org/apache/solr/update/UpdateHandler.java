@@ -111,7 +111,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public UpdateHandler(SolrCore core)  {
     this(core, null);
   }
-  
+
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();
@@ -126,8 +126,8 @@ public abstract class UpdateHandler implements SolrInfoBean {
       if (dirFactory instanceof HdfsDirectoryFactory) {
         ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
-        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
+        ulog = ulogPluginInfo.className == null ? new UpdateLog():
+            core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
       }
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {

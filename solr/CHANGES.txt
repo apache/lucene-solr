@@ -62,6 +62,8 @@ Improvements
 
 * SOLR-15040: Improvements to postlogs timestamp handling (Joel Bernstein)
 
+* SOLR-14155: Load all other SolrCore plugins from packages (noble)
+
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
