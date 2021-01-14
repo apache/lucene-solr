@@ -21,6 +21,7 @@ import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestEdisMaxSolrFeature extends TestRerankBase {
@@ -74,6 +75,7 @@ public class TestEdisMaxSolrFeature extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==4");
   }
 
+  @Ignore("SOLR-15071")
   @Test
   public void testEdisMaxSolrFeatureCustomMM() throws Exception {
     loadFeature(
