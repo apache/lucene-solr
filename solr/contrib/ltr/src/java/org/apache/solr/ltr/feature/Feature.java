@@ -364,6 +364,10 @@ public abstract class Feature extends Query implements Accountable {
         return in.iterator();
       }
 
+      // Currently (Q1 2021) we intentionally don't delegate twoPhaseIterator()
+      // because it doesn't always work and we don't yet know why, please see
+      // SOLR-15071 for more details.
+
       @Override
       public int advanceShallow(int target) throws IOException {
         return in.advanceShallow(target);
