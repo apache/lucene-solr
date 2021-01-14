@@ -23,8 +23,13 @@ import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
+  @Test
+  public void i53643_numbersWithSeparators() throws Exception {
+    doTest("i53643");
+  }
 
   public void testBreak() throws Exception {
     doTest("break");

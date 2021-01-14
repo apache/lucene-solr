@@ -35,9 +35,15 @@ public class SpellChecker {
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
   public boolean spell(String word) {
+    if (word.isEmpty()) return true;
+
     char[] wordChars = word.toCharArray();
     if (dictionary.isForbiddenWord(wordChars, scratch)) {
       return false;
+    }
+
+    if (isNumber(word)) {
+      return true;
     }
 
     if (!stemmer.stem(wordChars, word.length()).isEmpty()) {
@@ -49,6 +55,28 @@ public class SpellChecker {
     }
 
     return false;
+  }
+
+  private static boolean isNumber(String s) {
+    int i = 0;
+    while (i < s.length()) {
+      char c = s.charAt(i);
+      if (isDigit(c)) {
+        i++;
+      } else if (c == '.' || c == ',' || c == '-') {
+        if (i == 0 || i >= s.length() - 1 || !isDigit(s.charAt(i + 1))) {
+          return false;
+        }
+        i += 2;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean isDigit(char c) {
+    return c >= '0' && c <= '9';
   }
 
   private boolean tryBreaks(String word) {
