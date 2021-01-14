@@ -102,6 +102,69 @@ public class TestPackages extends SolrCloudTestCase {
     @JsonProperty("class")
     public String klass;
   }
+
+
+  public void testCoreReloadingPlugin() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("conf2"))
+            .configure();
+    try {
+      String FILE1 = "/mypkg/runtimelibs.jar";
+      String COLLECTION_NAME = "testCoreReloadingPluginColl";
+      byte[] derFile = readFile("cryptokeys/pub_key512.der");
+      uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
+      postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE1,
+          "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
+
+      Package.AddVersion add = new Package.AddVersion();
+      add.version = "1.0";
+      add.pkg = "mypkg";
+      add.files = Arrays.asList(new String[]{FILE1});
+      V2Request req = new V2Request.Builder("/cluster/package")
+          .forceV2(true)
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload(Collections.singletonMap("add", add))
+          .build();
+
+      req.process(cluster.getSolrClient());
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/cluster/package").
+              withMethod(SolrRequest.METHOD.GET)
+              .build().process(cluster.getSolrClient()),
+          Utils.makeMap(
+              ":result:packages:mypkg[0]:version", "1.0",
+              ":result:packages:mypkg[0]:files[0]", FILE1
+          ));
+
+      CollectionAdminRequest
+          .createCollection(COLLECTION_NAME, "conf", 2, 2)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+      verifyComponent(cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", add.pkg, add.version);
+
+
+      add.version = "2.0";
+      req.process(cluster.getSolrClient());
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/cluster/package").
+              withMethod(SolrRequest.METHOD.GET)
+              .build().process(cluster.getSolrClient()),
+          Utils.makeMap(
+              ":result:packages:mypkg[1]:version", "2.0",
+              ":result:packages:mypkg[1]:files[0]", FILE1
+          ));
+      new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION_NAME);
+
+      verifyComponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "query", "filterCache",
+          "mypkg", "2.0" );
+    } finally {
+      cluster.shutdown();
+    }
+  }
   @Test
   @SuppressWarnings({"unchecked"})
   public void testPluginLoading() throws Exception {
@@ -650,10 +713,10 @@ public class TestPackages extends SolrCloudTestCase {
     System.setProperty("managed.schema.mutable", "true");
 
     MiniSolrCloudCluster cluster =
-            configureCluster(4)
-                    .withJettyConfig(jetty -> jetty.enableV2(true))
-                    .addConfig("conf1", configset("schema-package"))
-                    .configure();
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf1", configset("schema-package"))
+            .configure();
     try {
       String FILE1 = "/schemapkg/schema-plugins.jar";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
@@ -686,14 +749,14 @@ public class TestPackages extends SolrCloudTestCase {
           ));
 
       CollectionAdminRequest
-              .createCollection(COLLECTION_NAME, "conf1", 2, 2)
-              .process(cluster.getSolrClient());
+          .createCollection(COLLECTION_NAME, "conf1", 2, 2)
+          .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
       verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
-              Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
-                      ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
-                      ":fieldType:_packageinfo_:version","1.0"));
+          Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
+              ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
+              ":fieldType:_packageinfo_:version","1.0"));
 
       add = new Package.AddVersion();
       add.version = "2.0";

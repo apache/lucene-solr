@@ -26,9 +26,8 @@ import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 /**
  * A {@link SolrClassLoader} that is designed to listen to a set of packages.
@@ -37,22 +36,29 @@ import java.util.function.Function;
  * */
 public class PackageListeningClassLoader implements SolrClassLoader , PackageListeners.Listener {
     private final CoreContainer coreContainer;
-    private final SolrResourceLoader coreResourceLoader;
+    private final SolrClassLoader fallbackClassLoader;
     private final Function<String, String> pkgVersionSupplier;
     /** package name and the versions that we are tracking
      */
-    private Map<String ,PackageAPI.PkgVersion> packageVersions =  new HashMap<>(1);
+    private Map<String ,PackageAPI.PkgVersion> packageVersions =  new ConcurrentHashMap<>(1);
+    private Map<String, String> classNameVsPackageName = new ConcurrentHashMap<>();
     private final Runnable onReload;
 
+    /**
+     * @param fallbackClassLoader The {@link SolrClassLoader} to use if no package is specified
+     * @param pkgVersionSupplier Get the version configured for a given package
+     * @param onReload The callback function that should be run if a package is updated
+     */
     public PackageListeningClassLoader(CoreContainer coreContainer,
-                                       SolrResourceLoader coreResourceLoader,
+                                       SolrClassLoader fallbackClassLoader,
                                        Function<String, String> pkgVersionSupplier,
                                        Runnable onReload) {
         this.coreContainer = coreContainer;
-        this.coreResourceLoader = coreResourceLoader;
+        this.fallbackClassLoader = fallbackClassLoader;
         this.pkgVersionSupplier = pkgVersionSupplier;
         this.onReload = () -> {
-            packageVersions = new HashMap<>();
+            packageVersions = new ConcurrentHashMap<>();
+            classNameVsPackageName = new ConcurrentHashMap<>();
             onReload.run();
         };
     }
@@ -61,18 +67,28 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     @Override
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
-        if(cName.pkg == null){
-            return coreResourceLoader.newInstance(cname, expectedType, subpackages);
+        if(cName.pkg == null) {
+            return fallbackClassLoader.newInstance(cname, expectedType, subpackages);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName);
-            return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subpackages));
-
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
+            T obj = version.getLoader().newInstance(cName.className, expectedType, subpackages);
+            classNameVsPackageName.put(cName.original, cName.pkg);
+            return applyResourceLoaderAware(version, obj);
         }
     }
 
-    private PackageLoader.Package.Version findPkgVersion(PluginInfo.ClassName cName) {
+
+    /**
+     * This looks up for package and also listens for that package if required
+     * @param cName The class name
+     */
+    public PackageLoader.Package.Version findPackageVersion(PluginInfo.ClassName cName, boolean registerListener) {
         PackageLoader.Package.Version theVersion = coreContainer.getPackageLoader().getPackage(cName.pkg).getLatest(pkgVersionSupplier.apply(cName.pkg));
-        packageVersions.put(cName.pkg, theVersion.getPkgVersion());
+        if(registerListener) {
+            classNameVsPackageName.put(cName.original, cName.pkg);
+            PackageAPI.PkgVersion pkgVersion = theVersion.getPkgVersion();
+            if(pkgVersion !=null) packageVersions.put(cName.pkg, pkgVersion);
+        }
         return theVersion;
     }
 
@@ -101,10 +117,12 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public <T> T newInstance(String cname, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return coreResourceLoader.newInstance(cname, expectedType, subPackages, params, args);
+            return fallbackClassLoader.newInstance(cname, expectedType, subPackages, params, args);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName);
-            return applyResourceLoaderAware(version, version.getLoader().newInstance(cName.className, expectedType, subPackages, params, args));
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
+            T obj = version.getLoader().newInstance(cName.className, expectedType, subPackages, params, args);
+            classNameVsPackageName.put(cName.original, cName.pkg);
+            return applyResourceLoaderAware(version, obj);
         }
     }
 
@@ -112,10 +130,12 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
         PluginInfo.ClassName cName = new PluginInfo.ClassName(cname);
         if (cName.pkg == null) {
-            return coreResourceLoader.findClass(cname, expectedType);
+            return fallbackClassLoader.findClass(cname, expectedType);
         } else {
-            PackageLoader.Package.Version version = findPkgVersion(cName);
-            return version.getLoader().findClass(cName.className, expectedType);
+            PackageLoader.Package.Version version = findPackageVersion(cName, true);
+            Class<? extends T> klas = version.getLoader().findClass(cName.className, expectedType);
+            classNameVsPackageName.put(cName.original, cName.pkg);
+            return klas;
 
         }
     }
@@ -126,8 +146,10 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
     }
 
     @Override
-    public PluginInfo pluginInfo() {
-        return null;
+    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+        Map<String, PackageAPI.PkgVersion> result = new LinkedHashMap<>();
+        classNameVsPackageName.forEach((k, v) -> result.put(k, packageVersions.get(v)));
+        return result;
     }
 
     @Override
@@ -146,6 +168,11 @@ public class PackageListeningClassLoader implements SolrClassLoader , PackageLis
             //no need to update
             return;
         }
+        doReloadAction(ctx);
+    }
+
+    protected void doReloadAction(Ctx ctx) {
+        if(onReload == null) return;
         ctx.runLater(null, onReload);
     }
 }
