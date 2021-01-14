@@ -181,6 +181,9 @@ public abstract class TermsEnum implements BytesRefIterator {
    */
   public static final TermsEnum EMPTY =
       new TermsEnum() {
+
+        private AttributeSource atts = null;
+
         @Override
         public SeekStatus seekCeil(BytesRef term) {
           return SeekStatus.END;
@@ -224,9 +227,12 @@ public abstract class TermsEnum implements BytesRefIterator {
           return null;
         }
 
-        @Override
-        public AttributeSource attributes() {
-          return new AttributeSource();
+        @Override // make it synchronized here, to prevent double lazy init
+        public synchronized AttributeSource attributes() {
+          if (atts == null) {
+            atts = new AttributeSource();
+          }
+          return atts;
         }
 
         @Override
