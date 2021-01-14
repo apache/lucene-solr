@@ -19,8 +19,6 @@ package org.apache.solr.pkg;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.Map;
 
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
@@ -59,8 +57,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public Map<String, PackageAPI.PkgVersion> packageDetails() {
-        return Collections.singletonMap(info.cName.original, pkgVersion.getPkgVersion());
+      public PluginInfo pluginInfo() {
+        return info;
       }
 
       @Override
@@ -75,12 +73,6 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
     });
-  }
-
-  public static <T> PluginBag.PluginHolder<T> createHolder(T inst,  Class<T> type) {
-    SolrConfig.SolrPluginInfo plugin = SolrConfig.classVsSolrPluginInfo.get(type.getName());
-    PluginInfo info = new PluginInfo(plugin.tag, Collections.singletonMap("class", inst.getClass().getName()));
-    return new PluginBag.PluginHolder<T>(info,inst);
   }
 
   public static <T> PluginBag.PluginHolder<T> createHolder(PluginInfo info, SolrCore core, Class<T> type, String msg) {
@@ -116,7 +108,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
     if (log.isInfoEnabled()) {
       log.info("loading plugin: {} -> {} using  package {}:{}",
-              pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+          pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
     }
 
     initNewInstance(newest);
@@ -127,7 +119,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   @SuppressWarnings({"unchecked"})
   protected Object initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
-            pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
+        pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
     handleAwareCallbacks(newest.getLoader(), instance);
     T old = inst;
