@@ -283,14 +283,18 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static final SegmentInfos readCommit(Directory directory, String segmentFileName)
-      throws IOException {
+  public static final SegmentInfos readCommit(Directory directory, String segmentFileName) throws IOException {
+    return readCommit(directory, segmentFileName, Version.MIN_SUPPORTED_MAJOR);
+  }
+
+  static final SegmentInfos readCommit(Directory directory, String segmentFileName, int minSupportedMajorVersion)
+    throws IOException {
 
     long generation = generationFromSegmentsFileName(segmentFileName);
     // System.out.println(Thread.currentThread() + ": SegmentInfos.readCommit " + segmentFileName);
     try (ChecksumIndexInput input = directory.openChecksumInput(segmentFileName, IOContext.READ)) {
       try {
-        return readCommit(directory, input, generation);
+        return readCommit(directory, input, generation, minSupportedMajorVersion);
       } catch (EOFException | NoSuchFileException | FileNotFoundException e) {
         throw new CorruptIndexException(
             "Unexpected file read error while reading index.", input, e);
@@ -298,9 +302,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
-  /** Read the commit from the provided {@link ChecksumIndexInput}. */
   public static final SegmentInfos readCommit(
-      Directory directory, ChecksumIndexInput input, long generation) throws IOException {
+          Directory directory, ChecksumIndexInput input, long generation) throws IOException {
+    return readCommit(directory, input, generation, Version.MIN_SUPPORTED_MAJOR);
+  }
+
+    /** Read the commit from the provided {@link ChecksumIndexInput}. */
+  static final SegmentInfos readCommit(
+      Directory directory, ChecksumIndexInput input, long generation, int minSupportedMajorVersion) throws IOException {
     Throwable priorE = null;
     int format = -1;
     try {
@@ -329,14 +338,15 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
             input);
       }
 
-      if (indexCreatedVersion < Version.LATEST.major - 1) {
+      if (indexCreatedVersion < minSupportedMajorVersion) {
         throw new IndexFormatTooOldException(
             input,
             "This index was initially created with Lucene "
                 + indexCreatedVersion
                 + ".x while the current version is "
-                + Version.LATEST
-                + " and Lucene only supports reading the current and previous major versions.");
+                + Version.LATEST + " and Lucene only supports reading"
+                + (minSupportedMajorVersion == Version.MIN_SUPPORTED_MAJOR ?
+                    " the current and previous major versions" : " from version " + minSupportedMajorVersion + " upwards"));
       }
 
       SegmentInfos infos = new SegmentInfos(indexCreatedVersion);
@@ -499,7 +509,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
         throw new IllegalArgumentException(
             "Could not load codec '"
                 + name
-                + "'.  Did you forget to add lucene-backward-codecs.jar?",
+                + "'. Did you forget to add lucene-backward-codecs.jar?",
             e);
       }
       throw e;
@@ -508,10 +518,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
 
   /** Find the latest commit ({@code segments_N file}) and load all {@link SegmentCommitInfo}s. */
   public static final SegmentInfos readLatestCommit(Directory directory) throws IOException {
+    return readLatestCommit(directory, Version.MIN_SUPPORTED_MAJOR);
+  }
+
+  static final SegmentInfos readLatestCommit(Directory directory, int minSupportedMajorVersion) throws IOException {
     return new FindSegmentsFile<SegmentInfos>(directory) {
       @Override
       protected SegmentInfos doBody(String segmentFileName) throws IOException {
-        return readCommit(directory, segmentFileName);
+        return readCommit(directory, segmentFileName, minSupportedMajorVersion);
       }
     }.run();
   }

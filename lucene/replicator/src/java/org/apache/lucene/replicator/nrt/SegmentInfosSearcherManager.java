@@ -33,6 +33,7 @@ import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 
 /**
  * A SearcherManager that refreshes via an externally provided (NRT) SegmentInfos, either from
@@ -60,7 +61,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     node.message("SegmentInfosSearcherManager.init: use incoming infos=" + infosIn.toString());
     current =
         SearcherManager.getSearcher(
-            searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null), null);
+            searcherFactory, StandardDirectoryReader.open(dir, currentInfos, Version.MIN_SUPPORTED_MAJOR, null), null);
     addReaderClosedListener(current.getIndexReader());
   }
 
@@ -111,7 +112,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     }
 
     // Open a new reader, sharing any common segment readers with the old one:
-    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs);
+    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, Version.MIN_SUPPORTED_MAJOR, subs);
     addReaderClosedListener(r);
     node.message("refreshed to version=" + currentInfos.getVersion() + " r=" + r);
     return SearcherManager.getSearcher(searcherFactory, r, old.getIndexReader());

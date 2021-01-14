@@ -365,7 +365,7 @@ public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
               si.setCodec(codec);
               SegmentCommitInfo sci =
                   new SegmentCommitInfo(si, 0, 0, -1, -1, -1, StringHelper.randomId());
-              SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, IOContext.DEFAULT);
+              SegmentReader sr = new SegmentReader(sci, Version.LATEST.major, Version.MIN_SUPPORTED_MAJOR, IOContext.DEFAULT);
               try {
                 thread0Count += sr.docFreq(new Term("field", "threadID0"));
                 thread1Count += sr.docFreq(new Term("field", "threadID1"));

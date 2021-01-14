@@ -170,6 +170,7 @@ public class ParallelLeafReader extends LeafReader {
     Version minVersion = Version.LATEST;
     for (final LeafReader reader : this.parallelReaders) {
       Version leafVersion = reader.getMetaData().getMinVersion();
+
       if (leafVersion == null) {
         minVersion = null;
         break;
@@ -179,7 +180,7 @@ public class ParallelLeafReader extends LeafReader {
     }
 
     fieldInfos = builder.finish();
-    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, indexSort);
+    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, createdVersionMajor, indexSort);
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
     for (LeafReader reader : completeReaderSet) {

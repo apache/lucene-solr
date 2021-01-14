@@ -31,15 +31,19 @@ public final class LeafMetaData {
   private final Sort sort;
 
   /** Expert: Sole constructor. Public for use by custom {@link LeafReader} impls. */
-  public LeafMetaData(int createdVersionMajor, Version minVersion, Sort sort) {
+  public LeafMetaData(int createdVersionMajor, Version minVersion, int minVersionSupported, Sort sort) {
     this.createdVersionMajor = createdVersionMajor;
+    if (minVersionSupported > Version.LATEST.major || minVersionSupported < 0) {
+      throw new IllegalArgumentException("minVersionSupported must be positive and <= "
+              + Version.LATEST.major + " but was: " + minVersionSupported);
+    }
     if (createdVersionMajor > Version.LATEST.major) {
       throw new IllegalArgumentException(
           "createdVersionMajor is in the future: " + createdVersionMajor);
     }
-    if (createdVersionMajor < 6) {
+    if (createdVersionMajor < minVersionSupported) {
       throw new IllegalArgumentException(
-          "createdVersionMajor must be >= 6, got: " + createdVersionMajor);
+          "createdVersionMajor must be >= " + minVersionSupported + ", got: " + createdVersionMajor);
     }
     if (createdVersionMajor >= 7 && minVersion == null) {
       throw new IllegalArgumentException("minVersion must be set when createdVersionMajor is >= 7");

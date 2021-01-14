@@ -258,7 +258,7 @@ public class QueryUtils {
 
       @Override
       public LeafMetaData getMetaData() {
-        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+        return new LeafMetaData(Version.LATEST.major, Version.LATEST, Version.MIN_SUPPORTED_MAJOR, null);
       }
 
       @Override

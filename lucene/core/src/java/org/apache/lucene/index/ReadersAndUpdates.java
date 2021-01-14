@@ -42,6 +42,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.Version;
 
 // Used by IndexWriter to hold open SegmentReaders (for
 // searching or merging), plus pending deletes and updates,
@@ -176,7 +177,7 @@ final class ReadersAndUpdates {
   public synchronized SegmentReader getReader(IOContext context) throws IOException {
     if (reader == null) {
       // We steal returned ref:
-      reader = new SegmentReader(info, indexCreatedVersionMajor, context);
+      reader = new SegmentReader(info, indexCreatedVersionMajor, Version.MIN_SUPPORTED_MAJOR, context);
       pendingDeletes.onNewReader(reader, info);
     }
 
@@ -581,7 +582,7 @@ final class ReadersAndUpdates {
       // IndexWriter.commitMergedDeletes).
       final SegmentReader reader;
       if (this.reader == null) {
-        reader = new SegmentReader(info, indexCreatedVersionMajor, IOContext.READONCE);
+        reader = new SegmentReader(info, indexCreatedVersionMajor, Version.MIN_SUPPORTED_MAJOR, IOContext.READONCE);
         pendingDeletes.onNewReader(reader, info);
       } else {
         reader = this.reader;

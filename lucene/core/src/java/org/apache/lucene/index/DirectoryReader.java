@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 
 /**
  * DirectoryReader is an implementation of {@link CompositeReader} that can read indexes in a {@link
@@ -102,6 +103,17 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    */
   public static DirectoryReader open(final IndexCommit commit) throws IOException {
     return StandardDirectoryReader.open(commit.getDirectory(), commit);
+  }
+
+  /**
+   * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}.
+   *
+   * @param commit the commit point to open
+   * @param minIndexVersionCreated the minimum index version created to check before opening the index
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final IndexCommit commit, int minIndexVersionCreated) throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), minIndexVersionCreated, commit);
   }
 
   /**
@@ -217,11 +229,29 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @return a sorted list of {@link IndexCommit}s, from oldest to latest.
    */
   public static List<IndexCommit> listCommits(Directory dir) throws IOException {
+    return listCommits(dir, Version.MIN_SUPPORTED_MAJOR);
+  }
+
+  /**
+   * Returns all commit points that exist in the Directory. Normally, because the default is {@link
+   * KeepOnlyLastCommitDeletionPolicy}, there would be only one commit point. But if you're using a
+   * custom {@link IndexDeletionPolicy} then there could be many commits. Once you have a given
+   * commit, you can open a reader on it by calling {@link DirectoryReader#open(IndexCommit)} There
+   * must be at least one commit in the Directory, else this method throws {@link
+   * IndexNotFoundException}. Note that if a commit is in progress while this method is running,
+   * that commit may or may not be returned.
+   *
+   * @param dir the directory to read the commits from
+   * @param minSupportedMajorVersion the minimum supported major version the index was created with
+   *
+   * @return a sorted list of {@link IndexCommit}s, from oldest to latest.
+   */
+  public static List<IndexCommit> listCommits(Directory dir, int minSupportedMajorVersion) throws IOException {
     final String[] files = dir.listAll();
 
     List<IndexCommit> commits = new ArrayList<>();
 
-    SegmentInfos latest = SegmentInfos.readLatestCommit(dir);
+    SegmentInfos latest = SegmentInfos.readLatestCommit(dir, minSupportedMajorVersion);
     final long currentGen = latest.getGeneration();
 
     commits.add(new StandardDirectoryReader.ReaderCommit(null, latest, dir));

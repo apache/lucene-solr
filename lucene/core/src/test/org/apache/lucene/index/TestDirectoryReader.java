@@ -46,6 +46,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.junit.Assume;
 
 @LuceneTestCase.SuppressCodecs("SimpleText")
@@ -1095,5 +1096,20 @@ public class TestDirectoryReader extends LuceneTestCase {
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));
     dir.close();
+  }
+
+  public void testOpenWithInvalidMinCompatVersion() throws IOException {
+    try (Directory dir = newDirectory();
+          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+      Document doc = new Document();
+      doc.add(newStringField("field1", "foobar", Field.Store.YES));
+      doc.add(newStringField("field2", "foobaz", Field.Store.YES));
+      writer.addDocument(doc);
+      writer.commit();
+      IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
+      expectThrows(IndexFormatTooOldException.class, () -> DirectoryReader.open(commit, Version.LATEST.major+1));
+      expectThrows(IllegalArgumentException.class, () -> DirectoryReader.open(commit, -1));
+      DirectoryReader.open(commit, random().nextInt(Version.LATEST.major+1)).close();
+    }
   }
 }
