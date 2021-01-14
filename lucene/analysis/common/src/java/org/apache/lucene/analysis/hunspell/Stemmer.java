@@ -67,7 +67,7 @@ final class Stemmer {
         suffixReaders[level] = dictionary.suffixes.getBytesReader();
       }
     }
-    formStep = dictionary.hasStemExceptions ? 2 : 1;
+    formStep = dictionary.formStep();
   }
 
   /**
