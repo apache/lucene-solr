@@ -23,16 +23,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.fst.CharSequenceOutputs;
-import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.FSTCompiler;
-import org.apache.lucene.util.fst.Outputs;
-import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.*;
+import org.apache.lucene.util.fst.*;
 
 public class TestDictionary extends LuceneTestCase {
 
@@ -42,18 +34,18 @@ public class TestDictionary extends LuceneTestCase {
     Directory tempDir = getDirectory();
 
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}, 0, 1).length);
-    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}, 0, 1).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
+    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
 
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
-    char flags[] = Dictionary.decodeFlags(ref);
+    char[] flags = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
 
-    ordList = dictionary.lookupWord(new char[] {'l', 'u', 'c', 'e', 'n'}, 0, 5);
+    ordList = dictionary.lookupWord(new char[] {'l', 'u', 'c', 'e', 'n'}, 5);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
     dictionary.flagLookup.get(ordList.ints[0], ref);
@@ -71,12 +63,12 @@ public class TestDictionary extends LuceneTestCase {
 
     Directory tempDir = getDirectory();
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}, 0, 1).length);
-    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}, 0, 1).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
+    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
-    char flags[] = Dictionary.decodeFlags(ref);
+    char[] flags = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -90,12 +82,12 @@ public class TestDictionary extends LuceneTestCase {
     Directory tempDir = getDirectory();
 
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}, 0, 1).length);
-    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}, 0, 1).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
+    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
-    char flags[] = Dictionary.decodeFlags(ref);
+    char[] flags = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -109,12 +101,12 @@ public class TestDictionary extends LuceneTestCase {
     Directory tempDir = getDirectory();
 
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}, 0, 1).length);
-    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}, 0, 1).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
+    assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
+    assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
-    char flags[] = Dictionary.decodeFlags(ref);
+    char[] flags = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -131,9 +123,7 @@ public class TestDictionary extends LuceneTestCase {
     ParseException expected =
         expectThrows(
             ParseException.class,
-            () -> {
-              new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-            });
+            () -> new Dictionary(tempDir, "dictionary", affixStream, dictStream));
     assertTrue(
         expected
             .getMessage()
@@ -153,10 +143,7 @@ public class TestDictionary extends LuceneTestCase {
 
     Exception expected =
         expectThrows(
-            Exception.class,
-            () -> {
-              new Dictionary(tempDir, "dictionary", affixStream, dictStream);
-            });
+            Exception.class, () -> new Dictionary(tempDir, "dictionary", affixStream, dictStream));
     assertTrue(expected.getMessage().startsWith("expected only one flag"));
 
     affixStream.close();
@@ -269,7 +256,7 @@ public class TestDictionary extends LuceneTestCase {
             new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(StandardCharsets.UTF_8))));
   }
 
-  public void testFlagWithCrazyWhitespace() throws Exception {
+  public void testFlagWithCrazyWhitespace() {
     assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
     assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
   }
