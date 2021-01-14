@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -265,6 +266,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       if (!withCollections.values().contains(secondaryCollection.getName())) {
         return;
       }
+      Map<Node, Map<String, AtomicInteger>> secondaryNodeShardReplicas = new HashMap<>();
+      secondaryCollection.shards().forEach(shard ->
+          shard.replicas().forEach(replica -> {
+            secondaryNodeShardReplicas.computeIfAbsent(replica.getNode(), n -> new HashMap<>())
+                .computeIfAbsent(replica.getShard().getShardName(), s -> new AtomicInteger())
+                .incrementAndGet();
+          }));
+
       // find the colocated-with collections
       Cluster cluster = placementContext.getCluster();
       Set<SolrCollection> colocatedCollections = new HashSet<>();
@@ -301,18 +310,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         if (!colocatingNodes.containsKey(replica.getNode())) {
           continue;
         }
-        // check that this is the only replica of this shard on this node
-        Shard shard = replica.getShard();
-        boolean hasOtherReplicas = false;
-        for (Replica otherReplica : shard.replicas()) {
-          if (otherReplica.getNode().equals(replica.getNode())) {
-            hasOtherReplicas = true;
-            break;
-          }
-        }
-        // ok to delete when at least one remains on this node
-        if (hasOtherReplicas) {
-          return;
+        // check that there will be at least one replica remaining
+        AtomicInteger secondaryCount = secondaryNodeShardReplicas
+            .getOrDefault(replica.getNode(), Map.of())
+            .getOrDefault(replica.getShard().getShardName(), new AtomicInteger());
+        if (secondaryCount.get() > 1) {
+          // we can delete it - record the deletion
+          secondaryCount.decrementAndGet();
+          continue;
         }
         // fail - this replica cannot be removed
         if (exception == null) {
