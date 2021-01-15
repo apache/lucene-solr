@@ -22,57 +22,85 @@ public class TestXYCircle extends LuceneTestCase {
 
   /** point values cannot be NaN */
   public void testNaN() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(Float.NaN, 45.23f, 35.5f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(Float.NaN, 45.23f, 35.5f);
+            });
     assertTrue(expected.getMessage().contains("invalid value NaN"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(43.5f, Float.NaN, 35.5f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(43.5f, Float.NaN, 35.5f);
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value NaN"));
   }
 
   /** point values mist be finite */
   public void testPositiveInf() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(Float.POSITIVE_INFINITY, 45.23f, 35.5f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(Float.POSITIVE_INFINITY, 45.23f, 35.5f);
+            });
     assertTrue(expected.getMessage().contains("invalid value Inf"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(43.5f, Float.POSITIVE_INFINITY, 35.5f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(43.5f, Float.POSITIVE_INFINITY, 35.5f);
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value Inf"));
   }
 
   /** point values mist be finite */
   public void testNegativeInf() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(Float.NEGATIVE_INFINITY, 45.23f, 35.5f);
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(Float.NEGATIVE_INFINITY, 45.23f, 35.5f);
+            });
     assertTrue(expected.getMessage().contains("invalid value -Inf"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(43.5f, Float.NEGATIVE_INFINITY, 35.5f);
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(43.5f, Float.NEGATIVE_INFINITY, 35.5f);
+            });
     assertTrue(expected.getMessage(), expected.getMessage().contains("invalid value -Inf"));
   }
 
   /** radius must be positive */
   public void testNegativeRadius() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(43.5f, 45.23f, -1000f);
-    });
-    assertTrue(expected.getMessage(), expected.getMessage().contains("radius must be bigger than 0, got -1000.0"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(43.5f, 45.23f, -1000f);
+            });
+    assertTrue(
+        expected.getMessage(),
+        expected.getMessage().contains("radius must be bigger than 0, got -1000.0"));
   }
 
   /** radius must be lower than 3185504.3857 */
   public void testInfiniteRadius() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new XYCircle(43.5f, 45.23f, Float.POSITIVE_INFINITY);
-    });
-    assertTrue(expected.getMessage(), expected.getMessage().contains("radius must be finite, got Infinity"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new XYCircle(43.5f, 45.23f, Float.POSITIVE_INFINITY);
+            });
+    assertTrue(
+        expected.getMessage(),
+        expected.getMessage().contains("radius must be finite, got Infinity"));
   }
 
   /** equals and hashcode */
@@ -82,7 +110,9 @@ public class TestXYCircle extends LuceneTestCase {
     assertEquals(circle, copy);
     assertEquals(circle.hashCode(), copy.hashCode());
     XYCircle otherCircle = ShapeTestUtil.nextCircle();
-    if (circle.getX() != otherCircle.getX() || circle.getY() != otherCircle.getY() || circle.getRadius() != otherCircle.getRadius()) {
+    if (circle.getX() != otherCircle.getX()
+        || circle.getY() != otherCircle.getY()
+        || circle.getRadius() != otherCircle.getRadius()) {
       assertNotEquals(circle, otherCircle);
       assertNotEquals(circle.hashCode(), otherCircle.hashCode());
     } else {

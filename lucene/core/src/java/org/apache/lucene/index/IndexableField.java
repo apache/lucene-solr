@@ -16,42 +16,39 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
 
-/** Represents a single field for indexing.  IndexWriter
- *  consumes Iterable&lt;IndexableField&gt; as a document.
+/**
+ * Represents a single field for indexing. IndexWriter consumes Iterable&lt;IndexableField&gt; as a
+ * document.
  *
- *  @lucene.experimental */
-
+ * @lucene.experimental
+ */
 public interface IndexableField {
 
   /** Field name */
   public String name();
 
-  /** {@link IndexableFieldType} describing the properties
-   * of this field. */
+  /** {@link IndexableFieldType} describing the properties of this field. */
   public IndexableFieldType fieldType();
 
   /**
-   * Creates the TokenStream used for indexing this field.  If appropriate,
-   * implementations should use the given Analyzer to create the TokenStreams.
+   * Creates the TokenStream used for indexing this field. If appropriate, implementations should
+   * use the given Analyzer to create the TokenStreams.
    *
    * @param analyzer Analyzer that should be used to create the TokenStreams from
-   * @param reuse TokenStream for a previous instance of this field <b>name</b>. This allows
-   *              custom field types (like StringField and NumericField) that do not use
-   *              the analyzer to still have good performance. Note: the passed-in type
-   *              may be inappropriate, for example if you mix up different types of Fields
-   *              for the same field name. So it's the responsibility of the implementation to
-   *              check.
-   * @return TokenStream value for indexing the document.  Should always return
-   *         a non-null value if the field is to be indexed
+   * @param reuse TokenStream for a previous instance of this field <b>name</b>. This allows custom
+   *     field types (like StringField and NumericField) that do not use the analyzer to still have
+   *     good performance. Note: the passed-in type may be inappropriate, for example if you mix up
+   *     different types of Fields for the same field name. So it's the responsibility of the
+   *     implementation to check.
+   * @return TokenStream value for indexing the document. Should always return a non-null value if
+   *     the field is to be indexed
    */
   public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse);
 
@@ -61,9 +58,7 @@ public interface IndexableField {
   /** Non-null if this field has a string value */
   public String stringValue();
 
-  /**
-   * Non-null if this field has a string value
-   */
+  /** Non-null if this field has a string value */
   default CharSequence getCharSequenceValue() {
     return stringValue();
   }

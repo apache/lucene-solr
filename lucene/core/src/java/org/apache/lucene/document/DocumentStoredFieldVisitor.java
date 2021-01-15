@@ -20,28 +20,27 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 
-/** A {@link StoredFieldVisitor} that creates a {@link
- *  Document} from stored fields.
- *  <p>
- *  This visitor supports loading all stored fields, or only specific
- *  requested fields provided from a {@link Set}.
- *  <p>
- *  This is used by {@link IndexReader#document(int)} to load a
- *  document.
+/**
+ * A {@link StoredFieldVisitor} that creates a {@link Document} from stored fields.
  *
- * @lucene.experimental */
-
+ * <p>This visitor supports loading all stored fields, or only specific requested fields provided
+ * from a {@link Set}.
+ *
+ * <p>This is used by {@link IndexReader#document(int)} to load a document.
+ *
+ * @lucene.experimental
+ */
 public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   private final Document doc = new Document();
   private final Set<String> fieldsToAdd;
 
-  /** 
-   * Load only fields named in the provided <code>Set&lt;String&gt;</code>. 
+  /**
+   * Load only fields named in the provided <code>Set&lt;String&gt;</code>.
+   *
    * @param fieldsToAdd Set of fields to load, or <code>null</code> (all fields).
    */
   public DocumentStoredFieldVisitor(Set<String> fieldsToAdd) {
@@ -51,7 +50,7 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   /** Load only fields named in the provided fields. */
   public DocumentStoredFieldVisitor(String... fields) {
     fieldsToAdd = new HashSet<>(fields.length);
-    for(String field : fields) {
+    for (String field : fields) {
       fieldsToAdd.add(field);
     }
   }
@@ -72,7 +71,9 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     ft.setStoreTermVectors(fieldInfo.hasVectors());
     ft.setOmitNorms(fieldInfo.omitsNorms());
     ft.setIndexOptions(fieldInfo.getIndexOptions());
-    doc.add(new StoredField(fieldInfo.name, Objects.requireNonNull(value, "String value should not be null"), ft));
+    doc.add(
+        new StoredField(
+            fieldInfo.name, Objects.requireNonNull(value, "String value should not be null"), ft));
   }
 
   @Override
@@ -102,10 +103,10 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   /**
    * Retrieve the visited document.
-   * @return {@link Document} populated with stored fields. Note that only
-   *         the stored information in the field instances is valid,
-   *         data such as indexing options, term vector options,
-   *         etc is not set.
+   *
+   * @return {@link Document} populated with stored fields. Note that only the stored information in
+   *     the field instances is valid, data such as indexing options, term vector options, etc is
+   *     not set.
    */
   public Document getDocument() {
     return doc;

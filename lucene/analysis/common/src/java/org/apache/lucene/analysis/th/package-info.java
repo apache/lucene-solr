@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Thai.
- */
+/** Analyzer for Thai. */
 package org.apache.lucene.analysis.th;

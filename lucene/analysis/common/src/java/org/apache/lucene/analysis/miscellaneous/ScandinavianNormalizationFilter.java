@@ -16,24 +16,23 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.StemmerUtil;
 
-import java.io.IOException;
-
 /**
- * This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØ
- * and folded variants (aa, ao, ae, oe and oo) by transforming them to åÅæÆøØ.
- * <p>
- * It's a semantically less destructive solution than {@link ScandinavianFoldingFilter},
- * most useful when a person with a Norwegian or Danish keyboard queries a Swedish index
- * and vice versa. This filter does <b>not</b>  the common Swedish folds of å and ä to a nor ö to o.
- * <p>
- * blåbærsyltetøj == blåbärsyltetöj == blaabaarsyltetoej but not blabarsyltetoj
- * räksmörgås == ræksmørgås == ræksmörgaos == raeksmoergaas but not raksmorgas
+ * This filter normalize use of the interchangeable Scandinavian characters æÆäÄöÖøØ and folded
+ * variants (aa, ao, ae, oe and oo) by transforming them to åÅæÆøØ.
+ *
+ * <p>It's a semantically less destructive solution than {@link ScandinavianFoldingFilter}, most
+ * useful when a person with a Norwegian or Danish keyboard queries a Swedish index and vice versa.
+ * This filter does <b>not</b> the common Swedish folds of å and ä to a nor ö to o.
+ *
+ * <p>blåbærsyltetøj == blåbärsyltetöj == blaabaarsyltetoej but not blabarsyltetoj räksmörgås ==
+ * ræksmørgås == ræksmörgaos == raeksmoergaas but not raksmorgas
+ *
  * @see ScandinavianFoldingFilter
  */
 public final class ScandinavianNormalizationFilter extends TokenFilter {
@@ -53,8 +52,7 @@ public final class ScandinavianNormalizationFilter extends TokenFilter {
   private static final char OE = '\u00D8'; // Ø
   private static final char oe = '\u00F8'; // ø
   private static final char OE_se = '\u00D6'; // Ö
-  private static final char oe_se = '\u00F6'; //ö
-
+  private static final char oe_se = '\u00F6'; // ö
 
   @Override
   public boolean incrementToken() throws IOException {
@@ -64,7 +62,6 @@ public final class ScandinavianNormalizationFilter extends TokenFilter {
 
     char[] buffer = charTermAttribute.buffer();
     int length = charTermAttribute.length();
-
 
     int i;
     for (i = 0; i < length; i++) {
@@ -83,11 +80,19 @@ public final class ScandinavianNormalizationFilter extends TokenFilter {
 
       } else if (length - 1 > i) {
 
-        if (buffer[i] == 'a' && (buffer[i + 1] == 'a' || buffer[i + 1] == 'o' || buffer[i + 1] == 'A' || buffer[i + 1] == 'O')) {
+        if (buffer[i] == 'a'
+            && (buffer[i + 1] == 'a'
+                || buffer[i + 1] == 'o'
+                || buffer[i + 1] == 'A'
+                || buffer[i + 1] == 'O')) {
           length = StemmerUtil.delete(buffer, i + 1, length);
           buffer[i] = aa;
 
-        } else if (buffer[i] == 'A' && (buffer[i + 1] == 'a' || buffer[i + 1] == 'A' || buffer[i + 1] == 'o' || buffer[i + 1] == 'O')) {
+        } else if (buffer[i] == 'A'
+            && (buffer[i + 1] == 'a'
+                || buffer[i + 1] == 'A'
+                || buffer[i + 1] == 'o'
+                || buffer[i + 1] == 'O')) {
           length = StemmerUtil.delete(buffer, i + 1, length);
           buffer[i] = AA;
 
@@ -99,23 +104,27 @@ public final class ScandinavianNormalizationFilter extends TokenFilter {
           length = StemmerUtil.delete(buffer, i + 1, length);
           buffer[i] = AE;
 
-        } else if (buffer[i] == 'o' && (buffer[i + 1] == 'e' || buffer[i + 1] == 'E' || buffer[i + 1] == 'o' || buffer[i + 1] == 'O')) {
+        } else if (buffer[i] == 'o'
+            && (buffer[i + 1] == 'e'
+                || buffer[i + 1] == 'E'
+                || buffer[i + 1] == 'o'
+                || buffer[i + 1] == 'O')) {
           length = StemmerUtil.delete(buffer, i + 1, length);
           buffer[i] = oe;
 
-        } else if (buffer[i] == 'O' && (buffer[i + 1] == 'e' || buffer[i + 1] == 'E' || buffer[i + 1] == 'o' || buffer[i + 1] == 'O')) {
+        } else if (buffer[i] == 'O'
+            && (buffer[i + 1] == 'e'
+                || buffer[i + 1] == 'E'
+                || buffer[i + 1] == 'o'
+                || buffer[i + 1] == 'O')) {
           length = StemmerUtil.delete(buffer, i + 1, length);
           buffer[i] = OE;
-
         }
-
       }
     }
 
     charTermAttribute.setLength(length);
 
-
     return true;
   }
-
 }

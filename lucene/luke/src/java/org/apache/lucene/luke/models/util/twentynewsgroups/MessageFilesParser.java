@@ -28,12 +28,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.util.LoggerFactory;
 
-/** 20 Newsgroups (http://kdd.ics.uci.edu/databases/20newsgroups/20newsgroups.html) message files parser */
-public class MessageFilesParser  extends SimpleFileVisitor<Path> {
+/**
+ * 20 Newsgroups (http://kdd.ics.uci.edu/databases/20newsgroups/20newsgroups.html) message files
+ * parser
+ */
+public class MessageFilesParser extends SimpleFileVisitor<Path> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -94,7 +96,8 @@ public class MessageFilesParser  extends SimpleFileVisitor<Path> {
           case "Lines":
             try {
               message.setLines(Integer.parseInt(ary[1].trim()));
-            } catch (NumberFormatException e) {}
+            } catch (NumberFormatException e) {
+            }
             break;
           default:
             break;
@@ -119,5 +122,4 @@ public class MessageFilesParser  extends SimpleFileVisitor<Path> {
     Files.walkFileTree(root, this);
     return messages;
   }
-
 }

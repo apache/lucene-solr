@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -62,39 +61,35 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * A {@link Query} that treats multiple fields as a single stream and scores
- * terms as if you had indexed them as a single term in a single field.
+ * A {@link Query} that treats multiple fields as a single stream and scores terms as if you had
+ * indexed them as a single term in a single field.
  *
- * For scoring purposes this query implements the BM25F's simple formula
- * described in:
- *  http://www.staff.city.ac.uk/~sb317/papers/foundations_bm25_review.pdf
+ * <p>For scoring purposes this query implements the BM25F's simple formula described in:
+ * http://www.staff.city.ac.uk/~sb317/papers/foundations_bm25_review.pdf
  *
- * The per-field similarity is ignored but to be compatible each field must use
- * a {@link Similarity} at index time that encodes norms the same way as
- * {@link SimilarityBase#computeNorm}.
+ * <p>The per-field similarity is ignored but to be compatible each field must use a {@link
+ * Similarity} at index time that encodes norms the same way as {@link SimilarityBase#computeNorm}.
  *
  * @lucene.experimental
  */
 public final class BM25FQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BM25FQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(BM25FQuery.class);
 
-  /**
-   * A builder for {@link BM25FQuery}.
-   */
+  /** A builder for {@link BM25FQuery}. */
   public static class Builder {
     private final BM25Similarity similarity;
     private final Map<String, FieldAndWeight> fieldAndWeights = new HashMap<>();
     private final Set<BytesRef> termsSet = new HashSet<>();
 
-    /**
-     * Default builder.
-     */
+    /** Default builder. */
     public Builder() {
       this.similarity = new BM25Similarity();
     }
 
     /**
      * Builder with the supplied parameter values.
+     *
      * @param k1 Controls non-linear term frequency normalization (saturation).
      * @param b Controls to what degree document length normalizes tf values.
      */
@@ -104,6 +99,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
     /**
      * Adds a field to this builder.
+     *
      * @param field The field name.
      */
     public Builder addField(String field) {
@@ -112,6 +108,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
     /**
      * Adds a field to this builder.
+     *
      * @param field The field name.
      * @param weight The weight associated to this field.
      */
@@ -123,9 +120,7 @@ public final class BM25FQuery extends Query implements Accountable {
       return this;
     }
 
-    /**
-     * Adds a term to this builder.
-     */
+    /** Adds a term to this builder. */
     public Builder addTerm(BytesRef term) {
       if (termsSet.size() > IndexSearcher.getMaxClauseCount()) {
         throw new IndexSearcher.TooManyClauses();
@@ -134,9 +129,7 @@ public final class BM25FQuery extends Query implements Accountable {
       return this;
     }
 
-    /**
-     * Builds the {@link BM25FQuery}.
-     */
+    /** Builds the {@link BM25FQuery}. */
     public BM25FQuery build() {
       int size = fieldAndWeights.size() * termsSet.size();
       if (size > IndexSearcher.getMaxClauseCount()) {
@@ -168,7 +161,10 @@ public final class BM25FQuery extends Query implements Accountable {
 
   private final long ramBytesUsed;
 
-  private BM25FQuery(BM25Similarity similarity, TreeMap<String, FieldAndWeight> fieldAndWeights, BytesRef[] terms) {
+  private BM25FQuery(
+      BM25Similarity similarity,
+      TreeMap<String, FieldAndWeight> fieldAndWeights,
+      BytesRef[] terms) {
     this.similarity = similarity;
     this.fieldAndWeights = fieldAndWeights;
     this.terms = terms;
@@ -185,10 +181,11 @@ public final class BM25FQuery extends Query implements Accountable {
       }
     }
 
-    this.ramBytesUsed = BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(fieldAndWeights) +
-        RamUsageEstimator.sizeOfObject(fieldTerms) +
-        RamUsageEstimator.sizeOfObject(terms);
+    this.ramBytesUsed =
+        BASE_RAM_BYTES
+            + RamUsageEstimator.sizeOfObject(fieldAndWeights)
+            + RamUsageEstimator.sizeOfObject(fieldTerms)
+            + RamUsageEstimator.sizeOfObject(terms);
   }
 
   public List<Term> getTerms() {
@@ -228,8 +225,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-        Arrays.equals(terms, ((BM25FQuery) other).terms);
+    return sameClassAs(other) && Arrays.equals(terms, ((BM25FQuery) other).terms);
   }
 
   @Override
@@ -260,7 +256,8 @@ public final class BM25FQuery extends Query implements Accountable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    Term[] selectedTerms = Arrays.stream(fieldTerms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
+    Term[] selectedTerms =
+        Arrays.stream(fieldTerms).filter(t -> visitor.acceptField(t.field())).toArray(Term[]::new);
     if (selectedTerms.length > 0) {
       QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.SHOULD, this);
       v.consumeTerms(this, selectedTerms);
@@ -277,7 +274,8 @@ public final class BM25FQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     if (scoreMode.needsScores()) {
       return new BM25FWeight(this, searcher, scoreMode, boost);
     } else {
@@ -292,7 +290,8 @@ public final class BM25FQuery extends Query implements Accountable {
     private final TermStates termStates[];
     private final Similarity.SimScorer simWeight;
 
-    BM25FWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    BM25FWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       super(query);
       assert scoreMode.needsScores();
       this.searcher = searcher;
@@ -304,21 +303,24 @@ public final class BM25FQuery extends Query implements Accountable {
         TermStates ts = TermStates.build(searcher.getTopReaderContext(), fieldTerms[i], true);
         termStates[i] = ts;
         if (ts.docFreq() > 0) {
-          TermStatistics termStats = searcher.termStatistics(fieldTerms[i], ts.docFreq(), ts.totalTermFreq());
+          TermStatistics termStats =
+              searcher.termStatistics(fieldTerms[i], ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += (double) field.weight * termStats.totalTermFreq();
         }
       }
       if (docFreq > 0) {
         CollectionStatistics pseudoCollectionStats = mergeCollectionStatistics(searcher);
-        TermStatistics pseudoTermStatistics = new TermStatistics(new BytesRef("pseudo_term"), docFreq, Math.max(1, totalTermFreq));
+        TermStatistics pseudoTermStatistics =
+            new TermStatistics(new BytesRef("pseudo_term"), docFreq, Math.max(1, totalTermFreq));
         this.simWeight = similarity.scorer(boost, pseudoCollectionStats, pseudoTermStatistics);
       } else {
         this.simWeight = null;
       }
     }
 
-    private CollectionStatistics mergeCollectionStatistics(IndexSearcher searcher) throws IOException {
+    private CollectionStatistics mergeCollectionStatistics(IndexSearcher searcher)
+        throws IOException {
       long maxDoc = searcher.getIndexReader().maxDoc();
       long docCount = 0;
       long sumTotalTermFreq = 0;
@@ -332,12 +334,14 @@ public final class BM25FQuery extends Query implements Accountable {
         }
       }
 
-      return new CollectionStatistics("pseudo_field", maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
+      return new CollectionStatistics(
+          "pseudo_field", maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
     }
 
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      Weight weight = searcher.rewrite(rewriteToBoolean()).createWeight(searcher, ScoreMode.COMPLETE, 1f);
+      Weight weight =
+          searcher.rewrite(rewriteToBoolean()).createWeight(searcher, ScoreMode.COMPLETE, 1f);
       return weight.matches(context, doc);
     }
 
@@ -355,13 +359,19 @@ public final class BM25FQuery extends Query implements Accountable {
             freq = ((TermScorer) scorer).freq();
           }
           final MultiNormsLeafSimScorer docScorer =
-              new MultiNormsLeafSimScorer(simWeight, context.reader(), fieldAndWeights.values(), true);
+              new MultiNormsLeafSimScorer(
+                  simWeight, context.reader(), fieldAndWeights.values(), true);
           Explanation freqExplanation = Explanation.match(freq, "termFreq=" + freq);
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
               scoreExplanation.getValue(),
-              "weight(" + getQuery() + " in " + doc + ") ["
-                  + similarity.getClass().getSimpleName() + "], result of:",
+              "weight("
+                  + getQuery()
+                  + " in "
+                  + doc
+                  + ") ["
+                  + similarity.getClass().getSimpleName()
+                  + "], result of:",
               scoreExplanation);
         }
       }
@@ -395,12 +405,15 @@ public final class BM25FQuery extends Query implements Accountable {
       }
       final MultiNormsLeafSimScorer scoringSimScorer =
           new MultiNormsLeafSimScorer(simWeight, context.reader(), fields, true);
-      LeafSimScorer nonScoringSimScorer = new LeafSimScorer(simWeight, context.reader(), "pseudo_field", false);
+      LeafSimScorer nonScoringSimScorer =
+          new LeafSimScorer(simWeight, context.reader(), "pseudo_field", false);
       // we use termscorers + disjunction as an impl detail
       DisiPriorityQueue queue = new DisiPriorityQueue(iterators.size());
       for (int i = 0; i < iterators.size(); i++) {
         float weight = fields.get(i).weight;
-        queue.add(new WeightedDisiWrapper(new TermScorer(this, iterators.get(i), nonScoringSimScorer), weight));
+        queue.add(
+            new WeightedDisiWrapper(
+                new TermScorer(this, iterators.get(i), nonScoringSimScorer), weight));
       }
       // Even though it is called approximation, it is accurate since none of
       // the sub iterators are two-phase iterators.
@@ -432,7 +445,11 @@ public final class BM25FQuery extends Query implements Accountable {
     private final DocIdSetIterator iterator;
     private final MultiNormsLeafSimScorer simScorer;
 
-    BM25FScorer(Weight weight, DisiPriorityQueue queue, DocIdSetIterator iterator, MultiNormsLeafSimScorer simScorer) {
+    BM25FScorer(
+        Weight weight,
+        DisiPriorityQueue queue,
+        DocIdSetIterator iterator,
+        MultiNormsLeafSimScorer simScorer) {
       super(weight);
       this.queue = queue;
       this.iterator = iterator;

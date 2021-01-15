@@ -16,21 +16,19 @@
  */
 package org.apache.lucene.facet;
 
-import org.apache.lucene.search.CollectorManager;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import org.apache.lucene.search.CollectorManager;
 
 /**
- * A {@link CollectorManager} implementation which produces FacetsCollector and produces a merged FacetsCollector.
- * This is used for concurrent FacetsCollection.
+ * A {@link CollectorManager} implementation which produces FacetsCollector and produces a merged
+ * FacetsCollector. This is used for concurrent FacetsCollection.
  */
 public class FacetsCollectorManager implements CollectorManager<FacetsCollector, FacetsCollector> {
 
   /** Sole constructor. */
-  public FacetsCollectorManager() {
-  }
+  public FacetsCollectorManager() {}
 
   @Override
   public FacetsCollector newCollector() throws IOException {
@@ -41,7 +39,8 @@ public class FacetsCollectorManager implements CollectorManager<FacetsCollector,
   public FacetsCollector reduce(Collection<FacetsCollector> collectors) throws IOException {
     if (collectors == null || collectors.size() == 0) {
       return new FacetsCollector();
-    } if (collectors.size() == 1) {
+    }
+    if (collectors.size() == 1) {
       return collectors.iterator().next();
     }
     return new ReducedFacetsCollector(collectors);
@@ -51,7 +50,8 @@ public class FacetsCollectorManager implements CollectorManager<FacetsCollector,
 
     public ReducedFacetsCollector(final Collection<FacetsCollector> facetsCollectors) {
       final List<MatchingDocs> matchingDocs = this.getMatchingDocs();
-      facetsCollectors.forEach(facetsCollector -> matchingDocs.addAll(facetsCollector.getMatchingDocs()));
+      facetsCollectors.forEach(
+          facetsCollector -> matchingDocs.addAll(facetsCollector.getMatchingDocs()));
     }
   }
 }

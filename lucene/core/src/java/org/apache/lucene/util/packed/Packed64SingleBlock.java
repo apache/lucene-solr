@@ -20,27 +20,25 @@ package org.apache.lucene.util.packed;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * This class is similar to {@link Packed64} except that it trades space for
- * speed by ensuring that a single block needs to be read/written in order to
- * read/write a value.
+ * This class is similar to {@link Packed64} except that it trades space for speed by ensuring that
+ * a single block needs to be read/written in order to read/write a value.
  */
 abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
   public static final int MAX_SUPPORTED_BITS_PER_VALUE = 32;
-  private static final int[] SUPPORTED_BITS_PER_VALUE = new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32};
+  private static final int[] SUPPORTED_BITS_PER_VALUE =
+      new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 21, 32};
 
   public static boolean isSupported(int bitsPerValue) {
     return Arrays.binarySearch(SUPPORTED_BITS_PER_VALUE, bitsPerValue) >= 0;
   }
 
   private static int requiredCapacity(int valueCount, int valuesPerBlock) {
-    return valueCount / valuesPerBlock
-        + (valueCount % valuesPerBlock == 0 ? 0 : 1);
+    return valueCount / valuesPerBlock + (valueCount % valuesPerBlock == 0 ? 0 : 1);
   }
 
   final long[] blocks;
@@ -60,9 +58,9 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
-        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 2 * Integer.BYTES     // valueCount,bitsPerValue
-        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
+            RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+                + 2 * Integer.BYTES // valueCount,bitsPerValue
+                + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
         + RamUsageEstimator.sizeOf(blocks);
   }
 
@@ -91,14 +89,16 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     // bulk get
     assert index % valuesPerBlock == 0;
     @SuppressWarnings("deprecation")
-    final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
+    final PackedInts.Decoder decoder =
+        BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
     assert decoder.longBlockCount() == 1;
     assert decoder.longValueCount() == valuesPerBlock;
     final int blockIndex = index / valuesPerBlock;
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
     decoder.decode(blocks, blockIndex, arr, off, nblocks);
     final int diff = nblocks * valuesPerBlock;
-    index += diff; len -= diff;
+    index += diff;
+    len -= diff;
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -143,7 +143,8 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     final int nblocks = (index + len) / valuesPerBlock - blockIndex;
     op.encode(arr, off, blocks, blockIndex, nblocks);
     final int diff = nblocks * valuesPerBlock;
-    index += diff; len -= diff;
+    index += diff;
+    len -= diff;
 
     if (index > originalIndex) {
       // stay at the block boundary
@@ -204,12 +205,18 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(bitsPerValue=" + bitsPerValue
-        + ",size=" + size() + ",blocks=" + blocks.length + ")";
+    return getClass().getSimpleName()
+        + "(bitsPerValue="
+        + bitsPerValue
+        + ",size="
+        + size()
+        + ",blocks="
+        + blocks.length
+        + ")";
   }
 
-  public static Packed64SingleBlock create(DataInput in,
-      int valueCount, int bitsPerValue) throws IOException {
+  public static Packed64SingleBlock create(DataInput in, int valueCount, int bitsPerValue)
+      throws IOException {
     Packed64SingleBlock reader = create(valueCount, bitsPerValue);
     for (int i = 0; i < reader.blocks.length; ++i) {
       reader.blocks[i] = in.readLong();
@@ -273,7 +280,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 0;
       blocks[o] = (blocks[o] & ~(1L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock2 extends Packed64SingleBlock {
@@ -297,7 +303,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 1;
       blocks[o] = (blocks[o] & ~(3L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock3 extends Packed64SingleBlock {
@@ -321,7 +326,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 3;
       blocks[o] = (blocks[o] & ~(7L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock4 extends Packed64SingleBlock {
@@ -345,7 +349,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 2;
       blocks[o] = (blocks[o] & ~(15L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock5 extends Packed64SingleBlock {
@@ -369,7 +372,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 5;
       blocks[o] = (blocks[o] & ~(31L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock6 extends Packed64SingleBlock {
@@ -393,7 +395,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 6;
       blocks[o] = (blocks[o] & ~(63L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock7 extends Packed64SingleBlock {
@@ -417,7 +418,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 7;
       blocks[o] = (blocks[o] & ~(127L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock8 extends Packed64SingleBlock {
@@ -441,7 +441,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 3;
       blocks[o] = (blocks[o] & ~(255L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock9 extends Packed64SingleBlock {
@@ -465,7 +464,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 9;
       blocks[o] = (blocks[o] & ~(511L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock10 extends Packed64SingleBlock {
@@ -489,7 +487,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 10;
       blocks[o] = (blocks[o] & ~(1023L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock12 extends Packed64SingleBlock {
@@ -513,7 +510,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 12;
       blocks[o] = (blocks[o] & ~(4095L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock16 extends Packed64SingleBlock {
@@ -537,7 +533,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 4;
       blocks[o] = (blocks[o] & ~(65535L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock21 extends Packed64SingleBlock {
@@ -561,7 +556,6 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b * 21;
       blocks[o] = (blocks[o] & ~(2097151L << shift)) | (value << shift);
     }
-
   }
 
   static class Packed64SingleBlock32 extends Packed64SingleBlock {
@@ -585,7 +579,5 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
       final int shift = b << 5;
       blocks[o] = (blocks[o] & ~(4294967295L << shift)) | (value << shift);
     }
-
   }
-
 }

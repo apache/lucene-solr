@@ -250,7 +250,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     if (isLeader && !isSubShardLeader)  {
       DocCollection coll = clusterState.getCollection(collection);
-      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
+      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getIndexedIdStr(), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -260,7 +260,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_FROM_PARENT, cloudDesc.getShardId());
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
       }
-      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
+      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getIndexedIdStr(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty())  {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -280,11 +280,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               DistribPhase.TOLEADER.toString()));
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
-
-      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // TODO: Kept for rolling upgrades only. Should be removed in Solr 9
-        params.set(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
-      }
 
       if (cmd.isInPlaceUpdate()) {
         params.set(DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
@@ -359,10 +354,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       params.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
 
-      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // TODO: Kept for rolling upgrades only. Remove in Solr 9
-        params.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
-      }
       cmdDistrib.distribDelete(cmd, nodes, params, false, rollupReplicationTracker, leaderReplicationTracker);
     }
   }
@@ -428,11 +419,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
       outParams.remove("commit"); // this will be distributed from the local commit
 
-
-      if (params.get(UpdateRequest.MIN_REPFACT) != null) {
-        // TODO: Kept this for rolling upgrades. Remove in Solr 9
-        outParams.add(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
-      }
       cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
 
       if (!leaderForAnyShard) {
@@ -582,7 +568,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-      nodes = setupRequest(acmd.getRootIdUsingRouteParam(), acmd.getSolrInputDocument());
+      nodes = setupRequest(acmd.getIndexedIdStr(), acmd.getSolrInputDocument());
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
       nodes = setupRequest(dcmd.getId(), null);
@@ -1216,10 +1202,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Rollup tracker has accumulated stats.
       if (rollupReplicationTracker != null) {
         achievedRf = rollupReplicationTracker.getAchievedRf();
-      }
-      if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
-        // Unused, but kept for back compatibility. To be removed in Solr 9
-        rsp.getResponseHeader().add(UpdateRequest.MIN_REPFACT, Integer.parseInt(req.getParams().get(UpdateRequest.MIN_REPFACT)));
       }
       rsp.getResponseHeader().add(UpdateRequest.REPFACT, achievedRf);
       rollupReplicationTracker = null;

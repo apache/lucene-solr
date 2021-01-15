@@ -22,9 +22,10 @@ import java.io.IOException;
 /**
  * Base class for exact and sloppy phrase matching
  *
- * To find matches on a document, first advance {@link #approximation} to the
- * relevant document, then call {@link #reset()}.  Clients can then call
- * {@link #nextMatch()} to iterate over the matches
+ * <p>To find matches on a document, first advance {@link #approximation} to the relevant document,
+ * then call {@link #reset()}. Clients can then call {@link #nextMatch()} to iterate over the
+ * matches
+ *
  * @lucene.internal
  */
 public abstract class PhraseMatcher {
@@ -35,57 +36,38 @@ public abstract class PhraseMatcher {
     this.matchCost = matchCost;
   }
 
-  /**
-   * Approximation that only matches documents that have all terms.
-   */
+  /** Approximation that only matches documents that have all terms. */
   abstract DocIdSetIterator approximation();
 
-  /**
-   * Approximation that is aware of impacts.
-   */
+  /** Approximation that is aware of impacts. */
   abstract ImpactsDISI impactsApproximation();
 
-  /**
-   * An upper bound on the number of possible matches on this document
-   */
+  /** An upper bound on the number of possible matches on this document */
   abstract float maxFreq() throws IOException;
 
-  /**
-   * Called after {@link #approximation} has been advanced
-   */
+  /** Called after {@link #approximation} has been advanced */
   public abstract void reset() throws IOException;
 
-  /**
-   * Find the next match on the current document, returning {@code false} if there
-   * are none.
-   */
+  /** Find the next match on the current document, returning {@code false} if there are none. */
   public abstract boolean nextMatch() throws IOException;
 
   /**
    * The slop-adjusted weight of the current match
    *
-   * The sum of the slop-adjusted weights is used as the freq for scoring
+   * <p>The sum of the slop-adjusted weights is used as the freq for scoring
    */
   abstract float sloppyWeight();
 
-  /**
-   * The start position of the current match
-   */
+  /** The start position of the current match */
   abstract int startPosition();
 
-  /**
-   * The end position of the current match
-   */
+  /** The end position of the current match */
   abstract int endPosition();
 
-  /**
-   * The start offset of the current match
-   */
+  /** The start offset of the current match */
   abstract int startOffset() throws IOException;
 
-  /**
-   * The end offset of the current match
-   */
+  /** The end offset of the current match */
   abstract int endOffset() throws IOException;
 
   /**
@@ -96,5 +78,4 @@ public abstract class PhraseMatcher {
   public float getMatchCost() {
     return matchCost;
   }
-
 }

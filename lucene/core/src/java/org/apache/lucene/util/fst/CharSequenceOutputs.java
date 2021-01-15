@@ -16,28 +16,23 @@
  */
 package org.apache.lucene.util.fst;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * An FST {@link Outputs} implementation where each output
- * is a sequence of characters.
+ * An FST {@link Outputs} implementation where each output is a sequence of characters.
  *
  * @lucene.experimental
  */
-
 public final class CharSequenceOutputs extends Outputs<CharsRef> {
 
-  private final static CharsRef NO_OUTPUT = new CharsRef();
-  private final static CharSequenceOutputs singleton = new CharSequenceOutputs();
+  private static final CharsRef NO_OUTPUT = new CharsRef();
+  private static final CharSequenceOutputs singleton = new CharSequenceOutputs();
 
-  private CharSequenceOutputs() {
-  }
+  private CharSequenceOutputs() {}
 
   public static CharSequenceOutputs getSingleton() {
     return singleton;
@@ -51,7 +46,7 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
     int pos1 = output1.offset;
     int pos2 = output2.offset;
     int stopAt1 = pos1 + Math.min(output1.length, output2.length);
-    while(pos1 < stopAt1) {
+    while (pos1 < stopAt1) {
       if (output1.chars[pos1] != output2.chars[pos2]) {
         break;
       }
@@ -69,7 +64,7 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
       // output2 is a prefix of output1
       return output2;
     } else {
-      return new CharsRef(output1.chars, output1.offset, pos1-output1.offset);
+      return new CharsRef(output1.chars, output1.offset, pos1 - output1.offset);
     }
   }
 
@@ -84,9 +79,10 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
       // entire output removed
       return NO_OUTPUT;
     } else {
-      assert inc.length < output.length: "inc.length=" + inc.length + " vs output.length=" + output.length;
+      assert inc.length < output.length
+          : "inc.length=" + inc.length + " vs output.length=" + output.length;
       assert inc.length > 0;
-      return new CharsRef(output.chars, output.offset + inc.length, output.length-inc.length);
+      return new CharsRef(output.chars, output.offset + inc.length, output.length - inc.length);
     }
   }
 
@@ -114,8 +110,8 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
     assert prefix != null;
     out.writeVInt(prefix.length);
     // TODO: maybe UTF8?
-    for(int idx=0;idx<prefix.length;idx++) {
-      out.writeVInt(prefix.chars[prefix.offset+idx]);
+    for (int idx = 0; idx < prefix.length; idx++) {
+      out.writeVInt(prefix.chars[prefix.offset + idx]);
     }
   }
 
@@ -126,18 +122,18 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
       return NO_OUTPUT;
     } else {
       final CharsRef output = new CharsRef(len);
-      for(int idx=0;idx<len;idx++) {
+      for (int idx = 0; idx < len; idx++) {
         output.chars[idx] = (char) in.readVInt();
       }
       output.length = len;
       return output;
     }
   }
-  
+
   @Override
   public void skipOutput(DataInput in) throws IOException {
     final int len = in.readVInt();
-    for(int idx=0;idx<len;idx++) {
+    for (int idx = 0; idx < len; idx++) {
       in.readVInt();
     }
   }

@@ -18,12 +18,11 @@
 package org.apache.lucene.misc;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.misc.util.MemoryTracker;
 
 /**
- * Default implementation of {@code MemoryTracker} that tracks
- * allocations and allows setting a memory limit per collector
+ * Default implementation of {@code MemoryTracker} that tracks allocations and allows setting a
+ * memory limit per collector
  */
 public class CollectorMemoryTracker implements MemoryTracker {
   private String name;

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.util.PriorityQueue;
 
 class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
@@ -51,7 +50,7 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
       deduplicated.add(RepeatingIntervalsSource.build(source, counts.get(source)));
     }
     if (deduplicated.size() == 1 && deduplicated.get(0) instanceof RepeatingIntervalsSource) {
-      ((RepeatingIntervalsSource)deduplicated.get(0)).setName("UNORDERED");
+      ((RepeatingIntervalsSource) deduplicated.get(0)).setName("UNORDERED");
     }
     return deduplicated;
   }
@@ -60,9 +59,8 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     List<IntervalsSource> flattened = new ArrayList<>();
     for (IntervalsSource s : sources) {
       if (s instanceof UnorderedIntervalsSource) {
-        flattened.addAll(((UnorderedIntervalsSource)s).subSources);
-      }
-      else {
+        flattened.addAll(((UnorderedIntervalsSource) s).subSources);
+      } else {
         flattened.add(s);
       }
     }
@@ -106,8 +104,9 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public String toString() {
-    return "UNORDERED(" +
-        subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(",")) + ")";
+    return "UNORDERED("
+        + subSources.stream().map(IntervalsSource::toString).collect(Collectors.joining(","))
+        + ")";
   }
 
   private static class UnorderedIntervalIterator extends ConjunctionIntervalIterator {
@@ -119,12 +118,13 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
-      this.queue = new PriorityQueue<IntervalIterator>(subIterators.size()) {
-        @Override
-        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
-          return a.start() < b.start() || (a.start() == b.start() && a.end() >= b.end());
-        }
-      };
+      this.queue =
+          new PriorityQueue<IntervalIterator>(subIterators.size()) {
+            @Override
+            protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
+              return a.start() < b.start() || (a.start() == b.start() && a.end() >= b.end());
+            }
+          };
       this.subIterators = new IntervalIterator[subIterators.size()];
 
       for (int i = 0; i < subIterators.size(); i++) {
@@ -169,8 +169,9 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
         for (IntervalIterator it : subIterators) {
           slop -= it.width();
         }
-        if (queue.top().end() == end)
+        if (queue.top().end() == end) {
           return start;
+        }
         IntervalIterator it = queue.pop();
         if (it != null && it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
           queue.add(it);
@@ -197,6 +198,5 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
         updateRightExtreme(it);
       }
     }
-
   }
 }

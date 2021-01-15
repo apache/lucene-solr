@@ -22,24 +22,25 @@ import java.util.Collection;
 import java.util.Comparator;
 
 /**
- * A helper to propagate block boundaries for disjunctions.
- * Because a disjunction matches if any of its sub clauses matches, it is
- * tempting to return the minimum block boundary across all clauses. The problem
- * is that it might then make the query slow when the minimum competitive score
- * is high and low-scoring clauses don't drive iteration anymore. So this class
- * computes block boundaries only across clauses whose maximum score is greater
- * than or equal to the minimum competitive score, or the maximum scoring clause
- * if there is no such clause.
+ * A helper to propagate block boundaries for disjunctions. Because a disjunction matches if any of
+ * its sub clauses matches, it is tempting to return the minimum block boundary across all clauses.
+ * The problem is that it might then make the query slow when the minimum competitive score is high
+ * and low-scoring clauses don't drive iteration anymore. So this class computes block boundaries
+ * only across clauses whose maximum score is greater than or equal to the minimum competitive
+ * score, or the maximum scoring clause if there is no such clause.
  */
 final class DisjunctionScoreBlockBoundaryPropagator {
 
-  private static final Comparator<Scorer> MAX_SCORE_COMPARATOR = Comparator.comparing((Scorer s) -> {
-    try {
-      return s.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }).thenComparing(Comparator.comparing(s -> s.iterator().cost()));
+  private static final Comparator<Scorer> MAX_SCORE_COMPARATOR =
+      Comparator.comparing(
+              (Scorer s) -> {
+                try {
+                  return s.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+              })
+          .thenComparing(Comparator.comparing(s -> s.iterator().cost()));
 
   private final Scorer[] scorers;
   private final float[] maxScores;
@@ -58,9 +59,7 @@ final class DisjunctionScoreBlockBoundaryPropagator {
     }
   }
 
-  /**
-   * See {@link Scorer#advanceShallow(int)}.
-   */
+  /** See {@link Scorer#advanceShallow(int)}. */
   int advanceShallow(int target) throws IOException {
     // For scorers that are below the lead index, just propagate.
     for (int i = 0; i < leadIndex; ++i) {
@@ -98,8 +97,8 @@ final class DisjunctionScoreBlockBoundaryPropagator {
   }
 
   /**
-   * Set the minimum competitive score to filter out clauses that score less
-   * than this threshold.
+   * Set the minimum competitive score to filter out clauses that score less than this threshold.
+   *
    * @see Scorer#setMinCompetitiveScore
    */
   void setMinCompetitiveScore(float minScore) throws IOException {
@@ -108,5 +107,4 @@ final class DisjunctionScoreBlockBoundaryPropagator {
       leadIndex++;
     }
   }
-
 }

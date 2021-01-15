@@ -69,7 +69,7 @@ public class ResponseUtils {
     if (code == 500 || code < 100) {
       StringWriter sw = new StringWriter();
       ex.printStackTrace(new PrintWriter(sw));
-      SolrException.log(log, null, ex);
+      SolrException.log(log, ex);
       info.add("trace", sw.toString());
 
       // non standard codes have undefined results with various servers

@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.FlattenGraphFilter;
@@ -35,16 +34,13 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.fst.FST;
 
 /**
- * Matches single or multi word synonyms in a token stream.
- * This token stream cannot properly handle position
- * increments != 1, ie, you should place this filter before
- * filtering out stop words.
- * 
- * <p>Note that with the current implementation, parsing is
- * greedy, so whenever multiple parses would apply, the rule
- * starting the earliest and parsing the most tokens wins.
- * For example if you have these rules:
- *      
+ * Matches single or multi word synonyms in a token stream. This token stream cannot properly handle
+ * position increments != 1, ie, you should place this filter before filtering out stop words.
+ *
+ * <p>Note that with the current implementation, parsing is greedy, so whenever multiple parses
+ * would apply, the rule starting the earliest and parsing the most tokens wins. For example if you
+ * have these rules:
+ *
  * <pre>
  *   a -&gt; x
  *   a b -&gt; y
@@ -52,38 +48,28 @@ import org.apache.lucene.util.fst.FST;
  * </pre>
  *
  * Then input <code>a b c d e</code> parses to <code>y b c
- * d</code>, ie the 2nd rule "wins" because it started
- * earliest and matched the most input tokens of other rules
- * starting at that point.
+ * d</code>, ie the 2nd rule "wins" because it started earliest and matched the most input tokens of
+ * other rules starting at that point.
  *
- * <p>A future improvement to this filter could allow
- * non-greedy parsing, such that the 3rd rule would win, and
- * also separately allow multiple parses, such that all 3
- * rules would match, perhaps even on a rule by rule
- * basis.</p>
+ * <p>A future improvement to this filter could allow non-greedy parsing, such that the 3rd rule
+ * would win, and also separately allow multiple parses, such that all 3 rules would match, perhaps
+ * even on a rule by rule basis.
  *
- * <p><b>NOTE</b>: when a match occurs, the output tokens
- * associated with the matching rule are "stacked" on top of
- * the input stream (if the rule had
- * <code>keepOrig=true</code>) and also on top of another
- * matched rule's output tokens.  This is not a correct
- * solution, as really the output should be an arbitrary
- * graph/lattice.  For example, with the above match, you
- * would expect an exact <code>PhraseQuery</code> <code>"y b
- * c"</code> to match the parsed tokens, but it will fail to
- * do so.  This limitation is necessary because Lucene's
- * TokenStream (and index) cannot yet represent an arbitrary
- * graph.</p>
+ * <p><b>NOTE</b>: when a match occurs, the output tokens associated with the matching rule are
+ * "stacked" on top of the input stream (if the rule had <code>keepOrig=true</code>) and also on top
+ * of another matched rule's output tokens. This is not a correct solution, as really the output
+ * should be an arbitrary graph/lattice. For example, with the above match, you would expect an
+ * exact <code>PhraseQuery</code> <code>"y b
+ * c"</code> to match the parsed tokens, but it will fail to do so. This limitation is necessary
+ * because Lucene's TokenStream (and index) cannot yet represent an arbitrary graph.
  *
- * <p><b>NOTE</b>: If multiple incoming tokens arrive on the
- * same position, only the first token at that position is
- * used for parsing.  Subsequent tokens simply pass through
- * and are not parsed.  A future improvement would be to
- * allow these tokens to also be matched.</p>
+ * <p><b>NOTE</b>: If multiple incoming tokens arrive on the same position, only the first token at
+ * that position is used for parsing. Subsequent tokens simply pass through and are not parsed. A
+ * future improvement would be to allow these tokens to also be matched.
  *
- * @deprecated Use {@link SynonymGraphFilter} instead, but be sure to also
- * use {@link FlattenGraphFilter} at index time (not at search time) as well.
- */ 
+ * @deprecated Use {@link SynonymGraphFilter} instead, but be sure to also use {@link
+ *     FlattenGraphFilter} at index time (not at search time) as well.
+ */
 
 // TODO: maybe we should resolve token -> wordID then run
 // FST on wordIDs, for better perf?
@@ -105,7 +91,8 @@ import org.apache.lucene.util.fst.FST;
 // finds all matches.  This really amounts to adding a .*
 // closure to the FST and then determinizing it.
 //
-// Another possible solution is described at http://www.cis.uni-muenchen.de/people/Schulz/Pub/dictle5.ps
+// Another possible solution is described at
+// http://www.cis.uni-muenchen.de/people/Schulz/Pub/dictle5.ps
 
 @Deprecated
 public final class SynonymFilter extends TokenFilter {
@@ -122,7 +109,8 @@ public final class SynonymFilter extends TokenFilter {
   // TODO: we should set PositionLengthAttr too...
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -146,14 +134,14 @@ public final class SynonymFilter extends TokenFilter {
     boolean consumed = true;
     int startOffset;
     int endOffset;
-    
+
     public void reset() {
       state = null;
       consumed = true;
       keepOrig = false;
       matched = false;
     }
-  };
+  }
 
   // Rolling buffer, holding pending input tokens we had to
   // clone because we needed to look ahead, indexed by
@@ -204,15 +192,15 @@ public final class SynonymFilter extends TokenFilter {
 
     public void add(char[] output, int offset, int len, int endOffset, int posLength) {
       if (count == outputs.length) {
-        outputs = ArrayUtil.grow(outputs, count+1);
+        outputs = ArrayUtil.grow(outputs, count + 1);
       }
       if (count == endOffsets.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
+        final int[] next = new int[ArrayUtil.oversize(1 + count, Integer.BYTES)];
         System.arraycopy(endOffsets, 0, next, 0, count);
         endOffsets = next;
       }
       if (count == posLengths.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
+        final int[] next = new int[ArrayUtil.oversize(1 + count, Integer.BYTES)];
         System.arraycopy(posLengths, 0, next, 0, count);
         posLengths = next;
       }
@@ -227,7 +215,8 @@ public final class SynonymFilter extends TokenFilter {
       posLengths[count] = posLength;
       count++;
     }
-  };
+  }
+  ;
 
   private final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
 
@@ -250,16 +239,15 @@ public final class SynonymFilter extends TokenFilter {
 
   private final FST.BytesReader fstReader;
 
-
   private final BytesRef scratchBytes = new BytesRef();
   private final CharsRefBuilder scratchChars = new CharsRefBuilder();
 
   /**
    * @param input input tokenstream
    * @param synonyms synonym map
-   * @param ignoreCase case-folds input for matching with {@link Character#toLowerCase(int)}.
-   *                   Note, if you set this to true, it's your responsibility to lowercase
-   *                   the input entries when you create the {@link SynonymMap}
+   * @param ignoreCase case-folds input for matching with {@link Character#toLowerCase(int)}. Note,
+   *     if you set this to true, it's your responsibility to lowercase the input entries when you
+   *     create the {@link SynonymMap}
    */
   public SynonymFilter(TokenStream input, SynonymMap synonyms, boolean ignoreCase) {
     super(input);
@@ -274,23 +262,23 @@ public final class SynonymFilter extends TokenFilter {
     // Must be 1+ so that when roll buffer is at full
     // lookahead we can distinguish this full buffer from
     // the empty buffer:
-    rollBufferSize = 1+synonyms.maxHorizontalContext;
+    rollBufferSize = 1 + synonyms.maxHorizontalContext;
 
     futureInputs = new PendingInput[rollBufferSize];
     futureOutputs = new PendingOutputs[rollBufferSize];
-    for(int pos=0;pos<rollBufferSize;pos++) {
+    for (int pos = 0; pos < rollBufferSize; pos++) {
       futureInputs[pos] = new PendingInput();
       futureOutputs[pos] = new PendingOutputs();
     }
 
-    //System.out.println("FSTFilt maxH=" + synonyms.maxHorizontalContext);
+    // System.out.println("FSTFilt maxH=" + synonyms.maxHorizontalContext);
 
     scratchArc = new FST.Arc<>();
   }
 
   private void capture() {
     captureCount++;
-    //System.out.println("  capture slot=" + nextWrite);
+    // System.out.println("  capture slot=" + nextWrite);
     final PendingInput input = futureInputs[nextWrite];
 
     input.state = captureState();
@@ -316,7 +304,7 @@ public final class SynonymFilter extends TokenFilter {
   private int lastEndOffset;
 
   private void parse() throws IOException {
-    //System.out.println("\nS: parse");
+    // System.out.println("\nS: parse");
 
     assert inputSkipCount == 0;
 
@@ -335,12 +323,12 @@ public final class SynonymFilter extends TokenFilter {
     int tokenCount = 0;
 
     byToken:
-    while(true) {
-      
+    while (true) {
+
       // Pull next token's chars:
       final char[] buffer;
       final int bufferLen;
-      //System.out.println("  cycle nextRead=" + curNextRead + " nextWrite=" + nextWrite);
+      // System.out.println("  cycle nextRead=" + curNextRead + " nextWrite=" + nextWrite);
 
       int inputEndOffset = 0;
 
@@ -351,13 +339,13 @@ public final class SynonymFilter extends TokenFilter {
 
         if (finished) {
           break;
-        } else  {
-          //System.out.println("  input.incrToken");
+        } else {
+          // System.out.println("  input.incrToken");
           assert futureInputs[nextWrite].consumed;
           // Not correct: a syn match whose output is longer
           // than its input can set future inputs keepOrig
           // to true:
-          //assert !futureInputs[nextWrite].keepOrig;
+          // assert !futureInputs[nextWrite].keepOrig;
           if (input.incrementToken()) {
             buffer = termAtt.buffer();
             bufferLen = termAtt.length();
@@ -365,7 +353,7 @@ public final class SynonymFilter extends TokenFilter {
             lastStartOffset = input.startOffset = offsetAtt.startOffset();
             lastEndOffset = input.endOffset = offsetAtt.endOffset();
             inputEndOffset = input.endOffset;
-            //System.out.println("  new token=" + new String(buffer, 0, bufferLen));
+            // System.out.println("  new token=" + new String(buffer, 0, bufferLen));
             if (nextRead != nextWrite) {
               capture();
             } else {
@@ -374,7 +362,7 @@ public final class SynonymFilter extends TokenFilter {
 
           } else {
             // No more input tokens
-            //System.out.println("      set end");
+            // System.out.println("      set end");
             finished = true;
             break;
           }
@@ -384,23 +372,29 @@ public final class SynonymFilter extends TokenFilter {
         buffer = futureInputs[curNextRead].term.chars();
         bufferLen = futureInputs[curNextRead].term.length();
         inputEndOffset = futureInputs[curNextRead].endOffset;
-        //System.out.println("  old token=" + new String(buffer, 0, bufferLen));
+        // System.out.println("  old token=" + new String(buffer, 0, bufferLen));
       }
 
       tokenCount++;
 
       // Run each char in this token through the FST:
       int bufUpto = 0;
-      while(bufUpto < bufferLen) {
+      while (bufUpto < bufferLen) {
         final int codePoint = Character.codePointAt(buffer, bufUpto, bufferLen);
-        if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
-          //System.out.println("    stop");
+        if (fst.findTargetArc(
+                ignoreCase ? Character.toLowerCase(codePoint) : codePoint,
+                scratchArc,
+                scratchArc,
+                fstReader)
+            == null) {
+          // System.out.println("    stop");
           break byToken;
         }
 
         // Accum the output
         pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
-        //System.out.println("    char=" + buffer[bufUpto] + " output=" + pendingOutput + " arc.output=" + scratchArc.output);
+        // System.out.println("    char=" + buffer[bufUpto] + " output=" + pendingOutput + "
+        // arc.output=" + scratchArc.output);
         bufUpto += Character.charCount(codePoint);
       }
 
@@ -410,7 +404,7 @@ public final class SynonymFilter extends TokenFilter {
         matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput());
         matchInputLength = tokenCount;
         matchEndOffset = inputEndOffset;
-        //System.out.println("  found matchLength=" + matchInputLength + " output=" + matchOutput);
+        // System.out.println("  found matchLength=" + matchInputLength + " output=" + matchOutput);
       }
 
       // See if the FST wants to continue matching (ie, needs to
@@ -433,12 +427,12 @@ public final class SynonymFilter extends TokenFilter {
     }
 
     if (nextRead == nextWrite && !finished) {
-      //System.out.println("  skip write slot=" + nextWrite);
+      // System.out.println("  skip write slot=" + nextWrite);
       nextWrite = rollIncr(nextWrite);
     }
 
     if (matchOutput != null) {
-      //System.out.println("  add matchLength=" + matchInputLength + " output=" + matchOutput);
+      // System.out.println("  add matchLength=" + matchInputLength + " output=" + matchOutput);
       inputSkipCount = matchInputLength;
       addOutput(matchOutput, matchInputLength, matchEndOffset);
     } else if (nextRead != nextWrite) {
@@ -450,7 +444,8 @@ public final class SynonymFilter extends TokenFilter {
       assert finished;
     }
 
-    //System.out.println("  parse done inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead + " nextWrite=" + nextWrite);
+    // System.out.println("  parse done inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead
+    // + " nextWrite=" + nextWrite);
   }
 
   // Interleaves all output tokens onto the futureOutputs:
@@ -460,21 +455,20 @@ public final class SynonymFilter extends TokenFilter {
     final int code = bytesReader.readVInt();
     final boolean keepOrig = (code & 0x1) == 0;
     final int count = code >>> 1;
-    //System.out.println("  addOutput count=" + count + " keepOrig=" + keepOrig);
-    for(int outputIDX=0;outputIDX<count;outputIDX++) {
-      synonyms.words.get(bytesReader.readVInt(),
-                         scratchBytes);
-      //System.out.println("    outIDX=" + outputIDX + " bytes=" + scratchBytes.length);
+    // System.out.println("  addOutput count=" + count + " keepOrig=" + keepOrig);
+    for (int outputIDX = 0; outputIDX < count; outputIDX++) {
+      synonyms.words.get(bytesReader.readVInt(), scratchBytes);
+      // System.out.println("    outIDX=" + outputIDX + " bytes=" + scratchBytes.length);
       scratchChars.copyUTF8Bytes(scratchBytes);
       int lastStart = 0;
       final int chEnd = lastStart + scratchChars.length();
       int outputUpto = nextRead;
-      for(int chIDX=lastStart;chIDX<=chEnd;chIDX++) {
+      for (int chIDX = lastStart; chIDX <= chEnd; chIDX++) {
         if (chIDX == chEnd || scratchChars.charAt(chIDX) == SynonymMap.WORD_SEPARATOR) {
           final int outputLen = chIDX - lastStart;
           // Caller is not allowed to have empty string in
           // the output:
-          assert outputLen > 0: "output contains empty string: " + scratchChars;
+          assert outputLen > 0 : "output contains empty string: " + scratchChars;
           final int endOffset;
           final int posLen;
           if (chIDX == chEnd && lastStart == 0) {
@@ -492,18 +486,21 @@ public final class SynonymFilter extends TokenFilter {
             endOffset = -1;
             posLen = 1;
           }
-          futureOutputs[outputUpto].add(scratchChars.chars(), lastStart, outputLen, endOffset, posLen);
-          //System.out.println("      " + new String(scratchChars.chars, lastStart, outputLen) + " outputUpto=" + outputUpto);
-          lastStart = 1+chIDX;
-          //System.out.println("  slot=" + outputUpto + " keepOrig=" + keepOrig);
+          futureOutputs[outputUpto].add(
+              scratchChars.chars(), lastStart, outputLen, endOffset, posLen);
+          // System.out.println("      " + new String(scratchChars.chars, lastStart, outputLen) + "
+          // outputUpto=" + outputUpto);
+          lastStart = 1 + chIDX;
+          // System.out.println("  slot=" + outputUpto + " keepOrig=" + keepOrig);
           outputUpto = rollIncr(outputUpto);
-          assert futureOutputs[outputUpto].posIncr == 1: "outputUpto=" + outputUpto + " vs nextWrite=" + nextWrite;
+          assert futureOutputs[outputUpto].posIncr == 1
+              : "outputUpto=" + outputUpto + " vs nextWrite=" + nextWrite;
         }
       }
     }
 
     int upto = nextRead;
-    for(int idx=0;idx<matchInputLength;idx++) {
+    for (int idx = 0; idx < matchInputLength; idx++) {
       futureInputs[upto].keepOrig |= keepOrig;
       futureInputs[upto].matched = true;
       upto = rollIncr(upto);
@@ -528,14 +525,15 @@ public final class SynonymFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
 
-    //System.out.println("\nS: incrToken inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead + " nextWrite=" + nextWrite);
+    // System.out.println("\nS: incrToken inputSkipCount=" + inputSkipCount + " nextRead=" +
+    // nextRead + " nextWrite=" + nextWrite);
 
-    while(true) {
+    while (true) {
 
       // First play back any buffered future inputs/outputs
       // w/o running parsing again:
       while (inputSkipCount != 0) {
-        
+
         // At each position, we first output the original
         // token
 
@@ -543,8 +541,10 @@ public final class SynonymFilter extends TokenFilter {
         // both input & outputs?
         final PendingInput input = futureInputs[nextRead];
         final PendingOutputs outputs = futureOutputs[nextRead];
-        
-        //System.out.println("  cycle nextRead=" + nextRead + " nextWrite=" + nextWrite + " inputSkipCount="+ inputSkipCount + " input.keepOrig=" + input.keepOrig + " input.consumed=" + input.consumed + " input.state=" + input.state);
+
+        // System.out.println("  cycle nextRead=" + nextRead + " nextWrite=" + nextWrite + "
+        // inputSkipCount="+ inputSkipCount + " input.keepOrig=" + input.keepOrig + "
+        // input.consumed=" + input.consumed + " input.state=" + input.state);
 
         if (!input.consumed && (input.keepOrig || !input.matched)) {
           if (input.state != null) {
@@ -554,7 +554,8 @@ public final class SynonymFilter extends TokenFilter {
           } else {
             // Pass-through case: return token we just pulled
             // but didn't capture:
-            assert inputSkipCount == 1: "inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead;
+            assert inputSkipCount == 1
+                : "inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead;
           }
           input.reset();
           if (outputs.count > 0) {
@@ -563,7 +564,7 @@ public final class SynonymFilter extends TokenFilter {
             nextRead = rollIncr(nextRead);
             inputSkipCount--;
           }
-          //System.out.println("  return token=" + termAtt.toString());
+          // System.out.println("  return token=" + termAtt.toString());
           return true;
         } else if (outputs.upto < outputs.count) {
           // Still have pending outputs to replay at this
@@ -587,7 +588,7 @@ public final class SynonymFilter extends TokenFilter {
             nextRead = rollIncr(nextRead);
             inputSkipCount--;
           }
-          //System.out.println("  return token=" + termAtt.toString());
+          // System.out.println("  return token=" + termAtt.toString());
           return true;
         } else {
           // Done with the buffered input and all outputs at
@@ -614,9 +615,9 @@ public final class SynonymFilter extends TokenFilter {
           offsetAtt.setOffset(lastStartOffset, lastEndOffset);
           termAtt.copyBuffer(output.chars, output.offset, output.length);
           typeAtt.setType(TYPE_SYNONYM);
-          //System.out.println("  set posIncr=" + outputs.posIncr + " outputs=" + outputs);
+          // System.out.println("  set posIncr=" + outputs.posIncr + " outputs=" + outputs);
           posIncrAtt.setPositionIncrement(posIncr);
-          //System.out.println("  return token=" + termAtt.toString());
+          // System.out.println("  return token=" + termAtt.toString());
           return true;
         } else {
           return false;

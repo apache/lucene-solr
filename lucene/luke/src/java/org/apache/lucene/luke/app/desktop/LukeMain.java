@@ -17,13 +17,14 @@
 
 package org.apache.lucene.luke.app.desktop;
 
-import javax.swing.JFrame;
-import javax.swing.UIManager;
+import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
+
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
-
+import javax.swing.JFrame;
+import javax.swing.UIManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.desktop.components.LukeWindowProvider;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.OpenIndexDialogFactory;
@@ -32,20 +33,22 @@ import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.util.LoggerFactory;
 
-import static org.apache.lucene.luke.app.desktop.util.ExceptionHandler.handle;
-
 /** Entry class for desktop Luke */
 public class LukeMain {
 
-  public static final String LOG_FILE = System.getProperty("user.home") +
-      FileSystems.getDefault().getSeparator() + ".luke.d" +
-      FileSystems.getDefault().getSeparator() + "luke.log";
+  public static final String LOG_FILE =
+      System.getProperty("user.home")
+          + FileSystems.getDefault().getSeparator()
+          + ".luke.d"
+          + FileSystems.getDefault().getSeparator()
+          + "luke.log";
 
   static {
     LoggerFactory.initGuiLogging(LOG_FILE);
   }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private static JFrame frame;
 
   public static JFrame getOwnerFrame() {
@@ -55,9 +58,7 @@ public class LukeMain {
   private static void createAndShowGUI() {
     // uncaught error handler
     MessageBroker messageBroker = MessageBroker.getInstance();
-    Thread.setDefaultUncaughtExceptionHandler((thread, cause) ->
-        handle(cause, messageBroker)
-    );
+    Thread.setDefaultUncaughtExceptionHandler((thread, cause) -> handle(cause, messageBroker));
 
     try {
       frame = new LukeWindowProvider().get();
@@ -68,9 +69,12 @@ public class LukeMain {
 
       // show open index dialog
       OpenIndexDialogFactory openIndexDialogFactory = OpenIndexDialogFactory.getInstance();
-      new DialogOpener<>(openIndexDialogFactory).open(MessageUtils.getLocalizedMessage("openindex.dialog.title"), 600, 420,
-          (factory) -> {
-          });
+      new DialogOpener<>(openIndexDialogFactory)
+          .open(
+              MessageUtils.getLocalizedMessage("openindex.dialog.title"),
+              600,
+              420,
+              (factory) -> {});
     } catch (IOException e) {
       messageBroker.showUnknownErrorMessage();
       log.error("Cannot initialize components.", e);
@@ -79,7 +83,8 @@ public class LukeMain {
 
   public static void main(String[] args) throws Exception {
     String lookAndFeelClassName = UIManager.getSystemLookAndFeelClassName();
-    if (!lookAndFeelClassName.contains("AquaLookAndFeel") && !lookAndFeelClassName.contains("PlasticXPLookAndFeel")) {
+    if (!lookAndFeelClassName.contains("AquaLookAndFeel")
+        && !lookAndFeelClassName.contains("PlasticXPLookAndFeel")) {
       // may be running on linux platform
       lookAndFeelClassName = "javax.swing.plaf.metal.MetalLookAndFeel";
     }
@@ -89,6 +94,5 @@ public class LukeMain {
     genv.registerFont(FontUtils.createElegantIconFont());
 
     javax.swing.SwingUtilities.invokeLater(LukeMain::createAndShowGUI);
-
   }
 }

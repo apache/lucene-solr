@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,33 +31,35 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Create an index with terms from 000-999.
- * Generates random wildcards according to patterns,
- * and validates the correct number of hits are returned.
+ * Create an index with terms from 000-999. Generates random wildcards according to patterns, and
+ * validates the correct number of hits are returned.
  */
 public class TestWildcardRandom extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory dir;
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
-    
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
+
     Document doc = new Document();
     Field field = newStringField("field", "", Field.Store.NO);
     doc.add(field);
-    
+
     NumberFormat df = new DecimalFormat("000", new DecimalFormatSymbols(Locale.ROOT));
     for (int i = 0; i < 1000; i++) {
       field.setStringValue(df.format(i));
       writer.addDocument(doc);
     }
-    
+
     reader = writer.getReader();
     searcher = newSearcher(reader);
     writer.close();
@@ -67,15 +67,15 @@ public class TestWildcardRandom extends LuceneTestCase {
       System.out.println("TEST: setUp searcher=" + searcher);
     }
   }
-  
+
   private char N() {
     return (char) (0x30 + random().nextInt(10));
   }
-  
+
   private String fillPattern(String wildcardPattern) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < wildcardPattern.length(); i++) {
-      switch(wildcardPattern.charAt(i)) {
+      switch (wildcardPattern.charAt(i)) {
         case 'N':
           sb.append(N());
           break;
@@ -85,7 +85,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     }
     return sb.toString();
   }
-  
+
   private void assertPatternHits(String pattern, int numHits) throws Exception {
     // TODO: run with different rewrites
     final String filledPattern = fillPattern(pattern);
@@ -103,8 +103,9 @@ public class TestWildcardRandom extends LuceneTestCase {
     dir.close();
     super.tearDown();
   }
-  
-  public void testWildcards() throws Exception {;
+
+  public void testWildcards() throws Exception {
+    ;
     int num = atLeast(1);
     for (int i = 0; i < num; i++) {
       assertPatternHits("NNN", 1);
@@ -112,25 +113,25 @@ public class TestWildcardRandom extends LuceneTestCase {
       assertPatternHits("N?N", 10);
       assertPatternHits("NN?", 10);
     }
-    
+
     for (int i = 0; i < num; i++) {
       assertPatternHits("??N", 100);
       assertPatternHits("N??", 100);
       assertPatternHits("???", 1000);
-      
+
       assertPatternHits("NN*", 10);
       assertPatternHits("N*", 100);
       assertPatternHits("*", 1000);
-      
+
       assertPatternHits("*NN", 10);
       assertPatternHits("*N", 100);
-      
+
       assertPatternHits("N*N", 10);
-      
+
       // combo of ? and * operators
       assertPatternHits("?N*", 100);
       assertPatternHits("N?*", 100);
-      
+
       assertPatternHits("*N?", 100);
       assertPatternHits("*??", 1000);
       assertPatternHits("*?N", 100);

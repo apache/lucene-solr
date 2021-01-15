@@ -110,9 +110,10 @@ elif [ -n "$JAVA_HOME" ]; then
       JAVA="$java/java"
       if [ -x "$java/jstack" ]; then
         JSTACK="$java/jstack"
+      elif [ -x "$(command -v jattach)" ]; then
+        JATTACH="$(command -v jattach)"
       else
-        echo >&2 "The currently defined JAVA_HOME ($JAVA_HOME) refers to a location"
-        echo >&2 "where java was found but jstack was not found. Continuing."
+        echo >&2 "neither jattach nor jstack in $JAVA_HOME could be found, so no thread dumps are possible. Continuing."
       fi
       break
     fi
@@ -429,7 +430,7 @@ function print_usage() {
     echo ""
     echo "  -c <collection>  Collection to run healthcheck against."
     echo ""
-    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;" 
+    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
     echo "                     otherwise, default is localhost:9983"
     echo ""
     echo "  -V               Enable more verbose output"
@@ -831,7 +832,7 @@ function run_package() {
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
-# (will attempt to jstack before killing)
+# (will attempt to thread dump before killing)
 function stop_solr() {
 
   DIR="$1"
@@ -871,6 +872,9 @@ function stop_solr() {
     if [ "$JSTACK" != "" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
       $JSTACK $SOLR_PID
+    elif [ "$JATTACH" != "" ]; then
+      echo -e "Solr process $SOLR_PID is still running; jattach threaddumping it now."
+      $JATTACH $SOLR_PID threaddump
     fi
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
     kill -9 $SOLR_PID
@@ -1890,6 +1894,10 @@ fi
 
 if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
+fi
+
+if [ -n "$SOLR_PORT_ADVERTISE" ]; then
+  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
 fi
 
 if [ -n "$SOLR_JETTY_HOST" ]; then

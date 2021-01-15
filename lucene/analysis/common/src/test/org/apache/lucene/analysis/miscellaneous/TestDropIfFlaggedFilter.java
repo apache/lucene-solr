@@ -21,14 +21,10 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Test that this filter removes tokens that match a particular set of flags.
- */
+/** Test that this filter removes tokens that match a particular set of flags. */
 public class TestDropIfFlaggedFilter extends BaseTokenStreamTestCase {
 
-  /**
-   * Test the straight forward cases. When all flags match the token should be dropped
-   */
+  /** Test the straight forward cases. When all flags match the token should be dropped */
   public void testDropped() throws Exception {
 
     Token token = new Token("foo", 0, 2);
@@ -37,20 +33,22 @@ public class TestDropIfFlaggedFilter extends BaseTokenStreamTestCase {
     Token token4 = new Token("bam", 12, 14);
 
     token.setFlags(0); // 000 no flags match
-    token2.setFlags(1);// 001 one flag matches
-    token3.setFlags(2);// 010 no flags match
-    token4.setFlags(7);// 111 both flags match (drop)
+    token2.setFlags(1); // 001 one flag matches
+    token3.setFlags(2); // 010 no flags match
+    token4.setFlags(7); // 111 both flags match (drop)
 
     TokenStream ts = new CannedTokenStream(token, token2, token3, token4);
     ts = new DropIfFlaggedFilter(ts, 5); // 101
 
-    assertTokenStreamContents(ts, new String[]{
-        "foo", "bar", "baz"}, new int[]{0, 4, 8}, new int[]{2, 6, 10}, new int[]{1, 1, 1});
+    assertTokenStreamContents(
+        ts,
+        new String[] {"foo", "bar", "baz"},
+        new int[] {0, 4, 8},
+        new int[] {2, 6, 10},
+        new int[] {1, 1, 1});
   }
 
-  /**
-   * Test where the first and last token are dropped.
-   */
+  /** Test where the first and last token are dropped. */
   public void testDroppedFirst() throws Exception {
 
     Token token = new Token("foo", 0, 2);
@@ -59,15 +57,14 @@ public class TestDropIfFlaggedFilter extends BaseTokenStreamTestCase {
     Token token4 = new Token("bam", 12, 14);
 
     token.setFlags(4); // 100 flag matches (drop)
-    token2.setFlags(1);// 001 no flags match
-    token3.setFlags(2);// 010 no flags match
-    token4.setFlags(7);// 111 flag matches (drop)
+    token2.setFlags(1); // 001 no flags match
+    token3.setFlags(2); // 010 no flags match
+    token4.setFlags(7); // 111 flag matches (drop)
 
     TokenStream ts = new CannedTokenStream(token, token2, token3, token4);
-    ts = new DropIfFlaggedFilter(ts, 4) ;
+    ts = new DropIfFlaggedFilter(ts, 4);
 
-    assertTokenStreamContents(ts, new String[]{
-         "bar", "baz"}, new int[]{ 4, 8}, new int[]{6, 10}, new int[]{2, 1});
+    assertTokenStreamContents(
+        ts, new String[] {"bar", "baz"}, new int[] {4, 8}, new int[] {6, 10}, new int[] {2, 1});
   }
-
 }

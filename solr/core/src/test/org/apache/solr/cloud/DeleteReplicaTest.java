@@ -241,8 +241,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
         ZkStateReader.NODE_NAME_PROP, replica.getNodeName(),
         ZkStateReader.COLLECTION_PROP, collectionName,
-        ZkStateReader.CORE_NODE_NAME_PROP, replica.getName(),
-        ZkStateReader.BASE_URL_PROP, replica.getBaseUrl());
+        ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
 
     cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
 
@@ -307,8 +306,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
               ZkStateReader.CORE_NAME_PROP, replica1.getCoreName(),
               ZkStateReader.NODE_NAME_PROP, replica1.getNodeName(),
               ZkStateReader.COLLECTION_PROP, collectionName,
-              ZkStateReader.CORE_NODE_NAME_PROP, replica1.getName(),
-              ZkStateReader.BASE_URL_PROP, replica1.getBaseUrl());
+              ZkStateReader.CORE_NODE_NAME_PROP, replica1.getName());
           cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
 
           boolean replicaDeleted = false;

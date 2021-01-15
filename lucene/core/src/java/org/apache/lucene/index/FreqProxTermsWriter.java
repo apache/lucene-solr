@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -42,7 +40,11 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 final class FreqProxTermsWriter extends TermsHash {
 
-  FreqProxTermsWriter(final IntBlockPool.Allocator intBlockAllocator, final ByteBlockPool.Allocator byteBlockAllocator, Counter bytesUsed, TermsHash termVectors) {
+  FreqProxTermsWriter(
+      final IntBlockPool.Allocator intBlockAllocator,
+      final ByteBlockPool.Allocator byteBlockAllocator,
+      Counter bytesUsed,
+      TermsHash termVectors) {
     super(intBlockAllocator, byteBlockAllocator, bytesUsed, termVectors);
   }
 
@@ -50,13 +52,14 @@ final class FreqProxTermsWriter extends TermsHash {
     // Process any pending Term deletes for this newly
     // flushed segment:
     if (state.segUpdates != null && state.segUpdates.deleteTerms.size() > 0) {
-      Map<Term,Integer> segDeletes = state.segUpdates.deleteTerms;
+      Map<Term, Integer> segDeletes = state.segUpdates.deleteTerms;
       List<Term> deleteTerms = new ArrayList<>(segDeletes.keySet());
       Collections.sort(deleteTerms);
-      FrozenBufferedUpdates.TermDocsIterator iterator = new FrozenBufferedUpdates.TermDocsIterator(fields, true);
-      for(Term deleteTerm : deleteTerms) {
+      FrozenBufferedUpdates.TermDocsIterator iterator =
+          new FrozenBufferedUpdates.TermDocsIterator(fields, true);
+      for (Term deleteTerm : deleteTerms) {
         DocIdSetIterator postings = iterator.nextTerm(deleteTerm.field(), deleteTerm.bytes());
-        if (postings != null ) {
+        if (postings != null) {
           int delDocLimit = segDeletes.get(deleteTerm);
           assert delDocLimit < PostingsEnum.NO_MORE_DOCS;
           int doc;
@@ -76,8 +79,12 @@ final class FreqProxTermsWriter extends TermsHash {
   }
 
   @Override
-  public void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state,
-      Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+  public void flush(
+      Map<String, TermsHashPerField> fieldsToFlush,
+      final SegmentWriteState state,
+      Sorter.DocMap sortMap,
+      NormsProducer norms)
+      throws IOException {
     super.flush(fieldsToFlush, state, sortMap, norms);
 
     // Gather all fields that saw any postings:
@@ -100,18 +107,19 @@ final class FreqProxTermsWriter extends TermsHash {
     if (sortMap != null) {
       final Sorter.DocMap docMap = sortMap;
       final FieldInfos infos = state.fieldInfos;
-      fields = new FilterLeafReader.FilterFields(fields) {
+      fields =
+          new FilterLeafReader.FilterFields(fields) {
 
-        @Override
-        public Terms terms(final String field) throws IOException {
-          Terms terms = in.terms(field);
-          if (terms == null) {
-            return null;
-          } else {
-            return new SortingTerms(terms, infos.fieldInfo(field).getIndexOptions(), docMap);
-          }
-        }
-      };
+            @Override
+            public Terms terms(final String field) throws IOException {
+              Terms terms = in.terms(field);
+              if (terms == null) {
+                return null;
+              } else {
+                return new SortingTerms(terms, infos.fieldInfo(field).getIndexOptions(), docMap);
+              }
+            }
+          };
     }
 
     FieldsConsumer consumer = state.segmentInfo.getCodec().postingsFormat().fieldsConsumer(state);
@@ -126,12 +134,12 @@ final class FreqProxTermsWriter extends TermsHash {
         IOUtils.closeWhileHandlingException(consumer);
       }
     }
-
   }
 
   @Override
   public TermsHashPerField addField(FieldInvertState invertState, FieldInfo fieldInfo) {
-    return new FreqProxTermsWriterPerField(invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo));
+    return new FreqProxTermsWriterPerField(
+        invertState, this, fieldInfo, nextTermsHash.addField(invertState, fieldInfo));
   }
 
   static class SortingTerms extends FilterLeafReader.FilterTerms {
@@ -151,11 +159,10 @@ final class FreqProxTermsWriter extends TermsHash {
     }
 
     @Override
-    public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm)
-        throws IOException {
-      return new SortingTermsEnum(in.intersect(compiled, startTerm), docMap, indexOptions, hasPositions());
+    public TermsEnum intersect(CompiledAutomaton compiled, BytesRef startTerm) throws IOException {
+      return new SortingTermsEnum(
+          in.intersect(compiled, startTerm), docMap, indexOptions, hasPositions());
     }
-
   }
 
   private static class SortingTermsEnum extends FilterLeafReader.FilterTermsEnum {
@@ -164,7 +171,8 @@ final class FreqProxTermsWriter extends TermsHash {
     private final IndexOptions indexOptions;
     private final boolean hasPositions;
 
-    SortingTermsEnum(final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions, boolean hasPositions) {
+    SortingTermsEnum(
+        final TermsEnum in, Sorter.DocMap docMap, IndexOptions indexOptions, boolean hasPositions) {
       super(in);
       this.docMap = docMap;
       this.indexOptions = indexOptions;
@@ -172,7 +180,7 @@ final class FreqProxTermsWriter extends TermsHash {
     }
 
     @Override
-    public PostingsEnum postings( PostingsEnum reuse, final int flags) throws IOException {
+    public PostingsEnum postings(PostingsEnum reuse, final int flags) throws IOException {
 
       if (hasPositions && PostingsEnum.featureRequested(flags, PostingsEnum.POSITIONS)) {
         final PostingsEnum inReuse;
@@ -192,8 +200,10 @@ final class FreqProxTermsWriter extends TermsHash {
         // since this code is expected to be used during addIndexes which will
         // ask for everything. if that assumption changes in the future, we can
         // factor in whether 'flags' says offsets are not required.
-        final boolean storeOffsets = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-        return new SortingPostingsEnum(docMap.size(), wrapReuse, inDocsAndPositions, docMap, storeOffsets);
+        final boolean storeOffsets =
+            indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
+        return new SortingPostingsEnum(
+            docMap.size(), wrapReuse, inDocsAndPositions, docMap, storeOffsets);
       }
 
       final PostingsEnum inReuse;
@@ -209,10 +219,11 @@ final class FreqProxTermsWriter extends TermsHash {
       }
 
       final PostingsEnum inDocs = in.postings(inReuse, flags);
-      final boolean withFreqs = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >=0 && PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
+      final boolean withFreqs =
+          indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0
+              && PostingsEnum.featureRequested(flags, PostingsEnum.FREQS);
       return new SortingDocsEnum(docMap.size(), wrapReuse, inDocs, withFreqs, docMap);
     }
-
   }
 
   static class SortingDocsEnum extends FilterLeafReader.FilterPostingsEnum {
@@ -293,7 +304,13 @@ final class FreqProxTermsWriter extends TermsHash {
     private final int upto;
     private final boolean withFreqs;
 
-    SortingDocsEnum(int maxDoc, SortingDocsEnum reuse, final PostingsEnum in, boolean withFreqs, final Sorter.DocMap docMap) throws IOException {
+    SortingDocsEnum(
+        int maxDoc,
+        SortingDocsEnum reuse,
+        final PostingsEnum in,
+        boolean withFreqs,
+        final Sorter.DocMap docMap)
+        throws IOException {
       super(in);
       this.maxDoc = maxDoc;
       this.withFreqs = withFreqs;
@@ -316,7 +333,7 @@ final class FreqProxTermsWriter extends TermsHash {
         if (freqs == null || freqs.length < docs.length) {
           freqs = new int[docs.length];
         }
-        while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
+        while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           if (i >= docs.length) {
             docs = ArrayUtil.grow(docs, docs.length + 1);
             freqs = ArrayUtil.grow(freqs, freqs.length + 1);
@@ -327,7 +344,7 @@ final class FreqProxTermsWriter extends TermsHash {
         }
       } else {
         freqs = null;
-        while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS){
+        while ((doc = in.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
           if (i >= docs.length) {
             docs = ArrayUtil.grow(docs, docs.length + 1);
           }
@@ -403,10 +420,8 @@ final class FreqProxTermsWriter extends TermsHash {
   static class SortingPostingsEnum extends FilterLeafReader.FilterPostingsEnum {
 
     /**
-     * A {@link TimSorter} which sorts two parallel arrays of doc IDs and
-     * offsets in one go. Everyti
-     * me a doc ID is 'swapped', its corresponding offset
-     * is swapped too.
+     * A {@link TimSorter} which sorts two parallel arrays of doc IDs and offsets in one go. Everyti
+     * me a doc ID is 'swapped', its corresponding offset is swapped too.
      */
     private static final class DocOffsetSorter extends TimSorter {
 
@@ -484,7 +499,13 @@ final class FreqProxTermsWriter extends TermsHash {
 
     private final ByteBuffersDataOutput buffer;
 
-    SortingPostingsEnum(int maxDoc, SortingPostingsEnum reuse, final PostingsEnum in, Sorter.DocMap docMap, boolean storeOffsets) throws IOException {
+    SortingPostingsEnum(
+        int maxDoc,
+        SortingPostingsEnum reuse,
+        final PostingsEnum in,
+        Sorter.DocMap docMap,
+        boolean storeOffsets)
+        throws IOException {
       super(in);
       this.maxDoc = maxDoc;
       this.storeOffsets = storeOffsets;
@@ -631,5 +652,4 @@ final class FreqProxTermsWriter extends TermsHash {
       return in;
     }
   }
-
 }

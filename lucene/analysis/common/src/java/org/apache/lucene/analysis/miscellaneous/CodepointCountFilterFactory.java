@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- * Factory for {@link CodepointCountFilter}. 
+ * Factory for {@link CodepointCountFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_lngth" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,6 +30,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.CodepointCountFilterFactory" min="0" max="1" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 4.5.1
  * @lucene.spi {@value #NAME}
  */
@@ -53,7 +53,7 @@ public class CodepointCountFilterFactory extends TokenFilterFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public CodepointCountFilterFactory() {
     throw defaultCtorException();

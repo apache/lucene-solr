@@ -24,9 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
-
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.misc.store.HardlinkCopyDirectoryWrapper;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.store.BaseDirectoryTestCase;
@@ -41,7 +39,8 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
@@ -55,9 +54,7 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
     return new HardlinkCopyDirectoryWrapper(open);
   }
 
-  /**
-   * Tests that we use hardlinks if possible on Directory#copyFrom
-   */
+  /** Tests that we use hardlinks if possible on Directory#copyFrom */
   public void testCopyHardLinks() throws IOException {
     Path tempDir = createTempDir();
     Path dir_1 = tempDir.resolve("dir_1");
@@ -77,10 +74,13 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
       luceneDir_1.sync(Collections.singleton("foo.bar"));
       try {
         Files.createLink(tempDir.resolve("test"), dir_1.resolve("foo.bar"));
-        BasicFileAttributes destAttr = Files.readAttributes(tempDir.resolve("test"), BasicFileAttributes.class);
-        BasicFileAttributes sourceAttr = Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
-        assumeTrue("hardlinks are not supported", destAttr.fileKey() != null
-            && destAttr.fileKey().equals(sourceAttr.fileKey()));
+        BasicFileAttributes destAttr =
+            Files.readAttributes(tempDir.resolve("test"), BasicFileAttributes.class);
+        BasicFileAttributes sourceAttr =
+            Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
+        assumeTrue(
+            "hardlinks are not supported",
+            destAttr.fileKey() != null && destAttr.fileKey().equals(sourceAttr.fileKey()));
       } catch (UnsupportedOperationException ex) {
         assumeFalse("hardlinks are not supported", true);
       }
@@ -88,10 +88,13 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
       HardlinkCopyDirectoryWrapper wrapper = new HardlinkCopyDirectoryWrapper(luceneDir_2);
       wrapper.copyFrom(luceneDir_1, "foo.bar", "bar.foo", IOContext.DEFAULT);
       assertTrue(Files.exists(dir_2.resolve("bar.foo")));
-      BasicFileAttributes destAttr = Files.readAttributes(dir_2.resolve("bar.foo"), BasicFileAttributes.class);
-      BasicFileAttributes sourceAttr = Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
+      BasicFileAttributes destAttr =
+          Files.readAttributes(dir_2.resolve("bar.foo"), BasicFileAttributes.class);
+      BasicFileAttributes sourceAttr =
+          Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
       assertEquals(destAttr.fileKey(), sourceAttr.fileKey());
-      try (ChecksumIndexInput indexInput = wrapper.openChecksumInput("bar.foo", IOContext.DEFAULT)) {
+      try (ChecksumIndexInput indexInput =
+          wrapper.openChecksumInput("bar.foo", IOContext.DEFAULT)) {
         CodecUtil.checkHeader(indexInput, "foo", 0, 0);
         assertEquals("hey man, nice shot!", indexInput.readString());
         CodecUtil.checkFooter(indexInput);
@@ -100,7 +103,6 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
       // close them in a finally block we might run into an assume here
       IOUtils.close(luceneDir_1, luceneDir_2);
     }
-
   }
 
   public void testRenameWithHardLink() throws Exception {

@@ -16,17 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.TokenStream;
 
-/**
- * An always exhausted token stream.
- */
+/** An always exhausted token stream. */
 public final class EmptyTokenStream extends TokenStream {
 
   @Override
   public final boolean incrementToken() {
     return false;
   }
-
 }

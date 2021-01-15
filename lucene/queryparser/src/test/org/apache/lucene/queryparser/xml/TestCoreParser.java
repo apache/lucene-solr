@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.io.IOException;
+import java.io.InputStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -32,12 +34,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.xml.sax.SAXException;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 public class TestCoreParser extends LuceneTestCase {
 
-  final private static String defaultField = "contents";
+  private static final String defaultField = "contents";
 
   private static Analyzer analyzer;
   private static CoreParser coreParser;
@@ -45,8 +44,10 @@ public class TestCoreParser extends LuceneTestCase {
   private static CoreParserTestIndexData indexData;
 
   protected Analyzer newAnalyzer() {
-    // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-    return new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
+    // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work
+    // with CURRENT):
+    return new MockAnalyzer(
+        random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
   }
 
   protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
@@ -69,20 +70,21 @@ public class TestCoreParser extends LuceneTestCase {
   }
 
   public void test_DOCTYPE_TermQueryXML() throws ParserException, IOException {
-    SAXException saxe = LuceneTestCase.expectThrows(ParserException.class, SAXException.class,
-        () -> parse("DOCTYPE_TermQuery.xml"));
+    SAXException saxe =
+        LuceneTestCase.expectThrows(
+            ParserException.class, SAXException.class, () -> parse("DOCTYPE_TermQuery.xml"));
     assertTrue(saxe.getMessage().startsWith("External Entity resolving unsupported:"));
   }
 
   public void test_ENTITY_TermQueryXML() throws ParserException, IOException {
-    SAXException saxe = LuceneTestCase.expectThrows(ParserException.class, SAXException.class,
-        () -> parse("ENTITY_TermQuery.xml"));
+    SAXException saxe =
+        LuceneTestCase.expectThrows(
+            ParserException.class, SAXException.class, () -> parse("ENTITY_TermQuery.xml"));
     assertTrue(saxe.getMessage().startsWith("External Entity resolving unsupported:"));
   }
 
   public void testTermQueryEmptyXML() throws ParserException, IOException {
-    parseShouldFail("TermQueryEmpty.xml",
-        "TermQuery has no text");
+    parseShouldFail("TermQueryEmpty.xml", "TermQuery has no text");
   }
 
   public void testTermsQueryXML() throws ParserException, IOException {
@@ -94,11 +96,11 @@ public class TestCoreParser extends LuceneTestCase {
     Query q = parse("BooleanQuery.xml");
     dumpResults("BooleanQuery", q, 5);
   }
-  
+
   public void testDisjunctionMaxQueryXML() throws ParserException, IOException {
     Query q = parse("DisjunctionMaxQuery.xml");
     assertTrue(q instanceof DisjunctionMaxQuery);
-    DisjunctionMaxQuery d = (DisjunctionMaxQuery)q;
+    DisjunctionMaxQuery d = (DisjunctionMaxQuery) q;
     assertEquals(0.0f, d.getTieBreakerMultiplier(), 0.0001f);
     assertEquals(2, d.getDisjuncts().size());
     DisjunctionMaxQuery ndq = (DisjunctionMaxQuery) d.getDisjuncts().get(1);
@@ -148,13 +150,13 @@ public class TestCoreParser extends LuceneTestCase {
     Exception expectedException = new NumberFormatException("For input string: \"\"");
     try {
       Query q = parse("SpanNearQueryWithoutSlop.xml");
-      fail("got query "+q+" instead of expected exception "+expectedException);
+      fail("got query " + q + " instead of expected exception " + expectedException);
     } catch (Exception e) {
       assertEquals(expectedException.toString(), e.toString());
     }
     try {
       SpanQuery sq = parseAsSpan("SpanNearQueryWithoutSlop.xml");
-      fail("got span query "+sq+" instead of expected exception "+expectedException);
+      fail("got span query " + sq + " instead of expected exception " + expectedException);
     } catch (Exception e) {
       assertEquals(expectedException.toString(), e.toString());
     }
@@ -174,7 +176,7 @@ public class TestCoreParser extends LuceneTestCase {
     Query q = parse("NestedBooleanQuery.xml");
     dumpResults("Nested Boolean query", q, 5);
   }
-  
+
   public void testPointRangeQuery() throws ParserException, IOException {
     Query q = parse("PointRangeQuery.xml");
     dumpResults("PointRangeQuery", q, 5);
@@ -195,7 +197,7 @@ public class TestCoreParser extends LuceneTestCase {
     dumpResults("PointRangeQueryWithoutRange", q, 5);
   }
 
-  //================= Helper methods ===================================
+  // ================= Helper methods ===================================
 
   protected String defaultField() {
     return defaultField;
@@ -220,7 +222,7 @@ public class TestCoreParser extends LuceneTestCase {
       try {
         indexData = new CoreParserTestIndexData(analyzer());
       } catch (Exception e) {
-        fail("caught Exception "+e);
+        fail("caught Exception " + e);
       }
     }
     return indexData;
@@ -234,7 +236,8 @@ public class TestCoreParser extends LuceneTestCase {
     return indexData().searcher;
   }
 
-  protected void parseShouldFail(String xmlFileName, String expectedParserExceptionMessage) throws IOException {
+  protected void parseShouldFail(String xmlFileName, String expectedParserExceptionMessage)
+      throws IOException {
     Query q = null;
     ParserException pe = null;
     try {
@@ -242,10 +245,12 @@ public class TestCoreParser extends LuceneTestCase {
     } catch (ParserException e) {
       pe = e;
     }
-    assertNull("for "+xmlFileName+" unexpectedly got "+q, q);
-    assertNotNull("expected a ParserException for "+xmlFileName, pe);
-    assertEquals("expected different ParserException for "+xmlFileName,
-        expectedParserExceptionMessage, pe.getMessage());
+    assertNull("for " + xmlFileName + " unexpectedly got " + q, q);
+    assertNotNull("expected a ParserException for " + xmlFileName, pe);
+    assertEquals(
+        "expected different ParserException for " + xmlFileName,
+        expectedParserExceptionMessage,
+        pe.getMessage());
   }
 
   protected Query parse(String xmlFileName) throws ParserException, IOException {
@@ -253,7 +258,7 @@ public class TestCoreParser extends LuceneTestCase {
   }
 
   protected SpanQuery parseAsSpan(String xmlFileName) throws ParserException, IOException {
-    return (SpanQuery)implParse(xmlFileName, true);
+    return (SpanQuery) implParse(xmlFileName, true);
   }
 
   private Query implParse(String xmlFileName, boolean span) throws ParserException, IOException {
@@ -273,13 +278,29 @@ public class TestCoreParser extends LuceneTestCase {
 
   protected void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
-      System.out.println("TEST: qType=" + qType + " numDocs=" + numDocs + " " + q.getClass().getCanonicalName() + " query=" + q);
+      System.out.println(
+          "TEST: qType="
+              + qType
+              + " numDocs="
+              + numDocs
+              + " "
+              + q.getClass().getCanonicalName()
+              + " query="
+              + q);
     }
     final IndexSearcher searcher = searcher();
     TopDocs hits = searcher.search(q, numDocs);
     final boolean producedResults = (hits.totalHits.value > 0);
     if (!producedResults) {
-      System.out.println("TEST: qType=" + qType + " numDocs=" + numDocs + " " + q.getClass().getCanonicalName() + " query=" + q);
+      System.out.println(
+          "TEST: qType="
+              + qType
+              + " numDocs="
+              + numDocs
+              + " "
+              + q.getClass().getCanonicalName()
+              + " query="
+              + q);
     }
     if (VERBOSE) {
       ScoreDoc[] scoreDocs = hits.scoreDocs;

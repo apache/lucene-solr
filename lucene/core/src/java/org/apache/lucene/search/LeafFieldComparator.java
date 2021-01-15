@@ -16,36 +16,25 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 /**
- * Expert: comparator that gets instantiated on each leaf
- * from a top-level {@link FieldComparator} instance.
+ * Expert: comparator that gets instantiated on each leaf from a top-level {@link FieldComparator}
+ * instance.
  *
- * <p>A leaf comparator must define these functions:</p>
+ * <p>A leaf comparator must define these functions:
  *
  * <ul>
- *
- *  <li> {@link #setBottom} This method is called by
- *       {@link FieldValueHitQueue} to notify the
- *       FieldComparator of the current weakest ("bottom")
- *       slot.  Note that this slot may not hold the weakest
- *       value according to your comparator, in cases where
- *       your comparator is not the primary one (ie, is only
- *       used to break ties from the comparators before it).
- *
- *  <li> {@link #compareBottom} Compare a new hit (docID)
- *       against the "weakest" (bottom) entry in the queue.
- *
- *  <li> {@link #compareTop} Compare a new hit (docID)
- *       against the top value previously set by a call to
- *       {@link FieldComparator#setTopValue}.
- *
- *  <li> {@link #copy} Installs a new hit into the
- *       priority queue.  The {@link FieldValueHitQueue}
+ *   <li>{@link #setBottom} This method is called by {@link FieldValueHitQueue} to notify the
+ *       FieldComparator of the current weakest ("bottom") slot. Note that this slot may not hold
+ *       the weakest value according to your comparator, in cases where your comparator is not the
+ *       primary one (ie, is only used to break ties from the comparators before it).
+ *   <li>{@link #compareBottom} Compare a new hit (docID) against the "weakest" (bottom) entry in
+ *       the queue.
+ *   <li>{@link #compareTop} Compare a new hit (docID) against the top value previously set by a
+ *       call to {@link FieldComparator#setTopValue}.
+ *   <li>{@link #copy} Installs a new hit into the priority queue. The {@link FieldValueHitQueue}
  *       calls this method when a new hit is competitive.
- *
  * </ul>
  *
  * @see FieldComparator
@@ -54,82 +43,72 @@ import java.io.IOException;
 public interface LeafFieldComparator {
 
   /**
-   * Set the bottom slot, ie the "weakest" (sorted last)
-   * entry in the queue.  When {@link #compareBottom} is
-   * called, you should compare against this slot.  This
-   * will always be called before {@link #compareBottom}.
-   * 
+   * Set the bottom slot, ie the "weakest" (sorted last) entry in the queue. When {@link
+   * #compareBottom} is called, you should compare against this slot. This will always be called
+   * before {@link #compareBottom}.
+   *
    * @param slot the currently weakest (sorted last) slot in the queue
    */
   void setBottom(final int slot) throws IOException;
 
   /**
-   * Compare the bottom of the queue with this doc.  This will
-   * only invoked after setBottom has been called.  This
-   * should return the same result as {@link
-   * FieldComparator#compare(int,int)}} as if bottom were slot1 and the new
-   * document were slot 2.
-   *    
-   * <p>For a search that hits many results, this method
-   * will be the hotspot (invoked by far the most
-   * frequently).</p>
-   * 
+   * Compare the bottom of the queue with this doc. This will only invoked after setBottom has been
+   * called. This should return the same result as {@link FieldComparator#compare(int,int)}} as if
+   * bottom were slot1 and the new document were slot 2.
+   *
+   * <p>For a search that hits many results, this method will be the hotspot (invoked by far the
+   * most frequently).
+   *
    * @param doc that was hit
-   * @return any {@code N < 0} if the doc's value is sorted after
-   * the bottom entry (not competitive), any {@code N > 0} if the
-   * doc's value is sorted before the bottom entry and {@code 0} if
-   * they are equal.
+   * @return any {@code N < 0} if the doc's value is sorted after the bottom entry (not
+   *     competitive), any {@code N > 0} if the doc's value is sorted before the bottom entry and
+   *     {@code 0} if they are equal.
    */
   int compareBottom(int doc) throws IOException;
 
   /**
-   * Compare the top value with this doc.  This will
-   * only invoked after setTopValue has been called.  This
-   * should return the same result as {@link
-   * FieldComparator#compare(int,int)}} as if topValue were slot1 and the new
-   * document were slot 2.  This is only called for searches that
-   * use searchAfter (deep paging).
-   *    
+   * Compare the top value with this doc. This will only invoked after setTopValue has been called.
+   * This should return the same result as {@link FieldComparator#compare(int,int)}} as if topValue
+   * were slot1 and the new document were slot 2. This is only called for searches that use
+   * searchAfter (deep paging).
+   *
    * @param doc that was hit
-   * @return any {@code N < 0} if the doc's value is sorted after
-   * the top entry (not competitive), any {@code N > 0} if the
-   * doc's value is sorted before the top entry and {@code 0} if
-   * they are equal.
+   * @return any {@code N < 0} if the doc's value is sorted after the top entry (not competitive),
+   *     any {@code N > 0} if the doc's value is sorted before the top entry and {@code 0} if they
+   *     are equal.
    */
   int compareTop(int doc) throws IOException;
 
   /**
-   * This method is called when a new hit is competitive.
-   * You should copy any state associated with this document
-   * that will be required for future comparisons, into the
-   * specified slot.
-   * 
+   * This method is called when a new hit is competitive. You should copy any state associated with
+   * this document that will be required for future comparisons, into the specified slot.
+   *
    * @param slot which slot to copy the hit to
    * @param doc docID relative to current reader
    */
   void copy(int slot, int doc) throws IOException;
 
-  /** Sets the Scorer to use in case a document's score is
-   *  needed.
-   * 
-   * @param scorer Scorer instance that you should use to
-   * obtain the current hit's score, if necessary. */
+  /**
+   * Sets the Scorer to use in case a document's score is needed.
+   *
+   * @param scorer Scorer instance that you should use to obtain the current hit's score, if
+   *     necessary.
+   */
   void setScorer(Scorable scorer) throws IOException;
 
   /**
    * Returns a competitive iterator
-   * @return an iterator over competitive docs that are stronger than already collected docs
-   * or {@code null} if such an iterator is not available for the current comparator or segment.
+   *
+   * @return an iterator over competitive docs that are stronger than already collected docs or
+   *     {@code null} if such an iterator is not available for the current comparator or segment.
    */
   default DocIdSetIterator competitiveIterator() throws IOException {
     return null;
   }
 
   /**
-   * Informs this leaf comparator that hits threshold is reached.
-   * This method is called from a collector when hits threshold is reached.
+   * Informs this leaf comparator that hits threshold is reached. This method is called from a
+   * collector when hits threshold is reached.
    */
-  default void setHitsThresholdReached() throws IOException{
-  }
-
+  default void setHitsThresholdReached() throws IOException {}
 }

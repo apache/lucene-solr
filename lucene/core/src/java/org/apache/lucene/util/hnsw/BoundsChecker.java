@@ -19,56 +19,57 @@ package org.apache.lucene.util.hnsw;
 
 abstract class BoundsChecker {
 
-    float bound;
+  float bound;
 
-    /**
-     * Update the bound if sample is better
-     */
-    abstract void update(float sample);
+  /** Update the bound if sample is better */
+  abstract void update(float sample);
 
-    /**
-     * Return whether the sample exceeds (is worse than) the bound
-     */
-    abstract boolean check(float sample);
+  /** Update the bound unconditionally */
+  void set(float sample) {
+    bound = sample;
+  }
 
-    static BoundsChecker create(boolean reversed) {
-        if (reversed) {
-            return new Min();
-        } else {
-            return new Max();
-        }
+  /** @return whether the sample exceeds (is worse than) the bound */
+  abstract boolean check(float sample);
+
+  static BoundsChecker create(boolean reversed) {
+    if (reversed) {
+      return new Min();
+    } else {
+      return new Max();
+    }
+  }
+
+  static class Max extends BoundsChecker {
+    Max() {
+      bound = Float.NEGATIVE_INFINITY;
     }
 
-    static class Max extends BoundsChecker {
-        Max() {
-            bound = Float.NEGATIVE_INFINITY;
-        }
-
-        void update(float sample) {
-            if (sample > bound) {
-                bound = sample;
-            }
-        }
-
-        boolean check(float sample) {
-            return sample < bound;
-        }
+    void update(float sample) {
+      if (sample > bound) {
+        bound = sample;
+      }
     }
 
-    static class Min extends BoundsChecker {
-
-        Min() {
-            bound = Float.POSITIVE_INFINITY;
-        }
-
-        void update(float sample) {
-            if (sample < bound) {
-                bound = sample;
-            }
-        }
-
-        boolean check(float sample) {
-            return sample > bound;
-        }
+    boolean check(float sample) {
+      return sample < bound;
     }
+  }
+
+  static class Min extends BoundsChecker {
+
+    Min() {
+      bound = Float.POSITIVE_INFINITY;
+    }
+
+    void update(float sample) {
+      if (sample < bound) {
+        bound = sample;
+      }
+    }
+
+    boolean check(float sample) {
+      return sample > bound;
+    }
+  }
 }

@@ -16,22 +16,18 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.Map;
-
 /**
- * <code>LinearFloatFunction</code> implements a linear function over
- * another {@link ValueSource}.
+ * <code>LinearFloatFunction</code> implements a linear function over another {@link ValueSource}.
  * <br>
  * Normally Used as an argument to a {@link org.apache.lucene.queries.function.FunctionQuery}
- *
- *
  */
 public class LinearFloatFunction extends ValueSource {
   protected final ValueSource source;
@@ -43,24 +39,27 @@ public class LinearFloatFunction extends ValueSource {
     this.slope = slope;
     this.intercept = intercept;
   }
-  
+
   @Override
   public String description() {
     return slope + "*float(" + source.description() + ")+" + intercept;
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
-    final FunctionValues vals =  source.getValues(context, readerContext);
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
+    final FunctionValues vals = source.getValues(context, readerContext);
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) throws IOException {
         return vals.floatVal(doc) * slope + intercept;
       }
+
       @Override
       public boolean exists(int doc) throws IOException {
         return vals.exists(doc);
       }
+
       @Override
       public String toString(int doc) throws IOException {
         return slope + "*float(" + vals.toString(doc) + ")+" + intercept;
@@ -85,9 +84,9 @@ public class LinearFloatFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (LinearFloatFunction.class != o.getClass()) return false;
-    LinearFloatFunction other = (LinearFloatFunction)o;
-    return  this.slope == other.slope
-         && this.intercept == other.intercept
-         && this.source.equals(other.source);
+    LinearFloatFunction other = (LinearFloatFunction) o;
+    return this.slope == other.slope
+        && this.intercept == other.intercept
+        && this.source.equals(other.source);
   }
 }

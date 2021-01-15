@@ -16,18 +16,17 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
- * Factory for {@link KeepWordFilter}. 
+ * Factory for {@link KeepWordFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_keepword" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -47,9 +46,9 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
   private final boolean ignoreCase;
   private final String wordFiles;
   private CharArraySet words;
-  
+
   /** Creates a new KeepWordFilterFactory */
-  public KeepWordFilterFactory(Map<String,String> args) {
+  public KeepWordFilterFactory(Map<String, String> args) {
     super(args);
     wordFiles = get(args, "words");
     ignoreCase = getBoolean(args, "ignoreCase", false);

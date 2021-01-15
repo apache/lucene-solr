@@ -16,25 +16,21 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 
 /**
  * Provides the ability to use a different {@link Similarity} for different fields.
- * <p>
- * Subclasses should implement {@link #get(String)} to return an appropriate
- * Similarity (for example, using field-specific parameter values) for the field.
- * 
+ *
+ * <p>Subclasses should implement {@link #get(String)} to return an appropriate Similarity (for
+ * example, using field-specific parameter values) for the field.
+ *
  * @lucene.experimental
  */
 public abstract class PerFieldSimilarityWrapper extends Similarity {
-  
-  /**
-   * Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.)
-   */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   public PerFieldSimilarityWrapper() {}
 
   @Override
@@ -43,13 +39,11 @@ public abstract class PerFieldSimilarityWrapper extends Similarity {
   }
 
   @Override
-  public final SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+  public final SimScorer scorer(
+      float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
     return get(collectionStats.field()).scorer(boost, collectionStats, termStats);
   }
-  
-  /** 
-   * Returns a {@link Similarity} for scoring a field.
-   */
-  public abstract Similarity get(String name);
 
+  /** Returns a {@link Similarity} for scoring a field. */
+  public abstract Similarity get(String name);
 }

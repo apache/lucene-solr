@@ -29,7 +29,7 @@ public class TestByteBlockPool extends LuceneTestCase {
     pool.nextBuffer();
     boolean reuseFirst = random().nextBoolean();
     for (int j = 0; j < 2; j++) {
-        
+
       List<BytesRef> list = new ArrayList<>();
       int maxLength = atLeast(500);
       final int numValues = atLeast(100);
@@ -84,7 +84,7 @@ public class TestByteBlockPool extends LuceneTestCase {
     pool.nextBuffer();
 
     List<byte[]> items = new ArrayList<>();
-    for (int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       int size;
       if (random().nextBoolean()) {
         size = TestUtil.nextInt(random(), 100, 1000);

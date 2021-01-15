@@ -42,4 +42,14 @@ class PlacementPlanImpl implements PlacementPlan {
   public Set<ReplicaPlacement> getReplicaPlacements() {
     return replicaPlacements;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("PlacementPlan{");
+    for (ReplicaPlacement placement : replicaPlacements) {
+      sb.append("\n").append(placement.toString());
+    }
+    sb.append("\n}");
+    return sb.toString();
+  }
 }

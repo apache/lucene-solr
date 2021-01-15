@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.pattern;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -27,46 +26,32 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.CharsRefBuilder;
 
 /**
- * CaptureGroup uses Java regexes to emit multiple tokens - one for each capture
- * group in one or more patterns.
+ * CaptureGroup uses Java regexes to emit multiple tokens - one for each capture group in one or
+ * more patterns.
  *
- * <p>
- * For example, a pattern like:
- * </p>
+ * <p>For example, a pattern like:
  *
- * <p>
- * <code>"(https?://([a-zA-Z\-_0-9.]+))"</code>
- * </p>
+ * <p><code>"(https?://([a-zA-Z\-_0-9.]+))"</code>
  *
- * <p>
- * when matched against the string "http://www.foo.com/index" would return the
- * tokens "https://www.foo.com" and "www.foo.com".
- * </p>
+ * <p>when matched against the string "http://www.foo.com/index" would return the tokens
+ * "https://www.foo.com" and "www.foo.com".
  *
- * <p>
- * If none of the patterns match, or if preserveOriginal is true, the original
- * token will be preserved.
- * </p>
- * <p>
- * Each pattern is matched as often as it can be, so the pattern
- * <code> "(...)"</code>, when matched against <code>"abcdefghi"</code> would
- * produce <code>["abc","def","ghi"]</code>
- * </p>
- * <p>
- * A camelCaseFilter could be written as:
- * </p>
- * <p>
- * <code>
- *   "([A-Z]{2,})",                                 
- *   "(?&lt;![A-Z])([A-Z][a-z]+)",                     
+ * <p>If none of the patterns match, or if preserveOriginal is true, the original token will be
+ * preserved.
+ *
+ * <p>Each pattern is matched as often as it can be, so the pattern <code> "(...)"</code>, when
+ * matched against <code>"abcdefghi"</code> would produce <code>["abc","def","ghi"]</code>
+ *
+ * <p>A camelCaseFilter could be written as:
+ *
+ * <p><code>
+ *   "([A-Z]{2,})",
+ *   "(?&lt;![A-Z])([A-Z][a-z]+)",
  *   "(?:^|\\b|(?&lt;=[0-9_])|(?&lt;=[A-Z]{2}))([a-z]+)",
  *   "([0-9]+)"
  * </code>
- * </p>
- * <p>
- * plus if {@link #preserveOriginal} is true, it would also return
- * <code>"camelCaseFilter"</code>
- * </p>
+ *
+ * <p>plus if {@link #preserveOriginal} is true, it would also return <code>"camelCaseFilter"</code>
  */
 public final class PatternCaptureGroupTokenFilter extends TokenFilter {
 
@@ -81,17 +66,13 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
   private int currentMatcher;
 
   /**
-   * @param input
-   *          the input {@link TokenStream}
-   * @param preserveOriginal
-   *          set to true to return the original token even if one of the
-   *          patterns matches
-   * @param patterns
-   *          an array of {@link Pattern} objects to match against each token
+   * @param input the input {@link TokenStream}
+   * @param preserveOriginal set to true to return the original token even if one of the patterns
+   *     matches
+   * @param patterns an array of {@link Pattern} objects to match against each token
    */
-
-  public PatternCaptureGroupTokenFilter(TokenStream input,
-      boolean preserveOriginal, Pattern... patterns) {
+  public PatternCaptureGroupTokenFilter(
+      TokenStream input, boolean preserveOriginal, Pattern... patterns) {
     super(input);
     this.preserveOriginal = preserveOriginal;
     this.matchers = new Matcher[patterns.length];
@@ -118,8 +99,7 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
         while (currentGroup[i] < groupCounts[i] + 1) {
           final int start = matcher.start(currentGroup[i]);
           final int end = matcher.end(currentGroup[i]);
-          if (start == end || preserveOriginal && start == 0
-              && spare.length() == end) {
+          if (start == end || preserveOriginal && start == 0 && spare.length() == end) {
             currentGroup[i]++;
             continue;
           }
@@ -145,10 +125,8 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
       assert state != null;
       clearAttributes();
       restoreState(state);
-      final int start = matchers[currentMatcher]
-          .start(currentGroup[currentMatcher]);
-      final int end = matchers[currentMatcher]
-          .end(currentGroup[currentMatcher]);
+      final int start = matchers[currentMatcher].start(currentGroup[currentMatcher]);
+      final int end = matchers[currentMatcher].end(currentGroup[currentMatcher]);
 
       posAttr.setPositionIncrement(0);
       charTermAttr.copyBuffer(spare.chars(), start, end - start);
@@ -173,10 +151,8 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
     if (preserveOriginal) {
       currentMatcher = 0;
     } else if (nextCapture()) {
-      final int start = matchers[currentMatcher]
-          .start(currentGroup[currentMatcher]);
-      final int end = matchers[currentMatcher]
-          .end(currentGroup[currentMatcher]);
+      final int start = matchers[currentMatcher].start(currentGroup[currentMatcher]);
+      final int end = matchers[currentMatcher].end(currentGroup[currentMatcher]);
 
       // if we start at 0 we can simply set the length and save the copy
       if (start == 0) {
@@ -187,7 +163,6 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
       currentGroup[currentMatcher]++;
     }
     return true;
-
   }
 
   @Override
@@ -196,5 +171,4 @@ public final class PatternCaptureGroupTokenFilter extends TokenFilter {
     state = null;
     currentMatcher = -1;
   }
-
 }

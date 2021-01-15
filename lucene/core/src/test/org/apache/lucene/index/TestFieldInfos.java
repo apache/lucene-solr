@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.index;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.sameInstance;
 
 import java.io.IOException;
 import java.util.Iterator;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,15 +29,15 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.sameInstance;
-
 public class TestFieldInfos extends LuceneTestCase {
 
-  public void testFieldInfos() throws Exception{
+  public void testFieldInfos() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
 
     Document d1 = new Document();
     for (int i = 0; i < 15; i++) {
@@ -64,20 +65,20 @@ public class TestFieldInfos extends LuceneTestCase {
     FieldInfos fis3 = IndexWriter.readFieldInfos(sis.info(2));
 
     // testing dense FieldInfos
-    Iterator<FieldInfo>  it = fis1.iterator();
+    Iterator<FieldInfo> it = fis1.iterator();
     int i = 0;
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       FieldInfo fi = it.next();
       assertEquals(i, fi.number);
-      assertEquals("f" + i , fi.name);
-      assertEquals("f" + i, fis1.fieldInfo(i).name); //lookup by number
-      assertEquals("f" + i, fis1.fieldInfo("f" + i).name); //lookup by name
+      assertEquals("f" + i, fi.name);
+      assertEquals("f" + i, fis1.fieldInfo(i).name); // lookup by number
+      assertEquals("f" + i, fis1.fieldInfo("f" + i).name); // lookup by name
       i++;
     }
 
     // testing sparse FieldInfos
-    assertEquals("f0", fis2.fieldInfo(0).name); //lookup by number
-    assertEquals("f0", fis2.fieldInfo("f0").name); //lookup by name
+    assertEquals("f0", fis2.fieldInfo(0).name); // lookup by number
+    assertEquals("f0", fis2.fieldInfo("f0").name); // lookup by name
     assertNull(fis2.fieldInfo(1));
     assertNull(fis2.fieldInfo("f1"));
     assertEquals("f15", fis2.fieldInfo(15).name);
@@ -86,18 +87,21 @@ public class TestFieldInfos extends LuceneTestCase {
     assertEquals("f16", fis2.fieldInfo("f16").name);
 
     // testing empty FieldInfos
-    assertNull(fis3.fieldInfo(0)); //lookup by number
-    assertNull(fis3.fieldInfo("f0")); //lookup by name
+    assertNull(fis3.fieldInfo(0)); // lookup by number
+    assertNull(fis3.fieldInfo("f0")); // lookup by name
     assertEquals(0, fis3.size());
     Iterator<FieldInfo> it3 = fis3.iterator();
     assertFalse(it3.hasNext());
     dir.close();
   }
 
-  public void testFieldAttributes() throws Exception{
+  public void testFieldAttributes() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter writer =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
 
     FieldType type1 = new FieldType();
     type1.setStored(true);
@@ -106,7 +110,7 @@ public class TestFieldInfos extends LuceneTestCase {
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", type1));
     FieldType type2 = new FieldType(type1);
-    //changing the value after copying shouldn't impact the original type1
+    // changing the value after copying shouldn't impact the original type1
     type2.putAttribute("testKey1", "testValue2");
     writer.addDocument(d1);
     writer.commit();
@@ -123,8 +127,8 @@ public class TestFieldInfos extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     FieldInfos fis = FieldInfos.getMergedFieldInfos(reader);
     assertEquals(fis.size(), 2);
-    Iterator<FieldInfo>  it = fis.iterator();
-    while(it.hasNext()) {
+    Iterator<FieldInfo> it = fis.iterator();
+    while (it.hasNext()) {
       FieldInfo fi = it.next();
       switch (fi.name) {
         case "f1":
@@ -186,5 +190,50 @@ public class TestFieldInfos extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+
+  public void testFieldNumbersAutoIncrement() {
+    FieldInfos.FieldNumbers fieldNumbers = new FieldInfos.FieldNumbers("softDeletes");
+    for (int i = 0; i < 10; i++) {
+      fieldNumbers.addOrGet(
+          "field" + i,
+          -1,
+          IndexOptions.NONE,
+          DocValuesType.NONE,
+          0,
+          0,
+          0,
+          0,
+          VectorValues.SearchStrategy.NONE,
+          false);
+    }
+    int idx =
+        fieldNumbers.addOrGet(
+            "EleventhField",
+            -1,
+            IndexOptions.NONE,
+            DocValuesType.NONE,
+            0,
+            0,
+            0,
+            0,
+            VectorValues.SearchStrategy.NONE,
+            false);
+    assertEquals("Field numbers 0 through 9 were allocated", 10, idx);
+
+    fieldNumbers.clear();
+    idx =
+        fieldNumbers.addOrGet(
+            "PostClearField",
+            -1,
+            IndexOptions.NONE,
+            DocValuesType.NONE,
+            0,
+            0,
+            0,
+            0,
+            VectorValues.SearchStrategy.NONE,
+            false);
+    assertEquals("Field numbers should reset after clear()", 0, idx);
   }
 }

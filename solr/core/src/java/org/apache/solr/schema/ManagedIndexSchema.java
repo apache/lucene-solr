@@ -67,9 +67,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
+import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.CreateMode;
@@ -77,7 +79,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import static org.apache.solr.core.SolrResourceLoader.informAware;
 
@@ -102,7 +103,7 @@ public final class ManagedIndexSchema extends IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see org.apache.solr.core.SolrResourceLoader#openResource
    */
-  ManagedIndexSchema(SolrConfig solrConfig, String name, InputSource is, boolean isMutable,
+  ManagedIndexSchema(SolrConfig solrConfig, String name, ConfigSetService.ConfigResource is, boolean isMutable,
                      String managedSchemaResourceName, int schemaZkVersion, Object schemaUpdateLock) {
     super(name, is, solrConfig.luceneMatchVersion, solrConfig.getResourceLoader(), solrConfig.getSubstituteProperties());
     this.isMutable = isMutable;
@@ -935,8 +936,9 @@ public final class ManagedIndexSchema extends IndexSchema {
   private void rebuildCopyFields(List<CopyField> oldCopyFields) {
     if (oldCopyFields.size() > 0) {
       for (CopyField copyField : oldCopyFields) {
-        SchemaField source = fields.get(copyField.getSource().getName());
-        SchemaField destination = fields.get(copyField.getDestination().getName());
+        // source or destination either could be explicit field which matches dynamic rule
+        SchemaField source = getFieldOrNull(copyField.getSource().getName());
+        SchemaField destination = getFieldOrNull(copyField.getDestination().getName());
         registerExplicitSrcAndDestFields
             (copyField.getSource().getName(), copyField.getMaxChars(), destination, source);
       }
@@ -1308,7 +1310,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     Map<String,FieldType> newFieldTypes = new HashMap<>();
     List<SchemaAware> schemaAwareList = new ArrayList<>();
     FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, newFieldTypes, schemaAwareList);
-    typeLoader.loadSingle(solrClassLoader, FieldTypeXmlAdapter.toNode(options));
+    typeLoader.loadSingle(solrClassLoader, new DOMConfigNode(FieldTypeXmlAdapter.toNode(options)));
     FieldType ft = newFieldTypes.get(typeName);
     if (!schemaAwareList.isEmpty())
       schemaAware.addAll(schemaAwareList);

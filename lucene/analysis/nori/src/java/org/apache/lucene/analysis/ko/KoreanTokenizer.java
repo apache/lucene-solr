@@ -16,12 +16,13 @@
  */
 package org.apache.lucene.analysis.ko;
 
+import static java.lang.Character.UnicodeScript;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ko.dict.CharacterDefinition;
 import org.apache.lucene.analysis.ko.dict.ConnectionCosts;
@@ -43,65 +44,49 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 
-import static java.lang.Character.UnicodeScript;
-
 /**
  * Tokenizer for Korean that uses morphological analysis.
- * <p>
- * This tokenizer sets a number of additional attributes:
+ *
+ * <p>This tokenizer sets a number of additional attributes:
+ *
  * <ul>
  *   <li>{@link PartOfSpeechAttribute} containing part-of-speech.
  *   <li>{@link ReadingAttribute} containing reading.
  * </ul>
- * <p>
- * This tokenizer uses a rolling Viterbi search to find the
- * least cost segmentation (path) of the incoming characters.
+ *
+ * <p>This tokenizer uses a rolling Viterbi search to find the least cost segmentation (path) of the
+ * incoming characters.
+ *
  * @lucene.experimental
  */
 public final class KoreanTokenizer extends Tokenizer {
 
-  /**
-   * Token type reflecting the original source of this token
-   */
+  /** Token type reflecting the original source of this token */
   public enum Type {
-    /**
-     * Known words from the system dictionary.
-     */
+    /** Known words from the system dictionary. */
     KNOWN,
-    /**
-     * Unknown words (heuristically segmented).
-     */
+    /** Unknown words (heuristically segmented). */
     UNKNOWN,
-    /**
-     * Known words from the user dictionary.
-     */
+    /** Known words from the user dictionary. */
     USER
   }
 
   /**
-   * Decompound mode: this determines how the tokenizer handles
-   * {@link POS.Type#COMPOUND}, {@link POS.Type#INFLECT} and {@link POS.Type#PREANALYSIS} tokens.
+   * Decompound mode: this determines how the tokenizer handles {@link POS.Type#COMPOUND}, {@link
+   * POS.Type#INFLECT} and {@link POS.Type#PREANALYSIS} tokens.
    */
   public enum DecompoundMode {
-    /**
-     * No decomposition for compound.
-     */
+    /** No decomposition for compound. */
     NONE,
 
-    /**
-     * Decompose compounds and discards the original form (default).
-     */
+    /** Decompose compounds and discards the original form (default). */
     DISCARD,
 
-    /**
-     * Decompose compounds and keeps the original form.
-     */
+    /** Decompose compounds and keeps the original form. */
     MIXED
   }
 
-  /**
-   * Default mode for the decompound of tokens ({@link DecompoundMode#DISCARD}.
-   */
+  /** Default mode for the decompound of tokens ({@link DecompoundMode#DISCARD}. */
   public static final DecompoundMode DEFAULT_DECOMPOUND = DecompoundMode.DISCARD;
 
   private static final boolean VERBOSE = false;
@@ -148,16 +133,16 @@ public final class KoreanTokenizer extends Tokenizer {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final PartOfSpeechAttribute posAtt = addAttribute(PartOfSpeechAttribute.class);
   private final ReadingAttribute readingAtt = addAttribute(ReadingAttribute.class);
 
-
   /**
    * Creates a new KoreanTokenizer with default parameters.
-   * <p>
-   * Uses the default AttributeFactory.
+   *
+   * <p>Uses the default AttributeFactory.
    */
   public KoreanTokenizer() {
     this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false, true);
@@ -171,7 +156,11 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param mode Decompound mode.
    * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    */
-  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
+  public KoreanTokenizer(
+      AttributeFactory factory,
+      UserDictionary userDictionary,
+      DecompoundMode mode,
+      boolean outputUnknownUnigrams) {
     this(factory, userDictionary, mode, outputUnknownUnigrams, true);
   }
 
@@ -184,18 +173,27 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param outputUnknownUnigrams if true outputs unigrams for unknown words.
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    */
-  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
-    this(factory,
+  public KoreanTokenizer(
+      AttributeFactory factory,
+      UserDictionary userDictionary,
+      DecompoundMode mode,
+      boolean outputUnknownUnigrams,
+      boolean discardPunctuation) {
+    this(
+        factory,
         TokenInfoDictionary.getInstance(),
         UnknownDictionary.getInstance(),
         ConnectionCosts.getInstance(),
-        userDictionary, mode, outputUnknownUnigrams, discardPunctuation);
+        userDictionary,
+        mode,
+        outputUnknownUnigrams,
+        discardPunctuation);
   }
 
   /**
-   * <p>Create a new KoreanTokenizer supplying a custom system dictionary and unknown dictionary.
-   * This constructor provides an entry point for users that want to construct custom language models
-   * that can be used as input to {@link org.apache.lucene.analysis.ko.util.DictionaryBuilder}.</p>
+   * Create a new KoreanTokenizer supplying a custom system dictionary and unknown dictionary. This
+   * constructor provides an entry point for users that want to construct custom language models
+   * that can be used as input to {@link org.apache.lucene.analysis.ko.util.DictionaryBuilder}.
    *
    * @param factory the AttributeFactory to use
    * @param systemDictionary a custom known token dictionary
@@ -207,14 +205,15 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param discardPunctuation true if punctuation tokens should be dropped from the output.
    * @lucene.experimental
    */
-  public KoreanTokenizer(AttributeFactory factory,
-                         TokenInfoDictionary systemDictionary,
-                         UnknownDictionary unkDictionary,
-                         ConnectionCosts connectionCosts,
-                         UserDictionary userDictionary,
-                         DecompoundMode mode,
-                         boolean outputUnknownUnigrams,
-                         boolean discardPunctuation) {
+  public KoreanTokenizer(
+      AttributeFactory factory,
+      TokenInfoDictionary systemDictionary,
+      UnknownDictionary unkDictionary,
+      ConnectionCosts connectionCosts,
+      UserDictionary userDictionary,
+      DecompoundMode mode,
+      boolean outputUnknownUnigrams,
+      boolean discardPunctuation) {
     super(factory);
     this.dictionary = systemDictionary;
     this.fst = dictionary.getFST();
@@ -244,8 +243,7 @@ public final class KoreanTokenizer extends Tokenizer {
 
   private GraphvizFormatter dotOut;
 
-  /** Expert: set this to produce graphviz (dot) output of
-   *  the Viterbi lattice */
+  /** Expert: set this to produce graphviz (dot) output of the Viterbi lattice */
   public void setGraphvizFormatter(GraphvizFormatter dotOut) {
     this.dotOut = dotOut;
   }
@@ -283,7 +281,7 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   // Holds all back pointers arriving to this position:
-  final static class Position {
+  static final class Position {
 
     int pos;
 
@@ -299,12 +297,12 @@ public final class KoreanTokenizer extends Tokenizer {
     Type[] backType = new Type[8];
 
     public void grow() {
-      costs = ArrayUtil.grow(costs, 1+count);
-      lastRightID = ArrayUtil.grow(lastRightID, 1+count);
-      backPos = ArrayUtil.grow(backPos, 1+count);
-      backWordPos = ArrayUtil.grow(backWordPos, 1+count);
-      backIndex = ArrayUtil.grow(backIndex, 1+count);
-      backID = ArrayUtil.grow(backID, 1+count);
+      costs = ArrayUtil.grow(costs, 1 + count);
+      lastRightID = ArrayUtil.grow(lastRightID, 1 + count);
+      backPos = ArrayUtil.grow(backPos, 1 + count);
+      backWordPos = ArrayUtil.grow(backWordPos, 1 + count);
+      backIndex = ArrayUtil.grow(backIndex, 1 + count);
+      backID = ArrayUtil.grow(backID, 1 + count);
 
       // NOTE: sneaky: grow separately because
       // ArrayUtil.grow will otherwise pick a different
@@ -314,7 +312,14 @@ public final class KoreanTokenizer extends Tokenizer {
       backType = newBackType;
     }
 
-    public void add(int cost, int lastRightID, int backPos, int backRPos, int backIndex, int backID, Type backType) {
+    public void add(
+        int cost,
+        int lastRightID,
+        int backPos,
+        int backRPos,
+        int backIndex,
+        int backID,
+        Type backType) {
       // NOTE: this isn't quite a true Viterbi search,
       // because we should check if lastRightID is
       // already present here, and only update if the new
@@ -366,26 +371,45 @@ public final class KoreanTokenizer extends Tokenizer {
       }
     }
     return spacePenalty;
-
   }
 
-  private void add(Dictionary dict, Position fromPosData, int wordPos, int endPos, int wordID, Type type) {
+  private void add(
+      Dictionary dict, Position fromPosData, int wordPos, int endPos, int wordID, Type type) {
     final POS.Tag leftPOS = dict.getLeftPOS(wordID);
     final int wordCost = dict.getWordCost(wordID);
     final int leftID = dict.getLeftId(wordID);
     int leastCost = Integer.MAX_VALUE;
     int leastIDX = -1;
     assert fromPosData.count > 0;
-    for(int idx=0;idx<fromPosData.count;idx++) {
+    for (int idx = 0; idx < fromPosData.count; idx++) {
       // The number of spaces before the term
       int numSpaces = wordPos - fromPosData.pos;
 
       // Cost is path cost so far, plus word cost (added at
       // end of loop), plus bigram cost and space penalty cost.
-      final int cost = fromPosData.costs[idx] + costs.get(fromPosData.lastRightID[idx], leftID) + computeSpacePenalty(leftPOS, numSpaces);
+      final int cost =
+          fromPosData.costs[idx]
+              + costs.get(fromPosData.lastRightID[idx], leftID)
+              + computeSpacePenalty(leftPOS, numSpaces);
       if (VERBOSE) {
-        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.lastRightID[idx], leftID) +
-            " spacePenalty=" + computeSpacePenalty(leftPOS, numSpaces) + ") leftID=" + leftID + " leftPOS=" + leftPOS.name() + ")");
+        System.out.println(
+            "      fromIDX="
+                + idx
+                + ": cost="
+                + cost
+                + " (prevCost="
+                + fromPosData.costs[idx]
+                + " wordCost="
+                + wordCost
+                + " bgCost="
+                + costs.get(fromPosData.lastRightID[idx], leftID)
+                + " spacePenalty="
+                + computeSpacePenalty(leftPOS, numSpaces)
+                + ") leftID="
+                + leftID
+                + " leftPOS="
+                + leftPOS.name()
+                + ")");
       }
       if (cost < leastCost) {
         leastCost = cost;
@@ -399,10 +423,24 @@ public final class KoreanTokenizer extends Tokenizer {
     leastCost += wordCost;
 
     if (VERBOSE) {
-      System.out.println("      + cost=" + leastCost + " wordID=" + wordID + " leftID=" + leftID + " leastIDX=" + leastIDX + " toPos=" + endPos + " toPos.idx=" + positions.get(endPos).count);
+      System.out.println(
+          "      + cost="
+              + leastCost
+              + " wordID="
+              + wordID
+              + " leftID="
+              + leftID
+              + " leastIDX="
+              + leastIDX
+              + " toPos="
+              + endPos
+              + " toPos.idx="
+              + positions.get(endPos).count);
     }
 
-    positions.get(endPos).add(leastCost, dict.getRightId(wordID), fromPosData.pos, wordPos, leastIDX, wordID, type);
+    positions
+        .get(endPos)
+        .add(leastCost, dict.getRightId(wordID), fromPosData.pos, wordPos, leastIDX, wordID, type);
   }
 
   @Override
@@ -421,12 +459,13 @@ public final class KoreanTokenizer extends Tokenizer {
       parse();
     }
 
-    final Token token = pending.remove(pending.size()-1);
+    final Token token = pending.remove(pending.size() - 1);
 
     int length = token.getLength();
     clearAttributes();
     assert length > 0;
-    //System.out.println("off=" + token.getOffset() + " len=" + length + " vs " + token.getSurfaceForm().length);
+    // System.out.println("off=" + token.getOffset() + " len=" + length + " vs " +
+    // token.getSurfaceForm().length);
     termAtt.copyBuffer(token.getSurfaceForm(), token.getOffset(), length);
     offsetAtt.setOffset(correctOffset(token.getStartOffset()), correctOffset(token.getEndOffset()));
     posAtt.setToken(token);
@@ -446,7 +485,7 @@ public final class KoreanTokenizer extends Tokenizer {
     private Position[] positions = new Position[8];
 
     public WrappedPositionArray() {
-      for(int i=0;i<positions.length;i++) {
+      for (int i = 0; i < positions.length; i++) {
         positions[i] = new Position();
       }
     }
@@ -463,7 +502,7 @@ public final class KoreanTokenizer extends Tokenizer {
 
     public void reset() {
       nextWrite--;
-      while(count > 0) {
+      while (count > 0) {
         if (nextWrite == -1) {
           nextWrite = positions.length - 1;
         }
@@ -475,18 +514,20 @@ public final class KoreanTokenizer extends Tokenizer {
       count = 0;
     }
 
-    /** Get Position instance for this absolute position;
-     *  this is allowed to be arbitrarily far "in the
-     *  future" but cannot be before the last freeBefore. */
+    /**
+     * Get Position instance for this absolute position; this is allowed to be arbitrarily far "in
+     * the future" but cannot be before the last freeBefore.
+     */
     public Position get(int pos) {
-      while(pos >= nextPos) {
-        //System.out.println("count=" + count + " vs len=" + positions.length);
+      while (pos >= nextPos) {
+        // System.out.println("count=" + count + " vs len=" + positions.length);
         if (count == positions.length) {
-          Position[] newPositions = new Position[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-          //System.out.println("grow positions " + newPositions.length);
-          System.arraycopy(positions, nextWrite, newPositions, 0, positions.length-nextWrite);
-          System.arraycopy(positions, 0, newPositions, positions.length-nextWrite, nextWrite);
-          for(int i=positions.length;i<newPositions.length;i++) {
+          Position[] newPositions =
+              new Position[ArrayUtil.oversize(1 + count, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+          // System.out.println("grow positions " + newPositions.length);
+          System.arraycopy(positions, nextWrite, newPositions, 0, positions.length - nextWrite);
+          System.arraycopy(positions, 0, newPositions, positions.length - nextWrite, nextWrite);
+          for (int i = positions.length; i < newPositions.length; i++) {
             newPositions[i] = new Position();
           }
           nextWrite = positions.length;
@@ -531,11 +572,11 @@ public final class KoreanTokenizer extends Tokenizer {
       if (index < 0) {
         index += positions.length;
       }
-      for(int i=0;i<toFree;i++) {
+      for (int i = 0; i < toFree; i++) {
         if (index == positions.length) {
           index = 0;
         }
-        //System.out.println("  fb idx=" + index);
+        // System.out.println("  fb idx=" + index);
         positions[index].reset();
         index++;
       }
@@ -611,7 +652,7 @@ public final class KoreanTokenizer extends Tokenizer {
         for (int pos2 = pos; pos2 < positions.getNextPos(); pos2++) {
           final Position posData2 = positions.get(pos2);
           for (int idx = 0; idx < posData2.count; idx++) {
-            //System.out.println("    idx=" + idx + " cost=" + cost);
+            // System.out.println("    idx=" + idx + " cost=" + cost);
             final int cost = posData2.costs[idx];
             if (cost < leastCost) {
               leastCost = cost;
@@ -663,7 +704,13 @@ public final class KoreanTokenizer extends Tokenizer {
       }
 
       if (VERBOSE) {
-        System.out.println("\n  extend @ pos=" + pos + " char=" + (char) buffer.get(pos) + " hex=" + Integer.toHexString(buffer.get(pos)));
+        System.out.println(
+            "\n  extend @ pos="
+                + pos
+                + " char="
+                + (char) buffer.get(pos)
+                + " hex="
+                + Integer.toHexString(buffer.get(pos)));
       }
 
       if (VERBOSE) {
@@ -716,9 +763,19 @@ public final class KoreanTokenizer extends Tokenizer {
         // Longest matching for user word
         if (anyMatches && maxPosAhead > userWordMaxPosAhead) {
           if (VERBOSE) {
-            System.out.println("    USER word " + new String(buffer.get(pos, maxPosAhead + 1)) + " toPos=" + (maxPosAhead + 1));
+            System.out.println(
+                "    USER word "
+                    + new String(buffer.get(pos, maxPosAhead + 1))
+                    + " toPos="
+                    + (maxPosAhead + 1));
           }
-          add(userDictionary, posData, pos, maxPosAhead + 1, outputMaxPosAhead + arcFinalOutMaxPosAhead, Type.USER);
+          add(
+              userDictionary,
+              posData,
+              pos,
+              maxPosAhead + 1,
+              outputMaxPosAhead + arcFinalOutMaxPosAhead,
+              Type.USER);
           userWordMaxPosAhead = Math.max(userWordMaxPosAhead, maxPosAhead);
         }
       }
@@ -737,7 +794,7 @@ public final class KoreanTokenizer extends Tokenizer {
           if (ch == -1) {
             break;
           }
-          //System.out.println("    match " + (char) ch + " posAhead=" + posAhead);
+          // System.out.println("    match " + (char) ch + " posAhead=" + posAhead);
 
           if (fst.findTargetArc(ch, arc, arc, posAhead == pos, fstReader) == null) {
             break;
@@ -754,10 +811,23 @@ public final class KoreanTokenizer extends Tokenizer {
           if (arc.isFinal()) {
             dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
-              System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
+              System.out.println(
+                  "    KNOWN word "
+                      + new String(buffer.get(pos, posAhead - pos + 1))
+                      + " toPos="
+                      + (posAhead + 1)
+                      + " "
+                      + wordIdRef.length
+                      + " wordIDs");
             }
             for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-              add(dictionary, posData, pos, posAhead + 1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN);
+              add(
+                  dictionary,
+                  posData,
+                  pos,
+                  posAhead + 1,
+                  wordIdRef.ints[wordIdRef.offset + ofs],
+                  Type.KNOWN);
               anyMatches = true;
             }
           }
@@ -779,7 +849,8 @@ public final class KoreanTokenizer extends Tokenizer {
         if (!characterDefinition.isGroup(firstCharacter)) {
           unknownWordLength = 1;
         } else {
-          // Extract unknown word. Characters with the same script are considered to be part of unknown word
+          // Extract unknown word. Characters with the same script are considered to be part of
+          // unknown word
           unknownWordLength = 1;
           UnicodeScript scriptCode = UnicodeScript.of(firstCharacter);
           final boolean isPunct = isPunctuation(firstCharacter);
@@ -792,17 +863,18 @@ public final class KoreanTokenizer extends Tokenizer {
             char ch = (char) next;
             int chType = Character.getType(ch);
             UnicodeScript sc = UnicodeScript.of(next);
-            boolean sameScript = isSameScript(scriptCode, sc)
-                // Non-spacing marks inherit the script of their base character,
-                // following recommendations from UTR #24.
-                || chType == Character.NON_SPACING_MARK;
+            boolean sameScript =
+                isSameScript(scriptCode, sc)
+                    // Non-spacing marks inherit the script of their base character,
+                    // following recommendations from UTR #24.
+                    || chType == Character.NON_SPACING_MARK;
 
             if (sameScript
-                  // split on punctuation
-                  && isPunctuation(ch, chType) == isPunct
-                  // split on digit
-                  && Character.isDigit(ch) == isDigit
-                  && characterDefinition.isGroup(ch)) {
+                // split on punctuation
+                && isPunctuation(ch, chType) == isPunct
+                // split on digit
+                && Character.isDigit(ch) == isDigit
+                && characterDefinition.isGroup(ch)) {
               unknownWordLength++;
             } else {
               break;
@@ -816,12 +888,20 @@ public final class KoreanTokenizer extends Tokenizer {
           }
         }
 
-        unkDictionary.lookupWordIds(characterId, wordIdRef); // characters in input text are supposed to be the same
+        unkDictionary.lookupWordIds(
+            characterId, wordIdRef); // characters in input text are supposed to be the same
         if (VERBOSE) {
-          System.out.println("    UNKNOWN word len=" + unknownWordLength + " " + wordIdRef.length + " wordIDs");
+          System.out.println(
+              "    UNKNOWN word len=" + unknownWordLength + " " + wordIdRef.length + " wordIDs");
         }
         for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-          add(unkDictionary, posData, pos, pos + unknownWordLength, wordIdRef.ints[wordIdRef.offset + ofs], Type.UNKNOWN);
+          add(
+              unkDictionary,
+              posData,
+              pos,
+              pos + unknownWordLength,
+              wordIdRef.ints[wordIdRef.offset + ofs],
+              Type.UNKNOWN);
         }
       }
 
@@ -838,10 +918,12 @@ public final class KoreanTokenizer extends Tokenizer {
       if (VERBOSE) {
         System.out.println("  end: " + endPosData.count + " nodes");
       }
-      for(int idx=0;idx<endPosData.count;idx++) {
+      for (int idx = 0; idx < endPosData.count; idx++) {
         // Add EOS cost:
         final int cost = endPosData.costs[idx] + costs.get(endPosData.lastRightID[idx], 0);
-        //System.out.println("    idx=" + idx + " cost=" + cost + " (pathCost=" + endPosData.costs[idx] + " bgCost=" + costs.get(endPosData.lastRightID[idx], 0) + ") backPos=" + endPosData.backPos[idx]);
+        // System.out.println("    idx=" + idx + " cost=" + cost + " (pathCost=" +
+        // endPosData.costs[idx] + " bgCost=" + costs.get(endPosData.lastRightID[idx], 0) + ")
+        // backPos=" + endPosData.backPos[idx]);
         if (cost < leastCost) {
           leastCost = cost;
           leastIDX = idx;
@@ -860,10 +942,20 @@ public final class KoreanTokenizer extends Tokenizer {
     final int endPos = endPosData.pos;
 
     if (VERBOSE) {
-      System.out.println("\n  backtrace: endPos=" + endPos + " pos=" + pos + "; " + (pos - lastBackTracePos) + " characters; last=" + lastBackTracePos + " cost=" + endPosData.costs[fromIDX]);
+      System.out.println(
+          "\n  backtrace: endPos="
+              + endPos
+              + " pos="
+              + pos
+              + "; "
+              + (pos - lastBackTracePos)
+              + " characters; last="
+              + lastBackTracePos
+              + " cost="
+              + endPosData.costs[fromIDX]);
     }
 
-    final char[] fragment = buffer.get(lastBackTracePos, endPos-lastBackTracePos);
+    final char[] fragment = buffer.get(lastBackTracePos, endPos - lastBackTracePos);
 
     if (dotOut != null) {
       dotOut.onBacktrace(this, positions, lastBackTracePos, endPosData, fromIDX, fragment, end);
@@ -881,13 +973,14 @@ public final class KoreanTokenizer extends Tokenizer {
     // incrementToken.
 
     while (pos > lastBackTracePos) {
-      //System.out.println("BT: back pos=" + pos + " bestIDX=" + bestIDX);
+      // System.out.println("BT: back pos=" + pos + " bestIDX=" + bestIDX);
       final Position posData = positions.get(pos);
       assert bestIDX < posData.count;
 
       int backPos = posData.backPos[bestIDX];
       int backWordPos = posData.backWordPos[bestIDX];
-      assert backPos >= lastBackTracePos: "backPos=" + backPos + " vs lastBackTracePos=" + lastBackTracePos;
+      assert backPos >= lastBackTracePos
+          : "backPos=" + backPos + " vs lastBackTracePos=" + lastBackTracePos;
       // the length of the word without the whitespaces at the beginning.
       int length = pos - backWordPos;
       Type backType = posData.backType[bestIDX];
@@ -907,30 +1000,32 @@ public final class KoreanTokenizer extends Tokenizer {
             i--;
             charLen = 2;
           }
-          final DictionaryToken token = new DictionaryToken(Type.UNKNOWN,
-              unkDictionary,
-              CharacterDefinition.NGRAM,
-              fragment,
-              fragmentOffset+i,
-              charLen,
-              backWordPos+i,
-              backWordPos+i+charLen
-          );
+          final DictionaryToken token =
+              new DictionaryToken(
+                  Type.UNKNOWN,
+                  unkDictionary,
+                  CharacterDefinition.NGRAM,
+                  fragment,
+                  fragmentOffset + i,
+                  charLen,
+                  backWordPos + i,
+                  backWordPos + i + charLen);
           pending.add(token);
           if (VERBOSE) {
             System.out.println("    add token=" + pending.get(pending.size() - 1));
           }
         }
       } else {
-        final DictionaryToken token = new DictionaryToken(backType,
-            dict,
-            backID,
-            fragment,
-            fragmentOffset,
-            length,
-            backWordPos,
-            backWordPos + length
-        );
+        final DictionaryToken token =
+            new DictionaryToken(
+                backType,
+                dict,
+                backID,
+                fragment,
+                fragmentOffset,
+                length,
+                backWordPos,
+                backWordPos + length);
         if (token.getPOSType() == POS.Type.MORPHEME || mode == DecompoundMode.NONE) {
           if (shouldFilterToken(token) == false) {
             pending.add(token);
@@ -954,15 +1049,24 @@ public final class KoreanTokenizer extends Tokenizer {
               final Token compoundToken;
               if (token.getPOSType() == POS.Type.COMPOUND) {
                 assert endOffset - morpheme.surfaceForm.length() >= 0;
-                compoundToken = new DecompoundToken(morpheme.posTag, morpheme.surfaceForm,
-                    endOffset - morpheme.surfaceForm.length(), endOffset);
+                compoundToken =
+                    new DecompoundToken(
+                        morpheme.posTag,
+                        morpheme.surfaceForm,
+                        endOffset - morpheme.surfaceForm.length(),
+                        endOffset);
               } else {
-                compoundToken = new DecompoundToken(morpheme.posTag, morpheme.surfaceForm, token.getStartOffset(), token.getEndOffset());
+                compoundToken =
+                    new DecompoundToken(
+                        morpheme.posTag,
+                        morpheme.surfaceForm,
+                        token.getStartOffset(),
+                        token.getEndOffset());
               }
               if (i == 0 && mode == DecompoundMode.MIXED) {
                 compoundToken.setPositionIncrement(0);
               }
-              ++ posLen;
+              ++posLen;
               endOffset -= morpheme.surfaceForm.length();
               pending.add(compoundToken);
               if (VERBOSE) {
@@ -983,10 +1087,19 @@ public final class KoreanTokenizer extends Tokenizer {
         // Add a token for whitespaces between terms
         int offset = backPos - lastBackTracePos;
         int len = backWordPos - backPos;
-        //System.out.println(offset + " " + fragmentOffset + " " + len + " " + backWordPos + " " + backPos);
+        // System.out.println(offset + " " + fragmentOffset + " " + len + " " + backWordPos + " " +
+        // backPos);
         unkDictionary.lookupWordIds(characterDefinition.getCharacterClass(' '), wordIdRef);
-        DictionaryToken spaceToken = new DictionaryToken(Type.UNKNOWN, unkDictionary,
-            wordIdRef.ints[wordIdRef.offset], fragment, offset, len, backPos, backPos+len);
+        DictionaryToken spaceToken =
+            new DictionaryToken(
+                Type.UNKNOWN,
+                unkDictionary,
+                wordIdRef.ints[wordIdRef.offset],
+                fragment,
+                offset,
+                len,
+                backPos,
+                backPos + len);
         pending.add(spaceToken);
       }
 
@@ -1022,7 +1135,7 @@ public final class KoreanTokenizer extends Tokenizer {
     if (ch == 0x318D) {
       return true;
     }
-    switch(cid) {
+    switch (cid) {
       case Character.SPACE_SEPARATOR:
       case Character.LINE_SEPARATOR:
       case Character.PARAGRAPH_SEPARATOR:
@@ -1046,8 +1159,7 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private static boolean isCommonOrInherited(UnicodeScript script) {
-    return script == UnicodeScript.INHERITED ||
-        script == UnicodeScript.COMMON;
+    return script == UnicodeScript.INHERITED || script == UnicodeScript.COMMON;
   }
 
   /** Determine if two scripts are compatible. */

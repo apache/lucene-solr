@@ -40,5 +40,4 @@ public class TestLMJelinekMercerSimilarity extends BaseSimilarityTestCase {
     }
     return new LMJelinekMercerSimilarity(lambda);
   }
-
 }

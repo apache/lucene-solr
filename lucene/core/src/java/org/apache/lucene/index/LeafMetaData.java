@@ -21,6 +21,7 @@ import org.apache.lucene.util.Version;
 
 /**
  * Provides read-only metadata about a leaf.
+ *
  * @lucene.experimental
  */
 public final class LeafMetaData {
@@ -33,10 +34,12 @@ public final class LeafMetaData {
   public LeafMetaData(int createdVersionMajor, Version minVersion, Sort sort) {
     this.createdVersionMajor = createdVersionMajor;
     if (createdVersionMajor > Version.LATEST.major) {
-      throw new IllegalArgumentException("createdVersionMajor is in the future: " + createdVersionMajor);
+      throw new IllegalArgumentException(
+          "createdVersionMajor is in the future: " + createdVersionMajor);
     }
     if (createdVersionMajor < 6) {
-      throw new IllegalArgumentException("createdVersionMajor must be >= 6, got: " + createdVersionMajor);
+      throw new IllegalArgumentException(
+          "createdVersionMajor must be >= 6, got: " + createdVersionMajor);
     }
     if (createdVersionMajor >= 7 && minVersion == null) {
       throw new IllegalArgumentException("minVersion must be set when createdVersionMajor is >= 7");
@@ -45,27 +48,28 @@ public final class LeafMetaData {
     this.sort = sort;
   }
 
-  /** Get the Lucene version that created this index. This can be used to implement
-   *  backward compatibility on top of the codec API. A return value of {@code 6}
-   *  indicates that the created version is unknown. */
+  /**
+   * Get the Lucene version that created this index. This can be used to implement backward
+   * compatibility on top of the codec API. A return value of {@code 6} indicates that the created
+   * version is unknown.
+   */
   public int getCreatedVersionMajor() {
     return createdVersionMajor;
   }
 
   /**
-   * Return the minimum Lucene version that contributed documents to this index,
-   * or {@code null} if this information is not available.
+   * Return the minimum Lucene version that contributed documents to this index, or {@code null} if
+   * this information is not available.
    */
   public Version getMinVersion() {
     return minVersion;
   }
 
   /**
-   * Return the order in which documents from this index are sorted, or
-   * {@code null} if documents are in no particular order.
+   * Return the order in which documents from this index are sorted, or {@code null} if documents
+   * are in no particular order.
    */
   public Sort getSort() {
     return sort;
   }
-
 }

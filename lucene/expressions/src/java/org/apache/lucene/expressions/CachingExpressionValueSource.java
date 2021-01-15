@@ -20,14 +20,14 @@ package org.apache.lucene.expressions;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 
 /**
- * This expression value source shares one value cache when generating {@link ExpressionFunctionValues}
- * such that only one value along the whole generation tree is corresponding to one name
+ * This expression value source shares one value cache when generating {@link
+ * ExpressionFunctionValues} such that only one value along the whole generation tree is
+ * corresponding to one name
  */
 final class CachingExpressionValueSource extends ExpressionValueSource {
 
@@ -35,21 +35,27 @@ final class CachingExpressionValueSource extends ExpressionValueSource {
     super(bindings, expression);
   }
 
-  CachingExpressionValueSource(DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
+  CachingExpressionValueSource(
+      DoubleValuesSource[] variables, Expression expression, boolean needsScores) {
     super(variables, expression, needsScores);
   }
 
   public CachingExpressionValueSource(ExpressionValueSource expressionValueSource) {
-    super(expressionValueSource.variables, expressionValueSource.expression, expressionValueSource.needsScores);
+    super(
+        expressionValueSource.variables,
+        expressionValueSource.expression,
+        expressionValueSource.needsScores);
   }
 
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
     return getValuesWithCache(readerContext, scores, new HashMap<>());
   }
 
-  private DoubleValues getValuesWithCache(LeafReaderContext readerContext, DoubleValues scores,
-                                                  Map<String, DoubleValues> valuesCache) throws IOException {
+  private DoubleValues getValuesWithCache(
+      LeafReaderContext readerContext, DoubleValues scores, Map<String, DoubleValues> valuesCache)
+      throws IOException {
     DoubleValues[] externalValues = new DoubleValues[expression.variables.length];
 
     for (int i = 0; i < variables.length; ++i) {
@@ -57,13 +63,19 @@ final class CachingExpressionValueSource extends ExpressionValueSource {
       DoubleValues values = valuesCache.get(externalName);
       if (values == null) {
         if (variables[i] instanceof CachingExpressionValueSource) {
-          values = ((CachingExpressionValueSource) variables[i]).getValuesWithCache(readerContext, scores, valuesCache);
+          values =
+              ((CachingExpressionValueSource) variables[i])
+                  .getValuesWithCache(readerContext, scores, valuesCache);
         } else {
           values = variables[i].getValues(readerContext, scores);
         }
         if (values == null) {
-          throw new RuntimeException("Unrecognized variable (" + externalName + ") referenced in expression (" +
-              expression.sourceText + ").");
+          throw new RuntimeException(
+              "Unrecognized variable ("
+                  + externalName
+                  + ") referenced in expression ("
+                  + expression.sourceText
+                  + ").");
         }
         valuesCache.put(externalName, values);
       }

@@ -21,37 +21,32 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
 
-/**  
- * A {@code FilterOutputStream2} contains another 
- * {@code OutputStream}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
- * <p>
- * Note: unlike {@link FilterOutputStream} this class
- * delegates every method by default. This means to transform
- * {@code write} calls, you need to override multiple methods.
- * On the other hand, it is less trappy: a simple implementation 
- * that just overrides {@code close} will not force bytes to be 
- * written one-at-a-time.
+/**
+ * A {@code FilterOutputStream2} contains another {@code OutputStream}, which it uses as its basic
+ * source of data, possibly transforming the data along the way or providing additional
+ * functionality.
+ *
+ * <p>Note: unlike {@link FilterOutputStream} this class delegates every method by default. This
+ * means to transform {@code write} calls, you need to override multiple methods. On the other hand,
+ * it is less trappy: a simple implementation that just overrides {@code close} will not force bytes
+ * to be written one-at-a-time.
  */
 public abstract class FilterOutputStream2 extends OutputStream {
-  
-  /** 
-   * The underlying {@code OutputStream} instance. 
-   */
+
+  /** The underlying {@code OutputStream} instance. */
   protected final OutputStream delegate;
-  
+
   /**
-   * Construct a {@code FilterOutputStream2} based on 
-   * the specified base stream.
-   * <p>
-   * Note that base stream is closed if this stream is closed.
+   * Construct a {@code FilterOutputStream2} based on the specified base stream.
+   *
+   * <p>Note that base stream is closed if this stream is closed.
+   *
    * @param delegate specified base stream.
    */
   public FilterOutputStream2(OutputStream delegate) {
     this.delegate = Objects.requireNonNull(delegate);
   }
-  
+
   @Override
   public void write(byte[] b) throws IOException {
     delegate.write(b);

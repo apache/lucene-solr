@@ -127,7 +127,13 @@ public class ClusterProperties {
   @SuppressWarnings("unchecked")
   public void update(MapWriter obj, String... path) throws KeeperException, InterruptedException{
     client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
-      Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(bytes);
+      Map<String, Object> zkJson;
+      if (bytes == null) {
+        // no previous properties - initialize
+        zkJson = new LinkedHashMap<>();
+      } else {
+        zkJson = (Map<String, Object>) Utils.fromJSON(bytes);
+      }
       Utils.setObjectByPath(zkJson, Arrays.asList(path), obj);
       return Utils.toJSON(zkJson);
     });

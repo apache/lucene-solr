@@ -37,10 +37,8 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
   private final double minimumZ;
   private final double maximumZ;
   private DocIdSetBuilder.BulkAdder adder;
-  
-  public PointInShapeIntersectVisitor(DocIdSetBuilder hits,
-    GeoShape shape,
-    XYZBounds bounds) {
+
+  public PointInShapeIntersectVisitor(DocIdSetBuilder hits, GeoShape shape, XYZBounds bounds) {
     this.hits = hits;
     this.shape = shape;
     DocValueEncoder docValueEncoder = shape.getPlanetModel().getDocValueEncoder();
@@ -68,64 +66,88 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     double x = Geo3DPoint.decodeDimension(packedValue, 0, shape.getPlanetModel());
     double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES, shape.getPlanetModel());
     double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES, shape.getPlanetModel());
-    if (x >= minimumX && x <= maximumX &&
-      y >= minimumY && y <= maximumY &&
-      z >= minimumZ && z <= maximumZ) {
+    if (x >= minimumX
+        && x <= maximumX
+        && y >= minimumY
+        && y <= maximumY
+        && z >= minimumZ
+        && z <= maximumZ) {
       if (shape.isWithin(x, y, z)) {
         adder.add(docID);
       }
     }
   }
-  
+
   @Override
   public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-    // Because the dimensional format operates in quantized (64 bit -> 32 bit) space, and the cell bounds
-    // here are inclusive, we need to extend the bounds to the largest un-quantized values that
-    // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
+    // Because the dimensional format operates in quantized (64 bit -> 32 bit) space, and the cell
+    // bounds here are inclusive, we need to extend the bounds to the largest un-quantized values
+    // that could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
     // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-    double xMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 0), shape.getPlanetModel());
-    double xMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 0), shape.getPlanetModel());
-    double yMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES), shape.getPlanetModel());
-    double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES), shape.getPlanetModel());
-    double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES), shape.getPlanetModel());
-    double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES), shape.getPlanetModel());
+    double xMin =
+        Geo3DUtil.decodeValueFloor(
+            NumericUtils.sortableBytesToInt(minPackedValue, 0), shape.getPlanetModel());
+    double xMax =
+        Geo3DUtil.decodeValueCeil(
+            NumericUtils.sortableBytesToInt(maxPackedValue, 0), shape.getPlanetModel());
+    double yMin =
+        Geo3DUtil.decodeValueFloor(
+            NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES),
+            shape.getPlanetModel());
+    double yMax =
+        Geo3DUtil.decodeValueCeil(
+            NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES),
+            shape.getPlanetModel());
+    double zMin =
+        Geo3DUtil.decodeValueFloor(
+            NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES),
+            shape.getPlanetModel());
+    double zMax =
+        Geo3DUtil.decodeValueCeil(
+            NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES),
+            shape.getPlanetModel());
 
-    //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
+    // System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" +
+    // cellYMax + " z=" + cellZMin + "-" + cellZMax);
     assert xMin <= xMax;
     assert yMin <= yMax;
     assert zMin <= zMax;
 
     // First, check bounds.  If the shape is entirely contained, return CELL_CROSSES_QUERY.
-    if (minimumX >= xMin && maximumX <= xMax &&
-      minimumY >= yMin && maximumY <= yMax &&
-      minimumZ >= zMin && maximumZ <= zMax) {
+    if (minimumX >= xMin
+        && maximumX <= xMax
+        && minimumY >= yMin
+        && maximumY <= yMax
+        && minimumZ >= zMin
+        && maximumZ <= zMax) {
       return Relation.CELL_CROSSES_QUERY;
     }
 
     // Quick test failed so do slower one...
-    GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(shape.getPlanetModel(), xMin, xMax, yMin, yMax, zMin, zMax);
+    GeoArea xyzSolid =
+        GeoAreaFactory.makeGeoArea(shape.getPlanetModel(), xMin, xMax, yMin, yMax, zMin, zMax);
 
-    switch(xyzSolid.getRelationship(shape)) {
-    case GeoArea.CONTAINS:
-      // Shape fully contains the cell
-      //System.out.println("    inside");
-      return Relation.CELL_INSIDE_QUERY;
-    case GeoArea.OVERLAPS:
-      // They do overlap but neither contains the other:
-      //System.out.println("    crosses1");
-      return Relation.CELL_CROSSES_QUERY;
-    case GeoArea.WITHIN:
-      // Cell fully contains the shape:
-      //System.out.println("    crosses2");
-      // return Relation.SHAPE_INSIDE_CELL;
-      return Relation.CELL_CROSSES_QUERY;
-    case GeoArea.DISJOINT:
-      // They do not overlap at all
-      //System.out.println("    outside");
-      return Relation.CELL_OUTSIDE_QUERY;
-    default:
-      assert false;
-      return Relation.CELL_CROSSES_QUERY;
+    switch (xyzSolid.getRelationship(shape)) {
+      case GeoArea.CONTAINS:
+        // Shape fully contains the cell
+        // System.out.println("    inside");
+        return Relation.CELL_INSIDE_QUERY;
+      case GeoArea.OVERLAPS:
+        // They do overlap but neither contains the other:
+        // System.out.println("    crosses1");
+        return Relation.CELL_CROSSES_QUERY;
+      case GeoArea.WITHIN:
+        // Cell fully contains the shape:
+        // System.out.println("    crosses2");
+        // return Relation.SHAPE_INSIDE_CELL;
+        return Relation.CELL_CROSSES_QUERY;
+      case GeoArea.DISJOINT:
+        // They do not overlap at all
+        // System.out.println("    outside");
+        return Relation.CELL_OUTSIDE_QUERY;
+      default:
+        assert false;
+        return Relation.CELL_CROSSES_QUERY;
     }
   }
 }

@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -35,21 +34,15 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
- * Command-line tool that enables listing segments in an
- * index, copying specific segments to another index, and
- * deleting segments from an index.
+ * Command-line tool that enables listing segments in an index, copying specific segments to another
+ * index, and deleting segments from an index.
  *
- * <p>This tool does file-level copying of segments files.
- * This means it's unable to split apart a single segment
- * into multiple segments.  For example if your index is a
- * single segment, this tool won't help.  Also, it does basic
- * file-level copying (using simple
- * File{In,Out}putStream) so it will not work with non
- * FSDirectory Directory impls.</p>
+ * <p>This tool does file-level copying of segments files. This means it's unable to split apart a
+ * single segment into multiple segments. For example if your index is a single segment, this tool
+ * won't help. Also, it does basic file-level copying (using simple File{In,Out}putStream) so it
+ * will not work with non FSDirectory Directory impls.
  *
- * @lucene.experimental You can easily
- * accidentally remove segments from your index so be
- * careful!
+ * @lucene.experimental You can easily accidentally remove segments from your index so be careful!
  */
 public class IndexSplitter {
   public final SegmentInfos infos;
@@ -61,18 +54,15 @@ public class IndexSplitter {
   @SuppressForbidden(reason = "System.out required: command line tool")
   public static void main(String[] args) throws Exception {
     if (args.length < 2) {
-      System.err
-          .println("Usage: IndexSplitter <srcDir> -l (list the segments and their sizes)");
+      System.err.println("Usage: IndexSplitter <srcDir> -l (list the segments and their sizes)");
       System.err.println("IndexSplitter <srcDir> <destDir> <segments>+");
-      System.err
-          .println("IndexSplitter <srcDir> -d (delete the following segments)");
+      System.err.println("IndexSplitter <srcDir> -d (delete the following segments)");
       return;
     }
     Path srcDir = Paths.get(args[0]);
     IndexSplitter is = new IndexSplitter(srcDir);
     if (!Files.exists(srcDir)) {
-      throw new Exception("srcdir:" + srcDir.toAbsolutePath()
-          + " doesn't exist");
+      throw new Exception("srcdir:" + srcDir.toAbsolutePath() + " doesn't exist");
     }
     if (args[1].equals("-l")) {
       is.listSegments();
@@ -91,7 +81,7 @@ public class IndexSplitter {
       is.split(targetDir, segs.toArray(new String[0]));
     }
   }
-  
+
   public IndexSplitter(Path dir) throws IOException {
     this.dir = dir;
     fsDir = FSDirectory.open(dir);
@@ -100,7 +90,8 @@ public class IndexSplitter {
 
   @SuppressForbidden(reason = "System.out required: command line tool")
   public void listSegments() throws IOException {
-    DecimalFormat formatter = new DecimalFormat("###,###.###", DecimalFormatSymbols.getInstance(Locale.ROOT));
+    DecimalFormat formatter =
+        new DecimalFormat("###,###.###", DecimalFormatSymbols.getInstance(Locale.ROOT));
     for (int x = 0; x < infos.size(); x++) {
       SegmentCommitInfo info = infos.info(x);
       String sizeStr = formatter.format(info.sizeInBytes());
@@ -110,8 +101,7 @@ public class IndexSplitter {
 
   private SegmentCommitInfo getInfo(String name) {
     for (int x = 0; x < infos.size(); x++) {
-      if (name.equals(infos.info(x).info.name))
-        return infos.info(x);
+      if (name.equals(infos.info(x).info.name)) return infos.info(x);
     }
     return null;
   }
@@ -134,11 +124,28 @@ public class IndexSplitter {
       SegmentCommitInfo infoPerCommit = getInfo(n);
       SegmentInfo info = infoPerCommit.info;
       // Same info just changing the dir:
-      SegmentInfo newInfo = new SegmentInfo(destFSDir, info.getVersion(), info.getMinVersion(), info.name, info.maxDoc(),
-                                            info.getUseCompoundFile(), info.getCodec(), info.getDiagnostics(), info.getId(), Collections.emptyMap(), null);
-      destInfos.add(new SegmentCommitInfo(newInfo, infoPerCommit.getDelCount(), infoPerCommit.getSoftDelCount(),
-          infoPerCommit.getDelGen(), infoPerCommit.getFieldInfosGen(),
-          infoPerCommit.getDocValuesGen(), infoPerCommit.getId()));
+      SegmentInfo newInfo =
+          new SegmentInfo(
+              destFSDir,
+              info.getVersion(),
+              info.getMinVersion(),
+              info.name,
+              info.maxDoc(),
+              info.getUseCompoundFile(),
+              info.getCodec(),
+              info.getDiagnostics(),
+              info.getId(),
+              Collections.emptyMap(),
+              null);
+      destInfos.add(
+          new SegmentCommitInfo(
+              newInfo,
+              infoPerCommit.getDelCount(),
+              infoPerCommit.getSoftDelCount(),
+              infoPerCommit.getDelGen(),
+              infoPerCommit.getFieldInfosGen(),
+              infoPerCommit.getDocValuesGen(),
+              infoPerCommit.getId()));
       // now copy files over
       Collection<String> files = infoPerCommit.files();
       for (final String srcName : files) {

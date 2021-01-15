@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,8 +29,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
   // omitNorms bit in the FieldInfo
@@ -39,28 +37,29 @@ public class TestOmitNorms extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
     Document d = new Document();
-        
+
     // this field will have norms
     Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
-       
+
     // this field will NOT have norms
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
     Field f2 = newField("f2", "This field has NO norms in all docs", customType);
     d.add(f2);
-        
+
     writer.addDocument(d);
     writer.forceMerge(1);
-    // now we add another document which has term freq for field f2 and not for f1 and verify if the SegmentMerger
+    // now we add another document which has term freq for field f2 and not for f1 and verify if the
+    // SegmentMerger
     // keep things constant
     d = new Document();
-        
+
     // Reverse
     d.add(newField("f1", "This field has norms", customType));
-        
+
     d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
-        
+
     writer.addDocument(d);
 
     // force merge
@@ -72,28 +71,28 @@ public class TestOmitNorms extends LuceneTestCase {
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
-        
+
     reader.close();
     ram.close();
   }
- 
+
   // Tests whether merging of docs that have different
   // omitNorms for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(
-        ram,
-        newIndexWriterConfig(analyzer)
-           .setMaxBufferedDocs(3)
-           .setMergePolicy(newLogMergePolicy(2))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            ram,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(3)
+                .setMergePolicy(newLogMergePolicy(2)));
     Document d = new Document();
-        
+
     // this field will have norms
     Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
-       
+
     // this field will NOT have norms
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
     customType.setOmitNorms(true);
@@ -103,20 +102,21 @@ public class TestOmitNorms extends LuceneTestCase {
     for (int i = 0; i < 30; i++) {
       writer.addDocument(d);
     }
-        
-    // now we add another document which has norms for field f2 and not for f1 and verify if the SegmentMerger
+
+    // now we add another document which has norms for field f2 and not for f1 and verify if the
+    // SegmentMerger
     // keep things constant
     d = new Document();
-        
+
     // Reverese
     d.add(newField("f1", "This field has norms", customType));
-        
+
     d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
-        
+
     for (int i = 0; i < 30; i++) {
       writer.addDocument(d);
     }
-        
+
     // force merge
     writer.forceMerge(1);
     // flush
@@ -126,29 +126,29 @@ public class TestOmitNorms extends LuceneTestCase {
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
-        
+
     reader.close();
     ram.close();
   }
 
   // Make sure first adding docs that do not omitNorms for
   // field X, then adding docs that do omitNorms for that same
-  // field, 
+  // field,
   public void testMixedRAM() throws Exception {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(
-        ram,
-        newIndexWriterConfig(analyzer)
-            .setMaxBufferedDocs(10)
-            .setMergePolicy(newLogMergePolicy(2))
-    );
+    IndexWriter writer =
+        new IndexWriter(
+            ram,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(10)
+                .setMergePolicy(newLogMergePolicy(2)));
     Document d = new Document();
-        
+
     // this field will have norms
     Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
     d.add(f1);
-       
+
     // this field will NOT have norms
 
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
@@ -159,7 +159,7 @@ public class TestOmitNorms extends LuceneTestCase {
     for (int i = 0; i < 5; i++) {
       writer.addDocument(d);
     }
-        
+
     for (int i = 0; i < 20; i++) {
       writer.addDocument(d);
     }
@@ -174,7 +174,7 @@ public class TestOmitNorms extends LuceneTestCase {
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should not be set.", !fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
-        
+
     reader.close();
     ram.close();
   }
@@ -191,9 +191,12 @@ public class TestOmitNorms extends LuceneTestCase {
   public void testNoNrmFile() throws Throwable {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
-                                                .setMaxBufferedDocs(3)
-                                                .setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer =
+        new IndexWriter(
+            ram,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(3)
+                .setMergePolicy(newLogMergePolicy()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
     lmp.setNoCFSRatio(0.0);
@@ -211,7 +214,7 @@ public class TestOmitNorms extends LuceneTestCase {
     writer.commit();
 
     assertNoNrm(ram);
-        
+
     // force merge
     writer.forceMerge(1);
     // flush
@@ -220,12 +223,11 @@ public class TestOmitNorms extends LuceneTestCase {
     assertNoNrm(ram);
     ram.close();
   }
-  
+
   /**
-   * Tests various combinations of omitNorms=true/false, the field not existing at all,
-   * ensuring that only omitNorms is 'viral'.
-   * Internally checks that MultiNorms.norms() is consistent (returns the same bytes)
-   * as the fully merged equivalent.
+   * Tests various combinations of omitNorms=true/false, the field not existing at all, ensuring
+   * that only omitNorms is 'viral'. Internally checks that MultiNorms.norms() is consistent
+   * (returns the same bytes) as the fully merged equivalent.
    */
   public void testOmitNormsCombos() throws IOException {
     // indexed with norms
@@ -246,7 +248,7 @@ public class TestOmitNorms extends LuceneTestCase {
     Field noNormsNoIndex = new Field("foo", "a", customType3);
     // not indexed nor stored (doesnt exist at all, we index a different field instead)
     Field emptyNorms = new Field("bar", "a", customType);
-    
+
     assertNotNull(getNorms("foo", norms, norms));
     assertNull(getNorms("foo", norms, noNorms));
     assertNotNull(getNorms("foo", norms, noIndex));
@@ -265,25 +267,25 @@ public class TestOmitNorms extends LuceneTestCase {
   }
 
   /**
-   * Indexes at least 1 document with f1, and at least 1 document with f2.
-   * returns the norms for "field".
+   * Indexes at least 1 document with f1, and at least 1 document with f2. returns the norms for
+   * "field".
    */
   NumericDocValues getNorms(String field, Field f1, Field f2) throws IOException {
     Directory dir = newDirectory();
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
-                              .setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig iwc =
+        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-    
+
     // add f1
     Document d = new Document();
     d.add(f1);
     riw.addDocument(d);
-    
+
     // add f2
     d = new Document();
     d.add(f2);
     riw.addDocument(d);
-    
+
     // add a mix of f1's and f2's
     int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
     for (int i = 0; i < numExtraDocs; i++) {
@@ -295,7 +297,7 @@ public class TestOmitNorms extends LuceneTestCase {
     IndexReader ir1 = riw.getReader();
     // todo: generalize
     NumericDocValues norms1 = MultiDocValues.getNormValues(ir1, field);
-    
+
     // fully merge and validate MultiNorms against single segment.
     riw.forceMerge(1);
     DirectoryReader ir2 = riw.getReader();

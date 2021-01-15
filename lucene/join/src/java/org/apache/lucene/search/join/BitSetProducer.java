@@ -17,19 +17,15 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.BitSet;
 
-/**
- * A producer of {@link BitSet}s per segment.
- */
+/** A producer of {@link BitSet}s per segment. */
 public interface BitSetProducer {
 
   /**
-   * Produce a {@link BitSet} matching the expected documents on the given
-   * segment. This may return {@code null} if no documents match.
+   * Produce a {@link BitSet} matching the expected documents on the given segment. This may return
+   * {@code null} if no documents match.
    */
   BitSet getBitSet(LeafReaderContext context) throws IOException;
-
 }

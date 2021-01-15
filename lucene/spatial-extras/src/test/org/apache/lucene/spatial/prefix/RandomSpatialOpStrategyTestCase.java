@@ -16,26 +16,26 @@
  */
 package org.apache.lucene.spatial.prefix;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.locationtech.spatial4j.shape.Shape;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
-
-/** Base test harness, ideally for SpatialStrategy impls that have exact results
- * (not grid approximated), hence "not fuzzy".
+/**
+ * Base test harness, ideally for SpatialStrategy impls that have exact results (not grid
+ * approximated), hence "not fuzzy".
  */
 public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
-  //Note: this is partially redundant with StrategyTestCase.runTestQuery & testOperation
+  // Note: this is partially redundant with StrategyTestCase.runTestQuery & testOperation
 
   protected void testOperationRandomShapes(final SpatialOperation operation) throws IOException {
 
@@ -51,31 +51,35 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
       queryShapes.add(randomQueryShape());
     }
 
-    testOperation(operation, indexedShapes, queryShapes, true/*havoc*/);
+    testOperation(operation, indexedShapes, queryShapes, true /*havoc*/);
   }
 
-  protected void testOperation(final SpatialOperation operation,
-                               List<Shape> indexedShapes, List<Shape> queryShapes, boolean havoc) throws IOException {
-    //first show that when there's no data, a query will result in no results
+  protected void testOperation(
+      final SpatialOperation operation,
+      List<Shape> indexedShapes,
+      List<Shape> queryShapes,
+      boolean havoc)
+      throws IOException {
+    // first show that when there's no data, a query will result in no results
     {
       Query query = strategy.makeQuery(new SpatialArgs(operation, randomQueryShape()));
       SearchResults searchResults = executeQuery(query, 1);
       assertEquals(0, searchResults.numFound);
     }
 
-    //Main index loop:
+    // Main index loop:
     for (int i = 0; i < indexedShapes.size(); i++) {
       Shape shape = indexedShapes.get(i);
-      adoc(""+i, shape);
+      adoc("" + i, shape);
 
       if (havoc && random().nextInt(10) == 0)
-        commit();//intermediate commit, produces extra segments
+        commit(); // intermediate commit, produces extra segments
     }
     if (havoc) {
-      //delete some documents randomly
+      // delete some documents randomly
       for (int id = 0; id < indexedShapes.size(); id++) {
         if (random().nextInt(10) == 0) {
-          deleteDoc(""+id);
+          deleteDoc("" + id);
           indexedShapes.set(id, null);
         }
       }
@@ -83,27 +87,25 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
 
     commit();
 
-    //Main query loop:
+    // Main query loop:
     for (int queryIdx = 0; queryIdx < queryShapes.size(); queryIdx++) {
       final Shape queryShape = queryShapes.get(queryIdx);
 
-      if (havoc)
-        preQueryHavoc();
+      if (havoc) preQueryHavoc();
 
-      //Generate truth via brute force:
+      // Generate truth via brute force:
       // We ensure true-positive matches (if the predicate on the raw shapes match
       //  then the search should find those same matches).
-      Set<String> expectedIds = new LinkedHashSet<>();//true-positives
+      Set<String> expectedIds = new LinkedHashSet<>(); // true-positives
       for (int id = 0; id < indexedShapes.size(); id++) {
         Shape indexedShape = indexedShapes.get(id);
-        if (indexedShape == null)
-          continue;
+        if (indexedShape == null) continue;
         if (operation.evaluate(indexedShape, queryShape)) {
-          expectedIds.add(""+id);
+          expectedIds.add("" + id);
         }
       }
 
-      //Search and verify results
+      // Search and verify results
       SpatialArgs args = new SpatialArgs(operation, queryShape);
       Query query = strategy.makeQuery(args);
       SearchResults got = executeQuery(query, 100);
@@ -121,9 +123,16 @@ public abstract class RandomSpatialOpStrategyTestCase extends StrategyTestCase {
     }
   }
 
-  private void fail(String label, String id, List<Shape> indexedShapes, Shape queryShape, SpatialOperation operation) {
-    fail("[" + operation + "] " + label
-        + " I#" + id + ":" + indexedShapes.get(Integer.parseInt(id)) + " Q:" + queryShape);
+  private void fail(
+      String label,
+      String id,
+      List<Shape> indexedShapes,
+      Shape queryShape,
+      SpatialOperation operation) {
+    fail(
+        ("[" + operation + "] ")
+            + (label + " I#" + id + ":" + indexedShapes.get(Integer.parseInt(id)))
+            + (" Q:" + queryShape));
   }
 
   protected void preQueryHavoc() {

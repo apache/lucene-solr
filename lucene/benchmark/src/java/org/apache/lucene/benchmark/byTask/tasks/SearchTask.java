@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 
 /**
  * Search task.
- * 
- * <p>Note: This task reuses the reader if it is already open. 
- * Otherwise a reader is opened at start and closed at the end.
+ *
+ * <p>Note: This task reuses the reader if it is already open. Otherwise a reader is opened at start
+ * and closed at the end.
  */
 public class SearchTask extends ReadTask {
 
@@ -56,6 +55,4 @@ public class SearchTask extends ReadTask {
   public QueryMaker getQueryMaker() {
     return getRunData().getQueryMaker(this);
   }
-
-
 }

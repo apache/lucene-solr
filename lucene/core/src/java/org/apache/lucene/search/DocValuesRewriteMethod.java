@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -29,47 +27,47 @@ import org.apache.lucene.util.LongBitSet;
 
 /**
  * Rewrites MultiTermQueries into a filter, using DocValues for term enumeration.
- * <p>
- * This can be used to perform these queries against an unindexed docvalues field.
+ *
+ * <p>This can be used to perform these queries against an unindexed docvalues field.
+ *
  * @lucene.experimental
  */
 public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
-  
+
   @Override
   public Query rewrite(IndexReader reader, MultiTermQuery query) {
     return new ConstantScoreQuery(new MultiTermQueryDocValuesWrapper(query));
   }
-  
+
   static class MultiTermQueryDocValuesWrapper extends Query {
-    
+
     protected final MultiTermQuery query;
-    
-    /**
-     * Wrap a {@link MultiTermQuery} as a Filter.
-     */
+
+    /** Wrap a {@link MultiTermQuery} as a Filter. */
     protected MultiTermQueryDocValuesWrapper(MultiTermQuery query) {
       this.query = query;
     }
-    
+
     @Override
     public String toString(String field) {
       // query.toString should be ok for the filter, too, if the query boost is 1.0f
       return query.toString(field);
     }
-    
+
     @Override
     public final boolean equals(final Object other) {
-      return sameClassAs(other) &&
-             query.equals(((MultiTermQueryDocValuesWrapper) other).query);
+      return sameClassAs(other) && query.equals(((MultiTermQueryDocValuesWrapper) other).query);
     }
 
     @Override
     public final int hashCode() {
       return 31 * classHash() + query.hashCode();
     }
-    
+
     /** Returns the field name for this query */
-    public final String getField() { return query.getField(); }
+    public final String getField() {
+      return query.getField();
+    }
 
     @Override
     public void visit(QueryVisitor visitor) {
@@ -77,65 +75,71 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
         visitor.getSubVisitor(BooleanClause.Occur.FILTER, query);
       }
     }
-    
+
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+        throws IOException {
       return new ConstantScoreWeight(this, boost) {
 
         @Override
         public Matches matches(LeafReaderContext context, int doc) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
-          return MatchesUtils.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, query.field, getTermsEnum(fcsi)));
+          return MatchesUtils.forField(
+              query.field,
+              () ->
+                  DisjunctionMatchesIterator.fromTermsEnum(
+                      context, doc, query, query.field, getTermsEnum(fcsi)));
         }
 
         private TermsEnum getTermsEnum(SortedSetDocValues fcsi) throws IOException {
-          return query.getTermsEnum(new Terms() {
+          return query.getTermsEnum(
+              new Terms() {
 
-            @Override
-            public TermsEnum iterator() throws IOException {
-              return fcsi.termsEnum();
-            }
+                @Override
+                public TermsEnum iterator() throws IOException {
+                  return fcsi.termsEnum();
+                }
 
-            @Override
-            public long getSumTotalTermFreq() {
-              throw new UnsupportedOperationException();
-            }
+                @Override
+                public long getSumTotalTermFreq() {
+                  throw new UnsupportedOperationException();
+                }
 
-            @Override
-            public long getSumDocFreq() {
-              throw new UnsupportedOperationException();
-            }
+                @Override
+                public long getSumDocFreq() {
+                  throw new UnsupportedOperationException();
+                }
 
-            @Override
-            public int getDocCount() {
-              throw new UnsupportedOperationException();
-            }
+                @Override
+                public int getDocCount() {
+                  throw new UnsupportedOperationException();
+                }
 
-            @Override
-            public long size() {
-              return -1;
-            }
+                @Override
+                public long size() {
+                  return -1;
+                }
 
-            @Override
-            public boolean hasFreqs() {
-              return false;
-            }
+                @Override
+                public boolean hasFreqs() {
+                  return false;
+                }
 
-            @Override
-            public boolean hasOffsets() {
-              return false;
-            }
+                @Override
+                public boolean hasOffsets() {
+                  return false;
+                }
 
-            @Override
-            public boolean hasPositions() {
-              return false;
-            }
+                @Override
+                public boolean hasPositions() {
+                  return false;
+                }
 
-            @Override
-            public boolean hasPayloads() {
-              return false;
-            }
-          });
+                @Override
+                public boolean hasPayloads() {
+                  return false;
+                }
+              });
         }
 
         @Override
@@ -157,38 +161,42 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
             }
           } while (termsEnum.next() != null);
 
-          return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(fcsi) {
+          return new ConstantScoreScorer(
+              this,
+              score(),
+              scoreMode,
+              new TwoPhaseIterator(fcsi) {
 
-            @Override
-            public boolean matches() throws IOException {
-              for (long ord = fcsi.nextOrd(); ord != SortedSetDocValues.NO_MORE_ORDS; ord = fcsi.nextOrd()) {
-                if (termSet.get(ord)) {
-                  return true;
+                @Override
+                public boolean matches() throws IOException {
+                  for (long ord = fcsi.nextOrd();
+                      ord != SortedSetDocValues.NO_MORE_ORDS;
+                      ord = fcsi.nextOrd()) {
+                    if (termSet.get(ord)) {
+                      return true;
+                    }
+                  }
+                  return false;
                 }
-              }
-              return false;
-            }
 
-            @Override
-            public float matchCost() {
-              return 3; // lookup in a bitset
-            }
-          });
+                @Override
+                public float matchCost() {
+                  return 3; // lookup in a bitset
+                }
+              });
         }
 
         @Override
         public boolean isCacheable(LeafReaderContext ctx) {
           return DocValues.isCacheable(ctx, query.field);
         }
-
       };
     }
   }
 
   @Override
   public boolean equals(Object other) {
-    return other != null &&
-           getClass() == other.getClass();
+    return other != null && getClass() == other.getClass();
   }
 
   @Override

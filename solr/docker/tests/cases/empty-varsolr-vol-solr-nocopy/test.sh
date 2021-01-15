@@ -17,6 +17,7 @@ docker volume create "$myvarsolr"
 docker run \
   -v "$myvarsolr:/var/solr:nocopy" \
   --rm \
+  -e NO_INIT_VAR_SOLR=yes \
   -u "0:0" \
   "$tag" bash -c "chown 8983:8983 /var/solr"
 

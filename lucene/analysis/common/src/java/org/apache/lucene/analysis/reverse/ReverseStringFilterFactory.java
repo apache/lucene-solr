@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.reverse;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link ReverseStringFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_rvsstr" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,15 +38,15 @@ public class ReverseStringFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "reverseString";
-  
+
   /** Creates a new ReverseStringFilterFactory */
-  public ReverseStringFilterFactory(Map<String,String> args) {
+  public ReverseStringFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public ReverseStringFilterFactory() {
     throw defaultCtorException();
@@ -58,4 +57,3 @@ public class ReverseStringFilterFactory extends TokenFilterFactory {
     return new ReverseStringFilter(in);
   }
 }
-

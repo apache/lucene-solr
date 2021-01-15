@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.store.Directory;
@@ -26,14 +25,13 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Just like the default live docs format but with additional asserts.
- */
+/** Just like the default live docs format but with additional asserts. */
 public class AssertingLiveDocsFormat extends LiveDocsFormat {
   private final LiveDocsFormat in = TestUtil.getDefaultCodec().liveDocsFormat();
 
   @Override
-  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context) throws IOException {
+  public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context)
+      throws IOException {
     Bits raw = in.readLiveDocs(dir, info, context);
     assert raw != null;
     check(raw, info.info.maxDoc(), info.getDelCount());
@@ -41,7 +39,9 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
   }
 
   @Override
-  public void writeLiveDocs(Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context) throws IOException {
+  public void writeLiveDocs(
+      Bits bits, Directory dir, SegmentCommitInfo info, int newDelCount, IOContext context)
+      throws IOException {
     check(bits, info.info.maxDoc(), info.getDelCount() + newDelCount);
     in.writeLiveDocs(bits, dir, info, newDelCount, context);
   }
@@ -54,7 +54,8 @@ public class AssertingLiveDocsFormat extends LiveDocsFormat {
         deletedCount++;
       }
     }
-    assert deletedCount == expectedDeleteCount : "deleted: " + deletedCount + " != expected: " + expectedDeleteCount;
+    assert deletedCount == expectedDeleteCount
+        : "deleted: " + deletedCount + " != expected: " + expectedDeleteCount;
   }
 
   @Override

@@ -51,7 +51,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.WatchedEvent;
@@ -63,6 +67,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptySortedSet;
+import static org.apache.solr.common.cloud.UrlScheme.HTTP;
 import static org.apache.solr.common.util.Utils.fromJSON;
 
 public class ZkStateReader implements SolrCloseable {
@@ -137,6 +142,10 @@ public class ZkStateReader implements SolrCloseable {
   private static final String SOLR_ENVIRONMENT = "environment";
 
   public static final String REPLICA_TYPE = "type";
+
+  public static final String CONTAINER_PLUGINS = "plugin";
+
+  public static final String PLACEMENT_PLUGIN = "placement-plugin";
 
   /**
    * A view of the current state of all collections.
@@ -222,7 +231,10 @@ public class ZkStateReader implements SolrCloseable {
       MAX_CORES_PER_NODE,
       SAMPLE_PERCENTAGE,
       SOLR_ENVIRONMENT,
-      CollectionAdminParams.DEFAULTS);
+      CollectionAdminParams.DEFAULTS,
+      CONTAINER_PLUGINS,
+      PLACEMENT_PLUGIN
+      );
 
   /**
    * Returns config set name for collection.
@@ -798,7 +810,11 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection, shard, timeout));
+    Replica replica = getLeaderRetry(collection, shard, timeout);
+    if (replica == null || replica.getBaseUrl() == null) {
+      return null;
+    }
+    ZkCoreNodeProps props = new ZkCoreNodeProps(replica);
     return props.getCoreUrl();
   }
 
@@ -1002,6 +1018,9 @@ public class ZkStateReader implements SolrCloseable {
           byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
           this.clusterProperties = ClusterProperties.convertCollectionDefaultsToNestedFormat((Map<String, Object>) Utils.fromJSON(data));
           log.debug("Loaded cluster properties: {}", this.clusterProperties);
+
+          // Make the urlScheme globally accessible
+          UrlScheme.INSTANCE.setUrlScheme(getClusterProperty(ZkStateReader.URL_SCHEME, HTTP));
 
           for (ClusterPropertiesListener listener : clusterPropertiesListeners) {
             listener.onChange(getClusterProperties());

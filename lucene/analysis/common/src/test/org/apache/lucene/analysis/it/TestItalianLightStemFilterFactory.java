@@ -16,29 +16,28 @@
  */
 package org.apache.lucene.analysis.it;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
+import org.apache.lucene.analysis.TokenStream;
 
-/**
- * Simple tests to ensure the Italian light stem factory is working.
- */
+/** Simple tests to ensure the Italian light stem factory is working. */
 public class TestItalianLightStemFilterFactory extends BaseTokenStreamFactoryTestCase {
   public void testStemming() throws Exception {
     Reader reader = new StringReader("ragazzo ragazzi");
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = tokenFilterFactory("ItalianLightStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "ragazz", "ragazz" });
+    assertTokenStreamContents(stream, new String[] {"ragazz", "ragazz"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("ItalianLightStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("ItalianLightStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

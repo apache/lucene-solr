@@ -19,9 +19,7 @@ package org.apache.lucene.search.matchhighlight;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 
-/**
- * An analyzer for tests that has a predefined offset and position gap.
- */
+/** An analyzer for tests that has a predefined offset and position gap. */
 class AnalyzerWithGaps extends DelegatingAnalyzerWrapper {
   private final Analyzer delegate;
   private final int offsetGap;

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 /**
@@ -52,5 +51,4 @@ public abstract class FilterLeafCollector implements LeafCollector {
     }
     return name + "(" + in + ")";
   }
-
 }

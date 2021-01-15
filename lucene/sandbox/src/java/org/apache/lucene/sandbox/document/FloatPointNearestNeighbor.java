@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
-
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -48,8 +47,13 @@ public class FloatPointNearestNeighbor {
     final BKDReader.IndexTree index;
     /** The closest possible distance^2 of all points in this cell */
     final double distanceSquared;
-    
-    Cell(BKDReader.IndexTree index, int readerIndex, byte[] minPacked, byte[] maxPacked, double distanceSquared) {
+
+    Cell(
+        BKDReader.IndexTree index,
+        int readerIndex,
+        byte[] minPacked,
+        byte[] maxPacked,
+        double distanceSquared) {
       this.index = index;
       this.readerIndex = readerIndex;
       this.minPacked = minPacked.clone();
@@ -63,8 +67,15 @@ public class FloatPointNearestNeighbor {
 
     @Override
     public String toString() {
-      return "Cell(readerIndex=" + readerIndex + " nodeID=" + index.getNodeID()
-          + " isLeaf=" + index.isLeafNode() + " distanceSquared=" + distanceSquared + ")";
+      return "Cell(readerIndex="
+          + readerIndex
+          + " nodeID="
+          + index.getNodeID()
+          + " isLeaf="
+          + index.isLeafNode()
+          + " distanceSquared="
+          + distanceSquared
+          + ")";
     }
   }
 
@@ -74,7 +85,7 @@ public class FloatPointNearestNeighbor {
     final int topN;
     final PriorityQueue<NearestHit> hitQueue;
     final float[] origin;
-    final private int dims;
+    private final int dims;
     double bottomNearestDistanceSquared = Double.POSITIVE_INFINITY;
     int bottomNearestDistanceDoc = Integer.MAX_VALUE;
 
@@ -98,7 +109,7 @@ public class FloatPointNearestNeighbor {
       }
 
       double distanceSquared = 0.0d;
-      for (int d = 0, offset = 0 ; d < dims ; ++d, offset += Float.BYTES) {
+      for (int d = 0, offset = 0; d < dims; ++d, offset += Float.BYTES) {
         double diff = (double) FloatPoint.decodeDimension(packedValue, offset) - (double) origin[d];
         distanceSquared += diff * diff;
         if (distanceSquared > bottomNearestDistanceSquared) {
@@ -106,12 +117,14 @@ public class FloatPointNearestNeighbor {
         }
       }
 
-      // System.out.println("    visit docID=" + docID + " distanceSquared=" + distanceSquared + " value: " + Arrays.toString(docPoint));
+      // System.out.println("    visit docID=" + docID + " distanceSquared=" + distanceSquared + "
+      // value: " + Arrays.toString(docPoint));
 
       int fullDocID = curDocBase + docID;
 
       if (hitQueue.size() == topN) { // queue already full
-        if (distanceSquared == bottomNearestDistanceSquared && fullDocID > bottomNearestDistanceDoc) {
+        if (distanceSquared == bottomNearestDistanceSquared
+            && fullDocID > bottomNearestDistanceDoc) {
           return;
         }
         NearestHit bottom = hitQueue.poll();
@@ -120,7 +133,7 @@ public class FloatPointNearestNeighbor {
         bottom.distanceSquared = distanceSquared;
         hitQueue.offer(bottom);
         updateBottomNearestDistance();
-          // System.out.println("      ** keep1, now bottom=" + bottom);
+        // System.out.println("      ** keep1, now bottom=" + bottom);
       } else {
         NearestHit hit = new NearestHit();
         hit.docID = fullDocID;
@@ -141,7 +154,9 @@ public class FloatPointNearestNeighbor {
 
     @Override
     public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      if (hitQueue.size() == topN && pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin) > bottomNearestDistanceSquared) {
+      if (hitQueue.size() == topN
+          && pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin)
+              > bottomNearestDistanceSquared) {
         return PointValues.Relation.CELL_OUTSIDE_QUERY;
       }
       return PointValues.Relation.CELL_CROSSES_QUERY;
@@ -159,17 +174,27 @@ public class FloatPointNearestNeighbor {
     }
   }
 
-  private static NearestHit[] nearest(List<BKDReader> readers, List<Bits> liveDocs, List<Integer> docBases, final int topN, float[] origin) throws IOException {
+  private static NearestHit[] nearest(
+      List<BKDReader> readers,
+      List<Bits> liveDocs,
+      List<Integer> docBases,
+      final int topN,
+      float[] origin)
+      throws IOException {
 
-    // System.out.println("NEAREST: readers=" + readers + " liveDocs=" + liveDocs + " origin: " + Arrays.toString(origin));
+    // System.out.println("NEAREST: readers=" + readers + " liveDocs=" + liveDocs + " origin: " +
+    // Arrays.toString(origin));
 
     // Holds closest collected points seen so far:
     // TODO: if we used lucene's PQ we could just updateTop instead of poll/offer:
-    final PriorityQueue<NearestHit> hitQueue = new PriorityQueue<>(topN, (a, b) -> {
-      // sort by opposite distance natural order
-      int cmp = Double.compare(a.distanceSquared, b.distanceSquared);
-      return cmp != 0 ? -cmp : b.docID - a.docID; // tie-break by higher docID
-    });
+    final PriorityQueue<NearestHit> hitQueue =
+        new PriorityQueue<>(
+            topN,
+            (a, b) -> {
+              // sort by opposite distance natural order
+              int cmp = Double.compare(a.distanceSquared, b.distanceSquared);
+              return cmp != 0 ? -cmp : b.docID - a.docID; // tie-break by higher docID
+            });
 
     // Holds all cells, sorted by closest to the point:
     PriorityQueue<Cell> cellQueue = new PriorityQueue<>();
@@ -180,21 +205,30 @@ public class FloatPointNearestNeighbor {
     // Add root cell for each reader into the queue:
     int bytesPerDim = -1;
 
-    for (int i = 0 ; i < readers.size() ; ++i) {
+    for (int i = 0; i < readers.size(); ++i) {
       BKDReader reader = readers.get(i);
       if (bytesPerDim == -1) {
         bytesPerDim = reader.getBytesPerDimension();
       } else if (bytesPerDim != reader.getBytesPerDimension()) {
-        throw new IllegalStateException("bytesPerDim changed from " + bytesPerDim
-            + " to " + reader.getBytesPerDimension() + " across readers");
+        throw new IllegalStateException(
+            "bytesPerDim changed from "
+                + bytesPerDim
+                + " to "
+                + reader.getBytesPerDimension()
+                + " across readers");
       }
       byte[] minPackedValue = reader.getMinPackedValue();
       byte[] maxPackedValue = reader.getMaxPackedValue();
       BKDReader.IntersectState state = reader.getIntersectState(visitor);
       states.add(state);
 
-      cellQueue.offer(new Cell(state.index, i, reader.getMinPackedValue(), reader.getMaxPackedValue(),
-          pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin)));
+      cellQueue.offer(
+          new Cell(
+              state.index,
+              i,
+              reader.getMinPackedValue(),
+              reader.getMaxPackedValue(),
+              pointToRectangleDistanceSquared(minPackedValue, maxPackedValue, origin)));
     }
 
     while (cellQueue.size() > 0) {
@@ -213,7 +247,7 @@ public class FloatPointNearestNeighbor {
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
         reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
 
-        //assert hitQueue.peek().distanceSquared >= cell.distanceSquared;
+        // assert hitQueue.peek().distanceSquared >= cell.distanceSquared;
         // System.out.println("    now " + hitQueue.size() + " hits");
       } else {
         // System.out.println("    non-leaf");
@@ -225,54 +259,72 @@ public class FloatPointNearestNeighbor {
         // we must clone the index so that we we can recurse left and right "concurrently":
         BKDReader.IndexTree newIndex = cell.index.clone();
         byte[] splitPackedValue = cell.maxPacked.clone();
-        System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim * bytesPerDim, bytesPerDim);
+        System.arraycopy(
+            splitValue.bytes,
+            splitValue.offset,
+            splitPackedValue,
+            splitDim * bytesPerDim,
+            bytesPerDim);
 
         cell.index.pushLeft();
-        double distanceLeft = pointToRectangleDistanceSquared(cell.minPacked, splitPackedValue, origin);
+        double distanceLeft =
+            pointToRectangleDistanceSquared(cell.minPacked, splitPackedValue, origin);
         if (distanceLeft <= visitor.bottomNearestDistanceSquared) {
-          cellQueue.offer(new Cell(cell.index, cell.readerIndex, cell.minPacked, splitPackedValue, distanceLeft));
+          cellQueue.offer(
+              new Cell(
+                  cell.index, cell.readerIndex, cell.minPacked, splitPackedValue, distanceLeft));
         }
 
         splitPackedValue = cell.minPacked.clone();
-        System.arraycopy(splitValue.bytes, splitValue.offset, splitPackedValue, splitDim * bytesPerDim, bytesPerDim);
+        System.arraycopy(
+            splitValue.bytes,
+            splitValue.offset,
+            splitPackedValue,
+            splitDim * bytesPerDim,
+            bytesPerDim);
 
         newIndex.pushRight();
-        double distanceRight = pointToRectangleDistanceSquared(splitPackedValue, cell.maxPacked, origin);
+        double distanceRight =
+            pointToRectangleDistanceSquared(splitPackedValue, cell.maxPacked, origin);
         if (distanceRight <= visitor.bottomNearestDistanceSquared) {
-          cellQueue.offer(new Cell(newIndex, cell.readerIndex, splitPackedValue, cell.maxPacked, distanceRight));
+          cellQueue.offer(
+              new Cell(
+                  newIndex, cell.readerIndex, splitPackedValue, cell.maxPacked, distanceRight));
         }
       }
     }
 
     NearestHit[] hits = new NearestHit[hitQueue.size()];
-    int downTo = hitQueue.size()-1;
+    int downTo = hitQueue.size() - 1;
     while (hitQueue.size() != 0) {
       hits[downTo] = hitQueue.poll();
       downTo--;
     }
-    //System.out.println(visitor.comp);
+    // System.out.println(visitor.comp);
     return hits;
   }
 
-  private static double pointToRectangleDistanceSquared(byte[] minPackedValue, byte[] maxPackedValue, float[] value) {
+  private static double pointToRectangleDistanceSquared(
+      byte[] minPackedValue, byte[] maxPackedValue, float[] value) {
     double sumOfSquaredDiffs = 0.0d;
-    for (int i = 0, offset = 0 ; i < value.length ; ++i, offset += Float.BYTES) {
+    for (int i = 0, offset = 0; i < value.length; ++i, offset += Float.BYTES) {
       double min = FloatPoint.decodeDimension(minPackedValue, offset);
       if (value[i] < min) {
-        double diff = min - (double)value[i];
+        double diff = min - (double) value[i];
         sumOfSquaredDiffs += diff * diff;
         continue;
       }
       double max = FloatPoint.decodeDimension(maxPackedValue, offset);
       if (value[i] > max) {
-        double diff =  max - (double)value[i];
+        double diff = max - (double) value[i];
         sumOfSquaredDiffs += diff * diff;
       }
     }
     return sumOfSquaredDiffs;
   }
 
-  public static TopFieldDocs nearest(IndexSearcher searcher, String field, int topN, float... origin) throws IOException {
+  public static TopFieldDocs nearest(
+      IndexSearcher searcher, String field, int topN, float... origin) throws IOException {
     if (topN < 1) {
       throw new IllegalArgumentException("topN must be at least 1; got " + topN);
     }
@@ -290,10 +342,11 @@ public class FloatPointNearestNeighbor {
       PointValues points = leaf.reader().getPointValues(field);
       if (points != null) {
         if (points instanceof BKDReader == false) {
-          throw new IllegalArgumentException("can only run on Lucene60PointsReader points implementation, but got " + points);
+          throw new IllegalArgumentException(
+              "can only run on Lucene60PointsReader points implementation, but got " + points);
         }
         totalHits += points.getDocCount();
-        readers.add((BKDReader)points);
+        readers.add((BKDReader) points);
         docBases.add(leaf.docBase);
         liveDocs.add(leaf.reader().getLiveDocs());
       }
@@ -303,9 +356,10 @@ public class FloatPointNearestNeighbor {
 
     // Convert to TopFieldDocs:
     ScoreDoc[] scoreDocs = new ScoreDoc[hits.length];
-    for(int i=0;i<hits.length;i++) {
+    for (int i = 0; i < hits.length; i++) {
       NearestHit hit = hits[i];
-      scoreDocs[i] = new FieldDoc(hit.docID, 0.0f, new Object[] { (float)Math.sqrt(hit.distanceSquared) });
+      scoreDocs[i] =
+          new FieldDoc(hit.docID, 0.0f, new Object[] {(float) Math.sqrt(hit.distanceSquared)});
     }
     return new TopFieldDocs(new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO), scoreDocs, null);
   }

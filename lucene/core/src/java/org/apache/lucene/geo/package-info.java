@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Geospatial Utility Implementations for Lucene Core
- */
+/** Geospatial Utility Implementations for Lucene Core */
 package org.apache.lucene.geo;

@@ -42,31 +42,24 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-/**  
- * A {@code FilterFileSystemProvider} contains another 
- * {@code FileSystemProvider}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterFileSystemProvider} contains another {@code FileSystemProvider}, which it uses as
+ * its basic source of data, possibly transforming the data along the way or providing additional
+ * functionality.
  */
 public abstract class FilterFileSystemProvider extends FileSystemProvider {
-  
-  /** 
-   * The underlying {@code FileSystemProvider}. 
-   */
+
+  /** The underlying {@code FileSystemProvider}. */
   protected final FileSystemProvider delegate;
-  /** 
-   * The underlying {@code FileSystem} instance. 
-   */
+  /** The underlying {@code FileSystem} instance. */
   protected FileSystem fileSystem;
-  /** 
-   * The URI scheme for this provider.
-   */
+  /** The URI scheme for this provider. */
   protected final String scheme;
-  
+
   /**
-   * Construct a {@code FilterFileSystemProvider} indicated by
-   * the specified {@code scheme} and wrapping functionality of the
-   * provider of the specified base filesystem.
+   * Construct a {@code FilterFileSystemProvider} indicated by the specified {@code scheme} and
+   * wrapping functionality of the provider of the specified base filesystem.
+   *
    * @param scheme URI scheme
    * @param delegateInstance specified base filesystem.
    */
@@ -76,11 +69,11 @@ public abstract class FilterFileSystemProvider extends FileSystemProvider {
     this.delegate = delegateInstance.provider();
     this.fileSystem = new FilterFileSystem(this, delegateInstance);
   }
-  
+
   /**
-   * Construct a {@code FilterFileSystemProvider} indicated by
-   * the specified {@code scheme} and wrapping functionality of the
-   * provider. You must set the singleton {@code filesystem} yourself.
+   * Construct a {@code FilterFileSystemProvider} indicated by the specified {@code scheme} and
+   * wrapping functionality of the provider. You must set the singleton {@code filesystem} yourself.
+   *
    * @param scheme URI scheme
    * @param delegate specified base provider.
    */
@@ -95,15 +88,15 @@ public abstract class FilterFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public FileSystem newFileSystem(URI uri, Map<String,?> env) throws IOException {
+  public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
     if (fileSystem == null) {
       throw new IllegalStateException("subclass did not initialize singleton filesystem");
     }
     return fileSystem;
   }
-  
+
   @Override
-  public FileSystem newFileSystem(Path path, Map<String,?> env) throws IOException {
+  public FileSystem newFileSystem(Path path, Map<String, ?> env) throws IOException {
     if (fileSystem == null) {
       throw new IllegalStateException("subclass did not initialize singleton filesystem");
     }
@@ -168,22 +161,26 @@ public abstract class FilterFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
+  public <V extends FileAttributeView> V getFileAttributeView(
+      Path path, Class<V> type, LinkOption... options) {
     return delegate.getFileAttributeView(toDelegate(path), type, options);
   }
 
   @Override
-  public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
+  public <A extends BasicFileAttributes> A readAttributes(
+      Path path, Class<A> type, LinkOption... options) throws IOException {
     return delegate.readAttributes(toDelegate(path), type, options);
   }
 
   @Override
-  public Map<String,Object> readAttributes(Path path, String attributes, LinkOption... options) throws IOException {
+  public Map<String, Object> readAttributes(Path path, String attributes, LinkOption... options)
+      throws IOException {
     return delegate.readAttributes(toDelegate(path), attributes, options);
   }
 
   @Override
-  public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
+  public void setAttribute(Path path, String attribute, Object value, LinkOption... options)
+      throws IOException {
     delegate.setAttribute(toDelegate(path), attribute, value, options);
   }
 
@@ -198,33 +195,44 @@ public abstract class FilterFileSystemProvider extends FileSystemProvider {
   }
 
   @Override
-  public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+  public FileChannel newFileChannel(
+      Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     return delegate.newFileChannel(toDelegate(path), options, attrs);
   }
 
   @Override
-  public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+  public AsynchronousFileChannel newAsynchronousFileChannel(
+      Path path,
+      Set<? extends OpenOption> options,
+      ExecutorService executor,
+      FileAttribute<?>... attrs)
+      throws IOException {
     return delegate.newAsynchronousFileChannel(toDelegate(path), options, executor, attrs);
   }
-  
+
   @Override
-  public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+  public SeekableByteChannel newByteChannel(
+      Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
     return delegate.newByteChannel(toDelegate(path), options, attrs);
   }
 
   @Override
-  public DirectoryStream<Path> newDirectoryStream(Path dir, final Filter<? super Path> filter) throws IOException {
-    Filter<Path> wrappedFilter = new Filter<Path>() {
-      @Override
-      public boolean accept(Path entry) throws IOException {
-        return filter.accept(new FilterPath(entry, fileSystem));
-      }
-    };
-    return new FilterDirectoryStream(delegate.newDirectoryStream(toDelegate(dir), wrappedFilter), fileSystem);
+  public DirectoryStream<Path> newDirectoryStream(Path dir, final Filter<? super Path> filter)
+      throws IOException {
+    Filter<Path> wrappedFilter =
+        new Filter<Path>() {
+          @Override
+          public boolean accept(Path entry) throws IOException {
+            return filter.accept(new FilterPath(entry, fileSystem));
+          }
+        };
+    return new FilterDirectoryStream(
+        delegate.newDirectoryStream(toDelegate(dir), wrappedFilter), fileSystem);
   }
 
   @Override
-  public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs) throws IOException {
+  public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs)
+      throws IOException {
     delegate.createSymbolicLink(toDelegate(link), toDelegate(target), attrs);
   }
 
@@ -247,21 +255,25 @@ public abstract class FilterFileSystemProvider extends FileSystemProvider {
     if (path instanceof FilterPath) {
       FilterPath fp = (FilterPath) path;
       if (fp.fileSystem != fileSystem) {
-        throw new ProviderMismatchException("mismatch, expected: " + fileSystem.provider().getClass() + ", got: " + fp.fileSystem.provider().getClass());
+        throw new ProviderMismatchException(
+            "mismatch, expected: "
+                + fileSystem.provider().getClass()
+                + ", got: "
+                + fp.fileSystem.provider().getClass());
       }
       return fp.delegate;
     } else {
-      throw new ProviderMismatchException("mismatch, expected: FilterPath, got: " + path.getClass());
+      throw new ProviderMismatchException(
+          "mismatch, expected: FilterPath, got: " + path.getClass());
     }
   }
-  
-  /** 
+
+  /**
    * Override to trigger some behavior when the filesystem is closed.
-   * <p>
-   * This is always called for each FilterFileSystemProvider in the chain.
+   *
+   * <p>This is always called for each FilterFileSystemProvider in the chain.
    */
-  protected void onClose() {
-  }
+  protected void onClose() {}
 
   @Override
   public String toString() {

@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.ArrayUtil;
 
 class ParallelPostingsArray {
-  final static int BYTES_PER_POSTING = 3 * Integer.BYTES;
+  static final int BYTES_PER_POSTING = 3 * Integer.BYTES;
 
   final int size;
   final int[] textStarts; // maps term ID to the terms's text start in the bytesHash

@@ -17,7 +17,6 @@
 package org.apache.lucene.expressions.js;
 
 import java.text.ParseException;
-
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -42,8 +41,9 @@ public class TestJavascriptCompiler extends LuceneTestCase {
     doTestValidVariable("empty['']");
     doTestValidVariable("empty[\"\"]", "empty['']");
     doTestValidVariable("strindex['\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059']");
-    doTestValidVariable("strindex[\"\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059\"]",
-                        "strindex['\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059']");
+    doTestValidVariable(
+        "strindex[\"\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059\"]",
+        "strindex['\u304A\u65E9\u3046\u3054\u3056\u3044\u307E\u3059']");
     doTestValidVariable("escapes['\\\\\\'']");
     doTestValidVariable("escapes[\"\\\\\\\"\"]", "escapes['\\\\\"']");
     doTestValidVariable("mixed[23]['key'].sub.sub");
@@ -90,83 +90,124 @@ public class TestJavascriptCompiler extends LuceneTestCase {
   }
 
   void doTestInvalidVariable(String variable) {
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile(variable);
-    });
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile(variable);
+        });
   }
 
   public void testInvalidLexer() throws Exception {
-    ParseException expected = expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("\n .");
-    });
+    ParseException expected =
+        expectThrows(
+            ParseException.class,
+            () -> {
+              JavascriptCompiler.compile("\n .");
+            });
     assertTrue(expected.getMessage().contains("unexpected character '.' on line (2) position (1)"));
   }
 
   public void testInvalidCompiles() throws Exception {
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("100 100");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("7*/-8");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("0y1234");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("500EE");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("500.5EE");
-    });
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("100 100");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("7*/-8");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("0y1234");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("500EE");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("500.5EE");
+        });
   }
-  
+
   public void testEmpty() {
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("()");
-    });
-    
-    expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("   \r\n   \n \t");
-    });
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("()");
+        });
+
+    expectThrows(
+        ParseException.class,
+        () -> {
+          JavascriptCompiler.compile("   \r\n   \n \t");
+        });
   }
-  
+
   public void testNull() throws Exception {
-    expectThrows(NullPointerException.class, () -> {
-      JavascriptCompiler.compile(null);
-    });
+    expectThrows(
+        NullPointerException.class,
+        () -> {
+          JavascriptCompiler.compile(null);
+        });
   }
-  
+
   public void testWrongArity() throws Exception {
-    ParseException expected = expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("tan()");
-      fail();
-    });
-    assertEquals("Invalid expression 'tan()': Expected (1) arguments for function call (tan), but found (0).", expected.getMessage());
+    ParseException expected =
+        expectThrows(
+            ParseException.class,
+            () -> {
+              JavascriptCompiler.compile("tan()");
+              fail();
+            });
+    assertEquals(
+        "Invalid expression 'tan()': Expected (1) arguments for function call (tan), but found (0).",
+        expected.getMessage());
     assertEquals(expected.getErrorOffset(), 0);
-    
-    expected = expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("tan(1, 1)");
-    });
+
+    expected =
+        expectThrows(
+            ParseException.class,
+            () -> {
+              JavascriptCompiler.compile("tan(1, 1)");
+            });
     assertTrue(expected.getMessage().contains("arguments for function call"));
-    
-    expected = expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile(" tan()");
-    });
-    assertEquals("Invalid expression ' tan()': Expected (1) arguments for function call (tan), but found (0).", expected.getMessage());
+
+    expected =
+        expectThrows(
+            ParseException.class,
+            () -> {
+              JavascriptCompiler.compile(" tan()");
+            });
+    assertEquals(
+        "Invalid expression ' tan()': Expected (1) arguments for function call (tan), but found (0).",
+        expected.getMessage());
     assertEquals(expected.getErrorOffset(), 1);
-    
-    expected = expectThrows(ParseException.class, () -> {
-      JavascriptCompiler.compile("1 + tan()");
-    });
-    assertEquals("Invalid expression '1 + tan()': Expected (1) arguments for function call (tan), but found (0).", expected.getMessage());
+
+    expected =
+        expectThrows(
+            ParseException.class,
+            () -> {
+              JavascriptCompiler.compile("1 + tan()");
+            });
+    assertEquals(
+        "Invalid expression '1 + tan()': Expected (1) arguments for function call (tan), but found (0).",
+        expected.getMessage());
     assertEquals(expected.getErrorOffset(), 4);
   }
 

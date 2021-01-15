@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
@@ -33,7 +31,9 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.PriorityQueue;
 
-/** Expert: Find exact phrases
+/**
+ * Expert: Find exact phrases
+ *
  * @lucene.internal
  */
 public final class ExactPhraseMatcher extends PhraseMatcher {
@@ -54,24 +54,33 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
   private final ImpactsDISI impactsApproximation;
 
   /** Expert: Creates ExactPhraseMatcher instance */
-  public ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, ScoreMode scoreMode, SimScorer scorer, float matchCost) {
+  public ExactPhraseMatcher(
+      PhraseQuery.PostingsAndFreq[] postings,
+      ScoreMode scoreMode,
+      SimScorer scorer,
+      float matchCost) {
     super(matchCost);
 
-    final DocIdSetIterator approximation = ConjunctionDISI.intersectIterators(Arrays.stream(postings).map(p -> p.postings).collect(Collectors.toList()));
-    final ImpactsSource impactsSource = mergeImpacts(Arrays.stream(postings).map(p -> p.impacts).toArray(ImpactsEnum[]::new));
+    final DocIdSetIterator approximation =
+        ConjunctionDISI.intersectIterators(
+            Arrays.stream(postings).map(p -> p.postings).collect(Collectors.toList()));
+    final ImpactsSource impactsSource =
+        mergeImpacts(Arrays.stream(postings).map(p -> p.impacts).toArray(ImpactsEnum[]::new));
 
     if (scoreMode == ScoreMode.TOP_SCORES) {
-      this.approximation = this.impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
+      this.approximation =
+          this.impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
     } else {
       this.approximation = approximation;
       this.impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
     }
 
     List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
-    for(PhraseQuery.PostingsAndFreq posting : postings) {
+    for (PhraseQuery.PostingsAndFreq posting : postings) {
       postingsAndPositions.add(new PostingsAndPosition(posting.postings, posting.position));
     }
-    this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
+    this.postings =
+        postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
   }
 
   @Override
@@ -93,10 +102,12 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
     return minFreq;
   }
 
-  /** Advance the given pos enum to the first doc on or after {@code target}.
-   *  Return {@code false} if the enum was exhausted before reaching
-   *  {@code target} and {@code true} otherwise. */
-  private static boolean advancePosition(PostingsAndPosition posting, int target) throws IOException {
+  /**
+   * Advance the given pos enum to the first doc on or after {@code target}. Return {@code false} if
+   * the enum was exhausted before reaching {@code target} and {@code true} otherwise.
+   */
+  private static boolean advancePosition(PostingsAndPosition posting, int target)
+      throws IOException {
     while (posting.pos < target) {
       if (posting.upTo == posting.freq) {
         return false;
@@ -123,8 +134,7 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
     if (lead.upTo < lead.freq) {
       lead.pos = lead.postings.nextPosition();
       lead.upTo += 1;
-    }
-    else {
+    } else {
       return false;
     }
     advanceHead:
@@ -177,9 +187,7 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
     return postings[postings.length - 1].postings.endOffset();
   }
 
-  /**
-   * Merge impacts for multiple terms of an exact phrase.
-   */
+  /** Merge impacts for multiple terms of an exact phrase. */
   static ImpactsSource mergeImpacts(ImpactsEnum[] impactsEnums) {
     // Iteration of block boundaries uses the impacts enum with the lower cost.
     // This is consistent with BlockMaxConjunctionScorer.
@@ -235,8 +243,8 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
           }
 
           /**
-           * Return the minimum level whose impacts are valid up to {@code docIdUpTo},
-           * or {@code -1} if there is no such level.
+           * Return the minimum level whose impacts are valid up to {@code docIdUpTo}, or {@code -1}
+           * if there is no such level.
            */
           private int getLevel(Impacts impacts, int docIdUpTo) {
             for (int level = 0, numLevels = impacts.numLevels(); level < numLevels; ++level) {
@@ -251,12 +259,13 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
           public List<Impact> getImpacts(int level) {
             final int docIdUpTo = getDocIdUpTo(level);
 
-            PriorityQueue<SubIterator> pq = new PriorityQueue<SubIterator>(impacts.length) {
-              @Override
-              protected boolean lessThan(SubIterator a, SubIterator b) {
-                return a.current.freq < b.current.freq;
-              }
-            };
+            PriorityQueue<SubIterator> pq =
+                new PriorityQueue<SubIterator>(impacts.length) {
+                  @Override
+                  protected boolean lessThan(SubIterator a, SubIterator b) {
+                    return a.current.freq < b.current.freq;
+                  }
+                };
 
             boolean hasImpacts = false;
             List<Impact> onlyImpactList = null;
@@ -309,8 +318,10 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
               }
             }
 
-            outer: while (true) {
-              if (mergedImpacts.size() > 0 && mergedImpacts.get(mergedImpacts.size() - 1).norm == currentNorm) {
+            outer:
+            while (true) {
+              if (mergedImpacts.size() > 0
+                  && mergedImpacts.get(mergedImpacts.size() - 1).norm == currentNorm) {
                 mergedImpacts.get(mergedImpacts.size() - 1).freq = currentFreq;
               } else {
                 mergedImpacts.add(new Impact(currentFreq, currentNorm));
@@ -345,5 +356,4 @@ public final class ExactPhraseMatcher extends PhraseMatcher {
       }
     };
   }
-
 }

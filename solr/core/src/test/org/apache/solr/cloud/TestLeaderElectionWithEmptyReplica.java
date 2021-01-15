@@ -35,8 +35,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 /**
  * See SOLR-9504
  */
@@ -73,7 +71,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (JettySolrRunner jettySolrRunner : jettySolrRunners) {
       int port = jettySolrRunner.getBaseUrl().getPort();
-      if (replica.getStr(BASE_URL_PROP).contains(":" + port))  {
+      if (replica.getBaseUrl().contains(":" + port))  {
         replicaJetty = jettySolrRunner;
         break;
       }

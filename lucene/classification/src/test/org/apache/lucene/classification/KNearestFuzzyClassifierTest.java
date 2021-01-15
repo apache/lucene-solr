@@ -27,9 +27,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Tests for {@link KNearestFuzzyClassifier}
- */
+/** Tests for {@link KNearestFuzzyClassifier} */
 public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef> {
 
   @Test
@@ -38,7 +36,9 @@ public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef
     try {
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
-      Classifier<BytesRef> classifier = new KNearestFuzzyClassifier(leafReader, null, analyzer, null, 3, categoryFieldName, textFieldName);
+      Classifier<BytesRef> classifier =
+          new KNearestFuzzyClassifier(
+              leafReader, null, analyzer, null, 3, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
       checkCorrectClassification(classifier, POLITICS_INPUT, POLITICS_RESULT);
     } finally {
@@ -55,7 +55,9 @@ public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef
       MockAnalyzer analyzer = new MockAnalyzer(random());
       leafReader = getSampleIndex(analyzer);
       TermQuery query = new TermQuery(new Term(textFieldName, "not"));
-      Classifier<BytesRef> classifier = new KNearestFuzzyClassifier(leafReader, null, analyzer, query, 3, categoryFieldName, textFieldName);
+      Classifier<BytesRef> classifier =
+          new KNearestFuzzyClassifier(
+              leafReader, null, analyzer, query, 3, categoryFieldName, textFieldName);
       checkCorrectClassification(classifier, TECHNOLOGY_INPUT, TECHNOLOGY_RESULT);
     } finally {
       if (leafReader != null) {
@@ -70,10 +72,13 @@ public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef
     int numDocs = atLeast(10);
     LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
-      Classifier<BytesRef> classifier = new KNearestFuzzyClassifier(leafReader, null, analyzer, null, 3, categoryFieldName, textFieldName);
+      Classifier<BytesRef> classifier =
+          new KNearestFuzzyClassifier(
+              leafReader, null, analyzer, null, 3, categoryFieldName, textFieldName);
 
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          classifier, categoryFieldName, textFieldName, -1);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix =
+          ConfusionMatrixGenerator.getConfusionMatrix(
+              leafReader, classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
 
       double avgClassificationTime = confusionMatrix.getAvgClassificationTime();
@@ -110,5 +115,4 @@ public class KNearestFuzzyClassifierTest extends ClassificationTestBase<BytesRef
       leafReader.close();
     }
   }
-
 }

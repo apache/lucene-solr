@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.th;
 
 import java.io.IOException;
 import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -34,34 +33,32 @@ import org.apache.lucene.analysis.core.DecimalDigitFilter;
  * @since 3.1
  */
 public final class ThaiAnalyzer extends StopwordAnalyzerBase {
-  
+
   /** File containing default Thai stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
-  /**
-   * The comment character in the stopwords file.  
-   * All lines prefixed with this will be ignored.
-   */
+  public static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  /** The comment character in the stopwords file. All lines prefixed with this will be ignored. */
   private static final String STOPWORDS_COMMENT = "#";
-  
+
   /**
    * Returns an unmodifiable instance of the default stop words set.
+   *
    * @return default stop words set.
    */
-  public static CharArraySet getDefaultStopSet(){
+  public static CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
-  
+
   /**
-   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
-   * accesses the static final set the first time.;
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class accesses the
+   * static final set the first time.;
    */
   private static class DefaultSetHolder {
     static final CharArraySet DEFAULT_STOP_SET;
 
     static {
       try {
-        DEFAULT_STOP_SET = loadStopwordSet(false, ThaiAnalyzer.class, 
-            DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+        DEFAULT_STOP_SET =
+            loadStopwordSet(false, ThaiAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -70,13 +67,11 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Builds an analyzer with the default stop words.
-   */
+  /** Builds an analyzer with the default stop words. */
   public ThaiAnalyzer() {
     this(DefaultSetHolder.DEFAULT_STOP_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words.
    *
@@ -87,13 +82,12 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * used to tokenize all the text in the provided {@link Reader}.
-   * 
-   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link ThaiTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link DecimalDigitFilter} and {@link StopFilter}
+   * Creates {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} used to tokenize all
+   * the text in the provided {@link Reader}.
+   *
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from a {@link
+   *     ThaiTokenizer} filtered with {@link LowerCaseFilter}, {@link DecimalDigitFilter} and {@link
+   *     StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {

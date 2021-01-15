@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.compressing;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
@@ -34,8 +33,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -49,7 +48,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
       return CompressingCodec.reasonableInstance(random());
     }
   }
-  
+
   // https://issues.apache.org/jira/browse/LUCENE-5156
   public void testNoOrds() throws Exception {
     Directory dir = newDirectory();
@@ -72,19 +71,19 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     iw.close();
     dir.close();
   }
-  
+
   /**
-   * writes some tiny segments with incomplete compressed blocks,
-   * and ensures merge recompresses them.
+   * writes some tiny segments with incomplete compressed blocks, and ensures merge recompresses
+   * them.
    */
   public void testChunkCleanup() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMergePolicy(NoMergePolicy.INSTANCE);
-    
+
     // we have to enforce certain things like maxDocsPerChunk to cause dirty chunks to be created
     // by this test.
-    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4*1024, 100, false, 8));
+    iwConf.setCodec(CompressingCodec.randomInstance(random(), 4 * 1024, 100, false, 8));
     IndexWriter iw = new IndexWriter(dir, iwConf);
     DirectoryReader ir = DirectoryReader.open(iw);
     for (int i = 0; i < 5; i++) {
@@ -101,7 +100,8 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
       // examine dirty counts:
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
-        CompressingTermVectorsReader reader = (CompressingTermVectorsReader)sr.getTermVectorsReader();
+        CompressingTermVectorsReader reader =
+            (CompressingTermVectorsReader) sr.getTermVectorsReader();
         assertTrue(reader.getNumDirtyDocs() > 0);
         assertEquals(1, reader.getNumDirtyChunks());
       }
@@ -113,7 +113,7 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
-    CompressingTermVectorsReader reader = (CompressingTermVectorsReader)sr.getTermVectorsReader();
+    CompressingTermVectorsReader reader = (CompressingTermVectorsReader) sr.getTermVectorsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);
     ir.close();

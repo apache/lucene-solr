@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,7 +25,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
-
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -42,7 +40,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   // class has to be public so that Class.forName.newInstance() will work
   public static final class WriteLineDocMaker extends DocMaker {
-  
+
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
@@ -51,12 +49,11 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       doc.add(new StringField(DATE_FIELD, "date", Field.Store.NO));
       return doc;
     }
-    
   }
-  
+
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NewLinesDocMaker extends DocMaker {
-  
+
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
@@ -65,9 +62,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       doc.add(new StringField(DATE_FIELD, "date\r\ntext", Field.Store.NO));
       return doc;
     }
-    
   }
-  
+
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoBodyDocMaker extends DocMaker {
     @Override
@@ -78,7 +74,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return doc;
     }
   }
-  
+
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoTitleDocMaker extends DocMaker {
     @Override
@@ -89,7 +85,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return doc;
     }
   }
-  
+
   // class has to be public so that Class.forName.newInstance() will work
   public static final class JustDateDocMaker extends DocMaker {
     @Override
@@ -118,10 +114,10 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return new Document();
     }
   }
-  
+
   // class has to be public so that Class.forName.newInstance() will work
   public static final class ThreadingDocMaker extends DocMaker {
-  
+
     @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
@@ -131,14 +127,12 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       doc.add(new StringField(DATE_FIELD, "date_" + name, Field.Store.NO));
       return doc;
     }
-    
   }
 
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
-  private PerfRunData createPerfRunData(Path file, 
-                                        boolean allowEmptyDocs,
-                                        String docMakerName) throws Exception {
+  private PerfRunData createPerfRunData(Path file, boolean allowEmptyDocs, String docMakerName)
+      throws Exception {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
     props.setProperty("line.file.out", file.toAbsolutePath().toString());
@@ -153,11 +147,11 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     Config config = new Config(props);
     return new PerfRunData(config);
   }
-  
-  private void doReadTest(Path file, Type fileType, String expTitle,
-                          String expDate, String expBody) throws Exception {
+
+  private void doReadTest(Path file, Type fileType, String expTitle, String expDate, String expBody)
+      throws Exception {
     InputStream in = Files.newInputStream(file);
-    switch(fileType) {
+    switch (fileType) {
       case BZIP2:
         in = csFactory.createCompressorInputStream(CompressorStreamFactory.BZIP2, in);
         break;
@@ -167,9 +161,10 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       case PLAIN:
         break; // nothing to do
       default:
-        assertFalse("Unknown file type!",true); //fail, should not happen
+        assertFalse("Unknown file type!", true); // fail, should not happen
     }
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+    try (BufferedReader br =
+        new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
       String line = br.readLine();
       assertHeaderLine(line);
       line = br.readLine();
@@ -187,44 +182,46 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   }
 
   static void assertHeaderLine(String line) {
-    assertTrue("First line should be a header line",line.startsWith(WriteLineDocTask.FIELDS_HEADER_INDICATOR));
+    assertTrue(
+        "First line should be a header line",
+        line.startsWith(WriteLineDocTask.FIELDS_HEADER_INDICATOR));
   }
-  
+
   /* Tests WriteLineDocTask with a bzip2 format. */
   public void testBZip2() throws Exception {
-    
+
     // Create a document in bz2 format.
     Path file = getWorkDir().resolve("one-line.bz2");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.BZIP2, "title", "date", "body");
   }
-  
+
   /* Tests WriteLineDocTask with a gzip format. */
   public void testGZip() throws Exception {
-    
+
     // Create a document in gz format.
     Path file = getWorkDir().resolve("one-line.gz");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.GZIP, "title", "date", "body");
   }
-  
+
   public void testRegularFile() throws Exception {
-    
+
     // Create a document in regular format.
     Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.PLAIN, "title", "date", "body");
   }
 
@@ -237,10 +234,10 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.PLAIN, "title text", "date text", "body text two");
   }
-  
+
   public void testEmptyBody() throws Exception {
     // WriteLineDocTask threw away documents w/ no BODY element, even if they
     // had a TITLE element (LUCENE-1755). It should throw away documents if they
@@ -250,20 +247,20 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.PLAIN, "title", "date", null);
   }
-  
+
   public void testEmptyTitle() throws Exception {
     Path file = getWorkDir().resolve("one-line");
     PerfRunData runData = createPerfRunData(file, false, NoTitleDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     doReadTest(file, Type.PLAIN, "", "date", "body");
   }
-  
+
   /** Fail by default when there's only date */
   public void testJustDate() throws Exception {
     Path file = getWorkDir().resolve("one-line");
@@ -271,7 +268,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -286,7 +283,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -301,7 +298,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
-    
+
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       assertHeaderLine(line);
@@ -316,23 +313,24 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     final WriteLineDocTask wldt = new WriteLineDocTask(runData);
     Thread[] threads = new Thread[10];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread("t" + i) {
-        @Override
-        public void run() {
-          try {
-            wldt.doLogic();
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
+      threads[i] =
+          new Thread("t" + i) {
+            @Override
+            public void run() {
+              try {
+                wldt.doLogic();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            }
+          };
     }
-    
+
     for (Thread t : threads) t.start();
     for (Thread t : threads) t.join();
-    
+
     wldt.close();
-    
+
     Set<String> ids = new HashSet<>();
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search.spans;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
@@ -34,17 +33,17 @@ abstract class ContainSpans extends ConjunctionSpans {
   }
 
   @Override
-  public int startPosition() { 
-    return atFirstInCurrentDoc ? -1
-            : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-            : sourceSpans.startPosition(); 
+  public int startPosition() {
+    return atFirstInCurrentDoc
+        ? -1
+        : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS : sourceSpans.startPosition();
   }
 
   @Override
-  public int endPosition() { 
-    return atFirstInCurrentDoc ? -1
-            : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-            : sourceSpans.endPosition(); 
+  public int endPosition() {
+    return atFirstInCurrentDoc
+        ? -1
+        : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS : sourceSpans.endPosition();
   }
 
   @Override
@@ -57,5 +56,4 @@ abstract class ContainSpans extends ConjunctionSpans {
     bigSpans.collect(collector);
     littleSpans.collect(collector);
   }
-
 }

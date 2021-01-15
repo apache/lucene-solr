@@ -74,6 +74,10 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.impl.ClusterEventProducerFactory;
+import org.apache.solr.cluster.placement.PlacementPluginConfig;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.cluster.placement.impl.DelegatingPlacementPluginFactory;
+import org.apache.solr.cluster.placement.impl.PlacementPluginFactoryLoader;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -255,8 +259,8 @@ public class CoreContainer {
           !getZkController().getOverseer().isClosed(),
       (r) -> this.runAsync(r));
 
-  // initially these are the same to collect the plugin-based listeners during init
-  private ClusterEventProducer clusterEventProducer;
+  private volatile ClusterEventProducer clusterEventProducer;
+  private final DelegatingPlacementPluginFactory placementPluginFactory = new DelegatingPlacementPluginFactory();
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
@@ -895,6 +899,10 @@ public class CoreContainer {
       ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.readAPI);
       containerHandlers.getApiBag().registerObject(containerPluginsApi.editAPI);
+
+      // initialize the placement plugin factory wrapper
+      // with the plugin configuration from the registry
+      PlacementPluginFactoryLoader.load(placementPluginFactory, containerPluginsRegistry);
 
       // create target ClusterEventProducer (possibly from plugins)
       clusterEventProducer = clusterEventProducerFactory.create(containerPluginsRegistry);
@@ -2162,7 +2170,15 @@ public class CoreContainer {
     }
 
     if (tragicException != null && isZooKeeperAware()) {
-      getZkController().giveupLeadership(solrCore.getCoreDescriptor(), tragicException);
+      getZkController().giveupLeadership(solrCore.getCoreDescriptor());
+
+      try {
+        // If the error was something like a full file system disconnect, this probably won't help
+        // But if it is a transient disk failure then it's worth a try
+        solrCore.getSolrCoreState().newIndexWriter(solrCore, false); // should we rollback?
+      } catch (IOException e) {
+        log.warn("Could not roll index writer after tragedy");
+      }
     }
 
     return tragicException != null;
@@ -2178,6 +2194,10 @@ public class CoreContainer {
 
   public ClusterEventProducer getClusterEventProducer() {
     return clusterEventProducer;
+  }
+
+  public PlacementPluginFactory<? extends PlacementPluginConfig> getPlacementPluginFactory() {
+    return placementPluginFactory;
   }
 
   static {

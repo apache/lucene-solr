@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.util.Arrays;
-
 import org.apache.lucene.codecs.MutablePointValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntroSelector;
@@ -27,16 +26,18 @@ import org.apache.lucene.util.RadixSelector;
 import org.apache.lucene.util.Selector;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** Utility APIs for sorting and partitioning buffered points.
+/**
+ * Utility APIs for sorting and partitioning buffered points.
  *
- * @lucene.internal */
+ * @lucene.internal
+ */
 public final class MutablePointsReaderUtils {
 
   MutablePointsReaderUtils() {}
 
   /** Sort the given {@link MutablePointValues} based on its packed value then doc ID. */
-  public static void sort(BKDConfig config, int maxDoc,
-                          MutablePointValues reader, int from, int to) {
+  public static void sort(
+      BKDConfig config, int maxDoc, MutablePointValues reader, int from, int to) {
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new MSBRadixSorter(config.packedBytesLength + (bitsPerDocId + 7) / 8) {
 
@@ -78,8 +79,14 @@ public final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < config.packedBytesLength) {
               reader.getValue(j, scratch);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + k, pivot.offset + k + config.packedBytesLength - k,
-                  scratch.bytes, scratch.offset + k, scratch.offset + k + config.packedBytesLength - k);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      pivot.bytes,
+                      pivot.offset + k,
+                      pivot.offset + k + config.packedBytesLength - k,
+                      scratch.bytes,
+                      scratch.offset + k,
+                      scratch.offset + k + config.packedBytesLength - k);
               if (cmp != 0) {
                 return cmp;
               }
@@ -88,17 +95,22 @@ public final class MutablePointsReaderUtils {
           }
         };
       }
-
     }.sort(from, to);
   }
 
   /** Sort points on the given dimension. */
-  public static void sortByDim(BKDConfig config, int sortedDim, int[] commonPrefixLengths,
-                               MutablePointValues reader, int from, int to,
-                               BytesRef scratch1, BytesRef scratch2) {
+  public static void sortByDim(
+      BKDConfig config,
+      int sortedDim,
+      int[] commonPrefixLengths,
+      MutablePointValues reader,
+      int from,
+      int to,
+      BytesRef scratch1,
+      BytesRef scratch2) {
 
     final int start = sortedDim * config.bytesPerDim + commonPrefixLengths[sortedDim];
-    final int dimEnd =  sortedDim * config.bytesPerDim + config.bytesPerDim;
+    final int dimEnd = sortedDim * config.bytesPerDim + config.bytesPerDim;
     // No need for a fancy radix sort here, this is called on the leaves only so
     // there are not many values to sort
     new IntroSorter() {
@@ -120,11 +132,23 @@ public final class MutablePointsReaderUtils {
       @Override
       protected int comparePivot(int j) {
         reader.getValue(j, scratch2);
-        int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + start, pivot.offset + dimEnd, scratch2.bytes,
-            scratch2.offset + start, scratch2.offset + dimEnd);
+        int cmp =
+            Arrays.compareUnsigned(
+                pivot.bytes,
+                pivot.offset + start,
+                pivot.offset + dimEnd,
+                scratch2.bytes,
+                scratch2.offset + start,
+                scratch2.offset + dimEnd);
         if (cmp == 0) {
-          cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + config.packedIndexBytesLength, pivot.offset + config.packedBytesLength,
-              scratch2.bytes, scratch2.offset + config.packedIndexBytesLength, scratch2.offset + config.packedBytesLength);
+          cmp =
+              Arrays.compareUnsigned(
+                  pivot.bytes,
+                  pivot.offset + config.packedIndexBytesLength,
+                  pivot.offset + config.packedBytesLength,
+                  scratch2.bytes,
+                  scratch2.offset + config.packedIndexBytesLength,
+                  scratch2.offset + config.packedBytesLength);
           if (cmp == 0) {
             cmp = pivotDoc - reader.getDocID(j);
           }
@@ -134,21 +158,34 @@ public final class MutablePointsReaderUtils {
     }.sort(from, to);
   }
 
-  /** Partition points around {@code mid}. All values on the left must be less
-   *  than or equal to it and all values on the right must be greater than or
-   *  equal to it. */
-  public static void partition(BKDConfig config, int maxDoc, int splitDim, int commonPrefixLen,
-                               MutablePointValues reader, int from, int to, int mid,
-                               BytesRef scratch1, BytesRef scratch2) {
+  /**
+   * Partition points around {@code mid}. All values on the left must be less than or equal to it
+   * and all values on the right must be greater than or equal to it.
+   */
+  public static void partition(
+      BKDConfig config,
+      int maxDoc,
+      int splitDim,
+      int commonPrefixLen,
+      MutablePointValues reader,
+      int from,
+      int to,
+      int mid,
+      BytesRef scratch1,
+      BytesRef scratch2) {
     final int dimOffset = splitDim * config.bytesPerDim + commonPrefixLen;
     final int dimCmpBytes = config.bytesPerDim - commonPrefixLen;
-    final int dataCmpBytes = (config.numDims - config.numIndexDims) * config.bytesPerDim + dimCmpBytes;
+    final int dataCmpBytes =
+        (config.numDims - config.numIndexDims) * config.bytesPerDim + dimCmpBytes;
     final int bitsPerDocId = PackedInts.bitsRequired(maxDoc - 1);
     new RadixSelector(dataCmpBytes + (bitsPerDocId + 7) / 8) {
 
       @Override
       protected Selector getFallbackSelector(int k) {
-        final int dataStart = (k < dimCmpBytes) ? config.packedIndexBytesLength : config.packedIndexBytesLength + k - dimCmpBytes;
+        final int dataStart =
+            (k < dimCmpBytes)
+                ? config.packedIndexBytesLength
+                : config.packedIndexBytesLength + k - dimCmpBytes;
         final int dataEnd = config.numDims * config.bytesPerDim;
         return new IntroSelector() {
 
@@ -170,16 +207,28 @@ public final class MutablePointsReaderUtils {
           protected int comparePivot(int j) {
             if (k < dimCmpBytes) {
               reader.getValue(j, scratch2);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dimOffset + k, pivot.offset + dimOffset + dimCmpBytes,
-                  scratch2.bytes, scratch2.offset + dimOffset + k, scratch2.offset + dimOffset + dimCmpBytes);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      pivot.bytes,
+                      pivot.offset + dimOffset + k,
+                      pivot.offset + dimOffset + dimCmpBytes,
+                      scratch2.bytes,
+                      scratch2.offset + dimOffset + k,
+                      scratch2.offset + dimOffset + dimCmpBytes);
               if (cmp != 0) {
                 return cmp;
               }
             }
             if (k < dataCmpBytes) {
               reader.getValue(j, scratch2);
-              int cmp = Arrays.compareUnsigned(pivot.bytes, pivot.offset + dataStart, pivot.offset + dataEnd,
-                  scratch2.bytes, scratch2.offset + dataStart, scratch2.offset + dataEnd);
+              int cmp =
+                  Arrays.compareUnsigned(
+                      pivot.bytes,
+                      pivot.offset + dataStart,
+                      pivot.offset + dataEnd,
+                      scratch2.bytes,
+                      scratch2.offset + dataStart,
+                      scratch2.offset + dataEnd);
               if (cmp != 0) {
                 return cmp;
               }
@@ -199,7 +248,8 @@ public final class MutablePointsReaderUtils {
         if (k < dimCmpBytes) {
           return Byte.toUnsignedInt(reader.getByteAt(i, dimOffset + k));
         } else if (k < dataCmpBytes) {
-          return Byte.toUnsignedInt(reader.getByteAt(i, config.packedIndexBytesLength + k - dimCmpBytes));
+          return Byte.toUnsignedInt(
+              reader.getByteAt(i, config.packedIndexBytesLength + k - dimCmpBytes));
         } else {
           final int shift = bitsPerDocId - ((k - dataCmpBytes + 1) << 3);
           return (reader.getDocID(i) >>> Math.max(0, shift)) & 0xff;

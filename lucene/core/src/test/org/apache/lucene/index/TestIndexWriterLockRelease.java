@@ -16,30 +16,29 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * This tests the patch for issue #LUCENE-715 (IndexWriter does not
- * release its write lock when trying to open an index which does not yet
- * exist).
+ * This tests the patch for issue #LUCENE-715 (IndexWriter does not release its write lock when
+ * trying to open an index which does not yet exist).
  */
 public class TestIndexWriterLockRelease extends LuceneTestCase {
-  
+
   public void testIndexWriterLockRelease() throws IOException {
     Directory dir = newFSDirectory(createTempDir("testLockRelease"));
     try {
-      new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+      new IndexWriter(
+          dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
     } catch (FileNotFoundException | NoSuchFileException e) {
       try {
-        new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+        new IndexWriter(
+            dir, new IndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
       } catch (FileNotFoundException | NoSuchFileException e1) {
       }
     } finally {

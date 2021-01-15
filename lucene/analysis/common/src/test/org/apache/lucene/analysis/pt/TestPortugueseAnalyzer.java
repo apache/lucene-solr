@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.pt;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new PortugueseAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new PortugueseAnalyzer();
@@ -40,17 +37,16 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "não", new String[] {});
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("quilométricas"), false);
-    Analyzer a = new PortugueseAnalyzer( 
-        PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("quilométricas"), false);
+    Analyzer a = new PortugueseAnalyzer(PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "quilométricas", "quilométricas");
     checkOneTerm(a, "quilométricos", "quilometric");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new PortugueseAnalyzer();

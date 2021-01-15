@@ -16,15 +16,16 @@
  */
 package org.apache.lucene.search;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/** A Scorer for queries with a required part and an optional part.
- * Delays skipTo() on the optional part until a score() is needed.
+/**
+ * A Scorer for queries with a required part and an optional part. Delays skipTo() on the optional
+ * part until a score() is needed.
  */
 class ReqOptSumScorer extends Scorer {
   private final Scorer reqScorer;
@@ -45,9 +46,10 @@ class ReqOptSumScorer extends Scorer {
    *
    * @param reqScorer The required scorer. This must match.
    * @param optScorer The optional scorer. This is used for scoring only.
-   * @param scoreMode  How the produced scorers will be consumed.
+   * @param scoreMode How the produced scorers will be consumed.
    */
-  public ReqOptSumScorer(Scorer reqScorer, Scorer optScorer, ScoreMode scoreMode) throws IOException {
+  public ReqOptSumScorer(Scorer reqScorer, Scorer optScorer, ScoreMode scoreMode)
+      throws IOException {
     super(reqScorer.weight);
     assert reqScorer != null;
     assert optScorer != null;
@@ -78,155 +80,160 @@ class ReqOptSumScorer extends Scorer {
       reqScorer.advanceShallow(0);
       optScorer.advanceShallow(0);
       this.reqMaxScore = reqScorer.getMaxScore(NO_MORE_DOCS);
-      this.approximation = new DocIdSetIterator() {
-        int upTo = -1;
-        float maxScore;
+      this.approximation =
+          new DocIdSetIterator() {
+            int upTo = -1;
+            float maxScore;
 
-        private void moveToNextBlock(int target) throws IOException {
-          upTo = advanceShallow(target);
-          float reqMaxScoreBlock = reqScorer.getMaxScore(upTo);
-          maxScore = getMaxScore(upTo);
+            private void moveToNextBlock(int target) throws IOException {
+              upTo = advanceShallow(target);
+              float reqMaxScoreBlock = reqScorer.getMaxScore(upTo);
+              maxScore = getMaxScore(upTo);
 
-          // Potentially move to a conjunction
-          optIsRequired = reqMaxScoreBlock < minScore;
-        }
-
-        private int advanceImpacts(int target) throws IOException {
-          if (target > upTo) {
-            moveToNextBlock(target);
-          }
-
-          while (true) {
-            if (maxScore >= minScore) {
-              return target;
+              // Potentially move to a conjunction
+              optIsRequired = reqMaxScoreBlock < minScore;
             }
 
-            if (upTo == NO_MORE_DOCS) {
-              return NO_MORE_DOCS;
-            }
-
-            target = upTo + 1;
-
-            moveToNextBlock(target);
-          }
-        }
-
-        @Override
-        public int nextDoc() throws IOException {
-          return advanceInternal(reqApproximation.docID()+1);
-        }
-
-        @Override
-        public int advance(int target) throws IOException {
-          return advanceInternal(target);
-        }
-
-        private int advanceInternal(int target) throws IOException {
-          if (target == NO_MORE_DOCS) {
-            reqApproximation.advance(target);
-            return NO_MORE_DOCS;
-          }
-          int reqDoc = target;
-          advanceHead: for (;;) {
-            if (minScore != 0) {
-              reqDoc = advanceImpacts(reqDoc);
-            }
-            if (reqApproximation.docID() < reqDoc) {
-              reqDoc = reqApproximation.advance(reqDoc);
-            }
-            if (reqDoc == NO_MORE_DOCS || optIsRequired == false) {
-              return reqDoc;
-            }
-
-            int upperBound = reqMaxScore < minScore ? NO_MORE_DOCS : upTo;
-            if (reqDoc > upperBound) {
-              continue;
-            }
-
-            // Find the next common doc within the current block
-            for (;;) { // invariant: reqDoc >= optDoc
-              int optDoc = optApproximation.docID();
-              if (optDoc < reqDoc) {
-                optDoc = optApproximation.advance(reqDoc);
-              }
-              if (optDoc > upperBound) {
-                reqDoc = upperBound + 1;
-                continue advanceHead;
+            private int advanceImpacts(int target) throws IOException {
+              if (target > upTo) {
+                moveToNextBlock(target);
               }
 
-              if (optDoc != reqDoc) {
-                reqDoc = reqApproximation.advance(optDoc);
+              while (true) {
+                if (maxScore >= minScore) {
+                  return target;
+                }
+
+                if (upTo == NO_MORE_DOCS) {
+                  return NO_MORE_DOCS;
+                }
+
+                target = upTo + 1;
+
+                moveToNextBlock(target);
+              }
+            }
+
+            @Override
+            public int nextDoc() throws IOException {
+              return advanceInternal(reqApproximation.docID() + 1);
+            }
+
+            @Override
+            public int advance(int target) throws IOException {
+              return advanceInternal(target);
+            }
+
+            private int advanceInternal(int target) throws IOException {
+              if (target == NO_MORE_DOCS) {
+                reqApproximation.advance(target);
+                return NO_MORE_DOCS;
+              }
+              int reqDoc = target;
+              advanceHead:
+              for (; ; ) {
+                if (minScore != 0) {
+                  reqDoc = advanceImpacts(reqDoc);
+                }
+                if (reqApproximation.docID() < reqDoc) {
+                  reqDoc = reqApproximation.advance(reqDoc);
+                }
+                if (reqDoc == NO_MORE_DOCS || optIsRequired == false) {
+                  return reqDoc;
+                }
+
+                int upperBound = reqMaxScore < minScore ? NO_MORE_DOCS : upTo;
                 if (reqDoc > upperBound) {
-                  continue advanceHead;
+                  continue;
+                }
+
+                // Find the next common doc within the current block
+                for (; ; ) { // invariant: reqDoc >= optDoc
+                  int optDoc = optApproximation.docID();
+                  if (optDoc < reqDoc) {
+                    optDoc = optApproximation.advance(reqDoc);
+                  }
+                  if (optDoc > upperBound) {
+                    reqDoc = upperBound + 1;
+                    continue advanceHead;
+                  }
+
+                  if (optDoc != reqDoc) {
+                    reqDoc = reqApproximation.advance(optDoc);
+                    if (reqDoc > upperBound) {
+                      continue advanceHead;
+                    }
+                  }
+
+                  if (reqDoc == NO_MORE_DOCS || optDoc == reqDoc) {
+                    return reqDoc;
+                  }
                 }
               }
-
-              if (reqDoc == NO_MORE_DOCS || optDoc == reqDoc) {
-                return reqDoc;
-              }
             }
-          }
-        }
 
-        @Override
-        public int docID() {
-          return reqApproximation.docID();
-        }
+            @Override
+            public int docID() {
+              return reqApproximation.docID();
+            }
 
-        @Override
-        public long cost() {
-          return reqApproximation.cost();
-        }
-      };
+            @Override
+            public long cost() {
+              return reqApproximation.cost();
+            }
+          };
     }
 
     if (reqTwoPhase == null && optTwoPhase == null) {
       this.twoPhase = null;
     } else {
-      this.twoPhase = new TwoPhaseIterator(approximation) {
+      this.twoPhase =
+          new TwoPhaseIterator(approximation) {
 
-        @Override
-        public boolean matches() throws IOException {
-          if (reqTwoPhase != null && reqTwoPhase.matches() == false) {
-            return false;
-          }
-          if (optTwoPhase != null) {
-            if (optIsRequired) {
-              // The below condition is rare and can only happen if we transitioned to optIsRequired=true
-              // after the opt approximation was advanced and before it was confirmed.
-              if (reqScorer.docID() != optApproximation.docID()) {
-                if (optApproximation.docID() < reqScorer.docID()) {
-                  optApproximation.advance(reqScorer.docID());
-                }
-                if (reqScorer.docID() != optApproximation.docID()) {
-                  return false;
-                }
-              }
-              if (optTwoPhase.matches() == false) {
-                // Advance the iterator to make it clear it doesn't match the current doc id
-                optApproximation.nextDoc();
+            @Override
+            public boolean matches() throws IOException {
+              if (reqTwoPhase != null && reqTwoPhase.matches() == false) {
                 return false;
               }
-            } else if (optApproximation.docID() == reqScorer.docID() && optTwoPhase.matches() == false) {
-              // Advance the iterator to make it clear it doesn't match the current doc id
-              optApproximation.nextDoc();
+              if (optTwoPhase != null) {
+                if (optIsRequired) {
+                  // The below condition is rare and can only happen if we transitioned to
+                  // optIsRequired=true
+                  // after the opt approximation was advanced and before it was confirmed.
+                  if (reqScorer.docID() != optApproximation.docID()) {
+                    if (optApproximation.docID() < reqScorer.docID()) {
+                      optApproximation.advance(reqScorer.docID());
+                    }
+                    if (reqScorer.docID() != optApproximation.docID()) {
+                      return false;
+                    }
+                  }
+                  if (optTwoPhase.matches() == false) {
+                    // Advance the iterator to make it clear it doesn't match the current doc id
+                    optApproximation.nextDoc();
+                    return false;
+                  }
+                } else if (optApproximation.docID() == reqScorer.docID()
+                    && optTwoPhase.matches() == false) {
+                  // Advance the iterator to make it clear it doesn't match the current doc id
+                  optApproximation.nextDoc();
+                }
+              }
+              return true;
             }
-          }
-          return true;
-        }
 
-        @Override
-        public float matchCost() {
-          float matchCost = 1;
-          if (reqTwoPhase != null) {
-            matchCost += reqTwoPhase.matchCost();
-          }
-          if (optTwoPhase != null) {
-            matchCost += optTwoPhase.matchCost();
-          }
-          return matchCost;
-        }
-      };
+            @Override
+            public float matchCost() {
+              float matchCost = 1;
+              if (reqTwoPhase != null) {
+                matchCost += reqTwoPhase.matchCost();
+              }
+              if (optTwoPhase != null) {
+                matchCost += optTwoPhase.matchCost();
+              }
+              return matchCost;
+            }
+          };
     }
   }
 

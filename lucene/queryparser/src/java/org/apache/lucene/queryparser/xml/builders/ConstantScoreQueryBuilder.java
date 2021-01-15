@@ -24,9 +24,8 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
-/**
- * Builder for {@link ConstantScoreQuery}
- */
+
+/** Builder for {@link ConstantScoreQuery} */
 public class ConstantScoreQueryBuilder implements QueryBuilder {
 
   private final QueryBuilderFactory queryFactory;
@@ -46,5 +45,4 @@ public class ConstantScoreQueryBuilder implements QueryBuilder {
     }
     return q;
   }
-
 }

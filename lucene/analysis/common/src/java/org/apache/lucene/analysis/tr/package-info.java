@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Turkish.
- */
+/** Analyzer for Turkish. */
 package org.apache.lucene.analysis.tr;

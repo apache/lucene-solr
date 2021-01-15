@@ -19,14 +19,13 @@ package org.apache.lucene.analysis.opennlp;
 
 import java.io.IOException;
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.opennlp.tools.NLPSentenceDetectorOp;
 import org.apache.lucene.analysis.opennlp.tools.NLPTokenizerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
+import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.TokenizerFactory;
-import org.apache.lucene.util.AttributeFactory;
 
 /**
  * Factory for {@link OpenNLPTokenizer}.
@@ -37,6 +36,7 @@ import org.apache.lucene.util.AttributeFactory;
  *     &lt;tokenizer class="solr.OpenNLPTokenizerFactory" sentenceModel="filename" tokenizerModel="filename"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 7.3.0
  * @lucene.spi {@value #NAME}
  */
@@ -51,11 +51,11 @@ public class OpenNLPTokenizerFactory extends TokenizerFactory implements Resourc
   private final String sentenceModelFile;
   private final String tokenizerModelFile;
 
-  public OpenNLPTokenizerFactory(Map<String,String> args) {
+  public OpenNLPTokenizerFactory(Map<String, String> args) {
     super(args);
     sentenceModelFile = require(args, SENTENCE_MODEL);
     tokenizerModelFile = require(args, TOKENIZER_MODEL);
-    if ( ! args.isEmpty()) {
+    if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }

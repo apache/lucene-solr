@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -48,8 +47,11 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
 
   public void testPayloadSpanUtil() throws Exception {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new PayloadAnalyzer()).setSimilarity(new ClassicSimilarity()));
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(new PayloadAnalyzer()).setSimilarity(new ClassicSimilarity()));
 
     Document doc = new Document();
     doc.add(newTextField(FIELD, "xx rr yy mm  pp", Field.Store.YES));
@@ -62,9 +64,9 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
     PayloadSpanUtil psu = new PayloadSpanUtil(searcher.getTopReaderContext());
 
     Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(FIELD, "rr")));
-    if(VERBOSE) {
+    if (VERBOSE) {
       System.out.println("Num payloads:" + payloads.size());
-      for (final byte [] bytes : payloads) {
+      for (final byte[] bytes : payloads) {
         System.out.println(new String(bytes, StandardCharsets.UTF_8));
       }
     }
@@ -72,7 +74,7 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
     directory.close();
   }
 
-  final static class PayloadAnalyzer extends Analyzer {
+  static final class PayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
@@ -108,9 +110,9 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
 
         if (!nopayload.contains(token)) {
           if (entities.contains(token)) {
-            payloadAtt.setPayload(new BytesRef(token + ":Entity:"+ pos ));
+            payloadAtt.setPayload(new BytesRef(token + ":Entity:" + pos));
           } else {
-            payloadAtt.setPayload(new BytesRef(token + ":Noise:" + pos ));
+            payloadAtt.setPayload(new BytesRef(token + ":Noise:" + pos));
           }
         }
         pos += posIncrAtt.getPositionIncrement();
@@ -125,5 +127,4 @@ public class TestPayloadSpanUtil extends LuceneTestCase {
       this.pos = 0;
     }
   }
-
 }

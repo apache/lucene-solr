@@ -90,11 +90,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     // compute nodes, some live, some down
     final int maxNodesOfAType = perShardCounts.stream() // not too important how many we have, but lets have plenty
         .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas).max().getAsInt();
-    List<String> liveNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.0." + i + "_8983").collect(Collectors.toList());
+    List<String> liveNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.0." + i + ":8983_").collect(Collectors.toList());
     Collections.shuffle(liveNodes, random());
     String thisNode = liveNodes.get(0);
     List<String> otherLiveNodes = liveNodes.subList(1, liveNodes.size());
-    List<String> downNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.1." + i + "_8983").collect(Collectors.toList());
+    List<String> downNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.1." + i + ":8983_").collect(Collectors.toList());
 
     // divide into two collections
     int numCol1 = random().nextInt(perShardCounts.size());

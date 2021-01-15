@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LineFileDocs;
@@ -66,11 +64,11 @@ public class TestForceMergeForever extends LuceneTestCase {
     w.getConfig().setMaxBufferedDocs(TestUtil.nextInt(random(), 2, 11));
     final int numStartDocs = atLeast(20);
     final LineFileDocs docs = new LineFileDocs(random());
-    for(int docIDX=0;docIDX<numStartDocs;docIDX++) {
+    for (int docIDX = 0; docIDX < numStartDocs; docIDX++) {
       w.addDocument(docs.nextDoc());
     }
     MergePolicy mp = w.getConfig().getMergePolicy();
-    final int mergeAtOnce = 1+w.cloneSegmentInfos().size();
+    final int mergeAtOnce = 1 + w.cloneSegmentInfos().size();
     if (mp instanceof TieredMergePolicy) {
       ((TieredMergePolicy) mp).setMaxMergeAtOnce(mergeAtOnce);
     } else if (mp instanceof LogMergePolicy) {
@@ -84,21 +82,22 @@ public class TestForceMergeForever extends LuceneTestCase {
 
     final AtomicBoolean doStop = new AtomicBoolean();
     w.getConfig().setMaxBufferedDocs(2);
-    Thread t = new Thread() {
-      @Override
-      public void run() {
-        try {
-          while (doStop.get() == false) {
-            w.updateDocument(new Term("docid", "" + random().nextInt(numStartDocs)),
-                             docs.nextDoc());
-            // Force deletes to apply
-            w.getReader().close();
+    Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              while (doStop.get() == false) {
+                w.updateDocument(
+                    new Term("docid", "" + random().nextInt(numStartDocs)), docs.nextDoc());
+                // Force deletes to apply
+                w.getReader().close();
+              }
+            } catch (Throwable t) {
+              throw new RuntimeException(t);
+            }
           }
-        } catch (Throwable t) {
-          throw new RuntimeException(t);
-        }
-      }
-      };
+        };
     t.start();
     w.forceMerge(1);
     doStop.set(true);

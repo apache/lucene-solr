@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
@@ -32,12 +31,11 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 
-/** FirstPassGroupingCollector is the first of two passes necessary
- *  to collect grouped hits.  This pass gathers the top N sorted
- *  groups. Groups are defined by a {@link GroupSelector}
+/**
+ * FirstPassGroupingCollector is the first of two passes necessary to collect grouped hits. This
+ * pass gathers the top N sorted groups. Groups are defined by a {@link GroupSelector}
  *
- *  <p>See {@link org.apache.lucene.search.grouping} for more
- *  details including a full code example.</p>
+ * <p>See {@link org.apache.lucene.search.grouping} for more details including a full code example.
  *
  * @lucene.experimental
  */
@@ -56,6 +54,7 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
   // Set once we reach topNGroups unique groups:
   /** @lucene.internal */
   protected TreeSet<CollectedSearchGroup<T>> orderedGroups;
+
   private int docBase;
   private int spareSlot;
 
@@ -63,16 +62,14 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
    * Create the first pass collector.
    *
    * @param groupSelector a GroupSelector used to defined groups
-   * @param groupSort The {@link Sort} used to sort the
-   *    groups.  The top sorted document within each group
-   *    according to groupSort, determines how that group
-   *    sorts against other groups.  This must be non-null,
-   *    ie, if you want to groupSort by relevance use
-   *    Sort.RELEVANCE.
+   * @param groupSort The {@link Sort} used to sort the groups. The top sorted document within each
+   *     group according to groupSort, determines how that group sorts against other groups. This
+   *     must be non-null, ie, if you want to groupSort by relevance use Sort.RELEVANCE.
    * @param topNGroups How many top groups to keep.
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public FirstPassGroupingCollector(GroupSelector<T> groupSelector, Sort groupSort, int topNGroups) {
+  public FirstPassGroupingCollector(
+      GroupSelector<T> groupSelector, Sort groupSort, int topNGroups) {
     this.groupSelector = groupSelector;
     if (topNGroups < 1) {
       throw new IllegalArgumentException("topNGroups must be >= 1 (got " + topNGroups + ")");
@@ -91,7 +88,8 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     for (int i = 0; i < sortFields.length; i++) {
       final SortField sortField = sortFields[i];
 
-      // use topNGroups + 1 so we have a spare slot to use for comparing (tracked by this.spareSlot):
+      // use topNGroups + 1 so we have a spare slot to use for comparing (tracked by
+      // this.spareSlot):
       comparators[i] = sortField.getComparator(topNGroups + 1, i);
       reversed[i] = sortField.getReverse() ? -1 : 1;
     }
@@ -106,16 +104,16 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
   }
 
   /**
-   * Returns top groups, starting from offset.  This may
-   * return null, if no groups were collected, or if the
-   * number of unique groups collected is &lt;= offset.
+   * Returns top groups, starting from offset. This may return null, if no groups were collected, or
+   * if the number of unique groups collected is &lt;= offset.
    *
    * @param groupOffset The offset in the collected groups
    * @return top groups, starting from offset
    */
   public Collection<SearchGroup<T>> getTopGroups(int groupOffset) throws IOException {
 
-    //System.out.println("FP.getTopGroups groupOffset=" + groupOffset + " fillFields=" + fillFields + " groupMap.size()=" + groupMap.size());
+    // System.out.println("FP.getTopGroups groupOffset=" + groupOffset + " fillFields=" + fillFields
+    // + " groupMap.size()=" + groupMap.size());
 
     if (groupOffset < 0) {
       throw new IllegalArgumentException("groupOffset must be >= 0 (got " + groupOffset + ")");
@@ -132,20 +130,22 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     final Collection<SearchGroup<T>> result = new ArrayList<>();
     int upto = 0;
     final int sortFieldCount = comparators.length;
-    for(CollectedSearchGroup<T> group : orderedGroups) {
+    for (CollectedSearchGroup<T> group : orderedGroups) {
       if (upto++ < groupOffset) {
         continue;
       }
-      // System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.toString()));
+      // System.out.println("  group=" + (group.groupValue == null ? "null" :
+      // group.groupValue.toString()));
       SearchGroup<T> searchGroup = new SearchGroup<>();
       searchGroup.groupValue = group.groupValue;
       searchGroup.sortValues = new Object[sortFieldCount];
-      for(int sortFieldIDX=0;sortFieldIDX<sortFieldCount;sortFieldIDX++) {
-        searchGroup.sortValues[sortFieldIDX] = comparators[sortFieldIDX].value(group.comparatorSlot);
+      for (int sortFieldIDX = 0; sortFieldIDX < sortFieldCount; sortFieldIDX++) {
+        searchGroup.sortValues[sortFieldIDX] =
+            comparators[sortFieldIDX].value(group.comparatorSlot);
       }
       result.add(searchGroup);
     }
-    //System.out.println("  return " + result.size() + " groups");
+    // System.out.println("  return " + result.size() + " groups");
     return result;
   }
 
@@ -168,7 +168,7 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     // Downside: if the number of unique groups is very low, this is
     // wasted effort as we will most likely be updating an existing group.
     if (orderedGroups != null) {
-      for (int compIDX = 0;; compIDX++) {
+      for (int compIDX = 0; ; compIDX++) {
         final int c = reversed[compIDX] * leafComparators[compIDX].compareBottom(doc);
         if (c < 0) {
           // Definitely not competitive. So don't even bother to continue
@@ -190,8 +190,9 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
   @Override
   public void collect(int doc) throws IOException {
 
-    if (isCompetitive(doc) == false)
+    if (isCompetitive(doc) == false) {
       return;
+    }
 
     // TODO: should we add option to mean "ignore docs that
     // don't have the group field" (instead of stuffing them
@@ -236,7 +237,7 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
       // We already tested that the document is competitive, so replace
       // the bottom group with this new group.
       final CollectedSearchGroup<T> bottomGroup = orderedGroups.pollLast();
-      assert orderedGroups.size() == topNGroups -1;
+      assert orderedGroups.size() == topNGroups - 1;
 
       groupMap.remove(bottomGroup.groupValue);
 
@@ -261,16 +262,17 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     }
 
     // Update existing group:
-    for (int compIDX = 0;; compIDX++) {
+    for (int compIDX = 0; ; compIDX++) {
       leafComparators[compIDX].copy(spareSlot, doc);
 
-      final int c = reversed[compIDX] * comparators[compIDX].compare(group.comparatorSlot, spareSlot);
+      final int c =
+          reversed[compIDX] * comparators[compIDX].compare(group.comparatorSlot, spareSlot);
       if (c < 0) {
         // Definitely not competitive.
         return;
       } else if (c > 0) {
         // Definitely competitive; set remaining comparators:
-        for (int compIDX2=compIDX+1; compIDX2<comparators.length; compIDX2++) {
+        for (int compIDX2 = compIDX + 1; compIDX2 < comparators.length; compIDX2++) {
           leafComparators[compIDX2].copy(spareSlot, doc);
         }
         break;
@@ -289,7 +291,7 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
     if (orderedGroups != null) {
       prevLast = orderedGroups.last();
       orderedGroups.remove(group);
-      assert orderedGroups.size() == topNGroups-1;
+      assert orderedGroups.size() == topNGroups - 1;
     } else {
       prevLast = null;
     }
@@ -306,7 +308,8 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
       orderedGroups.add(group);
       assert orderedGroups.size() == topNGroups;
       final CollectedSearchGroup<?> newLast = orderedGroups.last();
-      // If we changed the value of the last group, or changed which group was last, then update bottom:
+      // If we changed the value of the last group, or changed which group was last, then update
+      // bottom:
       if (group == newLast || prevLast != newLast) {
         for (LeafFieldComparator fc : leafComparators) {
           fc.setBottom(newLast.comparatorSlot);
@@ -316,20 +319,21 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
   }
 
   private void buildSortedSet() throws IOException {
-    final Comparator<CollectedSearchGroup<?>> comparator = new Comparator<CollectedSearchGroup<?>>() {
-      @Override
-      public int compare(CollectedSearchGroup<?> o1, CollectedSearchGroup<?> o2) {
-        for (int compIDX = 0;; compIDX++) {
-          FieldComparator<?> fc = comparators[compIDX];
-          final int c = reversed[compIDX] * fc.compare(o1.comparatorSlot, o2.comparatorSlot);
-          if (c != 0) {
-            return c;
-          } else if (compIDX == compIDXEnd) {
-            return o1.topDoc - o2.topDoc;
+    final Comparator<CollectedSearchGroup<?>> comparator =
+        new Comparator<CollectedSearchGroup<?>>() {
+          @Override
+          public int compare(CollectedSearchGroup<?> o1, CollectedSearchGroup<?> o2) {
+            for (int compIDX = 0; ; compIDX++) {
+              FieldComparator<?> fc = comparators[compIDX];
+              final int c = reversed[compIDX] * fc.compare(o1.comparatorSlot, o2.comparatorSlot);
+              if (c != 0) {
+                return c;
+              } else if (compIDX == compIDXEnd) {
+                return o1.topDoc - o2.topDoc;
+              }
+            }
           }
-        }
-      }
-    };
+        };
 
     orderedGroups = new TreeSet<>(comparator);
     orderedGroups.addAll(groupMap.values());
@@ -343,18 +347,14 @@ public class FirstPassGroupingCollector<T> extends SimpleCollector {
   @Override
   protected void doSetNextReader(LeafReaderContext readerContext) throws IOException {
     docBase = readerContext.docBase;
-    for (int i=0; i<comparators.length; i++) {
+    for (int i = 0; i < comparators.length; i++) {
       leafComparators[i] = comparators[i].getLeafComparator(readerContext);
     }
     groupSelector.setNextReader(readerContext);
   }
 
-  /**
-   * @return the GroupSelector used for this Collector
-   */
+  /** @return the GroupSelector used for this Collector */
   public GroupSelector<T> getGroupSelector() {
     return groupSelector;
   }
-
 }
-

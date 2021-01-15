@@ -22,10 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Used by MockDirectoryWrapper to create an input stream that
- * keeps track of when it's been closed.
+ * Used by MockDirectoryWrapper to create an input stream that keeps track of when it's been closed.
  */
-
 public class MockIndexInputWrapper extends IndexInput {
   private MockDirectoryWrapper dir;
   final String name;
@@ -34,14 +32,15 @@ public class MockIndexInputWrapper extends IndexInput {
 
   // Which MockIndexInputWrapper we were cloned from, or null if we are not a clone:
   private final MockIndexInputWrapper parent;
-  
+
   /** Sole constructor */
-  public MockIndexInputWrapper(MockDirectoryWrapper dir, String name, IndexInput delegate, MockIndexInputWrapper parent) {
+  public MockIndexInputWrapper(
+      MockDirectoryWrapper dir, String name, IndexInput delegate, MockIndexInputWrapper parent) {
     super("MockIndexInputWrapper(name=" + name + " delegate=" + delegate + ")");
 
     // If we are a clone then our parent better not be a clone!
     assert parent == null || parent.parent == null;
-    
+
     this.parent = parent;
     this.name = name;
     this.dir = dir;
@@ -55,7 +54,7 @@ public class MockIndexInputWrapper extends IndexInput {
       return;
     }
     closed = true;
-    
+
     try (Closeable delegate = this.delegate) {
       // Pending resolution on LUCENE-686 we may want to
       // remove the conditional check so we also track that
@@ -67,9 +66,10 @@ public class MockIndexInputWrapper extends IndexInput {
       dir.maybeThrowDeterministicException();
     }
   }
-  
+
   private void ensureOpen() {
-    // TODO: not great this is a volatile read (closed) ... we should deploy heavy JVM voodoo like SwitchPoint to avoid this
+    // TODO: not great this is a volatile read (closed) ... we should deploy heavy JVM voodoo like
+    // SwitchPoint to avoid this
     if (closed) {
       throw new RuntimeException("Abusing closed IndexInput!");
     }
@@ -86,7 +86,8 @@ public class MockIndexInputWrapper extends IndexInput {
     }
     dir.inputCloneCount.incrementAndGet();
     IndexInput iiclone = delegate.clone();
-    MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, name, iiclone, parent != null ? parent : this);
+    MockIndexInputWrapper clone =
+        new MockIndexInputWrapper(dir, name, iiclone, parent != null ? parent : this);
     // Pending resolution on LUCENE-686 we may want to
     // uncomment this code so that we also track that all
     // clones get closed:
@@ -112,7 +113,8 @@ public class MockIndexInputWrapper extends IndexInput {
     }
     dir.inputCloneCount.incrementAndGet();
     IndexInput slice = delegate.slice(sliceDescription, offset, length);
-    MockIndexInputWrapper clone = new MockIndexInputWrapper(dir, sliceDescription, slice, parent != null ? parent : this);
+    MockIndexInputWrapper clone =
+        new MockIndexInputWrapper(dir, sliceDescription, slice, parent != null ? parent : this);
     return clone;
   }
 
@@ -147,10 +149,15 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
-      throws IOException {
+  public void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
     ensureOpen();
     delegate.readBytes(b, offset, len, useBuffer);
+  }
+
+  @Override
+  public void readLEFloats(float[] floats, int offset, int len) throws IOException {
+    ensureOpen();
+    delegate.readLEFloats(floats, offset, len);
   }
 
   @Override
@@ -208,7 +215,7 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public Map<String,String> readMapOfStrings() throws IOException {
+  public Map<String, String> readMapOfStrings() throws IOException {
     ensureOpen();
     return delegate.readMapOfStrings();
   }
@@ -224,4 +231,3 @@ public class MockIndexInputWrapper extends IndexInput {
     return "MockIndexInputWrapper(" + delegate + ")";
   }
 }
-

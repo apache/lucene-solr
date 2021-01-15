@@ -25,24 +25,21 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
-/**  
- * A {@code FilterFileChannel} contains another 
- * {@code FileChannel}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterFileChannel} contains another {@code FileChannel}, which it uses as its basic
+ * source of data, possibly transforming the data along the way or providing additional
+ * functionality.
  */
 public abstract class FilterFileChannel extends FileChannel {
-  
-  /** 
-   * The underlying {@code FileChannel} instance. 
-   */
+
+  /** The underlying {@code FileChannel} instance. */
   protected final FileChannel delegate;
-  
+
   /**
-   * Construct a {@code FilterFileChannel} based on 
-   * the specified base channel.
-   * <p>
-   * Note that base channel is closed if this channel is closed.
+   * Construct a {@code FilterFileChannel} based on the specified base channel.
+   *
+   * <p>Note that base channel is closed if this channel is closed.
+   *
    * @param delegate specified base channel.
    */
   public FilterFileChannel(FileChannel delegate) {

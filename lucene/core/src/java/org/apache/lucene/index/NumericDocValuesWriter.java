@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitSet;
@@ -27,10 +27,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-/** Buffers up pending long per doc, then flushes when
- *  segment flushes. */
+/** Buffers up pending long per doc, then flushes when segment flushes. */
 class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
   private PackedLongValues.Builder pending;
@@ -52,7 +49,10 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
   public void addValue(int docID, long value) {
     if (docID <= lastDocID) {
-      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+      throw new IllegalArgumentException(
+          "DocValuesField \""
+              + fieldInfo.name
+              + "\" appears more than once in this document (only one value is allowed per field)");
     }
 
     pending.add(value);
@@ -77,7 +77,8 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
   }
 
-  static NumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues) throws IOException {
+  static NumericDVs sortDocValues(int maxDoc, Sorter.DocMap sortMap, NumericDocValues oldDocValues)
+      throws IOException {
     FixedBitSet docsWithField = new FixedBitSet(maxDoc);
     long[] values = new long[maxDoc];
     while (true) {
@@ -93,32 +94,35 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
   }
 
   @Override
-  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer) throws IOException {
+  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, DocValuesConsumer dvConsumer)
+      throws IOException {
     if (finalValues == null) {
       finalValues = pending.build();
     }
     final NumericDVs sorted;
     if (sortMap != null) {
-      NumericDocValues oldValues = new BufferedNumericDocValues(finalValues, docsWithField.iterator());
+      NumericDocValues oldValues =
+          new BufferedNumericDocValues(finalValues, docsWithField.iterator());
       sorted = sortDocValues(state.segmentInfo.maxDoc(), sortMap, oldValues);
     } else {
       sorted = null;
     }
 
-    dvConsumer.addNumericField(fieldInfo,
-                               new EmptyDocValuesProducer() {
-                                 @Override
-                                 public NumericDocValues getNumeric(FieldInfo fieldInfo) {
-                                   if (fieldInfo != NumericDocValuesWriter.this.fieldInfo) {
-                                     throw new IllegalArgumentException("wrong fieldInfo");
-                                   }
-                                   if (sorted == null) {
-                                     return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
-                                   } else {
-                                     return new SortingNumericDocValues(sorted);
-                                   }
-                                 }
-                               });
+    dvConsumer.addNumericField(
+        fieldInfo,
+        new EmptyDocValuesProducer() {
+          @Override
+          public NumericDocValues getNumeric(FieldInfo fieldInfo) {
+            if (fieldInfo != NumericDocValuesWriter.this.fieldInfo) {
+              throw new IllegalArgumentException("wrong fieldInfo");
+            }
+            if (sorted == null) {
+              return new BufferedNumericDocValues(finalValues, docsWithField.iterator());
+            } else {
+              return new SortingNumericDocValues(sorted);
+            }
+          }
+        });
   }
 
   // iterates over the values we have in ram
@@ -184,10 +188,10 @@ class NumericDocValuesWriter extends DocValuesWriter<NumericDocValues> {
 
     @Override
     public int nextDoc() {
-      if (docID+1 == dvs.docsWithField.length()) {
+      if (docID + 1 == dvs.docsWithField.length()) {
         docID = NO_MORE_DOCS;
       } else {
-        docID = dvs.docsWithField.nextSetBit(docID+1);
+        docID = dvs.docsWithField.nextSetBit(docID + 1);
       }
       return docID;
     }

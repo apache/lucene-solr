@@ -16,22 +16,21 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
-
-import java.io.IOException;
 
 /**
  * Builds a BooleanQuery from all of the terms found in the XML element using the choice of analyzer
@@ -60,8 +59,7 @@ public class TermsQueryBuilder implements QueryBuilder {
         bq.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.SHOULD));
       }
       ts.end();
-    }
-    catch (IOException ioe) {
+    } catch (IOException ioe) {
       throw new RuntimeException("Error constructing terms from index:" + ioe);
     }
 
@@ -69,5 +67,4 @@ public class TermsQueryBuilder implements QueryBuilder {
     float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
     return new BoostQuery(q, boost);
   }
-
 }

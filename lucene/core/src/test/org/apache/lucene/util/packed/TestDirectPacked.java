@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.util.Random;
-
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -29,7 +27,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDirectPacked extends LuceneTestCase {
-  
+
   /** simple encode/decode */
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
@@ -44,7 +42,8 @@ public class TestDirectPacked extends LuceneTestCase {
     writer.finish();
     output.close();
     IndexInput input = dir.openInput("foo", IOContext.DEFAULT);
-    LongValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue, 0);
+    LongValues reader =
+        DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsPerValue, 0);
     assertEquals(1, reader.get(0));
     assertEquals(0, reader.get(1));
     assertEquals(2, reader.get(2));
@@ -53,7 +52,7 @@ public class TestDirectPacked extends LuceneTestCase {
     input.close();
     dir.close();
   }
-  
+
   /** test exception is delivered if you add the wrong number of values */
   public void testNotEnoughValues() throws Exception {
     Directory dir = newDirectory();
@@ -64,15 +63,18 @@ public class TestDirectPacked extends LuceneTestCase {
     writer.add(0);
     writer.add(2);
     writer.add(1);
-    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
-      writer.finish();
-    });
+    IllegalStateException expected =
+        expectThrows(
+            IllegalStateException.class,
+            () -> {
+              writer.finish();
+            });
     assertTrue(expected.getMessage().startsWith("Wrong number of values added"));
 
     output.close();
     dir.close();
   }
-  
+
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
     for (int bpv = 1; bpv <= 64; bpv++) {
@@ -95,7 +97,7 @@ public class TestDirectPacked extends LuceneTestCase {
     int numIters = TEST_NIGHTLY ? 100 : 10;
     for (int i = 0; i < numIters; i++) {
       long original[] = randomLongs(random, bpv);
-      int bitsRequired = bpv == 64 ? 64 : DirectWriter.bitsRequired(1L<<(bpv-1));
+      int bitsRequired = bpv == 64 ? 64 : DirectWriter.bitsRequired(1L << (bpv - 1));
       String name = "bpv" + bpv + "_" + i;
       IndexOutput output = directory.createOutput(name, IOContext.DEFAULT);
       for (long j = 0; j < offset; ++j) {
@@ -108,14 +110,16 @@ public class TestDirectPacked extends LuceneTestCase {
       writer.finish();
       output.close();
       IndexInput input = directory.openInput(name, IOContext.DEFAULT);
-      LongValues reader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bitsRequired, offset);
+      LongValues reader =
+          DirectReader.getInstance(
+              input.randomAccessSlice(0, input.length()), bitsRequired, offset);
       for (int j = 0; j < original.length; j++) {
         assertEquals("bpv=" + bpv, original[j], reader.get(j));
       }
       input.close();
     }
   }
-    
+
   private long[] randomLongs(MyRandom random, int bpv) {
     int amount = random.nextInt(5000);
     long longs[] = new long[amount];
@@ -129,16 +133,16 @@ public class TestDirectPacked extends LuceneTestCase {
   static class MyRandom extends Random {
     byte buffer[] = new byte[8];
     ByteArrayDataInput input = new ByteArrayDataInput();
-    
+
     MyRandom(long seed) {
       super(seed);
     }
-    
+
     public synchronized long nextLong(int bpv) {
       nextBytes(buffer);
       input.reset(buffer);
       long bits = input.readLong();
-      return bits >>> (64-bpv);
+      return bits >>> (64 - bpv);
     }
   }
 }

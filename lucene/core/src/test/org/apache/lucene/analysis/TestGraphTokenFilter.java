@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -111,7 +110,7 @@ public class TestGraphTokenFilter extends BaseTokenStreamTestCase {
     assertFalse(graph.incrementGraph());
     assertEquals(8, graph.cachedTokenCount());
 
-    //tok.setReader(new StringReader("a b/c d e/f:3 g/h i j k"));
+    // tok.setReader(new StringReader("a b/c d e/f:3 g/h i j k"));
 
     assertTrue(graph.incrementBaseToken());
     assertEquals("e", termAtt.toString());
@@ -159,17 +158,14 @@ public class TestGraphTokenFilter extends BaseTokenStreamTestCase {
     assertFalse(graph.incrementGraph());
     assertFalse(graph.incrementBaseToken());
     assertEquals(8, graph.cachedTokenCount());
-
   }
 
   public void testTrailingPositions() throws IOException {
 
     // a/b:2 c _
-    CannedTokenStream cts = new CannedTokenStream(1, 5,
-        new Token("a", 0, 1),
-        new Token("b", 0, 0, 1, 2),
-        new Token("c", 1, 2, 3)
-    );
+    CannedTokenStream cts =
+        new CannedTokenStream(
+            1, 5, new Token("a", 0, 1), new Token("b", 0, 0, 1, 2), new Token("c", 1, 2, 3));
 
     GraphTokenFilter gts = new TestFilter(cts);
     assertFalse(gts.incrementGraph());
@@ -192,20 +188,22 @@ public class TestGraphTokenFilter extends BaseTokenStreamTestCase {
     }
 
     GraphTokenFilter gts = new TestFilter(new CannedTokenStream(tokens));
-    Exception e = expectThrows(IllegalStateException.class, () -> {
-      gts.reset();
-      gts.incrementBaseToken();
-      while (true) {
-        gts.incrementGraphToken();
-      }
-    });
+    Exception e =
+        expectThrows(
+            IllegalStateException.class,
+            () -> {
+              gts.reset();
+              gts.incrementBaseToken();
+              while (true) {
+                gts.incrementGraphToken();
+              }
+            });
     assertEquals("Too many cached tokens (> 100)", e.getMessage());
 
     gts.reset();
     // after reset, the cache should be cleared and so we can read ahead once more
     gts.incrementBaseToken();
     gts.incrementGraphToken();
-
   }
 
   public void testGraphPathCountLimits() {
@@ -217,20 +215,22 @@ public class TestGraphTokenFilter extends BaseTokenStreamTestCase {
       tokens[i] = new Token("term" + i, i % 2, 2, 3);
     }
 
-    Exception e = expectThrows(IllegalStateException.class, () -> {
-      GraphTokenFilter graph = new TestFilter(new CannedTokenStream(tokens));
-      graph.reset();
-      graph.incrementBaseToken();
-      for (int i = 0; i < 10; i++) {
-        graph.incrementGraphToken();
-      }
-      while (graph.incrementGraph()) {
-        for (int i = 0; i < 10; i++) {
-          graph.incrementGraphToken();
-        }
-      }
-    });
+    Exception e =
+        expectThrows(
+            IllegalStateException.class,
+            () -> {
+              GraphTokenFilter graph = new TestFilter(new CannedTokenStream(tokens));
+              graph.reset();
+              graph.incrementBaseToken();
+              for (int i = 0; i < 10; i++) {
+                graph.incrementGraphToken();
+              }
+              while (graph.incrementGraph()) {
+                for (int i = 0; i < 10; i++) {
+                  graph.incrementGraphToken();
+                }
+              }
+            });
     assertEquals("Too many graph paths (> 1000)", e.getMessage());
   }
-
 }

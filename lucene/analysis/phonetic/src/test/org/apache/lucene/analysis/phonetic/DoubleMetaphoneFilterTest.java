@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -31,79 +30,83 @@ public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
   public void testSize4FalseInject() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("international");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
-    assertTokenStreamContents(filter, new String[] { "ANTR" });
+    assertTokenStreamContents(filter, new String[] {"ANTR"});
   }
 
   public void testSize4TrueInject() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("international");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, true);
-    assertTokenStreamContents(filter, new String[] { "international", "ANTR" });
+    assertTokenStreamContents(filter, new String[] {"international", "ANTR"});
   }
 
   public void testAlternateInjectFalse() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("Kuczewski");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
-    assertTokenStreamContents(filter, new String[] { "KSSK", "KXFS" });
+    assertTokenStreamContents(filter, new String[] {"KSSK", "KXFS"});
   }
 
   public void testSize8FalseInject() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("international");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
-    assertTokenStreamContents(filter, new String[] { "ANTRNXNL" });
+    assertTokenStreamContents(filter, new String[] {"ANTRNXNL"});
   }
 
   public void testNonConvertableStringsWithInject() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("12345 #$%@#^%&");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, true);
-    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
+    assertTokenStreamContents(filter, new String[] {"12345", "#$%@#^%&"});
   }
 
   public void testNonConvertableStringsWithoutInject() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("12345 #$%@#^%&");
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
-    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
-    
+    assertTokenStreamContents(filter, new String[] {"12345", "#$%@#^%&"});
+
     // should have something after the stream
     stream = whitespaceMockTokenizer("12345 #$%@#^%& hello");
     filter = new DoubleMetaphoneFilter(stream, 8, false);
-    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&", "HL" });
+    assertTokenStreamContents(filter, new String[] {"12345", "#$%@#^%&", "HL"});
   }
 
   public void testRandom() throws Exception {
     final int codeLen = TestUtil.nextInt(random(), 1, 8);
-    Analyzer a = new Analyzer() {
+    Analyzer a =
+        new Analyzer() {
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, false));
-      }
-      
-    };
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(
+                tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, false));
+          }
+        };
     checkRandomData(random(), a, 1000 * RANDOM_MULTIPLIER);
     a.close();
-    
-    Analyzer b = new Analyzer() {
 
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, true));
-      }
-      
-    };
-    checkRandomData(random(), b, 1000 * RANDOM_MULTIPLIER); 
+    Analyzer b =
+        new Analyzer() {
+
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(
+                tokenizer, new DoubleMetaphoneFilter(tokenizer, codeLen, true));
+          }
+        };
+    checkRandomData(random(), b, 1000 * RANDOM_MULTIPLIER);
     b.close();
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random().nextBoolean()));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(
+                tokenizer, new DoubleMetaphoneFilter(tokenizer, 8, random().nextBoolean()));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

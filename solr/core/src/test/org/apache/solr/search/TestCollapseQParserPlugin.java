@@ -18,12 +18,16 @@ package org.apache.solr.search;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1056,16 +1060,222 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         assertU(commit());
     }
     
-    for (String collapseField : new String[] {collapseFieldInt, collapseFieldFloat, collapseFieldString}) {
-      assertQ(req(
-          "q", "{!cache=false}field_s:1",
-          "rows", "1",
-          "minExactCount", "1",
-          // this collapse will end up matching all docs
-          "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
-          ),"//*[@numFoundExact='true']"
-          ,"//*[@numFound='" + (numDocs/2) + "']"
-          );
+    for (String collapseField : Arrays.asList(collapseFieldInt, collapseFieldFloat, collapseFieldString)) {
+      // all of our docs have a value in the collapse field(s) so the policy shouldn't matter...
+      for (String policy : Arrays.asList("", " nullPolicy=ignore", " nullPolicy=expand", " nullPolicy=collapse")) {
+        assertQ(req("q", "{!cache=false}field_s:1",
+                    "rows", "1",
+                    "minExactCount", "1", // collapse should force this to be ignored
+                    // this collapse will end up creating a group for each matched doc
+                    "fq", "{!collapse field=" + collapseField + policy + "}"
+                    )
+                , "//*[@numFoundExact='true']"
+                , "//*[@numFound='" + (numDocs/2) + "']"
+                );
+      }
+    }
+  }
+
+  public void testNullGroupNumericVsStringCollapse() throws Exception {
+    // NOTE: group_i and group_s will contain identical content so these need to be "numbers"...
+    // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy bug/behavior
+    // of treating 0 as null is no longer a problem) ...
+    final String A = "-1";
+    final String B = "0"; 
+    final String C = "1";
+
+    // Stub out our documents.  From now on assume highest "id" of each group should be group head...
+    final List<SolrInputDocument> docs = sdocs
+      (sdoc("id", "0"),  // null group
+       sdoc("id", "1",   "group_i", A, "group_s", A),
+       sdoc("id", "2",   "group_i", B, "group_s", B),
+       sdoc("id", "3",   "group_i", B, "group_s", B),  // B head
+       sdoc("id", "4"),  // null group
+       sdoc("id", "5",   "group_i", A, "group_s", A),
+       sdoc("id", "6",   "group_i", C, "group_s", C),
+       sdoc("id", "7"),  // null group                 // null head
+       sdoc("id", "8",   "group_i", A, "group_s", A),  // A head
+       sdoc("id", "9",   "group_i", C, "group_s", C)); // C head
+
+    final List<String> SELECTOR_FIELD_SUFFIXES = Arrays.asList("_i", "_l", "_f");
+    // add all the fields we'll be using as group head selectors...
+    int asc = 0;
+    int desc = 0;
+    for (SolrInputDocument doc : docs) {
+      for (String type : SELECTOR_FIELD_SUFFIXES) {
+        doc.setField("asc"  + type, asc);
+        doc.setField("desc" + type, desc);
+      }
+      asc++;
+      desc--;
+    }
+
+    // convert our docs to update commands, along with some commits, in a shuffled order and process all of them...
+    final List<String> updates = Stream.concat(Stream.of(commit(), commit()),
+                                               docs.stream().map(doc -> adoc(doc))).collect(Collectors.toList());
+    Collections.shuffle(updates, random());
+    for (String u : updates) {
+      assertU(u);
+    }
+    assertU(commit());
+
+    
+    // function based query for deterministic scores
+    final String q = "{!func}sum(asc_i,42)";
+      
+    // results should be the same regardless of wether we collapse on a string field or numeric field
+    // (docs have identicle group identifiers in both fields)
+    for (String f : Arrays.asList("group_i", 
+                                  "group_s")) {
+      
+      // these group head selectors should all result in identical group heads for our query...
+      for (String suffix : SELECTOR_FIELD_SUFFIXES) {
+
+        for (String selector : Arrays.asList("",
+                                             "max=asc" + suffix,
+                                             "min=desc" + suffix,
+                                             "sort='asc" + suffix + " desc'",
+                                             "sort='desc" +suffix + " asc'",
+                                             "max=sum(42,asc" + suffix + ")",
+                                             "min=sum(42,desc" + suffix + ")",
+                                             "max=sub(0,desc" + suffix + ")",
+                                             "min=sub(0,asc" + suffix + ")")) {
+          
+          if (selector.endsWith("_l") && f.endsWith("_i")) {
+            assertQEx("expected known limitation of using long for min/max selector when doing numeric collapse",
+                      "min/max must be Int or Float",
+                      req("q", q,
+                          "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"),
+                      SolrException.ErrorCode.BAD_REQUEST);
+              
+              continue;
+          }
+        
+          
+          // ignore nulls
+          assertQ(req(params("q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"))
+                  , "*[count(//doc)=3]"
+                  ,"//result/doc[1]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[2]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[3]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "1,5",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"))
+                  , "*[count(//doc)=4]"
+                  ,"//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
+                  ,"//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "0,7",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"))
+                  , "*[count(//doc)=5]"
+                  ,"//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[5]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "6,0",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=ignore " + selector + "}"))
+                  , "*[count(//doc)=4]"
+                  ,"//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
+                  ,"//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[4]/str[@name='id'][.='3']" // group B
+                  );
+          
+          // collapse nulls
+          assertQ(req(params("q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}"))
+                  , "*[count(//doc)=4]"
+                  ,"//result/doc[1]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[2]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[3]/str[@name='id'][.='7']" // group null
+                  ,"//result/doc[4]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "1,5",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}"))
+                  , "*[count(//doc)=5]"
+                  ,"//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
+                  ,"//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='7']" // group null
+                  ,"//result/doc[5]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "0,7",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}"))
+                  , "*[count(//doc)=5]"
+                  ,"//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[5]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "6,0",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=collapse " + selector + "}"))
+                  , "*[count(//doc)=4]"
+                  ,"//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
+                  ,"//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[4]/str[@name='id'][.='3']" // group B
+                  );
+          
+          // expand nulls
+          assertQ(req(params("q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=expand " + selector + "}"))
+                  , "*[count(//doc)=6]"
+                  ,"//result/doc[1]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[2]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[3]/str[@name='id'][.='7']" // null 
+                  ,"//result/doc[4]/str[@name='id'][.='4']" // null 
+                  ,"//result/doc[5]/str[@name='id'][.='3']" // group B
+                  ,"//result/doc[6]/str[@name='id'][.='0']" // null 
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "1,5",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=expand " + selector + "}"))
+                  , "*[count(//doc)=7]"
+                  ,"//result/doc[1]/str[@name='id'][.='1']" // elevated, prevents group A
+                  ,"//result/doc[2]/str[@name='id'][.='5']" // elevated, (also) prevents group A
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='7']" // null 
+                  ,"//result/doc[5]/str[@name='id'][.='4']" // null 
+                  ,"//result/doc[6]/str[@name='id'][.='3']" // group B
+                  ,"//result/doc[7]/str[@name='id'][.='0']" // null 
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "0,7",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=expand " + selector + "}"))
+                  , "*[count(//doc)=6]"
+                  ,"//result/doc[1]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[2]/str[@name='id'][.='7']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='9']" // group C
+                  ,"//result/doc[4]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[5]/str[@name='id'][.='4']" // null 
+                  ,"//result/doc[6]/str[@name='id'][.='3']" // group B
+                  );
+          assertQ(req(params("qt", "/elevate", "elevateIds", "6,0",
+                             "q", q,
+                             "fq", "{!collapse field=" + f + " nullPolicy=expand " + selector + "}"))
+                  , "*[count(//doc)=6]"
+                  ,"//result/doc[1]/str[@name='id'][.='6']" // elevated, prevents group C
+                  ,"//result/doc[2]/str[@name='id'][.='0']" // elevated (null)
+                  ,"//result/doc[3]/str[@name='id'][.='8']" // group A
+                  ,"//result/doc[4]/str[@name='id'][.='7']" // null 
+                  ,"//result/doc[5]/str[@name='id'][.='4']" // null 
+                  ,"//result/doc[6]/str[@name='id'][.='3']" // group B
+                  );
+          
+        }
+      }
     }
   }
 }

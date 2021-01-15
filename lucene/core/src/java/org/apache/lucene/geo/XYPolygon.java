@@ -16,13 +16,13 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Arrays;
-
 import static org.apache.lucene.geo.XYEncodingUtils.checkVal;
 
+import java.util.Arrays;
+
 /**
- * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code float[]}, {@code float[]} x, y arrays
- * coordinates.
+ * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code
+ * float[]}, {@code float[]} x, y arrays coordinates.
  */
 public final class XYPolygon extends XYGeometry {
   private final float[] x;
@@ -40,9 +40,7 @@ public final class XYPolygon extends XYGeometry {
   /** winding order of the vertices */
   private final GeoUtils.WindingOrder windingOrder;
 
-  /**
-   * Creates a new Polygon from the supplied x, y arrays, and optionally any holes.
-   */
+  /** Creates a new Polygon from the supplied x, y arrays, and optionally any holes. */
   public XYPolygon(float[] x, float[] y, XYPolygon... holes) {
     if (x == null) {
       throw new IllegalArgumentException("x must not be null");
@@ -59,11 +57,23 @@ public final class XYPolygon extends XYGeometry {
     if (x.length < 4) {
       throw new IllegalArgumentException("at least 4 polygon points required");
     }
-    if (x[0] != x[x.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): x[0]=" + x[0] + " x[" + (x.length-1) + "]=" + x[x.length-1]);
+    if (x[0] != x[x.length - 1]) {
+      throw new IllegalArgumentException(
+          "first and last points of the polygon must be the same (it must close itself): x[0]="
+              + x[0]
+              + " x["
+              + (x.length - 1)
+              + "]="
+              + x[x.length - 1]);
     }
-    if (y[0] != y[y.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): y[0]=" + y[0] + " y[" + (y.length-1) + "]=" + y[y.length-1]);
+    if (y[0] != y[y.length - 1]) {
+      throw new IllegalArgumentException(
+          "first and last points of the polygon must be the same (it must close itself): y[0]="
+              + y[0]
+              + " y["
+              + (y.length - 1)
+              + "]="
+              + y[y.length - 1]);
     }
     for (int i = 0; i < holes.length; i++) {
       XYPolygon inner = holes[i];
@@ -89,8 +99,8 @@ public final class XYPolygon extends XYGeometry {
       minY = Math.min(checkVal(y[i]), minY);
       maxY = Math.max(y[i], maxY);
       // compute signed area
-      windingSum += (x[j] - x[numPts])*(y[i] - y[numPts])
-          - (y[j] - y[numPts])*(x[i] - x[numPts]);
+      windingSum +=
+          (x[j] - x[numPts]) * (y[i] - y[numPts]) - (y[j] - y[numPts]) * (x[i] - x[numPts]);
     }
     this.minX = minX;
     this.maxX = maxX;
@@ -174,11 +184,7 @@ public final class XYPolygon extends XYGeometry {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < x.length; i++) {
-      sb.append("[")
-          .append(x[i])
-          .append(", ")
-          .append(y[i])
-          .append("] ");
+      sb.append("[").append(x[i]).append(", ").append(y[i]).append("] ");
     }
     if (holes.length > 0) {
       sb.append(", holes=");

@@ -16,24 +16,20 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-import java.io.IOException;
-
 /**
- * This TokenFilter limits the number of tokens while indexing. It is
- * a replacement for the maximum field length setting inside {@link org.apache.lucene.index.IndexWriter}.
- * <p>
- * By default, this filter ignores any tokens in the wrapped {@code TokenStream}
- * once the limit has been reached, which can result in {@code reset()} being 
- * called prior to {@code incrementToken()} returning {@code false}.  For most 
- * {@code TokenStream} implementations this should be acceptable, and faster 
- * then consuming the full stream. If you are wrapping a {@code TokenStream} 
- * which requires that the full stream of tokens be exhausted in order to 
- * function properly, use the 
- * {@link #LimitTokenCountFilter(TokenStream,int,boolean) consumeAllTokens} 
+ * This TokenFilter limits the number of tokens while indexing. It is a replacement for the maximum
+ * field length setting inside {@link org.apache.lucene.index.IndexWriter}.
+ *
+ * <p>By default, this filter ignores any tokens in the wrapped {@code TokenStream} once the limit
+ * has been reached, which can result in {@code reset()} being called prior to {@code
+ * incrementToken()} returning {@code false}. For most {@code TokenStream} implementations this
+ * should be acceptable, and faster then consuming the full stream. If you are wrapping a {@code
+ * TokenStream} which requires that the full stream of tokens be exhausted in order to function
+ * properly, use the {@link #LimitTokenCountFilter(TokenStream,int,boolean) consumeAllTokens}
  * option.
  */
 public final class LimitTokenCountFilter extends TokenFilter {
@@ -44,8 +40,8 @@ public final class LimitTokenCountFilter extends TokenFilter {
   private boolean exhausted = false;
 
   /**
-   * Build a filter that only accepts tokens up to a maximum number.
-   * This filter will not consume any tokens beyond the maxTokenCount limit
+   * Build a filter that only accepts tokens up to a maximum number. This filter will not consume
+   * any tokens beyond the maxTokenCount limit
    *
    * @see #LimitTokenCountFilter(TokenStream,int,boolean)
    */
@@ -55,9 +51,11 @@ public final class LimitTokenCountFilter extends TokenFilter {
 
   /**
    * Build an filter that limits the maximum number of tokens per field.
+   *
    * @param in the stream to wrap
    * @param maxTokenCount max number of tokens to produce
-   * @param consumeAllTokens whether all tokens from the input must be consumed even if maxTokenCount is reached.
+   * @param consumeAllTokens whether all tokens from the input must be consumed even if
+   *     maxTokenCount is reached.
    */
   public LimitTokenCountFilter(TokenStream in, int maxTokenCount, boolean consumeAllTokens) {
     super(in);
@@ -67,7 +65,7 @@ public final class LimitTokenCountFilter extends TokenFilter {
     this.maxTokenCount = maxTokenCount;
     this.consumeAllTokens = consumeAllTokens;
   }
-  
+
   @Override
   public boolean incrementToken() throws IOException {
     if (exhausted) {
@@ -81,7 +79,9 @@ public final class LimitTokenCountFilter extends TokenFilter {
         return false;
       }
     } else {
-      while (consumeAllTokens && input.incrementToken()) { /* NOOP */ }
+      while (consumeAllTokens && input.incrementToken()) {
+        /* NOOP */
+      }
       return false;
     }
   }

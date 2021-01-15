@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * This package contains the QueryParser.jj source file for the Surround parser.
- * <p>
- * Parsing the text of a query results in a SrndQuery in the
+ *
+ * <p>Parsing the text of a query results in a SrndQuery in the
  * org.apache.lucene.queryparser.surround.query package.
  */
 package org.apache.lucene.queryparser.surround.parser;
-

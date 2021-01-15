@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.es;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,22 +25,21 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 
-/**
- * Simple tests for {@link SpanishMinimalStemFilter}
- */
+/** Simple tests for {@link SpanishMinimalStemFilter} */
 public class TestSpanishMinimalStemFilter extends BaseTokenStreamTestCase {
   private Analyzer analyzer;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(source, new SpanishMinimalStemFilter(source));
-      }
-    };
+    analyzer =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer source = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+            return new TokenStreamComponents(source, new SpanishMinimalStemFilter(source));
+          }
+        };
   }
 
   @Override
@@ -62,19 +60,19 @@ public class TestSpanishMinimalStemFilter extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 50*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 50 * RANDOM_MULTIPLIER);
   }
 
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new EnglishMinimalStemFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new EnglishMinimalStemFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
-
 }

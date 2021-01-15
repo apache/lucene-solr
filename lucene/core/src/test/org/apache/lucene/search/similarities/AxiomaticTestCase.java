@@ -19,7 +19,7 @@ package org.apache.lucene.search.similarities;
 import java.util.Random;
 
 public abstract class AxiomaticTestCase extends BaseSimilarityTestCase {
-  
+
   @Override
   protected final Similarity getSimilarity(Random random) {
     // axiomatic parameter s
@@ -82,9 +82,9 @@ public abstract class AxiomaticTestCase extends BaseSimilarityTestCase {
         k = random.nextFloat();
         break;
     }
-    
+
     return getAxiomaticModel(s, queryLen, k);
   }
-  
+
   protected abstract Similarity getAxiomaticModel(float s, int queryLen, float k);
 }

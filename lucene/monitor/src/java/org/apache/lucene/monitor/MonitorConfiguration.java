@@ -20,7 +20,6 @@ package org.apache.lucene.monitor;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -29,9 +28,7 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
-/**
- * Encapsulates various configuration settings for a Monitor's query index
- */
+/** Encapsulates various configuration settings for a Monitor's query index */
 public class MonitorConfiguration {
 
   private int queryUpdateBufferSize = 5000;
@@ -57,7 +54,8 @@ public class MonitorConfiguration {
   }
 
   public IndexWriter buildIndexWriter() throws IOException {
-    Directory directory = indexPath == null ? new ByteBuffersDirectory() : FSDirectory.open(indexPath);
+    Directory directory =
+        indexPath == null ? new ByteBuffersDirectory() : FSDirectory.open(indexPath);
     return new IndexWriter(directory, getIndexWriterConfig());
   }
 
@@ -80,9 +78,7 @@ public class MonitorConfiguration {
     return this;
   }
 
-  /**
-   * @return the QueryDecomposer used by the Monitor
-   */
+  /** @return the QueryDecomposer used by the Monitor */
   public QueryDecomposer getQueryDecomposer() {
     return queryDecomposer;
   }
@@ -91,7 +87,7 @@ public class MonitorConfiguration {
    * Set the frequency with with the Monitor's querycache will be garbage-collected
    *
    * @param frequency the frequency value
-   * @param units     the frequency units
+   * @param units the frequency units
    * @return the current configuration
    */
   public MonitorConfiguration setPurgeFrequency(long frequency, TimeUnit units) {
@@ -100,16 +96,12 @@ public class MonitorConfiguration {
     return this;
   }
 
-  /**
-   * @return the value of Monitor's querycache garbage-collection frequency
-   */
+  /** @return the value of Monitor's querycache garbage-collection frequency */
   public long getPurgeFrequency() {
     return purgeFrequency;
   }
 
-  /**
-   * @return Get the units of the Monitor's querycache garbage-collection frequency
-   */
+  /** @return Get the units of the Monitor's querycache garbage-collection frequency */
   public TimeUnit getPurgeFrequencyUnits() {
     return purgeFrequencyUnits;
   }
@@ -117,7 +109,8 @@ public class MonitorConfiguration {
   /**
    * Set how many queries will be buffered in memory before being committed to the queryindex
    *
-   * @param size how many queries will be buffered in memory before being committed to the queryindex
+   * @param size how many queries will be buffered in memory before being committed to the
+   *     queryindex
    * @return the current configuration
    */
   public MonitorConfiguration setQueryUpdateBufferSize(int size) {
@@ -125,11 +118,8 @@ public class MonitorConfiguration {
     return this;
   }
 
-  /**
-   * @return the size of the queryindex's in-memory buffer
-   */
+  /** @return the size of the queryindex's in-memory buffer */
   public int getQueryUpdateBufferSize() {
     return queryUpdateBufferSize;
   }
-
 }

@@ -16,35 +16,40 @@
  */
 package org.apache.lucene.analysis.tokenattributes;
 
-
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 
-/** Default implementation of the common attributes used by Lucene:<ul>
- * <li>{@link CharTermAttribute}
- * <li>{@link TypeAttribute}
- * <li>{@link PositionIncrementAttribute}
- * <li>{@link PositionLengthAttribute}
- * <li>{@link OffsetAttribute}
- * <li>{@link TermFrequencyAttribute}
- * </ul>*/
-public class PackedTokenAttributeImpl extends CharTermAttributeImpl 
-                   implements TypeAttribute, PositionIncrementAttribute,
-                              PositionLengthAttribute, OffsetAttribute,
-                              TermFrequencyAttribute {
+/**
+ * Default implementation of the common attributes used by Lucene:
+ *
+ * <ul>
+ *   <li>{@link CharTermAttribute}
+ *   <li>{@link TypeAttribute}
+ *   <li>{@link PositionIncrementAttribute}
+ *   <li>{@link PositionLengthAttribute}
+ *   <li>{@link OffsetAttribute}
+ *   <li>{@link TermFrequencyAttribute}
+ * </ul>
+ */
+public class PackedTokenAttributeImpl extends CharTermAttributeImpl
+    implements TypeAttribute,
+        PositionIncrementAttribute,
+        PositionLengthAttribute,
+        OffsetAttribute,
+        TermFrequencyAttribute {
 
-  private int startOffset,endOffset;
+  private int startOffset, endOffset;
   private String type = DEFAULT_TYPE;
   private int positionIncrement = 1;
   private int positionLength = 1;
   private int termFrequency = 1;
 
   /** Constructs the attribute implementation. */
-  public PackedTokenAttributeImpl() {
-  }
+  public PackedTokenAttributeImpl() {}
 
   /**
    * {@inheritDoc}
+   *
    * @see PositionIncrementAttribute
    */
   @Override
@@ -57,6 +62,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see PositionIncrementAttribute
    */
   @Override
@@ -66,18 +72,21 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see PositionLengthAttribute
    */
   @Override
   public void setPositionLength(int positionLength) {
     if (positionLength < 1) {
-      throw new IllegalArgumentException("Position length must be 1 or greater: got " + positionLength);
+      throw new IllegalArgumentException(
+          "Position length must be 1 or greater: got " + positionLength);
     }
     this.positionLength = positionLength;
   }
 
   /**
    * {@inheritDoc}
+   *
    * @see PositionLengthAttribute
    */
   @Override
@@ -87,6 +96,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see OffsetAttribute
    */
   @Override
@@ -96,6 +106,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see OffsetAttribute
    */
   @Override
@@ -105,13 +116,18 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see OffsetAttribute
    */
   @Override
   public void setOffset(int startOffset, int endOffset) {
     if (startOffset < 0 || endOffset < startOffset) {
-      throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset; got "
-          + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+      throw new IllegalArgumentException(
+          "startOffset must be non-negative, and endOffset must be >= startOffset; got "
+              + "startOffset="
+              + startOffset
+              + ",endOffset="
+              + endOffset);
     }
     this.startOffset = startOffset;
     this.endOffset = endOffset;
@@ -119,6 +135,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see TypeAttribute
    */
   @Override
@@ -128,6 +145,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   /**
    * {@inheritDoc}
+   *
    * @see TypeAttribute
    */
   @Override
@@ -138,7 +156,8 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
   @Override
   public final void setTermFrequency(int termFrequency) {
     if (termFrequency < 1) {
-      throw new IllegalArgumentException("Term frequency must be 1 or greater; got " + termFrequency);
+      throw new IllegalArgumentException(
+          "Term frequency must be 1 or greater; got " + termFrequency);
     }
     this.termFrequency = termFrequency;
   }
@@ -148,8 +167,7 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
     return termFrequency;
   }
 
-  /** Resets the attributes
-   */
+  /** Resets the attributes */
   @Override
   public void clear() {
     super.clear();
@@ -158,9 +176,8 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
     startOffset = endOffset = 0;
     type = DEFAULT_TYPE;
   }
-  
-  /** Resets the attributes at end
-   */
+
+  /** Resets the attributes at end */
   @Override
   public void end() {
     super.end();
@@ -175,21 +192,20 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
-      return true;
+    if (obj == this) return true;
 
     if (obj instanceof PackedTokenAttributeImpl) {
       final PackedTokenAttributeImpl other = (PackedTokenAttributeImpl) obj;
-      return (startOffset == other.startOffset &&
-          endOffset == other.endOffset && 
-          positionIncrement == other.positionIncrement &&
-          positionLength == other.positionLength &&
-          (type == null ? other.type == null : type.equals(other.type)) &&
-          termFrequency == other.termFrequency &&
-          super.equals(obj)
-      );
-    } else
+      return (startOffset == other.startOffset
+          && endOffset == other.endOffset
+          && positionIncrement == other.positionIncrement
+          && positionLength == other.positionLength
+          && (type == null ? other.type == null : type.equals(other.type))
+          && termFrequency == other.termFrequency
+          && super.equals(obj));
+    } else {
       return false;
+    }
   }
 
   @Override
@@ -199,9 +215,8 @@ public class PackedTokenAttributeImpl extends CharTermAttributeImpl
     code = code * 31 + endOffset;
     code = code * 31 + positionIncrement;
     code = code * 31 + positionLength;
-    if (type != null)
-      code = code * 31 + type.hashCode();
-    code = code * 31 + termFrequency;;
+    if (type != null) code = code * 31 + type.hashCode();
+    code = code * 31 + termFrequency;
     return code;
   }
 

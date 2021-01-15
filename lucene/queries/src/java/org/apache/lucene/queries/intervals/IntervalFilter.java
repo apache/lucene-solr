@@ -21,15 +21,14 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link #accept()} function
+ * Wraps an {@link IntervalIterator} and passes through those intervals that match the {@link
+ * #accept()} function
  */
 public abstract class IntervalFilter extends IntervalIterator {
 
   protected final IntervalIterator in;
 
-  /**
-   * Create a new filter
-   */
+  /** Create a new filter */
   public IntervalFilter(IntervalIterator in) {
     this.in = Objects.requireNonNull(in);
   }
@@ -74,9 +73,7 @@ public abstract class IntervalFilter extends IntervalIterator {
     return in.matchCost();
   }
 
-  /**
-   * @return {@code true} if the wrapped iterator's interval should be passed on
-   */
+  /** @return {@code true} if the wrapped iterator's interval should be passed on */
   protected abstract boolean accept();
 
   @Override
@@ -84,9 +81,7 @@ public abstract class IntervalFilter extends IntervalIterator {
     int next;
     do {
       next = in.nextInterval();
-    }
-    while (next != IntervalIterator.NO_MORE_INTERVALS && accept() == false);
+    } while (next != IntervalIterator.NO_MORE_INTERVALS && accept() == false);
     return next;
   }
-
 }

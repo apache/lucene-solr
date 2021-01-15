@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.luke.util.BytesRefUtils;
 
 /**
- * Holder for term vector entry representing the term and their number of occurrences, and optionally, positions in the document field.
+ * Holder for term vector entry representing the term and their number of occurrences, and
+ * optionally, positions in the document field.
  */
 public final class TermVectorEntry {
 
@@ -72,50 +72,47 @@ public final class TermVectorEntry {
     this.positions = positions;
   }
 
-  /**
-   * Returns the string representation for this term.
-   */
+  /** Returns the string representation for this term. */
   public String getTermText() {
     return termText;
   }
 
-  /**
-   * Returns the number of occurrences of this term in the document field.
-   */
+  /** Returns the number of occurrences of this term in the document field. */
   public long getFreq() {
     return freq;
   }
 
-  /**
-   * Returns the list of positions for this term in the document field.
-   */
+  /** Returns the list of positions for this term in the document field. */
   public List<TermVectorPosition> getPositions() {
     return positions;
   }
 
   @Override
   public String toString() {
-    String positionsStr = positions.stream()
-        .map(TermVectorPosition::toString)
-        .collect(Collectors.joining(","));
+    String positionsStr =
+        positions.stream().map(TermVectorPosition::toString).collect(Collectors.joining(","));
 
-    return "TermVectorEntry{" +
-        "termText='" + termText + '\'' +
-        ", freq=" + freq +
-        ", positions=" + positionsStr +
-        '}';
+    return "TermVectorEntry{"
+        + "termText='"
+        + termText
+        + '\''
+        + ", freq="
+        + freq
+        + ", positions="
+        + positionsStr
+        + '}';
   }
 
-  /**
-   * Holder for position information for a term vector entry.
-   */
+  /** Holder for position information for a term vector entry. */
   public static final class TermVectorPosition {
     private final int position;
     private final int startOffset;
     private final int endOffset;
 
     /**
-     * Returns a new position entry representing the specified posting, and optionally, start and end offsets.
+     * Returns a new position entry representing the specified posting, and optionally, start and
+     * end offsets.
+     *
      * @param pos - term position
      * @param pe - positioned postings iterator
      * @return position entry
@@ -132,24 +129,22 @@ public final class TermVectorEntry {
       return new TermVectorPosition(pos);
     }
 
-    /**
-     * Returns the position for this term in the document field.
-     */
+    /** Returns the position for this term in the document field. */
     public int getPosition() {
       return position;
     }
 
     /**
-     * Returns the start offset for this term in the document field.
-     * Empty Optional instance is returned if no offset information available.
+     * Returns the start offset for this term in the document field. Empty Optional instance is
+     * returned if no offset information available.
      */
     public OptionalInt getStartOffset() {
       return startOffset >= 0 ? OptionalInt.of(startOffset) : OptionalInt.empty();
     }
 
     /**
-     * Returns the end offset for this term in the document field.
-     * Empty Optional instance is returned if no offset information available.
+     * Returns the end offset for this term in the document field. Empty Optional instance is
+     * returned if no offset information available.
      */
     public OptionalInt getEndOffset() {
       return endOffset >= 0 ? OptionalInt.of(endOffset) : OptionalInt.empty();
@@ -157,11 +152,14 @@ public final class TermVectorEntry {
 
     @Override
     public String toString() {
-      return "TermVectorPosition{" +
-          "position=" + position +
-          ", startOffset=" + startOffset +
-          ", endOffset=" + endOffset +
-          '}';
+      return "TermVectorPosition{"
+          + "position="
+          + position
+          + ", startOffset="
+          + startOffset
+          + ", endOffset="
+          + endOffset
+          + '}';
     }
 
     private TermVectorPosition(int position) {

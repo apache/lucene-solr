@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
@@ -30,8 +28,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
-  
-  
+
   /** Return a suitable builder for the top-level Query for holding all expanded terms. */
   protected abstract B getTopLevelBuilder() throws IOException;
 
@@ -39,14 +36,16 @@ abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
   protected abstract Query build(B builder);
 
   /** Add a MultiTermQuery term to the top-level query builder. */
-  protected final void addClause(B topLevel, Term term, int docCount, float boost) throws IOException {
+  protected final void addClause(B topLevel, Term term, int docCount, float boost)
+      throws IOException {
     addClause(topLevel, term, docCount, boost, null);
   }
-  
-  protected abstract void addClause(B topLevel, Term term, int docCount, float boost, TermStates states) throws IOException;
 
-  
-  final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
+  protected abstract void addClause(
+      B topLevel, Term term, int docCount, float boost, TermStates states) throws IOException;
+
+  final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector)
+      throws IOException {
     IndexReaderContext topReaderContext = reader.getContext();
     for (LeafReaderContext context : topReaderContext.leaves()) {
       final Terms terms = context.reader().terms(query.field);
@@ -58,9 +57,8 @@ abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
       final TermsEnum termsEnum = getTermsEnum(query, terms, collector.attributes);
       assert termsEnum != null;
 
-      if (termsEnum == TermsEnum.EMPTY)
-        continue;
-      
+      if (termsEnum == TermsEnum.EMPTY) continue;
+
       collector.setReaderContext(topReaderContext, context);
       collector.setNextEnum(termsEnum);
       BytesRef bytes;
@@ -70,22 +68,23 @@ abstract class TermCollectingRewrite<B> extends MultiTermQuery.RewriteMethod {
       }
     }
   }
-  
-  static abstract class TermCollector {
-    
+
+  abstract static class TermCollector {
+
     protected LeafReaderContext readerContext;
     protected IndexReaderContext topReaderContext;
 
-    public void setReaderContext(IndexReaderContext topReaderContext, LeafReaderContext readerContext) {
+    public void setReaderContext(
+        IndexReaderContext topReaderContext, LeafReaderContext readerContext) {
       this.readerContext = readerContext;
       this.topReaderContext = topReaderContext;
     }
     /** attributes used for communication with the enum */
     public final AttributeSource attributes = new AttributeSource();
-  
+
     /** return false to stop collecting */
     public abstract boolean collect(BytesRef bytes) throws IOException;
-    
+
     /** the next segment's {@link TermsEnum} that is used to collect terms */
     public abstract void setNextEnum(TermsEnum termsEnum) throws IOException;
   }

@@ -16,48 +16,58 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 public class TestLengthFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testPositionIncrements() throws Exception {
     Reader reader = new StringReader("foo foobar super-duper-trooper");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
-    stream = tokenFilterFactory("Length",
-        LengthFilterFactory.MIN_KEY, "4",
-        LengthFilterFactory.MAX_KEY, "10").create(stream);
-    assertTokenStreamContents(stream, new String[] { "foobar" }, new int[] { 2 });
+    ((Tokenizer) stream).setReader(reader);
+    stream =
+        tokenFilterFactory(
+                "Length", LengthFilterFactory.MIN_KEY, "4", LengthFilterFactory.MAX_KEY, "10")
+            .create(stream);
+    assertTokenStreamContents(stream, new String[] {"foobar"}, new int[] {2});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Length",
-          LengthFilterFactory.MIN_KEY, "4",
-          LengthFilterFactory.MAX_KEY, "5",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "Length",
+                  LengthFilterFactory.MIN_KEY,
+                  "4",
+                  LengthFilterFactory.MAX_KEY,
+                  "5",
+                  "bogusArg",
+                  "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
   /** Test that invalid arguments result in exception */
   public void testInvalidArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      Reader reader = new StringReader("foo foobar super-duper-trooper");
-      TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-      ((Tokenizer)stream).setReader(reader);
-      tokenFilterFactory("Length",
-          LengthFilterFactory.MIN_KEY, "5",
-          LengthFilterFactory.MAX_KEY, "4").create(stream);
-    });
-    assertTrue(expected.getMessage().contains("maximum length must not be greater than minimum length"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              Reader reader = new StringReader("foo foobar super-duper-trooper");
+              TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+              ((Tokenizer) stream).setReader(reader);
+              tokenFilterFactory(
+                      "Length", LengthFilterFactory.MIN_KEY, "5", LengthFilterFactory.MAX_KEY, "4")
+                  .create(stream);
+            });
+    assertTrue(
+        expected.getMessage().contains("maximum length must not be greater than minimum length"));
   }
 }

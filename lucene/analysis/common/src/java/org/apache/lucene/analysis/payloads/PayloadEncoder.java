@@ -18,22 +18,19 @@ package org.apache.lucene.analysis.payloads;
 
 import org.apache.lucene.util.BytesRef;
 
-
-
 /**
- * Mainly for use with the DelimitedPayloadTokenFilter, converts char buffers to
- * {@link BytesRef}.
- * <p>
- * NOTE: This interface is subject to change 
+ * Mainly for use with the DelimitedPayloadTokenFilter, converts char buffers to {@link BytesRef}.
  *
- **/
+ * <p>NOTE: This interface is subject to change
+ */
 public interface PayloadEncoder {
 
   BytesRef encode(char[] buffer);
 
   /**
    * Convert a char array to a {@link BytesRef}
+   *
    * @return encoded {@link BytesRef}
    */
-  BytesRef encode(char [] buffer, int offset, int length);
+  BytesRef encode(char[] buffer, int offset, int length);
 }
