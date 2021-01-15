@@ -49,6 +49,7 @@ public class BlobPusher implements Closeable {
   }
 
   public void push(
+          String blobDirPath,
       Collection<BlobFile> writes,
       IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier,
       Collection<String> deletes)
@@ -59,9 +60,9 @@ public class BlobPusher implements Closeable {
 
     // send files to BlobStore and delete our files too
     log.debug("Pushing {}", writes);
-    executeAll(pushFiles(writes, inputStreamSupplier));
+    executeAll(pushFiles(blobDirPath, writes, inputStreamSupplier));
     log.debug("Deleting {}", deletes);
-    deleteFiles(deletes);
+    deleteFiles(blobDirPath, deletes);
 
     // update "our" listing
     //      TODO David
@@ -81,6 +82,7 @@ public class BlobPusher implements Closeable {
   }
 
   private List<Callable<Void>> pushFiles(
+          String blobDirPath,
       Collection<BlobFile> blobFiles,
       IOUtils.IOFunction<BlobFile, InputStream> inputStreamSupplier) {
     return blobFiles.stream()
@@ -89,15 +91,15 @@ public class BlobPusher implements Closeable {
                 (Callable<Void>)
                     () -> {
                       try (InputStream in = inputStreamSupplier.apply(blobFile)) {
-                        blobStore.create(blobFile.fileName(), in, blobFile.size());
+                        blobStore.create(blobDirPath, blobFile.fileName(), in, blobFile.size());
                       }
                       return null;
                     })
         .collect(Collectors.toList());
   }
 
-  private void deleteFiles(Collection<String> fileNames) throws IOException {
-    blobStore.delete(fileNames);
+  private void deleteFiles(String blobDirPath, Collection<String> fileNames) throws IOException {
+    blobStore.delete(blobDirPath, fileNames);
   }
 
   @Override

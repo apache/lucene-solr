@@ -19,7 +19,10 @@ package org.apache.solr.blob;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
@@ -29,6 +32,7 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
@@ -37,24 +41,23 @@ import org.apache.solr.core.DirectoryFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO now: still failing tests (run CoreSynonymLoadTest no SolrCloud) because we have to support
-// removing dir and old
-// indexes in BlobStore. See all "TODO now"
-
 public class BlobDirectoryFactory extends CachingDirectoryFactory {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final Pattern INDEX_NAME_PATTERN = Pattern.compile("index(?:\\.[0-9]{17})?");
+
+  private String localRootPath;
+  private BlobStore blobStore;
+  private BlobPusher blobPusher;
   private DirectoryFactory delegateFactory;
   private String delegateLockType;
-  private String blobPath;
 
   // Parameters for MMapDirectory
   // TODO: Change DirectoryFactory.get() upstream to allow us to provide a Function<Directory,
-  // Directory> to wrap the
-  //  directory when it is created. This would unblock the delegation of DirectoryFactory here. And
-  // we could get rid
-  //  of these params, we could simply delegate to a delegateFactory instead.
+  //  Directory> to wrap the directory when it is created. This would unblock the delegation
+  //  of DirectoryFactory here. And we could get rid of these params, we could simply delegate
+  //  to a delegateFactory instead.
   private boolean unmapHack;
   private boolean preload;
   private int maxChunk;
@@ -65,6 +68,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     if (delegateFactory != null) {
       delegateFactory.initCoreContainer(cc);
     }
+    localRootPath = (dataHomePath == null ? cc.getCoreRootDirectory() : dataHomePath).getParent().toString();
     //        blobListingManager = BlobListingManager.getInstance(cc, "/blobDirListings");
   }
 
@@ -87,10 +91,12 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
       throw new IllegalArgumentException("delegateLockType is required");
     }
 
-    blobPath = params.get("blobPath");
-    if (blobPath == null) {
-      throw new IllegalArgumentException("blobPath is required");
+    String blobRootDir = params.get("blobRootDir");
+    if (blobRootDir == null) {
+      throw new IllegalArgumentException("blobRootDir is required");
     }
+    blobStore = null;//TODO new BlobStore(blobRootDir);
+    blobPusher = new BlobPusher(blobStore);
 
     maxChunk = params.getInt("maxChunkSize", MMapDirectory.DEFAULT_MAX_CHUNK_SIZE);
     if (maxChunk <= 0) {
@@ -111,7 +117,9 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public void close() throws IOException {
     log.debug("close");
-    // TODO delegateFactory.close();
+    IOUtils.closeQuietly(blobStore);
+    IOUtils.closeQuietly(blobPusher);
+    IOUtils.closeQuietly(delegateFactory);
     super.close();
   }
 
@@ -121,7 +129,7 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
         ? NoLockFactory.INSTANCE
         : NativeFSLockFactory.INSTANCE;
     // TODO return rawLockType.equals(DirectoryFactory.LOCK_TYPE_NONE) ? NoLockFactory.INSTANCE :
-    // DELEGATE_LOCK_FACTORY;
+    //  DELEGATE_LOCK_FACTORY;
   }
 
   @Override
@@ -137,12 +145,23 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     mapDirectory.setPreload(preload);
     Directory delegateDirectory = mapDirectory;
     // TODO
-    // String delegateLockType = lockFactory == NoLockFactory.INSTANCE ?
-    // DirectoryFactory.LOCK_TYPE_NONE : this.delegateLockType;
-    // Directory delegateDirectory = delegateFactory.get(path, dirContext, delegateLockType);
-    BlobPusher blobPusher =
-        null; // nocommit new BlobPusher(new BlobStore(blobPath, path));//TODO now: Reuse BlobPusher
-    return new BlobDirectory(delegateDirectory, blobPusher);
+    //  String delegateLockType = lockFactory == NoLockFactory.INSTANCE ?
+    //  DirectoryFactory.LOCK_TYPE_NONE : this.delegateLockType;
+    //  Directory delegateDirectory = delegateFactory.get(path, dirContext, delegateLockType);
+    String blobDirPath = getRelativePath(path, localRootPath);
+    return new BlobDirectory(delegateDirectory, blobDirPath, blobPusher);
+  }
+
+  private String getRelativePath(String path, String referencePath) {
+    if (!path.startsWith(referencePath)) {
+      throw new IllegalArgumentException("Path=" + path + " is expected to start with referencePath="
+              + referencePath + " otherwise we have to adapt the code");
+    }
+    String relativePath = path.substring(referencePath.length());
+    if (relativePath.startsWith("/")) {
+      relativePath = relativePath.substring(1);
+    }
+    return relativePath;
   }
 
   @Override
@@ -159,10 +178,8 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
     File dirFile = new File(cacheValue.path);
     FileUtils.deleteDirectory(dirFile);
     // TODO delegateFactory.remove(cacheValue.path);
-    BlobPusher blobPusher =
-        null; // nocommit new BlobPusher(new BlobStore(blobPath, cacheValue.path));//TODO now: Reuse
-    // BlobPusher
-    // TODO now: blobPusher.deleteDirectory();
+    String blobDirPath = getRelativePath(cacheValue.path, localRootPath);
+    blobStore.deleteDirectory(blobDirPath);
   }
 
   @Override
@@ -220,10 +237,44 @@ public class BlobDirectoryFactory extends CachingDirectoryFactory {
   }
 
   @Override
-  public void cleanupOldIndexDirectories(
-      final String dataDirPath, final String currentIndexDirPath, boolean afterCoreReload) {
+  public void cleanupOldIndexDirectories(String dataDirPath, String currentIndexDirPath, boolean afterCoreReload) {
     log.debug("cleanupOldIndexDirectories {} {}", dataDirPath, currentIndexDirPath);
+
     super.cleanupOldIndexDirectories(dataDirPath, currentIndexDirPath, afterCoreReload);
-    // TODO now: cleanup with BlobPusher
+    // TODO delegateFactory.cleanupOldIndexDirectories(dataDirPath, currentIndexDirPath, afterCoreReload);
+
+    try {
+      dataDirPath = normalize(dataDirPath);
+      currentIndexDirPath = normalize(currentIndexDirPath);
+    } catch (IOException e) {
+      log.error("Failed to delete old index directories in {} due to: ", dataDirPath, e);
+    }
+    String blobDirPath = getRelativePath(dataDirPath, localRootPath);
+    String currentIndexDirName = getRelativePath(currentIndexDirPath, dataDirPath);
+    List<String> oldIndexDirs;
+    try {
+      oldIndexDirs = blobStore.listInDirectory(blobDirPath,
+              (name) -> !name.equals(currentIndexDirName)
+                      && INDEX_NAME_PATTERN.matcher(name).matches());
+    } catch (IOException e) {
+      log.error("Failed to delete old index directories in {} due to: ", blobDirPath, e);
+      return;
+    }
+    if (oldIndexDirs.isEmpty()) {
+      return;
+    }
+    if (afterCoreReload) {
+      // Do not remove the most recent old directory after a core reload.
+      if (oldIndexDirs.size() == 1) {
+        return;
+      }
+      oldIndexDirs.sort(null);
+      oldIndexDirs = oldIndexDirs.subList(0, oldIndexDirs.size() - 1);
+    }
+    try {
+      blobStore.deleteDirectories(blobDirPath, oldIndexDirs);
+    } catch (IOException e) {
+      log.error("Failed to delete old index directories {} in {} due to: ", oldIndexDirs, blobDirPath, e);
+    }
   }
 }
