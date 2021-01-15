@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.Future;
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Unwrapable;
@@ -262,11 +261,11 @@ public class MMapDirectory extends FSDirectory {
             (length > (startOffset + chunkSize)) ? chunkSize : (length - startOffset);
         final MemorySegment segment;
         try {
-          segment = mapFileBugfix(path, startOffset, segSize, MapMode.READ_ONLY);
+          segment = MemorySegment.mapFile(path, startOffset, segSize, MapMode.READ_ONLY);
         } catch (IOException ioe) {
           throw convertMapFailedIOException(ioe, resourceDescription, segSize);
         }
-        if (preload && segSize > 0L) {
+        if (preload) {
           MappedMemorySegments.load(segment);
         }
         segments[segNr] = segment.share();
@@ -281,24 +280,6 @@ public class MMapDirectory extends FSDirectory {
     }
   }
   
-  private static MemorySegment mapFileBugfix(Path path, long bytesOffset, long bytesSize, MapMode mapMode) throws IOException {
-    // work around NPE bug:
-    // https://bugs.openjdk.java.net/browse/JDK-8259027
-    if (bytesSize == 0L) {
-      return MemorySegment.ofArray(BytesRef.EMPTY_BYTES);
-    }
-    // work around alignment bug by applying alignment on our own:
-    // https://bugs.openjdk.java.net/browse/JDK-8259032
-    // allocationGranularity: known maximum for Win64, on Linux it's page size
-    // We are just safe here and use a granularity that's huge enough for all platforms!
-    final long allocationGranularity = 65536L;
-    final long pageOffset = bytesOffset % allocationGranularity;
-    final long mapBytesOffset = bytesOffset - pageOffset;
-    final long mapBytesSize = bytesSize + pageOffset;
-    final MemorySegment seg = MemorySegment.mapFile(path, mapBytesOffset, mapBytesSize, mapMode);
-    return (pageOffset == 0L) ? seg : seg.asSlice(pageOffset);
-  }
-
   private static IOException convertMapFailedIOException(
       IOException ioe, String resourceDescription, long bufSize) {
     final String originalMessage;
