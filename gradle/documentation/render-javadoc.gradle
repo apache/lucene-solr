@@ -252,13 +252,6 @@ configure(project(":solr:contrib:langid")) {
   }
 }
 
-configure(project(":solr:contrib:scripting")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.solr.update.processor" ]
-  }
-}
-
 configure(project(":solr:solrj")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages
