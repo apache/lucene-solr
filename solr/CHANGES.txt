@@ -352,6 +352,8 @@ Other Changes
 
 * SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
+* SOLR-13105: Add Visual Guide to Math Expressions to the Ref Guide (Joel Bernstein, Cassandra Targett)
+
 ==================  8.7.0 ==================
 
 Consult the lucene/CHANGES.txt file for additional, low level, changes in this release.

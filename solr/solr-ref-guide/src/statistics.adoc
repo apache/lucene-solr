@@ -404,7 +404,7 @@ function call.
 
 In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
 the logs collection using the `random` function. The fields are vectorized into the
-variables *x* and *y* and then *Spearman's* correlation for
+variables `x` and `y` and then *Spearman's* correlation for
 the two vectors is calculated using the `corr` function.
 
 image::images/math-expressions/correlation.png[]
@@ -439,7 +439,7 @@ Finally the `zplot` function is used to plot the correlation matrix as a heat ma
 image::images/math-expressions/corrmatrix.png[]
 
 Notice in the example the correlation matrix is square with complaint types shown on both
-the *x* and y-axises. The color of the cells in the heat map shows the
+the x- and y-axes. The color of the cells in the heat map shows the
 intensity of the correlation between the complaint types.
 
 The heat map is interactive, so mousing over one of the cells pops up the values
@@ -458,7 +458,7 @@ The `cov` function calculates the covariance of two vectors of data.
 
 In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
 the logs collection using the `random` function. The fields are vectorized into the
-variables *x* and *y* and then the covariance for
+variables `x` and `y` and then the covariance for
 the two vectors is calculated using the `cov` function.
 
 image::images/math-expressions/covariance.png[]
