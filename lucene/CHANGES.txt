@@ -84,6 +84,8 @@ API Changes
 
 Improvements
 
+* LUCENE-9665: Hunspell: support default encoding (Peter Gromov)
+
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
 
