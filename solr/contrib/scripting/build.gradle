@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'Scripting Update Processor Package'
+description = 'Scripting Package'
 
 dependencies {
   implementation project(':solr:core')
