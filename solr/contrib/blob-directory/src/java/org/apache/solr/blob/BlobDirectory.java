@@ -42,8 +42,8 @@ public class BlobDirectory extends FilterDirectory {
 
   private static final IOContext SYNC_IO_CONTEXT = new IOContext();
 
+  private final String blobDirPath;
   private final BlobPusher blobPusher;
-
   /**
    * Map of {@link BlobFileSupplier} for each file created by this directory. Keys are file names.
    * Each {@link BlobFileSupplier} keeps a reference to the {@link IndexOutput} created for the
@@ -51,15 +51,13 @@ public class BlobDirectory extends FilterDirectory {
    * reference each time an {@link IndexOutput} is closed, by getting the checksum at that time.
    */
   private final Map<String, BlobFileSupplier> blobFileSupplierMap;
-
   private final Set<String> synchronizedFileNames;
-
   private final Collection<String> deletedFileNames;
-
   private volatile boolean isOpen;
 
-  public BlobDirectory(Directory delegate, BlobPusher blobPusher) {
+  public BlobDirectory(Directory delegate, String blobDirPath, BlobPusher blobPusher) {
     super(delegate);
+    this.blobDirPath = blobDirPath;
     this.blobPusher = blobPusher;
     blobFileSupplierMap = new HashMap<>();
     synchronizedFileNames = new HashSet<>();
@@ -128,7 +126,7 @@ public class BlobDirectory extends FilterDirectory {
     }
 
     log.debug("Sync to BlobStore writes={} deleted={}", writes, deletedFileNames);
-    blobPusher.push(writes, this::openInputStream, deletedFileNames);
+    blobPusher.push(blobDirPath, writes, this::openInputStream, deletedFileNames);
     synchronizedFileNames.clear();
     deletedFileNames.clear();
   }
