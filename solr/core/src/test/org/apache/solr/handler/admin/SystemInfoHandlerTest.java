@@ -24,6 +24,7 @@ import java.util.Collections;
 
 import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -72,6 +73,7 @@ public class SystemInfoHandlerTest extends SolrTestCase {
   }
 
   public void testGetSecurityInfoRuleBasedAuthorizationPlugin() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     final RuleBasedAuthorizationPluginBase ruleBasedAuthorizationPlugin = Mockito.mock(RuleBasedAuthorizationPlugin.class);
     Mockito.doReturn(Collections.EMPTY_SET).when(ruleBasedAuthorizationPlugin).getUserRoles(ArgumentMatchers.any(Principal.class));
     doTestGetSecurityInfo(ruleBasedAuthorizationPlugin);
@@ -91,6 +93,8 @@ public class SystemInfoHandlerTest extends SolrTestCase {
   }
 
   private static void doTestGetSecurityInfo(AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin) throws Exception {
+
+    SolrTestCaseJ4.assumeWorkingMockito();
 
     final CoreContainer cc = Mockito.mock(CoreContainer.class);
     {
