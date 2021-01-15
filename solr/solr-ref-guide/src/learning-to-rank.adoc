@@ -290,7 +290,7 @@ The output will include the model picked for each search result, resembling the 
   }}
 ----
 
-=== Running a Rerank Query Interleaving a model with the original ranking
+=== Running a Rerank Query Interleaving a Model with the Original Ranking
 When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking.
 To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
 
@@ -329,7 +329,7 @@ The output will include the model picked for each search result, resembling the 
   }}
 ----
 
-=== Running a Rerank Query with Interleaving passing a specific algorithm
+=== Running a Rerank Query with Interleaving Passing a Specific Algorithm
 To rerank the results of a query, interleaving two models using a specific algorithm, add the `interleavingAlgorithm` local parameter to the ltr query parser, for example:
 
 [source,text]

@@ -140,7 +140,7 @@ For example, if the Solr node is running behind a proxy or in a cloud environmen
 `hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
 In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
-If no port is passed via the `solr.xml` (i.e. `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
+If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
 
 `leaderVoteWait`::
 When SolrCloud is starting up, how long each Solr node will wait for all known replicas for that shard to be found before assuming that any nodes that haven't reported are down.

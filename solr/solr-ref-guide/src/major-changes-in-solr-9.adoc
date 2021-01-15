@@ -108,7 +108,7 @@ _(raw; not yet edited)_
 
 * SOLR-11775: Return long value for facet count in Json Facet module irrespective of number of shards (hossman, Munendra S N)
 
-* SOLR-12823: Remove /clusterstate.json support, i.e. support for collections created with stateFormat=1 as well as support
+* SOLR-12823: Remove /clusterstate.json support, i.e., support for collections created with stateFormat=1 as well as support
   for Collection API MIGRATESTATEFORMAT action. Also removes support for cluster property `legacyCloud` (as if always false now).
 
 * SOLR-14656: Autoscaling framework removed
