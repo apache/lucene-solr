@@ -145,9 +145,6 @@ _(raw; not yet edited)_
 * SOLR-14067: StatelessScriptingUpdateProcessor moved to /contrib/scripting-update-processor module.
   Renamed ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor being a deprecated name to support rolling upgrades.
 
-* SOLR-14067: StatelessScriptingUpdateProcessor moved to /contrib/scripting-update-processor module.
-  Renamed ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor being a deprecated name to support rolling upgrades.
-
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
