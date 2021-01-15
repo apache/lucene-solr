@@ -25,7 +25,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.processor.ScriptEngineCustomizer;
 import org.apache.solr.update.processor.UpdateProcessorTestBase;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.junit.Assume;
