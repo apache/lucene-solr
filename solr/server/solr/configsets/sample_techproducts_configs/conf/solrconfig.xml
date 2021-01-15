@@ -1281,7 +1281,7 @@
     See more about script update processor at https://lucene.apache.org/solr/guide/scripting-update-processor.html
   -->
   <updateRequestProcessorChain name="script">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
       <str name="script">update-script.js</str>
       <lst name="params">
         <str name="config_param">example config parameter</str>

@@ -54,7 +54,7 @@ Likewise you will need to add some JAR files depending on which scripting engine
 [source,xml]
 ----
 <updateRequestProcessorChain name="script">
-   <processor class="solr.ScriptUpdateProcessorFactory">
+   <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
      <str name="script">update-script.js</str>
    </processor>
    <!--  optional parameters passed to script

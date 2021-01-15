@@ -123,7 +123,7 @@ import org.slf4j.LoggerFactory;
  * A simple example...
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;str name="script"&gt;updateProcessor.js&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
