@@ -398,7 +398,8 @@ public final class SearchImpl extends LukeModel implements Search {
       tfidf.setDiscountOverlaps(config.isDiscountOverlaps());
       similarity = tfidf;
     } else {
-      BM25Similarity bm25 = new BM25Similarity(config.getK1(), config.getB(), config.isDiscountOverlaps());
+      BM25Similarity bm25 =
+          new BM25Similarity(config.getK1(), config.getB(), config.isDiscountOverlaps());
       similarity = bm25;
     }
 

@@ -64,10 +64,10 @@ public final class LegacyBM25Similarity extends Similarity {
    *
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
-   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero) are
-   * discounted from the document's length.
-   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
-   *         not within the range {@code [0..1]}
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero)
+   *     are discounted from the document's length.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is not
+   *     within the range {@code [0..1]}
    */
   public LegacyBM25Similarity(float k1, float b, boolean discountOverlaps) {
     this.bm25Similarity = new BM25Similarity(k1, b, discountOverlaps);

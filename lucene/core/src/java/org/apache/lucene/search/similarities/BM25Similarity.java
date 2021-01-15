@@ -41,8 +41,8 @@ public class BM25Similarity extends Similarity {
    *
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
-   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero) are
-   * discounted from the document's length.
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero)
+   *     are discounted from the document's length.
    * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is not
    *     within the range {@code [0..1]}
    */
@@ -64,8 +64,8 @@ public class BM25Similarity extends Similarity {
    *
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
-   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is
-   *         not within the range {@code [0..1]}
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is not
+   *     within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
     this(k1, b, true);
@@ -80,19 +80,21 @@ public class BM25Similarity extends Similarity {
    * </ul>
    *
    * and the supplied parameter value:
-   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero) are
-   * discounted from the document's length.
+   *
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero)
+   *     are discounted from the document's length.
    */
   public BM25Similarity(boolean discountOverlaps) {
     this(1.2f, 0.75f, discountOverlaps);
   }
 
-  /** BM25 with these default values:
+  /**
+   * BM25 with these default values:
    *
    * <ul>
-   *   <li>{@code k1 = 1.2}</li>
-   *   <li>{@code b = 0.75}</li>
-   *   <li>{@code discountOverlaps = true}</li>
+   *   <li>{@code k1 = 1.2}
+   *   <li>{@code b = 0.75}
+   *   <li>{@code discountOverlaps = true}
    * </ul>
    */
   public BM25Similarity() {
@@ -115,7 +117,7 @@ public class BM25Similarity extends Similarity {
   }
 
   /**
-   * Returns true if overlap tokens are discounted from the document's length. 
+   * Returns true if overlap tokens are discounted from the document's length.
    *
    * @see #BM25Similarity(float, float, boolean)
    */
