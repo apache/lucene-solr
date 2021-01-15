@@ -518,7 +518,7 @@ Improvements
   improves the approachability of the IndexWriter code. (Simon Willnauer)
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
-  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grand)
 
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)
