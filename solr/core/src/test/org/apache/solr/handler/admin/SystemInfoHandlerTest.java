@@ -18,12 +18,26 @@ package org.apache.solr.handler.admin;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.security.Principal;
 import java.util.Arrays;
+import java.util.Collections;
 
 import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.security.AuthenticationPlugin;
+import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.JWTPrincipal;
+import org.apache.solr.security.MockAuthenticationPlugin;
+import org.apache.solr.security.MockAuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.stats.MetricUtils;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 
 public class SystemInfoHandlerTest extends SolrTestCase {
@@ -48,6 +62,71 @@ public class SystemInfoHandlerTest extends SolrTestCase {
     for (String p : Arrays.asList("name", "version", "arch")) {
       assertEquals(info.get(p), info2.get(p));
     }
+  }
+
+  private static final String userName = "foobar";
+
+  public void testGetSecurityInfoAuthorizationPlugin() throws Exception {
+    final AuthorizationPlugin authorizationPlugin = new MockAuthorizationPlugin();
+    doTestGetSecurityInfo(authorizationPlugin);
+  }
+
+  public void testGetSecurityInfoRuleBasedAuthorizationPlugin() throws Exception {
+    final RuleBasedAuthorizationPluginBase ruleBasedAuthorizationPlugin = Mockito.mock(RuleBasedAuthorizationPlugin.class);
+    Mockito.doReturn(Collections.EMPTY_SET).when(ruleBasedAuthorizationPlugin).getUserRoles(ArgumentMatchers.any(Principal.class));
+    doTestGetSecurityInfo(ruleBasedAuthorizationPlugin);
+  }
+
+  private static void doTestGetSecurityInfo(AuthorizationPlugin authorizationPlugin) throws Exception {
+    final AuthenticationPlugin authenticationPlugin = new MockAuthenticationPlugin() {
+      @Override
+      public String getName() {
+        return "mock authentication plugin name";
+      }
+    };
+    doTestGetSecurityInfo(null, null);
+    doTestGetSecurityInfo(authenticationPlugin, null);
+    doTestGetSecurityInfo(null, authorizationPlugin);
+    doTestGetSecurityInfo(authenticationPlugin, authorizationPlugin);
+  }
+
+  private static void doTestGetSecurityInfo(AuthenticationPlugin authenticationPlugin, AuthorizationPlugin authorizationPlugin) throws Exception {
+
+    final CoreContainer cc = Mockito.mock(CoreContainer.class);
+    {
+      Mockito.doReturn(authenticationPlugin).when(cc).getAuthenticationPlugin();
+      Mockito.doReturn(authorizationPlugin).when(cc).getAuthorizationPlugin();
+    }
+
+    final SolrQueryRequest req = Mockito.mock(SolrQueryRequestBase.class);
+    {
+      final Principal principal = Mockito.mock(JWTPrincipal.class);
+      Mockito.doReturn(userName).when(principal).getName();
+      Mockito.doReturn(principal).when(req).getUserPrincipal();
+    }
+
+    final SimpleOrderedMap<Object> si = SystemInfoHandler.getSecurityInfo(cc, req);
+
+    if (authenticationPlugin != null) {
+      assertEquals(authenticationPlugin.getName(), si.remove("authenticationPlugin"));
+    } else {
+      assertNull(si.remove("authenticationPlugin"));
+    }
+
+    if (authorizationPlugin != null) {
+      assertEquals(authorizationPlugin.getClass().getName(), si.remove("authorizationPlugin"));
+      if (authorizationPlugin instanceof RuleBasedAuthorizationPluginBase) {
+        assertNotNull(si.remove("roles"));
+      } else {
+        assertNull(si.remove("roles"));
+      }
+    } else {
+      assertNull(si.remove("authorizationPlugin"));
+    }
+
+    assertEquals(userName, si.remove("username"));
+
+    assertEquals("Unexpected additional info: " + si, 0, si.size());
   }
 
 }
