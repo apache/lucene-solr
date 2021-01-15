@@ -180,7 +180,10 @@ public abstract class TermsEnum implements BytesRefIterator {
    * of unused Attributes does not matter.
    */
   public static final TermsEnum EMPTY =
-      new BaseTermsEnum() {
+      new TermsEnum() {
+
+        private AttributeSource atts = null;
+
         @Override
         public SeekStatus seekCeil(BytesRef term) {
           return SeekStatus.END;
@@ -226,7 +229,15 @@ public abstract class TermsEnum implements BytesRefIterator {
 
         @Override // make it synchronized here, to prevent double lazy init
         public synchronized AttributeSource attributes() {
-          return super.attributes();
+          if (atts == null) {
+            atts = new AttributeSource();
+          }
+          return atts;
+        }
+
+        @Override
+        public boolean seekExact(BytesRef text) throws IOException {
+          return seekCeil(text) == SeekStatus.FOUND;
         }
 
         @Override
