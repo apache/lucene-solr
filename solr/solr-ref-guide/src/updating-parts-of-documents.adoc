@@ -130,7 +130,7 @@ Solr offers two solutions to address this:
 Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
 field of this partial update.  This is how Solr understands that you are updating a child
 document, and not a Root document.  Without it, Solr only guesses that the `\_route_` param is
-equivalent, but it may be absent or not equivalent (e.g. when using the `implicit` router).
+equivalent, but it may be absent or not equivalent (e.g., when using the `implicit` router).
 
 All of the examples below use `id` prefixes, so no `\_route_` param will be necessary for these examples.
 ====
