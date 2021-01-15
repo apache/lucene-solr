@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The {solr-javadocs}/contrib/scripting/org/apache/solr/update/processor/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessor] allows Java scripting engines to be used
+The {solr-javadocs}/contrib/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessor] allows Java scripting engines to be used
 during Solr document update processing, allowing dramatic flexibility in
 expressing custom document processing logic before being indexed.  It has hooks to the
 commit, delete, rollback, etc indexing actions, however add is the most common usage.
