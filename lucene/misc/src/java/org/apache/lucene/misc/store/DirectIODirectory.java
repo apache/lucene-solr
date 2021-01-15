@@ -28,104 +28,105 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
-
 import org.apache.lucene.store.*;
 import org.apache.lucene.store.IOContext.Context;
 
 /**
- * A {@link Directory} implementation for all Unixes and Windows that uses
- * DIRECT I/O to bypass OS level IO caching during
- * merging.  For all other cases (searching, writing) we delegate
- * to the provided Directory instance.
+ * A {@link Directory} implementation for all Unixes and Windows that uses DIRECT I/O to bypass OS
+ * level IO caching during merging. For all other cases (searching, writing) we delegate to the
+ * provided Directory instance.
  *
- * <p>See <a
- * href="{@docRoot}/overview-summary.html#DirectIODirectory">Overview</a>
- * for more details.
+ * <p>See <a href="{@docRoot}/overview-summary.html#DirectIODirectory">Overview</a> for more
+ * details.
  *
- * <p><b>WARNING</b>: this code is very new and quite easily
- * could contain horrible bugs.
+ * <p><b>WARNING</b>: this code is very new and quite easily could contain horrible bugs.
  *
- * <p>This directory passes Solr and Lucene tests on Linux, OS X,
- * and Windows; other systems should work but have not been
- * tested! Use at your own risk.
+ * <p>This directory passes Solr and Lucene tests on Linux, OS X, and Windows; other systems should
+ * work but have not been tested! Use at your own risk.
  *
- * <p>@throws UnsupportedOperationException if the operating system, file system or JDK
- * does not support Direct I/O or a sufficient equivalent.
+ * <p>@throws UnsupportedOperationException if the operating system, file system or JDK does not
+ * support Direct I/O or a sufficient equivalent.
  *
  * @lucene.experimental
  */
 public class DirectIODirectory extends FilterDirectory {
 
-  /** Default buffer size before writing to disk (256 KB);
-   *  larger means less IO load but more RAM and direct
-   *  buffer storage space consumed during merging. */
+  /**
+   * Default buffer size before writing to disk (256 KB); larger means less IO load but more RAM and
+   * direct buffer storage space consumed during merging.
+   */
+  public static final int DEFAULT_MERGE_BUFFER_SIZE = 262144;
 
-  public final static int DEFAULT_MERGE_BUFFER_SIZE = 262144;
-
-  /** Default min expected merge size before direct IO is
-   *  used (10 MB): */
-  public final static long DEFAULT_MIN_BYTES_DIRECT = 10*1024*1024;
+  /** Default min expected merge size before direct IO is used (10 MB): */
+  public static final long DEFAULT_MIN_BYTES_DIRECT = 10 * 1024 * 1024;
 
   private final int blockSize, mergeBufferSize;
   private final long minBytesDirect;
-  
+
   volatile boolean isOpen = true;
 
-  /** Reference to {@code com.sun.nio.file.ExtendedOpenOption.DIRECT} by reflective class and enum lookup.
-   * There are two reasons for using this instead of directly referencing ExtendedOpenOption.DIRECT:
+  /**
+   * Reference to {@code com.sun.nio.file.ExtendedOpenOption.DIRECT} by reflective class and enum
+   * lookup. There are two reasons for using this instead of directly referencing
+   * ExtendedOpenOption.DIRECT:
+   *
    * <ol>
-   * <li> ExtendedOpenOption.DIRECT is OpenJDK's internal proprietary API. This API causes un-suppressible(?) warning to be emitted
-   *  when compiling with --release flag and value N, where N is smaller than the the version of javac used for compilation.
-   *  For details, please refer to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8259039.</li>
-   * <li> It is possible that Lucene is run using JDK that does not support ExtendedOpenOption.DIRECT. In such a
-   *  case, dynamic lookup allows us to bail out with UnsupportedOperationException with meaningful error message.</li>
+   *   <li>ExtendedOpenOption.DIRECT is OpenJDK's internal proprietary API. This API causes
+   *       un-suppressible(?) warning to be emitted when compiling with --release flag and value N,
+   *       where N is smaller than the the version of javac used for compilation. For details,
+   *       please refer to https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8259039.
+   *   <li>It is possible that Lucene is run using JDK that does not support
+   *       ExtendedOpenOption.DIRECT. In such a case, dynamic lookup allows us to bail out with
+   *       UnsupportedOperationException with meaningful error message.
    * </ol>
+   *
    * <p>This reference is {@code null}, if the JDK does not support direct I/O.
    */
   static final OpenOption ExtendedOpenOption_DIRECT; // visible for test
+
   static {
     OpenOption option;
     try {
-      final Class<? extends OpenOption> clazz = Class.forName("com.sun.nio.file.ExtendedOpenOption").asSubclass(OpenOption.class);
-      option = Arrays.stream(clazz.getEnumConstants())
-                      .filter(e -> e.toString().equalsIgnoreCase("DIRECT"))
-                      .findFirst()
-                      .orElse(null);
+      final Class<? extends OpenOption> clazz =
+          Class.forName("com.sun.nio.file.ExtendedOpenOption").asSubclass(OpenOption.class);
+      option =
+          Arrays.stream(clazz.getEnumConstants())
+              .filter(e -> e.toString().equalsIgnoreCase("DIRECT"))
+              .findFirst()
+              .orElse(null);
     } catch (Exception e) {
       option = null;
     }
     ExtendedOpenOption_DIRECT = option;
   }
 
-  /** Create a new DirectIODirectory for the named location.
-   * 
-   * @param delegate Directory for non-merges, also used
-   *    as reference to file system path.
-   * @param mergeBufferSize Size of buffer to use for
-   *    merging.
-   * @param minBytesDirect Merges, or files to be opened for
-   *   reading, smaller than this will
-   *   not use direct IO.  See {@link
-   *   #DEFAULT_MIN_BYTES_DIRECT}
+  /**
+   * Create a new DirectIODirectory for the named location.
+   *
+   * @param delegate Directory for non-merges, also used as reference to file system path.
+   * @param mergeBufferSize Size of buffer to use for merging.
+   * @param minBytesDirect Merges, or files to be opened for reading, smaller than this will not use
+   *     direct IO. See {@link #DEFAULT_MIN_BYTES_DIRECT}
    * @throws IOException If there is a low-level I/O error
    */
-  public DirectIODirectory(FSDirectory delegate, int mergeBufferSize, long minBytesDirect) throws IOException {
+  public DirectIODirectory(FSDirectory delegate, int mergeBufferSize, long minBytesDirect)
+      throws IOException {
     super(delegate);
     this.blockSize = Math.toIntExact(Files.getFileStore(delegate.getDirectory()).getBlockSize());
     this.mergeBufferSize = mergeBufferSize;
     this.minBytesDirect = minBytesDirect;
   }
 
-  /** Create a new DirectIODirectory for the named location.
-   * 
-   * @param delegate Directory for non-merges, also used
-   *    as reference to file system path.
+  /**
+   * Create a new DirectIODirectory for the named location.
+   *
+   * @param delegate Directory for non-merges, also used as reference to file system path.
    * @throws IOException If there is a low-level I/O error
    */
   public DirectIODirectory(FSDirectory delegate) throws IOException {
     this(delegate, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT);
   }
-  
+
   /** @return the underlying file system directory */
   public Path getDirectory() {
     return ((FSDirectory) in).getDirectory();
@@ -139,7 +140,8 @@ public class DirectIODirectory extends FilterDirectory {
   }
 
   protected boolean useDirectIO(IOContext context) {
-    return context.context == Context.MERGE && context.mergeInfo.estimatedMergeBytes >= minBytesDirect;
+    return context.context == Context.MERGE
+        && context.mergeInfo.estimatedMergeBytes >= minBytesDirect;
   }
 
   @Override
@@ -156,26 +158,28 @@ public class DirectIODirectory extends FilterDirectory {
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
     if (useDirectIO(context)) {
-      return new DirectIOIndexOutput(getDirectory().resolve(name), name, blockSize, mergeBufferSize);
+      return new DirectIOIndexOutput(
+          getDirectory().resolve(name), name, blockSize, mergeBufferSize);
     } else {
       return in.createOutput(name, context);
     }
   }
-  
+
   @Override
   public void close() throws IOException {
     isOpen = false;
     super.close();
   }
-  
+
   private static OpenOption getDirectOpenOption() {
     if (ExtendedOpenOption_DIRECT == null) {
-      throw new UnsupportedOperationException("com.sun.nio.file.ExtendedOpenOption.DIRECT is not available in the current JDK version.");
+      throw new UnsupportedOperationException(
+          "com.sun.nio.file.ExtendedOpenOption.DIRECT is not available in the current JDK version.");
     }
     return ExtendedOpenOption_DIRECT;
   }
 
-  private final static class DirectIOIndexOutput extends IndexOutput {
+  private static final class DirectIOIndexOutput extends IndexOutput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
     private final Checksum digest;
@@ -184,14 +188,19 @@ public class DirectIODirectory extends FilterDirectory {
     private boolean isOpen;
 
     /**
-     * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO bypassing OS buffer
-     * @throws UnsupportedOperationException if the operating system, file system or JDK
-     * does not support Direct I/O or a sufficient equivalent.
+     * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO
+     * bypassing OS buffer
+     *
+     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
+     *     support Direct I/O or a sufficient equivalent.
      */
-    public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize) throws IOException {
+    public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize)
+        throws IOException {
       super("DirectIOIndexOutput(path=\"" + path.toString() + "\")", name);
 
-      channel = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW, getDirectOpenOption());
+      channel =
+          FileChannel.open(
+              path, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW, getDirectOpenOption());
       buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
       digest = new BufferedChecksum(new CRC32());
 
@@ -210,7 +219,7 @@ public class DirectIODirectory extends FilterDirectory {
     @Override
     public void writeBytes(byte[] src, int offset, int len) throws IOException {
       int toWrite = len;
-      while(true) {
+      while (true) {
         final int left = buffer.remaining();
         if (left <= toWrite) {
           buffer.put(src, offset, left);
@@ -228,7 +237,7 @@ public class DirectIODirectory extends FilterDirectory {
 
     private void dump() throws IOException {
       final int size = buffer.position();
-      
+
       // we need to rewind, as we have to write full blocks (we truncate file later):
       buffer.rewind();
 
@@ -255,7 +264,7 @@ public class DirectIODirectory extends FilterDirectory {
         try {
           dump();
         } finally {
-          try (FileChannel ch = channel){
+          try (FileChannel ch = channel) {
             ch.truncate(getFilePointer());
           }
         }
@@ -263,7 +272,7 @@ public class DirectIODirectory extends FilterDirectory {
     }
   }
 
-  private final static class DirectIOIndexInput extends IndexInput {
+  private static final class DirectIOIndexInput extends IndexInput {
     private final ByteBuffer buffer;
     private final FileChannel channel;
     private final int blockSize;
@@ -273,9 +282,11 @@ public class DirectIODirectory extends FilterDirectory {
     private long filePos;
 
     /**
-     * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing OS buffer
-     * @throws UnsupportedOperationException if the operating system, file system or JDK
-     * does not support Direct I/O or a sufficient equivalent.
+     * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing
+     * OS buffer
+     *
+     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
+     *     support Direct I/O or a sufficient equivalent.
      */
     public DirectIOIndexInput(Path path, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
@@ -295,10 +306,10 @@ public class DirectIODirectory extends FilterDirectory {
       super(other.toString());
       this.channel = other.channel;
       this.blockSize = other.blockSize;
-      
+
       final int bufferSize = other.buffer.capacity();
       this.buffer = ByteBuffer.allocateDirect(bufferSize + blockSize - 1).alignedSlice(blockSize);
-      
+
       isOpen = true;
       isClone = true;
       filePos = -bufferSize;
@@ -317,11 +328,12 @@ public class DirectIODirectory extends FilterDirectory {
     public long getFilePointer() {
       long filePointer = filePos + buffer.position();
 
-      // opening the input and immediately calling getFilePointer without calling readX (and thus refill) first,
+      // opening the input and immediately calling getFilePointer without calling readX (and thus
+      // refill) first,
       // will result in negative value equal to bufferSize being returned,
       // due to the initialization method filePos = -bufferSize used in constructor.
-      assert filePointer == -buffer.capacity() || filePointer >= 0 :
-        "filePointer should either be initial value equal to negative buffer capacity, or larger than or equal to 0";
+      assert filePointer == -buffer.capacity() || filePointer >= 0
+          : "filePointer should either be initial value equal to negative buffer capacity, or larger than or equal to 0";
       return Math.max(filePointer, 0);
     }
 
@@ -329,8 +341,8 @@ public class DirectIODirectory extends FilterDirectory {
     public void seek(long pos) throws IOException {
       if (pos != getFilePointer()) {
         final long alignedPos = pos - (pos % blockSize);
-        filePos = alignedPos-buffer.capacity();
-        
+        filePos = alignedPos - buffer.capacity();
+
         final int delta = (int) (pos - alignedPos);
         refill();
         try {
@@ -364,7 +376,7 @@ public class DirectIODirectory extends FilterDirectory {
 
       // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
       // hence throwing EOFException early to maintain buffer state (position in particular)
-      if(filePos >= channel.size()) {
+      if (filePos >= channel.size()) {
         throw new EOFException("read past EOF: " + this);
       }
 
@@ -382,7 +394,7 @@ public class DirectIODirectory extends FilterDirectory {
     @Override
     public void readBytes(byte[] dst, int offset, int len) throws IOException {
       int toRead = len;
-      while(true) {
+      while (true) {
         final int left = buffer.remaining();
         if (left < toRead) {
           buffer.get(dst, offset, left);

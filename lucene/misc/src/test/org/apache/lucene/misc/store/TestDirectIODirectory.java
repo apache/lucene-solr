@@ -18,7 +18,6 @@ package org.apache.lucene.misc.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -35,13 +34,15 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
 
   @BeforeClass
   public static void checkSupported() {
-    assumeTrue("This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
+    assumeTrue(
+        "This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
         DirectIODirectory.ExtendedOpenOption_DIRECT != null);
   }
-  
+
   @Override
   protected DirectIODirectory getDirectory(Path path) throws IOException {
-    return new DirectIODirectory(FSDirectory.open(path), DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L) {
+    return new DirectIODirectory(
+        FSDirectory.open(path), DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L) {
       @Override
       protected boolean useDirectIO(IOContext context) {
         return true;
@@ -50,8 +51,8 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
   }
 
   public void testIndexWriteRead() throws IOException {
-    try(Directory dir = getDirectory(createTempDir("testDirectIODirectory"))) {
-      try(RandomIndexWriter iw = new RandomIndexWriter(random(), dir)) {
+    try (Directory dir = getDirectory(createTempDir("testDirectIODirectory"))) {
+      try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir)) {
         Document doc = new Document();
         Field field = newField("field", "foo bar", TextField.TYPE_STORED);
         doc.add(field);
@@ -60,7 +61,7 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
         iw.commit();
       }
 
-      try(IndexReader ir = DirectoryReader.open(dir)) {
+      try (IndexReader ir = DirectoryReader.open(dir)) {
         IndexSearcher s = newSearcher(ir);
         assertEquals(1, s.count(new PhraseQuery("field", "foo", "bar")));
       }
