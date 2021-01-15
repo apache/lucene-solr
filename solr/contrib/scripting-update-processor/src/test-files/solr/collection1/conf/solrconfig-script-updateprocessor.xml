@@ -29,7 +29,7 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="engine">javascript</str>
       <str name="script">missleading.extension.updateprocessor.js.txt</str>
     </processor>
@@ -42,7 +42,7 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="single-script">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">trivial.updateprocessor0.js</str>
       <lst name="params">
         <bool name="boolValue">true</bool>
@@ -53,7 +53,7 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="dual-scripts-arr">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <arr name="script">
         <str>trivial.updateprocessor0.js</str>
         <str>trivial.updateprocessor1.js</str>
@@ -67,7 +67,7 @@
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="dual-scripts-strs">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">trivial.updateprocessor0.js</str>
       <str name="script">trivial.updateprocessor1.js</str>
       <lst name="params">
@@ -81,7 +81,7 @@
   <updateRequestProcessorChain name="conditional-scripts">
     <!-- multiple scripts,
          test that the first one can conditionally stop execution -->
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">conditional.updateprocessor.js</str>
       <str name="script">addfields.updateprocessor.js</str>
     </processor>
@@ -91,34 +91,34 @@
     <!-- single script, followed by another processor
          (that happens to be a script).
          test that the first one can conditionally stop execution -->
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">conditional.updateprocessor.js</str>
     </processor>
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">addfields.updateprocessor.js</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="error-on-add">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">throw.error.on.add.updateprocessor.js</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="missing-functions">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">missing.functions.updateprocessor.js</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="javascript-compatibility">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">cross-compatible.js</str>
     </processor>
   </updateRequestProcessorChain>
 
   <updateRequestProcessorChain name="evil">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">evil.js</str>
     </processor>
   </updateRequestProcessorChain>

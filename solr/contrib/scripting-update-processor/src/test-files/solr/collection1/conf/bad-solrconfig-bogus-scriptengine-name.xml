@@ -22,7 +22,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="engine">giberish</str>
       <str name="script">missleading.extension.updateprocessor.js.txt</str>
     </processor>

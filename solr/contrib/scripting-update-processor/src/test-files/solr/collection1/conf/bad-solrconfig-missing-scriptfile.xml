@@ -22,7 +22,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.ScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory">
       <str name="script">a-file-name-that-does-not-exist.js</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />

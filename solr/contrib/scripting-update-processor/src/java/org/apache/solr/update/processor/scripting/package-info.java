@@ -14,14 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update.processor;
-
-import org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory;
 
 /**
- * @deprecated use {@link ScriptUpdateProcessorFactory} instead.  This class will be removed in an upcoming release.
+ * {@link org.apache.solr.update.processor.scripting.ScriptUpdateProcessorFactory} and related code.
  */
-@Deprecated
-public class StatelessScriptUpdateProcessorFactory extends ScriptUpdateProcessorFactory {
-
-}
+package org.apache.solr.update.processor.scripting;
