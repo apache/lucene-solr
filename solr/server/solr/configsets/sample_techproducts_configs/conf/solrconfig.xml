@@ -83,7 +83,7 @@
 
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
 
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-scripting-update-processor-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-scripting-\d.*\.jar" />
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged

@@ -52,7 +52,7 @@ dependencies {
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:scripting-update-processor"
+   ":solr:contrib:scripting"
   ].each { contribName ->
     distSolr project(contribName)
     contrib  project(path: contribName, configuration: "packaging")

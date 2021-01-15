@@ -37,7 +37,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <lib dir="${solr.install.dir:../../../../../}/contrib/scripting-update-processor/build/libs/" regex="solr-scripting-update-processor-\d.*\.jar" />
+  <lib dir="${solr.install.dir:../../../../../}/contrib/scripting/build/libs/" regex="solr-scripting-\d.*\.jar" />
 
 
   <requestHandler name="/select" class="solr.SearchHandler">

@@ -186,6 +186,9 @@ Other Changes
 
 * SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
 
+* SOLR-14067: StatelessScriptUpdateProcessor moved to it's own /contrib/scripting package instead of shipping as part of Solr due to security concerns.  Renamed to
+  ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor as a deprecated name. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -418,9 +421,6 @@ Improvements
 * SOLR-14691: Metrics reporting should avoid creating objects. (ab, noble)
 
 * SOLR-14933: Ability to add T and P type replica from admin UI (Sayan Das via Eric Pugh)
-
-* SOLR-14067: StatelessScriptUpdateProcessor moved to it's own /contrib package instead of shipping as part of Solr due to security concerns.  Renamed to
-  ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor as a deprecated name. (Eric Pugh)
 
 Optimizations
 ---------------------
