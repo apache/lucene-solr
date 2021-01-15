@@ -32,12 +32,27 @@ import java.util.OptionalInt;
  * Evaluation using a Two-Level Retrieval Process" by Broder, Carmel, Herscovici, Soffer and Zien.
  * Enhanced with techniques described in "Faster Top-k Document Retrieval Using Block-Max Indexes"
  * by Ding and Suel. This scorer maintains a feedback loop with the collector in order to know at
- * any time the minimum score that is required in order for a hit to be competitive. Then it
- * leverages the {@link Scorer#getMaxScore(int) max score} from each scorer in order to know when it
- * may call {@link DocIdSetIterator#advance} rather than {@link DocIdSetIterator#nextDoc} to move to
- * the next competitive hit. Implementation is similar to {@link MinShouldMatchSumScorer} except
- * that instead of enforcing that {@code freq >= minShouldMatch}, we enforce that {@code ∑ max_score
- * >= minCompetitiveScore}.
+ * any time the minimum score that is required in order for a hit to be competitive.
+ *
+ * <p>The implementation supports both minShouldMatch by enforcing {@code freq >= minShouldMatch},
+ * and minCompetitiveScore by enforce that {@code ∑ max_score >= minCompetitiveScore}. When {@link
+ * ScoreMode#needsScores()} is false, block-max scoring related logic (finding max score in the
+ * block, updating scorer with the new max score, and approximating next potential candidate using
+ * the updated score) is skipped.
+ *
+ * <p>The implementation keeps sub scorers in 3 different places: - tail: a heap that contains
+ * scorers that are behind the desired doc ID. These scorers are ordered by cost so that we can
+ * advance the least costly ones first. - lead: a linked list of scorer that are positioned on the
+ * desired doc ID - head: a heap that contains scorers which are beyond the desired doc ID, ordered
+ * by doc ID in order to move quickly to the next candidate.
+ *
+ * <p>When {@link ScoreMode#needsScores()} is true, it leverages the {@link Scorer#getMaxScore(int)
+ * max score} from each scorer in order to know when it may call {@link DocIdSetIterator#advance}
+ * rather than {@link DocIdSetIterator#nextDoc} to move to the next competitive hit.
+ *
+ * <p>Finding the next match consists of first setting the desired doc ID to the least entry in
+ * 'head', and then advance 'tail' until there is a match, by meeting the configured {@code freq >=
+ * minShouldMatch} or {@code ∑ max_score >= minCompetitiveScore} requirements.
  */
 final class WANDScorer extends Scorer {
 
@@ -134,7 +149,10 @@ final class WANDScorer extends Scorer {
   final int minShouldMatch;
   int freq;
 
-  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch) throws IOException {
+  final boolean needsScore;
+
+  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch, boolean needsScore)
+      throws IOException {
     super(weight);
 
     if (minShouldMatch >= scorers.size()) {
@@ -149,23 +167,33 @@ final class WANDScorer extends Scorer {
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
 
+    this.needsScore = needsScore;
+
     head = new DisiPriorityQueue(scorers.size());
     // there can be at most num_scorers - 1 scorers beyond the current position
     tail = new DisiWrapper[scorers.size()];
 
-    OptionalInt scalingFactor = OptionalInt.empty();
-    for (Scorer scorer : scorers) {
-      scorer.advanceShallow(0);
-      float maxScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-      if (maxScore != 0 && Float.isFinite(maxScore)) {
-        // 0 and +Infty should not impact the scale
-        scalingFactor =
-            OptionalInt.of(
-                Math.min(scalingFactor.orElse(Integer.MAX_VALUE), scalingFactor(maxScore)));
+    if (needsScore) {
+      OptionalInt scalingFactor = OptionalInt.empty();
+      for (Scorer scorer : scorers) {
+        scorer.advanceShallow(0);
+        float maxScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+        if (maxScore != 0 && Float.isFinite(maxScore)) {
+          // 0 and +Infty should not impact the scale
+          scalingFactor =
+              OptionalInt.of(
+                  Math.min(scalingFactor.orElse(Integer.MAX_VALUE), scalingFactor(maxScore)));
+        }
       }
+
+      this.scalingFactor = scalingFactor.orElse(0);
+      this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
+    } else {
+      this.scalingFactor = 0;
+      this.maxScorePropagator = null;
     }
+
     // Use a scaling factor of 0 if all max scores are either 0 or +Infty
-    this.scalingFactor = scalingFactor.orElse(0);
 
     for (Scorer scorer : scorers) {
       addLead(new DisiWrapper(scorer));
@@ -176,32 +204,33 @@ final class WANDScorer extends Scorer {
             scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
             scorers.size(),
             minShouldMatch);
-    this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
   }
 
   // returns a boolean so that it can be called from assert
   // the return value is useless: it always returns true
   private boolean ensureConsistent() {
-    long maxScoreSum = 0;
-    for (int i = 0; i < tailSize; ++i) {
-      assert tail[i].doc < doc;
-      maxScoreSum = Math.addExact(maxScoreSum, tail[i].maxScore);
-    }
-    assert maxScoreSum == tailMaxScore : maxScoreSum + " " + tailMaxScore;
+    if (needsScore) {
+      long maxScoreSum = 0;
+      for (int i = 0; i < tailSize; ++i) {
+        assert tail[i].doc < doc;
+        maxScoreSum = Math.addExact(maxScoreSum, tail[i].maxScore);
+      }
+      assert maxScoreSum == tailMaxScore : maxScoreSum + " " + tailMaxScore;
 
-    maxScoreSum = 0;
-    for (DisiWrapper w = lead; w != null; w = w.next) {
-      assert w.doc == doc;
-      maxScoreSum = Math.addExact(maxScoreSum, w.maxScore);
+      maxScoreSum = 0;
+      for (DisiWrapper w = lead; w != null; w = w.next) {
+        assert w.doc == doc;
+        maxScoreSum = Math.addExact(maxScoreSum, w.maxScore);
+      }
+      assert maxScoreSum == leadMaxScore : maxScoreSum + " " + leadMaxScore;
+
+      assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
+      assert doc <= upTo;
     }
-    assert maxScoreSum == leadMaxScore : maxScoreSum + " " + leadMaxScore;
 
     for (DisiWrapper w : head) {
       assert w.doc > doc;
     }
-
-    assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
-    assert doc <= upTo;
 
     return true;
   }
@@ -210,6 +239,7 @@ final class WANDScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     // Let this disjunction know about the new min score so that it can skip
     // over clauses that produce low scores.
+    assert needsScore : "minCompetitiveScore can not be set when in non-scoring mode";
     assert minScore >= 0;
     long scaledMinScore = scaleMinScore(minScore, scalingFactor);
     assert scaledMinScore >= minCompetitiveScore;
@@ -257,8 +287,10 @@ final class WANDScorer extends Scorer {
             // Advance 'head' as well
             advanceHead(target);
 
-            // Update score bounds if necessary so
-            updateMaxScoresIfNecessary(target);
+            if (needsScore) {
+              // Update score bounds if necessary so
+              updateMaxScoresIfNecessary(target);
+            }
 
             if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               return DocIdSetIterator.NO_MORE_DOCS;
@@ -266,11 +298,10 @@ final class WANDScorer extends Scorer {
               // Pop the new 'lead' from 'head', reset stats
               setDocAndFreq(doc + 1);
               assert ensureConsistent();
+
+              // Advance to the next possible match
+              return doNextCompetitiveCandidate();
             }
-
-
-            // Advance to the next possible match
-            return doNextCompetitiveCandidate();
           }
 
           @Override
@@ -308,8 +339,11 @@ final class WANDScorer extends Scorer {
   private void addLead(DisiWrapper lead) {
     lead.next = this.lead;
     this.lead = lead;
-    leadMaxScore += lead.maxScore;
     freq += 1;
+
+    if (needsScore) {
+      leadMaxScore += lead.maxScore;
+    }
   }
 
   /** Move disis that are in 'lead' back to the tail. */
@@ -322,7 +356,10 @@ final class WANDScorer extends Scorer {
       }
     }
     lead = null;
-    leadMaxScore = 0;
+
+    if (needsScore) {
+      leadMaxScore = 0;
+    }
   }
 
   /** Make sure all disis in 'head' are on or after 'target'. */
@@ -424,7 +461,8 @@ final class WANDScorer extends Scorer {
       }
     }
 
-    assert (head.size() == 0 && upTo == DocIdSetIterator.NO_MORE_DOCS) || (head.size() > 0 && head.top().doc <= upTo);
+    assert (head.size() == 0 && upTo == DocIdSetIterator.NO_MORE_DOCS)
+        || (head.size() > 0 && head.top().doc <= upTo);
     assert upTo >= target;
 
     // updateMaxScores tries to move forward until a block with matches is found
@@ -458,16 +496,18 @@ final class WANDScorer extends Scorer {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
 
-      // Update score bounds if necessary so
-      updateMaxScoresIfNecessary(doc + 1);
+      if (needsScore) {
+        // Update score bounds if necessary so
+        updateMaxScoresIfNecessary(doc + 1);
+      }
 
       if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          return DocIdSetIterator.NO_MORE_DOCS;
+        return DocIdSetIterator.NO_MORE_DOCS;
       } else {
         setDocAndFreq(doc + 1);
         assert ensureConsistent();
       }
-   }
+    }
 
     return doc;
   }

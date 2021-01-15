@@ -50,7 +50,7 @@ final class DisjunctionMaxScorer extends DisjunctionScorer {
     if (tieBreakerMultiplier < 0 || tieBreakerMultiplier > 1) {
       throw new IllegalArgumentException("tieBreakerMultiplier must be in [0, 1]");
     }
-    if (scoreMode == ScoreMode.TOP_SCORES) {
+    if (scoreMode.needsScores()) {
       this.disjunctionBlockPropagator = new DisjunctionScoreBlockBoundaryPropagator(subScorers);
     } else {
       this.disjunctionBlockPropagator = null;
