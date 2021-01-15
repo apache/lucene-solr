@@ -36,7 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.TestUtil;
 
 /** Base test case for testing indexing and search functionality of cartesian geometry * */
-public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
+public abstract class BaseXYShapeTestCase extends BaseSpatialTestCase {
   protected abstract ShapeType getShapeType();
 
   protected Object nextShape() {

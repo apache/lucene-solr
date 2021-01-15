@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -49,7 +47,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -497,13 +494,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // TODO: possibly set checkDeleteByQueries as a flag on the command?
       doLocalAdd(cmd);
 
-      // if the update updates a doc that is part of a nested structure,
-      // force open a realTimeSearcher to trigger a ulog cache refresh.
-      // This refresh makes RTG handler aware of this update.q
-      if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-        ulog.openRealtimeSearcher();
-      }
-
       if (clonedDoc != null) {
         cmd.solrDoc = clonedDoc;
       }
@@ -633,7 +623,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @return AddUpdateCommand containing latest full doc at shard leader for the given id, or null if not found.
    */
   private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
-    String id = inplaceAdd.getPrintableId();
+    String id = inplaceAdd.getIndexedIdStr();
     UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, false);
@@ -679,60 +669,47 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
     if (!AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) return false;
 
+    if (idField == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can't do atomic updates without a schema uniqueKeyField");
+    }
+
+    BytesRef rootIdBytes = cmd.getIndexedId(); // root doc; falls back to doc ID if no _route_
+    String rootDocIdString = cmd.getIndexedIdStr();
+
     Set<String> inPlaceUpdatedFields = AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd);
     if (inPlaceUpdatedFields.size() > 0) { // non-empty means this is suitable for in-place updates
       if (docMerger.doInPlaceUpdateMerge(cmd, inPlaceUpdatedFields)) {
         return true;
-      } else {
-        // in-place update failed, so fall through and re-try the same with a full atomic update
-      }
+      } // in-place update failed, so fall through and re-try the same with a full atomic update
     }
-    
-    // full (non-inplace) atomic update
-    SolrInputDocument sdoc = cmd.getSolrInputDocument();
-    BytesRef idBytes = cmd.getIndexedId();
-    String idString = cmd.getPrintableId();
-    SolrInputDocument oldRootDocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), idBytes, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
 
+    // full (non-inplace) atomic update
+
+    final SolrInputDocument oldRootDocWithChildren =
+        RealTimeGetComponent.getInputDocument(
+            req.getCore(),
+            rootIdBytes,
+            rootIdBytes,
+            null,
+            null,
+            RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN); // when no children, just fetches the doc
+
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    SolrInputDocument mergedDoc;
     if (oldRootDocWithChildren == null) {
-      if (versionOnUpdate > 0) {
+      if (versionOnUpdate > 0
+          || !rootDocIdString.equals(cmd.getChildDocIdStr())) {
         // could just let the optimistic locking throw the error
-        throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + idString);
-      } else if (req.getParams().get(ShardParams._ROUTE_) != null) {
-        // the specified document could not be found in this shard
-        // and was explicitly routed using _route_
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Could not find document id=" + idString +
-                ", perhaps the wrong \"_route_\" param was supplied");
+        throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
       }
+      // create a new doc by default if an old one wasn't found
+      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument(idField.getName(), rootDocIdString));
     } else {
       oldRootDocWithChildren.remove(CommonParams.VERSION_FIELD);
+
+      mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
     }
 
-
-    SolrInputDocument mergedDoc;
-    if(idField == null || oldRootDocWithChildren == null) {
-      // create a new doc by default if an old one wasn't found
-      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
-    } else {
-      // Safety check: don't allow an update to an existing doc that has children, unless we actually support this.
-      if (req.getSchema().isUsableForChildDocs() // however, next line we see it doesn't support child docs
-          && req.getSchema().supportsPartialUpdatesOfChildDocs() == false
-          && req.getSearcher().count(new TermQuery(new Term(IndexSchema.ROOT_FIELD_NAME, idBytes))) > 1) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "This schema does not support partial updates to nested docs. See ref guide.");
-      }
-
-      String oldRootDocRootFieldVal = (String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME);
-      if(req.getSchema().savesChildDocRelations() && oldRootDocRootFieldVal != null &&
-          !idString.equals(oldRootDocRootFieldVal)) {
-        // this is an update where the updated doc is not the root document
-        SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
-            idBytes, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
-        mergedDoc = docMerger.mergeChildDoc(sdoc, oldRootDocWithChildren, sdocWithChildren);
-      } else {
-        mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
-      }
-    }
     cmd.solrDoc = mergedDoc;
     return true;
   }
@@ -1129,20 +1106,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   protected void doDistribFinish() throws IOException {
     // no-op for derived classes to implement
-  }
-
-  /**
-   *
-   * {@link AddUpdateCommand#isNested} is set in {@link org.apache.solr.update.processor.NestedUpdateProcessorFactory},
-   * which runs on leader and replicas just before run time processor
-   * @return whether this update changes a value of a nested document
-   */
-  private static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
-    // should be set since this method should only be called after DistributedUpdateProcessor#doLocalAdd,
-    // which runs post-processor in the URP chain, having NestedURP set cmd#isNested.
-    assert !cmd.getReq().getSchema().savesChildDocRelations() || cmd.isNested != null;
-    // true if update adds children
-    return Boolean.TRUE.equals(cmd.isNested);
   }
 
   /**

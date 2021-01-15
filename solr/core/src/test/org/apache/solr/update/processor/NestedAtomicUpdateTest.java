@@ -21,12 +21,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
@@ -34,6 +36,9 @@ import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.handler.component.RealTimeGetComponent.Resolution.DOC;
+import static org.apache.solr.handler.component.RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN;
 
 public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
@@ -170,8 +175,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
 
     assertQ(req("q", "_root_:1", "fl", "*", "rows", "11"),
-        "//*[@numFound='11']",
-        "*[count(//str[@name='_root_'][.='1'])=11]"
+        "//*[@numFound='11']"
     );
 
     assertQ(req("q", "string_s:child", "fl", "*"),
@@ -182,8 +186,15 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // ensure updates work when block has more than 10 children
     for(int i = 10; i < 20; ++i) {
       docs = IntStream.range(i * 10, (i * 10) + 5).mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild")).collect(Collectors.toList());
-      doc = sdoc("id", String.valueOf(i), "grandChildren", Collections.singletonMap("add", docs));
-      addAndGetVersion(doc, params("wt", "json"));
+      doc =
+          sdoc(
+              "id",
+              String.valueOf(i),
+              "_root_", //shows we can specify the root field here instead of params
+              "1",
+              "grandChildren",
+              Collections.singletonMap("add", docs));
+      addAndGetVersion(doc, params("wt", "json")); // no _route_ with root
       assertU(commit());
     }
 
@@ -224,7 +235,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
     doc = sdoc("id", "2",
         "grandChild", Collections.singletonMap("add", sdocs(sdoc("id", "4", "child_s", "grandChild"), sdoc("id", "5", "child_s", "grandChild"))));
-    addAndGetVersion(doc, params("wt", "json"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertU(commit());
 
@@ -286,15 +297,16 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   @Test
   public void testBlockAtomicAdd() throws Exception {
 
+    final SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
-        "child1", sdoc("id", "2", "cat_ss", "child")
+        "child1", sdoc2
     );
     assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, rootDocId, null, null, ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -305,10 +317,10 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
-    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
+    assertEquals(sdoc2.toString(), removeSpecialFields(
+        RealTimeGetComponent.getInputDocument(core, childDocId, rootDocId, null, null, DOC)
+    ).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
@@ -359,7 +371,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     //add greatGrandChild
     doc = sdoc("id", "4",
         "child4", Collections.singletonMap("add", sdoc("id", "5", "cat_ss", "greatGrandChild")));
-    addAndGetVersion(doc, params("wt", "json"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertJQ(req("qt","/get", "id","1", "fl","id, cat_ss, child1, child2, child3, child4, [child]")
         ,"=={'doc':{'id':'1'" +
@@ -378,7 +390,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     //add another greatGrandChild
     doc = sdoc("id", "4",
         "child4", Collections.singletonMap("add", sdoc("id", "6", "cat_ss", "greatGrandChild")));
-    addAndGetVersion(doc, params("wt", "json"));
+    addAndGetVersion(doc, params("wt", "json", "_route_", "1"));
 
     assertU(commit());
 
@@ -432,15 +444,16 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBlockAtomicSet() throws Exception {
+    SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
-        "child1", Collections.singleton(sdoc("id", "2", "cat_ss", "child"))
+        "child1", Collections.singleton(sdoc2)
     );
     assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, rootDocId, null, null, ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -451,10 +464,10 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
-    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
+    assertEquals(sdoc2.toString(), removeSpecialFields(
+        RealTimeGetComponent.getInputDocument(core, childDocId, rootDocId, null, null, DOC)
+    ).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
@@ -568,15 +581,16 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBlockAtomicRemove() throws Exception {
+    SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc = sdoc("id", "1",
         "cat_ss", new String[] {"aaa", "ccc"},
-        "child1", sdocs(sdoc("id", "2", "cat_ss", "child"), sdoc("id", "3", "cat_ss", "child"))
+        "child1", sdocs(sdoc2, sdoc("id", "3", "cat_ss", "child"))
     );
     assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, rootDocId, null, null, ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -587,10 +601,10 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
-    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent.getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
+    assertEquals(sdoc2.toString(), removeSpecialFields(
+        RealTimeGetComponent.getInputDocument(core, childDocId, rootDocId, null, null, DOC)
+    ).toString());
 
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
@@ -655,15 +669,15 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   private void testBlockAtomicSetToNullOrEmpty(boolean empty) throws Exception {
     // latlon field is included to ensure reading from LatLonDocValuesField is working due to atomic update.
     // See SOLR-13966 for further details.
+    SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc = sdoc("id", "1", "latlon", "0,0",
         "cat_ss", new String[] {"aaa", "ccc"},
-        "child1", sdocs(sdoc("id", "2", "cat_ss", "child"), sdoc("id", "3", "cat_ss", "child")));
+        "child1", sdocs(sdoc2, sdoc("id", "3", "cat_ss", "child")));
     assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
     SolrCore core = h.getCore();
-    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId,
-        RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
+    SolrInputDocument block = RealTimeGetComponent.getInputDocument(core, rootDocId, rootDocId, null, null, ROOT_WITH_CHILDREN);
     // assert block doc has child docs
     assertTrue(block.containsKey("child1"));
 
@@ -672,12 +686,10 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     // commit the changes
     assertU(commit());
 
-    SolrInputDocument committedBlock = RealTimeGetComponent.getInputDocument(core, rootDocId,
-        RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
     BytesRef childDocId = new BytesRef("2");
-    // ensure the whole block is returned when resolveBlock is true and id of a child doc is provided
-    assertEquals(committedBlock.toString(), RealTimeGetComponent
-        .getInputDocument(core, childDocId, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN).toString());
+    assertEquals(sdoc2.toString(), removeSpecialFields(
+        RealTimeGetComponent.getInputDocument(core, childDocId, rootDocId, null, null, DOC)
+    ).toString());
 
     assertJQ(req("q", "id:1"), "/response/numFound==1");
 
@@ -712,6 +724,32 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/latlon=='0,0'",
         "/response/docs/[0]/cat_ss/[0]==\"aaa\"",
         "/response/docs/[0]/cat_ss/[1]==\"ccc\"");
+  }
+
+  public void testIncorrectlyUpdateChildDoc() throws Exception {
+    SolrInputDocument doc = sdoc("id", "1",
+        "child", sdoc("id", "2"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    // did not add _root_ like we should have
+    SolrException e = expectThrows(SolrException.class, () -> {
+      addAndGetVersion(
+          sdoc("id", "2", "grandchild", Collections.singletonMap("set", sdoc("id", "3"))), null);
+    });
+    assertTrue(e.toString(), e.getMessage().contains("Attempted an atomic/partial update to a " +
+        "child doc without indicating the _root_ somehow."));
+  }
+
+  private SolrInputDocument removeSpecialFields(SolrInputDocument doc) {
+    final Iterator<SolrInputField> fieldIter = doc.iterator();
+    while (fieldIter.hasNext()) {
+      SolrInputField field =  fieldIter.next();
+      if (field.getName().matches("^_.*_$")) {
+        fieldIter.remove();
+      }
+    }
+    return doc;
   }
 
   @SuppressWarnings({"unchecked"})

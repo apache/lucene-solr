@@ -62,7 +62,9 @@ The backup request can also take the following additional parameters:
 
 `location`::
 The path where the backup will be created. If the path is not absolute then the backup path will be relative to Solr's instance directory.
-|name |The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name would have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
+
+`name`::
+The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name will have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
 
 `numberToKeep`::
 The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
@@ -117,7 +119,7 @@ The `restore` request can take these additional parameters:
 The location of the backup snapshot file. If not specified, it looks for backups in Solr's data directory.
 
 `name`::
-The name of the backed up index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
+The name of the backup index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
 
 `repository`::
 The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.

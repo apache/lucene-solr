@@ -29,16 +29,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
@@ -49,7 +52,6 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -100,7 +102,6 @@ import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 public class RealTimeGetComponent extends SearchComponent
 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final Set<String> NESTED_META_FIELDS = Sets.newHashSet(IndexSchema.NEST_PATH_FIELD_NAME, IndexSchema.NEST_PARENT_FIELD_NAME);
   public static final String COMPONENT_NAME = "get";
 
   @Override
@@ -239,11 +240,17 @@ public class RealTimeGetComponent extends SearchComponent
 
    try {
 
-
+     boolean opennedRealtimeSearcher = false;
      BytesRefBuilder idBytes = new BytesRefBuilder();
      for (String idStr : reqIds.allIds) {
        fieldType.readableToIndexed(idStr, idBytes);
-       if (ulog != null) {
+       // if _route_ is passed, id is a child doc.  TODO remove in SOLR-15064
+       if (!opennedRealtimeSearcher && !params.get(ShardParams._ROUTE_, idStr).equals(idStr)) {
+         searcherInfo.clear();
+         resultContext = null;
+         ulog.openRealtimeSearcher();  // force open a new realtime searcher
+         opennedRealtimeSearcher = true;
+       } else if (ulog != null) {
          Object o = ulog.lookup(idBytes.get());
          if (o != null) {
            // should currently be a List<Oper,Ver,Doc/Id>
@@ -257,9 +264,12 @@ public class RealTimeGetComponent extends SearchComponent
 
                if (mustUseRealtimeSearcher) {
                  // close handles to current searchers & result context
-                 searcherInfo.clear();
-                 resultContext = null;
-                 ulog.openRealtimeSearcher();  // force open a new realtime searcher
+                 if (!opennedRealtimeSearcher) {
+                   searcherInfo.clear();
+                   resultContext = null;
+                   ulog.openRealtimeSearcher();  // force open a new realtime searcher
+                   opennedRealtimeSearcher = true;
+                 }
                  o = null;  // pretend we never found this record and fall through to use the searcher
                  break;
                }
@@ -267,20 +277,24 @@ public class RealTimeGetComponent extends SearchComponent
                SolrDocument doc;
                if (oper == UpdateLog.ADD) {
                  doc = toSolrDoc((SolrInputDocument)entry.get(entry.size()-1), core.getLatestSchema());
+                 // toSolrDoc filtered copy-field targets already
+                 if (transformer!=null) {
+                   transformer.transform(doc, -1); // unknown docID
+                 }
                } else if (oper == UpdateLog.UPDATE_INPLACE) {
                  assert entry.size() == 5;
                  // For in-place update case, we have obtained the partial document till now. We need to
                  // resolve it to a full document to be returned to the user.
-                 doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry, null);
+                 // resolveFullDocument applies the transformer, if present.
+                 doc = resolveFullDocument(core, idBytes.get(), rsp.getReturnFields(), (SolrInputDocument)entry.get(entry.size()-1), entry);
                  if (doc == null) {
                    break; // document has been deleted as the resolve was going on
                  }
+                 doc.visitSelfAndNestedDocs((label, d) -> removeCopyFieldTargets(d, req.getSchema()));
                } else {
                  throw new SolrException(ErrorCode.INVALID_STATE, "Expected ADD or UPDATE_INPLACE. Got: " + oper);
                }
-               if (transformer!=null) {
-                 transformer.transform(doc, -1); // unknown docID
-               }
+
               docList.add(doc);
               break;
              case UpdateLog.DELETE:
@@ -326,12 +340,12 @@ public class RealTimeGetComponent extends SearchComponent
          if (null == resultContext) {
            // either first pass, or we've re-opened searcher - either way now we setContext
            resultContext = new RTGResultContext(rsp.getReturnFields(), searcherInfo.getSearcher(), req);
-           transformer.setContext(resultContext);
+           transformer.setContext(resultContext); // we avoid calling setContext unless searcher is new/changed
          }
          transformer.transform(doc, docid);
        }
        docList.add(doc);
-     }
+     } // loop on ids
 
    } finally {
      searcherInfo.clear();
@@ -342,7 +356,8 @@ public class RealTimeGetComponent extends SearchComponent
   
   /**
    * Return the requested SolrInputDocument from the tlog/index. This will
-   * always be a full document, i.e. any partial in-place document will be resolved.
+   * always be a full document with children; partial / in-place documents will be resolved.
+   * The id must be for a root document, not a child.
    */
   void processGetInputDocument(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
@@ -355,8 +370,9 @@ public class RealTimeGetComponent extends SearchComponent
 
     String idStr = params.get("getInputDocument", null);
     if (idStr == null) return;
+    BytesRef idBytes = req.getSchema().indexableUniqueKey(idStr);
     AtomicLong version = new AtomicLong();
-    SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.DOC);
+    SolrInputDocument doc = getInputDocument(req.getCore(), idBytes, idBytes, version, null, Resolution.ROOT_WITH_CHILDREN);
     log.info("getInputDocument called for id={}, returning {}", idStr, doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
@@ -397,36 +413,45 @@ public class RealTimeGetComponent extends SearchComponent
     }
   }
 
-  /***
+  /**
    * Given a partial document obtained from the transaction log (e.g. as a result of RTG), resolve to a full document
    * by populating all the partial updates that were applied on top of that last full document update.
-   * 
-   * @param onlyTheseFields When a non-null set of field names is passed in, the resolve process only attempts to populate
-   *        the given fields in this set. When this set is null, it resolves all fields.
+   * Transformers are applied.
+   * <p>TODO <em>Sometimes</em> there's copy-field target removal; it ought to be consistent.
+   *
+   * @param idBytes doc ID to find; never a child doc.
+   * @param partialDoc partial doc (an in-place update).  Could be a child doc, thus not having idBytes.
    * @return Returns the merged document, i.e. the resolved full document, or null if the document was not found (deleted
-   *          after the resolving began)
+   *          after the resolving began).  Never a child doc, since idBytes is never a child doc either.
    */
   private static SolrDocument resolveFullDocument(SolrCore core, BytesRef idBytes,
                                                   ReturnFields returnFields, SolrInputDocument partialDoc,
-                                                  @SuppressWarnings({"rawtypes"}) List logEntry,
-                                                  Set<String> onlyTheseFields) throws IOException {
+                                                  @SuppressWarnings({"rawtypes"}) List logEntry) throws IOException {
+    Set<String> onlyTheseFields = returnFields.getExplicitlyRequestedFieldNames();
     if (idBytes == null || (logEntry.size() != 5 && logEntry.size() != 6)) {
       throw new SolrException(ErrorCode.INVALID_STATE, "Either Id field not present in partial document or log entry doesn't have previous version.");
     }
     long prevPointer = (long) logEntry.get(UpdateLog.PREV_POINTER_IDX);
     long prevVersion = (long) logEntry.get(UpdateLog.PREV_VERSION_IDX);
+    final IndexSchema schema = core.getLatestSchema();
 
     // get the last full document from ulog
-    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-    long lastPrevPointer = ulog.applyPartialUpdates(idBytes, prevPointer, prevVersion, onlyTheseFields, partialDoc);
+    long lastPrevPointer;
+    // If partialDoc is NOT a child doc, then proceed and look into the ulog...
+    if (schema.printableUniqueKey(idBytes).equals(schema.printableUniqueKey(partialDoc))) {
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      lastPrevPointer = ulog.applyPartialUpdates(idBytes, prevPointer, prevVersion, onlyTheseFields, partialDoc);
+    } else { // child doc.
+      // TODO could make this smarter but it's complicated with nested docs
+      lastPrevPointer = Long.MAX_VALUE; // results in reopenRealtimeSearcherAndGet
+    }
 
     if (lastPrevPointer == -1) { // full document was not found in tlog, but exists in index
-      SolrDocument mergedDoc = mergePartialDocWithFullDocFromIndex(core, idBytes, returnFields, onlyTheseFields, partialDoc);
-      return mergedDoc;
+      return mergePartialDocWithFullDocFromIndex(core, idBytes, returnFields, partialDoc);
     } else if (lastPrevPointer > 0) {
       // We were supposed to have found the last full doc also in the tlogs, but the prevPointer links led to nowhere
       // We should reopen a new RT searcher and get the doc. This should be a rare occurrence
-      Term idTerm = new Term(core.getLatestSchema().getUniqueKeyField().getName(), idBytes);
+      Term idTerm = new Term(schema.getUniqueKeyField().getName(), idBytes);
       SolrDocument mergedDoc = reopenRealtimeSearcherAndGet(core, idTerm, returnFields);
       if (mergedDoc == null) {
         return null; // the document may have been deleted as the resolving was going on.
@@ -438,12 +463,16 @@ public class RealTimeGetComponent extends SearchComponent
 
       // determine whether we can use the in place document, if the caller specified onlyTheseFields
       // and those fields are all supported for in-place updates
-      IndexSchema schema = core.getLatestSchema();
       boolean forInPlaceUpdate = onlyTheseFields != null
           && onlyTheseFields.stream().map(schema::getField)
           .allMatch(f -> null!=f && AtomicUpdateDocumentMerger.isSupportedFieldForInPlaceUpdate(f));
 
-      return toSolrDoc(partialDoc, schema, forInPlaceUpdate);
+      SolrDocument solrDoc = toSolrDoc(partialDoc, schema, forInPlaceUpdate); // filters copy-field targets TODO don't
+      DocTransformer transformer = returnFields.getTransformer();
+      if (transformer != null && !transformer.needsSolrIndexSearcher()) {
+        transformer.transform(solrDoc, -1); // no docId when from the ulog
+      } // if needs searcher, it must be [child]; tlog docs already have children
+      return solrDoc;
     }
   }
 
@@ -462,12 +491,7 @@ public class RealTimeGetComponent extends SearchComponent
       if (docid < 0) {
         return null;
       }
-      Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
-      SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-      docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVs(false));
-
-      return doc;
+      return fetchSolrDoc(searcher, docid, returnFields);
     } finally {
       searcherHolder.decref();
     }
@@ -481,16 +505,14 @@ public class RealTimeGetComponent extends SearchComponent
    * @param core           A SolrCore instance, useful for obtaining a realtimesearcher and the schema
    * @param idBytes        Binary representation of the value of the unique key field
    * @param returnFields   Return fields, as requested
-   * @param onlyTheseFields When a non-null set of field names is passed in, the merge process only attempts to merge
-   *        the given fields in this set. When this set is null, it merges all fields.
    * @param partialDoc     A partial document (containing an in-place update) used for merging against a full document
    *                       from index; this maybe be null.
-   * @return If partial document is null, this returns document from the index or null if not found. 
+   * @return If partial document is null, this returns document from the index or null if not found.
    *         If partial document is not null, this returns a document from index merged with the partial document, or null if
    *         document doesn't exist in the index.
    */
   private static SolrDocument mergePartialDocWithFullDocFromIndex(SolrCore core, BytesRef idBytes, ReturnFields returnFields,
-             Set<String> onlyTheseFields, SolrInputDocument partialDoc) throws IOException {
+                                                                  SolrInputDocument partialDoc) throws IOException {
     RefCounted<SolrIndexSearcher> searcherHolder = core.getRealtimeSearcher(); //Searcher();
     try {
       // now fetch last document from index, and merge partialDoc on top of it
@@ -512,11 +534,10 @@ public class RealTimeGetComponent extends SearchComponent
         return doc;
       }
 
-      SolrDocument doc;
-      Set<String> decorateFields = onlyTheseFields == null ? searcher.getDocFetcher().getNonStoredDVs(false): onlyTheseFields;
-      Document luceneDocument = searcher.doc(docid, returnFields.getLuceneFieldNames());
-      doc = toSolrDoc(luceneDocument, core.getLatestSchema());
-      searcher.getDocFetcher().decorateDocValueFields(doc, docid, decorateFields);
+      SolrDocument doc = fetchSolrDoc(searcher, docid, returnFields);
+      if (!doc.containsKey(VERSION_FIELD)) {
+        searcher.getDocFetcher().decorateDocValueFields(doc, docid, Collections.singleton(VERSION_FIELD));
+      }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);
       Object partialVersionObj = partialDoc.getFieldValue(VERSION_FIELD);
@@ -537,20 +558,88 @@ public class RealTimeGetComponent extends SearchComponent
     }
   }
 
+  /**
+   * Fetch the doc by the ID, returning the requested fields.
+   */
+  private static SolrDocument fetchSolrDoc(SolrIndexSearcher searcher, int docId, ReturnFields returnFields) throws IOException {
+    final SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
+    final SolrDocument solrDoc = docFetcher.solrDoc(docId, (SolrReturnFields) returnFields);
+    final DocTransformer transformer = returnFields.getTransformer();
+    if (transformer != null) {
+      transformer.setContext(new RTGResultContext(returnFields, searcher, null)); // we get away with null req
+      transformer.transform(solrDoc, docId);
+    }
+    return solrDoc;
+  }
+
+  private static void removeCopyFieldTargets(SolrDocument solrDoc, IndexSchema schema) {
+    // TODO ideally we wouldn't have fetched these in the first place!
+    final Iterator<Map.Entry<String, Object>> iterator = solrDoc.iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<String, Object> fieldVal =  iterator.next();
+      String fieldName = fieldVal.getKey();
+      SchemaField sf = schema.getFieldOrNull(fieldName);
+      if (sf != null && schema.isCopyFieldTarget(sf)) {
+        iterator.remove();
+      }
+    }
+  }
+
   public static SolrInputDocument DELETED = new SolrInputDocument();
+
+  @Deprecated // need Resolution
+  public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
+                                                           Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument) {
+    return getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs,
+        resolveFullDocument ? Resolution.DOC : Resolution.PARTIAL);
+  }
+
+  /**
+   * Specialized to pick out a child doc from a nested doc from the TLog.
+   * @see #getInputDocumentFromTlog(SolrCore, BytesRef, AtomicLong, Set, Resolution)
+   */
+  private static SolrInputDocument getInputDocumentFromTlog(
+      SolrCore core,
+      BytesRef idBytes,
+      BytesRef rootIdBytes,
+      AtomicLong versionReturned,
+      Set<String> onlyTheseFields,
+      Resolution resolution) {
+    if (idBytes.equals(rootIdBytes)) { // simple case; not looking for a child
+      return getInputDocumentFromTlog(
+          core, rootIdBytes, versionReturned, onlyTheseFields, resolution);
+    }
+
+    // Ensure we request the ID to pick out the child doc in the nest
+    final String uniqueKeyField = core.getLatestSchema().getUniqueKeyField().getName();
+    if (onlyTheseFields != null && !onlyTheseFields.contains(uniqueKeyField)) {
+      onlyTheseFields = new HashSet<>(onlyTheseFields); // clone
+      onlyTheseFields.add(uniqueKeyField);
+    }
+
+    SolrInputDocument iDoc =
+        getInputDocumentFromTlog(
+            core, rootIdBytes, versionReturned, onlyTheseFields, Resolution.ROOT_WITH_CHILDREN);
+    if (iDoc == DELETED || iDoc == null) {
+      return iDoc;
+    }
+
+    iDoc = findNestedDocById(iDoc, idBytes, core.getLatestSchema());
+    if (iDoc == null) {
+      return DELETED; // new nest overwrote the old nest without the ID we are looking for?
+    }
+    return iDoc;
+  }
 
   /** returns the SolrInputDocument from the current tlog, or DELETED if it has been deleted, or
    * null if there is no record of it in the current update log.  If null is returned, it could
-   * still be in the latest index.
+   * still be in the latest index.  Copy-field target fields are excluded.
+   * @param idBytes doc ID to find; never a child doc.
    * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
-   * @param resolveFullDocument In case the document is fetched from the tlog, it could only be a partial document if the last update
-   *                  was an in-place update. In that case, should this partial document be resolved to a full document (by following
-   *                  back prevPointer/prevVersion)?
    */
   @SuppressWarnings({"fallthrough"})
   public static SolrInputDocument getInputDocumentFromTlog(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
-      Set<String> onlyTheseNonStoredDVs, boolean resolveFullDocument) {
-
+      Set<String> onlyTheseFields, Resolution resolution) {
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
 
     if (ulog != null) {
@@ -568,17 +657,17 @@ public class RealTimeGetComponent extends SearchComponent
           case UpdateLog.UPDATE_INPLACE:
             assert entry.size() == 5;
             
-            if (resolveFullDocument) {
+            if (resolution != Resolution.PARTIAL) {
               SolrInputDocument doc = (SolrInputDocument)entry.get(entry.size()-1);
               try {
                 // For in-place update case, we have obtained the partial document till now. We need to
                 // resolve it to a full document to be returned to the user.
-                SolrDocument sdoc = resolveFullDocument(core, idBytes, new SolrReturnFields(), doc, entry, onlyTheseNonStoredDVs);
+                SolrReturnFields returnFields = makeReturnFields(core, onlyTheseFields, resolution);
+                SolrDocument sdoc = resolveFullDocument(core, idBytes, returnFields, doc, entry);
                 if (sdoc == null) {
                   return DELETED;
                 }
-                doc = toSolrInputDocument(sdoc, core.getLatestSchema());
-                return doc;
+                return toSolrInputDocument(sdoc, core.getLatestSchema()); // filters copy-field
               } catch (IOException ex) {
                 throw new SolrException(ErrorCode.SERVER_ERROR, "Error while resolving full document. ", ex);
               }
@@ -598,87 +687,64 @@ public class RealTimeGetComponent extends SearchComponent
     return null;
   }
 
-  /**
-   * Obtains the latest document for a given id from the tlog or index (if not found in the tlog).
-   * 
-   * NOTE: This method uses the effective value for nonStoredDVs as null in the call to @see {@link RealTimeGetComponent#getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)},
-   * so as to retrieve all stored and non-stored DV fields from all documents.
-   */
-
+  @Deprecated // easy to use wrong
   public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, Resolution lookupStrategy) throws IOException {
-    return getInputDocument (core, idBytes, null, null, lookupStrategy);
+    return getInputDocument (core, idBytes, idBytes, null, null, lookupStrategy);
   }
-  
+
   /**
-   * Obtains the latest document for a given id from the tlog or through the realtime searcher (if not found in the tlog). 
+   * Obtains the latest document for a given id from the tlog or through the realtime searcher (if not found in the tlog).
+   * Fields that are targets of copy-fields are excluded.
+   *
+   * @param idBytes ID of the document to be fetched.
+   * @param rootIdBytes the root ID of the document being looked up.
+   *                    If there are no child docs, this is always the same as idBytes.
    * @param versionReturned If a non-null AtomicLong is passed in, it is set to the version of the update returned from the TLog.
-   * @param onlyTheseNonStoredDVs If not-null, populate only these DV fields in the document fetched through the realtime searcher. 
-   *                  If this is null, decorate all non-stored  DVs (that are not targets of copy fields) from the searcher.
-   *                  When non-null, stored fields are not fetched.
-   * @param resolveStrategy The strategy to resolve the the document.
+   * @param onlyTheseFields If not-null, this limits the fields that are returned.  However it is only an optimization
+   *                        hint since other fields may be returned.  Copy field targets are never returned.
+   * @param resolveStrategy {@link Resolution#DOC} or {@link Resolution#ROOT_WITH_CHILDREN}.
    * @see Resolution
    */
-  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, AtomicLong versionReturned,
-      Set<String> onlyTheseNonStoredDVs, Resolution resolveStrategy) throws IOException {
-    SolrInputDocument sid = null;
-    RefCounted<SolrIndexSearcher> searcherHolder = null;
-    try {
-      SolrIndexSearcher searcher = null;
-      sid = getInputDocumentFromTlog(core, idBytes, versionReturned, onlyTheseNonStoredDVs, true);
-      if (sid == DELETED) {
-        return null;
-      }
+  public static SolrInputDocument getInputDocument(SolrCore core, BytesRef idBytes, BytesRef rootIdBytes, AtomicLong versionReturned,
+                                                   Set<String> onlyTheseFields, Resolution resolveStrategy) throws IOException {
+    assert resolveStrategy != Resolution.PARTIAL;
+    assert resolveStrategy == Resolution.DOC || idBytes.equals(rootIdBytes); // not needed (yet)
 
-      if (sid == null) {
-        // didn't find it in the update log, so it should be in the newest searcher opened
-        if (searcher == null) {
-          searcherHolder = core.getRealtimeSearcher();
-          searcher = searcherHolder.get();
-        }
+    SolrInputDocument sid =
+        getInputDocumentFromTlog(
+            core, idBytes, rootIdBytes, versionReturned, onlyTheseFields, resolveStrategy);
+    if (sid == DELETED) {
+      return null;
+    }
 
-        // SolrCore.verbose("RealTimeGet using searcher ", searcher);
-        final IndexSchema schema = core.getLatestSchema();
-        SchemaField idField = schema.getUniqueKeyField();
+    if (sid == null) {
+      // didn't find it in the update log, so it should be in the newest searcher opened
+      RefCounted<SolrIndexSearcher> searcherHolder = core.getRealtimeSearcher();
+      try {
+        SolrIndexSearcher searcher = searcherHolder.get();
 
-        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
-        if (docid < 0) return null;
+        int docId =
+            searcher.getFirstMatch(
+                new Term(
+                    core.getLatestSchema().getUniqueKeyField().getName(),
+                    resolveStrategy == Resolution.ROOT_WITH_CHILDREN ? rootIdBytes : idBytes));
+        if (docId < 0) return null;
 
-        SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
-        if (onlyTheseNonStoredDVs != null) {
-          sid = new SolrInputDocument();
-        } else {
-          Document luceneDocument = docFetcher.doc(docid);
-          sid = toSolrInputDocument(luceneDocument, schema);
-        }
-        final boolean isNestedRequest = resolveStrategy == Resolution.DOC_WITH_CHILDREN || resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
-        decorateDocValueFields(docFetcher, sid, docid, onlyTheseNonStoredDVs, isNestedRequest || schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME));
-        SolrInputField rootField = sid.getField(IndexSchema.ROOT_FIELD_NAME);
-        if((isNestedRequest) && schema.isUsableForChildDocs() && schema.hasExplicitField(IndexSchema.NEST_PATH_FIELD_NAME) && rootField!=null) {
-          // doc is part of a nested structure
-          final boolean resolveRootDoc = resolveStrategy == Resolution.ROOT_WITH_CHILDREN;
-          String id = resolveRootDoc? (String) rootField.getFirstValue(): (String) sid.getField(idField.getName()).getFirstValue();
-          ModifiableSolrParams params = new ModifiableSolrParams()
-              .set("fl", "*, _nest_path_, [child]")
-              .set("limit", "-1");
-          SolrQueryRequest nestedReq = new LocalSolrQueryRequest(core, params);
-          final BytesRef rootIdBytes = new BytesRef(id);
-          final int rootDocId = searcher.getFirstMatch(new Term(idField.getName(), rootIdBytes));
-          final DocTransformer childDocTransformer = core.getTransformerFactory("child").create("child", params, nestedReq);
-          final ResultContext resultContext = new RTGResultContext(new SolrReturnFields(nestedReq), searcher, nestedReq);
-          childDocTransformer.setContext(resultContext);
-          final SolrDocument nestedDoc;
-          if(resolveRootDoc && rootIdBytes.equals(idBytes)) {
-            nestedDoc = toSolrDoc(sid, schema);
-          } else {
-            nestedDoc = toSolrDoc(docFetcher.doc(rootDocId), schema);
-            decorateDocValueFields(docFetcher, nestedDoc, rootDocId, onlyTheseNonStoredDVs, true);
+        if (resolveStrategy == Resolution.ROOT_WITH_CHILDREN
+            && core.getLatestSchema().isUsableForChildDocs()) {
+          // check that this doc is in fact a root document as a prevention measure
+          if (!hasRootTerm(searcher, rootIdBytes)) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST,
+                "Attempted an atomic/partial update to a child doc without indicating the _root_ somehow.");
           }
-          childDocTransformer.transform(nestedDoc, rootDocId);
-          sid = toSolrInputDocument(nestedDoc, schema);
         }
-      }
-    } finally {
-      if (searcherHolder != null) {
+
+        SolrDocument solrDoc =
+            fetchSolrDoc(searcher, docId, makeReturnFields(core, onlyTheseFields, resolveStrategy));
+        sid = toSolrInputDocument(solrDoc, core.getLatestSchema()); // filters copy-field targets
+        // the assertions above furthermore guarantee the result corresponds to idBytes
+      } finally {
         searcherHolder.decref();
       }
     }
@@ -691,38 +757,51 @@ public class RealTimeGetComponent extends SearchComponent
     return sid;
   }
 
-  private static void decorateDocValueFields(SolrDocumentFetcher docFetcher,
-                                             @SuppressWarnings({"rawtypes"})SolrDocumentBase doc, int docid, Set<String> onlyTheseNonStoredDVs, boolean resolveNestedFields) throws IOException {
-    if (onlyTheseNonStoredDVs != null) {
-      docFetcher.decorateDocValueFields(doc, docid, onlyTheseNonStoredDVs);
-    } else {
-      docFetcher.decorateDocValueFields(doc, docid, docFetcher.getNonStoredDVsWithoutCopyTargets());
+  private static boolean hasRootTerm(SolrIndexSearcher searcher, BytesRef rootIdBytes) throws IOException {
+    final String fieldName = IndexSchema.ROOT_FIELD_NAME;
+    final List<LeafReaderContext> leafContexts = searcher.getTopReaderContext().leaves();
+    for (final LeafReaderContext leaf : leafContexts) {
+      final LeafReader reader = leaf.reader();
+
+      final Terms terms = reader.terms(fieldName);
+      if (terms == null) continue;
+
+      TermsEnum te = terms.iterator();
+      if (te.seekExact(rootIdBytes)) {
+        return true;
+      }
     }
-    if(resolveNestedFields) {
-      docFetcher.decorateDocValueFields(doc, docid, NESTED_META_FIELDS);
-    }
+    return false;
   }
 
-  private static SolrInputDocument toSolrInputDocument(Document doc, IndexSchema schema) {
-    SolrInputDocument out = new SolrInputDocument();
-    for( IndexableField f : doc.getFields() ) {
-      String fname = f.name();
-      SchemaField sf = schema.getFieldOrNull(f.name());
-      Object val = null;
-      if (sf != null) {
-        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
-        val = sf.getType().toObject(f);   // object or external string?
-      } else {
-        val = f.stringValue();
-        if (val == null) val = f.numericValue();
-        if (val == null) val = f.binaryValue();
-        if (val == null) val = f;
+  /** Traverse the doc looking for a doc with the specified ID. */
+  private static SolrInputDocument findNestedDocById(SolrInputDocument iDoc, BytesRef idBytes, IndexSchema schema) {
+    assert schema.printableUniqueKey(iDoc) != null : "need IDs";
+    // traverse nested doc, looking for the node with the ID we are looking for
+    SolrInputDocument[] found = new SolrInputDocument[1];
+    String idStr = schema.printableUniqueKey(idBytes);
+    BiConsumer<String, SolrInputDocument> finder = (label, childDoc) -> {
+      if (found[0] == null && idStr.equals(schema.printableUniqueKey(childDoc))) {
+        found[0] = childDoc;
       }
+    };
+    iDoc.visitSelfAndNestedDocs(finder);
+    return found[0];
+  }
 
-      // todo: how to handle targets of copy fields (including polyfield sub-fields)?
-      out.addField(fname, val);
+  private static SolrReturnFields makeReturnFields(SolrCore core, Set<String> requestedFields, Resolution resolution) {
+    DocTransformer docTransformer;
+    if (resolution == Resolution.ROOT_WITH_CHILDREN && core.getLatestSchema().isUsableForChildDocs()) {
+      SolrParams params = new ModifiableSolrParams().set("limit", "-1");
+      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
+        docTransformer = core.getTransformerFactory("child").create(null, params, req);
+      }
+    } else {
+      docTransformer = null;
     }
-    return out;
+    // TODO optimization: add feature to SolrReturnFields to exclude copyFieldTargets from wildcard matching.
+    //   Today, we filter this data out later before returning, but it's already been fetched.
+    return new SolrReturnFields(requestedFields, docTransformer);
   }
 
   private static SolrInputDocument toSolrInputDocument(SolrDocument doc, IndexSchema schema) {
@@ -835,7 +914,6 @@ public class RealTimeGetComponent extends SearchComponent
    *                         see {@link DocumentBuilder#toDocument(SolrInputDocument, IndexSchema, boolean, boolean)}
    */
   public static SolrDocument toSolrDoc(SolrInputDocument sdoc, IndexSchema schema, boolean forInPlaceUpdate) {
-    // TODO what about child / nested docs?
     // TODO: do something more performant than this double conversion
     Document doc = DocumentBuilder.toDocument(sdoc, schema, forInPlaceUpdate, true);
 
@@ -1251,27 +1329,16 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
   /**
-   *  <p>
-   *    Lookup strategy for {@link #getInputDocument(SolrCore, BytesRef, AtomicLong, Set, Resolution)}.
-   *  </p>
-   *  <ul>
-   *    <li>{@link #DOC}</li>
-   *    <li>{@link #DOC_WITH_CHILDREN}</li>
-   *    <li>{@link #ROOT_WITH_CHILDREN}</li>
-   *  </ul>
+   * Lookup strategy for some methods on this class.
    */
   public static enum Resolution {
-    /**
-     * Resolve this partial document to a full document (by following back prevPointer/prevVersion)?
-     */
+    /** A partial update document.  Whole documents may still be returned. */
+    PARTIAL,
+
+    /** Resolve to a whole document, exclusive of children. */
     DOC,
-    /**
-     * Check whether the document has child documents. If so, return the document including its children.
-     */
-    DOC_WITH_CHILDREN,
-    /**
-     * Check whether the document is part of a nested hierarchy. If so, return the whole hierarchy(look up root doc).
-     */
+
+    /** Resolves the whole nested hierarchy (look up root doc). */
     ROOT_WITH_CHILDREN
   }
 

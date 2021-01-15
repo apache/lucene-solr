@@ -84,6 +84,8 @@ API Changes
 
 Improvements
 
+* LUCENE-9665: Hunspell: support default encoding (Peter Gromov)
+
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
 
@@ -237,7 +239,9 @@ New Features
 * LUCENE-9572: TypeAsSynonymFilter has been enhanced support ignoring some types, and to allow
   the generated synonyms to copy some or all flags from the original token (Gus Heck).
 
-* LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera)  
+* LUCENE-9552: New LatLonPoint query that accepts an array of LatLonGeometries. (Ignacio Vera) 
+
+* LUCENE-9641: LatLonPoint query support for spatial relationships. (Ignacio Vera) 
 
 * LUCENE-9553: New XYPoint query that accepts an array of XYGeometries. (Ignacio Vera)  
 
@@ -265,6 +269,9 @@ Optimizations
 
 * LUCENE-9636: Faster decoding of postings for some numbers of bits per value.
   (Guo Feng via Adrien Grand)
+
+* LUCENE-9346: WANDScorer now supports queries that have a
+  `minimumNumberShouldMatch` configured. (Xi Zachary Chen via Adrien Grand)
 
 Bug Fixes
 ---------------------
@@ -511,7 +518,7 @@ Improvements
   improves the approachability of the IndexWriter code. (Simon Willnauer)
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
-  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grand)
 
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)

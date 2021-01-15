@@ -1,0 +1,91 @@
+{
+    "metrics": {
+        "solr.core.sop.shard1.replica_n1": {
+            "QUERY./select.clientErrors": {
+                "15minRate": 0.0,
+                "1minRate": 0.0,
+                "5minRate": 0.0,
+                "count": 0,
+                "meanRate": 0.0
+            },
+            "QUERY./select.distrib.requestTimes": {
+                "15minRate": 0.47381584176620906,
+                "1minRate": 5.156897804421665,
+                "5minRate": 1.3543985709476762,
+                "count": 452,
+                "max_ms": 45.569189,
+                "meanRate": 0.0031956674240800156,
+                "mean_ms": 1.3674256818943078,
+                "median_ms": 0.904248,
+                "min_ms": 0.237069,
+                "p75_ms": 1.31788,
+                "p95_ms": 3.046683,
+                "p999_ms": 45.569189,
+                "p99_ms": 9.422545,
+                "stddev_ms": 2.6474877358096216
+            },
+            "QUERY./select.distrib.totalTime": 697333466,
+            "QUERY./select.errors": {
+                "15minRate": 0.0,
+                "1minRate": 0.0,
+                "5minRate": 0.0,
+                "count": 0,
+                "meanRate": 0.0
+            },
+            "QUERY./select.handlerStart": 1608094191276,
+            "QUERY./select.local.requestTimes": {
+                "15minRate": 0.033360420653812076,
+                "1minRate": 0.020230459936618303,
+                "5minRate": 0.030666407244305586,
+                "count": 4712,
+                "max_ms": 1.979528,
+                "meanRate": 0.033314125810846446,
+                "mean_ms": 0.08599039684057355,
+                "median_ms": 0.079579,
+                "min_ms": 0.0494,
+                "p75_ms": 0.101273,
+                "p95_ms": 0.105268,
+                "p999_ms": 0.118169,
+                "p99_ms": 0.114697,
+                "stddev_ms": 0.01344763035245806
+            },
+            "QUERY./select.local.totalTime": 864944172,
+            "QUERY./select.requestTimes": {
+                "15minRate": 0.5071762624200211,
+                "1minRate": 5.177128264358283,
+                "5minRate": 1.3850649781919817,
+                "count": 5164,
+                "max_ms": 45.57461,
+                "meanRate": 0.0365097931587792,
+                "mean_ms": 1.3723643524092175,
+                "median_ms": 0.922498,
+                "min_ms": 0.062992,
+                "p75_ms": 1.320626,
+                "p95_ms": 3.052055,
+                "p999_ms": 45.57461,
+                "p99_ms": 9.429055,
+                "stddev_ms": 2.6425577233728577
+            },
+            "QUERY./select.requests": 5164,
+            "QUERY./select.serverErrors": {
+                "15minRate": 0.0,
+                "1minRate": 0.0,
+                "5minRate": 0.0,
+                "count": 0,
+                "meanRate": 0.0
+            },
+            "QUERY./select.timeouts": {
+                "15minRate": 0.0,
+                "1minRate": 0.0,
+                "5minRate": 0.0,
+                "count": 0,
+                "meanRate": 0.0
+            },
+            "QUERY./select.totalTime": 1562277638
+        }
+    },
+    "responseHeader": {
+        "QTime": 1,
+        "status": 0
+    }
+}
