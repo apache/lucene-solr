@@ -118,7 +118,7 @@ The Solr's metrics exposed by `solr-exporter` can be seen at: `\http://localhost
 
 === Environment Variable Options
 
-The bin scripts provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
+The `./bin` scripts provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
 
 `JAVA_HEAP`::
 Sets the initial (`Xms`) and max (`Xmx`) Java heap size. The default is `512m`.
@@ -133,13 +133,13 @@ Custom Java garbage collection settings. The default is `-XX:+UseG1GC`.
 Extra JVM options.
 
 `ZK_CREDS_AND_ACLS`::
-Credentials for connecting to a ZK Host that is protected with ACLs.
-For more information on what to include in this variable, refer to the <<zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts,Solr ZK ACL docs>> or the <<#getting-metrics-from-a-secured-solrcloud,example below>>.
+Credentials for connecting to a ZooKeeper host that is protected with ACLs.
+For more information on what to include in this variable, refer to the section <<zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts,ZooKeeper Access Control>> or the <<getting-metrics-from-a-secured-solrcloud,example below>>.
 
 `CLASSPATH_PREFIX`::
 Location of extra libraries to load when starting the `solr-exporter`.
 
-All <<#command-line-parameters,command line parameters>> are able to be provided via environment variables when using the bin scripts.
+All <<#command-line-parameters,command line parameters>> are able to be provided via environment variables when using the `./bin` scripts.
 
 === Getting Metrics from a Secured SolrCloud
 

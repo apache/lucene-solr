@@ -46,7 +46,7 @@ If this assumption is false, Solr will do a cheap check that usually detects the
 throw an exception to alert you of the need to specify the Root ID.
 This backwards incompatible change was done to increase performance and robustness.
 *** This feature no longer requires stored=true or docValues=true on the `\_root_` field.  You might
-have it for other purposes though (e.g. for `uniqueBlock(...)`)
+have it for other purposes though (e.g., for `uniqueBlock(...)`)
 *** This feature no longer requires the `\_nest_path_` field, although you probably ought to
 continue to define it as it's useful for other things.
 
