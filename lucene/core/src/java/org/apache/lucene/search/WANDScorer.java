@@ -257,14 +257,17 @@ final class WANDScorer extends Scorer {
             // Advance 'head' as well
             advanceHead(target);
 
-            // Pop the new 'lead' from 'head'
-            moveToNextCandidate(target);
+            // Update score bounds if necessary so
+            updateMaxScoresIfNecessary(target);
 
             if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               return DocIdSetIterator.NO_MORE_DOCS;
+            } else {
+              // Pop the new 'lead' from 'head', reset stats
+              setDocAndFreq(doc + 1);
+              assert ensureConsistent();
             }
 
-            assert ensureConsistent();
 
             // Advance to the next possible match
             return doNextCompetitiveCandidate();
@@ -421,16 +424,7 @@ final class WANDScorer extends Scorer {
       }
     }
 
-    assert upTo == DocIdSetIterator.NO_MORE_DOCS || (head.size() > 0 && head.top().doc <= upTo);
-  }
-
-  /**
-   * Set 'doc' to the next potential match, and move all disis of 'head' that are on this doc into
-   * 'lead'.
-   */
-  private void moveToNextCandidate(int target) throws IOException {
-    // Update score bounds if necessary so
-    updateMaxScoresIfNecessary(target);
+    assert (head.size() == 0 && upTo == DocIdSetIterator.NO_MORE_DOCS) || (head.size() > 0 && head.top().doc <= upTo);
     assert upTo >= target;
 
     // updateMaxScores tries to move forward until a block with matches is found
@@ -438,9 +432,14 @@ final class WANDScorer extends Scorer {
     if (head.size() == 0) {
       assert upTo == DocIdSetIterator.NO_MORE_DOCS;
       doc = DocIdSetIterator.NO_MORE_DOCS;
-      return;
     }
+  }
 
+  /**
+   * Set 'doc' to the next potential match, and move all disis of 'head' that are on this doc into
+   * 'lead'.
+   */
+  private void setDocAndFreq(int target) throws IOException {
     // The top of `head` defines the next potential match
     // pop all documents which are on this doc
     lead = head.pop();
@@ -458,12 +457,17 @@ final class WANDScorer extends Scorer {
     while (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
-      moveToNextCandidate(doc + 1);
-      assert ensureConsistent();
+
+      // Update score bounds if necessary so
+      updateMaxScoresIfNecessary(doc + 1);
+
       if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-        break;
+          return DocIdSetIterator.NO_MORE_DOCS;
+      } else {
+        setDocAndFreq(doc + 1);
+        assert ensureConsistent();
       }
-    }
+   }
 
     return doc;
   }
