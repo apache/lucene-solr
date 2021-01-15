@@ -1,15 +1,29 @@
 = Cluster Plugins
 :toc: macro
 :toclevels: 3
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
-toc::[]
-
-== Cluster (CoreContainer-level) plugins subsystem
+== Cluster (CoreContainer-level) Plugins Subsystem
 Cluster plugins are pluggable components that are defined and instantiated at the
 `CoreContainer` (node) level. These components usually provide admin-level functionality
 and APIs for additional functionality at the Solr node level.
 
-=== Plugin configurations
+=== Plugin Configurations
 Plugin configurations are maintained using `/cluster/plugin` API.
 
 This API endpoint allows adding, removing and updating plugin configurations.
@@ -29,7 +43,7 @@ The following common plugin properties are supported:
 `name`::
 (required) unique plugin name. Some plugin types require using one of the
 pre-defined names to properly function. By convention such predefined names use
-a leading-dot prefix (e.g. `.placement-plugin`)
+a leading-dot prefix (e.g., `.placement-plugin`)
 
 `class`::
 (required) implementation class. This can be specified as a fully-qualified
@@ -60,7 +74,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
   http://localhost:8983/api/cluster/plugin
 ----
 
-=== Types of cluster plugins
+=== Types of Cluster Plugins
 Classes loaded from plugins in general support two types of functionality (not mutually exclusive):
 
 * request handler plugins that expose REST API endpoints (the implementing class is annotated with
@@ -72,22 +86,22 @@ automatically discovered and registered with sub-systems that use this type of p
 include the `ClusterSingleton`, ClusterEventProducer`, `ClusterEventListener`
 and `PlacementPluginFactory`.
 
-=== Plugin life-cycle
+=== Plugin Lifecycle
 Plugin instances are loaded and initialized when Solr's `CoreContainer` is first created during
 Solr node start-up.
 
 Then on each update of the configurations each node is notified about the change,
 and then the existing plugins are compared with the new configs, and plugin instances
 present on the node are respectively created, removed, or
-replaced (i.e. removed and added using the new configuration).
+replaced (i.e., removed and added using the new configuration).
 
 In practice this means that cluster-level plugins managed by this API can be
 dynamically changed and reconfigured without restarting the Solr nodes, and the changes
 apply to all nodes nearly simultaneously.
 
-== Plugin types
+== Plugin Types
 
-=== Predefined plugin names
+=== Predefined Plugin Names
 
 Plugins with these names are used in specific parts of Solr. Their names are reserved
 and cannot be used for other plugin types:
@@ -100,11 +114,11 @@ determines the replica placement strategy in the cluster.
 plugin that implements `ClusterEventProducer` interface. This type of plugin
 is used for generating cluster-level events.
 
-=== PlacementPluginFactory plugins
+=== PlacementPluginFactory Plugins
 This type of plugin supports configurable placement strategies for collection
 replicas.
 
-=== ClusterSingleton plugins
+=== ClusterSingleton Plugins
 Plugins that implement `ClusterSingleton` interface are instantiated on each
 Solr node. However, their start/stop life-cycle, as defined in the interface,
 is controlled in such a way that only a single running instance of the plugin
@@ -116,7 +130,7 @@ is present in the cluster at any time.
 Any plugin can implement this interface to indicate to Solr that
 it requires this cluster singleton behavior.
 
-=== ClusterEventProducer plugin
+=== ClusterEventProducer Plugins
 In order to support the generation of cluster-level events an implementation of
 `ClusterEventProducer` is created on each Solr node. This component is also a
 `ClusterSingleton`, which means that only one active instance is present in the
@@ -152,7 +166,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
 ----
 
 
-=== ClusterEventListener plugins
+=== ClusterEventListener Plugins
 Plugins that implement the `ClusterEventListener` interface will be automatically
 registered with the instance of `ClusterEventProducer`.
 
@@ -181,9 +195,9 @@ curl -X POST -H 'Content-type: application/json' -d '{
   http://localhost:8983/api/cluster/plugin
 ----
 
-== Plugin management API
+== Plugin Management API
 
-=== List plugins
+=== List Plugins
 This command uses HTTP GET and returns a list of loaded plugins and their configurations:
 
 [source,bash]
@@ -191,7 +205,7 @@ This command uses HTTP GET and returns a list of loaded plugins and their config
 curl http://localhost:8983/api/cluster/plugin
 ----
 
-=== Add plugin
+=== Add Plugin
 This command uses HTTP POST to add a new plugin configuration. If a plugin with the
 same name already exists this results in an error.
 
@@ -207,7 +221,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
   http://localhost:8983/api/cluster/plugin
 ----
 
-=== Update plugin
+=== Update Plugin
 This command uses HTTP POST to update an existing plugin configuration. If a plugin
 with this name doesn't exist this results in an error.
 
@@ -226,7 +240,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
   http://localhost:8983/api/cluster/plugin
 ----
 
-=== Remove plugin
+=== Remove Plugin
 This command uses HTTP POST to delete an existing plugin configuration. If a plugin
 with this name doesn't exist this results in an error.
 
