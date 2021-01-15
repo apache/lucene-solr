@@ -16,7 +16,14 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -25,7 +32,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
@@ -33,12 +49,25 @@ import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.*;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.fst.*;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
+import org.apache.lucene.util.fst.IntSequenceOutputs;
+import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
 public class Dictionary {
@@ -221,21 +250,21 @@ public class Dictionary {
   }
 
   /** Looks up Hunspell word forms from the dictionary */
-  IntsRef lookupWord(char[] word, int length) {
-    return lookup(words, word, length);
+  IntsRef lookupWord(char[] word, int offset, int length) {
+    return lookup(words, word, offset, length);
   }
 
   // only for testing
   IntsRef lookupPrefix(char[] word) {
-    return lookup(prefixes, word, word.length);
+    return lookup(prefixes, word, 0, word.length);
   }
 
   // only for testing
   IntsRef lookupSuffix(char[] word) {
-    return lookup(suffixes, word, word.length);
+    return lookup(suffixes, word, 0, word.length);
   }
 
-  private IntsRef lookup(FST<IntsRef> fst, char[] word, int length) {
+  IntsRef lookup(FST<IntsRef> fst, char[] word, int offset, int length) {
     if (fst == null) {
       return null;
     }
@@ -245,9 +274,10 @@ public class Dictionary {
     final IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
     IntsRef output = NO_OUTPUT;
 
+    int l = offset + length;
     try {
-      for (int i = 0, cp; i < length; i += Character.charCount(cp)) {
-        cp = Character.codePointAt(word, i, length);
+      for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
+        cp = Character.codePointAt(word, i, l);
         if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
           return null;
         } else if (arc.output() != NO_OUTPUT) {

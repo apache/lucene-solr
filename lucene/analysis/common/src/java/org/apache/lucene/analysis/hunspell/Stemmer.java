@@ -169,7 +169,7 @@ final class Stemmer {
 
   private List<CharsRef> doStem(char[] word, int length, boolean caseVariant) {
     List<CharsRef> stems = new ArrayList<>();
-    IntsRef forms = dictionary.lookupWord(word, length);
+    IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
         boolean checkKeepCase = caseVariant && dictionary.keepcase != -1;
@@ -571,7 +571,7 @@ final class Stemmer {
 
     List<CharsRef> stems = new ArrayList<>();
 
-    IntsRef forms = dictionary.lookupWord(strippedWord, length);
+    IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
         dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);

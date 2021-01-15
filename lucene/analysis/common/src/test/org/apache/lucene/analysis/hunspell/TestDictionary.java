@@ -23,8 +23,16 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.*;
-import org.apache.lucene.util.fst.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.fst.CharSequenceOutputs;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
+import org.apache.lucene.util.fst.Outputs;
+import org.apache.lucene.util.fst.Util;
 
 public class TestDictionary extends LuceneTestCase {
 
@@ -36,7 +44,7 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
 
@@ -45,7 +53,8 @@ public class TestDictionary extends LuceneTestCase {
     char[] flags = Dictionary.decodeFlags(ref);
     assertEquals(1, flags.length);
 
-    ordList = dictionary.lookupWord(new char[] {'l', 'u', 'c', 'e', 'n'}, 5);
+    int offset = random().nextInt(10);
+    ordList = dictionary.lookupWord((" ".repeat(offset) + "lucen").toCharArray(), offset, 5);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
     dictionary.flagLookup.get(ordList.ints[0], ref);
@@ -65,7 +74,7 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
     char[] flags = Dictionary.decodeFlags(ref);
@@ -84,7 +93,7 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
     char[] flags = Dictionary.decodeFlags(ref);
@@ -103,7 +112,7 @@ public class TestDictionary extends LuceneTestCase {
     Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
-    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 3);
+    IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     dictionary.flagLookup.get(ordList.ints[0], ref);
     char[] flags = Dictionary.decodeFlags(ref);
