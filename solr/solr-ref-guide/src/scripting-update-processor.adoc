@@ -96,7 +96,7 @@ Every script has some variables provided to it.
 Logger (org.slf4j.Logger) instance. This is useful for logging information from the script.
 
 `req`::
-{solr-javadocs}/core/org/apache/solr/request/SolrQueryResponse.html[SolrQueryRequest] instance.
+{solr-javadocs}/core/org/apache/solr/response/SolrQueryResponse.html[SolrQueryRequest] instance.
 
 `rsp`::
 {solr-javadocs}/core/org/apache/solr/response/SolrQueryResponse.html[SolrQueryResponse] instance.
