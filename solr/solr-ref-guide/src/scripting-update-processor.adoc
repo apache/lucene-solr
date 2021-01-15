@@ -16,11 +16,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The {solr-javadocs}/contrib/org/apache/solr/update/processor/StatelessScriptUpdateProcessorFactory.html[StatelessScriptUpdateProcessor] allows Java scripting engines to be used
-during the Solr document update processing, allowing dramatic flexibility in
+The {solr-javadocs}/contrib/scripting-update-processor/org/apache/solr/update/processor/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessor] allows Java scripting engines to be used
+during Solr document update processing, allowing dramatic flexibility in
 expressing custom document processing logic before being indexed.  It has hooks to the
 commit, delete, rollback, etc indexing actions, however add is the most common usage.
 It is implemented as an UpdateProcessor to be placed in an UpdateChain.
+
+TIP: This used to be known as the _StatelessScriptingUpdateProcessor_ and was renamed to clarify the key aspect of this update processor is it enables scripting.
 
 The script can be written in any scripting language supported by your JVM (such
 as JavaScript), and executed dynamically so no pre-compilation is necessary.
@@ -52,7 +54,7 @@ Likewise you will need to add some JAR files depending on which scripting engine
 [source,xml]
 ----
 <updateRequestProcessorChain name="script">
-   <processor class="solr.StatelessScriptUpdateProcessorFactory">
+   <processor class="solr.ScriptUpdateProcessorFactory">
      <str name="script">update-script.js</str>
    </processor>
    <!--  optional parameters passed to script

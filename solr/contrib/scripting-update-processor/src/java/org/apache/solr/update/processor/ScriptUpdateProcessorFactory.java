@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * An update request processor factory that enables the use of update
  * processors implemented as scripts which can be loaded by the
  * {@link SolrResourceLoader} (usually via the <code>conf</code> dir for
- * the SolrCore).
+ * the SolrCore).  Previously known as the StatelessScriptUpdateProcessor.
  * </p>
  * <p>
  * This factory requires at least one configuration parameter named
@@ -100,7 +100,7 @@ import org.slf4j.LoggerFactory;
  * Internally this update processor uses JDK 6 scripting engine support,
  * and any {@link Invocable} implementations of <code>ScriptEngine</code>
  * that can be loaded using the Solr Plugin ClassLoader may be used.
- * By default, the engine used for each script is determined by the file 
+ * By default, the engine used for each script is determined by the file
  * extension (ie: a *.js file will be treated as a JavaScript script) but
  * this can be overridden by specifying an explicit "engine" name init
  * param for the factory, which identifies a registered name of a
@@ -120,7 +120,7 @@ import org.slf4j.LoggerFactory;
  * A simple example...
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.StatelessScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
  *   &lt;str name="script"&gt;updateProcessor.js&lt;/str&gt;
  * &lt;/processor&gt;
  * </pre>
@@ -130,7 +130,7 @@ import org.slf4j.LoggerFactory;
  * scope of each script...
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.StatelessScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
  *     &lt;str name="script"&gt;first-processor.js&lt;/str&gt;
  *     &lt;str name="script"&gt;second-processor.py&lt;/str&gt;
@@ -146,7 +146,7 @@ import org.slf4j.LoggerFactory;
  * explicit script engine is used....
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.StatelessScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
  *     &lt;str name="script"&gt;first-processor.txt&lt;/str&gt;
  *     &lt;str name="script"&gt;second-processor.txt&lt;/str&gt;
