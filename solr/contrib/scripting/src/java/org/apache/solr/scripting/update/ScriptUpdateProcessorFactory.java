@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.update.processor.scripting;
+package org.apache.solr.scripting.update;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -133,7 +133,7 @@ import org.slf4j.LoggerFactory;
  * scope of each script...
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
  *     &lt;str name="script"&gt;first-processor.js&lt;/str&gt;
  *     &lt;str name="script"&gt;second-processor.py&lt;/str&gt;
@@ -149,7 +149,7 @@ import org.slf4j.LoggerFactory;
  * explicit script engine is used....
  * </p>
  * <pre class="prettyprint">
- * &lt;processor class="solr.ScriptUpdateProcessorFactory"&gt;
+ * &lt;processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory"&gt;
  *   &lt;arr name="script"&gt;
  *     &lt;str name="script"&gt;first-processor.txt&lt;/str&gt;
  *     &lt;str name="script"&gt;second-processor.txt&lt;/str&gt;
