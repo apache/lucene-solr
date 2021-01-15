@@ -267,6 +267,9 @@ public class TestDictionary extends LuceneTestCase {
         "UTF-8",
         Dictionary.getDictionaryEncoding(
             new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(StandardCharsets.UTF_8))));
+    assertEquals(
+        Dictionary.DEFAULT_ENCODING,
+        Dictionary.getDictionaryEncoding(new ByteArrayInputStream(new byte[0])));
   }
 
   public void testFlagWithCrazyWhitespace() throws Exception {
