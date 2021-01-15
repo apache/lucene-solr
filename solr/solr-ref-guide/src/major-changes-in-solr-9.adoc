@@ -142,6 +142,8 @@ _(raw; not yet edited)_
 
 * SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
 
+* SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
+
 * SOLR-14067: StatelessScriptingUpdateProcessor moved to /contrib/scripting-update-processor module.
   Renamed ScriptingUpdateProcessor, with StatelessScriptingUpdateProcessor being a deprecated name to support rolling upgrades.
 
