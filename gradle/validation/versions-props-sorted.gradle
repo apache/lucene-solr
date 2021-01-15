@@ -31,4 +31,6 @@ configure(rootProject) {
       }
     }
   }
+
+  check.dependsOn versionsPropsAreSorted
 }

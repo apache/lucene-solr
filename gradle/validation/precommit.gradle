@@ -15,39 +15,38 @@
  * limitations under the License.
  */
 
-// This adds top-level 'precommit' task.
+// This adds 'precommit' task to all projects.
+//
+// A precommit is essentially an alias to 'check' with some long-lasting
+// tasks excluded.
 
-configure(rootProject) {
+allprojects {
   task precommit() {
     group = 'Precommit'
-    description = "All precommit checks"
+    description = "Run precommit checks"
 
-    // Root-level validation tasks.
-    dependsOn ":verifyLocks"
-    dependsOn ":versionsPropsAreSorted"
-    dependsOn ":checkWorkingCopyClean"
-
-    // Solr validation tasks.
-    dependsOn ":solr:validateConfigFileSanity"
-
-    // Attach all these tasks from all projects that have them.
-    // This uses lazy collections as they may not yet be defined.
-    dependsOn allprojects.collect { prj ->
-      prj.tasks.matching { task -> task.name in [
-          "forbiddenApis",
-          "licenses",
-          "javadoc",
-          "rat",
-          "ecjLint",
-          "validateLogCalls",
-          "validateSourcePatterns",
-          "spotlessCheck"
-      ]}
-    }
+    dependsOn check
   }
-
-  // Each validation task should be attached to check but make sure
-  // precommit() as a whole is a dependency on rootProject.check
-  check.dependsOn precommit
 }
 
+def taskNames = gradle.startParameter.taskNames
+    .collect {it.toLowerCase(Locale.ROOT)}
+    .collect {it.replaceAll("(.*:)*", "")}
+    .unique()
+
+if (taskNames.contains("precommit")) {
+  // Exclude (ignore) these tasks if running precommit alias.
+  def excludedTasks = [
+      "test"
+  ]
+
+  // Any task names from the exclusion list explicitly passed on command
+  // line should still be executed.
+  excludedTasks.removeAll taskNames
+
+  gradle.taskGraph.whenReady { TaskExecutionGraph taskGraph ->
+    taskGraph.allTasks.findAll { it.name in excludedTasks }.each { task ->
+      task.enabled = false
+    }
+  }
+}
