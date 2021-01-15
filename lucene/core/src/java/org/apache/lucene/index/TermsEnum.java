@@ -188,62 +188,75 @@ public abstract class TermsEnum implements BytesRefIterator {
    * This should not be a problem, as the enum is always empty and
    * the existence of unused Attributes does not matter.
    */
-  public static final TermsEnum EMPTY = new BaseTermsEnum() {
-    @Override
-    public SeekStatus seekCeil(BytesRef term) { return SeekStatus.END; }
-    
-    @Override
-    public void seekExact(long ord) {}
-    
-    @Override
-    public BytesRef term() {
-      throw new IllegalStateException("this method should never be called");
-    }
+  public static final TermsEnum EMPTY =
+      new TermsEnum() {
 
-    @Override
-    public int docFreq() {
-      throw new IllegalStateException("this method should never be called");
-    }
+        private AttributeSource atts = null;
 
-    @Override
-    public long totalTermFreq() {
-      throw new IllegalStateException("this method should never be called");
-    }
-      
-    @Override
-    public long ord() {
-      throw new IllegalStateException("this method should never be called");
-    }
+        @Override
+        public SeekStatus seekCeil(BytesRef term) {
+          return SeekStatus.END;
+        }
 
-    @Override
-    public PostingsEnum postings(PostingsEnum reuse, int flags) {
-      throw new IllegalStateException("this method should never be called");
-    }
+        @Override
+        public void seekExact(long ord) {}
 
-    @Override
-    public ImpactsEnum impacts(int flags) throws IOException {
-      throw new IllegalStateException("this method should never be called");
-    }
+        @Override
+        public BytesRef term() {
+          throw new IllegalStateException("this method should never be called");
+        }
 
-    @Override
-    public BytesRef next() {
-      return null;
-    }
-    
-    @Override // make it synchronized here, to prevent double lazy init
-    public synchronized AttributeSource attributes() {
-      return super.attributes();
-    }
+        @Override
+        public int docFreq() {
+          throw new IllegalStateException("this method should never be called");
+        }
 
-    @Override
-    public TermState termState() {
-      throw new IllegalStateException("this method should never be called");
-    }
+        @Override
+        public long totalTermFreq() {
+          throw new IllegalStateException("this method should never be called");
+        }
 
-    @Override
-    public void seekExact(BytesRef term, TermState state) {
-      throw new IllegalStateException("this method should never be called");
-    }
+        @Override
+        public long ord() {
+          throw new IllegalStateException("this method should never be called");
+        }
 
-  };
+        @Override
+        public PostingsEnum postings(PostingsEnum reuse, int flags) {
+          throw new IllegalStateException("this method should never be called");
+        }
+
+        @Override
+        public ImpactsEnum impacts(int flags) throws IOException {
+          throw new IllegalStateException("this method should never be called");
+        }
+
+        @Override
+        public BytesRef next() {
+          return null;
+        }
+
+        @Override // make it synchronized here, to prevent double lazy init
+        public synchronized AttributeSource attributes() {
+          if (atts == null) {
+            atts = new AttributeSource();
+          }
+          return atts;
+        }
+
+        @Override
+        public boolean seekExact(BytesRef text) throws IOException {
+          return seekCeil(text) == SeekStatus.FOUND;
+        }
+
+        @Override
+        public TermState termState() {
+          throw new IllegalStateException("this method should never be called");
+        }
+
+        @Override
+        public void seekExact(BytesRef term, TermState state) {
+          throw new IllegalStateException("this method should never be called");
+        }
+      };
 }

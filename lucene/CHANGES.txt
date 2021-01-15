@@ -100,6 +100,9 @@ Bug Fixes
 * LUCENE-9642: When encoding triangles in ShapeField, make sure generated triangles are CCW by rotating 
   triangle points before checking triangle orientation. (Ignacio Vera)  
 
+* LUCENE-9661: Fix deadlock in TermsEnum.EMPTY that occurs when trying to initialize TermsEnum and BaseTermsEnum
+  at the same time (Namgyu Kim)
+
 Other
 ---------------------
 
