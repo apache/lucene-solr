@@ -3,7 +3,7 @@ Apache Solr Scripting Update Processor
 
 # Introduction
 
-The StatelessScriptUpdateProcessor allows for Java scripting engines to be used during the Solr document update processing, allowing dramatic flexibility in expressing custom document processing before being indexed.  It also allows hooks to commit, delete, etc, but add is the most common usage.  It is implemented as an UpdateProcessor to be placed in an UpdateChain.
+The ScriptUpdateProcessor allows Java scripting engines to be used during the Solr document update processing, allowing dramatic flexibility in expressing custom document processing before being indexed.  It also allows hooks to commit, delete, etc, but add is the most common usage.  It is implemented as an UpdateProcessor to be placed in an UpdateChain.
 
 # Getting Started
 
