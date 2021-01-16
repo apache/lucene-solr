@@ -382,7 +382,8 @@ public class DirectIODirectory extends FilterDirectory {
 
       buffer.clear();
       try {
-        // read may return -1 here iff filePos == channel.size(), but that's ok as it just reaches EOF
+        // read may return -1 here iff filePos == channel.size(), but that's ok as it just reaches
+        // EOF
         // when filePos > channel.size(), an EOFException will be thrown from above
         channel.read(buffer, filePos);
       } catch (IOException ioe) {

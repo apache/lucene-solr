@@ -17,6 +17,7 @@
 package org.apache.lucene.misc.store;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
@@ -66,11 +67,10 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
   }
 
   public void testIllegalEOFWithFileSizeMultipleOfBlockSize() throws Exception {
-    // fileSize value smaller than block size may not properly test EOF handling
-    // On mac and some linux, block size is 4096; On some windows, block size is 512. Hence picking the larger one here.
-    final int fileSize = 4096 * 2;
+    Path path = createTempDir("testIllegalEOF");
+    final int fileSize = Math.toIntExact(Files.getFileStore(path).getBlockSize()) * 2;
 
-    try (Directory dir = getDirectory(createTempDir("testIllegalEOF"))) {
+    try (Directory dir = getDirectory(path)) {
       IndexOutput o = dir.createOutput("out", newIOContext(random()));
       byte[] b = new byte[fileSize];
       o.writeBytes(b, 0, fileSize);
@@ -80,5 +80,4 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
       i.close();
     }
   }
-
 }
