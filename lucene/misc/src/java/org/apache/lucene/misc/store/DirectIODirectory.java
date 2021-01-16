@@ -376,7 +376,7 @@ public class DirectIODirectory extends FilterDirectory {
 
       // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
       // hence throwing EOFException early to maintain buffer state (position in particular)
-      if (filePos >= channel.size()) {
+      if (filePos > channel.size()) {
         throw new EOFException("read past EOF: " + this);
       }
 
