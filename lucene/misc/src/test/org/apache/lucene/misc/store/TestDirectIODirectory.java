@@ -24,10 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.store.BaseDirectoryTestCase;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.*;
 import org.junit.BeforeClass;
 
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
@@ -67,4 +64,21 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
       }
     }
   }
+
+  public void testIllegalEOFWithFileSizeMultipleOfBlockSize() throws Exception {
+    // fileSize value smaller than block size may not properly test EOF handling
+    // On mac and some linux, block size is 4096; On some windows, block size is 512. Hence picking the larger one here.
+    final int fileSize = 4096 * 2;
+
+    try (Directory dir = getDirectory(createTempDir("testIllegalEOF"))) {
+      IndexOutput o = dir.createOutput("out", newIOContext(random()));
+      byte[] b = new byte[fileSize];
+      o.writeBytes(b, 0, fileSize);
+      o.close();
+      IndexInput i = dir.openInput("out", newIOContext(random()));
+      i.seek(fileSize);
+      i.close();
+    }
+  }
+
 }

@@ -381,13 +381,14 @@ public class DirectIODirectory extends FilterDirectory {
       }
 
       buffer.clear();
-      int n;
       try {
-        n = channel.read(buffer, filePos);
-        assert n >= 0 : "read should not past EOF";
+        // read may return -1 here iff filePos == channel.size(), but that's ok as it just reaches EOF
+        // when filePos > channel.size(), an EOFException will be thrown from above
+        channel.read(buffer, filePos);
       } catch (IOException ioe) {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
+
       buffer.flip();
     }
 
