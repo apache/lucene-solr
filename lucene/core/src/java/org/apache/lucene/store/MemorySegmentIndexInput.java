@@ -407,12 +407,16 @@ public abstract class MemorySegmentIndexInput extends IndexInput implements Rand
   public final void close() throws IOException {
     if (curSegment == null) return;
     
-    curSegment = null;
-    curSegmentIndex = 0;
-    
-    if (isClone) return;
-
-    IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
+    try {
+      curSegment = null;
+      if (isClone == false) {
+        IOUtils.applyToAll(Arrays.asList(segments), MemorySegment::close);
+      }
+    } finally {
+      // make sure that after close all segments are nulled,
+      // so clones can throw AlreadyClosed on NPE:
+      Arrays.fill(segments, null);
+    }
   }
 
   /** Optimization of MemorySegmentIndexInput for when there is only one segment. */
