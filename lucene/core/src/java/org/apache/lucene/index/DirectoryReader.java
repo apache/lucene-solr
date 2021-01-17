@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 /**
  * DirectoryReader is an implementation of {@link CompositeReader} that can read indexes in a {@link

@@ -301,7 +301,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
     }
   }
-  
+
   /** Read the commit from the provided {@link ChecksumIndexInput}. */
   public static final SegmentInfos readCommit(
           Directory directory, ChecksumIndexInput input, long generation) throws IOException {
