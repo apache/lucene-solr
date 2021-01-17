@@ -83,7 +83,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
@@ -1996,7 +1995,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
       IndexFormatTooOldException ex = expectThrows(IndexFormatTooOldException.class, () ->
               StandardDirectoryReader.open(commit, Version.LATEST.major));
-      ex.getMessage().contains("only supports reading from version " + Version.LATEST.major + " upwards." );
+      assertTrue(ex.getMessage().contains("only supports reading from version " + Version.LATEST.major + " upwards." ));
       // now open with allowed min version
       StandardDirectoryReader.open(commit, Version.LATEST.major-1).close();
     }
@@ -2012,11 +2011,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           // don't checkindex, we don't have the codecs yet
           dir.setCheckIndexOnClose(false);
           IllegalArgumentException iae = expectThrows(IllegalArgumentException.class,
-                  () -> DirectoryReader.listCommits(dir, Version.MIN_SUPPORTED_MAJOR - 1));
+                  () -> DirectoryReader.listCommits(dir));
           // TODO fix this once we have the codec for 7.0 recreated
           assertEquals("Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?", iae.getMessage());
-          IndexFormatTooOldException ex = expectThrows(IndexFormatTooOldException.class, () -> DirectoryReader.listCommits(dir));
-          assertTrue(ex.getMessage().contains("Lucene only supports reading the current and previous major versions."));
+          IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
+          assertEquals("Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?", ex.getMessage());
         }
       }
     }

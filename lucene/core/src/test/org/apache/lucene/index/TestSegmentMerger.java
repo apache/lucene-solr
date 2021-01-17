@@ -58,8 +58,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
-    reader1 = new SegmentReader(info1, Version.LATEST.major, Version.MIN_SUPPORTED_MAJOR, newIOContext(random()));
-    reader2 = new SegmentReader(info2, Version.LATEST.major, Version.MIN_SUPPORTED_MAJOR, newIOContext(random()));
+    reader1 = new SegmentReader(info1, Version.LATEST.major, newIOContext(random()));
+    reader2 = new SegmentReader(info2, Version.LATEST.major, newIOContext(random()));
   }
 
   @Override
@@ -113,7 +113,7 @@ public class TestSegmentMerger extends LuceneTestCase {
             new SegmentCommitInfo(
                 mergeState.segmentInfo, 0, 0, -1L, -1L, -1L, StringHelper.randomId()),
             Version.LATEST.major,
-                Version.MIN_SUPPORTED_MAJOR, newIOContext(random()));
+                newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);

@@ -160,7 +160,7 @@ public final class SortingCodecReader extends FilterCodecReader {
   static CodecReader wrap(CodecReader reader, Sorter.DocMap docMap, Sort sort) {
     LeafMetaData metaData = reader.getMetaData();
     LeafMetaData newMetaData =
-        new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), metaData.getCreatedVersionMajor(), sort);
+        new LeafMetaData(metaData.getCreatedVersionMajor(), metaData.getMinVersion(), sort);
     if (docMap == null) {
       // the reader is already sorted
       return new FilterCodecReader(reader) {

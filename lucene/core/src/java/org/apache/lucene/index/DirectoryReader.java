@@ -107,13 +107,18 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
   /**
    * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}.
+   * This method allows to open indices that were created wih a Lucene version older than N-1 provided that all
+   * all codecs for this index are available in the classpath and the segment file format used was created with
+   * Lucene 7 or older. Users of this API must be aware that Lucene doesn't guarantee semantic compatibility for
+   * indices created with versions older than N-1. All backwards compatibility aside of the file format is optional
+   * and applied on a best effort basis.
    *
    * @param commit the commit point to open
-   * @param minIndexVersionCreated the minimum index version created to check before opening the index
+   * @param minSupportedMajorVersion the minimum supported major index version
    * @throws IOException if there is a low-level IO error
    */
-  public static DirectoryReader open(final IndexCommit commit, int minIndexVersionCreated) throws IOException {
-    return StandardDirectoryReader.open(commit.getDirectory(), minIndexVersionCreated, commit);
+  public static DirectoryReader open(final IndexCommit commit, int minSupportedMajorVersion) throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), minSupportedMajorVersion, commit);
   }
 
   /**
@@ -229,29 +234,11 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @return a sorted list of {@link IndexCommit}s, from oldest to latest.
    */
   public static List<IndexCommit> listCommits(Directory dir) throws IOException {
-    return listCommits(dir, Version.MIN_SUPPORTED_MAJOR);
-  }
-
-  /**
-   * Returns all commit points that exist in the Directory. Normally, because the default is {@link
-   * KeepOnlyLastCommitDeletionPolicy}, there would be only one commit point. But if you're using a
-   * custom {@link IndexDeletionPolicy} then there could be many commits. Once you have a given
-   * commit, you can open a reader on it by calling {@link DirectoryReader#open(IndexCommit)} There
-   * must be at least one commit in the Directory, else this method throws {@link
-   * IndexNotFoundException}. Note that if a commit is in progress while this method is running,
-   * that commit may or may not be returned.
-   *
-   * @param dir the directory to read the commits from
-   * @param minSupportedMajorVersion the minimum supported major version the index was created with
-   *
-   * @return a sorted list of {@link IndexCommit}s, from oldest to latest.
-   */
-  public static List<IndexCommit> listCommits(Directory dir, int minSupportedMajorVersion) throws IOException {
     final String[] files = dir.listAll();
 
     List<IndexCommit> commits = new ArrayList<>();
 
-    SegmentInfos latest = SegmentInfos.readLatestCommit(dir, minSupportedMajorVersion);
+    SegmentInfos latest = SegmentInfos.readLatestCommit(dir, 0);
     final long currentGen = latest.getGeneration();
 
     commits.add(new StandardDirectoryReader.ReaderCommit(null, latest, dir));
@@ -267,7 +254,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
         try {
           // IOException allowed to throw there, in case
           // segments_N is corrupt
-          sis = SegmentInfos.readCommit(dir, fileName);
+          sis = SegmentInfos.readCommit(dir, fileName, 0);
         } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth

@@ -180,7 +180,7 @@ public class ParallelLeafReader extends LeafReader {
     }
 
     fieldInfos = builder.finish();
-    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, createdVersionMajor, indexSort);
+    this.metaData = new LeafMetaData(createdVersionMajor, minVersion, indexSort);
 
     // do this finally so any Exceptions occurred before don't affect refcounts:
     for (LeafReader reader : completeReaderSet) {

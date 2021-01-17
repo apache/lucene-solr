@@ -1107,7 +1107,6 @@ public class TestDirectoryReader extends LuceneTestCase {
       writer.addDocument(doc);
       writer.commit();
       IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
-      expectThrows(IndexFormatTooOldException.class, () -> DirectoryReader.open(commit, Version.LATEST.major+1));
       expectThrows(IllegalArgumentException.class, () -> DirectoryReader.open(commit, -1));
       DirectoryReader.open(commit, random().nextInt(Version.LATEST.major+1)).close();
     }
