@@ -291,18 +291,18 @@ final class WANDScorer extends Scorer {
             if (scoreMode == ScoreMode.TOP_SCORES) {
               // Update score bounds if necessary so
               updateMaxScoresIfNecessary(target);
+
+              if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+                return DocIdSetIterator.NO_MORE_DOCS;
+              }
             }
 
-            if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            } else {
-              // Pop the new 'lead' from 'head', reset stats
-              setDocAndFreq(doc + 1);
-              assert ensureConsistent();
+            // Pop the new 'lead' from 'head', reset stats
+            setDocAndFreq(doc + 1);
+            assert ensureConsistent();
 
-              // Advance to the next possible match
-              return doNextCompetitiveCandidate();
-            }
+            // Advance to the next possible match
+            return doNextCompetitiveCandidate();
           }
 
           @Override
@@ -341,10 +341,7 @@ final class WANDScorer extends Scorer {
     lead.next = this.lead;
     this.lead = lead;
     freq += 1;
-
-    if (scoreMode == ScoreMode.TOP_SCORES) {
-      leadMaxScore += lead.maxScore;
-    }
+    leadMaxScore += lead.maxScore;
   }
 
   /** Move disis that are in 'lead' back to the tail. */
@@ -357,10 +354,7 @@ final class WANDScorer extends Scorer {
       }
     }
     lead = null;
-
-    if (scoreMode == ScoreMode.TOP_SCORES) {
-      leadMaxScore = 0;
-    }
+    leadMaxScore = 0;
   }
 
   /** Make sure all disis in 'head' are on or after 'target'. */
@@ -500,14 +494,14 @@ final class WANDScorer extends Scorer {
       if (scoreMode == ScoreMode.TOP_SCORES) {
         // Update score bounds if necessary so
         updateMaxScoresIfNecessary(doc + 1);
+
+        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+          return DocIdSetIterator.NO_MORE_DOCS;
+        }
       }
 
-      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-        return DocIdSetIterator.NO_MORE_DOCS;
-      } else {
-        setDocAndFreq(doc + 1);
-        assert ensureConsistent();
-      }
+      setDocAndFreq(doc + 1);
+      assert ensureConsistent();
     }
 
     return doc;
