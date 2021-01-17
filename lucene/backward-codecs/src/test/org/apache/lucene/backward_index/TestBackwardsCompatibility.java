@@ -1993,29 +1993,38 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (String name : oldNames) {
       Directory directory = oldIndexDirs.get(name);
       IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
-      IndexFormatTooOldException ex = expectThrows(IndexFormatTooOldException.class, () ->
-              StandardDirectoryReader.open(commit, Version.LATEST.major));
-      assertTrue(ex.getMessage().contains("only supports reading from version " + Version.LATEST.major + " upwards." ));
+      IndexFormatTooOldException ex =
+          expectThrows(
+              IndexFormatTooOldException.class,
+              () -> StandardDirectoryReader.open(commit, Version.LATEST.major));
+      assertTrue(
+          ex.getMessage()
+              .contains(
+                  "only supports reading from version " + Version.LATEST.major + " upwards."));
       // now open with allowed min version
-      StandardDirectoryReader.open(commit, Version.LATEST.major-1).close();
+      StandardDirectoryReader.open(commit, Version.LATEST.major - 1).close();
     }
   }
 
   public void testReadNMinusTwoCommit() throws IOException {
     for (String name : this.unsupportedNames) {
-      if (name.startsWith(Version.MIN_SUPPORTED_MAJOR-1 + ".")) {
+      if (name.startsWith(Version.MIN_SUPPORTED_MAJOR - 1 + ".")) {
         Path oldIndexDir = createTempDir(name);
-        TestUtil.unzip(
-                getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+        TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
         try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
           // don't checkindex, we don't have the codecs yet
           dir.setCheckIndexOnClose(false);
-          IllegalArgumentException iae = expectThrows(IllegalArgumentException.class,
-                  () -> DirectoryReader.listCommits(dir));
+          IllegalArgumentException iae =
+              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
           // TODO fix this once we have the codec for 7.0 recreated
-          assertEquals("Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?", iae.getMessage());
-          IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
-          assertEquals("Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?", ex.getMessage());
+          assertEquals(
+              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
+              iae.getMessage());
+          IllegalArgumentException ex =
+              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
+          assertEquals(
+              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
+              ex.getMessage());
         }
       }
     }
