@@ -30,8 +30,6 @@ library {
 
   // Native build for Windows platform will be added in later stage
   targetMachines = [
-      machines.linux.x86_64,
-      machines.macOS.x86_64,
       machines.windows.x86_64
   ]
 
@@ -39,8 +37,6 @@ library {
   // (plugin won't find the toolchain).
   if (Os.isFamily(Os.FAMILY_WINDOWS)) {
     source.from file("${projectDir}/src/main/windows")
-  } else if (Os.isFamily(Os.FAMILY_UNIX) || Os.isFamily(Os.FAMILY_MAC)) {
-    source.from file("${projectDir}/src/main/posix")
   }
 }
 
@@ -51,11 +47,7 @@ tasks.withType(CppCompile).configureEach {
   // is present.
   systemIncludes.from file("${javaHome}/include")
 
-  for (def path : [
-      file("${javaHome}/include/win32"),
-      file("${javaHome}/include/darwin"),
-      file("${javaHome}/include/linux"),
-      file("${javaHome}/include/solaris")]) {
+  for (def path : [file("${javaHome}/include/win32")]) {
     if (path.exists()) {
       systemIncludes.from path
     }
