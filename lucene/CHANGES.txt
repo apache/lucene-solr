@@ -173,7 +173,7 @@ Improvements
 * LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
 
 * LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
-  and rename to DirectIODirectory (Zach Chen).
+  and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
 
 Bug fixes
 
