@@ -1100,7 +1100,7 @@ public class TestDirectoryReader extends LuceneTestCase {
 
   public void testOpenWithInvalidMinCompatVersion() throws IOException {
     try (Directory dir = newDirectory();
-          IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(newStringField("field1", "foobar", Field.Store.YES));
       doc.add(newStringField("field2", "foobaz", Field.Store.YES));
@@ -1108,7 +1108,7 @@ public class TestDirectoryReader extends LuceneTestCase {
       writer.commit();
       IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
       expectThrows(IllegalArgumentException.class, () -> DirectoryReader.open(commit, -1));
-      DirectoryReader.open(commit, random().nextInt(Version.LATEST.major+1)).close();
+      DirectoryReader.open(commit, random().nextInt(Version.LATEST.major + 1)).close();
     }
   }
 }

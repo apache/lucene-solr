@@ -164,10 +164,10 @@ public final class Version {
   @Deprecated public static final Version LUCENE_CURRENT = LATEST;
 
   /**
-   * Constant for the minimal supported major version of an index. This
-   * version is defined by the version that initially created the index.
+   * Constant for the minimal supported major version of an index. This version is defined by the
+   * version that initially created the index.
    */
-  public static final int MIN_SUPPORTED_MAJOR = Version.LATEST.major-1;
+  public static final int MIN_SUPPORTED_MAJOR = Version.LATEST.major - 1;
 
   /**
    * Parse a version number of the form {@code "major.minor.bugfix.prerelease"}.

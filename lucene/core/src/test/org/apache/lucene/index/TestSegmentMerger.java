@@ -113,7 +113,7 @@ public class TestSegmentMerger extends LuceneTestCase {
             new SegmentCommitInfo(
                 mergeState.segmentInfo, 0, 0, -1L, -1L, -1L, StringHelper.randomId()),
             Version.LATEST.major,
-                newIOContext(random()));
+            newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);

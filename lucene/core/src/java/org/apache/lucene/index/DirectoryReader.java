@@ -105,18 +105,19 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
   }
 
   /**
-   * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}.
-   * This method allows to open indices that were created wih a Lucene version older than N-1 provided that all
-   * all codecs for this index are available in the classpath and the segment file format used was created with
-   * Lucene 7 or older. Users of this API must be aware that Lucene doesn't guarantee semantic compatibility for
-   * indices created with versions older than N-1. All backwards compatibility aside of the file format is optional
-   * and applied on a best effort basis.
+   * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}. This method
+   * allows to open indices that were created wih a Lucene version older than N-1 provided that all
+   * all codecs for this index are available in the classpath and the segment file format used was
+   * created with Lucene 7 or older. Users of this API must be aware that Lucene doesn't guarantee
+   * semantic compatibility for indices created with versions older than N-1. All backwards
+   * compatibility aside of the file format is optional and applied on a best effort basis.
    *
    * @param commit the commit point to open
    * @param minSupportedMajorVersion the minimum supported major index version
    * @throws IOException if there is a low-level IO error
    */
-  public static DirectoryReader open(final IndexCommit commit, int minSupportedMajorVersion) throws IOException {
+  public static DirectoryReader open(final IndexCommit commit, int minSupportedMajorVersion)
+      throws IOException {
     return StandardDirectoryReader.open(commit.getDirectory(), minSupportedMajorVersion, commit);
   }
 
