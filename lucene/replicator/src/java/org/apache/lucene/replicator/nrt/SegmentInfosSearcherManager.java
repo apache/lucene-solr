@@ -33,7 +33,6 @@ import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 /**
  * A SearcherManager that refreshes via an externally provided (NRT) SegmentInfos, either from
