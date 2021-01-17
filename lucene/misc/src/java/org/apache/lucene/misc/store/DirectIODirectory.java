@@ -26,6 +26,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.OptionalLong;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 import org.apache.lucene.store.*;
@@ -55,7 +56,7 @@ public class DirectIODirectory extends FilterDirectory {
    * Default buffer size before writing to disk (256 KB); larger means less IO load but more RAM and
    * direct buffer storage space consumed during merging.
    */
-  public static final int DEFAULT_MERGE_BUFFER_SIZE = 262144;
+  public static final int DEFAULT_MERGE_BUFFER_SIZE = 256 * 1024;
 
   /** Default min expected merge size before direct IO is used (10 MB): */
   public static final long DEFAULT_MIN_BYTES_DIRECT = 10 * 1024 * 1024;
@@ -106,7 +107,7 @@ public class DirectIODirectory extends FilterDirectory {
    * @param delegate Directory for non-merges, also used as reference to file system path.
    * @param mergeBufferSize Size of buffer to use for merging.
    * @param minBytesDirect Merges, or files to be opened for reading, smaller than this will not use
-   *     direct IO. See {@link #DEFAULT_MIN_BYTES_DIRECT}
+   *     direct IO. See {@link #DEFAULT_MIN_BYTES_DIRECT} and {@link #useDirectIO}.
    * @throws IOException If there is a low-level I/O error
    */
   public DirectIODirectory(FSDirectory delegate, int mergeBufferSize, long minBytesDirect)
@@ -139,15 +140,29 @@ public class DirectIODirectory extends FilterDirectory {
     }
   }
 
-  protected boolean useDirectIO(IOContext context) {
+  /**
+   * Determines if direct IO should be used for a file. By default this tests if it is a merge
+   * context and if the merge or file length extends the minimum size (see {@link
+   * #DEFAULT_MIN_BYTES_DIRECT}). Subclasses may override method to enforce direct IO for specific
+   * file types.
+   *
+   * @param name file name (unused by default implementation)
+   * @param context information about merge size
+   * @param fileLength if available, gives the file length. Will be empty when requesting an {@link
+   *     IndexOutput}.
+   * @return {@code true} if direct IO should be used; {@code false} if input/output should be
+   *     requested from delegate directory.
+   */
+  protected boolean useDirectIO(String name, IOContext context, OptionalLong fileLength) {
     return context.context == Context.MERGE
-        && context.mergeInfo.estimatedMergeBytes >= minBytesDirect;
+        && context.mergeInfo.estimatedMergeBytes >= minBytesDirect
+        && fileLength.orElse(minBytesDirect) >= minBytesDirect;
   }
 
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
-    if (useDirectIO(context) && fileLength(name) >= minBytesDirect) {
+    if (useDirectIO(name, context, OptionalLong.of(fileLength(name)))) {
       return new DirectIOIndexInput(getDirectory().resolve(name), blockSize, mergeBufferSize);
     } else {
       return in.openInput(name, context);
@@ -157,7 +172,7 @@ public class DirectIODirectory extends FilterDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    if (useDirectIO(context)) {
+    if (useDirectIO(name, context, OptionalLong.empty())) {
       return new DirectIOIndexOutput(
           getDirectory().resolve(name), name, blockSize, mergeBufferSize);
     } else {

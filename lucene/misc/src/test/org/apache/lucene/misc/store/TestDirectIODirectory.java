@@ -19,6 +19,7 @@ package org.apache.lucene.misc.store;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -39,10 +40,9 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
 
   @Override
   protected DirectIODirectory getDirectory(Path path) throws IOException {
-    return new DirectIODirectory(
-        FSDirectory.open(path), DirectIODirectory.DEFAULT_MERGE_BUFFER_SIZE, 0L) {
+    return new DirectIODirectory(FSDirectory.open(path)) {
       @Override
-      protected boolean useDirectIO(IOContext context) {
+      protected boolean useDirectIO(String name, IOContext context, OptionalLong fileLength) {
         return true;
       }
     };
@@ -78,6 +78,62 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
       IndexInput i = dir.openInput("out", newIOContext(random()));
       i.seek(fileSize);
       i.close();
+    }
+  }
+
+  public void testUseDirectIODefaults() throws Exception {
+    Path path = createTempDir("testUseDirectIODefaults");
+    try (DirectIODirectory dir = new DirectIODirectory(FSDirectory.open(path))) {
+      long largeSize = DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT + random().nextInt(10_000);
+      long smallSize =
+          random().nextInt(Math.toIntExact(DirectIODirectory.DEFAULT_MIN_BYTES_DIRECT));
+      int numDocs = random().nextInt(1000);
+
+      assertFalse(dir.useDirectIO("dummy", IOContext.DEFAULT, OptionalLong.empty()));
+
+      assertTrue(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, largeSize, true, -1)),
+              OptionalLong.empty()));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, smallSize, true, -1)),
+              OptionalLong.empty()));
+
+      assertTrue(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, largeSize, true, -1)),
+              OptionalLong.of(largeSize)));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, smallSize, true, -1)),
+              OptionalLong.of(smallSize)));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, smallSize, true, -1)),
+              OptionalLong.of(largeSize)));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new MergeInfo(numDocs, largeSize, true, -1)),
+              OptionalLong.of(smallSize)));
+
+      assertFalse(
+          dir.useDirectIO(
+              "dummy", new IOContext(new FlushInfo(numDocs, largeSize)), OptionalLong.empty()));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy", new IOContext(new FlushInfo(numDocs, smallSize)), OptionalLong.empty()));
+      assertFalse(
+          dir.useDirectIO(
+              "dummy",
+              new IOContext(new FlushInfo(numDocs, largeSize)),
+              OptionalLong.of(largeSize)));
     }
   }
 }
