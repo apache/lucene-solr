@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -82,6 +83,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 
 
 /**
@@ -239,7 +242,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testRouting() throws Exception {
-    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("routing_collection", 2, 2);
     
     AbstractUpdateRequest request = new UpdateRequest()
@@ -1055,7 +1060,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1)
         .process(cluster.getSolrClient());
 
-    final String testCollection = "perReplicaState_test";
+    String testCollection = "perReplicaState_test";
     int liveNodes = cluster.getJettySolrRunners().size();
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
         .setPerReplicaState(Boolean.TRUE)
@@ -1067,6 +1072,17 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
     PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    assertEquals(4, prs.states.size());
+    testCollection = "perReplicaState_testv2";
+    new V2Request.Builder("/collections")
+        .withMethod(POST)
+        .withPayload("{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+        .build()
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+    c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+    prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
   }
 

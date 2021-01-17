@@ -221,11 +221,11 @@ public class ZkStateWriter {
           DocCollection c = cmd.collection;
 
           if(cmd.ops != null && cmd.ops.isPreOp()) {
-            PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
+            cmd.ops.persist(path, reader.getZkClient());
             clusterState = clusterState.copyWith(name,
                   cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
-          if(!cmd.persistCollState) continue;
+          if (!cmd.persistCollState) continue;
           if (c == null) {
             // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
             log.debug("going to delete state.json {}", path);
@@ -247,7 +247,7 @@ public class ZkStateWriter {
             }
           }
             if(cmd.ops != null && !cmd.ops.isPreOp()) {
-              PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
+              cmd.ops.persist(path, reader.getZkClient());
               DocCollection currentCollState = clusterState.getCollection(cmd.name);
               if ( currentCollState != null) {
                 clusterState = clusterState.copyWith(name,

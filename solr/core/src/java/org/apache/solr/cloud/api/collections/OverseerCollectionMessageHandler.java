@@ -142,6 +142,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       ZkStateReader.REPLICATION_FACTOR, "1",
       ZkStateReader.NRT_REPLICAS, "1",
       ZkStateReader.TLOG_REPLICAS, "0",
+      DocCollection.PER_REPLICA_STATE, null,
       ZkStateReader.PULL_REPLICAS, "0"));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
