@@ -94,6 +94,9 @@ If this parameter is specified, the router will look at the value of the field i
 +
 Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
+`perReplicaState`::
+If `true` the states of individual replicas will be maintained as individual child of the `state.json`. default is `false`
+
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
