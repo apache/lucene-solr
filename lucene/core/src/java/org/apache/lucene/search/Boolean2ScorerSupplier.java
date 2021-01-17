@@ -231,27 +231,15 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
         optionalScorers.add(scorer.get(leadCost));
       }
 
-      // nocommit
-      //
-      // The following updated condition follows the previous one that also utilized
-      // MinShouldMatchSumScorer However, technically speaking, WANDScorer is also able to
-      // handle the case where minShouldMatch == 0 (proven with existing possible condition of
-      // scoreMode == SoreMode.TOP_SCORES && minShouldMatch == 0), but removing the
-      // minShouldMatch > 1 condition would also stop WANDScorer to handle the case
-      // where scoreMode.needsScore() == false, which WANDScorer is also capable of
-      // (proven with existing possible condition of scoreMode != ScoreMode.TOP_SCORES &&
-      // minShouldMatch > 1).
-      //
-      // Ultimately, WANDScorer should be able to handle the following conditions now:
-      // 1. Any ScoreMode (with scoring or not), although it might be a bit slower compared to
-      //   DisjunctionSumScorer due to data structures and algorithms usd
+      // Technically speaking, WANDScorer should be able to handle the following 3 conditions now
+      // 1. Any ScoreMode (with scoring or not)
       // 2. Any minCompetitiveScore ( >= 0 )
       // 3. Any minShouldMatch ( >= 0 )
       //
-      // So it seems we might need a different condition check to differentiate usage between
-      // WANDScorer and DisjunctionSumScorer ?
+      // However, as WANDScorer uses more complex algorithm and data structure, we would like to
+      // still use DisjunctionSumScorer to handle exhaustive pure disjunctions, which may be faster
       if (scoreMode == ScoreMode.TOP_SCORES || minShouldMatch > 1) {
-        return new WANDScorer(weight, optionalScorers, minShouldMatch, scoreMode.needsScores());
+        return new WANDScorer(weight, optionalScorers, minShouldMatch, scoreMode);
       } else {
         return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }

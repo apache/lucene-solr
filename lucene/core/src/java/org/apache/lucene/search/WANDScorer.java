@@ -149,9 +149,9 @@ final class WANDScorer extends Scorer {
   final int minShouldMatch;
   int freq;
 
-  final boolean needsScore;
+  final ScoreMode scoreMode;
 
-  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch, boolean needsScore)
+  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch, ScoreMode scoreMode)
       throws IOException {
     super(weight);
 
@@ -167,13 +167,13 @@ final class WANDScorer extends Scorer {
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
 
-    this.needsScore = needsScore;
+    this.scoreMode = scoreMode;
 
     head = new DisiPriorityQueue(scorers.size());
     // there can be at most num_scorers - 1 scorers beyond the current position
     tail = new DisiWrapper[scorers.size()];
 
-    if (needsScore) {
+    if (this.scoreMode == ScoreMode.TOP_SCORES) {
       OptionalInt scalingFactor = OptionalInt.empty();
       for (Scorer scorer : scorers) {
         scorer.advanceShallow(0);
@@ -209,7 +209,7 @@ final class WANDScorer extends Scorer {
   // returns a boolean so that it can be called from assert
   // the return value is useless: it always returns true
   private boolean ensureConsistent() {
-    if (needsScore) {
+    if (scoreMode == ScoreMode.TOP_SCORES) {
       long maxScoreSum = 0;
       for (int i = 0; i < tailSize; ++i) {
         assert tail[i].doc < doc;
@@ -239,7 +239,8 @@ final class WANDScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     // Let this disjunction know about the new min score so that it can skip
     // over clauses that produce low scores.
-    assert needsScore : "minCompetitiveScore can not be set when in non-scoring mode";
+    assert scoreMode == ScoreMode.TOP_SCORES
+        : "minCompetitiveScore can only be set for ScoreMode.TOP_SCORES, but got: " + scoreMode;
     assert minScore >= 0;
     long scaledMinScore = scaleMinScore(minScore, scalingFactor);
     assert scaledMinScore >= minCompetitiveScore;
@@ -287,7 +288,7 @@ final class WANDScorer extends Scorer {
             // Advance 'head' as well
             advanceHead(target);
 
-            if (needsScore) {
+            if (scoreMode == ScoreMode.TOP_SCORES) {
               // Update score bounds if necessary so
               updateMaxScoresIfNecessary(target);
             }
@@ -341,7 +342,7 @@ final class WANDScorer extends Scorer {
     this.lead = lead;
     freq += 1;
 
-    if (needsScore) {
+    if (scoreMode == ScoreMode.TOP_SCORES) {
       leadMaxScore += lead.maxScore;
     }
   }
@@ -357,7 +358,7 @@ final class WANDScorer extends Scorer {
     }
     lead = null;
 
-    if (needsScore) {
+    if (scoreMode == ScoreMode.TOP_SCORES) {
       leadMaxScore = 0;
     }
   }
@@ -496,7 +497,7 @@ final class WANDScorer extends Scorer {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
 
-      if (needsScore) {
+      if (scoreMode == ScoreMode.TOP_SCORES) {
         // Update score bounds if necessary so
         updateMaxScoresIfNecessary(doc + 1);
       }
