@@ -106,8 +106,8 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
   /**
    * Expert: returns an IndexReader reading the index in the given {@link IndexCommit}. This method
-   * allows to open indices that were created wih a Lucene version older than N-1 provided that
-   * all codecs for this index are available in the classpath and the segment file format used was
+   * allows to open indices that were created wih a Lucene version older than N-1 provided that all
+   * codecs for this index are available in the classpath and the segment file format used was
    * created with Lucene 7 or older. Users of this API must be aware that Lucene doesn't guarantee
    * semantic compatibility for indices created with versions older than N-1. All backwards
    * compatibility aside of the file format is optional and applied on a best effort basis.
