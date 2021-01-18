@@ -84,6 +84,8 @@ API Changes
 
 Improvements
 
+* LUCENE-9665: Hunspell: support default encoding (Peter Gromov)
+
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
 
@@ -171,6 +173,9 @@ Improvements
   Add backwards compatibility tests for the taxonomy index. (Gautam Worah, Michael McCandless)
 
 * LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
+
+* LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
+  and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
 
 Bug fixes
 
@@ -295,6 +300,9 @@ Bug Fixes
 
 * LUCENE-9642: When encoding triangles in ShapeField, make sure generated triangles are CCW by rotating 
   triangle points before checking triangle orientation. (Ignacio Vera)  
+
+* LUCENE-9661: Fix deadlock in TermsEnum.EMPTY that occurs when trying to initialize TermsEnum and BaseTermsEnum
+  at the same time (Namgyu Kim)
 
 Other
 ---------------------
@@ -516,7 +524,7 @@ Improvements
   improves the approachability of the IndexWriter code. (Simon Willnauer)
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
-  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grand)
 
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)

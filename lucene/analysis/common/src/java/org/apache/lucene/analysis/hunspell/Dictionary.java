@@ -98,6 +98,7 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
+  static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -138,8 +139,6 @@ public class Dictionary {
   // we set this during sorting, so we know to add an extra FST output.
   // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
   boolean hasStemExceptions;
-
-  private final Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
 
   boolean ignoreCase;
   boolean complexPrefixes;
@@ -209,6 +208,7 @@ public class Dictionary {
     this.needsOutputCleaning = false; // set if we have an OCONV
     flagLookup.add(new BytesRef()); // no flags -> ord 0
 
+    Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
     Path aff = Files.createTempFile(tempPath, "affix", "aff");
     OutputStream out = new BufferedOutputStream(Files.newOutputStream(aff));
     InputStream aff1 = null;
@@ -251,33 +251,33 @@ public class Dictionary {
   }
 
   /** Looks up Hunspell word forms from the dictionary */
-  IntsRef lookupWord(char word[], int offset, int length) {
+  IntsRef lookupWord(char[] word, int offset, int length) {
     return lookup(words, word, offset, length);
   }
 
   // only for testing
-  IntsRef lookupPrefix(char word[], int offset, int length) {
-    return lookup(prefixes, word, offset, length);
+  IntsRef lookupPrefix(char[] word) {
+    return lookup(prefixes, word, 0, word.length);
   }
 
   // only for testing
-  IntsRef lookupSuffix(char word[], int offset, int length) {
-    return lookup(suffixes, word, offset, length);
+  IntsRef lookupSuffix(char[] word) {
+    return lookup(suffixes, word, 0, word.length);
   }
 
-  IntsRef lookup(FST<IntsRef> fst, char word[], int offset, int length) {
+  IntsRef lookup(FST<IntsRef> fst, char[] word, int offset, int length) {
     if (fst == null) {
       return null;
     }
     final FST.BytesReader bytesReader = fst.getBytesReader();
-    final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<IntsRef>());
+    final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
     // Accumulate output as we go
     final IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
     IntsRef output = NO_OUTPUT;
 
     int l = offset + length;
     try {
-      for (int i = offset, cp = 0; i < l; i += Character.charCount(cp)) {
+      for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
         cp = Character.codePointAt(word, i, l);
         if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
           return null;
@@ -319,7 +319,7 @@ public class Dictionary {
     seenStrips.put("", 0);
 
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(affixStream, decoder));
-    String line = null;
+    String line;
     while ((line = reader.readLine()) != null) {
       // ignore any BOM marker on first line
       if (reader.getLineNumber() == 1 && line.startsWith("\uFEFF")) {
@@ -343,31 +343,31 @@ public class Dictionary {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
       } else if (line.startsWith(CIRCUMFIX_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         if (parts.length != 2) {
           throw new ParseException("Illegal CIRCUMFIX declaration", reader.getLineNumber());
         }
         circumfix = flagParsingStrategy.parseFlag(parts[1]);
       } else if (line.startsWith(KEEPCASE_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         if (parts.length != 2) {
           throw new ParseException("Illegal KEEPCASE declaration", reader.getLineNumber());
         }
         keepcase = flagParsingStrategy.parseFlag(parts[1]);
       } else if (line.startsWith(NEEDAFFIX_KEY) || line.startsWith(PSEUDOROOT_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         if (parts.length != 2) {
           throw new ParseException("Illegal NEEDAFFIX declaration", reader.getLineNumber());
         }
         needaffix = flagParsingStrategy.parseFlag(parts[1]);
       } else if (line.startsWith(ONLYINCOMPOUND_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         if (parts.length != 2) {
           throw new ParseException("Illegal ONLYINCOMPOUND declaration", reader.getLineNumber());
         }
         onlyincompound = flagParsingStrategy.parseFlag(parts[1]);
       } else if (line.startsWith(IGNORE_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         if (parts.length != 2) {
           throw new ParseException("Illegal IGNORE declaration", reader.getLineNumber());
         }
@@ -375,7 +375,7 @@ public class Dictionary {
         Arrays.sort(ignore);
         needsInputCleaning = true;
       } else if (line.startsWith(ICONV_KEY) || line.startsWith(OCONV_KEY)) {
-        String parts[] = line.split("\\s+");
+        String[] parts = line.split("\\s+");
         String type = parts[0];
         if (parts.length != 2) {
           throw new ParseException("Illegal " + type + " declaration", reader.getLineNumber());
@@ -474,10 +474,10 @@ public class Dictionary {
 
     BytesRefBuilder scratch = new BytesRefBuilder();
     StringBuilder sb = new StringBuilder();
-    String args[] = header.split("\\s+");
+    String[] args = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
-    boolean isSuffix = conditionPattern == SUFFIX_CONDITION_REGEX_PATTERN;
+    boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX_PATTERN);
 
     int numLines = Integer.parseInt(args[3]);
     affixData = ArrayUtil.grow(affixData, (currentAffix << 3) + (numLines << 3));
@@ -487,7 +487,7 @@ public class Dictionary {
     for (int i = 0; i < numLines; i++) {
       assert affixWriter.getPosition() == currentAffix << 3;
       String line = reader.readLine();
-      String ruleArgs[] = line.split("\\s+");
+      String[] ruleArgs = line.split("\\s+");
 
       // from the manpage: PFX flag stripping prefix [condition [morphological_fields...]]
       // condition is optional
@@ -500,7 +500,7 @@ public class Dictionary {
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
       String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
       String affixArg = ruleArgs[3];
-      char appendFlags[] = null;
+      char[] appendFlags = null;
 
       // first: parse continuation classes out of affix
       int flagSep = affixArg.lastIndexOf('/');
@@ -584,7 +584,7 @@ public class Dictionary {
       affixWriter.writeShort((short) flag);
       affixWriter.writeShort((short) stripOrd.intValue());
       // encode crossProduct into patternIndex
-      int patternOrd = patternIndex.intValue() << 1 | (crossProduct ? 1 : 0);
+      int patternOrd = patternIndex << 1 | (crossProduct ? 1 : 0);
       affixWriter.writeShort((short) patternOrd);
       affixWriter.writeShort((short) appendFlagsOrd);
 
@@ -597,12 +597,7 @@ public class Dictionary {
         affixArg = new StringBuilder(affixArg).reverse().toString();
       }
 
-      List<Integer> list = affixes.get(affixArg);
-      if (list == null) {
-        list = new ArrayList<>();
-        affixes.put(affixArg, list);
-      }
-      list.add(currentAffix);
+      affixes.computeIfAbsent(affixArg, __ -> new ArrayList<>()).add(currentAffix);
       currentAffix++;
     }
   }
@@ -613,7 +608,7 @@ public class Dictionary {
 
     for (int i = 0; i < num; i++) {
       String line = reader.readLine();
-      String parts[] = line.split("\\s+");
+      String[] parts = line.split("\\s+");
       if (parts.length != 3) {
         throw new ParseException("invalid syntax: " + line, reader.getLineNumber());
       }
@@ -642,10 +637,8 @@ public class Dictionary {
    * @param affix InputStream for reading the affix file
    * @return Encoding specified in the affix file
    * @throws IOException Can be thrown while reading from the InputStream
-   * @throws ParseException Thrown if the first non-empty non-comment line read from the file does
-   *     not adhere to the format {@code SET <encoding>}
    */
-  static String getDictionaryEncoding(InputStream affix) throws IOException, ParseException {
+  static String getDictionaryEncoding(InputStream affix) throws IOException {
     final StringBuilder encoding = new StringBuilder();
     for (; ; ) {
       encoding.setLength(0);
@@ -664,7 +657,7 @@ public class Dictionary {
           // this test only at the end as ineffective but would allow lines only containing spaces:
           encoding.toString().trim().length() == 0) {
         if (ch < 0) {
-          throw new ParseException("Unexpected end of affix file.", 0);
+          return DEFAULT_ENCODING;
         }
         continue;
       }
@@ -673,6 +666,7 @@ public class Dictionary {
         int last = matcher.end();
         return encoding.substring(last).trim();
       }
+      return DEFAULT_ENCODING;
     }
   }
 
@@ -707,7 +701,7 @@ public class Dictionary {
    *     definition
    */
   static FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
-    String parts[] = flagLine.split("\\s+");
+    String[] parts = flagLine.split("\\s+");
     if (parts.length != 2) {
       throw new IllegalArgumentException("Illegal FLAG specification: " + flagLine);
     }
@@ -724,11 +718,11 @@ public class Dictionary {
     throw new IllegalArgumentException("Unknown flag type: " + flagType);
   }
 
-  final char FLAG_SEPARATOR = 0x1f; // flag separator after escaping
-  final char MORPH_SEPARATOR =
+  private static final char FLAG_SEPARATOR = 0x1f; // flag separator after escaping
+  private static final char MORPH_SEPARATOR =
       0x1e; // separator for boundary of entry (may be followed by morph data)
 
-  String unescapeEntry(String entry) {
+  private String unescapeEntry(String entry) {
     StringBuilder sb = new StringBuilder();
     int end = morphBoundary(entry);
     for (int i = 0; i < end; i++) {
@@ -738,9 +732,7 @@ public class Dictionary {
         i++;
       } else if (ch == '/') {
         sb.append(FLAG_SEPARATOR);
-      } else if (ch == MORPH_SEPARATOR || ch == FLAG_SEPARATOR) {
-        // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
-      } else {
+      } else if (!shouldSkipEscapedChar(ch)) {
         sb.append(ch);
       }
     }
@@ -748,14 +740,17 @@ public class Dictionary {
     if (end < entry.length()) {
       for (int i = end; i < entry.length(); i++) {
         char c = entry.charAt(i);
-        if (c == FLAG_SEPARATOR || c == MORPH_SEPARATOR) {
-          // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
-        } else {
+        if (!shouldSkipEscapedChar(c)) {
           sb.append(c);
         }
       }
     }
     return sb.toString();
+  }
+
+  private static boolean shouldSkipEscapedChar(char ch) {
+    return ch == FLAG_SEPARATOR
+        || ch == MORPH_SEPARATOR; // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
   }
 
   static int morphBoundary(String line) {
@@ -812,9 +807,9 @@ public class Dictionary {
     try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
       for (InputStream dictionary : dictionaries) {
         BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
-        String line =
-            lines.readLine(); // first line is number of entries (approximately, sometimes)
+        lines.readLine(); // first line is number of entries (approximately, sometimes)
 
+        String line;
         while ((line = lines.readLine()) != null) {
           // wild and unpredictable code comment rules
           if (line.isEmpty()
@@ -825,7 +820,7 @@ public class Dictionary {
           }
           line = unescapeEntry(line);
           // if we havent seen any stem exceptions, try to parse one
-          if (hasStemExceptions == false) {
+          if (!hasStemExceptions) {
             int morphStart = line.indexOf(MORPH_SEPARATOR);
             if (morphStart >= 0 && morphStart < line.length()) {
               hasStemExceptions = parseStemException(line.substring(morphStart + 1)) != null;
@@ -861,35 +856,28 @@ public class Dictionary {
         new OfflineSorter(
             tempDir,
             tempFileNamePrefix,
-            new Comparator<BytesRef>() {
-              BytesRef scratch1 = new BytesRef();
-              BytesRef scratch2 = new BytesRef();
+            new Comparator<>() {
+              final BytesRef scratch1 = new BytesRef();
+              final BytesRef scratch2 = new BytesRef();
+
+              private void initScratch(BytesRef o, BytesRef scratch) {
+                scratch.bytes = o.bytes;
+                scratch.offset = o.offset;
+                scratch.length = o.length;
+
+                for (int i = scratch.length - 1; i >= 0; i--) {
+                  if (scratch.bytes[scratch.offset + i] == FLAG_SEPARATOR
+                      || scratch.bytes[scratch.offset + i] == MORPH_SEPARATOR) {
+                    scratch.length = i;
+                    break;
+                  }
+                }
+              }
 
               @Override
               public int compare(BytesRef o1, BytesRef o2) {
-                scratch1.bytes = o1.bytes;
-                scratch1.offset = o1.offset;
-                scratch1.length = o1.length;
-
-                for (int i = scratch1.length - 1; i >= 0; i--) {
-                  if (scratch1.bytes[scratch1.offset + i] == FLAG_SEPARATOR
-                      || scratch1.bytes[scratch1.offset + i] == MORPH_SEPARATOR) {
-                    scratch1.length = i;
-                    break;
-                  }
-                }
-
-                scratch2.bytes = o2.bytes;
-                scratch2.offset = o2.offset;
-                scratch2.length = o2.length;
-
-                for (int i = scratch2.length - 1; i >= 0; i--) {
-                  if (scratch2.bytes[scratch2.offset + i] == FLAG_SEPARATOR
-                      || scratch2.bytes[scratch2.offset + i] == MORPH_SEPARATOR) {
-                    scratch2.length = i;
-                    break;
-                  }
-                }
+                initScratch(o1, scratch1);
+                initScratch(o2, scratch2);
 
                 int cmp = scratch1.compareTo(scratch2);
                 if (cmp == 0) {
@@ -933,7 +921,7 @@ public class Dictionary {
 
         String line = scratch.utf8ToString();
         String entry;
-        char wordForm[];
+        char[] wordForm;
         int end;
 
         int flagSep = line.indexOf(FLAG_SEPARATOR);
@@ -980,7 +968,7 @@ public class Dictionary {
             words.add(scratchInts.get(), currentOrds.get());
           }
           // swap current
-          if (cmp > 0 || currentEntry == null) {
+          if (cmp > 0) {
             currentEntry = entry;
             currentOrds = new IntsRefBuilder(); // must be this way
           }
@@ -994,6 +982,7 @@ public class Dictionary {
       }
 
       // finalize last entry
+      assert currentEntry != null;
       Util.toUTF32(currentEntry, scratchInts);
       words.add(scratchInts.get(), currentOrds.get());
       success2 = true;
@@ -1011,7 +1000,7 @@ public class Dictionary {
       return CharsRef.EMPTY_CHARS;
     }
     int len = b.length >>> 1;
-    char flags[] = new char[len];
+    char[] flags = new char[len];
     int upto = 0;
     int end = b.offset + b.length;
     for (int i = b.offset; i < end; i += 2) {
@@ -1020,19 +1009,18 @@ public class Dictionary {
     return flags;
   }
 
-  static void encodeFlags(BytesRefBuilder b, char flags[]) {
+  private static void encodeFlags(BytesRefBuilder b, char[] flags) {
     int len = flags.length << 1;
     b.grow(len);
     b.clear();
-    for (int i = 0; i < flags.length; i++) {
-      int flag = flags[i];
+    for (int flag : flags) {
       b.append((byte) ((flag >> 8) & 0xff));
       b.append((byte) (flag & 0xff));
     }
   }
 
   private void parseAlias(String line) {
-    String ruleArgs[] = line.split("\\s+");
+    String[] ruleArgs = line.split("\\s+");
     if (aliases == null) {
       // first line should be the aliases count
       final int count = Integer.parseInt(ruleArgs[1]);
@@ -1102,7 +1090,7 @@ public class Dictionary {
      * @return Parsed flag
      */
     char parseFlag(String rawFlag) {
-      char flags[] = parseFlags(rawFlag);
+      char[] flags = parseFlags(rawFlag);
       if (flags.length != 1) {
         throw new IllegalArgumentException("expected only one flag, got: " + rawFlag);
       }
@@ -1140,9 +1128,9 @@ public class Dictionary {
       char[] flags = new char[rawFlagParts.length];
       int upto = 0;
 
-      for (int i = 0; i < rawFlagParts.length; i++) {
+      for (String rawFlagPart : rawFlagParts) {
         // note, removing the trailing X/leading I for nepali... what is the rule here?!
-        String replacement = rawFlagParts[i].replaceAll("[^0-9]", "");
+        String replacement = rawFlagPart.replaceAll("[^0-9]", "");
         // note, ignoring empty flags (this happens in danish, for example)
         if (replacement.isEmpty()) {
           continue;
@@ -1185,13 +1173,13 @@ public class Dictionary {
         builder.append(combined);
       }
 
-      char flags[] = new char[builder.length()];
+      char[] flags = new char[builder.length()];
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
   }
 
-  static boolean hasFlag(char flags[], char flag) {
+  static boolean hasFlag(char[] flags, char flag) {
     return Arrays.binarySearch(flags, flag) >= 0;
   }
 
@@ -1247,7 +1235,7 @@ public class Dictionary {
   // TODO: this could be more efficient!
   static void applyMappings(FST<CharsRef> fst, StringBuilder sb) throws IOException {
     final FST.BytesReader bytesReader = fst.getBytesReader();
-    final FST.Arc<CharsRef> firstArc = fst.getFirstArc(new FST.Arc<CharsRef>());
+    final FST.Arc<CharsRef> firstArc = fst.getFirstArc(new FST.Arc<>());
     final CharsRef NO_OUTPUT = fst.outputs.getNoOutput();
 
     // temporary stuff
@@ -1290,6 +1278,7 @@ public class Dictionary {
   private static Path DEFAULT_TEMP_DIR;
 
   /** Used by test framework */
+  @SuppressWarnings("unused")
   public static void setDefaultTempDir(Path tempDir) {
     DEFAULT_TEMP_DIR = tempDir;
   }
@@ -1306,7 +1295,7 @@ public class Dictionary {
         throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
       }
       Path tempDirectory = Paths.get(tempDirPath);
-      if (Files.isWritable(tempDirectory) == false) {
+      if (!Files.isWritable(tempDirectory)) {
         throw new IOException(
             "Java's temporary folder not present or writeable?: " + tempDirectory.toAbsolutePath());
       }

@@ -18,7 +18,9 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +31,15 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Op;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.cloud.SolrCloudTestCase.configureCluster;
 
 public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
@@ -375,6 +381,31 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
     }
   }
+
+  public void testZkBehavior() throws Exception {
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .configure();
+    try {
+      SolrZkClient zkClient = cluster.getZkClient();
+      zkClient.create("/test-node", null, CreateMode.PERSISTENT, true);
+
+      Stat stat = zkClient.exists("/test-node", null, true);
+      int cversion = stat.getCversion();
+      List<Op> ops = Arrays.asList(
+          Op.create("/test-node/abc", null, zkClient.getZkACLProvider().getACLsToAdd("/test-node/abc"), CreateMode.PERSISTENT),
+          Op.delete("/test-node/abc", -1));
+      zkClient.multi(ops, true);
+      stat = zkClient.exists("/test-node", null, true);
+      assertTrue(stat.getCversion() >= cversion + 2);
+    } finally {
+      cluster.shutdown();
+    }
+
+  }
+
+
 
   @Override
   public void tearDown() throws Exception {

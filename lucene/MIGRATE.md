@@ -1,5 +1,12 @@
 # Apache Lucene Migration Guide
 
+## NativeUnixDirectory removed and replaced by DirectIODirectory (LUCENE-8982)
+
+Java 11 supports to use Direct IO without native wrappers from Java code.
+NativeUnixDirectory in the misc module was therefore removed and replaced
+by DirectIODirectory. To use it, you need a JVM and operating system that
+supports Direct IO.
+
 ## Packages in misc module are renamed (LUCENE-9600)
 
 Following package names in misc module are renamed.
