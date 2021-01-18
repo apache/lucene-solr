@@ -83,6 +83,8 @@
 
   <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
 
+  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-scripting-\d.*\.jar" />
+
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
        if it can't be loaded.
@@ -379,11 +381,11 @@
   <query>
 
     <!-- Maximum number of clauses allowed when parsing a boolean query string.
-         
+
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
          be.  Query strings that specify more clauses then this will result in an error.
-         
+
          If this per-collection limit is greater then the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
@@ -656,6 +658,9 @@
          enableRemoteStreaming - enables use of the stream.file
          and stream.url parameters for specifying remote streams.
 
+         enableStreamBody - This attribute controls whether streaming
+         content from the HTTP parameter stream.body is allowed.
+
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
 
@@ -674,12 +679,12 @@
          *** WARNING ***
          Before enabling remote streaming, you should make sure your
          system has authentication enabled.
-
-    <requestParsers enableRemoteStreaming="false"
+       -->
+    <requestParsers enableRemoteStreaming="true"
+                    enableStreamBody="true"
                     multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
-      -->
 
     <!-- HTTP Caching
 
@@ -1273,19 +1278,17 @@
 
     This example hooks in an update processor implemented using JavaScript.
 
-    See more about the script update processor at http://wiki.apache.org/solr/ScriptUpdateProcessor
+    See more about script update processor at https://lucene.apache.org/solr/guide/scripting-update-processor.html
   -->
-  <!--
-    <updateRequestProcessorChain name="script">
-      <processor class="solr.StatelessScriptUpdateProcessorFactory">
-        <str name="script">update-script.js</str>
-        <lst name="params">
-          <str name="config_param">example config parameter</str>
-        </lst>
-      </processor>
-      <processor class="solr.RunUpdateProcessorFactory" />
-    </updateRequestProcessorChain>
-  -->
+  <updateRequestProcessorChain name="script">
+    <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
+      <str name="script">update-script.js</str>
+      <lst name="params">
+        <str name="config_param">example config parameter</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <!-- Response Writers
 

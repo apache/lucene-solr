@@ -186,6 +186,9 @@ Other Changes
 
 * SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
 
+* SOLR-14067: StatelessScriptUpdateProcessor moved to it's own /contrib/scripting/ package instead
+ of shipping as part of Solr due to security concerns.  Renamed to ScriptingUpdateProcessor. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution

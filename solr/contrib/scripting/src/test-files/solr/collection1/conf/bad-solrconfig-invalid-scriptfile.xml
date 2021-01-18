@@ -22,7 +22,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
       <str name="engine">javascript</str>
       <!-- not parsable as javascript -->
       <str name="script">currency.xml</str>
