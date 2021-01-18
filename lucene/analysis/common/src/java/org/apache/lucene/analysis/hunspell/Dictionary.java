@@ -233,10 +233,9 @@ public class Dictionary {
       readAffixFile(aff2, decoder);
 
       // read dictionary entries
-      IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-      FSTCompiler<IntsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, o);
-      readDictionaryFiles(tempDir, tempFileNamePrefix, dictionaries, decoder, fstCompiler);
-      words = fstCompiler.compile();
+      IndexOutput unsorted = mergeDictionaries(tempDir, tempFileNamePrefix, dictionaries, decoder);
+      String sortedFile = sortWordsOffline(tempDir, tempFileNamePrefix, unsorted);
+      words = readSortedDictionaries(tempDir, sortedFile);
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
       success = true;
@@ -784,25 +783,13 @@ public class Dictionary {
     }
   }
 
-  /**
-   * Reads the dictionary file through the provided InputStreams, building up the words map
-   *
-   * @param dictionaries InputStreams to read the dictionary file through
-   * @param decoder CharsetDecoder used to decode the contents of the file
-   * @throws IOException Can be thrown while reading from the file
-   */
-  private void readDictionaryFiles(
+  private IndexOutput mergeDictionaries(
       Directory tempDir,
       String tempFileNamePrefix,
       List<InputStream> dictionaries,
-      CharsetDecoder decoder,
-      FSTCompiler<IntsRef> words)
+      CharsetDecoder decoder)
       throws IOException {
-    BytesRefBuilder flagsScratch = new BytesRefBuilder();
-    IntsRefBuilder scratchInts = new IntsRefBuilder();
-
     StringBuilder sb = new StringBuilder();
-
     IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
     try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
       for (InputStream dictionary : dictionaries) {
@@ -826,32 +813,38 @@ public class Dictionary {
               hasStemExceptions = parseStemException(line.substring(morphStart + 1)) != null;
             }
           }
-          if (needsInputCleaning) {
-            int flagSep = line.indexOf(FLAG_SEPARATOR);
-            if (flagSep == -1) {
-              flagSep = line.indexOf(MORPH_SEPARATOR);
-            }
-            if (flagSep == -1) {
-              CharSequence cleansed = cleanInput(line, sb);
-              writer.write(cleansed.toString().getBytes(StandardCharsets.UTF_8));
-            } else {
-              String text = line.substring(0, flagSep);
-              CharSequence cleansed = cleanInput(text, sb);
-              if (cleansed != sb) {
-                sb.setLength(0);
-                sb.append(cleansed);
-              }
-              sb.append(line.substring(flagSep));
-              writer.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-            }
-          } else {
-            writer.write(line.getBytes(StandardCharsets.UTF_8));
-          }
+
+          writeNormalizedWordEntry(sb, writer, line);
         }
       }
       CodecUtil.writeFooter(unsorted);
     }
+    return unsorted;
+  }
 
+  private void writeNormalizedWordEntry(
+      StringBuilder reuse, ByteSequencesWriter writer, String line) throws IOException {
+    int flagSep = line.indexOf(FLAG_SEPARATOR);
+    int morphSep = line.indexOf(MORPH_SEPARATOR);
+    assert morphSep > 0;
+    assert morphSep > flagSep;
+    int sep = flagSep < 0 ? morphSep : flagSep;
+
+    CharSequence toWrite;
+    if (needsInputCleaning) {
+      cleanInput(line, sep, reuse);
+      reuse.append(line, sep, line.length());
+      toWrite = reuse;
+    } else {
+      toWrite = line;
+    }
+
+    String written = toWrite.toString();
+    writer.write(written.getBytes(StandardCharsets.UTF_8));
+  }
+
+  private String sortWordsOffline(
+      Directory tempDir, String tempFileNamePrefix, IndexOutput unsorted) throws IOException {
     OfflineSorter sorter =
         new OfflineSorter(
             tempDir,
@@ -901,17 +894,19 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, unsorted.getName());
       }
     }
+    return sorted;
+  }
 
-    boolean success2 = false;
+  private FST<IntsRef> readSortedDictionaries(Directory tempDir, String sorted) throws IOException {
+    boolean success = false;
+
+    EntryGrouper grouper = new EntryGrouper();
 
     try (ByteSequencesReader reader =
         new ByteSequencesReader(tempDir.openChecksumInput(sorted, IOContext.READONCE), sorted)) {
 
       // TODO: the flags themselves can be double-chars (long) or also numeric
       // either way the trick is to encode them as char... but they must be parsed differently
-
-      String currentEntry = null;
-      IntsRefBuilder currentOrds = new IntsRefBuilder();
 
       while (true) {
         BytesRef scratch = reader.next();
@@ -952,46 +947,69 @@ public class Dictionary {
           }
         }
 
-        int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
-        if (cmp < 0) {
-          throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
-        } else {
-          encodeFlags(flagsScratch, wordForm);
-          int ord = flagLookup.add(flagsScratch.get());
-          if (ord < 0) {
-            // already exists in our hash
-            ord = (-ord) - 1;
-          }
-          // finalize current entry, and switch "current" if necessary
-          if (cmp > 0 && currentEntry != null) {
-            Util.toUTF32(currentEntry, scratchInts);
-            words.add(scratchInts.get(), currentOrds.get());
-          }
-          // swap current
-          if (cmp > 0) {
-            currentEntry = entry;
-            currentOrds = new IntsRefBuilder(); // must be this way
-          }
-          if (hasStemExceptions) {
-            currentOrds.append(ord);
-            currentOrds.append(stemExceptionID);
-          } else {
-            currentOrds.append(ord);
-          }
-        }
+        grouper.add(entry, wordForm, stemExceptionID);
       }
 
       // finalize last entry
-      assert currentEntry != null;
-      Util.toUTF32(currentEntry, scratchInts);
-      words.add(scratchInts.get(), currentOrds.get());
-      success2 = true;
+      grouper.flushGroup();
+      success = true;
+      return grouper.words.compile();
     } finally {
-      if (success2) {
+      if (success) {
         tempDir.deleteFile(sorted);
       } else {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, sorted);
       }
+    }
+  }
+
+  private class EntryGrouper {
+    final FSTCompiler<IntsRef> words =
+        new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
+    private final List<char[]> group = new ArrayList<>();
+    private final List<Integer> stemExceptionIDs = new ArrayList<>();
+    private final BytesRefBuilder flagsScratch = new BytesRefBuilder();
+    private final IntsRefBuilder scratchInts = new IntsRefBuilder();
+    private String currentEntry = null;
+
+    void add(String entry, char[] flags, int stemExceptionID) throws IOException {
+      if (!entry.equals(currentEntry)) {
+        if (currentEntry != null) {
+          if (entry.compareTo(currentEntry) < 0) {
+            throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
+          }
+          flushGroup();
+        }
+        currentEntry = entry;
+      }
+
+      group.add(flags);
+      if (hasStemExceptions) {
+        stemExceptionIDs.add(stemExceptionID);
+      }
+    }
+
+    void flushGroup() throws IOException {
+      IntsRefBuilder currentOrds = new IntsRefBuilder();
+
+      for (int i = 0; i < group.size(); i++) {
+        char[] flags = group.get(i);
+        encodeFlags(flagsScratch, flags);
+        int ord = flagLookup.add(flagsScratch.get());
+        if (ord < 0) {
+          ord = -ord - 1; // already exists in our hash
+        }
+        currentOrds.append(ord);
+        if (hasStemExceptions) {
+          currentOrds.append(stemExceptionIDs.get(i));
+        }
+      }
+
+      Util.toUTF32(currentEntry, scratchInts);
+      words.add(scratchInts.get(), currentOrds.get());
+
+      group.clear();
+      stemExceptionIDs.clear();
     }
   }
 
@@ -1184,9 +1202,13 @@ public class Dictionary {
   }
 
   CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
+    return cleanInput(input, input.length(), reuse);
+  }
+
+  private CharSequence cleanInput(CharSequence input, int prefixLength, StringBuilder reuse) {
     reuse.setLength(0);
 
-    for (int i = 0; i < input.length(); i++) {
+    for (int i = 0; i < prefixLength; i++) {
       char ch = input.charAt(i);
 
       if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0) {
