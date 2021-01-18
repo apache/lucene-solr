@@ -54,6 +54,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
+import static org.apache.solr.common.cloud.DocCollection.PER_REPLICA_STATE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
@@ -80,6 +81,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static final java.util.List<String> MODIFIABLE_COLLECTION_PROPERTIES = Arrays.asList(
       REPLICATION_FACTOR,
       COLL_CONF,
+      PER_REPLICA_STATE,
       READ_ONLY);
 
   protected final CollectionAction action;
@@ -433,6 +435,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer nrtReplicas;
     protected Integer pullReplicas;
     protected Integer tlogReplicas;
+    protected Boolean perReplicaState;
 
     protected Properties properties;
     protected String alias;
@@ -473,6 +476,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
+    public Create setPerReplicaState(Boolean b) {this.perReplicaState =  b; return this; }
 
     public Create setAlias(String alias) {
       this.alias = alias;
@@ -489,6 +493,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Integer getNumNrtReplicas() { return nrtReplicas; }
     public Integer getNumTlogReplicas() {return tlogReplicas;}
     public Integer getNumPullReplicas() {return pullReplicas;}
+    public Boolean getPerReplicaState() {return perReplicaState;}
 
     /**
      * Provide the name of the shards to be created, separated by commas
@@ -558,6 +563,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
+      }
+      if(Boolean.TRUE.equals(perReplicaState)) {
+        params.set(PER_REPLICA_STATE, perReplicaState);
       }
       params.setNonNull(ALIAS, alias);
       return params;
