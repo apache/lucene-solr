@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /**
  * A spell checker based on Hunspell dictionaries. The objects of this class are not thread-safe
@@ -46,7 +49,7 @@ public class SpellChecker {
       return true;
     }
 
-    if (!stemmer.stem(wordChars, word.length()).isEmpty()) {
+    if (checkWord(wordChars)) {
       return true;
     }
 
@@ -55,6 +58,57 @@ public class SpellChecker {
     }
 
     return false;
+  }
+
+  private boolean checkWord(char[] wordChars) {
+    if (!stemmer.stem(wordChars, wordChars.length).isEmpty()) {
+      return true;
+    }
+
+    if (dictionary.hasCompounding()) {
+      return checkCompounds(wordChars, 0, wordChars.length, new ArrayList<>());
+    }
+
+    return false;
+  }
+
+  private boolean checkCompounds(char[] wordChars, int offset, int length, List<IntsRef> words) {
+    if (words.size() >= 100) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      IntsRef forms = dictionary.lookupWord(wordChars, offset, breakPos);
+      if (forms != null) {
+        words.add(forms);
+
+        if (dictionary.compoundRules != null
+            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
+          if (checkLastCompoundPart(wordChars, offset + breakPos, words)) {
+            return true;
+          }
+
+          if (checkCompounds(wordChars, offset + breakPos, length - breakPos, words)) {
+            return true;
+          }
+        }
+
+        words.remove(words.size() - 1);
+      }
+    }
+
+    return false;
+  }
+
+  private boolean checkLastCompoundPart(char[] wordChars, int start, List<IntsRef> words) {
+    IntsRef forms = dictionary.lookupWord(wordChars, start, wordChars.length - start);
+    if (forms == null) return false;
+
+    words.add(forms);
+    boolean result =
+        dictionary.compoundRules != null
+            && dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+    words.remove(words.size() - 1);
+    return result;
   }
 
   private static boolean isNumber(String s) {

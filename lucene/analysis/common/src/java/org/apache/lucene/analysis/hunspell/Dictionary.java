@@ -92,6 +92,8 @@ public class Dictionary {
   private static final String LANG_KEY = "LANG";
   private static final String BREAK_KEY = "BREAK";
   private static final String FORBIDDENWORD_KEY = "FORBIDDENWORD";
+  private static final String COMPOUNDMIN_KEY = "COMPOUNDMIN";
+  private static final String COMPOUNDRULE_KEY = "COMPOUNDRULE";
   private static final String KEEPCASE_KEY = "KEEPCASE";
   private static final String NEEDAFFIX_KEY = "NEEDAFFIX";
   private static final String PSEUDOROOT_KEY = "PSEUDOROOT";
@@ -136,7 +138,7 @@ public class Dictionary {
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
-  private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
+  FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
 
   // AF entries
   private String[] aliases;
@@ -163,6 +165,8 @@ public class Dictionary {
   int needaffix = -1; // needaffix flag, or -1 if one is not defined
   int forbiddenword = -1; // forbiddenword flag, or -1 if one is not defined
   int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
+  int compoundMin = 3;
+  List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
@@ -419,6 +423,18 @@ public class Dictionary {
           throw new ParseException("Illegal FORBIDDENWORD declaration", reader.getLineNumber());
         }
         forbiddenword = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(COMPOUNDMIN_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal COMPOUNDMIN declaration", reader.getLineNumber());
+        }
+        compoundMin = Math.max(1, Integer.parseInt(parts[1]));
+      } else if (line.startsWith(COMPOUNDRULE_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal COMPOUNDRULE header", reader.getLineNumber());
+        }
+        this.compoundRules = parseCompoundRules(reader, Integer.parseInt(parts[1]));
       }
     }
 
@@ -440,6 +456,21 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private List<CompoundRule> parseCompoundRules(LineNumberReader reader, int num)
+      throws IOException, ParseException {
+    String line;
+    List<CompoundRule> compoundRules = new ArrayList<>();
+    for (int i = 0; i < num; i++) {
+      line = reader.readLine();
+      String[] parts = line.split("\\s+");
+      if (!line.startsWith(COMPOUNDRULE_KEY) || parts.length != 2) {
+        throw new ParseException("COMPOUNDRULE rule expected", reader.getLineNumber());
+      }
+      compoundRules.add(new CompoundRule(parts[1], this));
+    }
+    return compoundRules;
   }
 
   private Breaks parseBreaks(LineNumberReader reader, String line)
@@ -1191,13 +1222,16 @@ public class Dictionary {
   boolean isForbiddenWord(char[] word, BytesRef scratch) {
     if (forbiddenword != -1) {
       IntsRef forms = lookupWord(word, 0, word.length);
-      if (forms != null) {
-        int formStep = formStep();
-        for (int i = 0; i < forms.length; i += formStep) {
-          if (hasFlag(forms.ints[forms.offset + i], (char) forbiddenword, scratch)) {
-            return true;
-          }
-        }
+      return forms != null && hasFlag(forms, (char) forbiddenword, scratch);
+    }
+    return false;
+  }
+
+  boolean hasFlag(IntsRef forms, char flag, BytesRef scratch) {
+    int formStep = formStep();
+    for (int i = 0; i < forms.length; i += formStep) {
+      if (hasFlag(forms.ints[forms.offset + i], flag, scratch)) {
+        return true;
       }
     }
     return false;
@@ -1300,6 +1334,10 @@ public class Dictionary {
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
+  }
+
+  boolean hasCompounding() {
+    return compoundRules != null;
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {
