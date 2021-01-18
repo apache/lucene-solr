@@ -865,7 +865,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
       assertFalse(indexStatus.clean);
-      assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      if (unsupportedNames[i].startsWith("7.")) {
+        assertTrue(bos.toString(IOUtils.UTF_8).contains("Could not load codec 'Lucene70'"));
+      } else {
+        assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      }
       checker.close();
 
       dir.close();
