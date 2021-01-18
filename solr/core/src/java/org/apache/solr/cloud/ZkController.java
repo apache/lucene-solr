@@ -1610,6 +1610,7 @@ public class ZkController implements Closeable {
    */
   static boolean sendToOverseer(DocCollection coll, String replicaName) {
     if (coll == null) return true;
+    if (!coll.isPerReplicaState()) return true;
     Replica r = coll.getReplica(replicaName);
     if (r == null) return true;
     Slice shard = coll.getSlice(r.shard);

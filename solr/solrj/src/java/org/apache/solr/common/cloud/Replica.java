@@ -151,6 +151,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.node = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
     this.core = (String) propMap.get(ZkStateReader.CORE_NAME_PROP);
     this.type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
+    readPrs();
     // default to ACTIVE
     this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
     validate();
@@ -172,6 +173,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     if (props != null) {
       this.propMap.putAll(props);
     }
+    readPrs();
     validate();
     propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
@@ -193,6 +195,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.node = String.valueOf(details.get("node_name"));
 
     this.propMap.putAll(details);
+    readPrs();
+    type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
+    if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
+    validate();
+    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
+  }
+
+  private void readPrs() {
     ClusterState.getReplicaStatesProvider().get().ifPresent(it -> {
       log.debug("A replica  {} state fetched from per-replica state", name);
       replicaState = it.getStates().get(name);
@@ -201,10 +211,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
         if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
       }
     }) ;
-    type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
-    if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
-    validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   private final void validate() {
@@ -295,11 +301,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return this.type;
   }
 
-  public boolean isLeader() {
-    if(replicaState != null) return replicaState.isLeader;
-    return getBool(ZkStateReader.LEADER_PROP, false);
-  }
-
   public Object get(String key, Object defValue) {
     Object o = get(key);
     if (o != null) {
@@ -382,6 +383,10 @@ public class Replica extends ZkNodeProps implements MapWriter {
           .put(ZkStateReader.REPLICA_TYPE, type.toString(), p)
           .put(ZkStateReader.STATE_PROP, state.toString(), p);
     };
+  }
+  public boolean isLeader() {
+    if (replicaState != null) return replicaState.isLeader;
+    return getStr(Slice.LEADER) != null;
   }
 
   @Override

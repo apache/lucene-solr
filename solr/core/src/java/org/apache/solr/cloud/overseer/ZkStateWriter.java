@@ -148,10 +148,8 @@ public class ZkStateWriter {
     for (ZkWriteCommand cmd : cmds) {
       if (cmd == NO_OP) continue;
       prevState = prevState.copyWith(cmd.name, cmd.collection);
-      if (cmd.collection == null) {
-        updates.put(cmd.name, cmd);
-        numUpdates++;
-      }
+      updates.put(cmd.name, cmd);
+      numUpdates++;
     }
     clusterState = prevState;
 
