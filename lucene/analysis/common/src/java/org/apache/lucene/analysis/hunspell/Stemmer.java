@@ -552,7 +552,7 @@ final class Stemmer {
    * @param prefix true if we are removing a prefix (false if it's a suffix)
    * @return List of stems for the word, or an empty list if none are found
    */
-  List<CharsRef> applyAffix(
+  private List<CharsRef> applyAffix(
       char[] strippedWord,
       int length,
       int affix,
@@ -627,76 +627,47 @@ final class Stemmer {
       circumfix = Dictionary.hasFlag(appendFlags, (char) dictionary.circumfix);
     }
 
-    if (crossProduct) {
+    if (crossProduct && recursionDepth <= 1) {
+      boolean doPrefix;
       if (recursionDepth == 0) {
         if (prefix) {
+          prefixFlag = flag;
+          doPrefix = dictionary.complexPrefixes && dictionary.twoStageAffix;
           // we took away the first prefix.
           // COMPLEXPREFIXES = true:  combine with a second prefix and another suffix
           // COMPLEXPREFIXES = false: combine with a suffix
-          stems.addAll(
-              stem(
-                  strippedWord,
-                  length,
-                  affix,
-                  flag,
-                  flag,
-                  ++recursionDepth,
-                  dictionary.complexPrefixes && dictionary.twoStageAffix,
-                  true,
-                  true,
-                  circumfix,
-                  caseVariant));
         } else if (!dictionary.complexPrefixes && dictionary.twoStageAffix) {
+          doPrefix = false;
           // we took away a suffix.
           // COMPLEXPREFIXES = true: we don't recurse! only one suffix allowed
           // COMPLEXPREFIXES = false: combine with another suffix
-          stems.addAll(
-              stem(
-                  strippedWord,
-                  length,
-                  affix,
-                  flag,
-                  prefixFlag,
-                  ++recursionDepth,
-                  false,
-                  true,
-                  false,
-                  circumfix,
-                  caseVariant));
+        } else {
+          return stems;
         }
-      } else if (recursionDepth == 1) {
+      } else {
+        doPrefix = false;
         if (prefix && dictionary.complexPrefixes) {
+          prefixFlag = flag;
           // we took away the second prefix: go look for another suffix
-          stems.addAll(
-              stem(
-                  strippedWord,
-                  length,
-                  affix,
-                  flag,
-                  flag,
-                  ++recursionDepth,
-                  false,
-                  true,
-                  true,
-                  circumfix,
-                  caseVariant));
-        } else if (!prefix && !dictionary.complexPrefixes && dictionary.twoStageAffix) {
-          // we took away a prefix, then a suffix: go look for another suffix
-          stems.addAll(
-              stem(
-                  strippedWord,
-                  length,
-                  affix,
-                  flag,
-                  prefixFlag,
-                  ++recursionDepth,
-                  false,
-                  true,
-                  false,
-                  circumfix,
-                  caseVariant));
+        } else if (prefix || dictionary.complexPrefixes || !dictionary.twoStageAffix) {
+          return stems;
         }
+        // we took away a prefix, then a suffix: go look for another suffix
       }
+
+      stems.addAll(
+          stem(
+              strippedWord,
+              length,
+              affix,
+              flag,
+              prefixFlag,
+              recursionDepth + 1,
+              doPrefix,
+              true,
+              prefix,
+              circumfix,
+              caseVariant));
     }
 
     return stems;
