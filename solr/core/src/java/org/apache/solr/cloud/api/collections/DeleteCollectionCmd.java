@@ -29,12 +29,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cluster.placement.DeleteReplicasRequest;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
+import org.apache.solr.cluster.placement.impl.PlacementContextImpl;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -90,6 +96,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       collection = aliases.resolveSimpleAlias(extCollection);
     } else {
       collection = extCollection;
+    }
+
+    PlacementPlugin placementPlugin = ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance();
+    if (placementPlugin != null) {
+      // verify the placement modifications caused by the deletion are allowed
+      PlacementContext placementContext = new PlacementContextImpl(ocmh.cloudManager);
+      DocCollection coll = state.getCollection(collection);
+      for (Slice slice : coll.getActiveSlices()) {
+        DeleteReplicasRequest deleteReplicasRequest = ModificationRequestImpl
+            .deleteReplicasRequest(coll, slice.getName(),
+                slice.getReplicas().stream().map(Replica::getName).collect(Collectors.toSet()));
+        placementPlugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      }
     }
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);

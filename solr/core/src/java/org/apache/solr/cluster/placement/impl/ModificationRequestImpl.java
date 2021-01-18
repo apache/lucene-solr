@@ -29,10 +29,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- *
+ * Helper class to create modification request instances.
  */
 public class ModificationRequestImpl {
 
+  /**
+   * Create a delete replicas request.
+   * @param collection collection to delete replicas from
+   * @param replicas replicas to delete
+   */
   public static DeleteReplicasRequest deleteReplicasRequest(SolrCollection collection, Set<Replica> replicas) {
     return new DeleteReplicasRequest() {
       @Override
@@ -53,6 +58,13 @@ public class ModificationRequestImpl {
     };
   }
 
+  /**
+   * Create a delete replicas request using the internal Solr API.
+   * @param docCollection Solr collection
+   * @param shardName shard name
+   * @param replicaNames replica names (aka. core-node names)
+   * @return
+   */
   public static DeleteReplicasRequest deleteReplicasRequest(DocCollection docCollection, String shardName, Set<String> replicaNames) {
     SolrCollection solrCollection = SimpleClusterAbstractionsImpl.SolrCollectionImpl.fromDocCollection(docCollection);
     Shard shard = solrCollection.getShard(shardName);

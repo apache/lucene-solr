@@ -92,7 +92,7 @@ public class DeleteReplicaCmd implements Cmd {
         deleteReplicaBasedOnCount(clusterState, message, results, onComplete, parallel, placementPlugin, placementContext);
       } catch (PlacementException pe) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Delete replica(s) rejected by replica placement plugin: " + pe.getMessage(), pe);
+            "Delete replica(s) rejected by replica placement plugin: " + pe.toString(), pe);
       }
       return;
     }
@@ -122,7 +122,7 @@ public class DeleteReplicaCmd implements Cmd {
       deleteCore(coll, shard, replicaName, message, results, onComplete, parallel, placementPlugin, placementContext);
     } catch (PlacementException pe) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Delete replica rejected by replica placement plugin: " + pe.getMessage(), pe);
+          "Delete replica rejected by replica placement plugin: " + pe.toString(), pe);
     }
 
   }
@@ -170,14 +170,16 @@ public class DeleteReplicaCmd implements Cmd {
       }
     }
 
-    // verify that all replicas can be deleted
-    for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
-      Slice shardSlice = entry.getKey();
-      String shardId = shardSlice.getName();
-      Set<String> replicas = entry.getValue();
-      //verify all replicas
-      DeleteReplicasRequest deleteReplicasRequest = ModificationRequestImpl.deleteReplicasRequest(coll, shardId, replicas);
-      placementPlugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+    if (placementPlugin != null) {
+      // verify that all replicas can be deleted
+      for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
+        Slice shardSlice = entry.getKey();
+        String shardId = shardSlice.getName();
+        Set<String> replicas = entry.getValue();
+        //verify all replicas
+        DeleteReplicasRequest deleteReplicasRequest = ModificationRequestImpl.deleteReplicasRequest(coll, shardId, replicas);
+        placementPlugin.verifyAllowedModification(deleteReplicasRequest, placementContext);
+      }
     }
 
     for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
