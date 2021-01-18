@@ -5,7 +5,7 @@ Welcome to Apache Solr Scripting!
 
 The Scripting contrib module pulls together various scripting related functions.  
 
-Today, the ScriptUpdateProcessorFactory allows Java scripting engines to be used during the Solr document update processing, allowing dramatic flexibility in expressing custom document processing before being indexed.  It also allows hooks to commit, delete, etc, but add is the most common usage.  It is implemented as an UpdateProcessor to be placed in an UpdateChain.
+Today, the ScriptUpdateProcessorFactory allows Java scripting engines to support scripts written in languages such as JavaScript, Ruby, Python, and Groovy to be used during Solr document update processing, allowing dramatic flexibility in expressing custom document processing before being indexed.  It exposes hooks for commit, delete, etc, but add is the most common usage.  It is implemented as an UpdateProcessor to be placed in an UpdateChain.
 
 ## Getting Started
 
