@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
@@ -214,6 +215,8 @@ public class IndexWriter
   static int getActualMaxDocs() {
     return IndexWriter.actualMaxDocs;
   }
+
+  private final Comparator<LeafReader> leafSorter;
 
   /** Used only for testing. */
   private final boolean enableTestPoints;
@@ -933,6 +936,31 @@ public class IndexWriter
    *     low-level IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
+    this(d, conf, null);
+  }
+
+  /**
+   * Constructs a new IndexWriter per the settings given in <code>conf</code>. If you want to make
+   * "live" changes to this writer instance, use {@link #getConfig()}.
+   *
+   * <p><b>NOTE:</b> after ths writer is created, the given configuration instance cannot be passed
+   * to another writer.
+   *
+   * @param d the index directory. The index is either created or appended according <code>
+   *     conf.getOpenMode()</code>.
+   * @param conf the configuration settings according to which IndexWriter should be initialized.
+   * @param leafSorter a comparator for sorting leaf readers. Providing leafSorter is useful for
+   *     indices on which it is expected to run many queries with particular sort criteria (e.g. for
+   *     time-based indices this is usually a descending sort on timestamp). In this case {@code
+   *     leafSorter} should sort leaves according to this sort criteria. Providing leafSorter allows
+   *     to speed up this particular type of sort queries by early terminating while iterating
+   *     though segments and segments' documents.
+   * @throws IOException if the directory cannot be read/written to, or if it does not exist and
+   *     <code>conf.getOpenMode()</code> is <code>OpenMode.APPEND</code> or if there is any other
+   *     low-level IO error
+   */
+  public IndexWriter(Directory d, IndexWriterConfig conf, Comparator<LeafReader> leafSorter)
+      throws IOException {
     enableTestPoints = isEnableTestPoints();
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
@@ -941,6 +969,11 @@ public class IndexWriter
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
+    if (config.getIndexSort() != null && leafSorter != null) {
+      throw new IllegalArgumentException(
+          "[IndexWriter] can't use index sort and leaf sorter at the same time!");
+    }
+    this.leafSorter = leafSorter;
 
     boolean success = false;
     try {
@@ -1408,6 +1441,16 @@ public class IndexWriter
   public Analyzer getAnalyzer() {
     ensureOpen();
     return config.getAnalyzer();
+  }
+
+  /**
+   * Returns a comparator for sorting leaf readers. If not {@code null}, this comparator is used to
+   * sort leaf readers within {@code DirectoryReader} opened from this {@code IndexWriter}.
+   *
+   * @return a comparator for sorting leaf readers
+   */
+  public Comparator<LeafReader> getLeafSorter() {
+    return leafSorter;
   }
 
   /**

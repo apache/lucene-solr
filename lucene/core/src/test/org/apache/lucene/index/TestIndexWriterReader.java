@@ -16,10 +16,16 @@
  */
 package org.apache.lucene.index;
 
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomBoolean;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLongBetween;
+import static java.util.stream.Collectors.toList;
+import static org.apache.lucene.index.DirectoryReader.open;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -169,7 +176,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // writer.close wrote a new commit
     assertFalse(r2.isCurrent());
 
-    DirectoryReader r3 = DirectoryReader.open(dir1);
+    DirectoryReader r3 = open(dir1);
     assertTrue(r3.isCurrent());
     assertFalse(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r3));
@@ -215,7 +222,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertFalse(nrtReader.isCurrent());
     nrtReader.close();
 
-    DirectoryReader dirReader = DirectoryReader.open(dir);
+    DirectoryReader dirReader = open(dir);
     nrtReader = writer.getReader();
 
     assertTrue(dirReader.isCurrent());
@@ -406,7 +413,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     TestUtil.checkIndex(mainDir);
 
-    IndexReader reader = DirectoryReader.open(mainDir);
+    IndexReader reader = open(mainDir);
     assertEquals(addDirThreads.count.intValue(), reader.numDocs());
     // assertEquals(100 + numDirs * (3 * numIter / 4) * addDirThreads.numThreads
     //    * addDirThreads.NUM_INIT_DOCS, reader.numDocs());
@@ -447,7 +454,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       writer.close();
 
       readers = new DirectoryReader[numDirs];
-      for (int i = 0; i < numDirs; i++) readers[i] = DirectoryReader.open(addDir);
+      for (int i = 0; i < numDirs; i++) readers[i] = open(addDir);
     }
 
     void joinThreads() {
@@ -948,7 +955,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.forceMergeDeletes();
     w.close();
     r.close();
-    r = DirectoryReader.open(dir);
+    r = open(dir);
     assertEquals(1, r.numDocs());
     assertFalse(r.hasDeletions());
     r.close();
@@ -1166,7 +1173,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + i, Field.Store.NO));
       w.addDocument(doc);
-      IndexReader r = DirectoryReader.open(w);
+      IndexReader r = open(w);
       // Make sure segment count never exceeds 100:
       assertTrue(r.leaves().size() < 100);
       r.close();
@@ -1184,7 +1191,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.addDocument(new Document());
 
     // Pull NRT reader; it has 1 segment:
-    DirectoryReader r1 = DirectoryReader.open(w);
+    DirectoryReader r1 = open(w);
     assertEquals(1, r1.leaves().size());
     w.addDocument(new Document());
     w.commit();
@@ -1199,6 +1206,114 @@ public class TestIndexWriterReader extends LuceneTestCase {
     r1.close();
     r2.close();
     w.close();
+    dir.close();
+  }
+
+  public void testIndexReaderWriterWithLeafSorter() throws IOException {
+    final String FIELD_NAME = "field1";
+    final boolean ASC_SORT = randomBoolean();
+    final long MISSING_VALUE =
+        ASC_SORT ? Long.MAX_VALUE : Long.MIN_VALUE; // missing values at the end
+
+    // create a comparator that sort leaf readers according with
+    // the min value (asc sort) or max value (desc sort) of its points
+    Comparator<LeafReader> leafSorter =
+        Comparator.comparingLong(
+            r -> {
+              try {
+                PointValues points = r.getPointValues(FIELD_NAME);
+                if (points != null) {
+                  byte[] sortValue =
+                      ASC_SORT ? points.getMinPackedValue() : points.getMaxPackedValue();
+                  return LongPoint.decodeDimension(sortValue, 0);
+                }
+              } catch (IOException e) {
+              }
+              return MISSING_VALUE;
+            });
+    if (ASC_SORT == false) {
+      leafSorter = leafSorter.reversed();
+    }
+
+    final int NUM_DOCS = atLeast(30);
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(), leafSorter);
+    for (int i = 0; i < NUM_DOCS; ++i) {
+      final Document doc = new Document();
+      doc.add(new LongPoint(FIELD_NAME, randomLongBetween(1, 99)));
+      writer.addDocument(doc);
+      if (i > 0 && i % 10 == 0) writer.flush();
+    }
+
+    // Test1: test that leafReaders are sorted according to leafSorter provided in Writer
+    {
+      try (DirectoryReader reader = open(writer)) {
+        List<LeafReader> lrs =
+            reader.leaves().stream().map(LeafReaderContext::reader).collect(toList());
+        List<LeafReader> expectedSortedlrs =
+            reader.leaves().stream()
+                .map(LeafReaderContext::reader)
+                .sorted(leafSorter)
+                .collect(toList());
+        assertEquals(expectedSortedlrs, lrs);
+
+        // add more documents that should be sorted first
+        final long FIRST_VALUE = ASC_SORT ? 0 : 100;
+        for (int i = 0; i < 10; ++i) {
+          final Document doc = new Document();
+          doc.add(new LongPoint(FIELD_NAME, FIRST_VALUE));
+          writer.addDocument(doc);
+        }
+        writer.commit();
+
+        // and open again
+        try (DirectoryReader reader2 = DirectoryReader.openIfChanged(reader)) {
+          lrs = reader2.leaves().stream().map(LeafReaderContext::reader).collect(toList());
+          expectedSortedlrs =
+              reader2.leaves().stream()
+                  .map(LeafReaderContext::reader)
+                  .sorted(leafSorter)
+                  .collect(toList());
+          assertEquals(expectedSortedlrs, lrs);
+        }
+      }
+    }
+
+    // Test2: test that leafReaders are sorted according to leafSorter provided in DirectoryReader
+    {
+      try (DirectoryReader reader = DirectoryReader.open(dir, leafSorter)) {
+        List<LeafReader> lrs =
+            reader.leaves().stream().map(LeafReaderContext::reader).collect(toList());
+        List<LeafReader> expectedSortedlrs =
+            reader.leaves().stream()
+                .map(LeafReaderContext::reader)
+                .sorted(leafSorter)
+                .collect(toList());
+        assertEquals(expectedSortedlrs, lrs);
+
+        // add more documents that should be sorted first
+        final long FIRST_VALUE = ASC_SORT ? 0 : 100;
+        for (int i = 0; i < 10; ++i) {
+          final Document doc = new Document();
+          doc.add(new LongPoint(FIELD_NAME, FIRST_VALUE));
+          writer.addDocument(doc);
+        }
+        writer.commit();
+
+        // and open again
+        try (DirectoryReader reader2 = DirectoryReader.openIfChanged(reader)) {
+          lrs = reader2.leaves().stream().map(LeafReaderContext::reader).collect(toList());
+          expectedSortedlrs =
+              reader2.leaves().stream()
+                  .map(LeafReaderContext::reader)
+                  .sorted(leafSorter)
+                  .collect(toList());
+          assertEquals(expectedSortedlrs, lrs);
+        }
+      }
+    }
+
+    writer.close();
     dir.close();
   }
 }

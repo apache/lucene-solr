@@ -60,7 +60,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     node.message("SegmentInfosSearcherManager.init: use incoming infos=" + infosIn.toString());
     current =
         SearcherManager.getSearcher(
-            searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null), null);
+            searcherFactory, StandardDirectoryReader.open(dir, currentInfos, null, null), null);
     addReaderClosedListener(current.getIndexReader());
   }
 
@@ -111,7 +111,7 @@ class SegmentInfosSearcherManager extends ReferenceManager<IndexSearcher> {
     }
 
     // Open a new reader, sharing any common segment readers with the old one:
-    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs);
+    DirectoryReader r = StandardDirectoryReader.open(dir, currentInfos, subs, null);
     addReaderClosedListener(r);
     node.message("refreshed to version=" + currentInfos.getVersion() + " r=" + r);
     return SearcherManager.getSearcher(searcherFactory, r, old.getIndexReader());
