@@ -1,4 +1,4 @@
-= Scripting Update Processor
+= Script Update Processor
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -35,19 +35,19 @@ potential security vulnerabilities.
 
 The scripting update processor lives in the contrib module `/contrib/scripting`, and you need to explicitly add it to your Solr setup.
 
-Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.   Other supported scripting engines like
-JRuby, Jython, Groovy, all require you to add JAR files.
-
-
-You can either add the `dist/solr-scripting-*.jar` file into Solr’s resource loader in a core `lib/` directory, or via `<lib>` directives in `solrconfig.xml`:
+You can either add the `dist/solr-scripting-*.jar` file into Solr’s core `lib/` directory, or via `<lib>` directives in `solrconfig.xml`:
 
 [source,xml]
 ----
 <lib dir="${solr.install.dir:../../..}/dist/" regex="solr-scripting-\d.*\.jar" />
 ----
 
+Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.   Other supported scripting engines like
+JRuby, Jython, Groovy, all require you to add JAR files.
+
 Likewise you will need to add some JAR files depending on which scripting engines you choose.
 
+Learn more about about <<resource-loading.adoc#resource-loading,resources>>.
 
 == Configuration
 
@@ -96,7 +96,7 @@ Every script has some variables provided to it.
 Logger (org.slf4j.Logger) instance. This is useful for logging information from the script.
 
 `req`::
-{solr-javadocs}/core/org/apache/solr/response/SolrQueryResponse.html[SolrQueryRequest] instance.
+{solr-javadocs}/core/org/apache/solr/request/SolrQueryRequest.html[SolrQueryRequest] instance.
 
 `rsp`::
 {solr-javadocs}/core/org/apache/solr/response/SolrQueryResponse.html[SolrQueryResponse] instance.
@@ -174,11 +174,11 @@ function finish() {
 }
 ----
 
-=== JRuby
+=== Ruby
+Ruby support is implemented via the https://www.jruby.org/[JRuby] project.
+To use JRuby as the scripting engine, add `jruby.jar` to Solr.
 
-To use JRuby as the scripting engine, add `jruby.jar` to Solr's resource loader.
-
-Here's an example JRuby update processing script (note that all variables passed require prefixing with `$`, such as `$logger`):
+Here's an example of a JRuby update processing script (note that all variables passed in require prefixing with `$`, such as `$logger`):
 
 [source,ruby]
 ----
@@ -216,7 +216,7 @@ end
 
 ==== Known issues
 
-The following in JRuby do not work as expected for some reason, though it does work properly in JavaScript:
+The following in JRuby does not work as expected for some reason, though it does work properly in JavaScript:
 
 [source,ruby]
 ----
@@ -226,7 +226,7 @@ The following in JRuby do not work as expected for some reason, though it does w
 
 === Groovy
 
-Put all JARs from a Groovy distro's `lib/` directory into Solr's resource loader.  All JARs from
+Add JARs from a Groovy distro's `lib/` directory to Solr.  All JARs from
 Groovy's distro probably aren't required, but more than just the main `groovy.jar`
 file is needed (at least when this was tested using Groovy 2.0.6)
 
@@ -267,8 +267,8 @@ def finish() {
 }
 ----
 
-=== Jython
-
+=== Python
+Python support is implemented via the https://www.jython.org/[Jython] project.
 Put the *standalone* `jython.jar` (the JAR that contains all the dependencies) into Solr's resource loader.
 
 [source,python]
