@@ -389,7 +389,7 @@ public final class Lucene90VectorReader extends VectorReader {
     @Override
     public int advance(int target) {
       assert docID() < target;
-      ord = Arrays.binarySearch(fieldEntry.ordToDoc, target);
+      ord = Arrays.binarySearch(fieldEntry.ordToDoc, ord + 1, fieldEntry.ordToDoc.length, target);
       if (ord < 0) {
         ord = -(ord + 1);
       }
