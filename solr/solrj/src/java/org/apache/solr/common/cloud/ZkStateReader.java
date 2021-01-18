@@ -23,13 +23,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -1633,7 +1631,9 @@ public class ZkStateReader implements SolrCloseable {
     PerReplicaStates current = c.getPerReplicaStates();
     PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
     if (newPrs != current) {
-      log.debug("just-in-time update for a fresh per-replica-state {}", c.getName());
+      if(log.isDebugEnabled()) {
+        log.debug("update for a fresh per-replica-state {}", c.getName());
+      }
       DocCollection modifiedColl = c.copyWith(newPrs);
       updateWatchedCollection(c.getName(), modifiedColl);
       return modifiedColl;

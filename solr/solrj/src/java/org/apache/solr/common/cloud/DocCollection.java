@@ -124,9 +124,11 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Used to create a new Collection State when only a replica is updated
    */
   public DocCollection copyWith( PerReplicaStates newPerReplicaStates) {
-    log.debug("collection :{} going to be updated :  per-replica state :{} -> {}",
-        name,
-        getChildNodesVersion(), newPerReplicaStates.cversion);
+    if (log.isDebugEnabled()) {
+      log.debug("collection :{} going to be updated :  per-replica state :{} -> {}",
+              name,
+              getChildNodesVersion(), newPerReplicaStates.cversion);
+    }
     if(getChildNodesVersion() == newPerReplicaStates.cversion) return this;
     Set<String> modifiedReplicas = PerReplicaStates.findModifiedReplicas(newPerReplicaStates, this.perReplicaStates);
     if(modifiedReplicas.isEmpty()) return this; //nothing is modified
