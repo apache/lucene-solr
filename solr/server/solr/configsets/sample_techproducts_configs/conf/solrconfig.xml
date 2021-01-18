@@ -1278,7 +1278,7 @@
 
     This example hooks in an update processor implemented using JavaScript.
 
-    See more about script update processor at https://lucene.apache.org/solr/guide/scripting-update-processor.html
+    See more about script update processor at https://lucene.apache.org/solr/guide/script-update-processor.html
   -->
   <updateRequestProcessorChain name="script">
     <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">

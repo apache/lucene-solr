@@ -4,7 +4,7 @@
   In order for this to be executed, it must be properly wired into solrconfig.xml; by default it is commented out in
   the example solrconfig.xml and must be uncommented to be enabled.
 
-  See https://lucene.apache.org/solr/guide/scripting-update-processor.html for more details.
+  See https://lucene.apache.org/solr/guide/script-update-processor.html for more details.
 */
 
 function processAdd(cmd) {

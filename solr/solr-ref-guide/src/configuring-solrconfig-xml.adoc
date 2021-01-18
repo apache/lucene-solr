@@ -8,7 +8,7 @@
     query-settings-in-solrconfig, \
     requestdispatcher-in-solrconfig, \
     update-request-processors, \
-    scripting-update-processor, \    
+    script-update-processor, \    
     codec-factory
 
 // Licensed to the Apache Software Foundation (ASF) under one

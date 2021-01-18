@@ -11,4 +11,4 @@ Today, the ScriptUpdateProcessorFactory allows Java scripting engines to be used
 
 For information on how to get started please see:
  * [Solr Reference Guide's section on Update Request Processors](https://lucene.apache.org/solr/guide/update-request-processors.html)
-  * [Solr Reference Guide's section on ScriptUpdateProcessorFactory](https://lucene.apache.org/solr/guide/scripting-update-processors.html)
+  * [Solr Reference Guide's section on ScriptUpdateProcessorFactory](https://lucene.apache.org/solr/guide/script-update-processors.html)
