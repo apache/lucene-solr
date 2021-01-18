@@ -955,12 +955,7 @@ public class CoreContainer {
         name = "localhost";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer(this, null) {
-        @Override
-        public void close() throws IOException {
-          // do nothing - we close the container ourselves
-        }
-      };
+      client = new EmbeddedSolrServer(this, null);
       // enable local metrics unless specifically set otherwise
       initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
       initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);

@@ -38,6 +38,17 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.9
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote89[8.9 Release Notes^]
+for an overview of the main new features of Solr 8.9.
+
+When upgrading to 8.9.x users should be aware of the following major changes from 8.8.
+
+*Embedded Solr Server*
+
+* When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
+
 === Solr 8.8
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]
