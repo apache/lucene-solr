@@ -853,8 +853,6 @@ public class ZkStateReader implements SolrCloseable {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-    log.debug("getLeaderRetry:@{} {}/{}", System.currentTimeMillis(), collection, shard);
-
     AtomicReference<DocCollection> coll = new AtomicReference<>();
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
@@ -1609,7 +1607,6 @@ public class ZkStateReader implements SolrCloseable {
         v = new CollectionWatch<>();
         watchSet.set(true);
       }
-      log.info("already watching , added to stateWatchers");
       v.stateWatchers.add(stateWatcher);
       return v;
     });
@@ -1630,7 +1627,9 @@ public class ZkStateReader implements SolrCloseable {
     PerReplicaStates current = c.getPerReplicaStates();
     PerReplicaStates newPrs = PerReplicaStates.fetch(c.getZNode(), zkClient, current);
     if (newPrs != current) {
-      log.debug("just-in-time update for a fresh per-replica-state {}", c.getName());
+      if(log.isDebugEnabled()) {
+        log.debug("update for a fresh per-replica-state {}", c.getName());
+      }
       DocCollection modifiedColl = c.copyWith(newPrs);
       updateWatchedCollection(c.getName(), modifiedColl);
       return modifiedColl;
@@ -1675,12 +1674,6 @@ public class ZkStateReader implements SolrCloseable {
     CollectionStateWatcher watcher = (n, c) -> {
       docCollection.set(c);
       boolean matches = predicate.matches(n, c);
-      if (!matches) {
-        if (log.isDebugEnabled()) {
-          log.debug(" CollectionStatePredicate failed for {}, cversion : {}", collection,
-                  (c == null || c.getPerReplicaStates() == null ? "-1" : c.getPerReplicaStates()));
-        }
-      }
       if (matches)
         latch.countDown();
 
@@ -2275,6 +2268,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   public DocCollection getCollection(String collection) {
-    return clusterState.getCollectionOrNull(collection);
+    return clusterState == null ? null : clusterState.getCollectionOrNull(collection);
   }
+
 }

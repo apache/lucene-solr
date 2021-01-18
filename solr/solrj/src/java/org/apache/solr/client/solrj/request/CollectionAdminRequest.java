@@ -476,7 +476,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
     public Create setSnitch(String... s){ this.snitch = s; return this; }
-    public Create setPerReplicaState(Boolean b) {this.perReplicaState = b; return this; }
+    public Create setPerReplicaState(Boolean b) {this.perReplicaState =  b; return this; }
 
     public Create setAlias(String alias) {
       this.alias = alias;
@@ -564,7 +564,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (tlogReplicas != null) {
         params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
       }
-      if (Boolean.TRUE.equals(perReplicaState)) {
+      if(Boolean.TRUE.equals(perReplicaState)) {
         params.set(PER_REPLICA_STATE, perReplicaState);
       }
       params.setNonNull(ALIAS, alias);

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.MapWriter;
@@ -37,15 +36,11 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.WrappedSimpleMap;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VERSION;
 
@@ -60,12 +55,15 @@ public class PerReplicaStates implements ReflectMapWriter {
   public static final int MAX_RETRIES = 5;
 
 
+  //znode path where thisis loaded from
   @JsonProperty
   public final String path;
 
+  // the child version of that znode
   @JsonProperty
   public final int cversion;
 
+  //states of individual replicas
   @JsonProperty
   public final SimpleMap<State> states;
 
@@ -111,51 +109,6 @@ public class PerReplicaStates implements ReflectMapWriter {
     return result;
   }
 
-  /**
-   * This is a persist operation with retry if a write fails due to stale state
-   */
-  public static void persist(WriteOps ops, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    List<Operation> operations = ops.get();
-    for (int i = 0; i < MAX_RETRIES; i++) {
-      try {
-        persist(operations, znode, zkClient);
-        return;
-      } catch (KeeperException.NodeExistsException | KeeperException.NoNodeException e) {
-        //state is stale
-        if(log.isInfoEnabled()) {
-          log.info("stale state for {} , attempt: {}. retrying...", znode, i);
-        }
-        operations = ops.get(PerReplicaStates.fetch(znode, zkClient, null));
-      }
-    }
-  }
-
-  /**
-   * Persist a set of operations to Zookeeper
-   */
-  public static void persist(List<Operation> operations, String znode, SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    if (operations == null || operations.isEmpty()) return;
-    if (log.isDebugEnabled()) {
-      log.debug("Per-replica state being persisted for : '{}', ops: {}", znode, operations);
-    }
-
-    List<Op> ops = new ArrayList<>(operations.size());
-    for (Operation op : operations) {
-      //the state of the replica is being updated
-      String path = znode + "/" + op.state.asString;
-      ops.add(op.typ == Operation.Type.ADD ?
-          Op.create(path, null, zkClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT) :
-          Op.delete(path, -1));
-    }
-    try {
-      zkClient.multi(ops, true);
-    } catch (KeeperException e) {
-      log.error("multi op exception : " + e.getMessage() + zkClient.getChildren(znode, null, true));
-      throw e;
-    }
-
-  }
-
 
   /**
    * Fetch the latest {@link PerReplicaStates} . It fetches data after checking the {@link Stat#getCversion()} of state.json.
@@ -179,14 +132,6 @@ public class PerReplicaStates implements ReflectMapWriter {
     }
   }
 
-
-  private static List<Operation> addDeleteStaleNodes(List<Operation> ops, State rs) {
-    while (rs != null) {
-      ops.add(new Operation(Operation.Type.DELETE, rs));
-      rs = rs.duplicate;
-    }
-    return ops;
-  }
 
   public static String getReplicaName(String s) {
     int idx = s.indexOf(SEPARATOR);
@@ -223,6 +168,26 @@ public class PerReplicaStates implements ReflectMapWriter {
     }
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("{").append(path).append("/[").append(cversion).append("]: [");
+    appendStates(sb);
+    return sb.append("]}").toString();
+  }
+
+  private StringBuilder appendStates(StringBuilder sb) {
+    states.forEachEntry(new BiConsumer<String, State>() {
+      int count = 0;
+
+      @Override
+      public void accept(String s, State state) {
+        if (count++ > 0) sb.append(", ");
+        sb.append(state.asString);
+        for (State d : state.getDuplicates()) sb.append(d.asString);
+      }
+    });
+    return sb;
+  }
 
   /**
    * The state of a replica as stored as a node under /collections/collection-name/state.json/replica-state
@@ -342,239 +307,6 @@ public class PerReplicaStates implements ReflectMapWriter {
     public int hashCode() {
       return asString.hashCode();
     }
-  }
-
-
-  /**This is a helper class that encapsulates various operations performed on the per-replica states
-   * Do not directly manipulate the per replica states as it can become difficult to debug them
-   *
-   */
-  public static class WriteOps {
-    private PerReplicaStates rs;
-    List<Operation> ops;
-    private boolean preOp = true;
-    final Function<PerReplicaStates, List<Operation>> fun;
-
-    WriteOps(Function<PerReplicaStates, List<Operation>> fun) {
-      this.fun = fun;
-    }
-
-    public PerReplicaStates getPerReplicaStates() {
-      return rs;
-    }
-
-    /**
-     * state of a replica is changed
-     *
-     * @param newState the new state
-     */
-    public static WriteOps flipState(String replica, Replica.State newState, PerReplicaStates rs) {
-      return new WriteOps(prs -> {
-        List<Operation> operations = new ArrayList<>(2);
-        State existing = rs.get(replica);
-        if (existing == null) {
-          operations.add(new Operation(Operation.Type.ADD, new State(replica, newState, Boolean.FALSE, 0)));
-        } else {
-          operations.add(new Operation(Operation.Type.ADD, new State(replica, newState, existing.isLeader, existing.version + 1)));
-          addDeleteStaleNodes(operations, existing);
-        }
-        if (log.isDebugEnabled()) {
-          log.debug("flipState on {}, {} -> {}, ops :{}", rs.path, replica, newState, operations);
-        }
-        return operations;
-      }).init(rs);
-    }
-
-    /**
-     * Switch a collection from/to perReplicaState=true
-     */
-    public static WriteOps modifyCollection(DocCollection coll, boolean enable, PerReplicaStates rs) {
-      return new WriteOps(prs -> enable ? enable(coll) : disable(prs)).init(rs);
-
-    }
-
-    private static List<Operation> enable(DocCollection coll) {
-      List<Operation> result = new ArrayList<>();
-      coll.forEachReplica((s, r) -> result.add(new Operation(Operation.Type.ADD, new State(r.getName(), r.getState(), r.isLeader(), 0))));
-      return result;
-    }
-
-    private static List<Operation> disable(PerReplicaStates prs) {
-      List<Operation> result = new ArrayList<>();
-      prs.states.forEachEntry((s, state) -> result.add(new Operation(Operation.Type.DELETE, state)));
-      return result;
-    }
-
-    /**
-     * Flip the leader replica to a new one
-     *
-     * @param allReplicas allReplicas of the shard
-     * @param next        next leader
-     */
-    public static WriteOps flipLeader(Set<String> allReplicas, String next, PerReplicaStates rs) {
-      return new WriteOps(prs -> {
-        List<Operation> ops = new ArrayList<>();
-        if (next != null) {
-          State st = rs.get(next);
-          if (st != null) {
-            if (!st.isLeader) {
-              ops.add(new Operation(Operation.Type.ADD, new State(st.replica, Replica.State.ACTIVE, Boolean.TRUE, st.version + 1)));
-              ops.add(new Operation(Operation.Type.DELETE, st));
-            }
-            //else do not do anything , that node is the leader
-          } else {
-            //there is no entry for the new leader.
-            //create one
-            ops.add(new Operation(Operation.Type.ADD, new State(next, Replica.State.ACTIVE, Boolean.TRUE, 0)));
-          }
-        }
-
-        //now go through all other replicas and unset previous leader
-        for (String r : allReplicas) {
-          State st = rs.get(r);
-          if (st == null) continue;//unlikely
-          if (!Objects.equals(r, next)) {
-            if (st.isLeader) {
-              //some other replica is the leader now. unset
-              ops.add(new Operation(Operation.Type.ADD, new State(st.replica, st.state, Boolean.FALSE, st.version + 1)));
-              ops.add(new Operation(Operation.Type.DELETE, st));
-            }
-          }
-        }
-        if (log.isDebugEnabled()) {
-          log.debug("flipLeader on:{}, {} -> {}, ops: {}", rs.path, allReplicas, next, ops);
-        }
-        return ops;
-      }).init(rs);
-    }
-
-    /**
-     * Delete a replica entry from per-replica states
-     *
-     * @param replica name of the replica to be deleted
-     */
-    public static WriteOps deleteReplica(String replica, PerReplicaStates rs) {
-      return new WriteOps(prs -> {
-        List<Operation> result;
-        if (rs == null) {
-          result = Collections.emptyList();
-        } else {
-          State state = rs.get(replica);
-          result = addDeleteStaleNodes(new ArrayList<>(), state);
-        }
-        return result;
-      }).init(rs);
-    }
-
-    public static WriteOps addReplica(String replica, Replica.State state, boolean isLeader, PerReplicaStates rs) {
-      return new WriteOps(perReplicaStates -> singletonList(new Operation(Operation.Type.ADD,
-          new State(replica, state, isLeader, 0)))).init(rs);
-    }
-
-    /**
-     * mark a bunch of replicas as DOWN
-     */
-    public static WriteOps downReplicas(List<String> replicas, PerReplicaStates rs) {
-      return new WriteOps(prs -> {
-        List<Operation> operations = new ArrayList<>();
-        for (String replica : replicas) {
-          State r = rs.get(replica);
-          if (r != null) {
-            if (r.state == Replica.State.DOWN && !r.isLeader) continue;
-            operations.add(new Operation(Operation.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
-            addDeleteStaleNodes(operations, r);
-          } else {
-            operations.add(new Operation(Operation.Type.ADD, new State(replica, Replica.State.DOWN, Boolean.FALSE, 0)));
-          }
-        }
-        if (log.isDebugEnabled()) {
-          log.debug("for coll: {} down replicas {}, ops {}", rs, replicas, operations);
-        }
-        return operations;
-      }).init(rs);
-    }
-
-    /**
-     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of states.json
-     * is updated
-     */
-    public static WriteOps touchChildren() {
-      WriteOps result = new WriteOps(prs -> {
-        List<Operation> operations = new ArrayList<>();
-        State st = new State(".dummy." + System.nanoTime(), Replica.State.DOWN, Boolean.FALSE, 0);
-        operations.add(new Operation(Operation.Type.ADD, st));
-        operations.add(new Operation(Operation.Type.DELETE, st));
-        if (log.isDebugEnabled()) {
-          log.debug("touchChildren {}", operations);
-        }
-        return operations;
-      });
-      result.preOp = false;
-      result.ops = result.refresh(null);
-      return result;
-    }
-
-    WriteOps init(PerReplicaStates rs) {
-      if (rs == null) return null;
-      get(rs);
-      return this;
-    }
-
-    public List<Operation> get() {
-      return ops;
-    }
-
-    public List<Operation> get(PerReplicaStates rs) {
-      ops = refresh(rs);
-      if (ops == null) ops = Collections.emptyList();
-      this.rs = rs;
-      return ops;
-    }
-
-    /**
-     * To be executed before collection state.json is persisted
-     */
-    public boolean isPreOp() {
-      return preOp;
-    }
-
-    /**
-     * This method should compute the set of ZK operations for a given action
-     * for instance, a state change may result in
-     * if a multi operation fails because the state got modified from behind,
-     * refresh the operation and try again
-     *
-     * @param prs The new state
-     */
-    List<Operation> refresh(PerReplicaStates prs) {
-      if (fun != null) return fun.apply(prs);
-      return null;
-    }
-
-    @Override
-    public String toString() {
-      return ops.toString();
-    }
-  }
-
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder("{").append(path).append("/[").append(cversion).append("]: [");
-    appendStates(sb);
-    return sb.append("]}").toString();
-  }
-
-  private StringBuilder appendStates(StringBuilder sb) {
-    states.forEachEntry(new BiConsumer<String, State>() {
-      int count = 0;
-      @Override
-      public void accept(String s, State state) {
-        if (count++ > 0) sb.append(", ");
-        sb.append(state.asString);
-        for (State d : state.getDuplicates()) sb.append(d.asString);
-      }
-    });
-    return sb;
   }
 
 }

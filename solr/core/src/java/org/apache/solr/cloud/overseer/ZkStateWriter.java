@@ -217,9 +217,8 @@ public class ZkStateWriter {
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 
-          if (cmd.ops != null && cmd.ops.isPreOp()) {
-            PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
-
+          if(cmd.ops != null && cmd.ops.isPreOp()) {
+            cmd.ops.persist(path, reader.getZkClient());
             clusterState = clusterState.copyWith(name,
                   cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
@@ -244,13 +243,13 @@ public class ZkStateWriter {
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
-          if (cmd.ops != null && !cmd.ops.isPreOp()) {
-            PerReplicaStates.persist(cmd.ops, path, reader.getZkClient());
-            DocCollection currentCollState = clusterState.getCollection(cmd.name);
-            if ( currentCollState != null) {
-              clusterState = clusterState.copyWith(name,
-                  currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
-            }
+            if(cmd.ops != null && !cmd.ops.isPreOp()) {
+              cmd.ops.persist(path, reader.getZkClient());
+              DocCollection currentCollState = clusterState.getCollection(cmd.name);
+              if ( currentCollState != null) {
+                clusterState = clusterState.copyWith(name,
+                        currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
+              }
           }
         }
 

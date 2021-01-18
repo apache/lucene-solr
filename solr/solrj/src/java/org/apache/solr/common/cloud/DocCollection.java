@@ -111,7 +111,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       }
       for (Replica replica : slice.getValue()) {
         addNodeNameReplica(replica);
-        if (perReplicaState) {
+        if(perReplicaState) {
           replicaMap.put(replica.getName(), replica);
         }
       }
@@ -126,16 +126,18 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Used to create a new Collection State when only a replica is updated
    */
   public DocCollection copyWith( PerReplicaStates newPerReplicaStates) {
-    log.debug("collection :{} going to be updated :  per-replica state :{} -> {}",
-        name,
-        getChildNodesVersion(), newPerReplicaStates.cversion);
-    if (getChildNodesVersion() == newPerReplicaStates.cversion) return this;
+    if (log.isDebugEnabled()) {
+      log.debug("collection :{} going to be updated :  per-replica state :{} -> {}",
+              name,
+              getChildNodesVersion(), newPerReplicaStates.cversion);
+    }
+    if(getChildNodesVersion() == newPerReplicaStates.cversion) return this;
     Set<String> modifiedReplicas = PerReplicaStates.findModifiedReplicas(newPerReplicaStates, this.perReplicaStates);
-    if (modifiedReplicas.isEmpty()) return this; //nothing is modified
+    if(modifiedReplicas.isEmpty()) return this; //nothing is modified
     Map<String, Slice> modifiedShards = new HashMap<>(getSlicesMap());
     for (String s : modifiedReplicas) {
       Replica replica = getReplica(s);
-      if (replica != null) {
+      if(replica != null) {
         Replica newReplica = replica.copyWith(newPerReplicaStates.get(s));
         Slice shard = modifiedShards.get(replica.shard);
         modifiedShards.put(replica.shard, shard.copyWith(newReplica));

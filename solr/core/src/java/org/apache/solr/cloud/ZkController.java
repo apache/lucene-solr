@@ -1591,8 +1591,8 @@ public class ZkController implements Closeable {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
         PerReplicaStates perReplicaStates = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStates.WriteOps ops = PerReplicaStates.WriteOps.flipState(coreNodeName, state, perReplicaStates);
-        PerReplicaStates.persist(ops, coll.getZNode(), zkClient);
+        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
+            .persist(coll.getZNode(), zkClient);
       }
     } finally {
       MDCLoggingContext.clear();

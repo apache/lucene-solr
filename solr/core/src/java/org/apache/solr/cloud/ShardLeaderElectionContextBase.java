@@ -25,14 +25,7 @@ import java.util.List;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -186,8 +179,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
       } else {
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStates.WriteOps writeOps = PerReplicaStates.WriteOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs);
-        PerReplicaStates.persist(writeOps, coll.getZNode(), zkStateReader.getZkClient());
+        PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)
+                .persist(coll.getZNode(), zkStateReader.getZkClient());
       }
     }
   }
