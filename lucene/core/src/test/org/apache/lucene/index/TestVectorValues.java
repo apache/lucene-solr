@@ -20,6 +20,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.TreeSet;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -814,5 +815,48 @@ public class TestVectorValues extends LuceneTestCase {
     assertEquals(1, VectorValues.SearchStrategy.EUCLIDEAN_HNSW.ordinal());
     assertEquals(2, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW.ordinal());
     assertEquals(3, VectorValues.SearchStrategy.values().length);
+  }
+
+  public void testAdvance() throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
+        int numdocs = 2000;
+        String fieldName = "field";
+        for (int i = 0; i < numdocs; i++) {
+          Document doc = new Document();
+          // randomly add a vector field
+          if (random().nextInt(4) == 3) {
+            doc.add(
+                new VectorField(
+                    fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+          }
+          w.addDocument(doc);
+        }
+        w.forceMerge(1);
+        try (IndexReader reader = w.getReader()) {
+          LeafReader r = getOnlyLeafReader(reader);
+          VectorValues vectorValues = r.getVectorValues(fieldName);
+          TreeSet<Integer> vectorDocs = new TreeSet<>();
+          int cur = -1;
+          while (cur != NO_MORE_DOCS) {
+            cur = vectorValues.nextDoc();
+            vectorDocs.add(cur);
+          }
+          vectorValues = r.getVectorValues(fieldName);
+          for (int i = 0; i != NO_MORE_DOCS && i < numdocs; i++) {
+            // randomly advance to i
+            if (random().nextInt(4) == 3) {
+              vectorValues.advance(i);
+              assertEquals((int) vectorDocs.higher(i - 1), vectorValues.docID());
+              if (vectorValues.docID() == NO_MORE_DOCS) {
+                break;
+              }
+              // ensure i is always greater than vectorValues.docID()
+              i = vectorValues.docID();
+            }
+          }
+        }
+      }
+    }
   }
 }
