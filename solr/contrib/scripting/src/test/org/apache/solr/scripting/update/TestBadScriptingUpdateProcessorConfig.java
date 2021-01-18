@@ -43,7 +43,7 @@ public class TestBadScriptingUpdateProcessorConfig extends AbstractBadConfigTest
     // sanity check
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
     assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
-                  "schema.xml","currency.xml");
+                  "schema.xml","invalid.script.xml");
   }
 
 }

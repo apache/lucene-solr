@@ -16,22 +16,12 @@
  limitations under the License.
 -->
 
-<!-- Example exchange rates file,
+<!-- This file is designed to test that loading a .xml file into
+     a script engine that is configured for JavaScript properly raises
+     an exception.
 
-
-     NOTE: this data must be kept in sync with ./open-exchange-rates.json
 -->
 
-<currencyConfig version="1.0">
-  <rates>
-    <!-- Fake rates for testing -->
-    <rate from="USD" to="JPY" rate="81.29"/>
-    <rate from="USD" to="EUR" rate="2.5"/>
-    <rate from="USD" to="GBP" rate="0.5"/>
-    <rate from="EUR" to="GBP" rate="0.5"/>
-    <rate from="MXN" to="USD" rate="0.5"/>
-
-    <!-- Asymmetric rate -->
-    <rate from="EUR" to="USD" rate="0.5"/>
-  </rates>
-</currencyConfig>
+<foo version="1.0">
+  <bar/>
+</foo>

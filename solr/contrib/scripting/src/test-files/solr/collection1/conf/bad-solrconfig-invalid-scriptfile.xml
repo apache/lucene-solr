@@ -25,7 +25,7 @@
     <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
       <str name="engine">javascript</str>
       <!-- not parsable as javascript -->
-      <str name="script">currency.xml</str>
+      <str name="script">invalid.script.xml</str>
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
