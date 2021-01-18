@@ -74,6 +74,8 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
+  private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
+
   private static final String ALIAS_KEY = "AF";
   private static final String MORPH_ALIAS_KEY = "AM";
   private static final String PREFIX_KEY = "PFX";
@@ -840,7 +842,27 @@ public class Dictionary {
     }
 
     String written = toWrite.toString();
+    sep = written.length() - (line.length() - sep);
     writer.write(written.getBytes(StandardCharsets.UTF_8));
+
+    WordCase wordCase = WordCase.caseOf(written, sep);
+    if (wordCase == WordCase.MIXED || wordCase == WordCase.UPPER && flagSep > 0) {
+      addHiddenCapitalizedWord(reuse, writer, written.substring(0, sep), written.substring(sep));
+    }
+  }
+
+  private void addHiddenCapitalizedWord(
+      StringBuilder reuse, ByteSequencesWriter writer, String word, String afterSep)
+      throws IOException {
+    reuse.setLength(0);
+    reuse.append(Character.toUpperCase(word.charAt(0)));
+    for (int i = 1; i < word.length(); i++) {
+      reuse.append(caseFold(word.charAt(i)));
+    }
+    reuse.append(FLAG_SEPARATOR);
+    reuse.append(HIDDEN_FLAG);
+    reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
+    writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
   }
 
   private String sortWordsOffline(
@@ -992,8 +1014,20 @@ public class Dictionary {
     void flushGroup() throws IOException {
       IntsRefBuilder currentOrds = new IntsRefBuilder();
 
+      boolean hasNonHidden = false;
+      for (char[] flags : group) {
+        if (!hasHiddenFlag(flags)) {
+          hasNonHidden = true;
+          break;
+        }
+      }
+
       for (int i = 0; i < group.size(); i++) {
         char[] flags = group.get(i);
+        if (hasNonHidden && hasHiddenFlag(flags)) {
+          continue;
+        }
+
         encodeFlags(flagsScratch, flags);
         int ord = flagLookup.add(flagsScratch.get());
         if (ord < 0) {
@@ -1011,6 +1045,10 @@ public class Dictionary {
       group.clear();
       stemExceptionIDs.clear();
     }
+  }
+
+  static boolean hasHiddenFlag(char[] flags) {
+    return hasFlag(flags, HIDDEN_FLAG);
   }
 
   static char[] decodeFlags(BytesRef b) {

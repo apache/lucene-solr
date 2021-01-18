@@ -145,25 +145,20 @@ final class Stemmer {
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        boolean checkKeepCase = caseVariant && dictionary.keepcase != -1;
-        boolean checkNeedAffix = dictionary.needaffix != -1;
-        boolean checkOnlyInCompound = dictionary.onlyincompound != -1;
-        if (checkKeepCase || checkNeedAffix || checkOnlyInCompound) {
-          dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
-          char[] wordFlags = Dictionary.decodeFlags(scratch);
-          // we are looking for a case variant, but this word does not allow it
-          if (checkKeepCase && Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)) {
-            continue;
-          }
-          // we can't add this form, it's a pseudostem requiring an affix
-          if (checkNeedAffix && Dictionary.hasFlag(wordFlags, (char) dictionary.needaffix)) {
-            continue;
-          }
-          // we can't add this form, it only belongs inside a compound word
-          if (checkOnlyInCompound
-              && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
-            continue;
-          }
+        dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
+        char[] wordFlags = Dictionary.decodeFlags(scratch);
+        if (!acceptCase(caseVariant, wordFlags)) {
+          continue;
+        }
+        // we can't add this form, it's a pseudostem requiring an affix
+        if (dictionary.needaffix != -1
+            && Dictionary.hasFlag(wordFlags, (char) dictionary.needaffix)) {
+          continue;
+        }
+        // we can't add this form, it only belongs inside a compound word
+        if (dictionary.onlyincompound != -1
+            && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
+          continue;
         }
         stems.add(newStem(word, length, forms, i));
       }
@@ -174,6 +169,12 @@ final class Stemmer {
       throw new RuntimeException(bogus);
     }
     return stems;
+  }
+
+  private boolean acceptCase(boolean caseVariant, char[] wordFlags) {
+    return caseVariant
+        ? dictionary.keepcase == -1 || !Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)
+        : !Dictionary.hasHiddenFlag(wordFlags);
   }
 
   /**
@@ -577,9 +578,7 @@ final class Stemmer {
           }
 
           // we are looking for a case variant, but this word does not allow it
-          if (caseVariant
-              && dictionary.keepcase != -1
-              && Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)) {
+          if (!acceptCase(caseVariant, wordFlags)) {
             continue;
           }
           // we aren't decompounding (yet)

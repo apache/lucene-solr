@@ -36,6 +36,20 @@ enum WordCase {
     return get(capitalized, seenUpper, seenLower);
   }
 
+  static WordCase caseOf(CharSequence word, int length) {
+    boolean capitalized = Character.isUpperCase(word.charAt(0));
+
+    boolean seenUpper = false;
+    boolean seenLower = false;
+    for (int i = 1; i < length; i++) {
+      char ch = word.charAt(i);
+      seenUpper = seenUpper || Character.isUpperCase(ch);
+      seenLower = seenLower || Character.isLowerCase(ch);
+    }
+
+    return get(capitalized, seenUpper, seenLower);
+  }
+
   private static WordCase get(boolean capitalized, boolean seenUpper, boolean seenLower) {
     if (capitalized) {
       return !seenLower ? UPPER : !seenUpper ? TITLE : MIXED;
