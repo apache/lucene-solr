@@ -31,28 +31,25 @@ import java.util.OptionalInt;
  * This implements the WAND (Weak AND) algorithm for dynamic pruning described in "Efficient Query
  * Evaluation using a Two-Level Retrieval Process" by Broder, Carmel, Herscovici, Soffer and Zien.
  * Enhanced with techniques described in "Faster Top-k Document Retrieval Using Block-Max Indexes"
- * by Ding and Suel. This scorer maintains a feedback loop with the collector in order to know at
- * any time the minimum score that is required in order for a hit to be competitive.
+ * by Ding and Suel. For scoreMode == {@link ScoreMode#TOP_SCORES}, this scorer maintains a feedback
+ * loop with the collector in order to know at any time the minimum score that is required in order
+ * for a hit to be competitive.
  *
- * <p>The implementation supports both minShouldMatch by enforcing {@code freq >= minShouldMatch},
- * and minCompetitiveScore by enforce that {@code ∑ max_score >= minCompetitiveScore}. When {@link
- * ScoreMode#needsScores()} is false, block-max scoring related logic (finding max score in the
- * block, updating scorer with the new max score, and approximating next potential candidate using
- * the updated score) is skipped.
+ * <p>The implementation supports both minCompetitiveScore by enforce that {@code ∑ max_score >=
+ * minCompetitiveScore}, and minShouldMatch by enforcing {@code freq >= minShouldMatch}. It keeps
+ * sub scorers in 3 different places: - tail: a heap that contains scorers that are behind the
+ * desired doc ID. These scorers are ordered by cost so that we can advance the least costly ones
+ * first. - lead: a linked list of scorer that are positioned on the desired doc ID - head: a heap
+ * that contains scorers which are beyond the desired doc ID, ordered by doc ID in order to move
+ * quickly to the next candidate.
  *
- * <p>The implementation keeps sub scorers in 3 different places: - tail: a heap that contains
- * scorers that are behind the desired doc ID. These scorers are ordered by cost so that we can
- * advance the least costly ones first. - lead: a linked list of scorer that are positioned on the
- * desired doc ID - head: a heap that contains scorers which are beyond the desired doc ID, ordered
- * by doc ID in order to move quickly to the next candidate.
- *
- * <p>When {@link ScoreMode#needsScores()} is true, it leverages the {@link Scorer#getMaxScore(int)
- * max score} from each scorer in order to know when it may call {@link DocIdSetIterator#advance}
- * rather than {@link DocIdSetIterator#nextDoc} to move to the next competitive hit.
- *
- * <p>Finding the next match consists of first setting the desired doc ID to the least entry in
- * 'head', and then advance 'tail' until there is a match, by meeting the configured {@code freq >=
- * minShouldMatch} or {@code ∑ max_score >= minCompetitiveScore} requirements.
+ * <p>When scoreMode == {@link ScoreMode#TOP_SCORES}, it leverages the {@link
+ * Scorer#getMaxScore(int) max score} from each scorer in order to know when it may call {@link
+ * DocIdSetIterator#advance} rather than {@link DocIdSetIterator#nextDoc} to move to the next
+ * competitive hit. When scoreMode != {@link ScoreMode#TOP_SCORES}, block-max scoring related logic
+ * is skipped. Finding the next match consists of first setting the desired doc ID to the least
+ * entry in 'head', and then advance 'tail' until there is a match, by meeting the configured {@code
+ * freq >= minShouldMatch} and / or {@code ∑ max_score >= minCompetitiveScore} requirements.
  */
 final class WANDScorer extends Scorer {
 
@@ -186,14 +183,13 @@ final class WANDScorer extends Scorer {
         }
       }
 
+      // Use a scaling factor of 0 if all max scores are either 0 or +Infty
       this.scalingFactor = scalingFactor.orElse(0);
       this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
     } else {
       this.scalingFactor = 0;
       this.maxScorePropagator = null;
     }
-
-    // Use a scaling factor of 0 if all max scores are either 0 or +Infty
 
     for (Scorer scorer : scorers) {
       addLead(new DisiWrapper(scorer));
@@ -288,17 +284,13 @@ final class WANDScorer extends Scorer {
             // Advance 'head' as well
             advanceHead(target);
 
-            if (scoreMode == ScoreMode.TOP_SCORES) {
-              // Update score bounds if necessary so
-              updateMaxScoresIfNecessary(target);
+            // Pop the new 'lead' from 'head'
+            moveToNextCandidate(target);
 
-              if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-                return DocIdSetIterator.NO_MORE_DOCS;
-              }
+            if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+              return DocIdSetIterator.NO_MORE_DOCS;
             }
 
-            // Pop the new 'lead' from 'head', reset stats
-            setDocAndFreq(doc + 1);
             assert ensureConsistent();
 
             // Advance to the next possible match
@@ -340,8 +332,8 @@ final class WANDScorer extends Scorer {
   private void addLead(DisiWrapper lead) {
     lead.next = this.lead;
     this.lead = lead;
-    freq += 1;
     leadMaxScore += lead.maxScore;
+    freq += 1;
   }
 
   /** Move disis that are in 'lead' back to the tail. */
@@ -459,20 +451,27 @@ final class WANDScorer extends Scorer {
     assert (head.size() == 0 && upTo == DocIdSetIterator.NO_MORE_DOCS)
         || (head.size() > 0 && head.top().doc <= upTo);
     assert upTo >= target;
-
-    // updateMaxScores tries to move forward until a block with matches is found
-    // so if the head is empty it means there are no matches at all anymore
-    if (head.size() == 0) {
-      assert upTo == DocIdSetIterator.NO_MORE_DOCS;
-      doc = DocIdSetIterator.NO_MORE_DOCS;
-    }
   }
 
   /**
    * Set 'doc' to the next potential match, and move all disis of 'head' that are on this doc into
    * 'lead'.
    */
-  private void setDocAndFreq(int target) throws IOException {
+  private void moveToNextCandidate(int target) throws IOException {
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      // Update score bounds if necessary so
+      updateMaxScoresIfNecessary(target);
+      assert upTo >= target;
+
+      // updateMaxScores tries to move forward until a block with matches is found
+      // so if the head is empty it means there are no matches at all anymore
+      if (head.size() == 0) {
+        assert upTo == DocIdSetIterator.NO_MORE_DOCS;
+        doc = DocIdSetIterator.NO_MORE_DOCS;
+        return;
+      }
+    }
+
     // The top of `head` defines the next potential match
     // pop all documents which are on this doc
     lead = head.pop();
@@ -490,18 +489,11 @@ final class WANDScorer extends Scorer {
     while (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
-
-      if (scoreMode == ScoreMode.TOP_SCORES) {
-        // Update score bounds if necessary so
-        updateMaxScoresIfNecessary(doc + 1);
-
-        if (doc == DocIdSetIterator.NO_MORE_DOCS) {
-          return DocIdSetIterator.NO_MORE_DOCS;
-        }
-      }
-
-      setDocAndFreq(doc + 1);
+      moveToNextCandidate(doc + 1);
       assert ensureConsistent();
+      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+        break;
+      }
     }
 
     return doc;
