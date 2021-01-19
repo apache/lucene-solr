@@ -668,7 +668,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
 
       //Resize the priorityQueueSize down for small result sets.
-      this.priorityQueueSize = Math.min(this.priorityQueueSize, (int)(this.totalHits*1.5));
+      this.priorityQueueSize = Math.min(this.priorityQueueSize, (int)(this.totalHits*1.2));
 
       if(log.isDebugEnabled()) {
         log.debug("Total priority queue size {}:", this.priorityQueueSize);
