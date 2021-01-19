@@ -34,9 +34,9 @@ import org.apache.lucene.util.packed.DirectWriter;
  * <p>Documents that have a value for the field are encoded in a way that it is always possible to
  * know the ordinal of the current document in the set of documents that have a value. For instance,
  * say the set of documents that have a value for the field is <code>{1, 5, 6, 11}</code>. When the
- * iterator is on <code>6</code>, it knows that this is the 3rd item of the set. This way, values can be
- * stored densely and accessed based on their index at search time. If all documents in a segment
- * have a value for the field, the index is the same as the doc ID, so this case is encoded
+ * iterator is on <code>6</code>, it knows that this is the 3rd item of the set. This way, values
+ * can be stored densely and accessed based on their index at search time. If all documents in a
+ * segment have a value for the field, the index is the same as the doc ID, so this case is encoded
  * implicitly and is very fast at query time. On the other hand if some documents are missing a
  * value for the field then the set of documents that have a value is encoded into blocks. All doc
  * IDs that share the same upper 16 bits are encoded into the same block with the following
