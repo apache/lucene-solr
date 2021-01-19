@@ -74,7 +74,7 @@ class ExclusiveSliceProperty {
   ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
     String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
-    if (StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX) == false) {
+    if (!StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX)) {
       tmp = CollectionAdminParams.PROPERTY_PREFIX + tmp;
     }
     this.property = tmp.toLowerCase(Locale.ROOT);

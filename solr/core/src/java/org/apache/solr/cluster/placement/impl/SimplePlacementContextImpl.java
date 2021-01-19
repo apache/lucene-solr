@@ -11,13 +11,13 @@ import java.io.IOException;
 /**
  *
  */
-public class PlacementContextImpl implements PlacementContext {
+public class SimplePlacementContextImpl implements PlacementContext {
 
   private final Cluster cluster;
   private final AttributeFetcher attributeFetcher;
   private final PlacementPlanFactory placementPlanFactory = new PlacementPlanFactoryImpl();
 
-  public PlacementContextImpl(SolrCloudManager solrCloudManager) throws IOException {
+  public SimplePlacementContextImpl(SolrCloudManager solrCloudManager) throws IOException {
     cluster = new SimpleClusterAbstractionsImpl.ClusterImpl(solrCloudManager);
     attributeFetcher = new AttributeFetcherImpl(solrCloudManager);
   }

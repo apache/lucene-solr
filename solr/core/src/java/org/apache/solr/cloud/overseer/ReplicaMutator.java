@@ -116,7 +116,7 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
-    if (StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX) == false) {
+    if (!StringUtils.startsWith(property, CollectionAdminParams.PROPERTY_PREFIX)) {
       property = CollectionAdminParams.PROPERTY_PREFIX + property;
     }
     property = property.toLowerCase(Locale.ROOT);

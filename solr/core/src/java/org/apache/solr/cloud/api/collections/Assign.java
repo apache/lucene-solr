@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.cluster.placement.ModificationRequest;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
 import org.apache.solr.common.SolrException;
@@ -381,7 +382,11 @@ public class Assign {
 
   public interface AssignStrategy {
     List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest)
-        throws Assign.AssignmentException, IOException, InterruptedException;
+        throws AssignmentException, IOException, InterruptedException;
+    void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection)
+        throws AssignmentException, IOException, InterruptedException;
+    void verifyDeleteReplicas(SolrCloudManager solrCloudManager, DocCollection collection, String shardId, Set<String> replicaNames)
+        throws AssignmentException, IOException, InterruptedException;
   }
 
   public static class AssignRequest {
@@ -477,6 +482,16 @@ public class Assign {
         }
       }
       return result;
+    }
+
+    @Override
+    public void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection) throws AssignmentException, IOException, InterruptedException {
+      // no-op
+    }
+
+    @Override
+    public void verifyDeleteReplicas(SolrCloudManager solrCloudManager, DocCollection collection, String shardId, Set<String> replicaNames) throws AssignmentException, IOException, InterruptedException {
+      // no-op
     }
 
     // keeps this big ugly construction block out of otherwise legible code

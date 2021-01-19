@@ -174,7 +174,10 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private final long prioritizedFreeDiskGB;
 
+    // primary to secondary (1:1)
     private final Map<String, String> withCollections;
+    // secondary to primary (1:N)
+    private final Map<String, Set<String>> colocatedWith;
 
     private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
 
@@ -184,7 +187,16 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollections) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+      Objects.requireNonNull(withCollections, "withCollections must not be null");
       this.withCollections = withCollections;
+      if (withCollections.isEmpty()) {
+        colocatedWith = Map.of();
+      } else {
+        colocatedWith = new HashMap<>();
+        withCollections.forEach((primary, secondary) ->
+            colocatedWith.computeIfAbsent(secondary, s -> new HashSet<>())
+                .add(primary));
+      }
 
       // We make things reproducible in tests by using test seed if any
       String seed = System.getProperty("tests.seed");
@@ -256,14 +268,30 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     @Override
     public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
+      Cluster cluster = placementContext.getCluster();
       if (modificationRequest instanceof DeleteShardsRequest) {
         throw new UnsupportedOperationException("not implemented yet");
+      } else if (modificationRequest instanceof DeleteCollectionRequest) {
+        DeleteCollectionRequest deleteCollectionRequest = (DeleteCollectionRequest) modificationRequest;
+        Set<String> colocatedCollections = colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
+        for (String primaryName : colocatedCollections) {
+          try {
+            if (cluster.getCollection(primaryName) != null) {
+              // still exists
+              throw new PlacementModificationException("colocated collection " + primaryName + " still present");
+            }
+          } catch (IOException e) {
+            throw new PlacementModificationException("failed to retrieve colocated collection information", e);
+          }
+        }
+        return;
       } else if (!(modificationRequest instanceof DeleteReplicasRequest)) {
         throw new UnsupportedOperationException("unsupported request type " + modificationRequest.getClass().getName());
       }
       DeleteReplicasRequest request = (DeleteReplicasRequest) modificationRequest;
       SolrCollection secondaryCollection = request.getCollection();
-      if (!withCollections.values().contains(secondaryCollection.getName())) {
+      Set<String> colocatedCollections = colocatedWith.get(secondaryCollection.getName());
+      if (colocatedCollections == null) {
         return;
       }
       Map<Node, Map<String, AtomicInteger>> secondaryNodeShardReplicas = new HashMap<>();
@@ -275,36 +303,28 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
           }));
 
       // find the colocated-with collections
-      Cluster cluster = placementContext.getCluster();
-      Set<SolrCollection> colocatedCollections = new HashSet<>();
-      AtomicReference<IOException> exc = new AtomicReference<>();
-      withCollections.forEach((primaryName, secondaryName) -> {
-        if (exc.get() != null) { // there were errors before
+      Map<Node, Set<String>> colocatingNodes = new HashMap<>();
+      AtomicReference<Exception> exc = new AtomicReference<>();
+      colocatedCollections.forEach(collName -> {
+        if (exc.get() != null) {
           return;
         }
-        if (secondaryCollection.getName().equals(secondaryName)) {
-          try {
-            SolrCollection primary = cluster.getCollection(primaryName);
-            if (primary != null) { // still exists
-              colocatedCollections.add(primary);
-            }
-          } catch (IOException e) {
-            // IO error, not a missing collection - fail
-            exc.set(e);
-            return;
-          }
+        SolrCollection coll;
+        try {
+          coll = cluster.getCollection(collName);
+        } catch (Exception e) {
+          exc.set(e);
+          return;
         }
+        coll.shards().forEach(shard ->
+            shard.replicas().forEach(replica -> {
+              colocatingNodes.computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                  .add(coll.getName());
+            }));
       });
       if (exc.get() != null) {
         throw new PlacementModificationException("failed to retrieve colocated collection information", exc.get());
       }
-      Map<Node, Set<String>> colocatingNodes = new HashMap<>();
-      colocatedCollections.forEach(coll ->
-          coll.shards().forEach(shard ->
-              shard.replicas().forEach(replica -> {
-                colocatingNodes.computeIfAbsent(replica.getNode(), n -> new HashSet<>())
-                    .add(coll.getName());
-              })));
       PlacementModificationException exception = null;
       for (Replica replica : request.getReplicas()) {
         if (!colocatingNodes.containsKey(replica.getNode())) {

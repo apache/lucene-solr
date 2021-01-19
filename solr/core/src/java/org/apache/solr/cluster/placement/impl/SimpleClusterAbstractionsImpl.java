@@ -324,7 +324,7 @@ class SimpleClusterAbstractionsImpl {
       return new Pair<>(replicas, leader);
     }
 
-    ReplicaImpl(String replicaName, Shard shard, org.apache.solr.common.cloud.Replica sliceReplica) {
+    private ReplicaImpl(String replicaName, Shard shard, org.apache.solr.common.cloud.Replica sliceReplica) {
       this.replicaName = replicaName;
       this.coreName = sliceReplica.getCoreName();
       this.shard = shard;
@@ -334,7 +334,7 @@ class SimpleClusterAbstractionsImpl {
       this.node = new NodeImpl(sliceReplica.getNodeName());
     }
 
-    Replica.ReplicaType translateType(org.apache.solr.common.cloud.Replica.Type type) {
+    private Replica.ReplicaType translateType(org.apache.solr.common.cloud.Replica.Type type) {
       switch (type) {
         case NRT:
           return Replica.ReplicaType.NRT;
@@ -347,7 +347,7 @@ class SimpleClusterAbstractionsImpl {
       }
     }
 
-    Replica.ReplicaState translateState(org.apache.solr.common.cloud.Replica.State state) {
+    private Replica.ReplicaState translateState(org.apache.solr.common.cloud.Replica.State state) {
       switch (state) {
         case ACTIVE:
           return Replica.ReplicaState.ACTIVE;

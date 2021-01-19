@@ -57,9 +57,7 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
 
   // no-arg public constructor required for deserialization
   public AffinityPlacementConfig() {
-    minimalFreeDiskGB = 20L;
-    prioritizedFreeDiskGB = 100L;
-    withCollections = Map.of();
+    this (20L, 100L, Map.of());
   }
 
   public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {

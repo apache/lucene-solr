@@ -310,7 +310,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
       fail("should have failed: " + rsp);
     } catch (Exception e) {
-      assertTrue(e.toString(), e.toString().contains("delete replica(s) rejected"));
+      assertTrue(e.toString(), e.toString().contains("colocated collection"));
     }
   }
 

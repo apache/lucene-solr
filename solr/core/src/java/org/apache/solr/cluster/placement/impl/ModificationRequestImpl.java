@@ -20,6 +20,7 @@ package org.apache.solr.cluster.placement.impl;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.placement.DeleteCollectionRequest;
 import org.apache.solr.cluster.placement.DeleteReplicasRequest;
 import org.apache.solr.cluster.placement.DeleteShardsRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,6 +33,11 @@ import java.util.Set;
  * Helper class to create modification request instances.
  */
 public class ModificationRequestImpl {
+
+  public static DeleteCollectionRequest deleteCollectionRequest(DocCollection docCollection) {
+    SolrCollection solrCollection = SimpleClusterAbstractionsImpl.SolrCollectionImpl.fromDocCollection(docCollection);
+    return () -> solrCollection;
+  }
 
   /**
    * Create a delete replicas request.
@@ -70,11 +76,7 @@ public class ModificationRequestImpl {
     Shard shard = solrCollection.getShard(shardName);
     Slice slice = docCollection.getSlice(shardName);
     Set<Replica> solrReplicas = new HashSet<>();
-    replicaNames.forEach(name -> {
-      org.apache.solr.common.cloud.Replica replica = slice.getReplica(name);
-      Replica solrReplica = new SimpleClusterAbstractionsImpl.ReplicaImpl(replica.getName(), shard, replica);
-      solrReplicas.add(solrReplica);
-    });
+    replicaNames.forEach(name -> solrReplicas.add(shard.getReplica(name)));
     return deleteReplicasRequest(solrCollection, solrReplicas);
   }
 
