@@ -82,9 +82,12 @@ API Changes
 * LUCENE-9317 LUCENE-9318 LUCENE-9319 LUCENE-9558 LUCENE-9600 : Clean up package name conflicts
   between modules. See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
+* LUCENE-9646: Set BM25Similarity discountOverlaps via the constructor (Patrick Marty via Bruno Roustant)
+
 Improvements
 
-* LUCENE-9665: Hunspell: support default encoding (Peter Gromov)
+* LUCENE-9665 LUCENE-9676 Hunspell improvements: support default encoding, improve stemming of all-caps words
+  (Peter Gromov)
 
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
@@ -174,6 +177,9 @@ Improvements
 
 * LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
 
+* LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
+  and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -259,6 +265,9 @@ Improvements
 * LUCENE-9023: GlobalOrdinalsWithScore should not compute occurrences when the
   provided min is 1. (Jim Ferenczi)
 
+* LUCENE-9675: Binary doc values fields now expose their configured compression mode
+  in the attributes of the field info. (Jim Ferenczi)
+
 Optimizations
 ---------------------
 
@@ -297,6 +306,9 @@ Bug Fixes
 
 * LUCENE-9642: When encoding triangles in ShapeField, make sure generated triangles are CCW by rotating 
   triangle points before checking triangle orientation. (Ignacio Vera)  
+
+* LUCENE-9661: Fix deadlock in TermsEnum.EMPTY that occurs when trying to initialize TermsEnum and BaseTermsEnum
+  at the same time (Namgyu Kim)
 
 Other
 ---------------------
@@ -518,7 +530,7 @@ Improvements
   improves the approachability of the IndexWriter code. (Simon Willnauer)
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
-  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grand)
 
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)

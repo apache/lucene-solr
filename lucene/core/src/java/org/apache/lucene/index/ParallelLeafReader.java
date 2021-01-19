@@ -170,6 +170,7 @@ public class ParallelLeafReader extends LeafReader {
     Version minVersion = Version.LATEST;
     for (final LeafReader reader : this.parallelReaders) {
       Version leafVersion = reader.getMetaData().getMinVersion();
+
       if (leafVersion == null) {
         minVersion = null;
         break;

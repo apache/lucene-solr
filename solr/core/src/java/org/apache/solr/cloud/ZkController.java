@@ -64,31 +64,8 @@ import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.BeforeReconnect;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.ConnectionManager;
-import org.apache.solr.common.cloud.DefaultConnectionStrategy;
-import org.apache.solr.common.cloud.DefaultZkACLProvider;
-import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocCollectionWatcher;
-import org.apache.solr.common.cloud.LiveNodesListener;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.cloud.OnReconnect;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.Type;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.UrlScheme;
-import org.apache.solr.common.cloud.ZkACLProvider;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkCredentialsProvider;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -1606,10 +1583,38 @@ public class ZkController implements Closeable {
       if (updateLastState) {
         cd.getCloudDescriptor().setLastPublished(state);
       }
-      overseerJobQueue.offer(Utils.toJSON(m));
+      DocCollection coll = zkStateReader.getCollection(collection);
+      if (forcePublish || sendToOverseer(coll, coreNodeName)) {
+        overseerJobQueue.offer(Utils.toJSON(m));
+      } else {
+        if (log.isDebugEnabled()) {
+          log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
+        }
+        PerReplicaStates perReplicaStates = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
+            .persist(coll.getZNode(), zkClient);
+      }
     } finally {
       MDCLoggingContext.clear();
     }
+  }
+
+  /**
+   * Whether a message needs to be sent to overseer or not
+   */
+  static boolean sendToOverseer(DocCollection coll, String replicaName) {
+    if (coll == null) return true;
+    if (!coll.isPerReplicaState()) return true;
+    Replica r = coll.getReplica(replicaName);
+    if (r == null) return true;
+    Slice shard = coll.getSlice(r.shard);
+    if (shard == null) return true;//very unlikely
+    if (shard.getState() == Slice.State.RECOVERY) return true;
+    if (shard.getParent() != null) return true;
+    for (Slice slice : coll.getSlices()) {
+      if (Objects.equals(shard.getName(), slice.getParent())) return true;
+    }
+    return false;
   }
 
   public ZkShardTerms getShardTerms(String collection, String shardId) {

@@ -63,7 +63,9 @@ public class TestSQLHandler extends SolrCloudTestCase {
       collection = COLLECTIONORALIAS;
     }
 
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 2, 2);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
