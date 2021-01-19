@@ -14,13 +14,12 @@ New Features
 
 Improvements
 ---------------------
-
-* SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
-  Used by default when field=_root_, or explicitly requsted for other fields via hint=block.  (Joel Bernstein, hossman)
+* SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
+  Used by default when field=_root_, or explicitly requested for other fields via hint=block.  (Joel Bernstein, hossman)
 
 Bug Fixes
 ---------------------
