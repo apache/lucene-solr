@@ -19,29 +19,28 @@ package org.apache.lucene.analysis.hunspell;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A spell checker based on Hunspell dictionaries. Thread-safe. Not all Hunspell features are
- * supported yet.
+ * A spell checker based on Hunspell dictionaries. The objects of this class are not thread-safe
+ * (but a single underlying Dictionary can be shared by multiple spell-checkers in different
+ * threads). Not all Hunspell features are supported yet.
  */
 public class SpellChecker {
   private final Dictionary dictionary;
   private final BytesRef scratch = new BytesRef();
+  private final Stemmer stemmer;
 
-  private SpellChecker(Dictionary dictionary) {
+  public SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
+    stemmer = new Stemmer(dictionary);
   }
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
-  public static boolean spell(Dictionary dictionary, String word) {
-    return new SpellChecker(dictionary).spell(word);
-  }
-
-  private boolean spell(String word) {
+  public boolean spell(String word) {
     char[] wordChars = word.toCharArray();
     if (dictionary.isForbiddenWord(wordChars, scratch)) {
       return false;
     }
 
-    if (!new Stemmer(dictionary).stem(wordChars, word.length()).isEmpty()) {
+    if (!stemmer.stem(wordChars, word.length()).isEmpty()) {
       return true;
     }
 
