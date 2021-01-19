@@ -62,6 +62,7 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -87,6 +88,7 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -863,7 +865,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
       assertFalse(indexStatus.clean);
-      assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      if (unsupportedNames[i].startsWith("7.")) {
+        assertTrue(bos.toString(IOUtils.UTF_8).contains("Could not load codec 'Lucene70'"));
+      } else {
+        assertTrue(
+            bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      }
       checker.close();
 
       dir.close();
@@ -1985,5 +1992,46 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     bytes.bytes[bytes.length++] = (byte) value;
     return bytes;
+  }
+
+  public void testFailOpenOldIndex() throws IOException {
+    for (String name : oldNames) {
+      Directory directory = oldIndexDirs.get(name);
+      IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
+      IndexFormatTooOldException ex =
+          expectThrows(
+              IndexFormatTooOldException.class,
+              () -> StandardDirectoryReader.open(commit, Version.LATEST.major));
+      assertTrue(
+          ex.getMessage()
+              .contains(
+                  "only supports reading from version " + Version.LATEST.major + " upwards."));
+      // now open with allowed min version
+      StandardDirectoryReader.open(commit, Version.LATEST.major - 1).close();
+    }
+  }
+
+  public void testReadNMinusTwoCommit() throws IOException {
+    for (String name : this.unsupportedNames) {
+      if (name.startsWith(Version.MIN_SUPPORTED_MAJOR - 1 + ".")) {
+        Path oldIndexDir = createTempDir(name);
+        TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+        try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+          // don't checkindex, we don't have the codecs yet
+          dir.setCheckIndexOnClose(false);
+          IllegalArgumentException iae =
+              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
+          // TODO fix this once we have the codec for 7.0 recreated
+          assertEquals(
+              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
+              iae.getMessage());
+          IllegalArgumentException ex =
+              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
+          assertEquals(
+              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
+              ex.getMessage());
+        }
+      }
+    }
   }
 }
