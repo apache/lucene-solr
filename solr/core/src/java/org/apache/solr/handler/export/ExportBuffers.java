@@ -224,7 +224,7 @@ class ExportBuffers {
 //        );
 //        allDone.join();
       log.debug("-- finished.");
-    } catch (Exception e) {
+    } catch (Throwable e) {
       Throwable ex = e;
       boolean ignore = false;
       while (ex != null) {

@@ -110,7 +110,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   //The batch size for the output writer thread.
   final int batchSize;
   //The max combined size of the segment level priority queues.
-  final int priorityQueueSize;
+  private int priorityQueueSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
   FieldWriter[] fieldWriters;
@@ -295,13 +295,18 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       streamContext.put(CommonParams.SORT, params.get(CommonParams.SORT));
     }
 
-    writer.writeMap(m -> {
-      m.put("responseHeader", singletonMap("status", 0));
-      m.put("response", (MapWriter) mw -> {
-        mw.put("numFound", totalHits);
-        mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
+    try {
+      writer.writeMap(m -> {
+        m.put("responseHeader", singletonMap("status", 0));
+        m.put("response", (MapWriter) mw -> {
+          mw.put("numFound", totalHits);
+          mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
+        });
       });
-    });
+    } catch (java.io.EOFException e) {
+      log.info("Caught Eof likely caused by early client disconnect");
+    }
+
     if (streamContext != null) {
       streamContext = null;
     }
@@ -421,7 +426,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
             long endExchangeBuffers = System.nanoTime();
-            if(log.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
               log.debug("Waited for reader thread {}:", Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
             }
           } finally {
@@ -662,11 +667,36 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         totalDocs += leaves.get(i).reader().maxDoc();
       }
 
+      //Resize the priorityQueueSize down for small result sets.
+      this.priorityQueueSize = Math.min(this.priorityQueueSize, (int)(this.totalHits*1.5));
+
+      if(log.isDebugEnabled()) {
+        log.debug("Total priority queue size {}:", this.priorityQueueSize);
+      }
+
       int[] sizes = new int[leaves.size()];
+
+      int combineQueueSize = 0;
       for (int i = 0; i < leaves.size(); i++) {
         long maxDoc = leaves.get(i).reader().maxDoc();
         int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * this.priorityQueueSize), batchSize);
+
+        //Protect against too small a queue size as well
+        if(sortQueueSize < 10) {
+          sortQueueSize = 10;
+        }
+
+        if(log.isDebugEnabled()) {
+          log.debug("Segment priority queue size {}:", sortQueueSize);
+        }
+
         sizes[i] = sortQueueSize;
+        combineQueueSize += sortQueueSize;
+
+      }
+
+      if(log.isDebugEnabled()) {
+        log.debug("Combined priority queue size {}:", combineQueueSize);
       }
 
       SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
