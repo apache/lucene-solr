@@ -61,6 +61,9 @@ Improvements
 * LUCENE-9023: GlobalOrdinalsWithScore should not compute occurrences when the
   provided min is 1. (Jim Ferenczi)
 
+* LUCENE-9675: Binary doc values fields now expose their configured compression mode
+  in the attributes of the field info. (Jim Ferenczi)
+
 Optimizations
 ---------------------
 

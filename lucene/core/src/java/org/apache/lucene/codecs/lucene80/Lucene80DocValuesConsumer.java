@@ -495,16 +495,15 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   @Override
   public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
+    field.putAttribute(Lucene80DocValuesFormat.MODE_KEY, mode.name());
     meta.writeInt(field.number);
     meta.writeByte(Lucene80DocValuesFormat.BINARY);
 
     switch (mode) {
       case BEST_SPEED:
-        meta.writeByte((byte) 0);
         doAddUncompressedBinaryField(field, valuesProducer);
         break;
       case BEST_COMPRESSION:
-        meta.writeByte((byte) 1);
         doAddCompressedBinaryField(field, valuesProducer);
         break;
       default:
