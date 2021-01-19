@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
 
-public class TestokenOffsetPayloadTokenFilter extends BaseTokenStreamTestCase {
+public class TestTokenOffsetPayloadTokenFilter extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
