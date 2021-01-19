@@ -25,8 +25,8 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.TreeSet;
 
-import com.codahale.metrics.Timer;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
@@ -90,15 +90,16 @@ import static org.apache.solr.common.util.Utils.makeMap;
  * bitmap identifies the smallest docs (default is {@link #DEFAULT_BATCH_SIZE}) that haven't been sent yet and stores them in a
  * Priority Queue.  They are then exported (written across the wire) and marked as sent (unset in the bitmap).
  * This process repeats until all matching documents have been sent.
- * <p>
- * This streaming approach is light on memory (only up to 2x batch size documents are ever stored in memory at
- * once), and it allows {@link ExportWriter} to scale well with regard to numDocs.
  */
 public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String BATCH_SIZE_PARAM = "batchSize";
+  public static final String QUEUE_SIZE_PARAM = "queueSize";
+
   public static final int DEFAULT_BATCH_SIZE = 30000;
+  public static final int DEFAULT_QUEUE_SIZE = 150000;
+
 
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -106,7 +107,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   final StreamContext initialStreamContext;
   final SolrMetricsContext solrMetricsContext;
   final String metricsPath;
+  //The batch size for the output writer thread.
   final int batchSize;
+  //The max combined size of the segment level priority queues.
+  private int priorityQueueSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
   FieldWriter[] fieldWriters;
@@ -114,11 +118,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   FixedBitSet[] sets = null;
   PushWriter writer;
   private String wt;
-  final Timer identifyLowestSortingDocTimer;
-  final Timer transferBatchToBufferTimer;
-  final Timer writeOutputBufferTimer;
-  final Timer writerWaitTimer;
-  final Timer fillerWaitTimer;
+
 
 
   public ExportWriter(SolrQueryRequest req, SolrQueryResponse res, String wt,
@@ -130,12 +130,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     this.initialStreamContext = initialStreamContext;
     this.solrMetricsContext = solrMetricsContext;
     this.metricsPath = metricsPath;
-    this.batchSize = req.getParams().getInt(BATCH_SIZE_PARAM, DEFAULT_BATCH_SIZE);
-    identifyLowestSortingDocTimer = solrMetricsContext.timer("identifyLowestSortingDoc", metricsPath);
-    transferBatchToBufferTimer = solrMetricsContext.timer("transferBatchToBuffer", metricsPath);
-    writeOutputBufferTimer = solrMetricsContext.timer("writeOutputBuffer", metricsPath);
-    writerWaitTimer = solrMetricsContext.timer("writerWaitTimer", metricsPath);
-    fillerWaitTimer = solrMetricsContext.timer("fillerWaitTimer", metricsPath);
+    this.priorityQueueSize = req.getParams().getInt(QUEUE_SIZE_PARAM, DEFAULT_QUEUE_SIZE);
+    this.batchSize = DEFAULT_BATCH_SIZE;
   }
 
   @Override
@@ -147,10 +143,20 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   @Override
   public void close() throws IOException {
-    if (writer != null) writer.close();
+    if (writer != null) {
+      try {
+        writer.close();
+      } catch (Throwable t) {
+        //We're going to sit on this.
+      }
+    }
     if (respWriter != null) {
-      respWriter.flush();
-      respWriter.close();
+      try {
+        respWriter.flush();
+        respWriter.close();
+      } catch (Throwable t) {
+
+      }
     }
 
   }
@@ -168,6 +174,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   public void write(OutputStream os) throws IOException {
+    try {
+      _write(os);
+    } finally {
+
+    }
+  }
+
+  private void _write(OutputStream os) throws IOException {
     QueryResponseWriter rw = req.getCore().getResponseWriters().get(wt);
     if (rw instanceof BinaryResponseWriter) {
       //todo add support for other writers after testing
@@ -281,13 +295,18 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       streamContext.put(CommonParams.SORT, params.get(CommonParams.SORT));
     }
 
-    writer.writeMap(m -> {
-      m.put("responseHeader", singletonMap("status", 0));
-      m.put("response", (MapWriter) mw -> {
-        mw.put("numFound", totalHits);
-        mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
+    try {
+      writer.writeMap(m -> {
+        m.put("responseHeader", singletonMap("status", 0));
+        m.put("response", (MapWriter) mw -> {
+          mw.put("numFound", totalHits);
+          mw.put("docs", (IteratorWriter) iw -> writeDocs(req, os, iw, sort));
+        });
       });
-    });
+    } catch (java.io.EOFException e) {
+      log.info("Caught Eof likely caused by early client disconnect");
+    }
+
     if (streamContext != null) {
       streamContext = null;
     }
@@ -302,41 +321,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return tupleStream;
   }
 
-  private void identifyLowestSortingUnexportedDocs(List<LeafReaderContext> leaves, SortDoc sortDoc, SortQueue queue) throws IOException {
-    Timer.Context timerContext = identifyLowestSortingDocTimer.time();
-    try {
-      queue.reset();
-      SortDoc top = queue.top();
-      for (int i = 0; i < leaves.size(); i++) {
-        sortDoc.setNextReader(leaves.get(i));
-        DocIdSetIterator it = new BitSetIterator(sets[i], 0); // cost is not useful here
-        int docId;
-        while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          sortDoc.setValues(docId);
-          if (top.lessThan(sortDoc)) {
-            top.setValues(sortDoc);
-            top = queue.updateTop();
-          }
-        }
-      }
-    } finally {
-      timerContext.stop();
-    }
-  }
-
-  private void transferBatchToBufferForOutput(SortQueue queue,
-                                                List<LeafReaderContext> leaves,
-                                                ExportBuffers.Buffer destination) throws IOException {
-    Timer.Context timerContext = transferBatchToBufferTimer.time();
+  private void transferBatchToBufferForOutput(MergeIterator mergeIterator,
+                                              ExportBuffers.Buffer destination) throws IOException {
     try {
       int outDocsIndex = -1;
-      for (int i = 0; i < queue.maxSize; i++) {
-        SortDoc s = queue.pop();
-        if (s.docId > -1) {
-          destination.outDocs[++outDocsIndex].setValues(s);
-          // remove this doc id from the matching bitset, it's been exported
-          sets[s.ord].clear(s.docId);
-          s.reset(); // reuse
+      for (int i = 0; i < batchSize; i++) {
+        SortDoc sortDoc = mergeIterator.next();
+        if (sortDoc != null) {
+          destination.outDocs[++outDocsIndex].setValues(sortDoc);
+        } else {
+          break;
         }
       }
       destination.outDocsIndex = outDocsIndex;
@@ -347,7 +341,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       throw t;
     } finally {
-      timerContext.stop();
+
     }
   }
 
@@ -355,8 +349,17 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     List<LeafReaderContext> leaves = req.getSearcher().getTopReaderContext().leaves();
     final int queueSize = Math.min(batchSize, totalHits);
 
-    ExportBuffers buffers = new ExportBuffers(this, leaves, req.getSearcher(), os, writer, sort, queueSize, totalHits,
-        writeOutputBufferTimer, fillerWaitTimer, writerWaitTimer);
+
+    ExportBuffers buffers = new ExportBuffers(this,
+                                              leaves,
+                                              req.getSearcher(),
+                                              os,
+                                              writer,
+                                              sort,
+                                              queueSize,
+                                              totalHits,
+                                              sets);
+
 
     if (streamExpression != null) {
       streamContext.put(ExportBuffers.EXPORT_BUFFERS_KEY, buffers);
@@ -408,9 +411,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             log.debug("--- writer interrupted");
             break;
           }
-          Timer.Context timerContext = writeOutputBufferTimer.time();
           try {
-            for (int i = buffer.outDocsIndex; i >= 0; --i) {
+            for (int i = 0; i <= buffer.outDocsIndex; ++i) {
               // we're using the raw writer here because there's no potential
               // reduction in the number of output items, unlike when using
               // streaming expressions
@@ -418,37 +420,38 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
               writer.add((MapWriter) ew -> writeDoc(currentDoc, leaves, ew, fieldWriters));
             }
           } finally {
-            timerContext.stop();
           }
-          log.debug("--- writer exchanging from {}", buffer);
-          timerContext = writerWaitTimer.time();
+          //log.debug("--- writer exchanging from {}", buffer);
           try {
+            long startExchangeBuffers = System.nanoTime();
             buffers.exchangeBuffers();
+            long endExchangeBuffers = System.nanoTime();
+            if (log.isDebugEnabled()) {
+              log.debug("Waited for reader thread {}:", Long.toString(((endExchangeBuffers - startExchangeBuffers) / 1000000)));
+            }
           } finally {
-            timerContext.stop();
           }
           buffer = buffers.getOutputBuffer();
-          log.debug("--- writer got {}", buffer);
+          //log.debug("--- writer got {}", buffer);
         }
         return true;
       });
     }
   }
 
-  void fillOutDocs(List<LeafReaderContext> leaves, SortDoc sortDoc,
-                          SortQueue sortQueue, ExportBuffers.Buffer buffer) throws IOException {
-    identifyLowestSortingUnexportedDocs(leaves, sortDoc, sortQueue);
-    transferBatchToBufferForOutput(sortQueue, leaves, buffer);
+  void fillOutDocs(MergeIterator mergeIterator,
+                   ExportBuffers.Buffer buffer) throws IOException {
+    transferBatchToBufferForOutput(mergeIterator, buffer);
   }
 
   void writeDoc(SortDoc sortDoc,
-                          List<LeafReaderContext> leaves,
-                          EntryWriter ew, FieldWriter[] writers) throws IOException {
+                List<LeafReaderContext> leaves,
+                EntryWriter ew, FieldWriter[] writers) throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
     for (FieldWriter fieldWriter : writers) {
-      if (fieldWriter.write(sortDoc, context.reader(), ew, fieldIndex)) {
+      if (fieldWriter.write(sortDoc, context, ew, fieldIndex)) {
         ++fieldIndex;
       }
     }
@@ -612,6 +615,183 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     return new SortDoc(sortValues);
   }
 
+
+  static class MergeIterator {
+    private TreeSet<SortDoc> set = new TreeSet<>();
+    private SegmentIterator[] segmentIterators;
+    private SortDoc outDoc;
+
+    public MergeIterator(SegmentIterator[] segmentIterators, SortDoc proto) throws IOException {
+      outDoc = proto.copy();
+      this.segmentIterators = segmentIterators;
+      for (int i = 0; i < segmentIterators.length; i++) {
+        try {
+          SortDoc sortDoc = segmentIterators[i].next();
+          if (sortDoc != null) {
+            set.add(sortDoc);
+          }
+        } catch (IOException e) {
+          log.error("Error in MergeIterator: ", e);
+          throw e;
+        }
+      }
+    }
+
+    /*
+    * Merge sorts the SortDocs from Segment Iterators
+    * Returns null when all docs are iterated.
+    */
+
+    public SortDoc next() throws IOException {
+      SortDoc sortDoc = set.pollLast();
+      //We've exhausted all documents
+      if (sortDoc == null) {
+        return null;
+      } else {
+        outDoc.setValues(sortDoc);
+      }
+
+      SortDoc nextDoc = segmentIterators[sortDoc.ord].next();
+      if (nextDoc != null) {
+        //The entire expense of the operation is here
+        set.add(nextDoc);
+      }
+      return outDoc;
+    }
+  }
+
+  public MergeIterator getMergeIterator(List<LeafReaderContext> leaves, FixedBitSet[] bits, SortDoc sortDoc) throws IOException {
+    try {
+      long totalDocs = 0;
+      for (int i = 0; i < leaves.size(); i++) {
+        totalDocs += leaves.get(i).reader().maxDoc();
+      }
+
+      //Resize the priorityQueueSize down for small result sets.
+      this.priorityQueueSize = Math.min(this.priorityQueueSize, (int)(this.totalHits*1.5));
+
+      if(log.isDebugEnabled()) {
+        log.debug("Total priority queue size {}:", this.priorityQueueSize);
+      }
+
+      int[] sizes = new int[leaves.size()];
+
+      int combineQueueSize = 0;
+      for (int i = 0; i < leaves.size(); i++) {
+        long maxDoc = leaves.get(i).reader().maxDoc();
+        int sortQueueSize = Math.min((int) (((double) maxDoc / (double) totalDocs) * this.priorityQueueSize), batchSize);
+
+        //Protect against too small a queue size as well
+        if(sortQueueSize < 10) {
+          sortQueueSize = 10;
+        }
+
+        if(log.isDebugEnabled()) {
+          log.debug("Segment priority queue size {}:", sortQueueSize);
+        }
+
+        sizes[i] = sortQueueSize;
+        combineQueueSize += sortQueueSize;
+
+      }
+
+      if(log.isDebugEnabled()) {
+        log.debug("Combined priority queue size {}:", combineQueueSize);
+      }
+
+      SegmentIterator[] segmentIterators = new SegmentIterator[leaves.size()];
+      for (int i = 0; i < segmentIterators.length; i++) {
+        SortQueue sortQueue = new SortQueue(sizes[i], sortDoc.copy());
+        segmentIterators[i] = new SegmentIterator(bits[i], leaves.get(i), sortQueue, sortDoc.copy());
+      }
+
+      return new MergeIterator(segmentIterators, sortDoc);
+    } finally {
+    }
+  }
+
+  private static class SegmentIterator {
+
+    private final FixedBitSet bits;
+    private final SortQueue queue;
+    private final SortDoc sortDoc;
+    private final LeafReaderContext context;
+    private final SortDoc[] outDocs;
+
+    private SortDoc nextDoc;
+    private int index;
+
+
+    public SegmentIterator(FixedBitSet bits, LeafReaderContext context, SortQueue sortQueue, SortDoc sortDoc) throws IOException {
+      this.bits = bits;
+      this.queue = sortQueue;
+      this.sortDoc = sortDoc;
+      this.nextDoc = sortDoc.copy();
+      this.context = context;
+      this.outDocs = new SortDoc[sortQueue.maxSize];
+      topDocs();
+    }
+
+    public SortDoc next() throws IOException {
+      SortDoc _sortDoc = null;
+      if (index > -1) {
+        _sortDoc = outDocs[index--];
+      } else {
+        topDocs();
+        if (index > -1) {
+          _sortDoc = outDocs[index--];
+        }
+      }
+
+      if (_sortDoc != null) {
+        //Clear the bit so it's not loaded again.
+        bits.clear(_sortDoc.docId);
+
+        //Load the global ordinal (only matters for strings)
+        _sortDoc.setGlobalValues(nextDoc);
+
+        nextDoc.setValues(_sortDoc);
+        //We are now done with this doc.
+        _sortDoc.reset();
+      } else {
+        nextDoc = null;
+      }
+      return nextDoc;
+    }
+
+    private void topDocs() throws IOException {
+      try {
+        queue.reset();
+        SortDoc top = queue.top();
+        this.sortDoc.setNextReader(context);
+        DocIdSetIterator it = new BitSetIterator(bits, 0); // cost is not useful here
+        int docId;
+        while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          this.sortDoc.setValues(docId);
+          if (top.lessThan(this.sortDoc)) {
+            top.setValues(this.sortDoc);
+            top = queue.updateTop();
+          }
+        }
+
+        //Pop the queue and load up the array.
+        index = -1;
+
+        SortDoc _sortDoc;
+        while ((_sortDoc = queue.pop()) != null) {
+          if (_sortDoc.docId > -1) {
+            outDocs[++index] = _sortDoc;
+          }
+        }
+      } catch (Exception e) {
+        log.error("Segment Iterator Error:", e);
+        throw new IOException(e);
+      } finally {
+
+      }
+    }
+  }
+
   public static class IgnoreException extends IOException {
     public void printStackTrace(PrintWriter pw) {
       pw.print("Early Client Disconnect");
@@ -621,5 +801,4 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       return "Early Client Disconnect";
     }
   }
-
 }

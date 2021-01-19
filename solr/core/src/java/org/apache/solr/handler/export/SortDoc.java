@@ -18,10 +18,11 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 
-class SortDoc {
+class SortDoc implements Comparable<SortDoc> {
 
   protected int docId = -1;
   protected int ord = -1;
@@ -34,6 +35,21 @@ class SortDoc {
   }
 
   public SortDoc() {
+
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    // subclasses are not equal
+    if (!obj.getClass().equals(getClass())) {
+      return false;
+    }
+    return compareTo((SortDoc) obj) == 0;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(docId, ord, docBase);
   }
 
   public SortValue getSortValue(String field) {
@@ -69,6 +85,13 @@ class SortDoc {
     }
   }
 
+  public void setGlobalValues(SortDoc previous) {
+    SortValue[] previousValues = previous.sortValues;
+    for (int i = 0; i < sortValues.length; i++) {
+      sortValues[i].toGlobalValue(previousValues[i]);
+    }
+  }
+
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
@@ -84,7 +107,6 @@ class SortDoc {
     for (int i = 0; i < sortValues.length; i++) {
       svs[i] = sortValues[i].copy();
     }
-
     return new SortDoc(svs);
   }
 
@@ -92,7 +114,7 @@ class SortDoc {
     if (docId == -1) {
       return true;
     }
-    SortDoc sd = (SortDoc)o;
+    SortDoc sd = (SortDoc) o;
     SortValue[] sortValues1 = sd.sortValues;
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sortValues1[i]);
@@ -105,17 +127,16 @@ class SortDoc {
     return docId + docBase > sd.docId + sd.docBase; //index order
   }
 
-  public int compareTo(Object o) {
-    SortDoc sd = (SortDoc)o;
+  @Override
+  public int compareTo(SortDoc sd) {
     for (int i = 0; i < sortValues.length; i++) {
       int comp = sortValues[i].compareTo(sd.sortValues[i]);
       if (comp != 0) {
         return comp;
       }
     }
-    return 0;
+    return (sd.docId + sd.docBase) - (docId + docBase);
   }
-
 
   public String toString() {
     StringBuilder builder = new StringBuilder();
