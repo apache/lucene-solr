@@ -14,7 +14,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
+  Used by default when field=_root_, or explicitly requsted for other fields via hint=block.  (Joel Bernstein, hossman)
 
 Optimizations
 ---------------------
