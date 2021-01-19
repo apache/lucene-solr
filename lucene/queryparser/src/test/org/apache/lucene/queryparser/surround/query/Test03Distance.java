@@ -68,11 +68,11 @@ public class Test03Distance extends LuceneTestCase {
   }
 
   private void distanceTst(String query, int[] expdnrs, SingleFieldTestDb db) throws Exception {
-    BooleanQueryTst bqt =
-        new BooleanQueryTst(
+    TestBooleanQuery tbq =
+        new TestBooleanQuery(
             query, expdnrs, db, fieldName, this, new BasicQueryFactory(maxBasicQueries));
-    bqt.setVerbose(verbose);
-    bqt.doTest();
+    tbq.setVerbose(verbose);
+    tbq.doTest();
   }
 
   public void distanceTest1(String query, int[] expdnrs) throws Exception {
