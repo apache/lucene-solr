@@ -7,6 +7,11 @@ NativeUnixDirectory in the misc module was therefore removed and replaced
 by DirectIODirectory. To use it, you need a JVM and operating system that
 supports Direct IO.
 
+## BM25Similarity.setDiscountOverlaps and LegacyBM25Similarity.setDiscountOverlaps methods removed (LUCENE-9646)
+
+The discount discountOverlaps parameter for both BM25Similarity and LegacyBM25Similarity
+is now set by the constructor of those classes.
+
 ## Packages in misc module are renamed (LUCENE-9600)
 
 Following package names in misc module are renamed.

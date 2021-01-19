@@ -82,6 +82,8 @@ API Changes
 * LUCENE-9317 LUCENE-9318 LUCENE-9319 LUCENE-9558 LUCENE-9600 : Clean up package name conflicts
   between modules. See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
+* LUCENE-9646: Set BM25Similarity discountOverlaps via the constructor (Patrick Marty via Bruno Roustant)
+
 Improvements
 
 * LUCENE-9665 LUCENE-9676 Hunspell improvements: support default encoding, improve stemming of all-caps words
