@@ -95,57 +95,30 @@ final class Stemmer {
       word = scratchBuffer;
     }
 
-    int caseType = caseOf(word, length);
-    if (caseType == UPPER_CASE) {
-      // upper: union exact, title, lower
+    WordCase wordCase = caseOf(word, length);
+    List<CharsRef> list = doStem(word, length, false);
+    if (wordCase == WordCase.UPPER) {
       caseFoldTitle(word, length);
-      caseFoldLower(titleBuffer, length);
-      List<CharsRef> list = doStem(word, length, false);
       list.addAll(doStem(titleBuffer, length, true));
-      list.addAll(doStem(lowerBuffer, length, true));
-      return list;
-    } else if (caseType == TITLE_CASE) {
-      // title: union exact, lower
-      caseFoldLower(word, length);
-      List<CharsRef> list = doStem(word, length, false);
-      list.addAll(doStem(lowerBuffer, length, true));
-      return list;
-    } else {
-      // exact match only
-      return doStem(word, length, false);
     }
+    if (wordCase == WordCase.UPPER || wordCase == WordCase.TITLE) {
+      caseFoldLower(wordCase == WordCase.UPPER ? titleBuffer : word, length);
+      list.addAll(doStem(lowerBuffer, length, true));
+    }
+    return list;
   }
 
   // temporary buffers for case variants
   private char[] lowerBuffer = new char[8];
   private char[] titleBuffer = new char[8];
 
-  private static final int EXACT_CASE = 0;
-  private static final int TITLE_CASE = 1;
-  private static final int UPPER_CASE = 2;
-
   /** returns EXACT_CASE,TITLE_CASE, or UPPER_CASE type for the word */
-  private int caseOf(char[] word, int length) {
+  private WordCase caseOf(char[] word, int length) {
     if (dictionary.ignoreCase || length == 0 || !Character.isUpperCase(word[0])) {
-      return EXACT_CASE;
+      return WordCase.MIXED;
     }
 
-    // determine if we are title or lowercase (or something funky, in which it's exact)
-    boolean seenUpper = false;
-    boolean seenLower = false;
-    for (int i = 1; i < length; i++) {
-      boolean v = Character.isUpperCase(word[i]);
-      seenUpper |= v;
-      seenLower |= !v;
-    }
-
-    if (!seenLower) {
-      return UPPER_CASE;
-    } else if (!seenUpper) {
-      return TITLE_CASE;
-    } else {
-      return EXACT_CASE;
-    }
+    return WordCase.caseOf(word, length);
   }
 
   /** folds titlecase variant of word to titleBuffer */
@@ -169,25 +142,20 @@ final class Stemmer {
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        boolean checkKeepCase = caseVariant && dictionary.keepcase != -1;
-        boolean checkNeedAffix = dictionary.needaffix != -1;
-        boolean checkOnlyInCompound = dictionary.onlyincompound != -1;
-        if (checkKeepCase || checkNeedAffix || checkOnlyInCompound) {
-          dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
-          char[] wordFlags = Dictionary.decodeFlags(scratch);
-          // we are looking for a case variant, but this word does not allow it
-          if (checkKeepCase && Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)) {
-            continue;
-          }
-          // we can't add this form, it's a pseudostem requiring an affix
-          if (checkNeedAffix && Dictionary.hasFlag(wordFlags, (char) dictionary.needaffix)) {
-            continue;
-          }
-          // we can't add this form, it only belongs inside a compound word
-          if (checkOnlyInCompound
-              && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
-            continue;
-          }
+        dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
+        char[] wordFlags = Dictionary.decodeFlags(scratch);
+        if (!acceptCase(caseVariant, wordFlags)) {
+          continue;
+        }
+        // we can't add this form, it's a pseudostem requiring an affix
+        if (dictionary.needaffix != -1
+            && Dictionary.hasFlag(wordFlags, (char) dictionary.needaffix)) {
+          continue;
+        }
+        // we can't add this form, it only belongs inside a compound word
+        if (dictionary.onlyincompound != -1
+            && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
+          continue;
         }
         stems.add(newStem(word, length, forms, i));
       }
@@ -198,6 +166,12 @@ final class Stemmer {
       throw new RuntimeException(bogus);
     }
     return stems;
+  }
+
+  private boolean acceptCase(boolean caseVariant, char[] wordFlags) {
+    return caseVariant
+        ? dictionary.keepcase == -1 || !Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)
+        : !Dictionary.hasHiddenFlag(wordFlags);
   }
 
   /**
@@ -595,9 +569,7 @@ final class Stemmer {
           }
 
           // we are looking for a case variant, but this word does not allow it
-          if (caseVariant
-              && dictionary.keepcase != -1
-              && Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)) {
+          if (!acceptCase(caseVariant, wordFlags)) {
             continue;
           }
           // we aren't decompounding (yet)

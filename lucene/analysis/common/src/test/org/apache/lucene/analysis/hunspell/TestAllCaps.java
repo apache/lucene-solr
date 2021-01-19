@@ -18,18 +18,25 @@ package org.apache.lucene.analysis.hunspell;
 
 import org.junit.BeforeClass;
 
-public class TestEscaped extends StemmerTestBase {
+public class TestAllCaps extends StemmerTestBase {
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    init("escaped.aff", "escaped.dic");
+    init("allcaps.aff", "allcaps.dic");
   }
 
-  public void testStemming() {
-    assertStemsTo("works", "work");
-    assertStemsTo("work", "work");
-    assertStemsTo("R2/D2", "R2/D2", "R2/d2");
-    assertStemsTo("R2/D2s", "R2/D2");
-    assertStemsTo("N/A", "N/A");
-    assertStemsTo("N/As");
+  public void testGood() {
+    assertStemsTo("OpenOffice.org", "OpenOffice.org");
+    assertStemsTo("UNICEF's", "UNICEF");
+
+    // Hunspell returns these title-cased stems, so for consistency we do, too
+    assertStemsTo("OPENOFFICE.ORG", "Openoffice.org");
+    assertStemsTo("UNICEF'S", "Unicef");
+  }
+
+  public void testWrong() {
+    assertStemsTo("Openoffice.org");
+    assertStemsTo("Unicef");
+    assertStemsTo("Unicef's");
   }
 }
