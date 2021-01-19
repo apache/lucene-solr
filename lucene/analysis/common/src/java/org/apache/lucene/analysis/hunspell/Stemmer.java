@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -39,7 +38,6 @@ final class Stemmer {
   private final Dictionary dictionary;
   private final BytesRef scratch = new BytesRef();
   private final StringBuilder segment = new StringBuilder();
-  private final ByteArrayDataInput affixReader;
 
   // used for normalization
   private final StringBuilder scratchSegment = new StringBuilder();
@@ -56,7 +54,6 @@ final class Stemmer {
    */
   public Stemmer(Dictionary dictionary) {
     this.dictionary = dictionary;
-    this.affixReader = new ByteArrayDataInput(dictionary.affixData);
     for (int level = 0; level < 3; level++) {
       if (dictionary.prefixes != null) {
         prefixArcs[level] = new FST.Arc<>();
@@ -339,13 +336,10 @@ final class Stemmer {
           if (prefix == previous) {
             continue;
           }
-          affixReader.setPosition(8 * prefix);
-          char flag = (char) (affixReader.readShort() & 0xffff);
-          char stripOrd = (char) (affixReader.readShort() & 0xffff);
-          int condition = (char) (affixReader.readShort() & 0xffff);
+          int condition = dictionary.affixData(prefix, Dictionary.AFFIX_CONDITION);
           boolean crossProduct = (condition & 1) == 1;
           condition >>>= 1;
-          char append = (char) (affixReader.readShort() & 0xffff);
+          int append = dictionary.affixData(prefix, Dictionary.AFFIX_APPEND);
 
           final boolean compatible;
           if (recursionDepth == 0) {
@@ -373,6 +367,7 @@ final class Stemmer {
           if (compatible) {
             int deAffixedLength = length - i;
 
+            int stripOrd = dictionary.affixData(prefix, Dictionary.AFFIX_STRIP_ORD);
             int stripStart = dictionary.stripOffsets[stripOrd];
             int stripEnd = dictionary.stripOffsets[stripOrd + 1];
             int stripLength = stripEnd - stripStart;
@@ -437,13 +432,10 @@ final class Stemmer {
           if (suffix == previous) {
             continue;
           }
-          affixReader.setPosition(8 * suffix);
-          char flag = (char) (affixReader.readShort() & 0xffff);
-          char stripOrd = (char) (affixReader.readShort() & 0xffff);
-          int condition = (char) (affixReader.readShort() & 0xffff);
+          int condition = dictionary.affixData(suffix, Dictionary.AFFIX_CONDITION);
           boolean crossProduct = (condition & 1) == 1;
           condition >>>= 1;
-          char append = (char) (affixReader.readShort() & 0xffff);
+          int append = dictionary.affixData(suffix, Dictionary.AFFIX_APPEND);
 
           final boolean compatible;
           if (recursionDepth == 0) {
@@ -473,6 +465,7 @@ final class Stemmer {
             int appendLength = length - i;
             int deAffixedLength = length - appendLength;
 
+            int stripOrd = dictionary.affixData(suffix, Dictionary.AFFIX_STRIP_ORD);
             int stripStart = dictionary.stripOffsets[stripOrd];
             int stripEnd = dictionary.stripOffsets[stripOrd + 1];
             int stripLength = stripEnd - stripStart;
@@ -563,11 +556,9 @@ final class Stemmer {
       boolean caseVariant)
       throws IOException {
     // TODO: just pass this in from before, no need to decode it twice
-    affixReader.setPosition(8 * affix);
-    char flag = (char) (affixReader.readShort() & 0xffff);
-    affixReader.skipBytes(2); // strip
-    boolean crossProduct = ((int) (char) (affixReader.readShort() & 0xffff) & 1) == 1;
-    char append = (char) (affixReader.readShort() & 0xffff);
+    char flag = dictionary.affixData(affix, Dictionary.AFFIX_FLAG);
+    boolean crossProduct = (dictionary.affixData(affix, Dictionary.AFFIX_CONDITION) & 1) == 1;
+    char append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
     List<CharsRef> stems = new ArrayList<>();
 
