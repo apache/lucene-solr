@@ -45,7 +45,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -118,9 +117,15 @@ public class Dictionary {
   char[] stripData;
   int[] stripOffsets;
 
-  // 8 bytes per affix
-  byte[] affixData = new byte[64];
+  // 4 chars per affix, each char representing an unsigned 2-byte integer
+  char[] affixData = new char[32];
   private int currentAffix = 0;
+
+  // offsets in affixData
+  static final int AFFIX_FLAG = 0;
+  static final int AFFIX_STRIP_ORD = 1;
+  static final int AFFIX_CONDITION = 2;
+  static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
   private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
@@ -480,12 +485,9 @@ public class Dictionary {
     boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX_PATTERN);
 
     int numLines = Integer.parseInt(args[3]);
-    affixData = ArrayUtil.grow(affixData, (currentAffix << 3) + (numLines << 3));
-    ByteArrayDataOutput affixWriter =
-        new ByteArrayDataOutput(affixData, currentAffix << 3, numLines << 3);
+    affixData = ArrayUtil.grow(affixData, currentAffix * 4 + numLines * 4);
 
     for (int i = 0; i < numLines; i++) {
-      assert affixWriter.getPosition() == currentAffix << 3;
       String line = reader.readLine();
       String[] ruleArgs = line.split("\\s+");
 
@@ -581,12 +583,13 @@ public class Dictionary {
             "Too many unique append flags, please report this to dev@lucene.apache.org");
       }
 
-      affixWriter.writeShort((short) flag);
-      affixWriter.writeShort((short) stripOrd.intValue());
+      int dataStart = currentAffix * 4;
+      affixData[dataStart + AFFIX_FLAG] = flag;
+      affixData[dataStart + AFFIX_STRIP_ORD] = (char) stripOrd.intValue();
       // encode crossProduct into patternIndex
       int patternOrd = patternIndex << 1 | (crossProduct ? 1 : 0);
-      affixWriter.writeShort((short) patternOrd);
-      affixWriter.writeShort((short) appendFlagsOrd);
+      affixData[dataStart + AFFIX_CONDITION] = (char) patternOrd;
+      affixData[dataStart + AFFIX_APPEND] = (char) appendFlagsOrd;
 
       if (needsInputCleaning) {
         CharSequence cleaned = cleanInput(affixArg, sb);
@@ -600,6 +603,10 @@ public class Dictionary {
       affixes.computeIfAbsent(affixArg, __ -> new ArrayList<>()).add(currentAffix);
       currentAffix++;
     }
+  }
+
+  char affixData(int affixIndex, int offset) {
+    return affixData[affixIndex * 4 + offset];
   }
 
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
