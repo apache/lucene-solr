@@ -290,7 +290,7 @@ final class Stemmer {
       fst.getFirstArc(arc);
       IntsRef NO_OUTPUT = outputs.getNoOutput();
       IntsRef output = NO_OUTPUT;
-      int limit = dictionary.fullStrip ? length : length - 1;
+      int limit = dictionary.fullStrip ? length + 1 : length;
       for (int i = 0; i < limit; i++) {
         if (i > 0) {
           int ch = word[i - 1];
