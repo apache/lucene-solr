@@ -386,7 +386,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     return oldSortedNames;
   }
 
-  final String[] unsupportedNames = {
+  static final String[] unsupportedNames = {
     "1.9.0-cfs",
     "1.9.0-nocfs",
     "2.0.0-cfs",
@@ -585,6 +585,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.7.3-cfs",
     "7.7.3-nocfs"
   };
+
+  static final int MIN_BINARY_SUPPORTED_MAJOR = Version.MIN_SUPPORTED_MAJOR - 1;
+
+  static final String[] binarySupportedNames;
+
+  static {
+    ArrayList<String> list = new ArrayList<>();
+    for (String name : unsupportedNames) {
+      if (name.startsWith(MIN_BINARY_SUPPORTED_MAJOR + ".")) {
+        list.add(name);
+      }
+    }
+    binarySupportedNames = list.toArray(new String[0]);
+  }
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
   static final String[] oldSingleSegmentNames = {};
@@ -864,10 +878,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CheckIndex checker = new CheckIndex(dir);
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
-      assertFalse(indexStatus.clean);
       if (unsupportedNames[i].startsWith("7.")) {
-        assertTrue(bos.toString(IOUtils.UTF_8).contains("Could not load codec 'Lucene70'"));
+        assertTrue(indexStatus.clean);
       } else {
+        assertFalse(indexStatus.clean);
         assertTrue(
             bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
       }
@@ -991,7 +1005,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testSearchOldIndex() throws IOException {
     for (String name : oldNames) {
-      searchIndex(oldIndexDirs.get(name), name);
+      searchIndex(oldIndexDirs.get(name), name, Version.MIN_SUPPORTED_MAJOR);
+    }
+
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        searchIndex(dir, name, MIN_BINARY_SUPPORTED_MAJOR);
+      }
     }
   }
 
@@ -1025,11 +1047,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void searchIndex(Directory dir, String oldName) throws IOException {
+  public void searchIndex(Directory dir, String oldName, int minIndexMajorVersion)
+      throws IOException {
     // QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     // Query query = parser.parse("handle:1");
-
-    IndexReader reader = DirectoryReader.open(dir);
+    IndexCommit indexCommit = DirectoryReader.listCommits(dir).get(0);
+    IndexReader reader = DirectoryReader.open(indexCommit, minIndexMajorVersion);
     IndexSearcher searcher = newSearcher(reader);
 
     TestUtil.checkIndex(dir);
@@ -2007,30 +2030,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
               .contains(
                   "only supports reading from version " + Version.LATEST.major + " upwards."));
       // now open with allowed min version
-      StandardDirectoryReader.open(commit, Version.LATEST.major - 1).close();
+      StandardDirectoryReader.open(commit, Version.MIN_SUPPORTED_MAJOR).close();
     }
   }
 
   public void testReadNMinusTwoCommit() throws IOException {
-    for (String name : this.unsupportedNames) {
-      if (name.startsWith(Version.MIN_SUPPORTED_MAJOR - 1 + ".")) {
-        Path oldIndexDir = createTempDir(name);
-        TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
-        try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
-          // don't checkindex, we don't have the codecs yet
-          dir.setCheckIndexOnClose(false);
-          IllegalArgumentException iae =
-              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
-          // TODO fix this once we have the codec for 7.0 recreated
-          assertEquals(
-              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
-              iae.getMessage());
-          IllegalArgumentException ex =
-              expectThrows(IllegalArgumentException.class, () -> DirectoryReader.listCommits(dir));
-          assertEquals(
-              "Could not load codec 'Lucene70'. Did you forget to add lucene-backward-codecs.jar?",
-              ex.getMessage());
-        }
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
+        StandardDirectoryReader.open(commit, MIN_BINARY_SUPPORTED_MAJOR).close();
       }
     }
   }
