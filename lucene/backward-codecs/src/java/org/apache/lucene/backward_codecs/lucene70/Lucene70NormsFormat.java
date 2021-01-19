@@ -34,12 +34,12 @@ import org.apache.lucene.store.DataOutput;
  * <p>Files:
  *
  * <ol>
- *   <li><tt>.nvd</tt>: Norms data
- *   <li><tt>.nvm</tt>: Norms metadata
+ *   <li><code>.nvd</code>: Norms data
+ *   <li><code>.nvm</code>: Norms metadata
  * </ol>
  *
  * <ol>
- *   <li><a name="nvm"></a>
+ *   <li><a id="nvm"></a>
  *       <p>The Norms metadata or .nvm file.
  *       <p>For each norms field, this stores metadata, such as the offset into the Norms data
  *       (.nvd)
@@ -65,7 +65,7 @@ import org.apache.lucene.store.DataOutput;
  *       if all documents have a norm value.
  *       <p>DocsWithFieldLength is the number of bytes used to encode the set of documents that have
  *       a norm.
- *   <li><a name="nvd"></a>
+ *   <li><a id="nvd"></a>
  *       <p>The Norms data or .nvd file.
  *       <p>For each Norms field, this stores the actual per-document data (the heavy-lifting)
  *       <p>Norms data (.nvd) --&gt; Header,&lt; Data &gt;<sup>NumFields</sup>,Footer
