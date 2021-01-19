@@ -41,7 +41,7 @@ public class Test03Distance extends LuceneTestCase {
   };
 
   public void test00Exceptions() throws Exception {
-    String m = ExceptionQueryTst.getFailQueries(exceptionQueries, verbose);
+    String m = TestExceptionQuery.getFailQueries(exceptionQueries, verbose);
     if (m.length() > 0) {
       fail("No ParseException for:\n" + m);
     }
