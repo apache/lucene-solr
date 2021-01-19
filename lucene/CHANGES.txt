@@ -197,6 +197,15 @@ Bug fixes
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
 
+Changes in Backwards Compatibility Policy
+
+* LUCENE-9669: DirectoryReader#open now accepts an argument to open indices created with versions
+  older than N-1. Lucene now can open indices created with a major version of N-2 in read-only mode.
+  Opening an index created with a major version of N-2 with an IndexWriter is not supported.
+  Further does lucene only support file-format compatibilty which enables reading of old indices while
+  semantic changes like analysis or certain encoding on top of the file format are only supported on 
+  a best effort basis. (Simon Willnauer)  
+
 Other
 
 * LUCENE-9570, LUCENE-9564: Apply google java format and enforce it on source Java files.
