@@ -32,9 +32,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Tests for {@link BM25NBClassifier}
- */
+/** Tests for {@link BM25NBClassifier} */
 public class TestBM25NBClassifier extends ClassificationTestBase<BytesRef> {
 
   @Test

@@ -27,9 +27,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 
-/**
- * Tests for {@link KNearestFuzzyClassifier}
- */
+/** Tests for {@link KNearestFuzzyClassifier} */
 public class TestKNearestFuzzyClassifier extends ClassificationTestBase<BytesRef> {
 
   @Test

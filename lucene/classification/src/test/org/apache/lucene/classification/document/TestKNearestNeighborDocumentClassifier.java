@@ -31,7 +31,17 @@ public class TestKNearestNeighborDocumentClassifier
     try {
       Document videoGameDocument = getVideoGameDocument();
       Document batmanDocument = getBatmanDocument();
-      KNearestNeighborDocumentClassifier classifier = new KNearestNeighborDocumentClassifier(indexReader, null, null, 1, 4, 1, categoryFieldName, field2analyzer, new String[]{textFieldName, titleFieldName, authorFieldName});
+      KNearestNeighborDocumentClassifier classifier =
+          new KNearestNeighborDocumentClassifier(
+              indexReader,
+              null,
+              null,
+              1,
+              4,
+              1,
+              categoryFieldName,
+              field2analyzer,
+              new String[] {textFieldName, titleFieldName, authorFieldName});
       checkCorrectDocumentClassification(classifier, videoGameDocument, VIDEOGAME_RESULT);
       checkCorrectDocumentClassification(classifier, batmanDocument, BATMAN_RESULT);
       // considering only the text we have wrong classification because the text was ambiguos on
