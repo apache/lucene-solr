@@ -197,6 +197,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
+(No changes)
 
 Improvements
 ---------------------
@@ -206,12 +207,15 @@ Improvements
 
 Optimizations
 ---------------------
+(No changes)
 
 Bug Fixes
 ---------------------
+(No changes)
 
 Other Changes
 ---------------------
+(No changes)
 
 ==================  8.8.0 ==================
 
