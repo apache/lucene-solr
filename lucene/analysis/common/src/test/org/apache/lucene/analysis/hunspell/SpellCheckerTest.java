@@ -44,11 +44,9 @@ public class SpellCheckerTest extends StemmerTestBase {
     InputStream dictStream =
         Objects.requireNonNull(getClass().getResourceAsStream(name + ".dic"), name);
 
-    SpellChecker speller;
+    Dictionary dict;
     try {
-      Dictionary dictionary =
-          new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
-      speller = new SpellChecker(dictionary);
+      dict = new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);
       IOUtils.closeWhileHandlingException(dictStream);
@@ -57,14 +55,14 @@ public class SpellCheckerTest extends StemmerTestBase {
     URL good = StemmerTestBase.class.getResource(name + ".good");
     if (good != null) {
       for (String word : Files.readAllLines(Path.of(good.toURI()))) {
-        assertTrue("Unexpectedly considered misspelled: " + word, speller.spell(word));
+        assertTrue("Unexpectedly considered misspelled: " + word, SpellChecker.spell(dict, word));
       }
     }
 
     URL wrong = StemmerTestBase.class.getResource(name + ".wrong");
     if (wrong != null) {
       for (String word : Files.readAllLines(Path.of(wrong.toURI()))) {
-        assertFalse("Unexpectedly considered correct: " + word, speller.spell(word));
+        assertFalse("Unexpectedly considered correct: " + word, SpellChecker.spell(dict, word));
       }
     }
   }

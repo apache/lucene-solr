@@ -24,22 +24,24 @@ import org.apache.lucene.util.BytesRef;
  */
 public class SpellChecker {
   private final Dictionary dictionary;
-  private final ThreadLocal<Stemmer> stemmer;
-  private final ThreadLocal<BytesRef> scratch = ThreadLocal.withInitial(BytesRef::new);
+  private final BytesRef scratch = new BytesRef();
 
-  public SpellChecker(Dictionary dictionary) {
+  private SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
-    stemmer = ThreadLocal.withInitial(() -> new Stemmer(this.dictionary));
   }
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
-  public boolean spell(String word) {
+  public static boolean spell(Dictionary dictionary, String word) {
+    return new SpellChecker(dictionary).spell(word);
+  }
+
+  private boolean spell(String word) {
     char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, scratch.get())) {
+    if (dictionary.isForbiddenWord(wordChars, scratch)) {
       return false;
     }
 
-    if (!stemmer.get().stem(wordChars, word.length()).isEmpty()) {
+    if (!new Stemmer(dictionary).stem(wordChars, word.length()).isEmpty()) {
       return true;
     }
 
