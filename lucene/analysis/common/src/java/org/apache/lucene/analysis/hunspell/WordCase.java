@@ -31,6 +31,7 @@ enum WordCase {
       char ch = word[i];
       seenUpper = seenUpper || Character.isUpperCase(ch);
       seenLower = seenLower || Character.isLowerCase(ch);
+      if (seenUpper && seenLower) break;
     }
 
     return get(capitalized, seenUpper, seenLower);
@@ -45,6 +46,7 @@ enum WordCase {
       char ch = word.charAt(i);
       seenUpper = seenUpper || Character.isUpperCase(ch);
       seenLower = seenLower || Character.isLowerCase(ch);
+      if (seenUpper && seenLower) break;
     }
 
     return get(capitalized, seenUpper, seenLower);
