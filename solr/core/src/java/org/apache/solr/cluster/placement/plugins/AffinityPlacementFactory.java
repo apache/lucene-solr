@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -268,28 +267,35 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     @Override
     public void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
-      Cluster cluster = placementContext.getCluster();
       if (modificationRequest instanceof DeleteShardsRequest) {
         throw new UnsupportedOperationException("not implemented yet");
       } else if (modificationRequest instanceof DeleteCollectionRequest) {
-        DeleteCollectionRequest deleteCollectionRequest = (DeleteCollectionRequest) modificationRequest;
-        Set<String> colocatedCollections = colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
-        for (String primaryName : colocatedCollections) {
-          try {
-            if (cluster.getCollection(primaryName) != null) {
-              // still exists
-              throw new PlacementModificationException("colocated collection " + primaryName + " still present");
-            }
-          } catch (IOException e) {
-            throw new PlacementModificationException("failed to retrieve colocated collection information", e);
-          }
-        }
-        return;
-      } else if (!(modificationRequest instanceof DeleteReplicasRequest)) {
+        verifyDeleteCollection((DeleteCollectionRequest) modificationRequest, placementContext);
+      } else if (modificationRequest instanceof DeleteReplicasRequest) {
+        verifyDeleteReplicas((DeleteReplicasRequest) modificationRequest, placementContext);
+      } else {
         throw new UnsupportedOperationException("unsupported request type " + modificationRequest.getClass().getName());
       }
-      DeleteReplicasRequest request = (DeleteReplicasRequest) modificationRequest;
-      SolrCollection secondaryCollection = request.getCollection();
+    }
+
+    private void verifyDeleteCollection(DeleteCollectionRequest deleteCollectionRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
+      Cluster cluster = placementContext.getCluster();
+      Set<String> colocatedCollections = colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
+      for (String primaryName : colocatedCollections) {
+        try {
+          if (cluster.getCollection(primaryName) != null) {
+            // still exists
+            throw new PlacementModificationException("colocated collection " + primaryName + " still present");
+          }
+        } catch (IOException e) {
+          throw new PlacementModificationException("failed to retrieve colocated collection information", e);
+        }
+      }
+    }
+
+    private void verifyDeleteReplicas(DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
+      Cluster cluster = placementContext.getCluster();
+      SolrCollection secondaryCollection = deleteReplicasRequest.getCollection();
       Set<String> colocatedCollections = colocatedWith.get(secondaryCollection.getName());
       if (colocatedCollections == null) {
         return;
@@ -304,29 +310,20 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
       // find the colocated-with collections
       Map<Node, Set<String>> colocatingNodes = new HashMap<>();
-      AtomicReference<Exception> exc = new AtomicReference<>();
-      colocatedCollections.forEach(collName -> {
-        if (exc.get() != null) {
-          return;
+      try {
+        for (String colocatedCollection : colocatedCollections) {
+          SolrCollection coll = cluster.getCollection(colocatedCollection);
+          coll.shards().forEach(shard ->
+              shard.replicas().forEach(replica -> {
+                colocatingNodes.computeIfAbsent(replica.getNode(), n -> new HashSet<>())
+                    .add(coll.getName());
+              }));
         }
-        SolrCollection coll;
-        try {
-          coll = cluster.getCollection(collName);
-        } catch (Exception e) {
-          exc.set(e);
-          return;
-        }
-        coll.shards().forEach(shard ->
-            shard.replicas().forEach(replica -> {
-              colocatingNodes.computeIfAbsent(replica.getNode(), n -> new HashSet<>())
-                  .add(coll.getName());
-            }));
-      });
-      if (exc.get() != null) {
-        throw new PlacementModificationException("failed to retrieve colocated collection information", exc.get());
+      } catch (IOException ioe) {
+        throw new PlacementModificationException("failed to retrieve colocated collection information", ioe);
       }
       PlacementModificationException exception = null;
-      for (Replica replica : request.getReplicas()) {
+      for (Replica replica : deleteReplicasRequest.getReplicas()) {
         if (!colocatingNodes.containsKey(replica.getNode())) {
           continue;
         }
