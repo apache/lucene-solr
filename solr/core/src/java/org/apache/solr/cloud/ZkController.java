@@ -430,8 +430,6 @@ public class ZkController implements Closeable, Runnable {
     this.overseerJobQueue = overseer.getStateUpdateQueue();
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
-    statePublisher = new StatePublisher(overseerJobQueue);
-    statePublisher.start();
 
     boolean isRegistered = SolrLifcycleListener.isRegistered(this);
     if (!isRegistered) {
@@ -1156,6 +1154,8 @@ public class ZkController implements Closeable, Runnable {
 
       zkStateReader.createClusterStateWatchersAndUpdate();
 
+      statePublisher = new StatePublisher(overseerJobQueue, zkStateReader);
+      statePublisher.start();
 
       this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(), getNodeName(), zkStateReader);
       overseerElector = new LeaderElector(this, new ContextKey("overseer", "overseer"));
@@ -1411,13 +1411,21 @@ public class ZkController implements Closeable, Runnable {
       if (log.isDebugEnabled()) log.debug("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = null;
       for (int i = 0; i < 30; i++) {
+//        if (leaderElector.isLeader()) {
+//          leader = replica;
+//          break;
+//        }
+
         try {
           if (getCoreContainer().isShutDown() || isDcCalled() || isClosed()) {
             throw new AlreadyClosedException();
           }
 
           leader = zkStateReader.getLeaderRetry(collection, shardId, 500);
-          break;
+
+          if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + shardId  + "/leader")) {
+            break;
+          }
         } catch (TimeoutException timeoutException) {
 
         }
@@ -1493,13 +1501,14 @@ public class ZkController implements Closeable, Runnable {
         }
       }
 
-      desc.getCloudDescriptor().setHasRegistered(true);
-
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       // nocommit
       registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), desc.getName());
 
       log.info("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
+
+      desc.getCloudDescriptor().setHasRegistered(true);
+
       return shardId;
     } finally {
       if (isDcCalled() || isClosed()) {

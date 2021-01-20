@@ -138,7 +138,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
 
   @Override
-  synchronized void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs)
+  synchronized boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs)
           throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
@@ -188,7 +188,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ParWork.propagateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
     }
-
+    return true;
   }
 
   @Override

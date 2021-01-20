@@ -25,7 +25,6 @@ import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.SolrCore;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -213,22 +212,15 @@ public class LeaderElector implements Closeable {
           }
 
           watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
-          zkClient.exists(watchedNode, watcher);
+          Stat exists = zkClient.exists(watchedNode, watcher);
+          if (exists == null) {
+            state = OUT_OF_ELECTION;
+            return true;
+          }
+
           state = WAITING_IN_ELECTION;
           if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
 
-          if (context instanceof ShardLeaderElectionContext) {
-            log.info("Start recovery for core {}", context.leaderProps.getName());
-            try (SolrCore core = zkController.getCoreContainer().getCore(context.leaderProps.getName())) {
-              if (core != null) {
-                // if (!core.getSolrCoreState().isRecoverying()) {
-                core.getSolrCoreState().doRecovery(core);
-                // }
-              } else {
-                log.warn("No core found to start recovery with {}", context.leaderProps.getName());
-              }
-            }
-          }
           return false;
         } catch (KeeperException.SessionExpiredException e) {
           state = OUT_OF_ELECTION;
@@ -275,10 +267,13 @@ public class LeaderElector implements Closeable {
       throw new IllegalStateException("Already in leader state");
     }
 
-    context.runLeaderProcess(context, weAreReplacement,0);
+    boolean success = context.runLeaderProcess(context, weAreReplacement, 0);
 
-
-    state = LEADER;
+    if (success) {
+      state = LEADER;
+    } else {
+      state = OUT_OF_ELECTION;
+    }
   }
 
   /**
@@ -436,24 +431,7 @@ public class LeaderElector implements Closeable {
 
     while (tryagain) {
       tryagain = checkIfIamLeader(context, replacement);
-
-      if (tryagain) {
-        try {
-          try (SolrCore core = zkController.getCoreContainer().getCore(context.leaderProps.getName())) {
-            if (core != null) {
-              if (!core.getSolrCoreState().isRecoverying()) {
-                core.getSolrCoreState().doRecovery(core);
-              }
-            }
-          }
-        } catch (Exception e) {
-          log.error("Exception trying to kick off or check for recovery", e);
-        }
-
-      }
-
     }
-
 
 //    boolean tryagain = false;
 //    while (tryagain) {
@@ -572,6 +550,7 @@ public class LeaderElector implements Closeable {
             }
           }
         }
+        // we don't kick off recovery here, the leader sync will do that if necessary for its replicas
       } catch (AlreadyClosedException | InterruptedException e) {
         log.info("Already shutting down");
         return;
@@ -620,4 +599,7 @@ public class LeaderElector implements Closeable {
     joinElection(true, joinAtHead);
   }
 
+  public boolean isLeader() {
+    return LEADER.equals(state);
+  }
 }

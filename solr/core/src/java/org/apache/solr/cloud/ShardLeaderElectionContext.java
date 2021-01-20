@@ -93,7 +93,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * weAreReplacement: has someone else been the leader already?
    */
   @Override
-  void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
+  boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStart) throws KeeperException,
           InterruptedException, IOException {
 
     String coreName = leaderProps.getName();
@@ -106,7 +106,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       if (core.isClosing() || core.getCoreContainer().isShutDown()) {
         log.info("We are closed, will not become leader");
-        return;
+        return false;
       }
       try {
         ActionThrottle lt;
@@ -138,7 +138,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if (zkShardTerms.registered(coreName) && !zkShardTerms.canBecomeLeader(coreName)) {
           if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
             rejoinLeaderElection(core);
-            return;
+            return false;
           } else {
             // only log an error if this replica win the election
             setTermToMax = true;
@@ -150,7 +150,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
         if (core.getCoreContainer().isShutDown()) {
-          return;
+          return false;
         }
         result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
         log.info("Sync strategy sync result {}", result);
@@ -177,7 +177,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             if (result.getOtherHasVersions().orElse(false)) {
               log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
               rejoinLeaderElection(core);
-              return;
+              return false;
             } else {
               log.info("We failed sync, but we have no versions - we can't sync in that case - we did not find versions on other replicas, so become leader anyway");
               success = true;
@@ -204,7 +204,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if (!success) {
           log.info("Sync with potential leader failed, rejoining election ...");
           rejoinLeaderElection(core);
-          return;
+          return false;
         }
 
         if (replicaType == Replica.Type.TLOG) {
@@ -250,13 +250,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // we could not publish ourselves as leader - try and rejoin election
 
         rejoinLeaderElection(core);
+        return false;
       }
+
 
     } catch (AlreadyClosedException e) {
       log.info("CoreContainer is shutting down, won't become leader");
     } finally {
       MDCLoggingContext.clear();
     }
+    return true;
   }
 
   /**
@@ -316,8 +319,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     log.info("There may be a better leader candidate than us - will cancel election, rejoin election, and kick off recovery");
 
     leaderElector.retryElection(false);
-
-    core.getUpdateHandler().getSolrCoreState().doRecovery(core);
   }
 
   public String getShardId() {

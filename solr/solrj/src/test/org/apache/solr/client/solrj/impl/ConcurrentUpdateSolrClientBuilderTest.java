@@ -50,8 +50,9 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
    * Test that connection timeout information is passed to the HttpSolrClient that handles non add operations.
    */
   @Test(timeout = 10000)
+  @Nightly
   public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
-    InetAddress localHost = InetAddress.getLocalHost();
+    InetAddress localHost = InetAddress.getLocalHost(); // this can fail java.net.BindException: Can't assign requested address (Bind failed) (seen on OSX)
     try (ServerSocket server = new ServerSocket(0, 1, localHost);
          ConcurrentUpdateSolrClient client = new ConcurrentUpdateSolrClient.Builder(
              "http://" + localHost.getHostAddress() + ":" + server.getLocalPort() + "/noOneThere")

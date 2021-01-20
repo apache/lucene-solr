@@ -86,8 +86,6 @@ public interface SolrQueryRequest extends AutoCloseable {
   public IndexSchema getSchema();
 
   /** Replaces the current schema snapshot with the latest from the core. */
-  public void updateSchemaToLatest(IndexSchema schema);
-
   public void updateSchemaToLatest();
 
   /**

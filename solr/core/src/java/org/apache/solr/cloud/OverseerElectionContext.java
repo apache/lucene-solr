@@ -50,13 +50,13 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   }
 
   @Override
-  void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
+  boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException,
           InterruptedException, IOException {
     log.info("Running the leader process for Overseer");
 
     if (overseer.isDone()) {
       log.info("Already closed, bailing ...");
-      return;
+      return false;
     }
 
     // TODO: the idea here is that we could clear the Overseer queue
@@ -87,6 +87,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       log.info("Will not start Overseer because we are closed");
     }
 
+    return true;
   }
 
   public Overseer getOverseer() {

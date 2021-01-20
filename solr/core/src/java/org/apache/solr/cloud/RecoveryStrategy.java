@@ -56,6 +56,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -180,27 +181,22 @@ public class RecoveryStrategy implements Runnable, Closeable {
   final public void close() {
     close = true;
 
-    //
-    //
-    //        try {
-    //          if (prevSendPreRecoveryHttpUriRequest != null) {
-    //            prevSendPreRecoveryHttpUriRequest.cancel();
-    //          }
-    //          prevSendPreRecoveryHttpUriRequest = null;
-    //        } catch (NullPointerException e) {
-    //          // expected
-    //        }
-    //
-    //
+    try {
+      if (prevSendPreRecoveryHttpUriRequest != null) {
+        prevSendPreRecoveryHttpUriRequest.cancel();
+      }
+      prevSendPreRecoveryHttpUriRequest = null;
+    } catch (NullPointerException e) {
+      // expected
+    }
+
     ReplicationHandler finalReplicationHandler = replicationHandler;
     if (finalReplicationHandler != null) {
 
       finalReplicationHandler.abortFetch();
     }
     if (latch != null) {
-
       latch.countDown();
-
     }
 
     log.warn("Stopping recovery for core=[{}]", coreName);
@@ -345,7 +341,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         try {
           Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
-          if (leader != null && leader.getName().equals(coreName)) {
+          if (leader != null && leader.getName().equals(coreName) &&  zkController.getZkClient().exists(COLLECTIONS_ZKNODE + "/" + coreDescriptor.getCollectionName() + "/leaders/" + coreDescriptor.getCloudDescriptor().getShardId() + "/leader")) {
             log.info("We are the leader, STOP recovery");
             close = true;
             return;
@@ -356,10 +352,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
             return;
           }
         } catch (InterruptedException e) {
-          log.info("InterruptedException, won't do recovery", e);
+          log.info("InterruptedException", e);
           throw new SolrException(ErrorCode.BAD_REQUEST, e);
         } catch (TimeoutException e) {
-          log.info("Timeout waiting for leader, won't do recovery", e);
+          log.info("Timeout waiting for leader", e);
+          continue;
           //   throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
 
@@ -604,8 +601,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
 //        } catch (NullPointerException e) {
 //          // okay
 //        }
-
-       // sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), slice);
+       // TODO can we do this with commit on leader
+        sendPrepRecoveryCmd(leader.getBaseUrl(), leader.getName(), zkStateReader.getClusterState().getCollection(coreDescriptor.getCollectionName()).getSlice(cloudDesc.getShardId()));
 
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state

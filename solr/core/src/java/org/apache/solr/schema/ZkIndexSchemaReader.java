@@ -80,7 +80,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       }
     });
 
-    updateSchema(schemaWatcher, -1, solrCore);
+    updateSchema();
 
     solrCore.getCoreContainer().getZkController().addOnReconnectListener(this);
   }
@@ -122,7 +122,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
       }
       log.info("A schema change: {}, has occurred - updating schema from ZooKeeper ...", event);
       try {
-        schemaReader.updateSchema(this, -1, null);
+        schemaReader.updateSchema();
       } catch (Exception e) {
         log.error("", e);
       }
@@ -144,7 +144,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
 //  }
 
   // package visibility for test purposes
-  public IndexSchema updateSchema(Watcher watcher, int version, SolrCore core) throws KeeperException, InterruptedException {
+  public IndexSchema updateSchema() throws KeeperException, InterruptedException {
     ManagedIndexSchema newSchema;
     ReentrantLock  lock = getSchemaUpdateLock();
     lock.lock();
@@ -159,11 +159,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
 
       int existsVersion = exists.getVersion();
       int v;
-      if (core != null) {
-        v = ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion();
-      } else {
-        v = managedIndexSchemaFactory.getSchema().getSchemaZkVersion();
-      }
+
+      v = managedIndexSchemaFactory.getSchema().getSchemaZkVersion();
 
       log.info("Retrieved schema version {} from Zookeeper, existing={} schema={}", existsVersion, v, managedIndexSchemaFactory.getSchema());
 
@@ -181,9 +178,6 @@ public class ZkIndexSchemaReader implements OnReconnect {
       newSchema = new ManagedIndexSchema(managedIndexSchemaFactory, collection, managedIndexSchemaFactory.getConfig(), resourceName, inputSource, managedIndexSchemaFactory.isMutable(), resourceName,
           stat.getVersion());
       managedIndexSchemaFactory.setSchema(newSchema);
-      if (core != null) {
-        core.setLatestSchema(newSchema);
-      }
 
       long stop = System.nanoTime();
       log.info("Finished refreshing schema in {} ms", TimeUnit.MILLISECONDS.convert(stop - start, TimeUnit.NANOSECONDS));
@@ -204,7 +198,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
   public void command() {
     try {
       // force update now as the schema may have changed while our zk session was expired
-      updateSchema(schemaWatcher, -1, null);
+      updateSchema();
     } catch (Exception exc) {
       log.error("Failed to update managed-schema watcher after session expiration due to: {}", exc);
     }

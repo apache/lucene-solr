@@ -112,7 +112,8 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
     jetty.stop();
     jetty.start();
-    
+
+    cluster.waitForActiveCollection(collection, 1, 2);
     QueryResponse resp = cluster.getSolrClient().query(collection, new SolrQuery("*:*"));
     assertEquals(10, resp.getResults().getNumFound());
   }

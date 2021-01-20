@@ -509,7 +509,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           cmd.getReq().updateSchemaToLatest();
         } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
           try {
-            ((ManagedIndexSchema) cmd.getReq().getSchema()).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema(null, -1, cmd.getReq().getCore());
+            ((ManagedIndexSchema) cmd.getReq().getSchema()).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema();
             cmd.getReq().updateSchemaToLatest();
 
             log.info("Schema changed while processing request ... current latest version {} try={}", ((ManagedIndexSchema) cmd.getReq().getSchema()).getSchemaZkVersion(), cnt);

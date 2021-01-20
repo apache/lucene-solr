@@ -2658,7 +2658,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       }
 
       if (expectedReplicas == 0 && !exact) {
-        log.info("0 replicaes expected and found, return");
+        log.info("0 replicas expected and found, return");
         return true;
       }
 

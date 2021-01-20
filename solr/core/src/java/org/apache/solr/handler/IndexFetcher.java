@@ -619,7 +619,7 @@ public class IndexFetcher {
               if (successfulInstall) deleteTmpIdxDir = false;
             } else {
               terminateAndWaitFsyncService();
-              moveIndexFiles(tmpIndexDir, indexDir);
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
             }
             if (successfulInstall) {
               if (isFullCopyNeeded) {
@@ -649,7 +649,7 @@ public class IndexFetcher {
               if (successfulInstall) deleteTmpIdxDir = false;
             } else if (successfulInstall) {
               terminateAndWaitFsyncService();
-              moveIndexFiles(tmpIndexDir, indexDir);
+              successfulInstall = moveIndexFiles(tmpIndexDir, indexDir);
 
               if (!successfulInstall) {
                 log.error("Move index files failed");

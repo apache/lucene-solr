@@ -18,14 +18,13 @@ package org.apache.solr.update;
 
 import org.apache.solr.request.SolrQueryRequest;
 
-
 /** An index update command encapsulated in an object (Command pattern)
  *
  *
  */
 public abstract class UpdateCommand implements Cloneable {
   protected SolrQueryRequest req;
-  protected long version;
+  protected volatile long version;
   protected String route;
   protected int flags;
 
@@ -62,6 +61,7 @@ public abstract class UpdateCommand implements Cloneable {
   public long getVersion() {
     return version;
   }
+
   public void setVersion(long version) {
     this.version = version;
   }

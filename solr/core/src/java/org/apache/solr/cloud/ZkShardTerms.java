@@ -76,8 +76,6 @@ public class ZkShardTerms implements Closeable {
   private final Set<CoreTermWatcher> listeners = ConcurrentHashMap.newKeySet();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-  private final Object termUpdate = new Object();
-
   private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
 
   /**
@@ -326,10 +324,7 @@ public class ZkShardTerms implements Closeable {
    */
   private boolean saveTerms(ShardTerms newTerms) throws KeeperException, InterruptedException {
     byte[] znodeData = Utils.toJSON(newTerms);
-    ShardTerms terms = this.terms.get();
-    int version = 0;
     try {
-      version = newTerms.getVersion();
       Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
       ShardTerms newShardTerms = new ShardTerms(newTerms, stat.getVersion());
       setNewTerms(newShardTerms);
@@ -340,9 +335,6 @@ public class ZkShardTerms implements Closeable {
 
       if (isClosed.get()) {
         throw new AlreadyClosedException();
-      }
-      synchronized (termUpdate) {
-        termUpdate.wait(250);
       }
 
       refreshTerms(false);
@@ -430,8 +422,5 @@ public class ZkShardTerms implements Closeable {
 
   private void onTermUpdates(ShardTerms newTerms) {
     listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(newTerms));
-    synchronized (termUpdate) {
-      termUpdate.notifyAll();
-    }
   }
 }

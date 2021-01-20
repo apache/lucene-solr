@@ -42,7 +42,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -84,16 +83,15 @@ public class JavabinLoader extends ContentStreamLoader {
     }
     UpdateRequest update = null;
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      private AddUpdateCommand addCmd = null;
 
       @Override
       public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
         if (document == null) {
           return;
         }
-        if (addCmd == null) {
-          addCmd = getAddCommand(req, updateRequest.getParams());
-        }
+
+        AddUpdateCommand addCmd = getAddCommand(req, updateRequest.getParams());
+
         addCmd.solrDoc = document;
         if (commitWithin != null) {
           addCmd.commitWithin = commitWithin;
@@ -109,7 +107,6 @@ public class JavabinLoader extends ContentStreamLoader {
 
         try {
           processor.processAdd(addCmd);
-          addCmd.clear();
         } catch (ZooKeeperException | IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + addCmd.getPrintableId(), e);
         }

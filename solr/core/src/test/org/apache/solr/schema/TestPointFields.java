@@ -657,9 +657,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
    */
   private static SortedSet<String> dynFieldRegexesForType(final Class<? extends FieldType> clazz) {
     SortedSet<String> typesToTest = new TreeSet<>();
-    for (DynamicField dynField : h.getCore().getLatestSchema().getDynamicFields()) {
-      if (clazz.isInstance(dynField.getPrototype().getType())) {
-        typesToTest.add(dynField.getRegex());
+    synchronized (h.getCore().getLatestSchema().getDynamicFields()) {
+      for (DynamicField dynField : h.getCore().getLatestSchema().getDynamicFields()) {
+        if (clazz.isInstance(dynField.getPrototype().getType())) {
+          typesToTest.add(dynField.getRegex());
+        }
       }
     }
     return typesToTest;
@@ -2326,9 +2328,11 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     }
     Set<String> typesToTest = new HashSet<>();
-    for (DynamicField dynField:h.getCore().getLatestSchema().getDynamicFields()) {
-      if (dynField.getPrototype().getType() instanceof PointField) {
-        typesToTest.add(dynField.getRegex());
+    synchronized (h.getCore().getLatestSchema().getDynamicFields()) {
+      for (DynamicField dynField : h.getCore().getLatestSchema().getDynamicFields()) {
+        if (dynField.getPrototype().getType() instanceof PointField) {
+          typesToTest.add(dynField.getRegex());
+        }
       }
     }
     assertEquals("Missing types in the test", typesTested, typesToTest);

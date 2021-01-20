@@ -450,8 +450,10 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   }
 
   public void setSchema(ManagedIndexSchema schema) {
-    core.setLatestSchema(schema);
-    this.schema = schema;
+    if (schema.getSchemaZkVersion() > this.schema.getSchemaZkVersion()) {
+      this.schema = schema;
+      core.setLatestSchema(schema);
+    }
   }
   
   public boolean isMutable() {

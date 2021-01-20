@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -41,6 +40,7 @@ public class StatePublisher implements Closeable {
       .getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String,String> stateCache = new ConcurrentHashMap<>(32, 0.75f, 4);
+  private final ZkStateReader zkStateReader;
 
   public static class NoOpMessage extends ZkNodeProps {
   }
@@ -131,8 +131,9 @@ public class StatePublisher implements Closeable {
     }
   }
 
-  public StatePublisher(ZkDistributedQueue overseerJobQueue) {
+  public StatePublisher(ZkDistributedQueue overseerJobQueue, ZkStateReader zkStateReader) {
     this.overseerJobQueue = overseerJobQueue;
+    this.zkStateReader = zkStateReader;
   }
 
   public void submitState(ZkNodeProps stateMessage) {
@@ -142,15 +143,16 @@ public class StatePublisher implements Closeable {
       if (operation.equals("state")) {
         String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
         String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
+        String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
 
-
+        Replica replica = zkStateReader.getClusterState().getCollection(collection).getReplica(core);
         String lastState = stateCache.get(core);
         // nocommit
-//        if (state.equals(lastState) && !Replica.State.ACTIVE.toString().toLowerCase(Locale.ROOT).equals(state)) {
-//          log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
-//          // nocommit
-//          return;
-//        }
+        if (collection != null && replica != null && state.equals(lastState) && replica.getState().toString().equals(state)) {
+          log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+          // nocommit
+          return;
+        }
         if (core == null || state == null) {
           log.error("Nulls in published state");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
@@ -158,7 +160,7 @@ public class StatePublisher implements Closeable {
 
         stateCache.put(core, state);
       } else if (operation.equalsIgnoreCase("downnode")) {
-        // nocommit - set all statecache entries for replica to DOWN
+        // set all statecache entries for replica to DOWN
 
       } else {
         throw new IllegalArgumentException(stateMessage.toString());

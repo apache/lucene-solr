@@ -758,8 +758,9 @@ public class IndexSchema {
     // in DocumentBuilder.getDoc()
     requiredFields.addAll(fieldsWithDefaultValue);
 
-
-    Collections.sort(dynamicFields);
+    synchronized (dynamicFields) {
+      Collections.sort(dynamicFields);
+    }
     return explicitRequiredProp;
   }
 
@@ -866,7 +867,9 @@ public class IndexSchema {
         addDynamicFieldNoDupCheck(dynFields, field);
       }
     }
-    dynamicFields.addAll(dynFields);
+    synchronized (dynamicFields) {
+      dynamicFields.addAll(dynFields);
+    }
   }
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
@@ -926,28 +929,30 @@ public class IndexSchema {
     
     if (null == destSchemaField || (null == sourceSchemaField && ! sourceIsExplicitFieldGlob)) {
       // Go through dynamicFields array only once, collecting info for both source and dest fields, if needed
-      for (DynamicField dynamicField : dynamicFields) {
-        if (null == sourceSchemaField && ! sourceIsDynamicFieldReference && ! sourceIsExplicitFieldGlob) {
-          if (dynamicField.matches(source)) {
-            sourceIsDynamicFieldReference = true;
-            if ( ! source.equals(dynamicField.getRegex())) {
-              sourceDynamicBase = dynamicField;
+      synchronized (dynamicFields) {
+        for (DynamicField dynamicField : dynamicFields) {
+          if (null == sourceSchemaField && !sourceIsDynamicFieldReference && !sourceIsExplicitFieldGlob) {
+            if (dynamicField.matches(source)) {
+              sourceIsDynamicFieldReference = true;
+              if (!source.equals(dynamicField.getRegex())) {
+                sourceDynamicBase = dynamicField;
+              }
             }
           }
-        }
-        if (null == destSchemaField) {
-          if (dest.equals(dynamicField.getRegex())) {
-            destDynamicField = dynamicField;
-            destSchemaField = dynamicField.prototype;
-          } else if (dynamicField.matches(dest)) {
-            destSchemaField = dynamicField.makeSchemaField(dest);
-            destDynamicField = new DynamicField(destSchemaField);
-            destDynamicBase = dynamicField;
+          if (null == destSchemaField) {
+            if (dest.equals(dynamicField.getRegex())) {
+              destDynamicField = dynamicField;
+              destSchemaField = dynamicField.prototype;
+            } else if (dynamicField.matches(dest)) {
+              destSchemaField = dynamicField.makeSchemaField(dest);
+              destDynamicField = new DynamicField(destSchemaField);
+              destDynamicBase = dynamicField;
+            }
           }
-        }
-        if (null != destSchemaField 
-            && (null != sourceSchemaField || sourceIsDynamicFieldReference || sourceIsExplicitFieldGlob)) {
-          break;
+          if (null != destSchemaField
+                  && (null != sourceSchemaField || sourceIsDynamicFieldReference || sourceIsExplicitFieldGlob)) {
+            break;
+          }
         }
       }
     }
@@ -1186,17 +1191,21 @@ public class IndexSchema {
   public SchemaField[] getDynamicFieldPrototypes() {
     SchemaField[] df = new SchemaField[dynamicFields.size()];
     int[] cnt = new int[]{0};
-    dynamicFields.forEach(dynamicField -> {
+    synchronized (dynamicFields) {
+      dynamicFields.forEach(dynamicField -> {
         df[cnt[0]] = dynamicFields.get(cnt[0]++).prototype;
-    });
+      });
+    }
     return df;
   }
 
   public String getDynamicPattern(String fieldName) {
-   for (DynamicField df : dynamicFields) {
-     if (df.matches(fieldName)) return df.getRegex();
-   }
-   return  null;
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) return df.getRegex();
+      }
+      return null;
+    }
   }
   
   /**
@@ -1209,9 +1218,10 @@ public class IndexSchema {
     if (fields.containsKey(fieldName)) {
       return true;
     }
-
-    for (DynamicField df : dynamicFields) {
-      if (fieldName.equals(df.getRegex())) return true;
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (fieldName.equals(df.getRegex())) return true;
+      }
     }
 
     return false;
@@ -1225,9 +1235,10 @@ public class IndexSchema {
     if(fields.containsKey(fieldName)) {
       return false;
     }
-
-    for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return true;
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) return true;
+      }
     }
 
     return false;
@@ -1248,11 +1259,12 @@ public class IndexSchema {
     if (f != null) return f;
     f = dynamicFieldCache.get(fieldName);
     if (f != null) return f;
-
-    for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) {
-        dynamicFieldCache.put(fieldName, f = df.makeSchemaField(fieldName));
-        break;
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) {
+          dynamicFieldCache.put(fieldName, f = df.makeSchemaField(fieldName));
+          break;
+        }
       }
     }
 
@@ -1345,15 +1357,19 @@ public class IndexSchema {
    * @see #getFieldTypeNoEx
    */
   public FieldType getDynamicFieldType(String fieldName) {
-     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.prototype.getType();
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) return df.prototype.getType();
+      }
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field "+fieldName);
   }
 
   private FieldType dynFieldType(String fieldName) {
-     for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.prototype.getType();
+    synchronized (dynamicFields) {
+      for (DynamicField df : dynamicFields) {
+        if (df.matches(fieldName)) return df.prototype.getType();
+      }
     }
     return null;
   }

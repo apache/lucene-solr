@@ -47,7 +47,7 @@ public abstract class ElectionContext {
   protected void cancelElection() throws InterruptedException, KeeperException {
   }
 
-  abstract void runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
+  abstract boolean runLeaderProcess(ElectionContext context, boolean weAreReplacement, int pauseBeforeStartMs) throws KeeperException, InterruptedException, IOException;
 
   public void checkIfIamLeaderFired() {}
 

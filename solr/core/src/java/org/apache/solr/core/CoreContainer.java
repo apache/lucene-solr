@@ -32,7 +32,6 @@ import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
@@ -89,7 +88,6 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -149,6 +147,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -918,7 +917,37 @@ public class CoreContainer implements Closeable {
         }
       }
       if (zkSys != null && zkSys.getZkController() != null) {
-        zkSys.getZkController().createEphemeralLiveNode();
+        ParWork.getRootSharedExecutor().submit(() -> {
+//          Collection<SolrCore> cores = getCores();
+//          for (SolrCore core : cores) {
+//            CoreDescriptor desc = core.getCoreDescriptor();
+//            String collection = desc.getCollectionName();
+//            try {
+//              zkSys.getZkController().zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
+//                if (c != null) {
+//                  List<Replica> replicas = c.getReplicas();
+//                  for (Replica replica : replicas) {
+//                    if (replica.getNodeName().equals(zkSys.getZkController().getNodeName())) {
+//                      if (!replica.getState().equals(Replica.State.DOWN)) {
+//                        //log.info("Found state {} {}", replica.getState(), replica.getNodeName());
+//                        return false;
+//                      }
+//                    }
+//                  }
+//                }
+//                return true;
+//              });
+//            } catch (InterruptedException e) {
+//              ParWork.propagateInterrupt(e);
+//              return;
+//            } catch (TimeoutException e) {
+//              log.error("Timeout", e);
+//            }
+//          }
+
+          zkSys.getZkController().createEphemeralLiveNode();
+        });
+
       }
     } finally {
 

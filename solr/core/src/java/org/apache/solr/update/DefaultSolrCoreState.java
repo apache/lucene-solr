@@ -363,7 +363,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         if (!locked) {
           recoveryWaiting.incrementAndGet();
           if (log.isDebugEnabled()) log.debug("Wait for recovery lock");
-
+          cancelRecovery();
           while (!recoveryLock.tryLock(250, TimeUnit.MILLISECONDS)) {
             if (closed || prepForClose) {
               log.warn("Skipping recovery because we are closed");
@@ -486,7 +486,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     // though
     // iwLock.writeLock().lock();
     if (recoverying) {
-      cancelRecovery();
+      cancelRecovery(false, true);
     }
     try {
       closeIndexWriter(closer);

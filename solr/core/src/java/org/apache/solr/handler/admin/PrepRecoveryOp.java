@@ -68,7 +68,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
 
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collection, 15, TimeUnit.SECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
           log.info("collection not found {}", collection);
           return false;
