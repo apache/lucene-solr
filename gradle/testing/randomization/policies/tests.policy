@@ -63,7 +63,7 @@ grant {
   permission java.lang.RuntimePermission "setContextClassLoader";
 
   // Needed for loading native library (lucene:misc:native) in lucene:misc
-  permission java.lang.RuntimePermission "loadLibrary.LuceneNativeIO";
+  permission java.lang.RuntimePermission "getFileStoreAttributes";
   permission java.lang.RuntimePermission "writeFileDescriptor";
 
   // TestLockFactoriesMultiJVM opens a random port on 127.0.0.1 (port 0 = ephemeral port range):

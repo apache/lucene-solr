@@ -27,15 +27,11 @@
 The misc package has various tools for splitting/merging indices,
 changing norms, finding high freq terms, and others.
 
-<a id="NativeUnixDirectory"></a>
-<h2>NativeUnixDirectory</h2>
+<a id="DirectIODirectory"></a>
+<h2>DirectIODirectory</h2>
 
 <p>
-<b>NOTE</b>: This uses C++ sources (accessible via JNI), which you'll
-have to compile on your platform.
-
-<p>
-{@link org.apache.lucene.misc.store.NativeUnixDirectory} is a Directory implementation that bypasses the
+{@link org.apache.lucene.misc.store.DirectIODirectory} is a Directory implementation that bypasses the
 OS's buffer cache (using direct IO) for any IndexInput and IndexOutput
 used during merging of segments larger than a specified size (default
 10 MB).  This avoids evicting hot pages that are still in-use for
@@ -45,23 +41,6 @@ searching, keeping search more responsive while large merges run.
 See <a target="_top" href="http://blog.mikemccandless.com/2010/06/lucene-and-fadvisemadvise.html">this blog post</a>
 for details.
 
-<p>Steps to build (from the project's root directory):
-<ul>
-  <li>Compile both the native library part (<code>libLuceneNativeIO</code>) and Java sources with:
-    <code>./gradlew -p lucene/misc build</code>.</li>
-  
-  <li>The native library will be located in the <code>lucene/misc/native/build/lib/main/release/<i>your-platform</i></code> folder.</li>
-
-  <li>On Unix-ish systems, make sure <code>libNativePosixUtil.so</code> is on your
-    <code>LD_LIBRARY_PATH</code> so java can find it (something like <code>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</code>,
-    where /path/to/dir contains <code>libLuceneNativeIO.so</code>).</li>
-</ul>
-
-<p>
-The native library exposes access to the <code>posix_madvise</code>,
-<code>madvise</code>, <code>posix_fadvise</code> functions, which are somewhat more cross
-platform than <code>O_DIRECT</code>, however, in testing (see above link), these
-APIs did not seem to help prevent buffer cache eviction.
 </body>
 
 </html>

@@ -190,6 +190,31 @@ Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
+  
+==================  8.9.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
+
+Optimizations
+---------------------
+* SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
+  Used by default when field=_root_, or explicitly requested for other fields via hint=block.  (Joel Bernstein, hossman)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
 
 ==================  8.8.0 ==================
 
@@ -208,6 +233,8 @@ New Features
 * SOLR-14907: Add v2 API for configSet upload, including single-file insertion. (Houston Putman)
 
 * SOLR-14560: Add interleaving support in Learning To Rank. (Alessandro Benedetti, Christine Poerschke)
+
+* SOLR-15052: Reducing overseer bottlenecks using per-replica states (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
@@ -248,6 +275,8 @@ Improvements
   to the Prometheus exporter to export query performance metrics, such as QPS and p95. (Timothy Potter)
 
 * SOLR-15040: Improvements to postlogs timestamp handling (Joel Bernstein)
+
+* SOLR-14155: Load all other SolrCore plugins from packages (noble)
 
 Optimizations
 ---------------------
@@ -382,6 +411,8 @@ New Features
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
+* SOLR-15052: Reducing overseer bottlenecks using per-replica states (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------

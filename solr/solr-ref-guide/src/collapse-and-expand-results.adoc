@@ -29,6 +29,10 @@ In order to use these features with SolrCloud, the documents must be located on 
 
 The `CollapsingQParser` is really a _post filter_ that provides more performant field collapsing than Solr's standard approach when the number of distinct groups in the result set is high. This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
 
+The CollapsingQParserPlugin fully supports the QueryElevationComponent.
+
+=== Collapsing Query Parser Options
+
 The CollapsingQParser accepts the following local parameters:
 
 `field`::
@@ -58,11 +62,17 @@ There are three available null policies:
 The default is `ignore`.
 
 `hint`::
-Currently there is only one hint available: `top_fc`, which stands for top level FieldCache.
 +
-The `top_fc` hint is only available when collapsing on String fields. `top_fc` usually provides the best query time speed but takes the longest to warm on startup or following a commit. `top_fc` will also result in having the collapsed field cached in memory twice if it's used for faceting or sorting. For very high cardinality (high distinct count) fields, `top_fc` may not fare so well.
+There are two hint options available:
++
+`top_fc`::: This stands for top level FieldCache.
++
+The `hint=top_fc` hint is only available when collapsing on String fields. `top_fc` usually provides the best query time speed but takes the longest to warm on startup or following a commit. `top_fc` will also result in having the collapsed field cached in memory twice if it's used for faceting or sorting. For very high cardinality (high distinct count) fields, `top_fc` may not fare so well.
++
+`hint=block`::: This indicates that the field being collapsed on is suitable for the optimzed <<#block-collapsing,Block Collapse>> logic described below.
 +
 The default is none.
+
 
 `size`::
 Sets the initial size of the collapse data structures when collapsing on a *numeric field only*.
@@ -122,7 +132,22 @@ Collapse with custom `cost` which defaults to `100`
 fq={!collapse cost=1000 field=group_field}
 ----
 
-The CollapsingQParserPlugin fully supports the QueryElevationComponent.
+=== Block Collapsing
+
+When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to eachother in the index in a single <<indexing-nested-documents.adoc#indexing-nested-documents,"block" of nested documents>>.  This allows the collapsing logic to be much faster and more memory efficient.
+
+The default collapsing logic must keep track of all group head documents -- for all groups encountered so far -- until it has evaluated all documents, because each document it considers may become the new group head of any group.
+
+When collapsing on the `\_root_` field however, the logic knows that as it scans over the index, it will never encounter any new documents in a group that it has previously processed.
+
+This more efficient logic can also be used with other `collapseField` values, via the `hint=block` local param.  This can be useful when you have deeply nested documents and you'd like to collapse on a field that does not contain identical values for all documents with a common `\_root_` but is a unique & identical value for sets of contiguious documents under a common `\_root_`.  For example: searching for "grand child" documents and collapsing on a field that is unique per "child document"
+
+[CAUTION]
+====
+Specifing `hint=block` when collapsing on a field that is not unique per contiguious block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
+
+The implementation does not offer any safeguards against missuse on an unsupported field, since doing so would require the the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
+====
 
 == Expand Component
 

@@ -32,6 +32,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 /** Default implementation of {@link DirectoryReader}. */
 public final class StandardDirectoryReader extends DirectoryReader {
@@ -57,13 +58,27 @@ public final class StandardDirectoryReader extends DirectoryReader {
     this.writeAllDeletes = writeAllDeletes;
   }
 
-  /** called from DirectoryReader.open(...) methods */
   static DirectoryReader open(final Directory directory, final IndexCommit commit)
+      throws IOException {
+    return open(directory, Version.MIN_SUPPORTED_MAJOR, commit);
+  }
+
+  /** called from DirectoryReader.open(...) methods */
+  static DirectoryReader open(
+      final Directory directory, int minSupportedMajorVersion, final IndexCommit commit)
       throws IOException {
     return new SegmentInfos.FindSegmentsFile<DirectoryReader>(directory) {
       @Override
       protected DirectoryReader doBody(String segmentFileName) throws IOException {
-        SegmentInfos sis = SegmentInfos.readCommit(directory, segmentFileName);
+        if (minSupportedMajorVersion > Version.LATEST.major || minSupportedMajorVersion < 0) {
+          throw new IllegalArgumentException(
+              "minSupportedMajorVersion must be positive and <= "
+                  + Version.LATEST.major
+                  + " but was: "
+                  + minSupportedMajorVersion);
+        }
+        SegmentInfos sis =
+            SegmentInfos.readCommit(directory, segmentFileName, minSupportedMajorVersion);
         final SegmentReader[] readers = new SegmentReader[sis.size()];
         boolean success = false;
         try {

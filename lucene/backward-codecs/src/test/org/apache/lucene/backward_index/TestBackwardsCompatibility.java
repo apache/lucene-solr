@@ -62,6 +62,7 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -87,6 +88,7 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -384,7 +386,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     return oldSortedNames;
   }
 
-  final String[] unsupportedNames = {
+  static final String[] unsupportedNames = {
     "1.9.0-cfs",
     "1.9.0-nocfs",
     "2.0.0-cfs",
@@ -583,6 +585,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.7.3-cfs",
     "7.7.3-nocfs"
   };
+
+  static final int MIN_BINARY_SUPPORTED_MAJOR = Version.MIN_SUPPORTED_MAJOR - 1;
+
+  static final String[] binarySupportedNames;
+
+  static {
+    ArrayList<String> list = new ArrayList<>();
+    for (String name : unsupportedNames) {
+      if (name.startsWith(MIN_BINARY_SUPPORTED_MAJOR + ".")) {
+        list.add(name);
+      }
+    }
+    binarySupportedNames = list.toArray(new String[0]);
+  }
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
   static final String[] oldSingleSegmentNames = {};
@@ -862,8 +878,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CheckIndex checker = new CheckIndex(dir);
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
-      assertFalse(indexStatus.clean);
-      assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      if (unsupportedNames[i].startsWith("7.")) {
+        assertTrue(indexStatus.clean);
+      } else {
+        assertFalse(indexStatus.clean);
+        assertTrue(
+            bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      }
       checker.close();
 
       dir.close();
@@ -984,7 +1005,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testSearchOldIndex() throws IOException {
     for (String name : oldNames) {
-      searchIndex(oldIndexDirs.get(name), name);
+      searchIndex(oldIndexDirs.get(name), name, Version.MIN_SUPPORTED_MAJOR);
+    }
+
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        searchIndex(dir, name, MIN_BINARY_SUPPORTED_MAJOR);
+      }
     }
   }
 
@@ -1018,11 +1047,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void searchIndex(Directory dir, String oldName) throws IOException {
+  public void searchIndex(Directory dir, String oldName, int minIndexMajorVersion)
+      throws IOException {
     // QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     // Query query = parser.parse("handle:1");
-
-    IndexReader reader = DirectoryReader.open(dir);
+    IndexCommit indexCommit = DirectoryReader.listCommits(dir).get(0);
+    IndexReader reader = DirectoryReader.open(indexCommit, minIndexMajorVersion);
     IndexSearcher searcher = newSearcher(reader);
 
     TestUtil.checkIndex(dir);
@@ -1985,5 +2015,33 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     bytes.bytes[bytes.length++] = (byte) value;
     return bytes;
+  }
+
+  public void testFailOpenOldIndex() throws IOException {
+    for (String name : oldNames) {
+      Directory directory = oldIndexDirs.get(name);
+      IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
+      IndexFormatTooOldException ex =
+          expectThrows(
+              IndexFormatTooOldException.class,
+              () -> StandardDirectoryReader.open(commit, Version.LATEST.major));
+      assertTrue(
+          ex.getMessage()
+              .contains(
+                  "only supports reading from version " + Version.LATEST.major + " upwards."));
+      // now open with allowed min version
+      StandardDirectoryReader.open(commit, Version.MIN_SUPPORTED_MAJOR).close();
+    }
+  }
+
+  public void testReadNMinusTwoCommit() throws IOException {
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
+        StandardDirectoryReader.open(commit, MIN_BINARY_SUPPORTED_MAJOR).close();
+      }
+    }
   }
 }

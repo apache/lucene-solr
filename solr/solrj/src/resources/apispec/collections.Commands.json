@@ -90,6 +90,11 @@
           "type": "boolean",
           "description": "If true then request will complete only when all affected replicas become active.",
           "default": false
+        },
+        "perReplicaState": {
+          "type": "boolean",
+          "description": "Use Per replica states",
+          "default": false
         }
       },
       "required": [

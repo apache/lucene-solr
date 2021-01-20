@@ -27,7 +27,7 @@ public class TestEscaped extends StemmerTestBase {
   public void testStemming() {
     assertStemsTo("works", "work");
     assertStemsTo("work", "work");
-    assertStemsTo("R2/D2", "R2/D2");
+    assertStemsTo("R2/D2", "R2/D2", "R2/d2");
     assertStemsTo("R2/D2s", "R2/D2");
     assertStemsTo("N/A", "N/A");
     assertStemsTo("N/As");

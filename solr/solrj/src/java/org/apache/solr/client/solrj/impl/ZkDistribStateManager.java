@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -180,5 +181,10 @@ public class ZkDistribStateManager implements DistribStateManager {
 
   public SolrZkClient getZkClient() {
     return zkClient;
+  }
+
+  @Override
+  public PerReplicaStates getReplicaStates(String path) throws KeeperException, InterruptedException {
+    return PerReplicaStates.fetch(path, zkClient, null);
   }
 }
