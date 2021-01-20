@@ -844,7 +844,6 @@ function stop_solr() {
 
   echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
   "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY" org.apache.solr.servlet.StopJetty || true
-  sleep .6
   PID=$(cat $SOLR_PID_DIR/$JETTY_PID)
   rm $SOLR_PID_DIR/$JETTY_PID
 } # end stop_solr
