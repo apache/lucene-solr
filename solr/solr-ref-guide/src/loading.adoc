@@ -172,7 +172,7 @@ to specific field types.
 
 image::images/math-expressions/csvselect.png[]
 
-== Loading
+== Loading Data
 
 When the data is ready to load, the `update` function can be used to send the
 data to a SolrCloud collection for indexing.
