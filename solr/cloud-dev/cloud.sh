@@ -90,7 +90,7 @@
 #
 ##################################################################################
 
-DEFAULT_VCS_WORKSPACE='../../'
+DEFAULT_VCS_WORKSPACE="../../"
 
 ############## Normally  no need to edit below this line ##############
 
@@ -106,7 +106,7 @@ MEMORY=1g        # default
 JVM_ARGS=''      # default
 RECOMPILE=false  # default
 NUM_NODES=0      # need to detect if not specified
-VCS_WORK=/data2/lucene-solr
+VCS_WORK=$DEFAULT_VCS_WORKSPACE
 ZK_PORT=2181
 
 while getopts ":crm:a:n:w:z:" opt; do
@@ -222,7 +222,7 @@ findSolr() {
   SOLR=${CLUSTER_WD}/$(find . -maxdepth 1 -name 'solr*' -type d -print0 | xargs -0 ls -1 -td | sed -E 's/\.\/(solr.*)/\1/' | head -n1)
   popd
 
-  #echo "Found solr at $SOLR"
+  echo "Found solr at $SOLR"
   SAFE_DEST="${CLUSTER_WD_FULL//\//_}";
 }
 
@@ -254,7 +254,6 @@ cleanIfReq() {
 recompileIfReq() {
   if [[ "$RECOMPILE" = true ]]; then
     pushd "$VCS_WORK"
-    ./gradlew clean
     ./gradlew -p solr distTar
     if [[ "$?" -ne 0 ]]; then
       echo "BUILD FAIL - cloud.sh stopping, see above output for details"; popd; exit 7;
@@ -330,48 +329,16 @@ start(){
   echo "Final NUM_NODES is $NUM_NODES"
   for i in `seq 1 $NUM_NODES`; do
     mkdir -p "${CLUSTER_WD}/n${i}"
-    argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -f -p 898${i} -m $MEMORY \
-    -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
-    -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
+    argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
+    -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i}" \
+    -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} "$JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr "${argsArray[@]}"
   done
 
-  SOLR_STOP_WAIT=180
-  SOLR_LOGS_DIR=logs
-  for i in `seq 1 $NUM_NODES`; do
-     if lsof -v 2>&1 | grep -q revision; then
-      echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
-      SOLR_PORT="898${i}"
-      (loops=0
-      while true
-      do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
-        if [ -z "$running" ]; then
-	        slept=$((loops / 2))
-          if [ $slept -lt $SOLR_STOP_WAIT ]; then
-            sleep 0.5
-            loops=$[$loops+1]
-          else
-            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_STOP_WAIT seconds!"
-            tail -30 "$SOLR_LOGS_DIR/solr.log"
-            exit # subshell!
-          fi
-        else
-          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
-          echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-          exit # subshell!
-        fi
-      done) &
-    else
-      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
-      sleep 10
-      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
-      echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
-      return;
-    fi
-  done
+  echo "/solr_${SAFE_DEST}" > ${CLUSTER_WD}/chroot.txt
+
 
   touch ${CLUSTER_WD}  # make this the most recently updated dir for ls -t
 
@@ -379,11 +346,16 @@ start(){
 
 stop() {
   echo "Stopping servers"
-  pushd ${CLUSTER_WD}
-  SOLR=${CLUSTER_WD}/$(find . -maxdepth 1 -name 'solr*' -type d -print0 | xargs -0 ls -1 -td | sed -E 's/\.\/(solr.*)/\1/' | head -n1)
-  popd
 
-  "${SOLR}/bin/solr" stop -all
+  findSolr
+
+  echo "Final NUM_NODES is $NUM_NODES"
+  for i in `seq 1 $NUM_NODES`; do
+    argsArray=(-s $CLUSTER_WD_FULL/n${i} -p "898${i}")
+    FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
+    echo ${FINAL_COMMAND}
+    ${SOLR}/bin/solr stop "${argsArray[@]}"
+  done
 }
 
 ########################
