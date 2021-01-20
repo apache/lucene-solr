@@ -54,6 +54,8 @@ configure(project(":lucene:analysis:common")) {
         srcExcludes += [
             "**/*.aff",
             "**/*.dic",
+            "**/*.wrong",
+            "**/*.good",
             "**/charfilter/*.htm*",
             "**/*LuceneResourcesWikiPage.html"
         ]

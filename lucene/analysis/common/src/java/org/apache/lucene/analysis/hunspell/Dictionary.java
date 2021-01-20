@@ -34,13 +34,16 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,6 +90,8 @@ public class Dictionary {
   private static final String OCONV_KEY = "OCONV";
   private static final String FULLSTRIP_KEY = "FULLSTRIP";
   private static final String LANG_KEY = "LANG";
+  private static final String BREAK_KEY = "BREAK";
+  private static final String FORBIDDENWORD_KEY = "FORBIDDENWORD";
   private static final String KEEPCASE_KEY = "KEEPCASE";
   private static final String NEEDAFFIX_KEY = "NEEDAFFIX";
   private static final String PSEUDOROOT_KEY = "PSEUDOROOT";
@@ -103,6 +108,7 @@ public class Dictionary {
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
+  Breaks breaks = Breaks.DEFAULT;
 
   // all condition checks used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
@@ -155,6 +161,7 @@ public class Dictionary {
   int circumfix = -1; // circumfix flag, or -1 if one is not defined
   int keepcase = -1; // keepcase flag, or -1 if one is not defined
   int needaffix = -1; // needaffix flag, or -1 if one is not defined
+  int forbiddenword = -1; // forbiddenword flag, or -1 if one is not defined
   int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
 
   // ignored characters (dictionary, affix, inputs)
@@ -254,6 +261,10 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(aff);
       }
     }
+  }
+
+  int formStep() {
+    return hasStemExceptions ? 2 : 1;
   }
 
   /** Looks up Hunspell word forms from the dictionary */
@@ -400,6 +411,14 @@ public class Dictionary {
       } else if (line.startsWith(LANG_KEY)) {
         language = line.substring(LANG_KEY.length()).trim();
         alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+      } else if (line.startsWith(BREAK_KEY)) {
+        breaks = parseBreaks(reader, line);
+      } else if (line.startsWith(FORBIDDENWORD_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal FORBIDDENWORD declaration", reader.getLineNumber());
+        }
+        forbiddenword = flagParsingStrategy.parseFlag(parts[1]);
       }
     }
 
@@ -421,6 +440,30 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private Breaks parseBreaks(LineNumberReader reader, String line)
+      throws IOException, ParseException {
+    Set<String> starting = new LinkedHashSet<>();
+    Set<String> ending = new LinkedHashSet<>();
+    Set<String> middle = new LinkedHashSet<>();
+    int num = Integer.parseInt(line.substring(BREAK_KEY.length()).trim());
+    for (int i = 0; i < num; i++) {
+      line = reader.readLine();
+      String[] parts = line.split("\\s+");
+      if (!line.startsWith(BREAK_KEY) || parts.length != 2) {
+        throw new ParseException("BREAK chars expected", reader.getLineNumber());
+      }
+      String breakStr = parts[1];
+      if (breakStr.startsWith("^")) {
+        starting.add(breakStr.substring(1));
+      } else if (breakStr.endsWith("$")) {
+        ending.add(breakStr.substring(0, breakStr.length() - 1));
+      } else {
+        middle.add(breakStr);
+      }
+    }
+    return new Breaks(starting, ending, middle);
   }
 
   private FST<IntsRef> affixFST(TreeMap<String, List<Integer>> affixes) throws IOException {
@@ -1143,6 +1186,22 @@ public class Dictionary {
     return null;
   }
 
+  boolean isForbiddenWord(char[] word, BytesRef scratch) {
+    if (forbiddenword != -1) {
+      IntsRef forms = lookupWord(word, 0, word.length);
+      if (forms != null) {
+        int formStep = formStep();
+        for (int i = 0; i < forms.length; i += formStep) {
+          flagLookup.get(forms.ints[forms.offset + i], scratch);
+          if (hasFlag(Dictionary.decodeFlags(scratch), (char) forbiddenword)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   /** Abstraction of the process of parsing flags taken from the affix and dic files */
   abstract static class FlagParsingStrategy {
 
@@ -1370,5 +1429,22 @@ public class Dictionary {
     }
 
     return DEFAULT_TEMP_DIR;
+  }
+
+  /** Possible word breaks according to BREAK directives */
+  static class Breaks {
+    private static final Set<String> MINUS = Collections.singleton("-");
+    static final Breaks DEFAULT = new Breaks(MINUS, MINUS, MINUS);
+    final String[] starting, ending, middle;
+
+    Breaks(Collection<String> starting, Collection<String> ending, Collection<String> middle) {
+      this.starting = starting.toArray(new String[0]);
+      this.ending = ending.toArray(new String[0]);
+      this.middle = middle.toArray(new String[0]);
+    }
+
+    boolean isNotEmpty() {
+      return middle.length > 0 || starting.length > 0 || ending.length > 0;
+    }
   }
 }
