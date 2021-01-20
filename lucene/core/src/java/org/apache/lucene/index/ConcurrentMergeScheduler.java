@@ -595,10 +595,12 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
         return false;
       }
 
-      if (verbose() && startStallTime == 0) {
-        message("    too many merges; stalling...");
+      if (startStallTime == 0) {
+        startStallTime = System.currentTimeMillis();
+        if (verbose()) {
+          message("    too many merges; stalling...");
+        }
       }
-      startStallTime = System.currentTimeMillis();
       doStall();
     }
 
