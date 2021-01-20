@@ -19,66 +19,145 @@
 This section of the user guide covers the probability distribution
 framework included in the math expressions library.
 
-== Probability Distribution Framework
+== Visualization
 
-The probability distribution framework includes many commonly used <<Real Distributions,real>>
-and <<Discrete,discrete>> probability distributions, including support for <<Empirical Distribution,empirical>>
-and <<Enumerated Distributions,enumerated>> distributions that model real world data.
+Probability distributions can be visualized with Zeppelin-Solr using the
+`zplot` function with the `dist` parameter, which visualizes the
+probability density function (PDF) of the distribution.
 
-The probability distribution framework also includes a set of functions that use the probability distributions
-to support probability calculations and sampling.
+Example visualizations are shown with each distribution below.
 
-=== Real Distributions
+=== Continuous Distributions
 
-The probability distribution framework has the following functions
-which support well known real probability distributions:
+Continuous probability distributions work with continuous numbers (floating points). Below
+are the supported continuous probability distributions.
 
-* `normalDistribution`: Creates a normal distribution function.
+==== empiricalDistribution
 
-* `logNormalDistribution`: Creates a log normal distribution function.
+The `empiricalDistribution` function creates a continuous probability
+distribution from actual data.
 
-* `gammaDistribution`: Creates a gamma distribution function.
+Empirical distributions can be used to conveniently visualize the probability density function of a random sample from a SolrCloud collection.
+The example below shows the `zplot` function visualizing the probability
+density of a random sample with a 32 bin histogram.
 
-* `betaDistribution`: Creates a beta distribution function.
+image::images/math-expressions/empirical.png[]
 
-* `uniformDistribution`: Creates a uniform real distribution function.
+==== normalDistribution
 
-* `weibullDistribution`: Creates a Weibull distribution function.
+The visualization below shows a normal distribution with a `mean` of 0 and `standard deviation` of 1.
 
-* `triangularDistribution`: Creates a triangular distribution function.
+image::images/math-expressions/dist.png[]
 
-* `constantDistribution`: Creates constant real distribution function.
 
-=== Empirical Distribution
+==== logNormalDistribution
 
-The `empiricalDistribution` function creates a real probability
-distribution from actual data. An empirical distribution
-can be used interchangeably with any of the theoretical
-real distributions.
+The visualization below shows a log normal distribution with a `shape` of .25 and `scale`
+of 0.
 
-=== Discrete
+image::images/math-expressions/lognormal.png[]
 
-The probability distribution framework has the following functions
-which support well known discrete probability distributions:
+==== gammaDistribution
 
-* `poissonDistribution`: Creates a Poisson distribution function.
+The visualization below shows a gamma distribution with a `shape` of 7.5 and `scale`
+of 1.
 
-* `binomialDistribution`: Creates a binomial distribution function.
+image::images/math-expressions/gamma.png[]
 
-* `uniformIntegerDistribution`: Creates a uniform integer distribution function.
+==== betaDistribution
 
-* `geometricDistribution`: Creates a geometric distribution function.
+The visualization below shows a beta distribution with a `shape1` of 2 and `shape2`
+of 2.
 
-* `zipFDistribution`: Creates a Zipf distribution function.
+image::images/math-expressions/beta.png[]
 
-=== Enumerated Distributions
+==== uniformDistribution
+
+The visualization below shows a uniform distribution between 0 and 10.
+
+image::images/math-expressions/uniformr.png[]
+
+==== weibullDistribution
+
+The visualization below shows a Weibull distribution with a `shape` of 5 and `scale`
+of 1.
+
+image::images/math-expressions/weibull.png[]
+
+==== triangularDistribution
+
+The visualization below shows a triangular distribution with a low of 5 a mode of 10
+and a high value of 20.
+
+image::images/math-expressions/triangular.png[]
+
+==== constantDistribution
+
+The visualization below shows a constant distribution of 10.5.
+
+image::images/math-expressions/constant.png[]
+
+
+
+=== Discrete Distributions
+
+Discrete probability distributions work with discrete numbers (integers). Below are the
+supported discrete probability distributions.
+
+==== enumeratedDistribution
 
 The `enumeratedDistribution` function creates a discrete
-distribution function from a data set of discrete values,
-or from and enumerated list of values and probabilities.
+distribution function
+from an enumerated list of values and probabilities or
+from a data set of discrete values
 
-Enumerated distribution functions can be used interchangeably
-with any of the theoretical discrete distributions.
+The visualization below shows an enumerated distribution created from a list of
+discrete values and probabilities.
+
+image::images/math-expressions/enum1.png[]
+
+The visualization below shows an enumerated distribution generated from a search
+result that has been transformed into a vector of discrete values.
+
+image::images/math-expressions/enum2.png[]
+
+==== poissonDistribution
+
+The visualization below shows a Poisson distribution with a `mean` of 15.
+
+image::images/math-expressions/poisson.png[]
+
+
+==== binomialDistribution
+
+The visualization below shows a binomial distribution with a 100 trials and .15
+probability of success.
+
+image::images/math-expressions/binomial.png[]
+
+
+==== uniformIntegerDistribution
+
+The visualization below shows a uniform integer distribution between 0 and 10.
+
+image::images/math-expressions/uniform.png[]
+
+
+==== geometricDistribution
+
+The visualization below shows a geometric distribution probability of success of
+.25.
+
+image::images/math-expressions/geometric.png[]
+
+
+==== zipFDistribution
+
+The visualization below shows a ZipF distribution with a size of 50 and exponent of 1.
+
+image::images/math-expressions/zipf.png[]
+
+
 
 === Cumulative Probability
 
@@ -120,23 +199,22 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example of a cumulative probability calculation
-using an empirical distribution.
+=== Probability
 
-In the example an empirical distribution is created from a random
-sample taken from the `price_f` field.
+All probability distributions can calculate the probability
+between a range of values.
 
-The cumulative probability of the value `.75` is then calculated.
-The `price_f` field in this example was generated using a
-uniform real distribution between 0 and 1, so the output of the
- `cumulativeProbability` function is very close to .75.
+In the following example an empirical distribution is created
+from a sample of file sizes drawn from the logs collection.
+Then the probability of a file size between the range of 40000
+and 41000 is calculated to be 19%.
 
 [source,text]
 ----
-let(a=random(collection1, q="*:*", rows="30000", fl="price_f"),
-    b=col(a, price_f),
-    c=empiricalDistribution(b),
-    d=cumulativeProbability(c, .75))
+let(a=random(logs, q="*:*", fl="filesize_d", rows="50000"),
+    b=col(a, filesize_d),
+    c=empiricalDistribution(b, 100),
+    d=probability(c, 40000, 41000))
 ----
 
 When this expression is sent to the `/stream` handler it responds with:
@@ -147,11 +225,11 @@ When this expression is sent to the `/stream` handler it responds with:
   "result-set": {
     "docs": [
       {
-        "b": 0.7554217416103242
+        "d": 0.19006540560734791
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 0
+        "RESPONSE_TIME": 550
       }
     ]
   }
@@ -197,44 +275,11 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example of a probability calculation using an enumerated distribution.
-
-In the example an enumerated distribution is created from a random
-sample taken from the `day_i` field, which was created using a uniform integer distribution between 0 and 30.
-
-The probability of the discrete value 10 is then calculated.
-
-[source,text]
-----
-let(a=random(collection1, q="*:*", rows="30000", fl="day_i"),
-    b=col(a, day_i),
-    c=enumeratedDistribution(b),
-    d=probability(c, 10))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": 0.03356666666666666
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 488
-      }
-    ]
-  }
-}
-----
 
 === Sampling
 
 All probability distributions support sampling. The `sample`
-function returns 1 or more random samples from a probability distribution.
+function returns one or more random samples from a probability distribution.
 
 Below is an example drawing a single sample from a normal distribution.
 
@@ -263,43 +308,28 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Below is an example drawing 10 samples from a normal distribution.
+The sample function can also return a vector of samples. Vectors of samples
+can be visualized as scatter plots to gain an intuitive understanding
+of the underlying distribution.
 
-[source,text]
-----
-let(a=normalDistribution(10, 5),
-    b=sample(a, 10))
-----
+The first example shows the scatter plot of a normal distribution with
+a mean of 0 and a standard deviation of 5.
 
-When this expression is sent to the `/stream` handler it responds with:
+image::images/math-expressions/sample-scatter.png[]
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "b": [
-          10.18444709339441,
-          9.466947971749377,
-          1.2420697166234458,
-          11.074501226984806,
-          7.659629052136225,
-          0.4440887839190708,
-          13.710925254778786,
-          2.089566359480239,
-          0.7907293097654424,
-          2.8184587681006734
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 3
-      }
-    ]
-  }
-}
-----
+The next example shows a scatter plot of the same distribution with
+an ascending sort applied to the sample vector.
+
+image::images/math-expressions/sample-scatter1.png[]
+
+The next example shows two different distributions overlaid
+in the same scatter plot.
+
+image::images/math-expressions/sample-overlay.png[]
+
+
+
+
 
 === Multivariate Normal Distribution
 
@@ -329,7 +359,7 @@ In this example 5000 random samples are selected from a collection of log record
 the fields `filesize_d` and `response_d`. The values of both fields conform to a normal distribution.
 
 Both fields are then vectorized. The `filesize_d` vector is stored in
-variable *`b`* and the `response_d` variable is stored in variable *`c`*.
+variable `b` and the `response_d` variable is stored in variable `c`.
 
 An array is created that contains the means of the two vectorized fields.
 
@@ -341,13 +371,13 @@ the observation matrix with the `cov` function. The covariance matrix describes 
 
 The `multivariateNormalDistribution` function is then called with the
 array of means for the two fields and the covariance matrix. The model for the
-multivariate normal distribution is assigned to variable *`g`*.
+multivariate normal distribution is assigned to variable `g`.
 
 Finally five samples are drawn from the multivariate normal distribution.
 
 [source,text]
 ----
-let(a=random(collection2, q="*:*", rows="5000", fl="filesize_d, response_d"),
+let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
     b=col(a, filesize_d),
     c=col(a, response_d),
     d=array(mean(b), mean(c)),
