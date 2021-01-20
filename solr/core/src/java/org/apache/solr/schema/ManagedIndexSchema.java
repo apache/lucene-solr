@@ -444,33 +444,35 @@ public final class ManagedIndexSchema extends IndexSchema {
       ManagedIndexSchema finalNewSchema = newSchema;
 
       Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
-      newFields.forEach(newField -> {
-        if (null != finalNewSchema.fields.get(newField.getName())) {
-          String msg = "Field '" + newField.getName() + "' already exists.";
-          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
-        }
-        finalNewSchema.fields.put(newField.getName(), newField);
+      synchronized (finalNewSchema.fields) {
+        newFields.forEach(newField -> {
+          if (null != finalNewSchema.fields.get(newField.getName())) {
+            String msg = "Field '" + newField.getName() + "' already exists.";
+            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+          }
+          finalNewSchema.fields.put(newField.getName(), newField);
 
-        if (null != newField.getDefaultValue()) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
+          if (null != newField.getDefaultValue()) {
+            if (log.isDebugEnabled()) {
+              log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
+            }
+            finalNewSchema.fieldsWithDefaultValue.add(newField);
           }
-          finalNewSchema.fieldsWithDefaultValue.add(newField);
-        }
-        if (newField.isRequired()) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} is required in this schema", newField.getName());
+          if (newField.isRequired()) {
+            if (log.isDebugEnabled()) {
+              log.debug("{} is required in this schema", newField.getName());
+            }
+            finalNewSchema.requiredFields.add(newField);
           }
-          finalNewSchema.requiredFields.add(newField);
-        }
-        Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
-        if (copyFields != null) {
-          for (String copyField : copyFields) {
-            finalNewSchema.registerCopyField(newField.getName(), copyField);
+          Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
+          if (copyFields != null) {
+            for (String copyField : copyFields) {
+              finalNewSchema.registerCopyField(newField.getName(), copyField);
+            }
           }
-        }
 
-      });
+        });
+      }
 
       if (persist) {
         success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
@@ -1120,34 +1122,36 @@ public final class ManagedIndexSchema extends IndexSchema {
       // Rebuild fields of the type being replaced
       List<CopyField> copyFieldsToRebuild = new ArrayList<>();
       List<SchemaField> replacementFields = new ArrayList<>();
-      Iterator<Map.Entry<String,SchemaField>> fieldsIter = newSchema.fields.entrySet().iterator();
-      while (fieldsIter.hasNext()) {
-        Map.Entry<String,SchemaField> entry = fieldsIter.next();
-        SchemaField oldField = entry.getValue();
-        if (oldField.getType().getTypeName().equals(typeName)) {
-          String fieldName = oldField.getName();
-          
-          // Drop the old field
-          fieldsIter.remove();
-          newSchema.fieldsWithDefaultValue.remove(oldField);
-          newSchema.requiredFields.remove(oldField);
-          
-          // Add the replacement field
-          SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
-          replacementFields.add(replacementField); // Save the new field to be added after iteration is finished
-          if (null != replacementField.getDefaultValue()) {
-            if (log.isDebugEnabled()) {
-              log.debug("{} contains default value: {}", replacementField.getName(), replacementField.getDefaultValue());
+      synchronized (newSchema.fields) {
+        Iterator<Map.Entry<String,SchemaField>> fieldsIter = newSchema.fields.entrySet().iterator();
+        while (fieldsIter.hasNext()) {
+          Map.Entry<String,SchemaField> entry = fieldsIter.next();
+          SchemaField oldField = entry.getValue();
+          if (oldField.getType().getTypeName().equals(typeName)) {
+            String fieldName = oldField.getName();
+
+            // Drop the old field
+            fieldsIter.remove();
+            newSchema.fieldsWithDefaultValue.remove(oldField);
+            newSchema.requiredFields.remove(oldField);
+
+            // Add the replacement field
+            SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, oldField.getArgs());
+            replacementFields.add(replacementField); // Save the new field to be added after iteration is finished
+            if (null != replacementField.getDefaultValue()) {
+              if (log.isDebugEnabled()) {
+                log.debug("{} contains default value: {}", replacementField.getName(), replacementField.getDefaultValue());
+              }
+              newSchema.fieldsWithDefaultValue.add(replacementField);
             }
-            newSchema.fieldsWithDefaultValue.add(replacementField);
-          }
-          if (replacementField.isRequired()) {
-            if (log.isDebugEnabled()) {
-              log.debug("{} is required in this schema", replacementField.getName());
+            if (replacementField.isRequired()) {
+              if (log.isDebugEnabled()) {
+                log.debug("{} is required in this schema", replacementField.getName());
+              }
+              newSchema.requiredFields.add(replacementField);
             }
-            newSchema.requiredFields.add(replacementField);
+            newSchema.removeCopyFieldSource(fieldName, copyFieldsToRebuild);
           }
-          newSchema.removeCopyFieldSource(fieldName, copyFieldsToRebuild);
         }
       }
       for (SchemaField replacementField : replacementFields) {
@@ -1441,7 +1445,9 @@ public final class ManagedIndexSchema extends IndexSchema {
      newSchema.fieldsWithDefaultValue.addAll((Set<? extends SchemaField>) new HashSet<>(fieldsWithDefaultValue).clone());
 
      newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
-     newSchema.fields.putAll((Map<? extends String,? extends SchemaField>) new HashMap<>(fields).clone());
+     synchronized (newSchema.fields) {
+       newSchema.fields.putAll((Map<? extends String,? extends SchemaField>) new HashMap<>(fields).clone());
+     }
      newSchema.dynamicFields.addAll((Collection<? extends DynamicField>) new HashSet<>(dynamicFields).clone());
      newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>((HashMap) new HashMap<>(copyFieldTargetCounts).clone());
