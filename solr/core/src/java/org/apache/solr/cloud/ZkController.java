@@ -1383,6 +1383,7 @@ public class ZkController implements Closeable, Runnable {
       //ZkCollectionTerms ct = createCollectionTerms(collection);
       shardTerms = getShardTerms(collection, cloudDesc.getShardId());
 
+      log.info("Create leader elector for replica {}", coreName);
       leaderElector = leaderElectors.get(replica.getName());
       if (leaderElector == null) {
         ContextKey contextKey = new ContextKey(collection, coreName);
@@ -1783,9 +1784,6 @@ public class ZkController implements Closeable, Runnable {
   public ZkShardTerms getShardTerms(String collection, String shardId) throws Exception {
     ZkCollectionTerms ct = getCollectionTerms(collection);
     if (ct == null) {
-      if (getCoreContainer().isShutDown()) {
-        throw new AlreadyClosedException();
-      }
       ct = createCollectionTerms(collection);
     }
     return ct.getShard(shardId);
@@ -1808,12 +1806,14 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public ZkCollectionTerms createCollectionTerms(String collection) {
-//    if (isClosed || dcCalled) {
-//      throw new AlreadyClosedException();
-//    }
     ZkCollectionTerms ct = new ZkCollectionTerms(collection, zkClient);
-    IOUtils.closeQuietly(collectionToTerms.put(collection, ct));
-    return ct;
+    ZkCollectionTerms returned = collectionToTerms.putIfAbsent(collection, ct);
+    if (returned == null) {
+      return ct;
+    } else {
+      IOUtils.closeQuietly(ct);
+    }
+    return returned;
   }
 
   public void clearZkCollectionTerms() {

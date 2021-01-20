@@ -26,7 +26,6 @@ import org.apache.zookeeper.KeeperException;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Used to manage all ZkShardTerms of a collection
@@ -34,9 +33,6 @@ import java.util.concurrent.locks.ReentrantLock;
 class ZkCollectionTerms implements AutoCloseable {
   private final String collection;
   private final Map<String,ZkShardTerms> terms;
-
-  private final ReentrantLock collectionToTermsLock = new ReentrantLock(true);
-
   private final SolrZkClient zkClient;
   private volatile boolean closed;
 
@@ -48,34 +44,23 @@ class ZkCollectionTerms implements AutoCloseable {
   }
 
   ZkShardTerms getShard(String shardId) throws Exception {
-    collectionToTermsLock.lock();
-    try {
-      ZkShardTerms zkterms = terms.get(shardId);
-      if (zkterms == null) {
-        if (closed) {
-          throw new AlreadyClosedException();
-        }
-        zkterms = new ZkShardTerms(collection, shardId, zkClient);
-        IOUtils.closeQuietly(terms.put(shardId, zkterms));
-        if (closed) {
-          IOUtils.closeQuietly(zkterms);
-          throw new AlreadyClosedException();
-        }
+    ZkShardTerms zkterms = terms.get(shardId);
+    if (zkterms == null) {
+      zkterms = new ZkShardTerms(collection, shardId, zkClient);
+      ZkShardTerms returned = terms.putIfAbsent(shardId, zkterms);
+      if (returned == null) {
+        return zkterms;
+      } else {
+        IOUtils.closeQuietly(zkterms);
+        return returned;
       }
-      return zkterms;
-    } finally {
-      collectionToTermsLock.unlock();
     }
+    return zkterms;
   }
 
   public ZkShardTerms getShardOrNull(String shardId) {
-    collectionToTermsLock.lock();
-    try {
-      if (!terms.containsKey(shardId)) return null;
-      return terms.get(shardId);
-    } finally {
-      collectionToTermsLock.unlock();
-    }
+    if (!terms.containsKey(shardId)) return null;
+    return terms.get(shardId);
   }
 
   public void register(String shardId, String coreNodeName) throws Exception {
@@ -84,43 +69,27 @@ class ZkCollectionTerms implements AutoCloseable {
   }
 
   public void remove(String shardId, CoreDescriptor coreDescriptor) throws KeeperException, InterruptedException {
-    collectionToTermsLock.lock();
-    try {
-      ZkShardTerms zterms = getShardOrNull(shardId);
-      if (zterms != null) {
-        if (zterms.removeTerm(coreDescriptor)) {
-          IOUtils.closeQuietly(terms.remove(shardId));
-        }
+    ZkShardTerms zterms = getShardOrNull(shardId);
+    if (zterms != null) {
+      if (zterms.removeTerm(coreDescriptor)) {
+        IOUtils.closeQuietly(terms.remove(shardId));
       }
-    } finally {
-      collectionToTermsLock.unlock();
     }
   }
 
   public void close() {
-    collectionToTermsLock.lock();
-    try {
-      closed = true;
-      terms.values().forEach(ZkShardTerms::close);
-
-      terms.clear();
-    } finally {
-      collectionToTermsLock.unlock();
-    }
+    closed = true;
+    terms.values().forEach(ZkShardTerms::close);
+    terms.clear();
     assert ObjectReleaseTracker.release(this);
   }
 
   public boolean cleanUp() {
-    collectionToTermsLock.lock();
-    try {
-      for (ZkShardTerms zkShardTerms : terms.values()) {
-        if (zkShardTerms.getTerms().size() > 0) {
-          return false;
-        }
+    for (ZkShardTerms zkShardTerms : terms.values()) {
+      if (zkShardTerms.getTerms().size() > 0) {
+        return false;
       }
-      return true;
-    } finally {
-      collectionToTermsLock.unlock();
     }
+    return true;
   }
 }
