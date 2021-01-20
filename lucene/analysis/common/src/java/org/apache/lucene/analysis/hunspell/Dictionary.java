@@ -1219,9 +1219,9 @@ public class Dictionary {
     return null;
   }
 
-  boolean isForbiddenWord(char[] word, BytesRef scratch) {
+  boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {
     if (forbiddenword != -1) {
-      IntsRef forms = lookupWord(word, 0, word.length);
+      IntsRef forms = lookupWord(word, 0, length);
       return forms != null && hasFlag(forms, (char) forbiddenword, scratch);
     }
     return false;

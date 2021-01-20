@@ -112,8 +112,8 @@ final class Stemmer {
   private char[] titleBuffer = new char[8];
 
   /** returns EXACT_CASE,TITLE_CASE, or UPPER_CASE type for the word */
-  private WordCase caseOf(char[] word, int length) {
-    if (dictionary.ignoreCase || length == 0 || !Character.isUpperCase(word[0])) {
+  WordCase caseOf(char[] word, int length) {
+    if (dictionary.ignoreCase || length == 0 || Character.isLowerCase(word[0])) {
       return WordCase.MIXED;
     }
 
@@ -121,22 +121,24 @@ final class Stemmer {
   }
 
   /** folds titlecase variant of word to titleBuffer */
-  private void caseFoldTitle(char[] word, int length) {
+  char[] caseFoldTitle(char[] word, int length) {
     titleBuffer = ArrayUtil.grow(titleBuffer, length);
     System.arraycopy(word, 0, titleBuffer, 0, length);
     for (int i = 1; i < length; i++) {
       titleBuffer[i] = dictionary.caseFold(titleBuffer[i]);
     }
+    return titleBuffer;
   }
 
   /** folds lowercase variant of word (title cased) to lowerBuffer */
-  private void caseFoldLower(char[] word, int length) {
+  char[] caseFoldLower(char[] word, int length) {
     lowerBuffer = ArrayUtil.grow(lowerBuffer, length);
     System.arraycopy(word, 0, lowerBuffer, 0, length);
     lowerBuffer[0] = dictionary.caseFold(lowerBuffer[0]);
+    return lowerBuffer;
   }
 
-  private List<CharsRef> doStem(char[] word, int length, boolean caseVariant) {
+  List<CharsRef> doStem(char[] word, int length, boolean caseVariant) {
     List<CharsRef> stems = new ArrayList<>();
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {

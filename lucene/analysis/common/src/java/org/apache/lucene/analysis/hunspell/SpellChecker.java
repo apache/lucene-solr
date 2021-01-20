@@ -40,33 +40,55 @@ public class SpellChecker {
   public boolean spell(String word) {
     if (word.isEmpty()) return true;
 
-    char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, scratch)) {
-      return false;
+    if (dictionary.needsInputCleaning) {
+      word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
     if (isNumber(word)) {
       return true;
     }
 
-    if (checkWord(wordChars)) {
+    char[] wordChars = word.toCharArray();
+    if (checkWord(wordChars, wordChars.length, false)) {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
+    WordCase wc = stemmer.caseOf(wordChars, wordChars.length);
+    if ((wc == WordCase.UPPER || wc == WordCase.TITLE) && checkCaseVariants(wordChars, wc)) {
+      return true;
+    }
+
+    if (dictionary.breaks.isNotEmpty()
+        && !hasTooManyBreakOccurrences(word)
+        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
       return tryBreaks(word);
     }
 
     return false;
   }
 
-  private boolean checkWord(char[] wordChars) {
-    if (!stemmer.stem(wordChars, wordChars.length).isEmpty()) {
+  private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
+    char[] caseVariant = wordChars;
+    if (wordCase == WordCase.UPPER) {
+      caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
+      if (checkWord(caseVariant, wordChars.length, true)) {
+        return true;
+      }
+    }
+    return checkWord(stemmer.caseFoldLower(caseVariant, wordChars.length), wordChars.length, true);
+  }
+
+  private boolean checkWord(char[] wordChars, int length, boolean caseVariant) {
+    if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
+      return false;
+    }
+
+    if (!stemmer.doStem(wordChars, length, caseVariant).isEmpty()) {
       return true;
     }
 
     if (dictionary.hasCompounding()) {
-      return checkCompounds(wordChars, 0, wordChars.length, new ArrayList<>());
+      return checkCompounds(wordChars, 0, length, new ArrayList<>());
     }
 
     return false;
@@ -83,7 +105,7 @@ public class SpellChecker {
 
         if (dictionary.compoundRules != null
             && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
-          if (checkLastCompoundPart(wordChars, offset + breakPos, words)) {
+          if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
 
@@ -99,8 +121,9 @@ public class SpellChecker {
     return false;
   }
 
-  private boolean checkLastCompoundPart(char[] wordChars, int start, List<IntsRef> words) {
-    IntsRef forms = dictionary.lookupWord(wordChars, start, wordChars.length - start);
+  private boolean checkLastCompoundPart(
+      char[] wordChars, int start, int length, List<IntsRef> words) {
+    IntsRef forms = dictionary.lookupWord(wordChars, start, length);
     if (forms == null) return false;
 
     words.add(forms);
