@@ -1101,7 +1101,9 @@ public class Dictionary {
     return hasFlag(flags, HIDDEN_FLAG);
   }
 
-  static char[] decodeFlags(BytesRef b) {
+  char[] decodeFlags(int entryId, BytesRef b) {
+    this.flagLookup.get(entryId, b);
+
     if (b.length == 0) {
       return CharsRef.EMPTY_CHARS;
     }
@@ -1192,8 +1194,7 @@ public class Dictionary {
       if (forms != null) {
         int formStep = formStep();
         for (int i = 0; i < forms.length; i += formStep) {
-          flagLookup.get(forms.ints[forms.offset + i], scratch);
-          if (hasFlag(Dictionary.decodeFlags(scratch), (char) forbiddenword)) {
+          if (hasFlag(forms.ints[forms.offset + i], (char) forbiddenword, scratch)) {
             return true;
           }
         }
@@ -1299,6 +1300,10 @@ public class Dictionary {
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
+  }
+
+  boolean hasFlag(int entryId, char flag, BytesRef scratch) {
+    return hasFlag(decodeFlags(entryId, scratch), flag);
   }
 
   static boolean hasFlag(char[] flags, char flag) {

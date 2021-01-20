@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.ArrayUtil;
@@ -142,8 +141,7 @@ final class Stemmer {
     IntsRef forms = dictionary.lookupWord(word, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
-        char[] wordFlags = Dictionary.decodeFlags(scratch);
+        char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
         if (!acceptCase(caseVariant, wordFlags)) {
           continue;
         }
@@ -321,19 +319,16 @@ final class Stemmer {
               compatible = true;
             } else {
               // check if affix is allowed in a non-compound word
-              dictionary.flagLookup.get(append, scratch);
-              char[] appendFlags = Dictionary.decodeFlags(scratch);
-              compatible = !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
+              compatible = !dictionary.hasFlag(append, (char) dictionary.onlyincompound, scratch);
             }
           } else if (crossProduct) {
             // cross check incoming continuation class (flag of previous affix) against list.
-            dictionary.flagLookup.get(append, scratch);
-            char[] appendFlags = Dictionary.decodeFlags(scratch);
+            char[] appendFlags = dictionary.decodeFlags(append, scratch);
             assert prevFlag >= 0;
             boolean allowed =
                 dictionary.onlyincompound == -1
                     || !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
-            compatible = allowed && hasCrossCheckedFlag((char) prevFlag, appendFlags, false);
+            compatible = allowed && Dictionary.hasFlag(appendFlags, (char) prevFlag);
           } else {
             compatible = false;
           }
@@ -417,20 +412,19 @@ final class Stemmer {
               compatible = true;
             } else {
               // check if affix is allowed in a non-compound word
-              dictionary.flagLookup.get(append, scratch);
-              char[] appendFlags = Dictionary.decodeFlags(scratch);
-              compatible = !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
+              compatible = !dictionary.hasFlag(append, (char) dictionary.onlyincompound, scratch);
             }
           } else if (crossProduct) {
             // cross check incoming continuation class (flag of previous affix) against list.
-            dictionary.flagLookup.get(append, scratch);
-            char[] appendFlags = Dictionary.decodeFlags(scratch);
+            char[] appendFlags = dictionary.decodeFlags(append, scratch);
             assert prevFlag >= 0;
             boolean allowed =
                 dictionary.onlyincompound == -1
                     || !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
             compatible =
-                allowed && hasCrossCheckedFlag((char) prevFlag, appendFlags, previousWasPrefix);
+                allowed
+                    && ((appendFlags.length == 0 && previousWasPrefix)
+                        || Dictionary.hasFlag(appendFlags, (char) prevFlag));
           } else {
             compatible = false;
           }
@@ -539,8 +533,7 @@ final class Stemmer {
     IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        dictionary.flagLookup.get(forms.ints[forms.offset + i], scratch);
-        char[] wordFlags = Dictionary.decodeFlags(scratch);
+        char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
         if (Dictionary.hasFlag(wordFlags, flag)) {
           // confusing: in this one exception, we already chained the first prefix against the
           // second,
@@ -550,9 +543,7 @@ final class Stemmer {
               && prefixFlag >= 0
               && !Dictionary.hasFlag(wordFlags, (char) prefixFlag)) {
             // see if we can chain prefix thru the suffix continuation class (only if it has any!)
-            dictionary.flagLookup.get(append, scratch);
-            char[] appendFlags = Dictionary.decodeFlags(scratch);
-            if (!hasCrossCheckedFlag((char) prefixFlag, appendFlags, false)) {
+            if (!dictionary.hasFlag(append, (char) prefixFlag, scratch)) {
               continue;
             }
           }
@@ -560,9 +551,8 @@ final class Stemmer {
           // if circumfix was previously set by a prefix, we must check this suffix,
           // to ensure it has it, and vice versa
           if (dictionary.circumfix != -1) {
-            dictionary.flagLookup.get(append, scratch);
-            char[] appendFlags = Dictionary.decodeFlags(scratch);
-            boolean suffixCircumfix = Dictionary.hasFlag(appendFlags, (char) dictionary.circumfix);
+            boolean suffixCircumfix =
+                dictionary.hasFlag(append, (char) dictionary.circumfix, scratch);
             if (circumfix != suffixCircumfix) {
               continue;
             }
@@ -585,9 +575,7 @@ final class Stemmer {
     // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we
     // have that flag
     if (dictionary.circumfix != -1 && !circumfix && prefix) {
-      dictionary.flagLookup.get(append, scratch);
-      char[] appendFlags = Dictionary.decodeFlags(scratch);
-      circumfix = Dictionary.hasFlag(appendFlags, (char) dictionary.circumfix);
+      circumfix = dictionary.hasFlag(append, (char) dictionary.circumfix, scratch);
     }
 
     if (crossProduct && recursionDepth <= 1) {
@@ -634,17 +622,5 @@ final class Stemmer {
     }
 
     return stems;
-  }
-
-  /**
-   * Checks if the given flag cross checks with the given array of flags
-   *
-   * @param flag Flag to cross check with the array of flags
-   * @param flags Array of flags to cross check against. Can be {@code null}
-   * @return {@code true} if the flag is found in the array or the array is {@code null}, {@code
-   *     false} otherwise
-   */
-  private boolean hasCrossCheckedFlag(char flag, char[] flags, boolean matchEmpty) {
-    return (flags.length == 0 && matchEmpty) || Arrays.binarySearch(flags, flag) >= 0;
   }
 }
