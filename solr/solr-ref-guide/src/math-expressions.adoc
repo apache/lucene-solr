@@ -25,44 +25,44 @@ image::images/math-expressions/searchiris.png[]
 
 == Table of Contents
 
-*<<visualization.adoc#,Visualizations>>*: Gallery of streaming expression and math expression visualizations.
+*<<visualization.adoc#visualization,Visualizations>>*: Gallery of streaming expression and math expression visualizations.
 
-*<<math-start.adoc#,Getting Started>>*: Getting started with streaming expressions, math expressions, and visualization.
+*<<math-start.adoc#math-start,Getting Started>>*: Getting started with streaming expressions, math expressions, and visualization.
 
-*<<loading.adoc#,Data Loading>>*: Visualizing, transforming and loading CSV files.
+*<<loading.adoc#loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
 
-*<<search-sample.adoc#,Searching, Sampling and Aggregation>>*: Searching, sampling, aggregation and visualization of result sets.
+*<<search-sample.adoc#search-sample,Searching, Sampling and Aggregation>>*: Searching, sampling, aggregation and visualization of result sets.
 
-*<<transform.adoc#,Transforming Data>>*: Transforming and filtering result sets.
+*<<transform.adoc#transform,Transforming Data>>*: Transforming and filtering result sets.
 
-*<<scalar-math.adoc#,Scalar Math>>*: Math functions and visualization applied to numbers.
+*<<scalar-math.adoc#scalar-math,Scalar Math>>*: Math functions and visualization applied to numbers.
 
-*<<vector-math.adoc#,Vector Math>>*: Vector math, manipulation and visualization.
+*<<vector-math.adoc#vector-math,Vector Math>>*: Vector math, manipulation and visualization.
 
-*<<variables.adoc#, Variables and Vectorization>>*: Vectorizing result sets and assigning and visualizing variables.
+*<<variables.adoc#variables, Variables and Vectorization>>*: Vectorizing result sets and assigning and visualizing variables.
 
-*<<matrix-math.adoc#,Matrix Math>>*: Matrix math, manipulation and visualization.
+*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math, manipulation and visualization.
 
-*<<term-vectors.adoc#,Text Analysis and Term Vectors>>*: Text analysis and TF-IDF term vectors.
+*<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Text analysis and TF-IDF term vectors.
 
-*<<probability-distributions.adoc#,Probability>>*: Continuous and discrete probability distribution functions.
+*<<probability-distributions.adoc#probability-distributions,Probability>>*: Continuous and discrete probability distribution functions.
 
-*<<statistics.adoc#,Statistics>>*: Descriptive statistics, histograms, percentiles, correlation, inference tests and other stats functions.
+*<<statistics.adoc#statistics,Statistics>>*: Descriptive statistics, histograms, percentiles, correlation, inference tests and other stats functions.
 
-*<<regression.adoc#,Linear Regression>>*: Simple and multivariate linear regression.
+*<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
-*<<curve-fitting.adoc#,Curve Fitting>>*: Polynomial, harmonic and Gaussian curve fitting.
+*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, harmonic and Gaussian curve fitting.
 
-*<<time-series.adoc#,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
+*<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
 
-*<<numerical-analysis.adoc#,Interpolation and Numerical Calculus>>*: Interpolation, derivatives and integrals.
+*<<numerical-analysis.adoc#numerical-analysis,Interpolation and Numerical Calculus>>*: Interpolation, derivatives and integrals.
 
-*<<dsp.adoc#,Signal Processing>>*: Convolution, cross-correlation, autocorrelation and fast Fourier transforms.
+*<<dsp.adoc#dsp,Signal Processing>>*: Convolution, cross-correlation, autocorrelation and fast Fourier transforms.
 
-*<<simulations.adoc#,Simulations>>*: Monte Carlo simulations and random walks
+*<<simulations.adoc#simulations,Simulations>>*: Monte Carlo simulations and random walks
 
-*<<machine-learning.adoc#,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
+*<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 
-*<<computational-geometry.adoc#,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
+*<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
 
-*<<logs.adoc#,Appendix A>>*: Solr log analytics and visualization.
+*<<logs.adoc#logs,Appendix A>>*: Solr log analytics and visualization.

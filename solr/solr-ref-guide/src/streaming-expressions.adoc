@@ -120,4 +120,4 @@ Visualization of both streaming expressions and math expressions is done using A
 
 Visualizing Streaming expressions and setting up of Apache Zeppelin is documented in <<math-start.adoc#zeppelin-solr-interpreter,Zeppelin-Solr Interpreter>>.
 
-The <<math-expressions.adoc#,Math Expressions User Guide>> has in depth coverage of visualization techniques.
+The <<math-expressions.adoc#math-expressions,Math Expressions User Guide>> has in depth coverage of visualization techniques.
