@@ -393,6 +393,7 @@ public final class Lucene90VectorReader extends VectorReader {
       if (ord < 0) {
         ord = -(ord + 1);
       }
+      assert ord >= 0 && ord <= fieldEntry.ordToDoc.length;
       if (ord == fieldEntry.ordToDoc.length) {
         doc = NO_MORE_DOCS;
       } else {
