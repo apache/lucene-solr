@@ -16,39 +16,42 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.hadoop.util.Time;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.DelegationTokenRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
-
-import org.apache.http.HttpStatus;
-import org.apache.solr.security.HttpParamDelegationTokenPlugin;
-import org.apache.solr.security.KerberosPlugin;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.hadoop.util.Time;
+import org.apache.http.HttpStatus;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.DelegationTokenRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.DelegationTokenResponse;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.security.HttpParamDelegationTokenPlugin;
+import org.apache.solr.security.KerberosPlugin;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM;
 
 /**
  * Test the delegation token support in the {@link org.apache.solr.security.KerberosPlugin}.
@@ -131,7 +134,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       DelegationTokenResponse.Renew renewResponse = renew.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
       return renewResponse.getExpirationTime();
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
       return -1;
     }
@@ -143,7 +146,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     try {
       cancel.process(client);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -163,9 +166,10 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       }
       Thread.sleep(1000);
     }
-    assertEquals("Did not receieve excepted status code", expectedStatusCode, lastStatusCode);
+    assertEquals("Did not receive expected status code", expectedStatusCode, lastStatusCode);
   }
 
+  @SuppressWarnings({"rawtypes"})
   private SolrRequest getAdminRequest(final SolrParams params) {
     return new CollectionAdminRequest.List() {
       @Override
@@ -176,7 +180,19 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       }
     };
   }
+  @SuppressWarnings({"rawtypes"})
+  private SolrRequest getUpdateRequest(boolean commit) {
+    UpdateRequest request = new UpdateRequest();
+    if (commit) {
+      request.setAction(ACTION.COMMIT, false, false);
+    }
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "dummy_id");
+    request.add(doc);
+    return request;
+  }
 
+  @SuppressWarnings({"unchecked"})
   private int getStatusCode(String token, final String user, final String op, HttpSolrClient client)
   throws Exception {
     SolrClient delegationTokenClient;
@@ -197,6 +213,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       ModifiableSolrParams p = new ModifiableSolrParams();
       if (user != null) p.set(USER_PARAM, user);
       if (op != null) p.set("op", op);
+      @SuppressWarnings({"rawtypes"})
       SolrRequest req = getAdminRequest(p);
       if (user != null || op != null) {
         Set<String> queryParams = new HashSet<>();
@@ -207,7 +224,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       try {
         delegationTokenClient.request(req, null);
         return HttpStatus.SC_OK;
-      } catch (HttpSolrClient.RemoteSolrException re) {
+      } catch (BaseHttpSolrClient.RemoteSolrException re) {
         return re.code();
       }
     } finally {
@@ -215,12 +232,24 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     }
   }
 
-  private void doSolrRequest(HttpSolrClient client, SolrRequest request,
+  private void doSolrRequest(HttpSolrClient client,
+                             @SuppressWarnings({"rawtypes"})SolrRequest request,
       int expectedStatusCode) throws Exception {
     try {
       client.request(request);
       assertEquals(HttpStatus.SC_OK, expectedStatusCode);
-    } catch (HttpSolrClient.RemoteSolrException ex) {
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+      assertEquals(expectedStatusCode, ex.code());
+    }
+  }
+
+  private void doSolrRequest(HttpSolrClient client,
+                             @SuppressWarnings({"rawtypes"})SolrRequest request, String collectionName,
+      int expectedStatusCode) throws Exception {
+    try {
+      client.request(request, collectionName);
+      assertEquals(HttpStatus.SC_OK, expectedStatusCode);
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertEquals(expectedStatusCode, ex.code());
     }
   }
@@ -385,6 +414,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     String token = getDelegationToken(null, "bar", solrClientPrimary);
     assertNotNull(token);
 
+    @SuppressWarnings({"rawtypes"})
     SolrRequest request = getAdminRequest(new ModifiableSolrParams());
 
     // test without token
@@ -415,4 +445,44 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       ssWToken.close();
     }
   }
+
+  /**
+   * Test HttpSolrServer's delegation token support for Update Requests
+   */
+  @Test
+  public void testDelegationTokenSolrClientWithUpdateRequests() throws Exception {
+    String collectionName = "testDelegationTokensWithUpdate";
+
+    // Get token
+    String token = getDelegationToken(null, "bar", solrClientPrimary);
+    assertNotNull(token);
+
+    // Tests with update request.
+    // Before SOLR-13921, the request without commit will fail with a NullpointerException in DelegationTokenHttpSolrClient.createMethod
+    // due to a missing null check in the createMethod. (When requesting a commit, the setAction method will call setParams on the
+    // request so there is no NPE in the createMethod.)
+    final HttpSolrClient scUpdateWToken = new HttpSolrClient.Builder(solrClientPrimary.getBaseURL().toString())
+        .withKerberosDelegationToken(token)
+        .withResponseParser(solrClientPrimary.getParser())
+        .build();
+
+    // Create collection
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, 1, 1);
+    create.process(scUpdateWToken);
+
+    try {
+      // test update request with token via property and commit=true
+      @SuppressWarnings({"rawtypes"})
+      SolrRequest request = getUpdateRequest(true);
+      doSolrRequest(scUpdateWToken, request, collectionName, HttpStatus.SC_OK);
+
+      // test update request with token via property and commit=false
+      request = getUpdateRequest(false);
+      doSolrRequest(scUpdateWToken, request, collectionName, HttpStatus.SC_OK);
+
+    } finally {
+      scUpdateWToken.close();
+    }
+  }
+
 }

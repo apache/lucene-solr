@@ -31,7 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
@@ -61,16 +60,13 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     final String collection = "implicitcoll";
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
     int numShards = 3;
-    int maxShardsPerNode = (((numShards + 1) * replicationFactor) / NODE_COUNT) + 1;
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .process(cluster.getSolrClient());
 
     DocCollection coll = getCollectionState(collection);
     assertEquals("implicit", ((Map) coll.get(DOC_ROUTER)).get("name"));
     assertNotNull(coll.getStr(REPLICATION_FACTOR));
-    assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
     assertNull("A shard of a Collection configured with implicit router must have null range",
         coll.getSlice("a").getRange());
 
@@ -126,13 +122,11 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     int numShards = 4;
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
     String shard_fld = "shard_s";
 
     final String collection = "withShardField";
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c,d", replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
 
@@ -154,11 +148,9 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     String collectionName = "routeFieldColl";
     int numShards = 4;
     int replicationFactor = 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
     String shard_fld = "shard_s";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
     

@@ -9,11 +9,7 @@ JVM="java"
 
 sdir="`dirname \"$0\"`"
 
-if [ -n "$LOG4J_PROPS" ]; then
-  log4j_config="file:$LOG4J_PROPS"
-else
-  log4j_config="file:$sdir/../../resources/log4j2-console.xml"
-fi
+log4j_config="file:$sdir/../../resources/log4j2-console.xml"
 
 # Settings for ZK ACL
 #SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider \

@@ -41,7 +41,7 @@ public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     String errorMessage = (String) args.get("error");
     if (errorMessage != null) {
       throw new Error(errorMessage);

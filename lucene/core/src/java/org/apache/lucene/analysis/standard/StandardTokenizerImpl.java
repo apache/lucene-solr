@@ -726,7 +726,7 @@ public final class StandardTokenizerImpl {
    *
    * All internal variables are reset, the old input stream 
    * <b>cannot</b> be reused (internal buffer is discarded and lost).
-   * Lexical state is set to <tt>ZZ_INITIAL</tt>.
+   * Lexical state is set to <code>ZZ_INITIAL</code>.
    *
    * Internal scan buffer is resized down to its initial length, if it has grown.
    *
@@ -774,7 +774,7 @@ public final class StandardTokenizerImpl {
 
 
   /**
-   * Returns the character at position <tt>pos</tt> from the 
+   * Returns the character at position <code>pos</code> from the 
    * matched text. 
    * 
    * It is equivalent to yytext().charAt(pos), but faster

@@ -19,12 +19,15 @@ package org.apache.solr.handler.admin;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import javax.xml.xpath.XPathConstants;
+
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -142,6 +145,18 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   private static String dynfield(String field) {
     return "//lst[@name='dynamicFields']/lst[@name='"+field+"']/";
   }
+  
+  @Test
+  public void testIndexHeapUsageBytes() throws Exception {
+    try (SolrQueryRequest req = req("qt", "/admin/luke")) {
+      String response = h.query(req);
+      String xpath = "//long[@name='indexHeapUsageBytes']";
+      Double num = (Double) TestHarness.evaluateXPath(response, xpath, XPathConstants.NUMBER);
+      //with docs in the index, indexHeapUsageBytes should be greater than 0
+      Assert.assertTrue("indexHeapUsageBytes should be > 0, but was " + num.intValue(), num.intValue() > 0);
+    }
+  }
+
   @Test
   public void testFlParam() {
     SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s", "show", "all");

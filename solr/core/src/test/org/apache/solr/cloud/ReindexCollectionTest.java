@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -133,6 +132,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
         .setTarget(targetCollection);
     CollectionAdminResponse rsp = req.process(solrClient);
     assertNotNull(rsp.toString(), rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS));
+    @SuppressWarnings({"unchecked"})
     Map<String, Object> status = (Map<String, Object>)rsp.getResponse().get(ReindexCollectionCmd.REINDEX_STATUS);
     assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("inputDocs")).longValue());
     assertEquals(status.toString(), (long)NUM_DOCS, ((Number)status.get("processedDocs")).longValue());
@@ -141,9 +141,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
-
-    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
-        "ReindexCollectionTest.testBasicReindexing", false);
 
     // verify the target docs exist
     QueryResponse queryResponse = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
@@ -194,8 +191,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       return ReindexCollectionCmd.State.FINISHED == state;
     });
     solrClient.getZkStateReader().aliasesManager.update();
-    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
-        "ReindexCollectionTest.testSameTargetReindex_" + sourceRemove, false);
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
@@ -228,8 +223,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
-    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", NUM_DOCS, "*:*",
-        "ReindexCollectionTest.testLossyScherma", false);
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
     assertEquals("copied num docs", NUM_DOCS, rsp.getResults().getNumFound());
@@ -265,9 +258,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
       ReindexCollectionCmd.State state = ReindexCollectionCmd.State.get(coll.getStr(ReindexCollectionCmd.REINDEXING_STATE));
       return ReindexCollectionCmd.State.FINISHED == state;
     });
-    SolrTestCaseJ4.Solr11035BandAid(solrClient, targetCollection, "id", 11, "*:*",
-        "ReindexCollectionTest.testReshapeReindexTarget", false);
-
     // verify the target docs exist
     QueryResponse rsp = solrClient.query(targetCollection, params(CommonParams.Q, "*:*"));
 
@@ -345,6 +335,7 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testAbort() throws Exception {
     final String sourceCollection = "abortReindexing";
     final String targetCollection = "abortReindexingTarget";
@@ -389,7 +380,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
   private void createCollection(String name, String config, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.createCollection(name, config, numShards, numReplicas)
-        .setMaxShardsPerNode(-1)
         .process(solrClient);
 
     cluster.waitForActiveCollection(name, numShards, numShards * numReplicas);
@@ -402,9 +392,6 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
     }
     solrClient.add(collection, docs);
     solrClient.commit(collection);
-    SolrTestCaseJ4.Solr11035BandAid(solrClient, collection, "id", NUM_DOCS, "*:*",
-        "ReindexCollectionTest.indexDocs", false);
-
     // verify the docs exist
     QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
 

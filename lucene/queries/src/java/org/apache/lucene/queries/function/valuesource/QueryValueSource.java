@@ -18,7 +18,6 @@ package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -29,24 +28,32 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 
-/**
- * <code>QueryValueSource</code> returns the relevance score of the query
- */
+/** <code>QueryValueSource</code> returns the relevance score of the query */
 public class QueryValueSource extends ValueSource {
   final Query q;
   final float defVal;
 
   public QueryValueSource(Query q, float defVal) {
+    super();
+    if (q == null) {
+      throw new IllegalArgumentException("query cannot be null");
+    }
     this.q = q;
     this.defVal = defVal;
   }
 
-  public Query getQuery() { return q; }
-  public float getDefaultValue() { return defVal; }
+  public Query getQuery() {
+    return q;
+  }
+
+  public float getDefaultValue() {
+    return defVal;
+  }
 
   @Override
   public String description() {
@@ -54,7 +61,8 @@ public class QueryValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map fcontext, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> fcontext, LeafReaderContext readerContext)
+      throws IOException {
     return new QueryDocValues(this, readerContext, fcontext);
   }
 
@@ -66,37 +74,36 @@ public class QueryValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (QueryValueSource.class != o.getClass()) return false;
-    QueryValueSource other = (QueryValueSource)o;
-    return this.q.equals(other.q) && this.defVal==other.defVal;
+    QueryValueSource other = (QueryValueSource) o;
+    return this.q.equals(other.q) && this.defVal == other.defVal;
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     Query rewritten = searcher.rewrite(q);
     Weight w = searcher.createWeight(rewritten, ScoreMode.COMPLETE, 1);
     context.put(this, w);
   }
 }
 
-
 class QueryDocValues extends FloatDocValues {
   final LeafReaderContext readerContext;
   final Weight weight;
   final float defVal;
-  final Map fcontext;
+  final Map<Object, Object> fcontext;
   final Query q;
 
   Scorer scorer;
-  DocIdSetIterator it;
-  int scorerDoc; // the document the scorer is on
-  boolean noMatches=false;
+  DocIdSetIterator disi;
+  TwoPhaseIterator tpi;
+  Boolean thisDocMatches;
 
-  // the last document requested... start off with high value
-  // to trigger a scorer reset on first access.
-  int lastDocRequested=Integer.MAX_VALUE;
-  
+  // the last document requested
+  int lastDocRequested = -1;
 
-  public QueryDocValues(QueryValueSource vs, LeafReaderContext readerContext, Map fcontext) throws IOException {
+  public QueryDocValues(
+      QueryValueSource vs, LeafReaderContext readerContext, Map<Object, Object> fcontext)
+      throws IOException {
     super(vs);
 
     this.readerContext = readerContext;
@@ -104,19 +111,19 @@ class QueryDocValues extends FloatDocValues {
     this.q = vs.q;
     this.fcontext = fcontext;
 
-    Weight w = fcontext==null ? null : (Weight)fcontext.get(vs);
+    Weight w = fcontext == null ? null : (Weight) fcontext.get(vs);
     if (w == null) {
       IndexSearcher weightSearcher;
-      if(fcontext == null) {
+      if (fcontext == null) {
         weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
       } else {
-        weightSearcher = (IndexSearcher)fcontext.get("searcher");
+        weightSearcher = (IndexSearcher) fcontext.get("searcher");
         if (weightSearcher == null) {
           weightSearcher = new IndexSearcher(ReaderUtil.getTopLevelContext(readerContext));
         }
       }
       vs.createWeight(fcontext, weightSearcher);
-      w = (Weight)fcontext.get(vs);
+      w = (Weight) fcontext.get(vs);
     }
     weight = w;
   }
@@ -124,75 +131,53 @@ class QueryDocValues extends FloatDocValues {
   @Override
   public float floatVal(int doc) {
     try {
-      if (doc < lastDocRequested) {
-        if (noMatches) return defVal;
-        scorer = weight.scorer(readerContext);
-        if (scorer==null) {
-          noMatches = true;
-          return defVal;
-        }
-        it = scorer.iterator();
-        scorerDoc = -1;
-      }
-      lastDocRequested = doc;
-
-      if (scorerDoc < doc) {
-        scorerDoc = it.advance(doc);
-      }
-
-      if (scorerDoc > doc) {
-        // query doesn't match this document... either because we hit the
-        // end, or because the next doc is after this doc.
-        return defVal;
-      }
-
-      // a match!
-      return scorer.score();
+      return exists(doc) ? scorer.score() : defVal;
     } catch (IOException e) {
-      throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+      throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
     }
   }
 
   @Override
   public boolean exists(int doc) {
+    if (doc < lastDocRequested) {
+      throw new IllegalArgumentException(
+          "docs were sent out-of-order: lastDocID=" + lastDocRequested + " vs docID=" + doc);
+    }
+    lastDocRequested = doc;
+
     try {
-      if (doc < lastDocRequested) {
-        if (noMatches) return false;
+      if (disi == null) {
         scorer = weight.scorer(readerContext);
-        scorerDoc = -1;
-        if (scorer==null) {
-          noMatches = true;
-          return false;
+        if (scorer == null) {
+          disi = DocIdSetIterator.empty();
+        } else {
+          tpi = scorer.twoPhaseIterator();
+          disi = tpi == null ? scorer.iterator() : tpi.approximation();
         }
-        it = scorer.iterator();
-      }
-      lastDocRequested = doc;
-
-      if (scorerDoc < doc) {
-        scorerDoc = it.advance(doc);
+        thisDocMatches = null;
       }
 
-      if (scorerDoc > doc) {
-        // query doesn't match this document... either because we hit the
-        // end, or because the next doc is after this doc.
+      if (disi.docID() < doc) {
+        disi.advance(doc);
+        thisDocMatches = null;
+      }
+      if (disi.docID() == doc) {
+        if (thisDocMatches == null) {
+          thisDocMatches = tpi == null || tpi.matches();
+        }
+        return thisDocMatches;
+      } else {
         return false;
       }
-
-      // a match!
-      return true;
     } catch (IOException e) {
-      throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+      throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
     }
   }
 
-   @Override
+  @Override
   public Object objectVal(int doc) {
-     try {
-       return exists(doc) ? scorer.score() : null;
-     } catch (IOException e) {
-       throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
-     }
-   }
+    return floatVal(doc);
+  }
 
   @Override
   public ValueFiller getValueFiller() {
@@ -212,39 +197,15 @@ class QueryDocValues extends FloatDocValues {
       @Override
       public void fillValue(int doc) {
         try {
-          if (noMatches) {
+          if (exists(doc)) {
+            mval.value = scorer.score();
+            mval.exists = true;
+          } else {
             mval.value = defVal;
             mval.exists = false;
-            return;
           }
-          scorer = weight.scorer(readerContext);
-          scorerDoc = -1;
-          if (scorer==null) {
-            noMatches = true;
-            mval.value = defVal;
-            mval.exists = false;
-            return;
-          }
-          it = scorer.iterator();
-          lastDocRequested = doc;
-
-          if (scorerDoc < doc) {
-            scorerDoc = it.advance(doc);
-          }
-
-          if (scorerDoc > doc) {
-            // query doesn't match this document... either because we hit the
-            // end, or because the next doc is after this doc.
-            mval.value = defVal;
-            mval.exists = false;
-            return;
-          }
-
-          // a match!
-          mval.value = scorer.score();
-          mval.exists = true;
         } catch (IOException e) {
-          throw new RuntimeException("caught exception in QueryDocVals("+q+") doc="+doc, e);
+          throw new RuntimeException("caught exception in QueryDocVals(" + q + ") doc=" + doc, e);
         }
       }
     };

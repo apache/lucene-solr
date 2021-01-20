@@ -91,8 +91,10 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     query.add("fl", "*, score,id,normHits,description,fv:[features store='feature-store-6' format='dense' efi.user_text='apple']");
     String res = restTestHarness.query("/query" + query.toQueryString());
 
+    @SuppressWarnings({"unchecked"})
     Map<String,Object> resultJson = (Map<String,Object>) Utils.fromJSONString(res);
 
+    @SuppressWarnings({"unchecked"})
     List<Map<String,Object>> docs = (List<Map<String,Object>>)((Map<String,Object>)resultJson.get("response")).get("docs");
     int passCount = 0;
     for (final Map<String,Object> doc : docs) {

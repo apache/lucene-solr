@@ -75,6 +75,7 @@ public class TestConfigSetImmutable extends RestTestBase {
         "}";
     String uri = "/config";
     String response = restTestHarness.post(uri, SolrTestCaseJ4.json(payload));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) Utils.fromJSONString(response);
     assertNotNull(map.get("error"));
     assertTrue(map.get("error").toString().contains("immutable"));
@@ -92,7 +93,9 @@ public class TestConfigSetImmutable extends RestTestBase {
         "    }";
 
     String response = restTestHarness.post("/schema", json(payload));
+    @SuppressWarnings({"rawtypes"})
     Map map = (Map) Utils.fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map error = (Map)map.get("error");
     assertNotNull("No errors", error);
     String msg = (String)error.get("msg");

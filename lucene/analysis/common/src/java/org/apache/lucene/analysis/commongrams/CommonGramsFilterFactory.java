@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.analysis.commongrams;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
  * Constructs a {@link CommonGramsFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_cmmngrms" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -51,9 +50,9 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
   private final String commonWordFiles;
   private final String format;
   private final boolean ignoreCase;
-  
+
   /** Creates a new CommonGramsFilterFactory */
-  public CommonGramsFilterFactory(Map<String,String> args) {
+  public CommonGramsFilterFactory(Map<String, String> args) {
     super(args);
     commonWordFiles = get(args, "words");
     format = get(args, "format");
@@ -61,6 +60,11 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public CommonGramsFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override
@@ -90,6 +94,3 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements Reso
     return commonGrams;
   }
 }
- 
-  
-  

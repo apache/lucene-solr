@@ -44,8 +44,10 @@ def p(s):
 
 def mirror_contains_file(url):
   url = urlparse(url)
-  
-  if url.scheme == 'http':
+
+  if url.scheme == 'https':
+    return https_file_exists(url)
+  elif url.scheme == 'http':
     return http_file_exists(url)
   elif url.scheme == 'ftp':
     return ftp_file_exists(url)
@@ -65,6 +67,18 @@ def http_file_exists(url):
 
   return exists
 
+def https_file_exists(url):
+  exists = False
+
+  try:
+    conn = http.HTTPSConnection(url.netloc)
+    conn.request('HEAD', url.path)
+    response = conn.getresponse()
+    exists = response.status == 200
+  except:
+    pass
+
+  return exists
 
 def ftp_file_exists(url):
   listing = []
@@ -112,7 +126,7 @@ except Exception as e:
   sys.exit(1)
 
 mirror_path = args.path if args.path is not None else 'lucene/java/{}/changes/Changes.html'.format(args.version)
-maven_url = None if args.version is None else 'http://repo1.maven.org/maven2/' \
+maven_url = None if args.version is None else 'https://repo1.maven.org/maven2/' \
     'org/apache/lucene/lucene-core/{0}/lucene-core-{0}.pom.asc'.format(args.version)
 maven_available = False
 

@@ -43,6 +43,7 @@ public class ModeEvaluator extends RecursiveObjectEvaluator implements OneValueW
       throw new IOException(String.format(Locale.ROOT, "Unable to find %s(...) because the value is null", constructingFactory.getFunctionName(getClass())));
     }
     else if(value instanceof List){
+      @SuppressWarnings({"unchecked"})
       List<Number> c = (List<Number>) value;
       double[] data = new double[c.size()];
       for(int i=0; i< c.size(); i++) {
@@ -50,7 +51,7 @@ public class ModeEvaluator extends RecursiveObjectEvaluator implements OneValueW
       }
 
       double[] mode = StatUtils.mode(data);
-      List<Number> l = new ArrayList();
+      List<Number> l = new ArrayList<>();
       for(double d : mode) {
         l.add(d);
       }

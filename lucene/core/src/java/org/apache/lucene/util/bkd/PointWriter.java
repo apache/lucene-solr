@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.util.bkd;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 
-/** Appends many points, and then at the end provides a {@link PointReader} to iterate
- *  those points.  This abstracts away whether we write to disk, or use simple arrays
- *  in heap.
+/**
+ * Appends many points, and then at the end provides a {@link PointReader} to iterate those points.
+ * This abstracts away whether we write to disk, or use simple arrays in heap.
  *
- *  @lucene.internal
- *  */
+ * @lucene.internal
+ */
 public interface PointWriter extends Closeable {
 
   /** Add a new point from the packed value and docId */
@@ -42,6 +41,4 @@ public interface PointWriter extends Closeable {
 
   /** Removes any temp files behind this writer */
   void destroy() throws IOException;
-
 }
-

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Spatial strategy that uses two fields.
- */
+/** Spatial strategy that uses two fields. */
 package org.apache.lucene.spatial.vector;

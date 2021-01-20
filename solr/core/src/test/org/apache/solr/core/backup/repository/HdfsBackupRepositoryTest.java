@@ -17,6 +17,8 @@
 
 package org.apache.solr.core.backup.repository;
 
+import java.io.IOException;
+
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.HdfsDirectoryFactory;
@@ -28,68 +30,76 @@ import static org.junit.Assert.assertEquals;
 public class HdfsBackupRepositoryTest {
 
   @Test(expected = NullPointerException.class)
-  public void testHdfsHomePropertyMissing() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    hdfsBackupRepository.init(namedList);
+  public void testHdfsHomePropertyMissing() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository())  {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test
-  public void testHdfsHomePropertySet() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
-    hdfsBackupRepository.init(namedList);
+  public void testHdfsHomePropertySet() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test(expected = ClassCastException.class)
-  public void testCopyBufferSizeNonNumeric() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add("solr.hdfs.buffer.size", "xyz");
-    hdfsBackupRepository.init(namedList);
+  public void testCopyBufferSizeNonNumeric() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add("solr.hdfs.buffer.size", "xyz");
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test(expected = ClassCastException.class)
-  public void testCopyBufferSizeWrongType() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add("solr.hdfs.buffer.size", "8192");
-    hdfsBackupRepository.init(namedList);
+  public void testCopyBufferSizeWrongType() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add("solr.hdfs.buffer.size", "8192");
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testCopyBufferSizeNegative() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add("solr.hdfs.buffer.size", -1);
-    hdfsBackupRepository.init(namedList);
+  public void testCopyBufferSizeNegative() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add("solr.hdfs.buffer.size", -1);
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void testCopyBufferSizeZero() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add("solr.hdfs.buffer.size", 0);
-    hdfsBackupRepository.init(namedList);
+  public void testCopyBufferSizeZero() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add("solr.hdfs.buffer.size", 0);
+      hdfsBackupRepository.init(namedList);
+    }
   }
 
   @Test
-  public void testCopyBufferSet() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
-    namedList.add("solr.hdfs.buffer.size", 32768);
-    hdfsBackupRepository.init(namedList);
-    assertEquals(hdfsBackupRepository.copyBufferSize, 32768);
+  public void testCopyBufferSet() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
+      namedList.add("solr.hdfs.buffer.size", 32768);
+      hdfsBackupRepository.init(namedList);
+      assertEquals(hdfsBackupRepository.copyBufferSize, 32768);
+    }
   }
 
   @Test
-  public void testCopyBufferDefaultSize() {
-    HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository();
-    NamedList<Object> namedList = new SimpleOrderedMap<>();
-    namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
-    hdfsBackupRepository.init(namedList);
-    assertEquals(hdfsBackupRepository.copyBufferSize, HdfsDirectory.DEFAULT_BUFFER_SIZE);
+  public void testCopyBufferDefaultSize() throws IOException {
+    try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
+      NamedList<Object> namedList = new SimpleOrderedMap<>();
+      namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
+      hdfsBackupRepository.init(namedList);
+      assertEquals(hdfsBackupRepository.copyBufferSize, HdfsDirectory.DEFAULT_BUFFER_SIZE);
+    }
   }
 }

@@ -20,14 +20,19 @@ package org.apache.lucene.codecs.compressing;
 public class FastDecompressionCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
-  public FastDecompressionCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("FastDecompressionCompressingStoredFields",
-          withSegmentSuffix ? "FastDecompressionCompressingStoredFields" : "",
-          CompressionMode.FAST_DECOMPRESSION, chunkSize, maxDocsPerChunk, blockSize);
+  public FastDecompressionCompressingCodec(
+      int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
+    super(
+        "FastDecompressionCompressingStoredFieldsData",
+        withSegmentSuffix ? "FastDecompressionCompressingStoredFields" : "",
+        CompressionMode.FAST_DECOMPRESSION,
+        chunkSize,
+        maxDocsPerChunk,
+        blockSize);
   }
 
   /** Default constructor. */
   public FastDecompressionCompressingCodec() {
-    this(1 << 14, 256, false, 1024);
+    this(1 << 14, 256, false, 10);
   }
 }

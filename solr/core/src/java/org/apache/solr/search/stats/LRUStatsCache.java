@@ -33,7 +33,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.FastLRUCache;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
@@ -65,12 +65,12 @@ public class LRUStatsCache extends ExactStatsCache {
   // map of <shardName, <field, collStats>>
   private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
   
-  // global stats synchronized from the master
+  // global stats synchronized from the leader
 
   // cache of <term, termStats>
-  private final FastLRUCache<String,TermStats> currentGlobalTermStats = new FastLRUCache<>();
+  private final CaffeineCache<String,TermStats> currentGlobalTermStats = new CaffeineCache<>();
   // cache of <field, colStats>
-  private final FastLRUCache<String,CollectionStats> currentGlobalColStats = new FastLRUCache<>();
+  private final CaffeineCache<String,CollectionStats> currentGlobalColStats = new CaffeineCache<>();
 
   // missing stats to be fetched with the next request
   private Set<String> missingColStats = ConcurrentHashMap.newKeySet();
@@ -82,7 +82,9 @@ public class LRUStatsCache extends ExactStatsCache {
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
-    log.debug("## GET total={}, cache {}", currentGlobalColStats , currentGlobalTermStats.size());
+    if (log.isDebugEnabled()) {
+      log.debug("## GET total={}, cache {}", currentGlobalColStats, currentGlobalTermStats.size());
+    }
     return new LRUStatsSource(statsCacheMetrics);
   }
 
@@ -158,7 +160,7 @@ public class LRUStatsCache extends ExactStatsCache {
         return super.doRetrieveStatsRequest(rb);
       }
     } catch (IOException e) {
-      log.warn("Exception checking missing stats for query " + rb.getQuery() + ", forcing retrieving stats", e);
+      log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
       // retrieve anyway
       return super.doRetrieveStatsRequest(rb);
     }
@@ -183,8 +185,10 @@ public class LRUStatsCache extends ExactStatsCache {
   protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
     Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
+      @SuppressWarnings({"unchecked"})
       SolrCache<String,TermStats> cache = perShardTermStats.computeIfAbsent(shard, s -> {
-        FastLRUCache c = new FastLRUCache<>();
+        @SuppressWarnings({"rawtypes"})
+        CaffeineCache c = new CaffeineCache<>();
         Map<String, String> map = new HashMap<>(lruCacheInitArgs);
         map.put(CommonParams.NAME, s);
         c.init(map, null, null);

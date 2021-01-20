@@ -613,6 +613,11 @@ limitations under the License.
   width: 71%;
 }
 
+#content #schema .actions .chosen-container
+{
+  width: 71% !important;
+}
+
 #content #schema .actions label.checkbox {
   margin-left: 27%;
   text-align: left;

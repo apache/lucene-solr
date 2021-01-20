@@ -77,21 +77,32 @@ public @interface LogLevel {
     }
 
     private static Map<String, Level> setLogLevels(Map<String, Level> logLevels) {
-      LoggerContext ctx = LoggerContext.getContext(false);
-      Configuration config = ctx.getConfiguration();
+      final LoggerContext ctx = LoggerContext.getContext(false);
+      final Configuration config = ctx.getConfiguration();
 
-      Map<String, Level> oldLevels = new HashMap<>();
-      logLevels.forEach((loggerName, level) -> {
-        LoggerConfig logConfig = config.getLoggerConfig(loggerName);
-        // what the initial logger level was. It will use the root value if logger is being defined for the first time
-        oldLevels.put(loggerName, logConfig.getLevel());
+      final Map<String, Level> oldLevels = new HashMap<>();
+      logLevels.forEach((loggerName, newLevel) -> {
+        final LoggerConfig logConfig = config.getLoggerConfig(loggerName);
         if (loggerName.equals(logConfig.getName())) {
-          logConfig.setLevel(level);
+          // we have an existing LoggerConfig for this specific loggerName
+          // record the existing 'old' level...
+          oldLevels.put(loggerName, logConfig.getLevel());
+          // ...and set the new one (or remove if null) ...
+          if (null == newLevel) {
+            config.removeLogger(loggerName);
+          } else {
+            logConfig.setLevel(newLevel);
+          }
         } else {
-          LoggerConfig loggerConfig = new LoggerConfig(loggerName, level, true);
-          loggerConfig.setLevel(level);
-          config.addLogger(loggerName, loggerConfig);
+          // there is no existing configuration for the exact loggerName, logConfig is some ancestor
+          // record an 'old' level of 'null' to track the lack of any configured level...
+          oldLevels.put(loggerName, null);
+          // ...and now create a new logger config wih our new level
+          final LoggerConfig newLoggerConfig = new LoggerConfig(loggerName, newLevel, true);
+          config.addLogger(loggerName, newLoggerConfig);
         }
+
+        assert oldLevels.containsKey(loggerName);
       });
       ctx.updateLoggers();
       return oldLevels;

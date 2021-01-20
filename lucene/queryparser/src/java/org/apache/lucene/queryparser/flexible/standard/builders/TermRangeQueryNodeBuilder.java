@@ -25,45 +25,45 @@ import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewri
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 
-/**
- * Builds a {@link TermRangeQuery} object from a {@link TermRangeQueryNode}
- * object.
- */
+/** Builds a {@link TermRangeQuery} object from a {@link TermRangeQueryNode} object. */
 public class TermRangeQueryNodeBuilder implements StandardQueryBuilder {
-  
+
   public TermRangeQueryNodeBuilder() {
-  // empty constructor
+    // empty constructor
   }
-  
+
   @Override
   public TermRangeQuery build(QueryNode queryNode) throws QueryNodeException {
     TermRangeQueryNode rangeNode = (TermRangeQueryNode) queryNode;
     FieldQueryNode upper = rangeNode.getUpperBound();
     FieldQueryNode lower = rangeNode.getLowerBound();
-    
+
     String field = StringUtils.toString(rangeNode.getField());
     String lowerText = lower.getTextAsString();
     String upperText = upper.getTextAsString();
-    
+
     if (lowerText.length() == 0) {
       lowerText = null;
     }
-    
+
     if (upperText.length() == 0) {
       upperText = null;
     }
-    
-    TermRangeQuery rangeQuery = TermRangeQuery.newStringRange(field, lowerText, upperText, rangeNode
-        .isLowerInclusive(), rangeNode.isUpperInclusive());
-    
-    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod) queryNode
-        .getTag(MultiTermRewriteMethodProcessor.TAG_ID);
+
+    TermRangeQuery rangeQuery =
+        TermRangeQuery.newStringRange(
+            field,
+            lowerText,
+            upperText,
+            rangeNode.isLowerInclusive(),
+            rangeNode.isUpperInclusive());
+
+    MultiTermQuery.RewriteMethod method =
+        (MultiTermQuery.RewriteMethod) queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       rangeQuery.setRewriteMethod(method);
     }
-    
+
     return rangeQuery;
-    
   }
-  
 }

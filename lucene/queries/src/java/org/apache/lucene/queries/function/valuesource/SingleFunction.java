@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 
-import java.io.IOException;
-import java.util.Map;
-
-/** A function with a single argument
- */
- public abstract class SingleFunction extends ValueSource {
+/** A function with a single argument */
+public abstract class SingleFunction extends ValueSource {
   protected final ValueSource source;
 
   public SingleFunction(ValueSource source) {
@@ -46,13 +44,12 @@ import java.util.Map;
   @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
-    SingleFunction other = (SingleFunction)o;
-    return this.name().equals(other.name())
-         && this.source.equals(other.source);
+    SingleFunction other = (SingleFunction) o;
+    return this.name().equals(other.name()) && this.source.equals(other.source);
   }
 
   @Override
-  public void createWeight(Map context, IndexSearcher searcher) throws IOException {
+  public void createWeight(Map<Object, Object> context, IndexSearcher searcher) throws IOException {
     source.createWeight(context, searcher);
   }
 }

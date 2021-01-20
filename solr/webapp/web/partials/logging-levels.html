@@ -15,42 +15,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <div id="logging" class="clearfix">
-
-
   <div id="frame">
-
     <div class="block">
       <h2><span>{{watcher}}</span></h2>
-      <ul class="tree jstree">
-        <li class="jstree-leaf level-{{logger.level.toLowerCase()}}" ng-class="{'jstree-last':$last}" ng-repeat="logger in logging" ng-include="'logger.html'"></li>
-      </ul>
+      <div id="loggingtree">
+        <ul class="tree jstree jstree-container-ul jstree-children tree ng-isolate-scope jstree-1 jstree-default">
+          <li class="jstree-node jstree-leaf jstree-open level-{{logger.level.toLowerCase()}}" ng-class="{'jstree-last':$last}" ng-repeat="logger in logging" ng-include="'logger.html'"></li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
 
-  <script type="text/ng-template"  id="logger.html">
-      <ins class="trigger jstree-icon">&nbsp;</ins>
-      <a ng-click="toggleOptions(logger)" class="trigger {{logger.level.toLowerCase() }}" ng-class="{null:!logger.level, set: logger.set}" title="{{ logger.name }}" rel="{{logger.level}}">
-        <span class="ns">{{logger.name}}</span>
-        <span class="name" ng-show="logger.short">{{ logger.short }}</span>
-        <span class="name" ng-show="!logger.short"><em>empty</em></span>
-      </a>
+<script type="text/ng-template" id="logger.html">
+  <i class="trigger jstree-icon jstree-ocl">&nbsp;</i>
+  <a ng-click="toggleOptions(logger)" class="jstree-anchor trigger {{logger.level.toLowerCase() }}" ng-class="{null:!logger.level, set: logger.set}" title="{{ logger.name }}" rel="{{logger.level}}">
+    <span class="ns">{{logger.name}}</span>
+    <span class="name" ng-show="logger.short">{{ logger.short }}</span>
+    <span class="name" ng-show="!logger.short"><em>empty</em></span>
+  </a>
 
-      <div class="selector-holder" ng-class="{open:logger.showOptions}">
-        <div class="selector">
-          <a class="trigger" ng-click="toggleOptions(logger)"><span><em>{{logger.level || "null"}}</em></span></a>
-          <div ng-show="logger.showOptions">
-          <ul>
-            <li ng-repeat="level in levels track by level.pos">
-              <a ng-click="setLevel(logger, level.name)">{{level.name}}</a>
-            </li>
-            <li class="unset"><a ng-click="setLevel(logger, 'unset')">UNSET</a></li>
-          </ul>
-          <a class="close" ng-click="toggleOptions(logger)"><span>[x]</span></a>
-          </div>
-        </div>
+  <div class="selector-holder" ng-class="{open:logger.showOptions}">
+    <div class="selector">
+      <a class="trigger" ng-click="toggleOptions(logger)"><span><em>{{logger.level || "null"}}</em></span></a>
+      <div ng-show="logger.showOptions">
+        <ul>
+          <li ng-repeat="level in levels track by level.pos">
+            <a ng-click="setLevel(logger, level.name)">{{level.name}}</a>
+          </li>
+          <li class="unset"><a ng-click="setLevel(logger, 'unset')">UNSET</a></li>
+        </ul>
+        <a class="close" ng-click="toggleOptions(logger)"><span>[x]</span></a>
       </div>
-      <ul>
-        <li class="jstree-leaf level-{{logger.level.toLowerCase()}}" ng-class="{'jstree-last':$last}" ng-repeat="logger in logger.children" ng-include="'logger.html'"></li>
-      </ul>
-  </script>
+    </div>
+  </div>
+  <ul>
+    <li class="jstree-node jstree-leaf jstree-open level-{{logger.level.toLowerCase()}}" ng-class="{'jstree-last':$last}" ng-repeat="logger in logger.children" ng-include="'logger.html'"></li>
+  </ul>
+</script>

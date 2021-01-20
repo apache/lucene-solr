@@ -28,5 +28,4 @@ public class TestIntroSorter extends BaseSortTestCase {
   public Sorter newSorter(Entry[] arr) {
     return new ArrayIntroSorter<>(arr, Comparator.naturalOrder());
   }
-
 }

@@ -16,21 +16,28 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.CharacterUtils.CharacterBuffer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-/**
- * TestCase for the {@link CharacterUtils} class.
- */
+/** TestCase for the {@link CharacterUtils} class. */
 public class TestCharacterUtils extends LuceneTestCase {
+
+  public void testLowerUpper() throws IOException {
+    Reader reader = new StringReader("ABc");
+    CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(3);
+    assertTrue(CharacterUtils.fill(buffer, reader));
+    assertEquals(3, buffer.getLength());
+    CharacterUtils.toLowerCase(buffer.getBuffer(), 1, 3);
+    assertEquals("Abc", new String(buffer.getBuffer()));
+    CharacterUtils.toUpperCase(buffer.getBuffer(), 1, 3);
+    assertEquals("ABC", new String(buffer.getBuffer()));
+  }
 
   public void testConversions() {
     final char[] orig = TestUtil.randomUnicodeString(random(), 100).toCharArray();
@@ -42,7 +49,9 @@ public class TestCharacterUtils extends LuceneTestCase {
     final int codePointCount = CharacterUtils.toCodePoints(orig, o1, orig.length - o1, buf, o2);
     final int charCount = CharacterUtils.toChars(buf, o2, codePointCount, restored, o3);
     assertEquals(orig.length - o1, charCount);
-    assertArrayEquals(ArrayUtil.copyOfSubArray(orig, o1, o1 + charCount), ArrayUtil.copyOfSubArray(restored, o3, o3 + charCount));
+    assertArrayEquals(
+        ArrayUtil.copyOfSubArray(orig, o1, o1 + charCount),
+        ArrayUtil.copyOfSubArray(restored, o3, o3 + charCount));
   }
 
   @Test
@@ -58,26 +67,27 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals(0, newCharacterBuffer.getLength());
 
     // length must be >= 2
-    expectThrows(IllegalArgumentException.class, () -> {
-      CharacterUtils.newCharacterBuffer(1);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          CharacterUtils.newCharacterBuffer(1);
+        });
   }
 
   @Test
   public void testFillNoHighSurrogate() throws IOException {
     Reader reader = new StringReader("helloworld");
     CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(6);
-    assertTrue(CharacterUtils.fill(buffer,reader));
+    assertTrue(CharacterUtils.fill(buffer, reader));
     assertEquals(0, buffer.getOffset());
     assertEquals(6, buffer.getLength());
     assertEquals("hellow", new String(buffer.getBuffer()));
-    assertFalse(CharacterUtils.fill(buffer,reader));
+    assertFalse(CharacterUtils.fill(buffer, reader));
     assertEquals(4, buffer.getLength());
     assertEquals(0, buffer.getOffset());
 
-    assertEquals("orld", new String(buffer.getBuffer(), buffer.getOffset(),
-        buffer.getLength()));
-    assertFalse(CharacterUtils.fill(buffer,reader));
+    assertEquals("orld", new String(buffer.getBuffer(), buffer.getOffset(), buffer.getLength()));
+    assertFalse(CharacterUtils.fill(buffer, reader));
   }
 
   @Test
@@ -87,21 +97,20 @@ public class TestCharacterUtils extends LuceneTestCase {
     CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(5);
     assertTrue(CharacterUtils.fill(buffer, reader));
     assertEquals(4, buffer.getLength());
-    assertEquals("1234", new String(buffer.getBuffer(), buffer.getOffset(),
-        buffer.getLength()));
+    assertEquals("1234", new String(buffer.getBuffer(), buffer.getOffset(), buffer.getLength()));
     assertTrue(CharacterUtils.fill(buffer, reader));
     assertEquals(5, buffer.getLength());
     assertEquals("\ud801\udc1c789", new String(buffer.getBuffer()));
     assertTrue(CharacterUtils.fill(buffer, reader));
     assertEquals(4, buffer.getLength());
-    assertEquals("123\ud801", new String(buffer.getBuffer(),
-        buffer.getOffset(), buffer.getLength()));
+    assertEquals(
+        "123\ud801", new String(buffer.getBuffer(), buffer.getOffset(), buffer.getLength()));
     assertFalse(CharacterUtils.fill(buffer, reader));
     assertEquals(3, buffer.getLength());
-    assertEquals("\ud801\udc1c\ud801", new String(buffer.getBuffer(), buffer
-        .getOffset(), buffer.getLength()));
+    assertEquals(
+        "\ud801\udc1c\ud801",
+        new String(buffer.getBuffer(), buffer.getOffset(), buffer.getLength()));
     assertFalse(CharacterUtils.fill(buffer, reader));
     assertEquals(0, buffer.getLength());
   }
-
 }

@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.codahale.metrics.Counter;
@@ -56,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Test PeerSync when a node restarts and documents are indexed when node was down.
@@ -113,7 +113,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     del("*:*");
 
@@ -123,7 +123,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
           "document number " + docId++);
     }
     commit();
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     try {
       checkShardConsistency(false, true);
@@ -156,14 +156,14 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       // now shutdown all other nodes except for 'nodeShutDownForFailure'
       otherJetties.remove(nodePeerSynced);
       forceNodeFailures(otherJetties);
-      waitForThingsToLevelOut(30);
+      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
       checkShardConsistency(false, true);
 
       // now shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info, new TimeOut(15, SECONDS, TimeSource.NANO_TIME));
+      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info, new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
       updateMappingsFromZk(jettys, clients, true);
       assertEquals("PeerSynced node did not become leader", nodePeerSynced, shardToLeaderJetty.get("shard1"));
 
@@ -308,14 +308,14 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     nodesDown.remove(nodeToBringUp);
 
     waitTillNodesActive();
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     Set<CloudJettyRunner> jetties = new HashSet<>();
     jetties.addAll(shardToJetty.get("shard1"));
     jetties.removeAll(nodesDown);
     assertEquals(getShardCount() - nodesDown.size(), jetties.size());
 
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
     
     iib.join();
     

@@ -16,32 +16,26 @@
  */
 package org.apache.lucene.util.automaton;
 
-
-/**
- * Automaton representation for matching char[].
- */
+/** Automaton representation for matching char[]. */
 public class CharacterRunAutomaton extends RunAutomaton {
-  /**
-   * Construct with a default number of maxDeterminizedStates.
-   */
+  /** Construct with a default number of maxDeterminizedStates. */
   public CharacterRunAutomaton(Automaton a) {
     this(a, Operations.DEFAULT_MAX_DETERMINIZED_STATES);
   }
 
   /**
    * Construct specifying maxDeterminizedStates.
+   *
    * @param a Automaton to match
-   * @param maxDeterminizedStates maximum number of states that the automataon
-   *   can have once determinized.  If more states are required to determinize
-   *   it then a TooComplexToDeterminizeException is thrown.
-   */ 
+   * @param maxDeterminizedStates maximum number of states that the automaton can have once
+   *     determinized. If more states are required to determinize it then a
+   *     TooComplexToDeterminizeException is thrown.
+   */
   public CharacterRunAutomaton(Automaton a, int maxDeterminizedStates) {
-    super(a, Character.MAX_CODE_POINT+1, maxDeterminizedStates);
+    super(a, Character.MAX_CODE_POINT + 1, maxDeterminizedStates);
   }
 
-  /**
-   * Returns true if the given string is accepted by this automaton.
-   */
+  /** Returns true if the given string is accepted by this automaton. */
   public boolean run(String s) {
     int p = 0;
     int l = s.length();
@@ -49,12 +43,10 @@ public class CharacterRunAutomaton extends RunAutomaton {
       p = step(p, cp = s.codePointAt(i));
       if (p == -1) return false;
     }
-    return accept[p];
+    return accept.get(p);
   }
-  
-  /**
-   * Returns true if the given string is accepted by this automaton
-   */
+
+  /** Returns true if the given string is accepted by this automaton */
   public boolean run(char[] s, int offset, int length) {
     int p = 0;
     int l = offset + length;
@@ -62,6 +54,6 @@ public class CharacterRunAutomaton extends RunAutomaton {
       p = step(p, cp = Character.codePointAt(s, i, l));
       if (p == -1) return false;
     }
-    return accept[p];
+    return accept.get(p);
   }
 }

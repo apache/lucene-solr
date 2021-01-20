@@ -32,17 +32,18 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * <code>BitDocSet</code> represents an unordered set of Lucene Document Ids
- * using a BitSet.  A set bit represents inclusion in the set for that document.
+ * A {@link FixedBitSet} based implementation of a {@link DocSet}.  Good for medium/large sets.
  *
  * @since solr 0.9
  */
-public class BitDocSet extends DocSetBase {
+public class BitDocSet extends DocSet {
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(BitDocSet.class)
       + RamUsageEstimator.shallowSizeOfInstance(FixedBitSet.class)
       + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;  // for the array object inside the FixedBitSet. long[] array won't change alignment, so no need to calculate it.
 
-  final FixedBitSet bits;
+  // TODO consider SparseFixedBitSet alternative
+
+  private final FixedBitSet bits;
   int size;    // number of docs in the set (cached for perf)
 
   public BitDocSet() {
@@ -66,35 +67,6 @@ public class BitDocSet extends DocSetBase {
     this.bits = bits;
     this.size = size;
   }
-
-  /* DocIterator using nextSetBit()
-  public DocIterator iterator() {
-    return new DocIterator() {
-      int pos=bits.nextSetBit(0);
-      public boolean hasNext() {
-        return pos>=0;
-      }
-
-      public Integer next() {
-        return nextDoc();
-      }
-
-      public void remove() {
-        bits.clear(pos);
-      }
-
-      public int nextDoc() {
-        int old=pos;
-        pos=bits.nextSetBit(old+1);
-        return old;
-      }
-
-      public float score() {
-        return 0.0f;
-      }
-    };
-  }
-  ***/
 
   @Override
   public DocIterator iterator() {
@@ -139,15 +111,13 @@ public class BitDocSet extends DocSetBase {
   }
 
   @Override
-  public void add(int doc) {
-    bits.set(doc);
-    size=-1;  // invalidate size
+  protected FixedBitSet getFixedBitSet() {
+    return bits;
   }
 
   @Override
-  public void addUnique(int doc) {
-    bits.set(doc);
-    size=-1;  // invalidate size
+  protected FixedBitSet getFixedBitSetClone() {
+    return bits.clone();
   }
 
   @Override
@@ -157,20 +127,26 @@ public class BitDocSet extends DocSetBase {
   }
 
   /**
-   * The number of set bits - size - is cached.  If the bitset is changed externally,
-   * this method should be used to invalidate the previously cached size.
-   */
-  public void invalidateSize() {
-    size=-1;
-  }
-
-  /**
    * Returns true of the doc exists in the set. Should only be called when doc &lt;
    * {@link FixedBitSet#length()}.
    */
   @Override
   public boolean exists(int doc) {
     return bits.get(doc);
+  }
+
+  @Override
+  public DocSet intersection(DocSet other) {
+    // intersection is overloaded in the smaller DocSets to be more
+    // efficient, so dispatch off of it instead.
+    if (!(other instanceof BitDocSet)) {
+      return other.intersection(this);
+    }
+
+    // Default... handle with bitsets.
+    FixedBitSet newbits = getFixedBitSetClone();
+    newbits.and(other.getFixedBitSet());
+    return new BitDocSet(newbits);
   }
 
   @Override
@@ -217,12 +193,8 @@ public class BitDocSet extends DocSetBase {
   }
 
   @Override
-  public void addAllTo(DocSet target) {
-    if (target instanceof BitDocSet) {
-      ((BitDocSet) target).bits.or(bits);
-    } else {
-      super.addAllTo(target);
-    }
+  public void addAllTo(FixedBitSet target) {
+    target.or(bits);
   }
 
   @Override

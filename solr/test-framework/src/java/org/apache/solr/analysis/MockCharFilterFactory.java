@@ -20,7 +20,7 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockCharFilter;
-import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
 
 /**
  * Factory for {@link MockCharFilter} for testing purposes.
@@ -39,6 +39,11 @@ public class MockCharFilterFactory extends CharFilterFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public MockCharFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

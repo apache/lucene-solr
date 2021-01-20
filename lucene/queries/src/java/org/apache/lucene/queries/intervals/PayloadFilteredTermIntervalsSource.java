@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Predicate;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -46,13 +45,20 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
   @Override
   public IntervalIterator intervals(String field, LeafReaderContext ctx) throws IOException {
     Terms terms = ctx.reader().terms(field);
-    if (terms == null)
+    if (terms == null) {
       return null;
+    }
     if (terms.hasPositions() == false) {
-      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+      throw new IllegalArgumentException(
+          "Cannot create an IntervalIterator over field "
+              + field
+              + " because it has no indexed positions");
     }
     if (terms.hasPayloads() == false) {
-      throw new IllegalArgumentException("Cannot create a payload-filtered iterator over field " + field + " because it has no indexed payloads");
+      throw new IllegalArgumentException(
+          "Cannot create a payload-filtered iterator over field "
+              + field
+              + " because it has no indexed payloads");
     }
     TermsEnum te = terms.iterator();
     if (te.seekExact(term) == false) {
@@ -110,12 +116,12 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
       @Override
       public int nextInterval() throws IOException {
         do {
-          if (upto <= 0)
+          if (upto <= 0) {
             return pos = NO_MORE_INTERVALS;
+          }
           upto--;
           pos = pe.nextPosition();
-        }
-        while (filter.test(pe.getPayload()) == false);
+        } while (filter.test(pe.getPayload()) == false);
         return pos;
       }
 
@@ -128,8 +134,7 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
         if (pe.docID() == NO_MORE_DOCS) {
           upto = -1;
           pos = NO_MORE_INTERVALS;
-        }
-        else {
+        } else {
           upto = pe.freq();
           pos = -1;
         }
@@ -143,15 +148,23 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     Terms terms = ctx.reader().terms(field);
-    if (terms == null)
+    if (terms == null) {
       return null;
+    }
     if (terms.hasPositions() == false) {
-      throw new IllegalArgumentException("Cannot create an IntervalIterator over field " + field + " because it has no indexed positions");
+      throw new IllegalArgumentException(
+          "Cannot create an IntervalIterator over field "
+              + field
+              + " because it has no indexed positions");
     }
     if (terms.hasPayloads() == false) {
-      throw new IllegalArgumentException("Cannot create a payload-filtered iterator over field " + field + " because it has no indexed payloads");
+      throw new IllegalArgumentException(
+          "Cannot create a payload-filtered iterator over field "
+              + field
+              + " because it has no indexed payloads");
     }
     TermsEnum te = terms.iterator();
     if (te.seekExact(term) == false) {
@@ -165,12 +178,22 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
     visitor.consumeTerms(new IntervalQuery(field, this), new Term(field, term));
   }
 
-  private MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+  private IntervalMatchesIterator matches(TermsEnum te, int doc) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.ALL);
     if (pe.advance(doc) != doc) {
       return null;
     }
-    return new MatchesIterator() {
+    return new IntervalMatchesIterator() {
+
+      @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
+      public int width() {
+        return 1;
+      }
 
       int upto = pe.freq();
       int pos = -1;
@@ -184,8 +207,7 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
           }
           upto--;
           pos = pe.nextPosition();
-        }
-        while (filter.test(pe.getPayload()) == false);
+        } while (filter.test(pe.getPayload()) == false);
         return true;
       }
 
@@ -248,5 +270,4 @@ class PayloadFilteredTermIntervalsSource extends IntervalsSource {
   public String toString() {
     return "PAYLOAD_FILTERED(" + term.utf8ToString() + ")";
   }
-
 }

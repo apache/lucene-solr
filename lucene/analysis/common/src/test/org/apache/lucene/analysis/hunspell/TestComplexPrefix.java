@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestComplexPrefix extends StemmerTestBase {
@@ -24,7 +23,7 @@ public class TestComplexPrefix extends StemmerTestBase {
   public static void beforeClass() throws Exception {
     init("complexprefix.aff", "complexprefix.dic");
   }
-  
+
   public void testPrefixes() {
     assertStemsTo("ptwofoo", "foo");
     assertStemsTo("poneptwofoo", "foo");

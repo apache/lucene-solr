@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,52 +24,42 @@ import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
-
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
- * Simple standalone tool that forever acquires and releases a
- * lock using a specific LockFactory.  Run without any args
- * to see usage.
+ * Simple standalone tool that forever acquires and releases a lock using a specific {@link
+ * LockFactory}. Run without any args to see usage.
  *
  * @see VerifyingLockFactory
  * @see LockVerifyServer
- */ 
-
+ */
 public class LockStressTest {
-  
   static final String LOCK_FILE_NAME = "test.lock";
 
   @SuppressForbidden(reason = "System.out required: command line tool")
-  @SuppressWarnings("try")
   public static void main(String[] args) throws Exception {
     if (args.length != 7) {
-      System.out.println("Usage: java org.apache.lucene.store.LockStressTest myID verifierHost verifierPort lockFactoryClassName lockDirName sleepTimeMS count\n" +
-                         "\n" +
-                         "  myID = int from 0 .. 255 (should be unique for test process)\n" +
-                         "  verifierHost = hostname that LockVerifyServer is listening on\n" +
-                         "  verifierPort = port that LockVerifyServer is listening on\n" +
-                         "  lockFactoryClassName = primary FSLockFactory class that we will use\n" +
-                         "  lockDirName = path to the lock directory\n" +
-                         "  sleepTimeMS = milliseconds to pause betweeen each lock obtain/release\n" +
-                         "  count = number of locking tries\n" +
-                         "\n" +
-                         "You should run multiple instances of this process, each with its own\n" +
-                         "unique ID, and each pointing to the same lock directory, to verify\n" +
-                         "that locking is working correctly.\n" +
-                         "\n" +
-                         "Make sure you are first running LockVerifyServer.");
+      System.out.println(
+          "Usage: java org.apache.lucene.store.LockStressTest myID verifierHost verifierPort lockFactoryClassName lockDirName sleepTimeMS count\n"
+              + "\n"
+              + "  myID = int from 0 .. 255 (should be unique for test process)\n"
+              + "  verifierHost = hostname that LockVerifyServer is listening on\n"
+              + "  verifierPort = port that LockVerifyServer is listening on\n"
+              + "  lockFactoryClassName = primary FSLockFactory class that we will use\n"
+              + "  lockDirName = path to the lock directory\n"
+              + "  sleepTimeMS = milliseconds to pause betweeen each lock obtain/release\n"
+              + "  count = number of locking tries\n"
+              + "\n"
+              + "You should run multiple instances of this process, each with its own\n"
+              + "unique ID, and each pointing to the same lock directory, to verify\n"
+              + "that locking is working correctly.\n"
+              + "\n"
+              + "Make sure you are first running LockVerifyServer.");
       System.exit(1);
     }
 
     int arg = 0;
     final int myID = Integer.parseInt(args[arg++]);
-
-    if (myID < 0 || myID > 255) {
-      System.out.println("myID must be a unique int 0..255");
-      System.exit(1);
-    }
-
     final String verifierHost = args[arg++];
     final int verifierPort = Integer.parseInt(args[arg++]);
     final String lockFactoryClassName = args[arg++];
@@ -78,28 +67,57 @@ public class LockStressTest {
     final int sleepTimeMS = Integer.parseInt(args[arg++]);
     final int count = Integer.parseInt(args[arg++]);
 
+    int exitCode =
+        run(
+            myID,
+            verifierHost,
+            verifierPort,
+            lockFactoryClassName,
+            lockDirPath,
+            sleepTimeMS,
+            count);
+    System.exit(exitCode);
+  }
+
+  @SuppressForbidden(reason = "System.out required: command line tool")
+  @SuppressWarnings("try")
+  private static int run(
+      int myID,
+      String verifierHost,
+      int verifierPort,
+      String lockFactoryClassName,
+      Path lockDirPath,
+      int sleepTimeMS,
+      int count)
+      throws IOException, InterruptedException {
+    if (myID < 0 || myID > 255) {
+      System.out.println("myID must be a unique int 0..255");
+      return 1;
+    }
+
     final LockFactory lockFactory = getNewLockFactory(lockFactoryClassName);
-    // we test the lock factory directly, so we don't need it on the directory itsself (the directory is just for testing)
-    final FSDirectory lockDir = new SimpleFSDirectory(lockDirPath, NoLockFactory.INSTANCE);
+    // we test the lock factory directly, so we don't need it on the directory itself (the directory
+    // is just for testing)
+    final FSDirectory lockDir = new NIOFSDirectory(lockDirPath, NoLockFactory.INSTANCE);
     final InetSocketAddress addr = new InetSocketAddress(verifierHost, verifierPort);
-    System.out.println("Connecting to server " + addr +
-        " and registering as client " + myID + "...");
+    System.out.println(
+        "Connecting to server " + addr + " and registering as client " + myID + "...");
     try (Socket socket = new Socket()) {
       socket.setReuseAddress(true);
       socket.connect(addr, 500);
       final OutputStream out = socket.getOutputStream();
       final InputStream in = socket.getInputStream();
-      
+
       out.write(myID);
       out.flush();
       LockFactory verifyLF = new VerifyingLockFactory(lockFactory, in, out);
       final Random rnd = new Random();
-      
+
       // wait for starting gun
-      if (in.read() != 43) {
+      if (in.read() != LockVerifyServer.START_GUN_SIGNAL) {
         throw new IOException("Protocol violation");
       }
-      
+
       for (int i = 0; i < count; i++) {
         try (final Lock l = verifyLF.obtainLock(lockDir, LOCK_FILE_NAME)) {
           if (rnd.nextInt(10) == 0) {
@@ -120,14 +138,14 @@ public class LockStressTest {
         if (i % 500 == 0) {
           System.out.println((i * 100. / count) + "% done.");
         }
-        
-        Thread.sleep(sleepTimeMS);
-      } 
-    }
-    
-    System.out.println("Finished " + count + " tries.");
-  }
 
+        Thread.sleep(sleepTimeMS);
+      }
+    }
+
+    System.out.println("Finished " + count + " tries.");
+    return 0;
+  }
 
   private static FSLockFactory getNewLockFactory(String lockFactoryClassName) throws IOException {
     // try to get static INSTANCE field of class
@@ -136,10 +154,13 @@ public class LockStressTest {
     } catch (ReflectiveOperationException e) {
       // fall-through
     }
-    
+
     // try to create a new instance
     try {
-      return Class.forName(lockFactoryClassName).asSubclass(FSLockFactory.class).getConstructor().newInstance();
+      return Class.forName(lockFactoryClassName)
+          .asSubclass(FSLockFactory.class)
+          .getConstructor()
+          .newInstance();
     } catch (ReflectiveOperationException | ClassCastException e) {
       // fall-through
     }

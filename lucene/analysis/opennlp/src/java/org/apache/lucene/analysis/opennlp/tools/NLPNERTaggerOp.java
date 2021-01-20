@@ -23,20 +23,20 @@ import opennlp.tools.namefind.TokenNameFinderModel;
 import opennlp.tools.util.Span;
 
 /**
- * Supply OpenNLP Named Entity Resolution tool
- * Requires binary models from OpenNLP project on SourceForge.
+ * Supply OpenNLP Named Entity Resolution tool Requires binary models from OpenNLP project on
+ * SourceForge.
  *
- * Usage: from <a href="http://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.namefind.recognition.api"
- *             >the OpenNLP documentation</a>:
+ * <p>Usage: from <a
+ * href="http://opennlp.apache.org/docs/1.8.3/manual/opennlp.html#tools.namefind.recognition.api"
+ * >the OpenNLP documentation</a>:
  *
- * "The NameFinderME class is not thread safe, it must only be called from one thread.
- * To use multiple threads multiple NameFinderME instances sharing the same model instance
- * can be created. The input text should be segmented into documents, sentences and tokens.
- * To perform entity detection an application calls the find method for every sentence in
- * the document. After every document clearAdaptiveData must be called to clear the adaptive
- * data in the feature generators. Not calling clearAdaptiveData can lead to a sharp drop
- * in the detection rate after a few documents."
- *
+ * <p>"The NameFinderME class is not thread safe, it must only be called from one thread. To use
+ * multiple threads multiple NameFinderME instances sharing the same model instance can be created.
+ * The input text should be segmented into documents, sentences and tokens. To perform entity
+ * detection an application calls the find method for every sentence in the document. After every
+ * document clearAdaptiveData must be called to clear the adaptive data in the feature generators.
+ * Not calling clearAdaptiveData can lead to a sharp drop in the detection rate after a few
+ * documents."
  */
 public class NLPNERTaggerOp {
   private final TokenNameFinder nameFinder;

@@ -52,7 +52,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
   @Test
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void test() throws Exception {
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     // kill a leader and make sure recovery occurs as expected
     testRf3WithLeaderFailover();
@@ -63,7 +63,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     // kill the leader ... see what happens
     // create a collection that has 1 shard but 3 replicas
     String testCollectionName = "c8n_1x3_lf"; // _lf is leader fails
-    createCollection(testCollectionName, "conf1", 1, 3, 1);
+    createCollection(testCollectionName, "conf1", 1, 3);
     cloudClient.setDefaultCollection(testCollectionName);
     
     sendDoc(1);
@@ -142,7 +142,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     if (oldLeaderProxy != null) {
       oldLeaderProxy.close();      
     } else {
-      log.warn("No SocketProxy found for old leader node "+leaderNode);      
+      log.warn("No SocketProxy found for old leader node {}",leaderNode);
     }
 
     Thread.sleep(10000); // give chance for new leader to be elected.

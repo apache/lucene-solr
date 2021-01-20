@@ -52,16 +52,25 @@ public class ReplicateFromLeader {
 
   /**
    * Start a replication handler thread that will periodically pull indices from the shard leader
+   *
+   * <p>This is separate from the ReplicationHandler that listens at /replication, used for recovery
+   * and leader actions. It is simpler to discard the entire polling ReplicationHandler rather then
+   * worrying about disabling polling and correctly setting all of the leader bits if we need to reset.
+   *
+   * <p>TODO: It may be cleaner to extract the polling logic use that directly instead of creating
+   * what might be a fairly heavyweight instance here.
+   *
    * @param switchTransactionLog if true, ReplicationHandler will rotate the transaction log once
    * the replication is done
    */
-  public void startReplication(boolean switchTransactionLog) throws InterruptedException {
+  public void startReplication(boolean switchTransactionLog) {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         if (cc.isShutDown()) {
           return;
         } else {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in " + cc.getLoadedCoreNames());
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "SolrCore not found:" + coreName + " in "
+                  + CloudUtil.getLoadedCoreNamesAsString(cc));
         }
       }
       SolrConfig.UpdateHandlerInfo uinfo = core.getSolrConfig().getUpdateHandlerInfo();
@@ -76,12 +85,12 @@ public class ReplicateFromLeader {
       }
       log.info("Will start replication from leader with poll interval: {}", pollIntervalStr );
 
-      NamedList<Object> slaveConfig = new NamedList<>();
-      slaveConfig.add("fetchFromLeader", Boolean.TRUE);
-      slaveConfig.add(ReplicationHandler.SKIP_COMMIT_ON_MASTER_VERSION_ZERO, switchTransactionLog);
-      slaveConfig.add("pollInterval", pollIntervalStr);
+      NamedList<Object> followerConfig = new NamedList<>();
+      followerConfig.add("fetchFromLeader", Boolean.TRUE);
+      followerConfig.add(ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, switchTransactionLog);
+      followerConfig.add("pollInterval", pollIntervalStr);
       NamedList<Object> replicationConfig = new NamedList<>();
-      replicationConfig.add("slave", slaveConfig);
+      replicationConfig.add("follower", followerConfig);
 
       String lastCommitVersion = getCommitVersion(core);
       if (lastCommitVersion != null) {
@@ -133,7 +142,7 @@ public class ReplicateFromLeader {
 
   public void stopReplication() {
     if (replicationProcess != null) {
-      replicationProcess.close();
+      replicationProcess.shutdown();
     }
   }
 }

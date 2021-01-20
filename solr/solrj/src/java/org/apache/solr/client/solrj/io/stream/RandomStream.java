@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -65,6 +66,8 @@ public class RandomStream extends TupleStream implements Expressible  {
   protected transient SolrClientCache cache;
   protected transient CloudSolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
+  private int x;
+  private boolean outputX;
 
   public RandomStream() {
     // Used by the RandomFacade
@@ -88,10 +91,6 @@ public class RandomStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
-    }
 
     // pull out known named params
     Map<String,String> params = new HashMap<String,String>();
@@ -100,6 +99,8 @@ public class RandomStream extends TupleStream implements Expressible  {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
+
+
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
@@ -124,6 +125,25 @@ public class RandomStream extends TupleStream implements Expressible  {
     this.zkHost  = zkHost;
     this.props   = props;
     this.collection = collection;
+    if(props.containsKey(CommonParams.FL)) {
+      String fl = props.get(CommonParams.FL);
+      if(fl != null) {
+        if(fl.equals("*")) {
+          outputX = true;
+        } else {
+          String[] fields = fl.split(",");
+          for (String f : fields) {
+            if (f.trim().equals("x")) {
+              outputX = true;
+            }
+          }
+        }
+      } else {
+        outputX = true;
+      }
+    } else {
+      outputX = true;
+    }
   }
 
   @Override
@@ -173,7 +193,7 @@ public class RandomStream extends TupleStream implements Expressible  {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     return l;
   }
 
@@ -214,17 +234,22 @@ public class RandomStream extends TupleStream implements Expressible  {
 
   public Tuple read() throws IOException {
     if(documentIterator.hasNext()) {
-      Map map = new HashMap();
+      Tuple tuple = new Tuple();
       SolrDocument doc = documentIterator.next();
-      for(Entry<String, Object> entry : doc.entrySet()) {
-        map.put(entry.getKey(), entry.getValue());
+
+      // Put the generated x-axis first. If there really is an x field it will overwrite it.
+      if(outputX) {
+        tuple.put("x", x++);
       }
-      return new Tuple(map);
-    } else {
-      Map fields = new HashMap();
-      fields.put("EOF", true);
-      Tuple tuple = new Tuple(fields);
+
+      for(Entry<String, Object> entry : doc.entrySet()) {
+        tuple.put(entry.getKey(), entry.getValue());
+      }
+
+
       return tuple;
+    } else {
+      return Tuple.EOF();
     }
   }
 

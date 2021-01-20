@@ -22,7 +22,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
 import org.apache.lucene.spatial3d.geom.GeoAreaShape;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoCircle;
@@ -47,7 +46,6 @@ public class Geo3dBinaryCodec extends BinaryCodec {
 
   private PlanetModel planetModel;
 
-  @SuppressWarnings("unchecked")
   public Geo3dBinaryCodec(SpatialContext ctx, SpatialContextFactory factory) {
     super(ctx, factory);
     planetModel = ((Geo3dSpatialContextFactory) factory).planetModel;
@@ -55,32 +53,37 @@ public class Geo3dBinaryCodec extends BinaryCodec {
 
   @Override
   public Shape readShape(DataInput dataInput) throws IOException {
-    SerializableObject serializableObject = SerializableObject.readObject(planetModel, (InputStream) dataInput);
+    SerializableObject serializableObject =
+        SerializableObject.readObject(planetModel, (InputStream) dataInput);
     if (serializableObject instanceof GeoAreaShape) {
       GeoAreaShape shape = (GeoAreaShape) serializableObject;
       return new Geo3dShape<>(shape, ctx);
     }
-    throw new IllegalArgumentException("trying to read a not supported shape: " + serializableObject.getClass());
+    throw new IllegalArgumentException(
+        "trying to read a not supported shape: " + serializableObject.getClass());
   }
 
   @Override
   public void writeShape(DataOutput dataOutput, Shape s) throws IOException {
     if (s instanceof Geo3dShape) {
-      Geo3dShape geoAreaShape = (Geo3dShape) s;
+      Geo3dShape<?> geoAreaShape = (Geo3dShape<?>) s;
       SerializableObject.writeObject((OutputStream) dataOutput, geoAreaShape.shape);
     } else {
-      throw new IllegalArgumentException("trying to write a not supported shape: " + s.getClass().getName());
+      throw new IllegalArgumentException(
+          "trying to write a not supported shape: " + s.getClass().getName());
     }
   }
 
   @Override
   public Point readPoint(DataInput dataInput) throws IOException {
-    SerializableObject serializableObject = SerializableObject.readObject(planetModel, (InputStream) dataInput);
+    SerializableObject serializableObject =
+        SerializableObject.readObject(planetModel, (InputStream) dataInput);
     if (serializableObject instanceof GeoPointShape) {
       GeoPointShape shape = (GeoPointShape) serializableObject;
       return new Geo3dPointShape(shape, ctx);
     }
-    throw new IllegalArgumentException("trying to read a not supported point shape: " + serializableObject.getClass());
+    throw new IllegalArgumentException(
+        "trying to read a not supported point shape: " + serializableObject.getClass());
   }
 
   @Override
@@ -90,12 +93,14 @@ public class Geo3dBinaryCodec extends BinaryCodec {
 
   @Override
   public Rectangle readRect(DataInput dataInput) throws IOException {
-    SerializableObject serializableObject = SerializableObject.readObject(planetModel, (InputStream) dataInput);
+    SerializableObject serializableObject =
+        SerializableObject.readObject(planetModel, (InputStream) dataInput);
     if (serializableObject instanceof GeoBBox) {
       GeoBBox shape = (GeoBBox) serializableObject;
       return new Geo3dRectangleShape(shape, ctx);
     }
-    throw new IllegalArgumentException("trying to read a not supported rectangle shape: " + serializableObject.getClass());
+    throw new IllegalArgumentException(
+        "trying to read a not supported rectangle shape: " + serializableObject.getClass());
   }
 
   @Override
@@ -105,12 +110,14 @@ public class Geo3dBinaryCodec extends BinaryCodec {
 
   @Override
   public Circle readCircle(DataInput dataInput) throws IOException {
-    SerializableObject serializableObject = SerializableObject.readObject(planetModel, (InputStream) dataInput);
+    SerializableObject serializableObject =
+        SerializableObject.readObject(planetModel, (InputStream) dataInput);
     if (serializableObject instanceof GeoCircle) {
       GeoCircle shape = (GeoCircle) serializableObject;
       return new Geo3dCircleShape(shape, ctx);
     }
-    throw new IllegalArgumentException("trying to read a not supported circle shape: " + serializableObject.getClass());
+    throw new IllegalArgumentException(
+        "trying to read a not supported circle shape: " + serializableObject.getClass());
   }
 
   @Override
@@ -119,11 +126,13 @@ public class Geo3dBinaryCodec extends BinaryCodec {
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public ShapeCollection readCollection(DataInput dataInput) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public void writeCollection(DataOutput dataOutput, ShapeCollection col) throws IOException {
     throw new UnsupportedOperationException();
   }

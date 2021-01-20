@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Utilities for evaluation, data preparation, etc.
- */
+/** Utilities for evaluation, data preparation, etc. */
 package org.apache.lucene.classification.utils;

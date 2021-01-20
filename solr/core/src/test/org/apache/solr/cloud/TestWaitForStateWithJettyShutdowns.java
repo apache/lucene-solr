@@ -33,7 +33,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 import static org.apache.solr.cloud.SolrCloudTestCase.clusterShape;
 
@@ -74,7 +74,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   public void testWaitForStateBeforeShutDown() throws Exception {
     final String col_name = "test_col";
     final ExecutorService executor = ExecutorUtil.newMDCAwareFixedThreadPool
-      (1, new DefaultSolrThreadFactory("background_executor"));
+      (1, new SolrNamedThreadFactory("background_executor"));
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
       (1, createTempDir(), buildJettyConfig("/solr"));
     try {
@@ -145,8 +145,10 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     }
     public boolean matches(Set<String> liveNodes, DocCollection collectionState) {
       final boolean result = inner.matches(liveNodes, collectionState);
-      log.info("Predicate called: result={}, (pre)latch={}, liveNodes={}, state={}",
-               result, latch.getCount(), liveNodes, collectionState);
+      if (log.isInfoEnabled()) {
+        log.info("Predicate called: result={}, (pre)latch={}, liveNodes={}, state={}",
+            result, latch.getCount(), liveNodes, collectionState);
+      }
       latch.countDown();
       return result;
     }

@@ -42,7 +42,7 @@ public class ExplainAugmenterFactory extends TransformerFactory
   protected Style defaultStyle = Style.text;
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     if( defaultUserArgs != null ) {
       defaultStyle = getStyle( defaultUserArgs );

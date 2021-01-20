@@ -16,22 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.util.Accountable;
@@ -48,8 +32,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -58,6 +42,23 @@ import org.apache.solr.spelling.suggest.SuggesterResult;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * SuggestComponent: interacts with multiple {@link SolrSuggester} to serve up suggestions
@@ -84,13 +85,10 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   
   /** SolrConfig label to identify boolean value to build suggesters on startup */
   private static final String BUILD_ON_STARTUP_LABEL = "buildOnStartup";
-  
-  @SuppressWarnings("unchecked")
+
+  @SuppressWarnings({"rawtypes"})
   protected NamedList initParams;
 
-  protected SolrMetricManager metricManager;
-  protected String registryName;
-  
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
    */
@@ -108,7 +106,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   
   @Override
   @SuppressWarnings("unchecked")
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     this.initParams = args;
   }
@@ -120,6 +118,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       boolean hasDefault = false;
       for (int i = 0; i < initParams.size(); i++) {
         if (initParams.getName(i).equals(CONFIG_PARAM_LABEL)) {
+          @SuppressWarnings({"rawtypes"})
           NamedList suggesterParams = (NamedList) initParams.getVal(i);
           SolrSuggester suggester = new SolrSuggester();
           String dictionary = suggester.init(suggesterParams, core);
@@ -152,7 +151,9 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
           
           if (buildOnCommit || buildOnOptimize || buildOnStartup) {
             SuggesterListener listener = new SuggesterListener(core, suggester, buildOnCommit, buildOnOptimize, buildOnStartup, core.isReloaded());
-            log.info("Registering searcher listener for suggester: " + suggester.getName() + " - " + listener);
+            if (log.isInfoEnabled()) {
+              log.info("Registering searcher listener for suggester: {} = {}", suggester.getName(), listener);
+            }
             core.registerFirstSearcherListener(listener);
             core.registerNewSearcherListener(listener);
           }
@@ -165,7 +166,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent prepare with : " + params);
+    log.info("SuggestComponent prepare with : {}", params);
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
@@ -197,7 +198,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @Override
   public int distributedProcess(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent distributedProcess with : " + params);
+    log.info("SuggestComponent distributedProcess with : {}", params);
     if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) 
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
@@ -219,21 +220,21 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent process with : " + params);
+    log.info("SuggestComponent process with : {}", params);
     if (!params.getBool(COMPONENT_NAME, false) || suggesters.isEmpty()) {
       return;
     }
     
     boolean buildAll = params.getBool(SUGGEST_BUILD_ALL, false);
     boolean reloadAll = params.getBool(SUGGEST_RELOAD_ALL, false);
-    Set<SolrSuggester> querySuggesters;
+    List<SolrSuggester> querySuggesters;
     try {
       querySuggesters = getSuggesters(params);
     } catch(SolrException ex) {
       if (!buildAll && !reloadAll) {
         throw ex;
       } else {
-        querySuggesters = new HashSet<>();
+        querySuggesters = new ArrayList<>();
       }
     }
     
@@ -258,8 +259,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       }
 
       SuggesterOptions options = new SuggesterOptions(new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
-      Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults =
-          new HashMap<>();
+      SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults = new SimpleOrderedMap<>();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
@@ -274,7 +274,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @Override
   public void finishStage(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent finishStage with : " + params);
+    log.info("SuggestComponent finishStage with : {}", params);
     if (!params.getBool(COMPONENT_NAME, false) || rb.stage != ResponseBuilder.STAGE_GET_FIELDS)
       return;
     int count = params.getInt(SUGGEST_COUNT, 1);
@@ -287,9 +287,11 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         NamedList<Object> resp;
         if((resp = srsp.getSolrResponse().getResponse()) != null) {
           @SuppressWarnings("unchecked")
-          Map<String, SimpleOrderedMap<NamedList<Object>>> namedList = 
-              (Map<String, SimpleOrderedMap<NamedList<Object>>>) resp.get(SuggesterResultLabels.SUGGEST);
-          log.info(srsp.getShard() + " : " + namedList);
+          SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedList =
+                  (SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>>) resp.get(SuggesterResultLabels.SUGGEST);
+          if (log.isInfoEnabled()) {
+            log.info("{} : {}", srsp.getShard(), namedList);
+          }
           suggesterResults.add(toSuggesterResult(namedList));
         }
       }
@@ -297,8 +299,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     
     // Merge Shard responses
     SuggesterResult suggesterResult = merge(suggesterResults, count);
-    Map<String, SimpleOrderedMap<NamedList<Object>>> namedListResults = 
-        new HashMap<>();
+    SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults = new SimpleOrderedMap<>();
     toNamedList(suggesterResult, namedListResults);
     
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
@@ -313,7 +314,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   private static SuggesterResult merge(List<SuggesterResult> suggesterResults, int count) {
     SuggesterResult result = new SuggesterResult();
     Set<String> allTokens = new HashSet<>();
-    Set<String> suggesterNames = new HashSet<>();
+    SortedSet<String> suggesterNames = new TreeSet<>();
     
     // collect all tokens
     for (SuggesterResult shardResult : suggesterResults) {
@@ -351,18 +352,17 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.registryName = registryName;
-    this.metricManager = manager;
-    registry = manager.registry(registryName);
-    manager.registerGauge(this, registryName, () -> ramBytesUsed(), tag, true, "totalSizeInBytes", getCategory().toString(), scope);
-    MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+
+    this.solrMetricsContext.gauge(() -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
+    MetricsMap suggestersMap = new MetricsMap(map -> {
       for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
         SolrSuggester suggester = entry.getValue();
-        map.put(entry.getKey(), suggester.toString());
+        map.putNoEx(entry.getKey(), suggester.toString());
       }
     });
-    manager.registerGauge(this, registryName, suggestersMap, tag, true, "suggesters", getCategory().toString(), scope);
+    this.solrMetricsContext.gauge(suggestersMap, true, "suggesters", getCategory().toString(), scope);
   }
 
   @Override
@@ -379,8 +379,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return Accountables.namedAccountables("field", suggesters);
   }
   
-  private Set<SolrSuggester> getSuggesters(SolrParams params) {
-    Set<SolrSuggester> solrSuggesters = new HashSet<>();
+  private List<SolrSuggester> getSuggesters(SolrParams params) {
+    List<SolrSuggester> solrSuggesters = new ArrayList<>();
     for(String suggesterName : getSuggesterNames(params)) {
       SolrSuggester curSuggester = suggesters.get(suggesterName);
       if (curSuggester != null) {
@@ -396,9 +396,9 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return solrSuggesters;
     
   }
-  
-  private Set<String> getSuggesterNames(SolrParams params) {
-    Set<String> suggesterNames = new HashSet<>();
+
+  private SortedSet<String> getSuggesterNames(SolrParams params) {
+    SortedSet<String> suggesterNames = new TreeSet<>();
     String[] suggesterNamesFromParams = params.getParams(SUGGEST_DICT);
     if (suggesterNamesFromParams == null) {
       suggesterNames.add(DEFAULT_DICT_NAME);
@@ -411,8 +411,9 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
   
   /** Convert {@link SuggesterResult} to NamedList for constructing responses */
-  private void toNamedList(SuggesterResult suggesterResult, Map<String, SimpleOrderedMap<NamedList<Object>>> resultObj) {
-    for(String suggesterName : suggesterResult.getSuggesterNames()) {
+  private void toNamedList(SuggesterResult suggesterResult, SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> resultObj) {
+    final SortedSet<String> sortedSuggesterNames = new TreeSet<>(suggesterResult.getSuggesterNames());
+    for(String suggesterName : sortedSuggesterNames) {
       SimpleOrderedMap<NamedList<Object>> results = new SimpleOrderedMap<>();
       for (String token : suggesterResult.getTokens(suggesterName)) {
         SimpleOrderedMap<Object> suggestionBody = new SimpleOrderedMap<>();
@@ -436,18 +437,18 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         suggestionBody.add(SuggesterResultLabels.SUGGESTIONS, suggestEntriesNamedList);
         results.add(token, suggestionBody);
       }
-      resultObj.put(suggesterName, results);
+      resultObj.add(suggesterName, results);
     }
   }
   
   /** Convert NamedList (suggester response) to {@link SuggesterResult} */
-  private SuggesterResult toSuggesterResult(Map<String, SimpleOrderedMap<NamedList<Object>>> suggestionsMap) {
+  private SuggesterResult toSuggesterResult(SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> suggestionsMap) {
     SuggesterResult result = new SuggesterResult();
     if (suggestionsMap == null) {
       return result;
     }
     // for each token
-    for(Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap.entrySet()) {
+    for(Map.Entry<String, SimpleOrderedMap<NamedList<Object>>> entry : suggestionsMap) {
       String suggesterName = entry.getKey();
       for (Iterator<Map.Entry<String, NamedList<Object>>> suggestionsIter = entry.getValue().iterator(); suggestionsIter.hasNext();) {
         Map.Entry<String, NamedList<Object>> suggestions = suggestionsIter.next(); 
@@ -501,27 +502,33 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     }
 
     @Override
-    public void init(NamedList args) {}
+    public void init(@SuppressWarnings({"rawtypes"})NamedList args) {}
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
       long thisCallCount = callCount.incrementAndGet();
       if (isCoreReload && thisCallCount == 1) {
-        log.info("Skipping first newSearcher call for suggester " + suggester + " in core reload");
+        log.info("Skipping first newSearcher call for suggester {} in core reload", suggester);
         return;
       } else if (thisCallCount == 1 || (isCoreReload && thisCallCount == 2)) {
         if (buildOnStartup) {
-          log.info("buildOnStartup: " + suggester.getName());
+          if (log.isInfoEnabled()) {
+            log.info("buildOnStartup: {}", suggester.getName());
+          }
           buildSuggesterIndex(newSearcher);
         }
       } else {
         if (buildOnCommit)  {
-          log.info("buildOnCommit: " + suggester.getName());
+          if (log.isInfoEnabled()) {
+            log.info("buildOnCommit: {}", suggester.getName());
+          }
           buildSuggesterIndex(newSearcher);
         } else if (buildOnOptimize) {
           if (newSearcher.getIndexReader().leaves().size() == 1)  {
-            log.info("buildOnOptimize: " + suggester.getName());
+            if (log.isInfoEnabled()) {
+              log.info("buildOnOptimize: {}", suggester.getName());
+            }
             buildSuggesterIndex(newSearcher);
           }
         }
@@ -533,7 +540,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
       try {
         suggester.build(core, newSearcher);
       } catch (Exception e) {
-        log.error("Exception in building suggester index for: " + suggester.getName(), e);
+        log.error("Exception in building suggester index for {}: ", suggester.getName(), e);
       }
     }
 

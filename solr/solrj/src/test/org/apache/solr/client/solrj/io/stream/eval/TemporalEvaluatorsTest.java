@@ -30,7 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
@@ -80,7 +80,7 @@ public class TemporalEvaluatorsTest {
     factory.withFunctionName(TemporalEvaluatorQuarter.FUNCTION_NAME,   TemporalEvaluatorQuarter.class);
     factory.withFunctionName(TemporalEvaluatorDayOfQuarter.FUNCTION_NAME,   TemporalEvaluatorDayOfQuarter.class);
 
-    values = new HashedMap();
+    values = new HashedMap<>();
   }
 
   @Test

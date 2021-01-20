@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.br;
 
-
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-/** 
+/**
  * Factory for {@link BrazilianStemFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_brstem" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -40,18 +39,22 @@ public class BrazilianStemFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "brazilianStem";
-  
+
   /** Creates a new BrazilianStemFilterFactory */
-  public BrazilianStemFilterFactory(Map<String,String> args) {
+  public BrazilianStemFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
+  /** Default ctor for compatibility with SPI */
+  public BrazilianStemFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public BrazilianStemFilter create(TokenStream in) {
     return new BrazilianStemFilter(in);
   }
 }
-

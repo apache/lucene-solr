@@ -41,6 +41,7 @@
   <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" positionIncrementGap="0"/>
   <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false"/>
+  <fieldType name="rank" class="solr.RankField"/>
 
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
@@ -559,6 +560,8 @@
   <field name="_version_" type="long" indexed="false" stored="false" docValues="true"/>
   <!-- points to the root document of a block of nested documents -->
   <field name="_root_" type="string" indexed="true" stored="true"/>
+  <!-- for nested documents (relationship tracking) -->
+  <field name="_nest_path_" type="_nest_path_" /><fieldType name="_nest_path_" class="solr.NestPathField" />
 
   <field name="multi_int_with_docvals" type="tint" multiValued="true" docValues="true" indexed="false"/>
 
@@ -577,7 +580,11 @@
   <!-- for in-place updates -->
   <dynamicField name="*_i_dvo" multiValued="false" type="int"   docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_f_dvo" multiValued="false" type="float" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="false" stored="false"/>
   <dynamicField name="*_l_dvo" multiValued="false" type="long"  docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_dt_dvo" multiValued="false" type="date" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="false" stored="false"/>
+  <dynamicField name="*_b_dvo" multiValued="false" type="boolean" docValues="true" indexed="false" stored="false"/>
   
   <dynamicField name="*_mfacet" type="string" indexed="true" stored="false" multiValued="true"/>
 
@@ -595,6 +602,7 @@
   <dynamicField name="*_tt" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_ws" type="nametext" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
+  <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_f" type="float" indexed="true" stored="true"/>
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
@@ -608,6 +616,8 @@
 
   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
+
+  <dynamicField name="rank_*" type="rank"/>
 
   <dynamicField name="random_*" type="random"/>
 

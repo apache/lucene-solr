@@ -105,17 +105,16 @@ def add_constant(new_version, deprecate):
   changed = update_file(filename, matcher, Edit())
   print('done' if changed else 'uptodate')
 
-version_prop_re = re.compile('version\.base=(.*)')
 def update_build_version(new_version):
-  print('  changing version.base...', end='', flush=True)
-  filename = 'lucene/version.properties'
+  print('  changing baseVersion...', end='', flush=True)
+  filename = 'build.gradle'
   def edit(buffer, match, line):
     if new_version.dot in line:
       return None
-    buffer.append('version.base=' + new_version.dot + '\n')
+    buffer.append('  baseVersion = \'' + new_version.dot + '\'\n')
     return True 
 
-  changed = update_file(filename, version_prop_re, edit)
+  changed = update_file(filename, scriptutil.version_prop_re, edit)
   print('done' if changed else 'uptodate')
 
 def update_latest_constant(new_version):
@@ -163,22 +162,16 @@ def update_solrconfig(filename, matcher, new_version):
 
 def check_lucene_version_tests():
   print('  checking lucene version tests...', end='', flush=True)
-  base_dir = os.getcwd()
-  os.chdir('lucene/core') 
-  run('ant test -Dtestcase=TestVersion')
-  os.chdir(base_dir)
+  run('./gradlew -p lucene/core test --tests TestVersion')
   print('ok')
 
 def check_solr_version_tests():
   print('  checking solr version tests...', end='', flush=True)
-  base_dir = os.getcwd()
-  os.chdir('solr/core') 
-  run('ant test -Dtestcase=TestLuceneMatchVersion')
-  os.chdir(base_dir)
+  run('./gradlew -p solr/core test --tests TestLuceneMatchVersion')
   print('ok')
 
 def read_config(current_version):
-  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, lucene/version.properties and solrconfig.xml files')
+  parser = argparse.ArgumentParser(description='Add a new version to CHANGES, to Version.java, build.gradle and solrconfig.xml files')
   parser.add_argument('version', type=Version.parse)
   newconf = parser.parse_args()
 
@@ -199,19 +192,12 @@ def parse_properties_file(filename):
 def get_solr_init_changes():
   return dedent('''
     Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+    Docker and contrib modules have separate CHANGES.md files.
 
-    Versions of Major Components
-    ---------------------
-    Apache Tika %(org.apache.tika.version)s
-    Carrot2 %(/org.carrot2/carrot2-mini)s
-    Velocity %(/org.apache.velocity/velocity-engine-core)s and Velocity Tools %(org.apache.velocity.tools.version)s
-    Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
-    Jetty %(org.eclipse.jetty.version)s
-
-    ''' % parse_properties_file('lucene/ivy-versions.properties'))
+    ''')
   
 def main():
-  if not os.path.exists('lucene/version.properties'):
+  if not os.path.exists('build.gradle'):
     sys.exit("Tool must be run from the root of a source checkout.")
   current_version = Version.parse(find_current_version())
   newconf = read_config(current_version)
@@ -222,7 +208,7 @@ def main():
   update_changes('lucene/CHANGES.txt', newconf.version, '\n',
                  ['Bug Fixes'] if is_bugfix else ['API Changes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other'])
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes'] if is_bugfix else ['Upgrade Notes', 'New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
+                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
 
   latest_or_backcompat = newconf.is_latest_version or current_version.is_back_compat_with(newconf.version)
   if latest_or_backcompat:

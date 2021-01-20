@@ -38,6 +38,7 @@ import static org.apache.solr.common.params.UpdateParams.ASSUME_CONTENT_TYPE;
 
 public class MultiContentWriterRequest extends AbstractUpdateRequest {
 
+  @SuppressWarnings({"rawtypes"})
   private final Iterator<Pair<NamedList, Object>> payload;
 
   /**
@@ -47,7 +48,8 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
    * @param payload add the per doc params, The Object could be a ByteBuffer or byte[]
    */
 
-  public MultiContentWriterRequest(METHOD m, String path, Iterator<Pair<NamedList, Object>> payload) {
+  public MultiContentWriterRequest(METHOD m, String path,
+                                   @SuppressWarnings({"rawtypes"})Iterator<Pair<NamedList, Object>> payload) {
     super(m, path);
     params = new ModifiableSolrParams();
     params.add("multistream", "true");
@@ -59,12 +61,15 @@ public class MultiContentWriterRequest extends AbstractUpdateRequest {
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.ContentWriter() {
       @Override
+      @SuppressWarnings({"unchecked"})
       public void write(OutputStream os) throws IOException {
         new JavaBinCodec().marshal((IteratorWriter) iw -> {
           while (payload.hasNext()) {
+            @SuppressWarnings({"rawtypes"})
             Pair<NamedList, Object> next = payload.next();
 
             if (next.second() instanceof ByteBuffer || next.second() instanceof byte[]) {
+              @SuppressWarnings({"rawtypes"})
               NamedList params = next.first();
               if(params.get(ASSUME_CONTENT_TYPE) == null){
                 String detectedType = detect(next.second());

@@ -42,7 +42,9 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     getSolrClient().add(Arrays.asList(
         sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
         sdoc("id", "2", "term_s", "Apple", "term2_s", "AAPL"),
-        sdoc("id", "3", "term_s", "Yahoo", "term2_s", "YHOO")));
+        sdoc("id", "3", "term_s", "Yahoo", "term2_s", "YHOO"),
+        sdoc("id", ",", "term_s", "b00m! 1", "term2_s", "id separator escape test document 1"),
+        sdoc("id", "1,2", "term_s", "b00m! 2", "term2_s", "id separator escape test document 2")));
 
     getSolrClient().commit(true, true);
   }
@@ -61,6 +63,21 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertEquals("2", rsp.get("id"));
     assertEquals("Apple", rsp.get("term_s"));
     assertEquals("AAPL", rsp.get("term2_s"));
+  }
+
+  @Test
+  public void testGetIdWithSeparator() throws Exception {
+    SolrDocument rsp = getSolrClient().getById(",");
+    assertNotNull(rsp);
+    assertEquals(",", rsp.get("id"));
+    assertEquals("b00m! 1", rsp.get("term_s"));
+    assertEquals("id separator escape test document 1", rsp.get("term2_s"));
+
+    rsp = getSolrClient().getById("1,2");
+    assertNotNull(rsp);
+    assertEquals("1,2", rsp.get("id"));
+    assertEquals("b00m! 2", rsp.get("term_s"));
+    assertEquals("id separator escape test document 2", rsp.get("term2_s"));
   }
 
   @Test
@@ -96,6 +113,14 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
     assertEquals("3", rsp.get(2).get("id"));
     assertEquals("Yahoo", rsp.get(2).get("term_s"));
     assertEquals("YHOO", rsp.get(2).get("term2_s"));
+  }
+
+  @Test
+  public void testGetIdsWithSeparator() throws Exception {
+    SolrDocumentList rsp = getSolrClient().getById(Arrays.asList(",", "1,2"));
+    assertEquals(2, rsp.getNumFound());
+    assertEquals(",", rsp.get(0).get("id"));
+    assertEquals("1,2", rsp.get(1).get("id"));
   }
 
   @Test

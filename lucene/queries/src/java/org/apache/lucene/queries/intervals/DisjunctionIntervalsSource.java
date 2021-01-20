@@ -26,12 +26,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
-import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.PriorityQueue;
@@ -41,7 +39,8 @@ class DisjunctionIntervalsSource extends IntervalsSource {
   final Collection<IntervalsSource> subSources;
   final boolean pullUpDisjunctions;
 
-  static IntervalsSource create(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
+  static IntervalsSource create(
+      Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
     subSources = simplify(subSources);
     if (subSources.size() == 1) {
       return subSources.iterator().next();
@@ -49,7 +48,8 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     return new DisjunctionIntervalsSource(subSources, pullUpDisjunctions);
   }
 
-  private DisjunctionIntervalsSource(Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
+  private DisjunctionIntervalsSource(
+      Collection<IntervalsSource> subSources, boolean pullUpDisjunctions) {
     this.subSources = simplify(subSources);
     this.pullUpDisjunctions = pullUpDisjunctions;
   }
@@ -59,8 +59,7 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     for (IntervalsSource source : sources) {
       if (source instanceof DisjunctionIntervalsSource) {
         simplified.addAll(source.pullUpDisjunctions());
-      }
-      else {
+      } else {
         simplified.add(source);
       }
     }
@@ -76,21 +75,34 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         subIterators.add(it);
       }
     }
-    if (subIterators.size() == 0)
+    if (subIterators.size() == 0) {
       return null;
+    }
     return new DisjunctionIntervalIterator(subIterators);
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    List<MatchesIterator> subMatches = new ArrayList<>();
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
+    List<IntervalMatchesIterator> subMatches = new ArrayList<>();
     for (IntervalsSource subSource : subSources) {
-      MatchesIterator mi = subSource.matches(field, ctx, doc);
+      IntervalMatchesIterator mi = subSource.matches(field, ctx, doc);
       if (mi != null) {
         subMatches.add(mi);
       }
     }
-    return MatchesUtils.disjunction(subMatches);
+    if (subMatches.size() == 0) {
+      return null;
+    }
+    DisjunctionIntervalIterator it =
+        new DisjunctionIntervalIterator(
+            subMatches.stream()
+                .map(m -> IntervalMatches.wrapMatches(m, doc))
+                .collect(Collectors.toList()));
+    if (it.advance(doc) != doc) {
+      return null;
+    }
+    return new DisjunctionMatchesIterator(it, subMatches);
   }
 
   @Override
@@ -154,12 +166,13 @@ class DisjunctionIntervalsSource extends IntervalsSource {
       }
       this.approximation = new DisjunctionDISIApproximation(disiQueue);
       this.iterators = iterators;
-      this.intervalQueue = new PriorityQueue<IntervalIterator>(iterators.size()) {
-        @Override
-        protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
-          return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
-        }
-      };
+      this.intervalQueue =
+          new PriorityQueue<IntervalIterator>(iterators.size()) {
+            @Override
+            protected boolean lessThan(IntervalIterator a, IntervalIterator b) {
+              return a.end() < b.end() || (a.end() == b.end() && a.start() >= b.start());
+            }
+          };
       float costsum = 0;
       for (IntervalIterator it : iterators) {
         costsum += it.cost();
@@ -194,6 +207,16 @@ class DisjunctionIntervalsSource extends IntervalsSource {
         intervalQueue.add(dw.intervals);
       }
       current = EMPTY;
+    }
+
+    int currentOrd() {
+      assert current != EMPTY && current != EXHAUSTED;
+      for (int i = 0; i < iterators.size(); i++) {
+        if (iterators.get(i) == current) {
+          return i;
+        }
+      }
+      throw new IllegalStateException();
     }
 
     @Override
@@ -248,100 +271,162 @@ class DisjunctionIntervalsSource extends IntervalsSource {
     }
   }
 
-  private static final IntervalIterator EMPTY = new IntervalIterator() {
+  private static final IntervalIterator EMPTY =
+      new IntervalIterator() {
 
-    @Override
-    public int docID() {
-      throw new UnsupportedOperationException();
+        @Override
+        public int docID() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long cost() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int start() {
+          return -1;
+        }
+
+        @Override
+        public int end() {
+          return -1;
+        }
+
+        @Override
+        public int gaps() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int nextInterval() {
+          return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        public float matchCost() {
+          return 0;
+        }
+      };
+
+  private static final IntervalIterator EXHAUSTED =
+      new IntervalIterator() {
+
+        @Override
+        public int docID() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int nextDoc() throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int advance(int target) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long cost() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int start() {
+          return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        public int end() {
+          return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        public int gaps() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int nextInterval() {
+          return NO_MORE_INTERVALS;
+        }
+
+        @Override
+        public float matchCost() {
+          return 0;
+        }
+      };
+
+  private static class DisjunctionMatchesIterator implements IntervalMatchesIterator {
+
+    final DisjunctionIntervalIterator it;
+    final List<IntervalMatchesIterator> subs;
+
+    private DisjunctionMatchesIterator(
+        DisjunctionIntervalIterator it, List<IntervalMatchesIterator> subs) {
+      this.it = it;
+      this.subs = subs;
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      throw new UnsupportedOperationException();
+    public boolean next() throws IOException {
+      return it.nextInterval() != IntervalIterator.NO_MORE_INTERVALS;
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException();
+    public int startPosition() {
+      return it.start();
     }
 
     @Override
-    public long cost() {
-      throw new UnsupportedOperationException();
+    public int endPosition() {
+      return it.end();
     }
 
     @Override
-    public int start() {
-      return -1;
+    public int startOffset() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).startOffset();
     }
 
     @Override
-    public int end() {
-      return -1;
+    public int endOffset() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).endOffset();
+    }
+
+    @Override
+    public MatchesIterator getSubMatches() throws IOException {
+      int ord = it.currentOrd();
+      return subs.get(ord).getSubMatches();
+    }
+
+    @Override
+    public Query getQuery() {
+      int ord = it.currentOrd();
+      return subs.get(ord).getQuery();
     }
 
     @Override
     public int gaps() {
-      throw new UnsupportedOperationException();
+      return it.gaps();
     }
 
     @Override
-    public int nextInterval() {
-      return NO_MORE_INTERVALS;
+    public int width() {
+      return it.width();
     }
-
-    @Override
-    public float matchCost() {
-      return 0;
-    }
-  };
-
-  private static final IntervalIterator EXHAUSTED = new IntervalIterator() {
-
-    @Override
-    public int docID() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long cost() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int start() {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public int end() {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public int gaps() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int nextInterval() {
-      return NO_MORE_INTERVALS;
-    }
-
-    @Override
-    public float matchCost() {
-      return 0;
-    }
-  };
-
+  }
 }

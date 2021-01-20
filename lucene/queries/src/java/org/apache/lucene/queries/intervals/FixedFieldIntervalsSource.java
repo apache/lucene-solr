@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
 class FixedFieldIntervalsSource extends IntervalsSource {
@@ -43,7 +41,8 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
     return source.matches(this.field, ctx, doc);
   }
 
@@ -63,7 +62,9 @@ class FixedFieldIntervalsSource extends IntervalsSource {
     if (inner.size() == 1) {
       return Collections.singleton(this);
     }
-    return inner.stream().map(s -> new FixedFieldIntervalsSource(field, s)).collect(Collectors.toSet());
+    return inner.stream()
+        .map(s -> new FixedFieldIntervalsSource(field, s))
+        .collect(Collectors.toSet());
   }
 
   @Override
@@ -71,8 +72,7 @@ class FixedFieldIntervalsSource extends IntervalsSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     FixedFieldIntervalsSource that = (FixedFieldIntervalsSource) o;
-    return Objects.equals(field, that.field) &&
-        Objects.equals(source, that.source);
+    return Objects.equals(field, that.field) && Objects.equals(source, that.source);
   }
 
   @Override

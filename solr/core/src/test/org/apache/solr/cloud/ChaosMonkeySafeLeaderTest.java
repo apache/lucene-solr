@@ -153,14 +153,14 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     Thread.sleep(2000);
 
-    waitForThingsToLevelOut(180000);
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
     
     // even if things were leveled out, a jetty may have just been stopped or something
     // we wait again and wait to level out again to make sure the system is not still in flux
     
     Thread.sleep(3000);
 
-    waitForThingsToLevelOut(180000);
+    waitForThingsToLevelOut(3, TimeUnit.MINUTES);
 
     checkShardConsistency(batchSize == 1, true);
     
@@ -176,7 +176,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
 
     try (CloudSolrClient client = createCloudClient("collection1")) {
-        createCollection(null, "testcollection", 1, 1, 1, client, null, "conf1");
+        createCollection(null, "testcollection", 1, 1, client, null, "conf1");
 
     }
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);

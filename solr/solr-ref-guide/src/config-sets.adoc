@@ -1,4 +1,4 @@
-= Config Sets
+= Configsets
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,17 +16,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-On a multicore Solr instance, you may find that you want to share configuration between a number of different cores. You can achieve this using named configsets, which are essentially shared configuration directories stored under a configurable configset base directory.
+Configsets are a set of configuration files used in a Solr installation: `solrconfig.xml`, the schema, and then <<resource-loading.adoc#resource-loading,resources>> like language files, `synonyms.txt`, and others.
 
-Configsets are made up of the configuration files used in a Solr installation: inclduding `solrconfig.xml`, the schema, language-files, `synonyms.txt`, DIH-related configuration, and others as needed for your implementation.
+Such configuration, _configsets_, can be named and then referenced by collections or cores, possibly with the intent to share them to avoid duplication.
 
 Solr ships with two example configsets located in `server/solr/configsets`, which can be used as a base for your own. These example configsets are named `_default` and `sample_techproducts_configs`.
 
 == Configsets in Standalone Mode
 
-If you are using Solr in standalone mode, configsets are created on the filesystem.
+If you are using Solr in standalone mode, configsets are managed on the filesystem.
 
-To create a configset, add a new directory under the configset base directory. The configset will be identified by the name of this directory. Then into this copy the configuration directory you want to share. The structure should look something like this:
+Each Solr core can have it's very own configset located beneath it in a `<instance_dir>/conf/` dir.
+Here, it is not named or shared and the word _configset_ isn't found.
+In Solr's early years, this was _the only way_ it was configured.
+
+To create a named configset, add a new directory under the configset base directory.
+The configset will be identified by the name of this directory.
+Then add a `conf/` directory containing the configuration you want to share.
+The structure should look something like this:
 
 [source,bash]
 ----
@@ -76,4 +83,16 @@ curl -v -X POST -H 'Content-type: application/json' -d '{
 
 == Configsets in SolrCloud Mode
 
-In SolrCloud mode, you can use the <<configsets-api.adoc#configsets-api,Configsets API>> to manage your configsets.
+In SolrCloud, it's critical to understand that configsets are fundamentally stored in ZooKeeper _and not_ the file system.
+Solr's `_default` configset is uploaded to ZooKeeper on initialization.
+This and some demonstration ones remain on the file system but Solr does not use them whatsoever in this mode.
+
+When you create a collection in SolrCloud, you can specify a named configset -- possibly shared.
+If you don't, then the `_default` will be copied and given a unique name for use by this collection.
+
+A configset can be uploaded to ZooKeeper either via the <<configsets-api.adoc#configsets-api,Configsets API>> or more directly via <<solr-control-script-reference.adoc#upload-a-configuration-set,`bin/solr zk upconfig`>>.
+The Configsets API has some other operations as well, and likewise, so does the CLI.
+
+To upload a file to a configset already stored on ZooKeeper, you can use <<solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes,`bin/solr zk cp`>>.
+
+CAUTION: By default, ZooKeeper's file size limit is 1MB. If your files are larger than this, you'll need to either <<setting-up-an-external-zookeeper-ensemble.adoc#increasing-the-file-size-limit,increase the ZooKeeper file size limit>> or store them instead <<libs.adoc#lib-directives-in-solrconfig,on the filesystem>>.

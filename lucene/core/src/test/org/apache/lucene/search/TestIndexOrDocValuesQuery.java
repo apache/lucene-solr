@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongPoint;
@@ -37,9 +36,12 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
 
   public void testUseIndexForSelectiveQueries() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig()
-        // relies on costs and PointValues.estimateCost so we need the default codec
-        .setCodec(TestUtil.getDefaultCodec()));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                // relies on costs and PointValues.estimateCost so we need the default codec
+                .setCodec(TestUtil.getDefaultCodec()));
     for (int i = 0; i < 2000; ++i) {
       Document doc = new Document();
       if (i == 42) {
@@ -63,20 +65,30 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
     searcher.setQueryCache(null);
 
     // The term query is more selective, so the IndexOrDocValuesQuery should use doc values
-    final Query q1 = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f1", "foo")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 2), NumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)), Occur.MUST)
-        .build();
+    final Query q1 =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f1", "foo")), Occur.MUST)
+            .add(
+                new IndexOrDocValuesQuery(
+                    LongPoint.newExactQuery("f2", 2),
+                    NumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)),
+                Occur.MUST)
+            .build();
 
     final Weight w1 = searcher.createWeight(searcher.rewrite(q1), ScoreMode.COMPLETE, 1);
     final Scorer s1 = w1.scorer(searcher.getIndexReader().leaves().get(0));
     assertNotNull(s1.twoPhaseIterator()); // means we use doc values
 
     // The term query is less selective, so the IndexOrDocValuesQuery should use points
-    final Query q2 = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), NumericDocValuesField.newSlowRangeQuery("f2", 42L, 42L)), Occur.MUST)
-        .build();
+    final Query q2 =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
+            .add(
+                new IndexOrDocValuesQuery(
+                    LongPoint.newExactQuery("f2", 42),
+                    NumericDocValuesField.newSlowRangeQuery("f2", 42L, 42L)),
+                Occur.MUST)
+            .build();
 
     final Weight w2 = searcher.createWeight(searcher.rewrite(q2), ScoreMode.COMPLETE, 1);
     final Scorer s2 = w2.scorer(searcher.getIndexReader().leaves().get(0));
@@ -89,14 +101,17 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
 
   public void testUseIndexForSelectiveMultiValueQueries() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig()
-        // relies on costs and PointValues.estimateCost so we need the default codec
-        .setCodec(TestUtil.getDefaultCodec()));
+    IndexWriter w =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig()
+                // relies on costs and PointValues.estimateCost so we need the default codec
+                .setCodec(TestUtil.getDefaultCodec()));
     for (int i = 0; i < 2000; ++i) {
       Document doc = new Document();
       if (i < 1000) {
         doc.add(new StringField("f1", "bar", Store.NO));
-        for (int j =0; j < 500; j++) {
+        for (int j = 0; j < 500; j++) {
           doc.add(new LongPoint("f2", 42L));
           doc.add(new SortedNumericDocValuesField("f2", 42L));
         }
@@ -106,7 +121,7 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
         doc.add(new SortedNumericDocValuesField("f2", 42L));
       } else {
         doc.add(new StringField("f1", "bar", Store.NO));
-        for (int j =0; j < 100; j++) {
+        for (int j = 0; j < 100; j++) {
           doc.add(new LongPoint("f2", 2L));
           doc.add(new SortedNumericDocValuesField("f2", 2L));
         }
@@ -119,30 +134,45 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
     searcher.setQueryCache(null);
 
     // The term query is less selective, so the IndexOrDocValuesQuery should use points
-    final Query q1 = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 2), SortedNumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)), Occur.MUST)
-        .build();
+    final Query q1 =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
+            .add(
+                new IndexOrDocValuesQuery(
+                    LongPoint.newExactQuery("f2", 2),
+                    SortedNumericDocValuesField.newSlowRangeQuery("f2", 2L, 2L)),
+                Occur.MUST)
+            .build();
 
     final Weight w1 = searcher.createWeight(searcher.rewrite(q1), ScoreMode.COMPLETE, 1);
     final Scorer s1 = w1.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(s1.twoPhaseIterator()); // means we use points
 
     // The term query is less selective, so the IndexOrDocValuesQuery should use points
-    final Query q2 = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), SortedNumericDocValuesField.newSlowRangeQuery("f2", 42, 42L)), Occur.MUST)
-        .build();
+    final Query q2 =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f1", "bar")), Occur.MUST)
+            .add(
+                new IndexOrDocValuesQuery(
+                    LongPoint.newExactQuery("f2", 42),
+                    SortedNumericDocValuesField.newSlowRangeQuery("f2", 42, 42L)),
+                Occur.MUST)
+            .build();
 
     final Weight w2 = searcher.createWeight(searcher.rewrite(q2), ScoreMode.COMPLETE, 1);
     final Scorer s2 = w2.scorer(searcher.getIndexReader().leaves().get(0));
     assertNull(s2.twoPhaseIterator()); // means we use points
 
     // The term query is more selective, so the IndexOrDocValuesQuery should use doc values
-    final Query q3 = new BooleanQuery.Builder()
-        .add(new TermQuery(new Term("f1", "foo")), Occur.MUST)
-        .add(new IndexOrDocValuesQuery(LongPoint.newExactQuery("f2", 42), SortedNumericDocValuesField.newSlowRangeQuery("f2", 42, 42L)), Occur.MUST)
-        .build();
+    final Query q3 =
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f1", "foo")), Occur.MUST)
+            .add(
+                new IndexOrDocValuesQuery(
+                    LongPoint.newExactQuery("f2", 42),
+                    SortedNumericDocValuesField.newSlowRangeQuery("f2", 42, 42L)),
+                Occur.MUST)
+            .build();
 
     final Weight w3 = searcher.createWeight(searcher.rewrite(q3), ScoreMode.COMPLETE, 1);
     final Scorer s3 = w3.scorer(searcher.getIndexReader().leaves().get(0));
@@ -152,5 +182,4 @@ public class TestIndexOrDocValuesQuery extends LuceneTestCase {
     w.close();
     dir.close();
   }
-
 }

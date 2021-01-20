@@ -21,14 +21,13 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.QueryVisitor;
 
 /**
- * Tracks a reference intervals source, and produces a pseudo-interval that appears
- * either one position before or one position after each interval from the reference
+ * Tracks a reference intervals source, and produces a pseudo-interval that appears either one
+ * position before or one position after each interval from the reference
  */
 class OffsetIntervalsSource extends IntervalsSource {
 
@@ -64,8 +63,7 @@ class OffsetIntervalsSource extends IntervalsSource {
           return Math.max(0, pos - 1);
         }
       };
-    }
-    else {
+    } else {
       return new OffsetIntervalIterator(it) {
         @Override
         public int start() {
@@ -85,7 +83,7 @@ class OffsetIntervalsSource extends IntervalsSource {
     }
   }
 
-  private static abstract class OffsetIntervalIterator extends IntervalIterator {
+  private abstract static class OffsetIntervalIterator extends IntervalIterator {
 
     final IntervalIterator in;
 
@@ -136,8 +134,9 @@ class OffsetIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator mi = in.matches(field, ctx, doc);
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
+    IntervalMatchesIterator mi = in.matches(field, ctx, doc);
     if (mi == null) {
       return null;
     }
@@ -146,7 +145,8 @@ class OffsetIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-    in.visit(field, visitor);
+    in.visit(
+        field, visitor.getSubVisitor(BooleanClause.Occur.MUST, new IntervalQuery(field, this)));
   }
 
   @Override
@@ -164,8 +164,7 @@ class OffsetIntervalsSource extends IntervalsSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     OffsetIntervalsSource that = (OffsetIntervalsSource) o;
-    return before == that.before &&
-        Objects.equals(in, that.in);
+    return before == that.before && Objects.equals(in, that.in);
   }
 
   @Override

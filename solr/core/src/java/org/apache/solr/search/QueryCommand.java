@@ -37,6 +37,7 @@ public class QueryCommand {
   private int supersetMaxDoc;
   private int flags;
   private long timeAllowed = -1;
+  private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   
   public CursorMark getCursorMark() {
@@ -180,6 +181,15 @@ public class QueryCommand {
   
   public QueryCommand setTimeAllowed(long timeAllowed) {
     this.timeAllowed = timeAllowed;
+    return this;
+  }
+
+  public int getMinExactCount() {
+    return minExactCount;
+  }
+
+  public QueryCommand setMinExactCount(int count) {
+    this.minExactCount = count;
     return this;
   }
   

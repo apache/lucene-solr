@@ -21,13 +21,15 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
     System.get(function(data) {
       $scope.system = data;
 
-      // load average
-      var load_average = ( data.system.uptime || '' ).match( /load averages?: (\d+[.,]\d\d),? (\d+[.,]\d\d),? (\d+[.,]\d\d)/ );
-      if (load_average) {
-        for (var i=0;i<2;i++) {
-          load_average[i]=load_average[i].replace(",","."); // for European users
-        }
-        $scope.load_average = load_average.slice(1);
+      if ("username" in data.security) {
+        // Needed for Kerberos, since this is the only place from where
+        // Kerberos username can be obtained.
+        sessionStorage.setItem("auth.username", data.security.username);
+      }
+
+      // load average, unless its negative (means n/a on windows, etc)
+      if (data.system.systemLoadAverage >= 0) {
+        $scope.load_average = data.system.systemLoadAverage.toFixed(2);
       }
 
       // physical memory

@@ -25,7 +25,7 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class PrecisionEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
+public class PrecisionEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
 
   public PrecisionEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -43,6 +43,17 @@ public class PrecisionEvaluator extends RecursiveNumericEvaluator implements Two
     }
     else if(value instanceof List){
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue, ((Number)value2).intValue())).collect(Collectors.toList());
+    } else if(value instanceof Matrix) {
+      int p = ((Number)value2).intValue();
+      Matrix matrix = (Matrix)value;
+      double[][] data = matrix.getData();
+      for(int i=0; i<data.length; ++i) {
+        for(int j=0; j < data[i].length; j++) {
+          data[i][j] = Precision.round(data[i][j], p);
+        }
+      }
+
+      return matrix;
     }
     else{
       return Precision.round(((Number)value).doubleValue(), ((Number)value2).intValue());

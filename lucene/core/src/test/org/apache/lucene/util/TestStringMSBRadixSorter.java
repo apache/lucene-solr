@@ -48,13 +48,13 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
 
   public void testOneValue() {
     BytesRef bytes = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes }, 1);
+    test(new BytesRef[] {bytes}, 1);
   }
 
   public void testTwoValues() {
     BytesRef bytes1 = new BytesRef(TestUtil.randomSimpleString(random()));
     BytesRef bytes2 = new BytesRef(TestUtil.randomSimpleString(random()));
-    test(new BytesRef[] { bytes1, bytes2 }, 2);
+    test(new BytesRef[] {bytes1, bytes2}, 2);
   }
 
   private void testRandom(int commonPrefixLen, int maxLen) {
@@ -72,25 +72,29 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
   }
 
   public void testRandom() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(0, 10);
     }
   }
 
   public void testRandomWithLotsOfDuplicates() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(0, 2);
     }
   }
 
   public void testRandomWithSharedPrefix() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(TestUtil.nextInt(random(), 1, 30), 10);
     }
   }
 
   public void testRandomWithSharedPrefixAndLotsOfDuplicates() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(TestUtil.nextInt(random(), 1, 30), 2);
     }
   }

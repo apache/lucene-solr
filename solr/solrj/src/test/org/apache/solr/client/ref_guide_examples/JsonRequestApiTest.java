@@ -64,7 +64,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
@@ -284,7 +285,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       //tag::solrj-ipod-query-boosted-dsl-2[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boostProperties = new HashMap<>();
-      final Map<String, Object> luceneTopLevel = new HashMap();
+      final Map<String, Object> luceneTopLevel = new HashMap<>();
       final Map<String, Object> luceneProperties = new HashMap<>();
       queryTopLevel.put("boost", boostProperties);
       boostProperties.put("b", "log(popularity)");
@@ -467,7 +468,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(4, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(146.66, (double) topLevelFacetingData.getStatValue("avg_price"), 0.5);
-    assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers"));
+    assertEquals(3L, topLevelFacetingData.getStatValue("num_suppliers"));
     assertEquals(352.0, (double) topLevelFacetingData.getStatValue("median_weight"), 0.5);
 
     Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");

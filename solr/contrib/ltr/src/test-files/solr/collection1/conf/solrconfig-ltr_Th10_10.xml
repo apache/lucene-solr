@@ -31,9 +31,9 @@
 
 
  <query>
-  <filterCache class="solr.FastLRUCache" size="4096"
+  <filterCache class="solr.CaffeineCache" size="4096"
    initialSize="2048" autowarmCount="0" />
-  <cache name="QUERY_DOC_FV" class="solr.search.LRUCache" size="4096"
+  <cache name="QUERY_DOC_FV" class="solr.search.CaffeineCache" size="4096"
    initialSize="2048" autowarmCount="4096" regenerator="solr.search.NoOpRegenerator" />
  </query>
 

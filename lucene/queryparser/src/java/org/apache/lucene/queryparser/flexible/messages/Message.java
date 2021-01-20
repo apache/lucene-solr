@@ -19,8 +19,8 @@ package org.apache.lucene.queryparser.flexible.messages;
 import java.util.Locale;
 
 /**
- * Message Interface for a lazy loading.
- * For Native Language Support (NLS), system of software internationalization.
+ * Message Interface for a lazy loading. For Native Language Support (NLS), system of software
+ * internationalization.
  */
 public interface Message {
 
@@ -31,5 +31,4 @@ public interface Message {
   public String getLocalizedMessage();
 
   public String getLocalizedMessage(Locale locale);
-
 }

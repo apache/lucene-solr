@@ -16,6 +16,16 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -34,23 +44,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
@@ -112,7 +111,7 @@ public class JettySolrRunner {
 
   private LinkedList<FilterHolder> extraFilters;
 
-  private static final String excludePatterns = "/css/.+,/js/.+,/img/.+,/tpl/.+";
+  private static final String excludePatterns = "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+";
 
   private int proxyPort = -1;
 
@@ -173,20 +172,20 @@ public class JettySolrRunner {
     private void executeDelay() {
       int delayMs = 0;
       for (Delay delay: delays) {
-        this.log.info("Delaying "+delay.delayValue+", for reason: "+delay.reason);
+        log.info("Delaying {}, for reason: {}", delay.delayValue, delay.reason);
         if (delay.counter.decrementAndGet() == 0) {
           delayMs += delay.delayValue;
         }
       }
 
       if (delayMs > 0) {
-        this.log.info("Pausing this socket connection for " + delayMs + "ms...");
+        log.info("Pausing this socket connection for {}ms...", delayMs);
         try {
           Thread.sleep(delayMs);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-        this.log.info("Waking up after the delay of " + delayMs + "ms...");
+        log.info("Waking up after the delay of {}ms...", delayMs);
       }
     }
 
@@ -279,7 +278,7 @@ public class JettySolrRunner {
       // the server as well as any client actions taken by this JVM in
       // talking to that server, but for the purposes of testing that should
       // be good enough
-      final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
+      final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector;
@@ -320,7 +319,6 @@ public class JettySolrRunner {
       }
 
       connector.setReuseAddress(true);
-      connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
@@ -331,7 +329,6 @@ public class JettySolrRunner {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setPort(port);
-      connector.setSoLingerTime(-1);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
@@ -369,7 +366,7 @@ public class JettySolrRunner {
 
         log.info("Jetty properties: {}", nodeProperties);
 
-        debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();
         for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
           extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
@@ -381,7 +378,8 @@ public class JettySolrRunner {
         dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);
         dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
-        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
+        // Map dispatchFilter in same path as in web.xml
+        root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         synchronized (JettySolrRunner.this) {
           waitOnSolr = true;
@@ -394,8 +392,8 @@ public class JettySolrRunner {
         System.clearProperty("hostPort");
       }
     });
-    // for some reason, there must be a servlet for this to get applied
-    root.addServlet(Servlet404.class, "/*");
+    // Default servlet as a fall-through
+    root.addServlet(Servlet404.class, "/");
     chain = root;
     }
 
@@ -413,7 +411,7 @@ public class JettySolrRunner {
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
-    gzipHandler.setMinGzipSize(0);
+    gzipHandler.setMinGzipSize(23); // https://github.com/eclipse/jetty.project/issues/4191
     gzipHandler.setCheckGzExists(false);
     gzipHandler.setCompressionLevel(-1);
     gzipHandler.setExcludedAgentPatterns(".*MSIE.6\\.0.*");
@@ -563,13 +561,14 @@ public class JettySolrRunner {
     int tryCnt = 1;
     while (true) {
       try {
-        log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt++);
+        tryCnt++;
+        log.info("Trying to start Jetty on port {} try number {} ...", port, tryCnt);
         server.start();
         break;
       } catch (IOException ioe) {
         Exception e = lookForBindException(ioe);
         if (e instanceof BindException) {
-          log.info("Port is in use, will try again until timeout of " + timeout);
+          log.info("Port is in use, will try again until timeout of {}", timeout);
           server.stop();
           Thread.sleep(3000);
           if (!timeout.hasTimedOut()) {
@@ -618,7 +617,7 @@ public class JettySolrRunner {
       SolrDispatchFilter sdf = getSolrDispatchFilter();
       ExecutorService customThreadPool = null;
       if (sdf != null) {
-        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("jettyShutDown"));
+        customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jettyShutDown"));
 
         sdf.closeOnDestroy(false);
 //        customThreadPool.submit(() -> {
@@ -757,6 +756,15 @@ public class JettySolrRunner {
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public URL getBaseURLV2(){
+    try {
+      return new URL(protocol, host, jettyPort, "/api");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    }
+
   }
   /**
    * Returns a base URL consisting of the protocol, host, and port for a

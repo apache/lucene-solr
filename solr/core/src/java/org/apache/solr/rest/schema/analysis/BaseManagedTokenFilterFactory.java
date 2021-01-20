@@ -18,9 +18,9 @@ package org.apache.solr.rest.schema.analysis;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResource;
 import org.apache.solr.rest.ManagedResourceObserver;
@@ -47,6 +47,11 @@ public abstract class BaseManagedTokenFilterFactory extends TokenFilterFactory
     }    
   }
   
+  /** Default ctor for compatibility with SPI */
+  public BaseManagedTokenFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * Registers an endpoint with the RestManager so that this component can be
    * managed using the REST API. This method can be invoked before all the

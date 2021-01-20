@@ -99,10 +99,13 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the for loop below
     // succeeds.
     String response = JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep));
+    @SuppressWarnings({"rawtypes"})
     Map res = (Map) fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map body = (Map) (res.get("response"));
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
 
+    @SuppressWarnings({"rawtypes"})
     Map header = (Map) (res.get("responseHeader"));
     assertTrue("Should have partial results", (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
@@ -142,8 +145,11 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     nl = queryCacheStats.getValue();
     assertEquals("Should NOT have inserted partial results!", inserts, (long) nl.get("inserts"));
 
+    @SuppressWarnings({"rawtypes"})
     Map res = (Map) fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map body = (Map) (res.get("response"));
+    @SuppressWarnings({"rawtypes"})
     Map header = (Map) (res.get("responseHeader"));
 
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);

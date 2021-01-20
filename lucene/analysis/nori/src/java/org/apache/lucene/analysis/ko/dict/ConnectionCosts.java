@@ -20,17 +20,14 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * n-gram connection cost data
- */
+/** n-gram connection cost data */
 public final class ConnectionCosts {
-  
+
   public static final String FILENAME_SUFFIX = ".dat";
   public static final String HEADER = "ko_cc";
   public static final int VERSION = 1;
@@ -38,12 +35,16 @@ public final class ConnectionCosts {
   private final ByteBuffer buffer;
   private final int forwardSize;
 
-  private ConnectionCosts() throws IOException {
+  /**
+   * @param scheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath - where to load resources from, without the ".dat" suffix
+   */
+  public ConnectionCosts(BinaryDictionary.ResourceScheme scheme, String resourcePath)
+      throws IOException {
     InputStream is = null;
-    ByteBuffer buffer;
     boolean success = false;
     try {
-      is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
+      is = BinaryDictionary.getResource(scheme, resourcePath.replace('.', '/') + FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
@@ -52,7 +53,7 @@ public final class ConnectionCosts {
       int size = forwardSize * backwardSize;
 
       // copy the matrix into a direct byte buffer
-      final ByteBuffer tmpBuffer = ByteBuffer.allocateDirect(size*2);
+      final ByteBuffer tmpBuffer = ByteBuffer.allocateDirect(size * 2);
       int accum = 0;
       for (int j = 0; j < backwardSize; j++) {
         for (int i = 0; i < forwardSize; i++) {
@@ -69,21 +70,25 @@ public final class ConnectionCosts {
         IOUtils.closeWhileHandlingException(is);
       }
     }
-    this.buffer = buffer;
   }
-  
+
+  private ConnectionCosts() throws IOException {
+    this(BinaryDictionary.ResourceScheme.CLASSPATH, ConnectionCosts.class.getName());
+  }
+
   public int get(int forwardId, int backwardId) {
     // map 2d matrix into a single dimension short array
     int offset = (backwardId * forwardSize + forwardId) * 2;
     return buffer.getShort(offset);
   }
-  
+
   public static ConnectionCosts getInstance() {
     return SingletonHolder.INSTANCE;
   }
-  
+
   private static class SingletonHolder {
     static final ConnectionCosts INSTANCE;
+
     static {
       try {
         INSTANCE = new ConnectionCosts();
@@ -91,6 +96,5 @@ public final class ConnectionCosts {
         throw new RuntimeException("Cannot load ConnectionCosts.", ioe);
       }
     }
-   }
-  
+  }
 }

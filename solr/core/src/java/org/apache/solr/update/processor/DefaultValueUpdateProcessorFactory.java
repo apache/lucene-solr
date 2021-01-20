@@ -54,7 +54,7 @@ public class DefaultValueUpdateProcessorFactory
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
     Object obj = args.remove("value");
     if (null == obj) {

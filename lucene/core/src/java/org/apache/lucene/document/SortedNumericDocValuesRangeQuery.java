@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -81,8 +80,7 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
     if (this.field.equals(field) == false) {
       b.append(this.field).append(":");
     }
-    return b
-        .append("[")
+    return b.append("[")
         .append(lowerValue)
         .append(" TO ")
         .append(upperValue)
@@ -101,7 +99,8 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
   abstract SortedNumericDocValues getValues(LeafReader reader, String field) throws IOException;
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
@@ -118,43 +117,44 @@ abstract class SortedNumericDocValuesRangeQuery extends Query {
         final NumericDocValues singleton = DocValues.unwrapSingleton(values);
         final TwoPhaseIterator iterator;
         if (singleton != null) {
-          iterator = new TwoPhaseIterator(singleton) {
-            @Override
-            public boolean matches() throws IOException {
-              final long value = singleton.longValue();
-              return value >= lowerValue && value <= upperValue;
-            }
-
-            @Override
-            public float matchCost() {
-              return 2; // 2 comparisons
-            }
-          };
-        } else {
-          iterator = new TwoPhaseIterator(values) {
-            @Override
-            public boolean matches() throws IOException {
-              for (int i = 0, count = values.docValueCount(); i < count; ++i) {
-                final long value = values.nextValue();
-                if (value < lowerValue) {
-                  continue;
+          iterator =
+              new TwoPhaseIterator(singleton) {
+                @Override
+                public boolean matches() throws IOException {
+                  final long value = singleton.longValue();
+                  return value >= lowerValue && value <= upperValue;
                 }
-                // Values are sorted, so the first value that is >= lowerValue is our best candidate
-                return value <= upperValue;
-              }
-              return false; // all values were < lowerValue
-            }
 
-            @Override
-            public float matchCost() {
-              return 2; // 2 comparisons
-            }
-          };
+                @Override
+                public float matchCost() {
+                  return 2; // 2 comparisons
+                }
+              };
+        } else {
+          iterator =
+              new TwoPhaseIterator(values) {
+                @Override
+                public boolean matches() throws IOException {
+                  for (int i = 0, count = values.docValueCount(); i < count; ++i) {
+                    final long value = values.nextValue();
+                    if (value < lowerValue) {
+                      continue;
+                    }
+                    // Values are sorted, so the first value that is >= lowerValue is our best
+                    // candidate
+                    return value <= upperValue;
+                  }
+                  return false; // all values were < lowerValue
+                }
+
+                @Override
+                public float matchCost() {
+                  return 2; // 2 comparisons
+                }
+              };
         }
         return new ConstantScoreScorer(this, score(), scoreMode, iterator);
       }
-
     };
   }
-
 }

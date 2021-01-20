@@ -26,26 +26,28 @@ Many of these parsers are expressed the same way as <<local-parameters-in-querie
 
 There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
 
-The example usage of the query parsers below assumes these two documents and each of their child documents have been indexed:
+The example usage of the query parsers below assumes the following documents have been indexed:
 
 [source,xml]
 ----
 <add>
   <doc>
-  <field name="id">1</field>
-  <field name="title">Solr has block join support</field>
-  <field name="content_type">parentDocument</field>
+    <field name="id">1</field>
+    <field name="content_type">parent</field>
+    <field name="title">Solr has block join support</field>
     <doc>
       <field name="id">2</field>
+      <field name="content_type">child</field>
       <field name="comments">SolrCloud supports it too!</field>
     </doc>
   </doc>
   <doc>
     <field name="id">3</field>
+    <field name="content_type">parent</field>
     <field name="title">New Lucene and Solr release</field>
-    <field name="content_type">parentDocument</field>
     <doc>
       <field name="id">4</field>
+      <field name="content_type">child</field>
       <field name="comments">Lots of new features</field>
     </doc>
   </doc>
@@ -54,21 +56,23 @@ The example usage of the query parsers below assumes these two documents and eac
 
 === Block Join Children Query Parser
 
-This parser takes a query that matches some parent documents and returns their children.
+This parser wraps a query that matches some parent documents and returns the children of those documents.
 
-The syntax for this parser is: `q={!child of=<allParents>}<someParents>`.
+The syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
 
-The parameter `allParents` is a filter that matches *only parent documents*; here you would define the field and value that you used to identify *all parent documents*.
+* The inner subordinate query string (`someParents`) must be a query that will match some parent documents
+* The `of` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
-The parameter `someParents` identifies a query that will match some of the parent documents. The output is the children.
+The resulting query will match all documents which do _not_ match the `<blockMask>` query and are children (or descendents) of the documents matched by `<someParents>`.
 
-Using the example documents above, we can construct a query such as `q={!child of="content_type:parentDocument"}title:lucene&wt=xml`. We only get one document in response:
+Using the example documents above, we can construct a query such as `q={!child of="content_type:parent"}title:lucene`. We only get one document in response:
 
 [source,xml]
 ----
 <result name="response" numFound="1" start="0">
   <doc>
     <str name="id">4</str>
+    <arr name="content_type"><str>child</str></arr>
     <str name="comments">Lots of new features</str>
   </doc>
 </result>
@@ -76,12 +80,12 @@ Using the example documents above, we can construct a query such as `q={!child o
 
 [CAUTION]
 ====
-The query for `someParents` should match only parent documents passed by `allParents` or you may get an exception:
+The query for `someParents` *MUST* match a strict subset of the documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
 
 [literal]
 Parent query must not match any docs besides parent filter. Combine them as must (+) and must-not (-) clauses to find a problem doc.
 
-You can search for `q=+(someParents) -(allParents)` to find a cause if you encounter this error.
+You can search for `q=+(someParents) -(blockMask)` to find a cause if you encounter this type of error.
 ====
 
 ==== Filtering and Tagging
@@ -89,78 +93,72 @@ You can search for `q=+(someParents) -(allParents)` to find a cause if you encou
 `{!child}` also supports `filters` and `excludeTags` local parameters like the following:
 
 [source,text]
-{!child of=<allParents> filters=$parentfq excludeTags=certain}<someParents>&parentfq=BRAND:Foo&parentfq=NAME:Bar&parentfq={!tag=certain}CATEGORY:Baz
+?q={!child of=<blockMask> filters=$parentfq excludeTags=certain}<someParents>
+&parentfq=BRAND:Foo
+&parentfq=NAME:Bar
+&parentfq={!tag=certain}CATEGORY:Baz
 
 This is equivalent to:
 
 [source,text]
-{!child of=<allParents>}+<someParents> +BRAND:Foo +NAME:Bar
+q={!child of=<blockMask>}+<someParents> +BRAND:Foo +NAME:Bar
 
 Notice "$" syntax in `filters` for referencing queries; comma-separated tags `excludeTags` allows to exclude certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note, that filtering is applied to the subordinate clause (`<someParents>`), and the intersection result is joined to the children.
 
 ==== All Children Syntax
 
-When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<allParents>}` is equivalent to `q=\*:* -<allParents>`.
+When subordinate clause (`<someParents>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for children documents. More precisely, `q={!child of=<blockMask>}` is equivalent to `q=\*:* -<blockMask>`.
 
 === Block Join Parent Query Parser
 
 This parser takes a query that matches child documents and returns their parents.
 
-The syntax for this parser is similar: `q={!parent which=<allParents>}<someChildren>`.
+The syntax for this parser is similar to the `child` parser: `q={!parent which=<blockMask>}<someChildren>`.
 
-The parameter `allParents` is a filter that matches *only parent documents*; here you would define the field and value that you used to identify *all parent documents*.
+* The inner subordinate query string (`someChildren`) must be a query that will match some child documents
+* The `which` parameter must be a query string to use as a <<#block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents
 
-The parameter `someChildren` is a query that matches some or all of the child documents.
+The resulting query will match all documents which _do_ match the `<blockMask>` query and are parents (or ancestors) of the documents matched by `<someChildren>`.
 
-[CAUTION]
-====
-The query for `someChildren` should match only child documents or you may get an exception:
-
-[literal]
-Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
-
-You can search for `q=+(parentFilter) +(someChildren)` to find a cause.
-====
-
-Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parentDocument"}comments:SolrCloud&wt=xml`. We get this document in response:
+Again using the example documents above, we can construct a query such as `q={!parent which="content_type:parent"}comments:SolrCloud`. We get this document in response:
 
 [source,xml]
 ----
 <result name="response" numFound="1" start="0">
   <doc>
     <str name="id">1</str>
+    <arr name="content_type"><str>parent</str></arr>
     <arr name="title"><str>Solr has block join support</str></arr>
-    <arr name="content_type"><str>parentDocument</str></arr>
   </doc>
 </result>
 ----
 
-.Using which
-[WARNING]
+
+[CAUTION]
 ====
-A common mistake is to try to filter parents with a `which` filter, as in this bad example:
+The query for `someChildren` *MUST NOT* match any documents matched by the <<#block-mask,Block Mask>> or your query may result in an Error:
 
-`q={!parent which="*title:join*"}comments:SolrCloud`
+[literal]
+Child query must not match same docs with parent filter. Combine them as must clauses (+) to find a problem doc.
 
-Instead, you should use a sibling mandatory clause as a filter:
-
-`q= *+title:join* +{!parent which="*content_type:parentDocument*"}comments:SolrCloud`
+You can search for `q=+(blockMask) +(someChildren)` to find a cause.
 ====
+
 
 ==== Filtering and Tagging
 
 The `{!parent}` query supports `filters` and `excludeTags` local parameters like the following:
 
 [source,text]
-{!parent which=<allParents> filters=$childfq excludeTags=certain}<someChildren>&
-childfq=COLOR:Red&
-childfq=SIZE:XL&
-childfq={!tag=certain}PRINT:Hatched
+?q={!parent which=<blockMask> filters=$childfq excludeTags=certain}<someChildren>
+&childfq=COLOR:Red
+&childfq=SIZE:XL
+&childfq={!tag=certain}PRINT:Hatched
 
 This is equivalent to:
 
 [source,text]
-{!parent which=<allParents>}+<someChildren> +COLOR:Red +SIZE:XL
+q={!parent which=<blockMask>}+<someChildren> +COLOR:Red +SIZE:XL
 
 Notice the "$" syntax in `filters` for referencing queries. Comma-separated tags in `excludeTags` allow excluding certain queries by tagging. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>. Note that filtering is applied to the subordinate clause (`<someChildren>`) first, and the intersection result is joined to the parents.
 
@@ -170,7 +168,41 @@ You can optionally use the `score` local parameter to return scores of the subor
 
 ==== All Parents Syntax
 
-When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<allParents>}` is equivalent to `q=<allParents>`.
+When subordinate clause (`<someChildren>`) is omitted, it's parsed as a _segmented_ and _cached_ filter for all parent documents, or more precisely `q={!parent which=<blockMask>}` is equivalent to `q=<blockMask>`.
+
+[#block-mask]
+=== Block Masks: The `of` and `which` local params
+
+The purpose of the "Block Mask" query specified as either an `of` or `which` param (depending on the parser used) is to identy the set of all documents in the index which should be treated as "parents" _(or their ancestors)_ and which documents should be treated as "children".  This is important because in the "on disk" index, the relationships are flattened into "blocks" of documents, so the `of` / `which` params are needed to serve as a "mask" against the flat document blocks to identify the boundaries of every hierarchical relationship.
+
+In the example queries above, we were able to use a very simple Block Mask of `doc_type:parent` because our data is very simple: every document is either a `parent` or a `child`  So this query string easily distinguishes _all_ of our documents.
+
+A common mistake is to try and use a `which` parameter that is more restrictive then the set of all parent documents, in order to filter the parents that are matched, as in this bad example:
+
+----
+// BAD! DO NOT USE!
+q={!parent which="title:join"}comments:support
+----
+
+This type of query will frequently not work the way you might expect.  Since the `which` param only identifies _some_ of the "parent" documents, the resulting query can match "parent" documents it should not, because it will mistakenly identify all documents which do _not_ match the `which="title:join"` Block Mask as children of the next "parent" document in the index (that does match this Mask).
+
+A similar problematic situation can arise when mixing parent/child documents with "simple" documents that have no children _and do not match the query used to identify 'parent' documents_.  For example, if we add the following document to our existing parent/child example documents:
+
+[source,xml]
+----
+<add>
+  <doc>
+    <field name="id">0</field>
+    <field name="content_type">plain</field>
+    <field name="title">Lucene and Solr are cool</field>
+  </doc>
+</add>
+----
+
+...then our simple `doc_type:parent` Block Mask would no longer be adequate.  We would instead need to use `\*:* -doc_type:child` or `doc_type:(simple parent)` to prevent our "simple" document from mistakenly being treated as a "child" of an adjacent "parent" document.
+
+The <<searching-nested-documents#searching-nested-documents,Searching Nested Documents>> section contains more detailed examples of specifing Block Mask queries with non trivial hierarchicies of documents.
+
 
 == Boolean Query Parser
 
@@ -188,7 +220,10 @@ A list of queries that *must not* appear in matching documents.
 A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
-A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored.
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
+
+`excludeTags`::
+Comma separated list of tags for excluding queries from parameters above. See explanation below.
 
 *Examples*
 
@@ -202,24 +237,57 @@ A list of queries that *must* appear in matching documents. However, unlike `mus
 {!bool filter=foo should=bar}
 ----
 
+Parameters might also be multivalue references. The former example above is equivalent to:
+
+[source,text]
+----
+q={!bool must=$ref}&ref=foo&ref=bar
+----
+
+Referred queries might be excluded via tags. Overall the idea is similar to <<faceting.adoc#tagging-and-excluding-filters, excluding fq in facets>>.
+
+[source,text]
+----
+q={!bool must=$ref excludeTags=t2}&ref={!tag=t1}foo&ref={!tag=t2}bar
+----
+
+Since the later query is excluded via `t2`, the resulting query is equivalent to:
+
+[source,text]
+----
+q={!bool must=foo}
+----
+
 == Boost Query Parser
 
-`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is the query to be boosted. Parameter `b` is the function query to use as the boost. The query to be boosted may be of any type.
+`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parser.
+Parameter `b` is a <<function-queries.adoc#available-functions,function>> to be evaluated against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
 
 === Boost Query Parser Examples
 
-Creates a query "foo" which is boosted (scores are multiplied) by the function query `log(popularity)`:
+Creates a query `name:foo` which is boosted (scores are multiplied) by the function query `log(popularity)`:
 
 [source,text]
 ----
-{!boost b=log(popularity)}foo
+q={!boost b=log(popularity)}name:foo
 ----
 
-Creates a query "foo" which is boosted by the date boosting function referenced in `ReciprocalFloatFunction`:
+Creates a query `name:foo` which has it's scores multiplied by the _inverse_ of the numeric `price` field -- effectively "demoting" documents which have a high `price` by lowering their final score:
 
 [source,text]
 ----
-{!boost b=recip(ms(NOW,mydatefield),3.16e-11,1,1)}foo
+// NOTE: we "add 1" to the denominator to prevent divide by zero
+q={!boost b=div(1,add(1,price))}name:foo
+----
+
+The `<<function-queries.adoc#query-function,query(...)>>` function is particularly useful for situations where you want to multiply (or divide) the score for each document matching your main query by the score that document would have from another query.
+
+This example uses <<local-parameters-in-queries.adoc#parameter-dereferencing,local parameter variables>> to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
+
+[source,text]
+----
+q={!boost b=query($my_boost)}name:foo
+my_boost=category:electronics
 ----
 
 [[other-collapsing]]
@@ -389,8 +457,8 @@ The graph is built according to linkages between documents based on the terms fo
 
 Supported field types are point fields with docValues enabled, or string fields with `indexed=true` or `docValues=true`.
 
-TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}sandbox/org/apache/lucene/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
-for it's performance characteristics so `indexed=true` will perform better for most use-cases.
+TIP: For string fields which are `indexed=false` and `docValues=true`, please refer to the javadocs for {lucene-javadocs}/sandbox/org/apache/lucene/sandbox/search/DocValuesTermsQuery.html[`DocValuesTermsQuery`]
+for its performance characteristics so `indexed=true` will perform better for most use-cases.
 
 === Graph Query Parameters
 
@@ -537,43 +605,141 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
    { "id":"H" } ]
 }
 ----
+== Hash Range Query Parser
+
+The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the join query when using method=crossCollection.  The hash rang query parser has a per segment cache for each field that this query parser will operate on.
+
+When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the cross collection join case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+
+This query parser uses the MurmurHash3_x86_32.  This is the same as the default hashing for the default composite ID router in Solr.
+
+=== Hash Range Parameters
+
+`f`::
+The field name to operate on.  This field should have docValues enabled and should be single-valued
+
+`l`::
+The lower bound of the hash range for the query
+
+`u`::
+The upper bound for the hash range for the query
+
+=== Hash Range Example
+
+[source,text]
+----
+{!hash_range f="field_name" l="0" u="12345"}
+----
+
+=== Hash Range Cache Config
+
+The hash range query parser uses a special cache to improve the speedup of the queries. The following should be added to the `solrconfig.xml` for the various fields that you want to perform the hash range query on.  Note the name of the cache should be the field name prefixed by "hash_".
+
+[source,xml]
+----
+<cache name="hash_field_name"
+       class="solr.LRUCache"
+       size="128"
+       initialSize="0"
+       regenerator="solr.NoOpRegenerator"/>
+----
+
 
 == Join Query Parser
 
-`JoinQParser` extends the `QParserPlugin`. It allows normalizing relationships between documents with a join operation. This is different from the concept of a join in a relational database because no information is being truly joined. An appropriate SQL analogy would be an "inner query".
+The Join query parser allows users to run queries that normalize relationships between documents.
+Solr runs a subquery of the user's choosing (the `v` param), identifies all the values that matching documents have in a field of interest (the `from` param), and then returns documents where those values are contained in a second field of interest (the `to` param).
 
-Examples:
-
-Find all products containing the word "ipod", join them against manufacturer docs and return the list of manufacturers:
-
-[source,text]
-----
-{!join from=manu_id_s to=id}ipod
-----
-
-Find all manufacturer docs named "belkin", join them against product docs, and filter the list to only products with a price less than $12:
+In practice, these semantics are much like "inner queries" in a SQL engine.
+As an example, consider the Solr query below:
 
 [source,text]
 ----
-q  = {!join from=id to=manu_id_s}compName_s:Belkin
-fq = price:[* TO 12]
+/solr/techproducts/select?q={!join from=manu_id_s to=id}title:ipod
 ----
 
-The join operation is done on a term basis, so the "from" and "to" fields must use compatible field types. For example: joining between a `StrField` and a `IntPointField` will not work, likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
+This query, which returns a document for each manufacturer that makes a product with "ipod" in the title, is semantically identical to the SQL query below:
 
-=== Join Parser Scoring
+[source,text]
+----
+SELECT *
+FROM techproducts
+WHERE id IN (
+    SELECT manu_id_s
+    FROM techproducts
+    WHERE title='ipod'
+  )
+----
 
-You can optionally use the `score` parameter to return scores of the subordinate query. The values to use for this parameter define the type of aggregation, which are `avg` (average), `max` (maximum), `min` (minimum) `total`, or `none`.
+The join operation is done on a term basis, so the `from` and `to` fields must use compatible field types.
+For example: joining between a `StrField` and a `IntPointField` will not work.
+Likewise joining between a `StrField` and a `TextField` that uses `LowerCaseFilterFactory` will only work for values that are already lower cased in the string field.
 
-.Score parameter and single value numerics
+=== Parameters
+
+This query parser takes the following parameters:
+
+`from`::
+The name of a field which contains values to look for in the "to" field.
+Can be single or multi-valued, but must have a field type compatible with the field represented in the "to" field.
+This parameter is required.
+
+`to`::
+The name of a field whose value(s) will be checked against those found in the "from" field.
+Can be single or multi-valued, but must have a field type compatible with the "from" field.
+This parameter is required.
+
+`fromIndex`::
+The name of the index to run the "from" query (`v` parameter) on and where "from" values are gathered.
+Must be located on the same node as the core processing the request.
+This parameter is optional; it defaults to the value of the processing core if not specified.
+See <<Joining Across Single Shard Collections,Joining Across Single Shard Collections>> or <<Cross Collection Join,Cross Collection Join>> below for more information.
+
+`score`::
+An optional parameter that instructs Solr to return information about the "from" query scores.
+The value of this parameter controls what type of aggregation information is returned.
+Options include `avg` (average), `max` (maximum), `min` (minimum), `total` (total), or `none`.
++
+If `method` is not specified but `score` is, then the `dvWithScore` method is used.
+If `method` is specified and is not `dvWithScore`, then the `score` value is ignored.
+See the `method` parameter documentation below for more details.
+
+
+`method`::
+An optional parameter used to determine which of several query implementations should be used by Solr.
+Options are restricted to: `index`, `dvWithScore`, and `topLevelDV`.
+If unspecified the default value is `index`, unless the `score` parameter is present which overrides it to `dvWithScore`.
+Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.
+Details and performance heuristics are given below.
++
+`index` the default `method` unless the `score` parameter is specified.
+Uses the terms index structures to process the request.
+Performance scales with the cardinality and number of postings (term occurrences) in the "from" field.
+Consider this method when the "from" field has low cardinality, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this is a disadvantage of other methods that `index` avoids).
+
++
+`dvWithScore` returns an optional "score" statistic alongside result documents.
+Uses docValues structures if available, but falls back to the field cache when necessary.
+The first access to the field cache slows down the initial requests following a commit and takes up additional space on the JVM heap, so docValues are recommended in most situations.
+Performance scales linearly with the number of values matched in the "from" field.
+This method must be used if score information is required, and should also be considered when the "from" query matches few documents, regardless of the number of "to" side documents returned.
++
+.dvWithScore and single value numerics
 [WARNING]
 ====
-Specifying `score` local parameter switches the join algorithm. This might have performance implication on large indices, but it's more important that this algorithm won't work for single value numeric field starting from 7.0. Users are encouraged to change field types to string and rebuild indexes during migration.
+The `dvWithScore` method doesn't support single value numeric fields. Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
 ====
++
+`topLevelDV` can only be used when `to` and `from` fields have docValues data, and does not currently support numeric fields.
+Uses top-level docValues data structures to find results.
+These data structures outperform other methods as the number of values matched in the `from` field grows high.
+But they are also expensive to build and need to be lazily populated after each commit, causing a sometimes-noticeable slowdown on the first query to use them after each commit.
+If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
+Consider this method when the "from" query matches a large number of documents and the "to" result set is small to moderate in size, but only if sporadic post-commit slowness is tolerable.
 
-=== Joining Across Collections
+=== Joining Across Single Shard Collections
 
-You can also specify a `fromIndex` parameter to join with a field from another core or collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
+You can also specify a `fromIndex` parameter to join with a field from another core or a single shard collection. If running in SolrCloud mode, then the collection specified in the `fromIndex` parameter must have a single shard and a replica on all Solr nodes where the collection you're joining to has a replica.
 
 Let's consider an example where you want to use a Solr join query to filter movies by directors that have won an Oscar. Specifically, imagine we have two collections with the following fields:
 
@@ -612,7 +778,93 @@ node 4: movie_directors_shard1_replica4
 
 At query time, the `JoinQParser` will access the local replica of the *movie_directors* collection to perform the join. If a local replica is not available or active, then the query will fail. At this point, it should be clear that since you're limited to a single shard and the data must be replicated across all nodes where it is needed, this approach works better with smaller data sets where there is a one-to-many relationship between the from collection and the to collection. Moreover, if you add a replica to the to collection, then you also need to add a replica for the from collection.
 
-For more information about join queries, see the Solr Wiki page on http://wiki.apache.org/solr/Join[Joins]. Erick Erickson has also written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+For more information, Erick Erickson has written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
+
+=== Cross Collection Join
+The Cross Collection Join Filter is a method for the join parser that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.
+
+The crossCollection join query will create an CrossCollectionQuery object.
+The CrossCollectionQuery will first query a remote Solr collection and get back a streaming expression result of the join keys.
+As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.
+This avoids keeping the full set of join keys in memory at any given time.
+This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the Solr filter cache.
+
+If the local index is sharded according to the join key field, the cross collection join can leverage a secondary query parser called the "hash_range" query parser.
+The hash_range query parser is responsible for returning only the documents that hash to a given range of values.
+This allows the CrossCollectionQuery to query the remote Solr collection and return only the join keys that would match a specific shard in the local Solr collection.
+This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
+
+The CrossCollection join query works with both String and Point types of fields.
+The fields that are being used for the join key must be single-valued and have docValues enabled.
+
+It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.
+
+The cross collection join queries should not be generally used as part of the `q` parameter, but rather it is designed to be used as a filter query (`fq` parameter) to ensure proper caching.
+
+The remote Solr collection that is being queried should have a single-valued field for the join key with docValues enabled.
+
+The remote Solr collection does not have any specific sharding requirements.
+
+==== Join Query Parser Definition in solrconfig.xml
+
+The cross collection join has some configuration options that can be specified in  `solrconfig.xml`.
+
+`routerField`::
+If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query.
+
+`solrUrl`::
+If specified, this array of strings specifies the white listed Solr URLs that you can pass to the solrUrl query parameter. Without this configuration the solrUrl parameter cannot be used. This restriction is necessary to prevent an attacker from using Solr to explore the network.
+
+[source,xml]
+----
+  <queryParser name="join" class="org.apache.solr.search.JoinQParserPlugin">
+    <str name="routerField">product_id_s</str>
+    <arr name="allowSolrUrls">
+      <str>http://othersolr.example.com:8983/solr</str>
+    </arr>
+  </queryParser>
+----
+
+==== Cross Collection Join Query Parameters
+
+`fromIndex`::
+The name of the external Solr collection to be queried to retrieve the set of join key values (required).
+
+`zkHost`::
+The connection string to be used to connect to ZooKeeper. `zkHost` and `solrUrl` are both optional parameters, and at most one of them should be specified. If neither `zkHost` nor `solrUrl` are specified, the local ZooKeeper cluster will be used. (optional).
+
+`solrUrl`::
+The URL of the external Solr node to be queried. Must be a character for character exact match of a whitelisted url. (optional, disabled by default for security).
+
+`from`::
+The join key field name in the external collection (required).
+
+`to`::
+The join key field name in the local collection.
+
+`v`::
+The query substituted in as a local param.  This is the query string that will match documents in the remote collection.
+
+`routed`::
+If `true`, the cross collection join query will use each shard's hash range to determine the set of join keys to retrieve for that shard.
+This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the `to` field.
+If this parameter is not specified, the cross collection join query will try to determine the correct value automatically.
+
+`ttl`::
+The length of time that a cross collection join query in the cache will be considered valid, in seconds.
+Defaults to `3600` (one hour).
+The cross collection join query will not be aware of changes to the remote collection, so if the remote collection is updated, cached cross collection queries may give inaccurate results.
+After the `ttl` period has expired, the cross collection join query will re-execute the join against the remote collection.
+
+Other Parameters::
+Any normal Solr query parameter can also be specified/passed through as a local param.
+
+==== Cross Collection Query Examples
+
+[source,text]
+----
+http://localhost:8983/solr/localCollection/query?fl=id&q={!join method="crossCollection" fromIndex="otherCollection" from="fromField" to="toField" v="*:*"}
+----
 
 == Lucene Query Parser
 
@@ -642,7 +894,7 @@ Details about using the `LTRQParserPlugin` can be found in the <<learning-to-ran
 
 == Max Score Query Parser
 
-The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses. It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with tie=1.0. Any `MUST` or `PROHIBITED` clauses are passed through as-is. Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
+The `MaxScoreQParser` extends the `LuceneQParser` but returns the Max score from the clauses. It does this by wrapping all `SHOULD` clauses in a `DisjunctionMaxQuery` with `tie=1.0`. Any `MUST` or `PROHIBITED` clauses are passed through as-is. Non-boolean queries, e.g., NumericRange falls-through to the `LuceneQParser` parser behavior.
 
 Example:
 
@@ -815,6 +1067,17 @@ For easy filter construction to drill down in faceting, the <<Term Query Parser,
 
 For full analysis on all fields, including text fields, you may want to use the <<Field Query Parser,FieldQParserPlugin>>.
 
+== Ranking Query Parser
+
+The `RankQParserPlugin` is a faster implementation of ranking-related features of `FunctionQParser` and can work together with specialized field of {solr-javadocs}/core/org/apache/solr/schema/RankField.html[`RankFields`] type.
+
+It allows queries like:
+
+[source,text]
+----
+http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', function='log' scalingFactor='1.2'}
+----
+
 == Re-Ranking Query Parser
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
@@ -980,7 +1243,19 @@ The field on which to search. This parameter is required.
 Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to  a comma (`,`).
 
 `method`::
-The internal query-building implementation: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`. Defaults to `termsFilter`.
+An optional parameter used to determine which of several query implementations should be used by Solr.  Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, `docValuesTermsFilterPerSegment`, `docValuesTermsFilterTopLevel` or `docValuesTermsFilter`.  If unspecified, the default value is `termsFilter`.  Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.  Heuristics are given below.
++
+`booleanQuery` creates a `BooleanQuery` representing the request.  Scales well with index size, but poorly with the number of terms being searched for.
++
+`termsFilter` the default `method`.  Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.  Scales well with index size, but only moderately with the number of query terms.
++
+`docValuesTermsFilter` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Chooses between the `docValuesTermsFilterTopLevel` and `docValuesTermsFilterPerSegment` methods using the number of query terms as a rough heuristic.  Users should typically use this method instead of using `docValuesTermsFilterTopLevel` or `docValuesTermsFilterPerSegment` directly, unless they've done performance testing to validate one of the methods on queries of all sizes.  Depending on the implementation picked, this method may rely on expensive data structures which are lazily populated after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
++
+`docValuesTermsFilterTopLevel` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Uses top-level docValues data structures to find results.  These data structures are more efficient as the number of query terms grows high (over several hundred). But they are also expensive to build and need to be populated lazily after each commit, causing a sometimes-noticeable slowdown on the first query after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
++
+`docValuesTermsFilterPerSegment` can only be used on fields with docValues data.  The `cache` parameter is false by default.  It is more efficient than the "top-level" alternative with small to medium (~500) numbers of query terms, and doesn't suffer a slowdown on queries immediately following a commit (as `docValuesTermsFilterTopLevel` does - see above).  But it is less performant on very large numbers of query terms.
++
+`automaton` creates an `AutomatonQuery` representing the request with each term forming a union.  Scales well with index size and moderately with the number of query terms.
 
 *Examples*
 
@@ -996,7 +1271,7 @@ The internal query-building implementation: `termsFilter`, `booleanQuery`, `auto
 
 == XML Query Parser
 
-The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/solr-core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
+The {solr-javadocs}/core/org/apache/solr/search/XmlQParserPlugin.html[XmlQParserPlugin] extends the {solr-javadocs}/core/org/apache/solr/search/QParserPlugin.html[QParserPlugin] and supports the creation of queries from XML. Example:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -1028,7 +1303,7 @@ The {solr-javadocs}/solr-core/org/apache/solr/search/XmlQParserPlugin.html[XmlQP
 ----
 |===
 
-The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
+The XmlQParser implementation uses the {solr-javadocs}/core/org/apache/solr/search/SolrCoreParser.html[SolrCoreParser] class which extends Lucene's {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/CoreParser.html[CoreParser] class. XML elements are mapped to {lucene-javadocs}/queryparser/org/apache/lucene/queryparser/xml/QueryBuilder.html[QueryBuilder] classes as follows:
 
 // TODO: Change column width to %autowidth.spread when https://github.com/asciidoctor/asciidoctor-pdf/issues/599 is fixed
 
@@ -1056,7 +1331,7 @@ The XmlQParser implementation uses the {solr-javadocs}/solr-core/org/apache/solr
 
 === Customizing XML Query Parser
 
-You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/solr-core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/solr-core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
+You can configure your own custom query builders for additional XML elements. The custom builders need to extend the {solr-javadocs}/core/org/apache/solr/search/SolrQueryBuilder.html[SolrQueryBuilder] or the {solr-javadocs}/core/org/apache/solr/search/SolrSpanQueryBuilder.html[SolrSpanQueryBuilder] class. Example `solrconfig.xml` snippet:
 
 [source,xml]
 ----

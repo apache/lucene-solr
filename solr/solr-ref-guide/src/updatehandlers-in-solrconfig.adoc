@@ -78,7 +78,7 @@ You can also specify 'soft' autoCommits in the same way that you can specify 'so
 
 === commitWithin
 
-The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to slave servers in a master/slave environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
+The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to follower servers in a leader/follower environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 
 [source,xml]
 ----

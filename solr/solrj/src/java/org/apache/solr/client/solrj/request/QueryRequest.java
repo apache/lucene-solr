@@ -76,5 +76,9 @@ public class QueryRequest extends SolrRequest<QueryResponse> {
     return query;
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.QUERY.toString();
+  }
 }
 

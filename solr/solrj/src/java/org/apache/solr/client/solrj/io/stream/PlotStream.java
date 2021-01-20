@@ -49,8 +49,8 @@ public class PlotStream extends TupleStream implements Expressible {
   private Map<String,String> stringParams = new HashMap<>();
   private Map<String,StreamEvaluator> evaluatorParams = new HashMap<>();
   private Map<String,TupleStream> streamParams = new HashMap<>();
-  private List<String> fieldNames = new ArrayList();
-  private Map<String, String> fieldLabels = new HashMap();
+  private List<String> fieldNames = new ArrayList<>();
+  private Map<String, String> fieldLabels = new HashMap<>();
 
   private boolean finished;
 
@@ -148,12 +148,11 @@ public class PlotStream extends TupleStream implements Expressible {
     return l;
   }
 
+  @SuppressWarnings({"unchecked"})
   public Tuple read() throws IOException {
 
-    if(finished) {
-      Map<String,Object> m = new HashMap<>();
-      m.put("EOF", true);
-      return new Tuple(m);
+    if (finished) {
+      return Tuple.EOF();
     } else {
       finished = true;
       Map<String, Object> values = new HashMap<>();
@@ -179,15 +178,15 @@ public class PlotStream extends TupleStream implements Expressible {
 
       if(x == null) {
         //x is null so add a sequence
-        x = new ArrayList();
+        x = new ArrayList<>();
         for(int i=0; i<y.size(); i++) {
           x.add(i+1);
         }
       }
 
-      List<List<Number>> xy = new ArrayList();
+      List<List<Number>> xy = new ArrayList<>();
       for(int i=0; i<x.size(); i++) {
-        List<Number> pair = new ArrayList();
+        List<Number> pair = new ArrayList<>();
         pair.add(x.get(i));
         pair.add(y.get(i));
         xy.add(pair);
@@ -197,8 +196,8 @@ public class PlotStream extends TupleStream implements Expressible {
       values.put("data", xy);
 
       Tuple tup = new Tuple(values);
-      tup.fieldLabels = fieldLabels;
-      tup.fieldNames = fieldNames;
+      tup.setFieldLabels(fieldLabels);
+      tup.setFieldNames(fieldNames);
       return tup;
     }
   }

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Miscellaneous Tokenstreams.
- */
+/** Miscellaneous Tokenstreams. */
 package org.apache.lucene.analysis.miscellaneous;

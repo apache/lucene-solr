@@ -18,17 +18,10 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
-import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.HdfsDirectoryFactory;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrEventListener;
-import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.core.*;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -56,22 +49,19 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   protected final UpdateLog ulog;
 
-  protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  protected MetricRegistry registry;
+  protected SolrMetricsContext solrMetricsContext;
 
   private void parseEventListeners() {
-    final Class<SolrEventListener> clazz = SolrEventListener.class;
-    final String label = "Event Listener";
     for (PluginInfo info : core.getSolrConfig().getPluginInfos(SolrEventListener.class.getName())) {
       String event = info.attributes.get("event");
       if ("postCommit".equals(event)) {
-        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
+        SolrEventListener obj = core.createEventListener(info);
         commitCallbacks.add(obj);
-        log.info("added SolrEventListener for postCommit: " + obj);
+        log.info("added SolrEventListener for postCommit: {}", obj);
       } else if ("postOptimize".equals(event)) {
-        SolrEventListener obj = core.createInitInstance(info,clazz,label,null);
+        SolrEventListener obj = core.createEventListener(info);
         optimizeCallbacks.add(obj);
-        log.info("added SolrEventListener for postOptimize: " + obj);
+        log.info("added SolrEventListener for postOptimize: {}", obj);
       }
     }
   }
@@ -113,7 +103,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public UpdateHandler(SolrCore core)  {
     this(core, null);
   }
-  
+
   public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
     this.core=core;
     idField = core.getLatestSchema().getUniqueKeyField();
@@ -128,15 +118,17 @@ public abstract class UpdateHandler implements SolrInfoBean {
       if (dirFactory instanceof HdfsDirectoryFactory) {
         ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
-        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
+        ulog = ulogPluginInfo.className == null ? new UpdateLog():
+                core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
       }
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
       }
 
-      log.info("Using UpdateLog implementation: " + ulog.getClass().getName());
+      if (log.isInfoEnabled()) {
+        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
+      }
       ulog.init(ulogPluginInfo);
       ulog.init(this, core);
     } else {
@@ -162,7 +154,6 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public abstract int mergeIndexes(MergeIndexesCommand cmd) throws IOException;
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
-  public abstract void close() throws IOException;
   public abstract UpdateLog getUpdateLog();
 
   /**
@@ -207,12 +198,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public Category getCategory() {
     return Category.UPDATE;
   }
+
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }

@@ -28,10 +28,18 @@ import json
 import re
 from github import Github
 from jira import JIRA
+from datetime import datetime
+from time import strftime
+try:
+  from jinja2 import Environment, BaseLoader
+  can_do_html = True
+except:
+  can_do_html = False
 
 def read_config():
   parser = argparse.ArgumentParser(description='Find open Pull Requests that need attention')
   parser.add_argument('--json', action='store_true', default=False, help='Output as json')
+  parser.add_argument('--html', action='store_true', default=False, help='Output as html')
   parser.add_argument('--token', help='Github access token in case you query too often anonymously')
   newconf = parser.parse_args()
   return newconf
@@ -39,9 +47,34 @@ def read_config():
 
 def out(text):
   global conf
-  if not conf.json:
+  if not (conf.json or conf.html):
     print(text)
 
+def make_html(dict):
+  if not can_do_html:
+    print ("ERROR: Cannot generate HTML. Please install jinja2")
+    sys.exit(1)
+  global conf
+  template = Environment(loader=BaseLoader).from_string("""
+  <h1>Lucene/Solr Github PR report</h1>
+
+  <p>Number of open Pull Requests: {{ open_count }}</p>
+
+  <h2>PRs lacking JIRA reference in title ({{ no_jira_count }})</h2>
+  <ul>
+  {% for pr in no_jira %}
+    <li><a href="https://github.com/apache/lucene-solr/pull/{{ pr.number }}">#{{ pr.number }}: {{ pr.created }} {{ pr.title }}</a> ({{ pr.user }})</li>
+  {%- endfor %}
+  </ul>
+
+  <h2>Open PRs with a resolved JIRA ({{ closed_jira_count }})</h2>
+  <ul>
+  {% for pr in closed_jira %}
+    <li><a href="https://github.com/apache/lucene-solr/pull/{{ pr.pr_number }}">#{{ pr.pr_number }}</a>: <a href="https://issues.apache.org/jira/browse/{{ pr.issue_key }}">{{ pr.status }} {{ pr.resolution_date }} {{ pr.issue_key}}: {{ pr.issue_summary }}</a> ({{ pr.assignee }})</li>
+  {%- endfor %}
+  </ul>
+  """)
+  return template.render(dict)
 
 def main():
   global conf
@@ -61,14 +94,14 @@ def main():
   result['open_count'] = open_prs.totalCount
 
   lack_jira = list(filter(lambda x: not re.match(r'.*\b(LUCENE|SOLR)-\d{3,6}\b', x.title), open_prs))
-  lack_jira_dict = {}
+  result['no_jira_count'] = len(lack_jira)
+  lack_jira_list = []
   for pr in lack_jira:
-    lack_jira_dict[pr.number] = pr.title
-  result['no_jira_count'] = len(lack_jira_dict)
-  result['no_jira'] = lack_jira_dict
+    lack_jira_list.append({'title': pr.title, 'number': pr.number, 'user': pr.user.login, 'created': pr.created_at.strftime("%Y-%m-%d")})
+  result['no_jira'] = lack_jira_list
   out("\nPRs lacking JIRA reference in title")
-  for pr in lack_jira:
-    out("  #%s: %s" % (pr.number, pr.title))
+  for pr in lack_jira_list:
+    out("  #%s: %s %s (%s)" % (pr['number'], pr['created'], pr['title'], pr['user'] ))
 
   out("\nOpen PRs with a resolved JIRA")
   has_jira = list(filter(lambda x: re.match(r'.*\b(LUCENE|SOLR)-\d{3,6}\b', x.title), open_prs))
@@ -81,28 +114,37 @@ def main():
     issue_to_pr[jira_issue_str] = pr
 
   resolved_jiras = jira.search_issues(jql_str="key in (%s) AND status in ('Closed', 'Resolved')" % ", ".join(issue_ids))
-  closed_jira_dict = {}
+  closed_jiras = []
   for issue in resolved_jiras:
     pr_title = issue_to_pr[issue.key].title
     pr_number = issue_to_pr[issue.key].number
-    closed_jira_dict[pr_number] = { 'key': issue.key,
-                                                 'status': issue.fields.status.name,
-                                                 'resolution': issue.fields.resolution.name,
-                                                 'resolution_date': issue.fields.resolutiondate,
-                                                 'pr_title': pr_title}
-    out("  #%s: %s status=%s, resolution=%s, resolutiondate=%s (%s)" % (pr_number,
-                                                                        issue.key,
-                                                                        issue.fields.status.name,
-                                                                        issue.fields.resolution.name,
-                                                                        issue.fields.resolutiondate,
-                                                                        pr_title)
+    assignee = issue.fields.assignee.name if issue.fields.assignee else None
+    closed_jiras.append({ 'issue_key': issue.key,
+                           'status': issue.fields.status.name,
+                           'resolution': issue.fields.resolution.name,
+                           'resolution_date': issue.fields.resolutiondate[:10],
+                           'pr_number': pr_number,
+                           'pr_title': pr_title,
+                           'issue_summary': issue.fields.summary,
+                           'assignee': assignee})
+
+  closed_jiras.sort(key=lambda r: r['pr_number'], reverse=True)
+  for issue in closed_jiras:
+    out("  #%s: %s %s %s: %s (%s)" % (issue['pr_number'],
+                                  issue['status'],
+                                  issue['resolution_date'],
+                                  issue['issue_key'],
+                                  issue['issue_summary'],
+                                  issue['assignee'])
         )
   result['closed_jira_count'] = len(resolved_jiras)
-  result['closed_jira'] = closed_jira_dict
+  result['closed_jira'] = closed_jiras
 
   if conf.json:
     print(json.dumps(result, indent=4))
 
+  if conf.html:
+    print(make_html(result))
 
 if __name__ == '__main__':
   try:

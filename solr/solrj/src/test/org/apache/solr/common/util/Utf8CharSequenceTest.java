@@ -27,6 +27,7 @@ import org.apache.solr.SolrTestCaseJ4;
 
 public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
 
+  @SuppressWarnings({"unchecked"})
   public void testLargeString() throws IOException {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 100; i++) {
@@ -35,9 +36,10 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(sb.toString());
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     byte[] buf = new byte[256];
-    FastOutputStream fos = new FastOutputStream(baos, buf, 0);
-    fos.writeUtf8CharSeq(utf8);
-    fos.flush();
+    try (FastOutputStream fos = new FastOutputStream(baos, buf, 0)) {
+      fos.writeUtf8CharSeq(utf8);
+      fos.flush();
+    }
     byte[] result = baos.toByteArray();
     ByteArrayUtf8CharSequence utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
     assertTrue(utf81.equals(utf8));
@@ -47,19 +49,27 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     utf81 = new ByteArrayUtf8CharSequence(result, 0, result.length);
     assertTrue(utf81.equals(utf8));
 
+    @SuppressWarnings({"rawtypes"})
     Map m0 = new HashMap();
     m0.put("str", utf8);
     baos.reset();
-    new JavaBinCodec().marshal(m0, baos);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(m0, baos);
+    }
     result = baos.toByteArray();
-    Map m1 = (Map) new JavaBinCodec()
-        .setReadStringAsCharSeq(true)
-        .unmarshal(new ByteArrayInputStream(result));
-    utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
-    assertTrue(utf81.equals(utf8));
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      @SuppressWarnings({"rawtypes"})
+      Map m1 = (Map) jbc
+          .setReadStringAsCharSeq(true)
+          .unmarshal(new ByteArrayInputStream(result));
+      utf81 = (ByteArrayUtf8CharSequence) m1.get("str");
+      assertTrue(utf81.equals(utf8));
+    }
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testUnMarshal() throws IOException {
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = new NamedList();
     String str = " The value!";
     for (int i = 0; i < 5; i++) {
@@ -78,15 +88,22 @@ public class Utf8CharSequenceTest extends SolrTestCaseJ4 {
     nl.add("key_long", sb.toString());
     nl.add("key5", "5" + str);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    new JavaBinCodec().marshal(nl, baos);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(nl, baos);
+    }
     byte[] bytes = baos.toByteArray();
 
-    NamedList nl1 = (NamedList) new JavaBinCodec()
-        .setReadStringAsCharSeq(true)
-        .unmarshal(new ByteArrayInputStream( bytes, 0, bytes.length));
+    @SuppressWarnings({"rawtypes"})
+    NamedList nl1;
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      nl1 = (NamedList) jbc
+          .setReadStringAsCharSeq(true)
+          .unmarshal(new ByteArrayInputStream(bytes, 0, bytes.length));
+    }
     byte[] buf = ((ByteArrayUtf8CharSequence) nl1.getVal(0)).getBuf();
     ByteArrayUtf8CharSequence valLong = (ByteArrayUtf8CharSequence) nl1.get("key_long");
     assertFalse(valLong.getBuf() == buf);
+
 
     for (int i = 1; i < 6; i++) {
       ByteArrayUtf8CharSequence val = (ByteArrayUtf8CharSequence) nl1.get("key" + i);

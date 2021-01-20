@@ -1,5 +1,5 @@
 = Securing Solr
-:page-children: authentication-and-authorization-plugins, enabling-ssl, audit-logging, zookeeper-access-control
+:page-children: authentication-and-authorization-plugins, enabling-ssl, zookeeper-access-control
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -26,7 +26,7 @@ When planning how to secure Solr, you should consider which of the available fea
 
 == Encryption with TLS (SSL) Certificates
 
-Ecrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
+Encrypting traffic to/from Solr and between Solr nodes prevents sensitive data to be leaked out on the network. TLS is also normally a requirement to prevent credential sniffing when using Authentication.
 
 See the page <<enabling-ssl.adoc#enabling-ssl,Enabling TLS (SSL)>> for details.
 
@@ -44,6 +44,7 @@ Authentication makes sure you know the identity of your users. The authenticatio
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<hadoop-authentication-plugin.adoc#hadoop-authentication-plugin,Hadoop Authentication Plugin>>
 * <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
+* <<cert-authentication-plugin.adoc#cert-authentication-plugin,Certificate Authentication Plugin>>
 // end::list-of-authentication-plugins[]
 
 === Authorization Plugins
@@ -52,13 +53,46 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 // tag::list-of-authorization-plugins[]
 * <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,Rule-Based Authorization Plugin>>
+* <<rule-based-authorization-plugin.adoc#rule-based-authorization-plugin,External Role Rule-Based Authorization Plugin>>
 // end::list-of-authorization-plugins[]
 
 === Audit Logging Plugins
 
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here in the <<audit-logging.adoc#audit-logging,Audit Logging>> chapter.
 
-== Securing Zookeeper Traffic
+== Request Logging
 
-Zookeeper is a central and important part of a SolrCloud cluster and understanding how to secure
+Solr can optionally log every incoming HTTP(s) request in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]. You can enable request logging by setting `SOLR_REQUESTLOG_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
+
+== Enable IP Access Control
+
+Restrict network access to specific hosts, by setting `SOLR_IP_WHITELIST`/`SOLR_IP_BLACKLIST` via environment variables or in `solr.in.sh`/`solr.in.cmd`.
+
+[source,bash]
+----
+# Allow IPv4/IPv6 localhost, the 192.168.0.x IPv4 network, and 2000:123:4:5:: IPv6 network.
+SOLR_IP_WHITELIST="127.0.0.1, [::1], 192.168.0.0/24, [2000:123:4:5::]/64"
+# Explicitly deny access to two problematic hosts.
+SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
+----
+
+== Securing ZooKeeper Traffic
+
+ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.
+
+== Network Configuration
+
+// tag::security-network-binding-1[]
+Administrators should consider their security setup carefully as an important step in moving to production.  Solr provides a number of features out of the box to meet the security needs of users: authentication and authorization can be configured using a range of security plugins, privacy can be bolstered by enabling SSL/TLS, and (in SolrCloud) ZooKeeper data can be protected with ACL rules to prevent unauthorized reads and writes.
+
+Even if these measures or others are taken, it is strongly recommended that Solr always be protected by a firewall.  Solr is not designed to be exposed on the open internet.
+
+It is also strongly recommended that Solr listen to only those network interfaces that are strictly required.  To prevent administrators from unintentionally exposing Solr more broadly, Solr only listens on the loopback interface ("127.0.0.1") by default.  Most deployments will need to change this value to something less restrictive so that it can be reached from other boxes.  This can be done by setting a `SOLR_JETTY_HOST` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
+
+[source,bash]
+ ----
+ SOLR_JETTY_HOST="0.0.0.0"
+ ----
+// end::security-network-binding-1[]
+

@@ -16,20 +16,20 @@
  */
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 /**
  * 
@@ -87,7 +87,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     assertEquals( custom, core.getUpdateProcessingChain( "custom" ) );
     
     // Make sure the NamedListArgs got through ok
-    assertEquals( "{name={n8=88,n9=99}}", link.args.toString() );
+    assertEquals( "{name={n8=88, n9=99}}", link.args.toString() );
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
@@ -162,7 +162,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
 
       // for these 3 (distrib) chains, the last proc should always be RunUpdateProcessor
       assertTrue(name + " (distrib) last processor isn't a RunUpdateProcessor: " + procs.toString(),
-                 procs.get(procs.size()-1) instanceof RunUpdateProcessor );
+                 procs.get(procs.size()-1) instanceof RunUpdateProcessorFactory.RunUpdateProcessor );
 
       // either 1 proc was droped in distrib mode, or 1 for the "implicit" chain
 

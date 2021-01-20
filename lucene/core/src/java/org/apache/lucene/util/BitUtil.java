@@ -16,20 +16,12 @@
  */
 package org.apache.lucene.util; // from org.apache.solr.util rev 555343
 
-/**  A variety of high efficiency bit twiddling routines.
+/**
+ * A variety of high efficiency bit twiddling routines.
+ *
  * @lucene.internal
  */
 public final class BitUtil {
-
-  // magic numbers for bit interleaving
-  private static final long MAGIC[] = {
-      0x5555555555555555L, 0x3333333333333333L,
-      0x0F0F0F0F0F0F0F0FL, 0x00FF00FF00FF00FFL,
-      0x0000FFFF0000FFFFL, 0x00000000FFFFFFFFL,
-      0xAAAAAAAAAAAAAAAAL
-  };
-  // shift values for bit interleaving
-  private static final short SHIFT[] = {1, 2, 4, 8, 16};
 
   private BitUtil() {} // no instance
 
@@ -46,8 +38,10 @@ public final class BitUtil {
     return popCount;
   }
 
-  /** Returns the popcount or cardinality of the two sets after an intersection.
-   *  Neither array is modified. */
+  /**
+   * Returns the popcount or cardinality of the two sets after an intersection. Neither array is
+   * modified.
+   */
   public static long pop_intersect(long[] arr1, long[] arr2, int wordOffset, int numWords) {
     long popCount = 0;
     for (int i = wordOffset, end = wordOffset + numWords; i < end; ++i) {
@@ -56,18 +50,16 @@ public final class BitUtil {
     return popCount;
   }
 
-   /** Returns the popcount or cardinality of the union of two sets.
-    *  Neither array is modified. */
-   public static long pop_union(long[] arr1, long[] arr2, int wordOffset, int numWords) {
-     long popCount = 0;
-     for (int i = wordOffset, end = wordOffset + numWords; i < end; ++i) {
-       popCount += Long.bitCount(arr1[i] | arr2[i]);
-     }
-     return popCount;
-   }
+  /** Returns the popcount or cardinality of the union of two sets. Neither array is modified. */
+  public static long pop_union(long[] arr1, long[] arr2, int wordOffset, int numWords) {
+    long popCount = 0;
+    for (int i = wordOffset, end = wordOffset + numWords; i < end; ++i) {
+      popCount += Long.bitCount(arr1[i] | arr2[i]);
+    }
+    return popCount;
+  }
 
-  /** Returns the popcount or cardinality of {@code A & ~B}.
-   *  Neither array is modified. */
+  /** Returns the popcount or cardinality of {@code A & ~B}. Neither array is modified. */
   public static long pop_andnot(long[] arr1, long[] arr2, int wordOffset, int numWords) {
     long popCount = 0;
     for (int i = wordOffset, end = wordOffset + numWords; i < end; ++i) {
@@ -76,8 +68,7 @@ public final class BitUtil {
     return popCount;
   }
 
-  /** Returns the popcount or cardinality of A ^ B
-    * Neither array is modified. */
+  /** Returns the popcount or cardinality of A ^ B Neither array is modified. */
   public static long pop_xor(long[] arr1, long[] arr2, int wordOffset, int numWords) {
     long popCount = 0;
     for (int i = wordOffset, end = wordOffset + numWords; i < end; ++i) {
@@ -86,7 +77,10 @@ public final class BitUtil {
     return popCount;
   }
 
-  /** returns the next highest power of two, or the current value if it's already a power of two or zero*/
+  /**
+   * returns the next highest power of two, or the current value if it's already a power of two or
+   * zero
+   */
   public static int nextHighestPowerOfTwo(int v) {
     v--;
     v |= v >> 1;
@@ -98,8 +92,11 @@ public final class BitUtil {
     return v;
   }
 
-  /** returns the next highest power of two, or the current value if it's already a power of two or zero*/
-   public static long nextHighestPowerOfTwo(long v) {
+  /**
+   * returns the next highest power of two, or the current value if it's already a power of two or
+   * zero
+   */
+  public static long nextHighestPowerOfTwo(long v) {
     v--;
     v |= v >> 1;
     v |= v >> 2;
@@ -111,71 +108,82 @@ public final class BitUtil {
     return v;
   }
 
+  // magic numbers for bit interleaving
+  private static final long MAGIC0 = 0x5555555555555555L;
+  private static final long MAGIC1 = 0x3333333333333333L;
+  private static final long MAGIC2 = 0x0F0F0F0F0F0F0F0FL;
+  private static final long MAGIC3 = 0x00FF00FF00FF00FFL;
+  private static final long MAGIC4 = 0x0000FFFF0000FFFFL;
+  private static final long MAGIC5 = 0x00000000FFFFFFFFL;
+  private static final long MAGIC6 = 0xAAAAAAAAAAAAAAAAL;
+
+  // shift values for bit interleaving
+  private static final long SHIFT0 = 1;
+  private static final long SHIFT1 = 2;
+  private static final long SHIFT2 = 4;
+  private static final long SHIFT3 = 8;
+  private static final long SHIFT4 = 16;
+
   /**
    * Interleaves the first 32 bits of each long value
    *
-   * Adapted from: http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
+   * <p>Adapted from: http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
    */
   public static long interleave(int even, int odd) {
     long v1 = 0x00000000FFFFFFFFL & even;
     long v2 = 0x00000000FFFFFFFFL & odd;
-    v1 = (v1 | (v1 << SHIFT[4])) & MAGIC[4];
-    v1 = (v1 | (v1 << SHIFT[3])) & MAGIC[3];
-    v1 = (v1 | (v1 << SHIFT[2])) & MAGIC[2];
-    v1 = (v1 | (v1 << SHIFT[1])) & MAGIC[1];
-    v1 = (v1 | (v1 << SHIFT[0])) & MAGIC[0];
-    v2 = (v2 | (v2 << SHIFT[4])) & MAGIC[4];
-    v2 = (v2 | (v2 << SHIFT[3])) & MAGIC[3];
-    v2 = (v2 | (v2 << SHIFT[2])) & MAGIC[2];
-    v2 = (v2 | (v2 << SHIFT[1])) & MAGIC[1];
-    v2 = (v2 | (v2 << SHIFT[0])) & MAGIC[0];
+    v1 = (v1 | (v1 << SHIFT4)) & MAGIC4;
+    v1 = (v1 | (v1 << SHIFT3)) & MAGIC3;
+    v1 = (v1 | (v1 << SHIFT2)) & MAGIC2;
+    v1 = (v1 | (v1 << SHIFT1)) & MAGIC1;
+    v1 = (v1 | (v1 << SHIFT0)) & MAGIC0;
+    v2 = (v2 | (v2 << SHIFT4)) & MAGIC4;
+    v2 = (v2 | (v2 << SHIFT3)) & MAGIC3;
+    v2 = (v2 | (v2 << SHIFT2)) & MAGIC2;
+    v2 = (v2 | (v2 << SHIFT1)) & MAGIC1;
+    v2 = (v2 | (v2 << SHIFT0)) & MAGIC0;
 
-    return (v2<<1) | v1;
+    return (v2 << 1) | v1;
   }
 
-  /**
-   * Extract just the even-bits value as a long from the bit-interleaved value
-   */
+  /** Extract just the even-bits value as a long from the bit-interleaved value */
   public static long deinterleave(long b) {
-    b &= MAGIC[0];
-    b = (b ^ (b >>> SHIFT[0])) & MAGIC[1];
-    b = (b ^ (b >>> SHIFT[1])) & MAGIC[2];
-    b = (b ^ (b >>> SHIFT[2])) & MAGIC[3];
-    b = (b ^ (b >>> SHIFT[3])) & MAGIC[4];
-    b = (b ^ (b >>> SHIFT[4])) & MAGIC[5];
+    b &= MAGIC0;
+    b = (b ^ (b >>> SHIFT0)) & MAGIC1;
+    b = (b ^ (b >>> SHIFT1)) & MAGIC2;
+    b = (b ^ (b >>> SHIFT2)) & MAGIC3;
+    b = (b ^ (b >>> SHIFT3)) & MAGIC4;
+    b = (b ^ (b >>> SHIFT4)) & MAGIC5;
     return b;
   }
 
-  /**
-   * flip flops odd with even bits
-   */
-  public static final long flipFlop(final long b) {
-    return ((b & MAGIC[6]) >>> 1) | ((b & MAGIC[0]) << 1 );
+  /** flip flops odd with even bits */
+  public static long flipFlop(final long b) {
+    return ((b & MAGIC6) >>> 1) | ((b & MAGIC0) << 1);
   }
 
-   /** Same as {@link #zigZagEncode(long)} but on integers. */
-   public static int zigZagEncode(int i) {
-     return (i >> 31) ^ (i << 1);
-   }
+  /** Same as {@link #zigZagEncode(long)} but on integers. */
+  public static int zigZagEncode(int i) {
+    return (i >> 31) ^ (i << 1);
+  }
 
-   /**
-    * <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">Zig-zag</a>
-    * encode the provided long. Assuming the input is a signed long whose
-    * absolute value can be stored on <tt>n</tt> bits, the returned value will
-    * be an unsigned long that can be stored on <tt>n+1</tt> bits.
-    */
-   public static long zigZagEncode(long l) {
-     return (l >> 63) ^ (l << 1);
-   }
+  /**
+   * <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">Zig-zag</a> encode
+   * the provided long. Assuming the input is a signed long whose absolute value can be stored on
+   * <code>n</code> bits, the returned value will be an unsigned long that can be stored on <code>
+   * n+1</code> bits.
+   */
+  public static long zigZagEncode(long l) {
+    return (l >> 63) ^ (l << 1);
+  }
 
-   /** Decode an int previously encoded with {@link #zigZagEncode(int)}. */
-   public static int zigZagDecode(int i) {
-     return ((i >>> 1) ^ -(i & 1));
-   }
+  /** Decode an int previously encoded with {@link #zigZagEncode(int)}. */
+  public static int zigZagDecode(int i) {
+    return ((i >>> 1) ^ -(i & 1));
+  }
 
-   /** Decode a long previously encoded with {@link #zigZagEncode(long)}. */
-   public static long zigZagDecode(long l) {
-     return ((l >>> 1) ^ -(l & 1));
-   }
-
+  /** Decode a long previously encoded with {@link #zigZagEncode(long)}. */
+  public static long zigZagDecode(long l) {
+    return ((l >>> 1) ^ -(l & 1));
+  }
 }

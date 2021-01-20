@@ -26,13 +26,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -48,6 +49,7 @@ public class ZkMaintenanceUtils {
   private static final String ZKNODE_DATA_FILE = "zknode.data";
 
   private ZkMaintenanceUtils() {} // don't let it be instantiated, all methods are static.
+
   /**
    * Lists a ZNode child and (optionally) the znodes of all the children. No data is dumped.
    *
@@ -69,7 +71,7 @@ public class ZkMaintenanceUtils {
     }
 
     StringBuilder sb = new StringBuilder();
-    
+
     if (recurse == false) {
       for (String node : zkClient.getChildren(root, null, true)) {
         if (node.equals("zookeeper") == false) {
@@ -78,7 +80,7 @@ public class ZkMaintenanceUtils {
       }
       return sb.toString();
     }
-    
+
     traverseZkTree(zkClient, root, VISIT_ORDER.VISIT_PRE, znode -> {
       if (znode.startsWith("/zookeeper")) return; // can't do anything with this node!
       int iPos = znode.lastIndexOf("/");
@@ -105,8 +107,8 @@ public class ZkMaintenanceUtils {
    * @throws InterruptedException Thread interrupted
    */
   public static void zkTransfer(SolrZkClient zkClient, String src, Boolean srcIsZk,
-                         String dst, Boolean dstIsZk, 
-                         Boolean recurse) throws SolrServerException, KeeperException, InterruptedException, IOException {
+                                String dst, Boolean dstIsZk,
+                                Boolean recurse) throws SolrServerException, KeeperException, InterruptedException, IOException {
 
     if (srcIsZk == false && dstIsZk == false) {
       throw new SolrServerException("One or both of source or destination must specify ZK nodes.");
@@ -258,11 +260,14 @@ public class ZkMaintenanceUtils {
       return;
     }
 
-    TreeSet<String> paths = new TreeSet<>(Comparator.comparingInt(String::length).reversed());
+    ArrayList<String> paths = new ArrayList<>();
 
     traverseZkTree(zkClient, path, VISIT_ORDER.VISIT_POST, znode -> {
       if (!znode.equals("/") && filter.test(znode)) paths.add(znode);
     });
+
+    // sort the list in descending order to ensure that child entries are deleted first
+    paths.sort(Comparator.comparingInt(String::length).reversed());
 
     for (String subpath : paths) {
       if (!subpath.equals("/")) {
@@ -274,7 +279,7 @@ public class ZkMaintenanceUtils {
       }
     }
   }
-  
+
   public static void uploadToZK(SolrZkClient zkClient, final Path fromPath, final String zkPath,
                                 final Pattern filenameExclusions) throws IOException {
 
@@ -284,7 +289,7 @@ public class ZkMaintenanceUtils {
     }
 
     final Path rootPath = Paths.get(path);
-        
+
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
 
@@ -327,8 +332,8 @@ public class ZkMaintenanceUtils {
 
   private static int copyDataDown(SolrZkClient zkClient, String zkPath, File file) throws IOException, KeeperException, InterruptedException {
     byte[] data = zkClient.getData(zkPath, null, null, true);
-    if (data != null && data.length > 1) { // There are apparently basically empty ZNodes.
-      log.info("Writing file {}", file.toString());
+    if (data != null && data.length > 0) { // There are apparently basically empty ZNodes.
+      log.info("Writing file {}", file);
       Files.write(file.toPath(), data);
       return data.length;
     }
@@ -418,7 +423,24 @@ public class ZkMaintenanceUtils {
     }
   }
 
+  // Get the parent path. This is really just the string before the last slash (/)
+  // Will return empty string if there are no slashes.
+  // Will return empty string if the path is just "/"
+  // Will return empty string if the path is just ""
+  public static String getZkParent(String path) {
+    // Remove trailing slash if present.
+    if (StringUtils.endsWith(path, "/")) {
+      path = StringUtils.substringBeforeLast(path, "/");
+    }
+    if (StringUtils.contains(path, "/") == false) {
+      return "";
+    }
+    return (StringUtils.substringBeforeLast(path, "/"));
+  }
+
   // Take into account Windows file separators when making a Znode's name.
+  // Used particularly when uploading configsets since the path we're copying
+  // up may be a file path.
   public static String createZkNodeName(String zkRoot, Path root, Path file) {
     String relativePath = root.relativize(file).toString();
     // Windows shenanigans

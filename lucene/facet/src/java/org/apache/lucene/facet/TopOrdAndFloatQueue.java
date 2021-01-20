@@ -18,8 +18,7 @@ package org.apache.lucene.facet;
 
 import org.apache.lucene.util.PriorityQueue;
 
-/** Keeps highest results, first by largest float value,
- *  then tie break by smallest ord. */
+/** Keeps highest results, first by largest float value, then tie break by smallest ord. */
 public class TopOrdAndFloatQueue extends PriorityQueue<TopOrdAndFloatQueue.OrdAndValue> {
 
   /** Holds a single entry. */
@@ -32,8 +31,7 @@ public class TopOrdAndFloatQueue extends PriorityQueue<TopOrdAndFloatQueue.OrdAn
     public float value;
 
     /** Default constructor. */
-    public OrdAndValue() {
-    }
+    public OrdAndValue() {}
   }
 
   /** Sole constructor. */

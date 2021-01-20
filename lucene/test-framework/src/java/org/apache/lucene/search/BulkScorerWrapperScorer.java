@@ -19,9 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * A {@link BulkScorer}-backed scorer.
- */
+/** A {@link BulkScorer}-backed scorer. */
 public class BulkScorerWrapperScorer extends Scorer {
 
   private final BulkScorer scorer;
@@ -47,19 +45,26 @@ public class BulkScorerWrapperScorer extends Scorer {
     while (next != DocIdSetIterator.NO_MORE_DOCS && bufferLength == 0) {
       final int min = Math.max(target, next);
       final int max = min + docs.length;
-      next = scorer.score(new LeafCollector() {
-        Scorable scorer;
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          this.scorer = scorer;
-        }
-        @Override
-        public void collect(int doc) throws IOException {
-          docs[bufferLength] = doc;
-          scores[bufferLength] = scorer.score();
-          bufferLength += 1;
-        }
-      }, null, min, max);
+      next =
+          scorer.score(
+              new LeafCollector() {
+                Scorable scorer;
+
+                @Override
+                public void setScorer(Scorable scorer) throws IOException {
+                  this.scorer = scorer;
+                }
+
+                @Override
+                public void collect(int doc) throws IOException {
+                  docs[bufferLength] = doc;
+                  scores[bufferLength] = scorer.score();
+                  bufferLength += 1;
+                }
+              },
+              null,
+              min,
+              max);
     }
     i = -1;
   }
@@ -114,5 +119,4 @@ public class BulkScorerWrapperScorer extends Scorer {
       }
     };
   }
-
 }

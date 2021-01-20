@@ -40,6 +40,7 @@ public class SumSqEvaluator extends RecursiveObjectEvaluator implements OneValue
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting a List",toExpression(constructingFactory), value.getClass().getSimpleName()));
     }
 
+    @SuppressWarnings({"unchecked"})
     List<Number> list = (List<Number>)value;
 
     if(0 == list.size()){

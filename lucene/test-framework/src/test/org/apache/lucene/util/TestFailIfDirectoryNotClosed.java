@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.store.Directory;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
-
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 
 public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   public TestFailIfDirectoryNotClosed() {
@@ -39,9 +38,10 @@ public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   @Test
   public void testFailIfDirectoryNotClosed() {
     Result r = JUnitCore.runClasses(Nested1.class);
-    RandomizedTest.assumeTrue("Ignoring nested test, very likely zombie threads present.", 
-        r.getIgnoreCount() == 0);
+    RandomizedTest.assumeTrue(
+        "Ignoring nested test, very likely zombie threads present.", r.getIgnoreCount() == 0);
     assertFailureCount(1, r);
-    Assert.assertTrue(r.getFailures().get(0).toString().contains("Resource in scope SUITE failed to close"));
+    Assert.assertTrue(
+        r.getFailures().get(0).toString().contains("Resource in scope SUITE failed to close"));
   }
 }

@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -59,11 +60,11 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
 
   @Test
   public void test() throws Exception {
-    waitForThingsToLevelOut(30000);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     String testCollectionName = "c8n_onreconnect_1x1";
     String shardId = "shard1";
-    createCollectionRetry(testCollectionName, "conf1", 1, 1, 1);
+    createCollectionRetry(testCollectionName, "conf1", 1, 1);
     cloudClient.setDefaultCollection(testCollectionName);
 
     Replica leader = getShardLeader(testCollectionName, shardId, 30 /* timeout secs */);

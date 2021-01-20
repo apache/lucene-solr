@@ -33,6 +33,7 @@ public class ValueAtEvaluator extends RecursiveObjectEvaluator implements ManyVa
   public Object doWork(Object... values) throws IOException {
     if(values[0] instanceof List) {
 
+      @SuppressWarnings({"unchecked"})
       List<Number> c = (List<Number>) values[0];
       int index = -1;
       if(values.length == 2) {

@@ -43,7 +43,7 @@ public class ConcatEvaluator extends RecursiveObjectEvaluator implements ManyVal
   }
 
   @Override
-  public Object doWork(Object values[]) throws IOException {
+  public Object doWork(Object... values) throws IOException {
 
     StringBuilder buff = new StringBuilder();
 

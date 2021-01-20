@@ -62,7 +62,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void create(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
-      Path propertiesFile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propertiesFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       if (Files.exists(propertiesFile))
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                 "Could not create a new core in " + cd.getInstanceDir()
@@ -78,7 +78,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void persist(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
-      Path propFile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       writePropertiesFile(cd, propFile);
     }
   }
@@ -92,7 +92,7 @@ public class CorePropertiesLocator implements CoresLocator {
       }
     }
     catch (IOException e) {
-      log.error("Couldn't persist core properties to {}: {}", propfile, e.getMessage());
+      log.error("Couldn't persist core properties to {}: ", propfile, e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
     }
@@ -105,11 +105,11 @@ public class CorePropertiesLocator implements CoresLocator {
     }
     for (CoreDescriptor cd : coreDescriptors) {
       if (cd == null) continue;
-      Path propfile = this.rootDirectory.resolve(cd.getInstanceDir()).resolve(PROPERTIES_FILENAME);
+      Path propfile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       try {
         Files.deleteIfExists(propfile);
       } catch (IOException e) {
-        log.warn("Couldn't delete core properties file {}: {}", propfile, e.getMessage());
+        log.warn("Couldn't delete core properties file {}: ", propfile, e);
       }
     }
   }
@@ -144,7 +144,9 @@ public class CorePropertiesLocator implements CoresLocator {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
             CoreDescriptor cd = buildCoreDescriptor(file, cc);
             if (cd != null) {
-              log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              if (log.isDebugEnabled()) {
+                log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+              }
               cds.add(cd);
             }
             return FileVisitResult.SKIP_SIBLINGS;
@@ -167,9 +169,13 @@ public class CorePropertiesLocator implements CoresLocator {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
     }
-    log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    if (log.isInfoEnabled()) {
+      log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
+    }
     if (cds.size() > 0) {
-      log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      if (log.isInfoEnabled()) {
+        log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      }
     }
     return cds;
   }
@@ -185,12 +191,12 @@ public class CorePropertiesLocator implements CoresLocator {
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.isZooKeeperAware());
+      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
       ret.loadExtraProperties();
       return ret;
     }
     catch (IOException e) {
-      log.error("Couldn't load core descriptor from {}:{}", propertiesFile, e.toString());
+      log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
       return null;
     }
 

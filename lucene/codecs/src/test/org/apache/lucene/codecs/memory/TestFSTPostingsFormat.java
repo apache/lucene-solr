@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests FSTPostingsFormat 
- */
+/** Tests FSTPostingsFormat */
 public class TestFSTPostingsFormat extends BasePostingsFormatTestCase {
   private final Codec codec = TestUtil.alwaysPostingsFormat(new FSTPostingsFormat());
 

@@ -31,7 +31,9 @@ public class LoggingInfoStream extends InfoStream {
 
   @Override
   public void message(String component, String message) {
-    log.info("[" + component + "][" + Thread.currentThread().getName() + "]: " + message);
+    if (log.isInfoEnabled()) {
+      log.info("[{}][{}]: {}", component, Thread.currentThread().getName(), message);
+    }
   }
 
   @Override

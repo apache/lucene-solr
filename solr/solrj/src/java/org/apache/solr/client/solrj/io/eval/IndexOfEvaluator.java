@@ -36,6 +36,7 @@ public class IndexOfEvaluator extends RecursiveObjectEvaluator implements TwoVal
     if(!(value1 instanceof List)){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an array",toExpression(constructingFactory), value1.getClass().getSimpleName()));
     } else {
+      @SuppressWarnings({"rawtypes"})
       List list = (List)value1;
       String find = value2.toString().replace("\"","");
       for(int i=0; i<list.size(); i++) {

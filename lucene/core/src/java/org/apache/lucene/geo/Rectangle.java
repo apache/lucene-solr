@@ -19,24 +19,21 @@ package org.apache.lucene.geo;
 import static java.lang.Math.PI;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
-import static org.apache.lucene.geo.GeoUtils.checkLatitude;
-import static org.apache.lucene.geo.GeoUtils.checkLongitude;
+import static org.apache.lucene.geo.GeoUtils.EARTH_MEAN_RADIUS_METERS;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_INCL;
-import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MAX_LAT_RADIANS;
 import static org.apache.lucene.geo.GeoUtils.MAX_LON_RADIANS;
+import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.geo.GeoUtils.MIN_LAT_RADIANS;
 import static org.apache.lucene.geo.GeoUtils.MIN_LON_RADIANS;
-import static org.apache.lucene.geo.GeoUtils.EARTH_MEAN_RADIUS_METERS;
+import static org.apache.lucene.geo.GeoUtils.checkLatitude;
+import static org.apache.lucene.geo.GeoUtils.checkLongitude;
 import static org.apache.lucene.geo.GeoUtils.sloppySin;
-import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
-import static org.apache.lucene.util.SloppyMath.toDegrees;
-import static org.apache.lucene.util.SloppyMath.toRadians;
 
 /** Represents a lat/lon rectangle. */
-public class Rectangle {
+public class Rectangle extends LatLonGeometry {
   /** maximum longitude value (in degrees) */
   public final double minLat;
   /** minimum longitude value (in degrees) */
@@ -64,6 +61,11 @@ public class Rectangle {
   }
 
   @Override
+  protected Component2D toComponent2D() {
+    return Rectangle2D.create(this);
+  }
+
+  @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
     b.append("Rectangle(lat=");
@@ -87,19 +89,27 @@ public class Rectangle {
     return maxLon < minLon;
   }
 
-  /** returns true if rectangle (defined by minLat, maxLat, minLon, maxLon) contains the lat lon point */
-  public static boolean containsPoint(final double lat, final double lon,
-                                      final double minLat, final double maxLat,
-                                      final double minLon, final double maxLon) {
+  /**
+   * returns true if rectangle (defined by minLat, maxLat, minLon, maxLon) contains the lat lon
+   * point
+   */
+  public static boolean containsPoint(
+      final double lat,
+      final double lon,
+      final double minLat,
+      final double maxLat,
+      final double minLon,
+      final double maxLon) {
     return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
   }
 
   /** Compute Bounding Box for a circle using WGS-84 parameters */
-  public static Rectangle fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
+  public static Rectangle fromPointDistance(
+      final double centerLat, final double centerLon, final double radiusMeters) {
     checkLatitude(centerLat);
     checkLongitude(centerLon);
-    final double radLat = toRadians(centerLat);
-    final double radLon = toRadians(centerLon);
+    final double radLat = Math.toRadians(centerLat);
+    final double radLon = Math.toRadians(centerLon);
     // LUCENE-7143
     double radDistance = (radiusMeters + 7E-2) / EARTH_MEAN_RADIUS_METERS;
     double minLat = radLat - radDistance;
@@ -125,16 +135,21 @@ public class Rectangle {
       maxLon = MAX_LON_RADIANS;
     }
 
-    return new Rectangle(toDegrees(minLat), toDegrees(maxLat), toDegrees(minLon), toDegrees(maxLon));
+    return new Rectangle(
+        Math.toDegrees(minLat),
+        Math.toDegrees(maxLat),
+        Math.toDegrees(minLon),
+        Math.toDegrees(maxLon));
   }
 
   /** maximum error from {@link #axisLat(double, double)}. logic must be prepared to handle this */
-  public static final double AXISLAT_ERROR = 0.1D / EARTH_MEAN_RADIUS_METERS * TO_DEGREES;
+  public static final double AXISLAT_ERROR = Math.toDegrees(0.1D / EARTH_MEAN_RADIUS_METERS);
 
   /**
    * Calculate the latitude of a circle's intersections with its bbox meridians.
-   * <p>
-   * <b>NOTE:</b> the returned value will be +/- {@link #AXISLAT_ERROR} of the actual value.
+   *
+   * <p><b>NOTE:</b> the returned value will be +/- {@link #AXISLAT_ERROR} of the actual value.
+   *
    * @param centerLat The latitude of the circle center
    * @param radiusMeters The radius of the circle in meters
    * @return A latitude
@@ -155,7 +170,7 @@ public class Rectangle {
     // cannot divide by 0, and we will always get a positive value in the range [0, 1) as
     // the argument to arc cosine, resulting in a range (0, PI/2].
     final double PIO2 = Math.PI / 2D;
-    double l1 = toRadians(centerLat);
+    double l1 = Math.toRadians(centerLat);
     double r = (radiusMeters + 7E-2) / EARTH_MEAN_RADIUS_METERS;
 
     // if we are within radius range of a pole, the lat is the pole itself
@@ -173,7 +188,7 @@ public class Rectangle {
     // now adjust back to range [-pi/2, pi/2], ie latitude in radians
     l2 = centerLat >= 0 ? PIO2 - l2 : l2 - PIO2;
 
-    return toDegrees(l2);
+    return Math.toDegrees(l2);
   }
 
   /** Returns the bounding box over an array of polygons */
@@ -184,7 +199,7 @@ public class Rectangle {
     double minLon = Double.POSITIVE_INFINITY;
     double maxLon = Double.NEGATIVE_INFINITY;
 
-    for (int i = 0;i < polygons.length; i++) {
+    for (int i = 0; i < polygons.length; i++) {
       minLat = Math.min(polygons[i].minLat, minLat);
       maxLat = Math.max(polygons[i].maxLat, maxLat);
       minLon = Math.min(polygons[i].minLon, minLon);
@@ -205,7 +220,6 @@ public class Rectangle {
     if (Double.compare(rectangle.minLon, minLon) != 0) return false;
     if (Double.compare(rectangle.maxLat, maxLat) != 0) return false;
     return Double.compare(rectangle.maxLon, maxLon) == 0;
-
   }
 
   @Override

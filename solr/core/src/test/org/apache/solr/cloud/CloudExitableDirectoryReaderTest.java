@@ -125,19 +125,32 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     counter = 1;
     UpdateRequest req = new UpdateRequest();
 
-    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "a" + counter,
+    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
+      final String v = "a" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
     counter++;
-    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "b" + counter,
+    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
+      final String v = "b" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
     counter++;
-    for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter,
+    for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ ) {
+      final String v = "dummy term doc" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", 
+          v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
     req.commit(client, COLLECTION);
   }
@@ -226,7 +239,10 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     SolrParams cases[] = new SolrParams[] {
         params( "sort","query($q,1) asc"),
         params("rows","0", "facet","true", "facet.method", "enum", "facet.field", "name"),
-        params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}")
+        params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : num}}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : name_dv}}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : name_dvs}}")
     }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);

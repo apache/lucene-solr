@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Collections;
@@ -30,15 +31,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
-import com.codahale.metrics.MetricRegistry;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +89,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
-  private MetricRegistry registry;
+  private SolrMetricsContext solrMetricsContext;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -135,7 +136,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return persistence;
   }
 
+  @SuppressWarnings({"unchecked"})
   private Cache<K, V> buildCache(Cache<K, V> prev) {
+    @SuppressWarnings({"rawtypes"})
     Caffeine builder = Caffeine.newBuilder()
         .initialCapacity(initialSize)
         .executor(executor)
@@ -177,6 +180,21 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return cache.get(key, k -> {
+      inserts.increment();
+      V value = mappingFunction.apply(k);
+      if (value == null) {
+        return null;
+      }
+      ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+          RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+      ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+      return value;
+    });
+  }
+
+  @Override
   public V put(K key, V val) {
     inserts.increment();
     V old = cache.asMap().put(key, val);
@@ -191,6 +209,17 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
+  public V remove(K key) {
+    V existing = cache.asMap().remove(key);
+    if (existing != null) {
+      ramBytes.add(- RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+      ramBytes.add(- RamUsageEstimator.sizeOfObject(existing, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
+      ramBytes.add(- RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);
+    }
+    return existing;
+  }
+
+  @Override
   public void clear() {
     cache.invalidateAll();
     ramBytes.reset();
@@ -202,7 +231,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
+    SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();
     if (executor instanceof ExecutorService) {
@@ -322,8 +352,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   @Override
@@ -332,14 +362,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
-    cacheMap = new MetricsMap((detailed, map) -> {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
+    cacheMap = new MetricsMap(map -> {
       if (cache != null) {
         CacheStats stats = cache.stats();
         long insertCount = inserts.sum();
@@ -362,6 +387,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 }

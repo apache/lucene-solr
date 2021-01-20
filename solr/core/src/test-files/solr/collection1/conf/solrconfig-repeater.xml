@@ -42,12 +42,12 @@
   </requestHandler>
 
   <requestHandler name="/replication" class="solr.ReplicationHandler">
-    <lst name="master">
+    <lst name="leader">
       <str name="replicateAfter">commit</str>
       <str name="confFiles">schema.xml</str>
     </lst>
-    <lst name="slave">
-      <str name="masterUrl">http://127.0.0.1:TEST_PORT/solr/replication</str>
+    <lst name="follower">
+      <str name="leaderUrl">http://127.0.0.1:TEST_PORT/solr/replication</str>
     </lst>
   </requestHandler>
 

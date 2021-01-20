@@ -379,12 +379,12 @@ public final class LegacyNumericUtils {
   
   /**
    * Filters the given {@link TermsEnum} by accepting only prefix coded 64 bit
-   * terms with a shift value of <tt>0</tt>.
+   * terms with a shift value of <code>0</code>.
    * 
    * @param termsEnum
    *          the terms enum to filter
    * @return a filtered {@link TermsEnum} that only returns prefix coded 64 bit
-   *         terms with a shift value of <tt>0</tt>.
+   *         terms with a shift value of <code>0</code>.
    */
   public static TermsEnum filterPrefixCodedLongs(TermsEnum termsEnum) {
     return new SeekingNumericFilteredTermsEnum(termsEnum) {
@@ -398,12 +398,12 @@ public final class LegacyNumericUtils {
 
   /**
    * Filters the given {@link TermsEnum} by accepting only prefix coded 32 bit
-   * terms with a shift value of <tt>0</tt>.
+   * terms with a shift value of <code>0</code>.
    * 
    * @param termsEnum
    *          the terms enum to filter
    * @return a filtered {@link TermsEnum} that only returns prefix coded 32 bit
-   *         terms with a shift value of <tt>0</tt>.
+   *         terms with a shift value of <code>0</code>.
    */
   public static TermsEnum filterPrefixCodedInts(TermsEnum termsEnum) {
     return new SeekingNumericFilteredTermsEnum(termsEnum) {

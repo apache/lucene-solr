@@ -21,10 +21,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,7 +44,6 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
@@ -86,7 +86,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile, null);
+      return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
@@ -133,6 +133,19 @@ public class TestHarness extends BaseTestHarness {
       this(SolrTestCaseJ4.DEFAULT_TEST_CORENAME, dataDirectory, solrConfig, indexSchema);
   }
 
+  /** 
+   * Helper method to let us do some home sys prop check in delegated construtor.
+   * in "real" code SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
+   */
+  private static Path checkAndReturnSolrHomeSysProp() {
+    final String SOLR_HOME = "solr.solr.home";
+    final String home = System.getProperty(SOLR_HOME);
+    if (null == home) {
+      throw new IllegalStateException("This TestHarness constructor requires " + SOLR_HOME + " sys prop to be set by test first");
+    }
+    return Paths.get(home).toAbsolutePath().normalize();
+  }
+  
   /**
    * @param coreName to initialize
    * @param dataDir path for index data, will not be cleaned up
@@ -140,7 +153,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())),
+    this(buildTestNodeConfig(checkAndReturnSolrHomeSysProp()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -155,16 +168,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome), solrXml);
-  }
-
-  /**
-   * Create a TestHarness using a specific solr resource loader and solr xml
-   * @param loader the SolrResourceLoader to use
-   * @param solrXml the text of a solrxml
-   */
-  public TestHarness(SolrResourceLoader loader, String solrXml) {
-    this(SolrXmlConfig.fromString(loader, solrXml));
+    this(SolrXmlConfig.fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -176,20 +180,21 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, new Properties(), coresLocator);
+    container = new CoreContainer(config, coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
   }
 
-  public static NodeConfig buildTestNodeConfig(SolrResourceLoader loader) {
-    CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
-                                                                 Integer.getInteger("hostPort", 8983),
-                                                                 System.getProperty("hostContext", ""))
-        .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
-        .build();
-    if (System.getProperty("zkHost") == null)
-      cloudConfig = null;
+  public static NodeConfig buildTestNodeConfig(Path solrHome) {
+    CloudConfig cloudConfig = (null == System.getProperty("zkHost"))
+      ? null
+      : new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
+                                           Integer.getInteger("hostPort", 8983),
+                                           System.getProperty("hostContext", ""))
+      .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+      .setZkHost(System.getProperty("zkHost"))
+      .build();
     UpdateShardHandlerConfig updateShardHandlerConfig = new UpdateShardHandlerConfig(
         HttpClientUtil.DEFAULT_MAXCONNECTIONS,
         HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST,
@@ -201,10 +206,13 @@ public class TestHarness extends BaseTestHarness {
     attributes.put("class", SolrJmxReporter.class.getName());
     PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
     MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder()
-        .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
+        .setMetricReporterPlugins(new PluginInfo[]{defaultPlugin})
+        .setHistoryHandler(
+            Boolean.getBoolean("metricsHistory")
+                ? null : new PluginInfo("typeUnused", Collections.singletonMap("enable", "false")))
         .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", loader)
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)
@@ -228,8 +236,7 @@ public class TestHarness extends BaseTestHarness {
 
     @Override
     public List<CoreDescriptor> discover(CoreContainer cc) {
-      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName),
-          cc.getContainerProperties(), cc.isZooKeeperAware(),
+      return ImmutableList.of(new CoreDescriptor(coreName, cc.getCoreRootDirectory().resolve(coreName), cc,
           CoreDescriptor.CORE_DATADIR, dataDir,
           CoreDescriptor.CORE_CONFIG, solrConfig,
           CoreDescriptor.CORE_SCHEMA, schema,
@@ -285,7 +292,7 @@ public class TestHarness extends BaseTestHarness {
       }
       return connection.request(handler, null, xml);
     } catch (SolrException e) {
-      throw (SolrException)e;
+      throw e;
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
@@ -447,6 +454,7 @@ public class TestHarness extends BaseTestHarness {
      * Perhaps the best we could do is increment the core reference count
      * and decrement it in the request close() method?
      */
+    @SuppressWarnings({"unchecked"})
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
@@ -455,10 +463,12 @@ public class TestHarness extends BaseTestHarness {
       if (q.length%2 != 0) { 
         throw new RuntimeException("The length of the string array (query arguments) needs to be even");
       }
+      @SuppressWarnings({"rawtypes"})
       Map.Entry<String, String> [] entries = new NamedListEntry[q.length / 2];
       for (int i = 0; i < q.length; i += 2) {
         entries[i/2] = new NamedListEntry<>(q[i], q[i+1]);
       }
+      @SuppressWarnings({"rawtypes"})
       NamedList nl = new NamedList(entries);
       if(nl.get("wt" ) == null) nl.add("wt","xml");
       return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);

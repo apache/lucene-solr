@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.index.TestBackwardsCompatibility;
+import org.apache.lucene.backward_index.TestBackwardsCompatibility;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Construct n-grams for frequently occurring terms and phrases.
- */
+/** Construct n-grams for frequently occurring terms and phrases. */
 package org.apache.lucene.analysis.commongrams;

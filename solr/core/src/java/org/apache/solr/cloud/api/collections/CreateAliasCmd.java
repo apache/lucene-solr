@@ -52,7 +52,7 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList results)
+  public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ocmh.zkStateReader;

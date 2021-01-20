@@ -19,14 +19,15 @@ package org.apache.lucene.spatial3d;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial3d.geom.GeoOutsideDistance;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 
-/**
- * Sorts by outside distance from an origin location.
- */
+/** Sorts by outside distance from an origin location. */
 final class Geo3DPointOutsideSortField extends SortField {
   final GeoOutsideDistance distanceShape;
+  private final PlanetModel planetModel;
 
-  Geo3DPointOutsideSortField(final String field, final GeoOutsideDistance distanceShape) {
+  Geo3DPointOutsideSortField(
+      final String field, final PlanetModel planetModel, final GeoOutsideDistance distanceShape) {
     super(field, SortField.Type.CUSTOM);
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
@@ -34,13 +35,14 @@ final class Geo3DPointOutsideSortField extends SortField {
     if (distanceShape == null) {
       throw new IllegalArgumentException("distanceShape must not be null");
     }
+    this.planetModel = planetModel;
     this.distanceShape = distanceShape;
     setMissingValue(Double.POSITIVE_INFINITY);
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new Geo3DPointOutsideDistanceComparator(getField(), distanceShape, numHits);
+    return new Geo3DPointOutsideDistanceComparator(getField(), planetModel, distanceShape, numHits);
   }
 
   @Override
@@ -51,11 +53,13 @@ final class Geo3DPointOutsideSortField extends SortField {
   @Override
   public void setMissingValue(Object missingValue) {
     if (Double.valueOf(Double.POSITIVE_INFINITY).equals(missingValue) == false) {
-      throw new IllegalArgumentException("Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got " + missingValue);
+      throw new IllegalArgumentException(
+          "Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got "
+              + missingValue);
     }
     this.missingValue = missingValue;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;

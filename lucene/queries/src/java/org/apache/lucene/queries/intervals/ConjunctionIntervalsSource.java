@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FilterMatchesIterator;
@@ -55,8 +54,9 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     List<IntervalIterator> subIntervals = new ArrayList<>();
     for (IntervalsSource source : subSources) {
       IntervalIterator it = source.intervals(field, ctx);
-      if (it == null)
+      if (it == null) {
         return null;
+      }
       subIntervals.add(it);
     }
     return combine(subIntervals);
@@ -65,10 +65,11 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
   protected abstract IntervalIterator combine(List<IntervalIterator> iterators);
 
   @Override
-  public final MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    List<MatchesIterator> subs = new ArrayList<>();
+  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
+    List<IntervalMatchesIterator> subs = new ArrayList<>();
     for (IntervalsSource source : subSources) {
-      MatchesIterator mi = source.matches(field, ctx, doc);
+      IntervalMatchesIterator mi = source.matches(field, ctx, doc);
       if (mi == null) {
         return null;
       }
@@ -77,23 +78,30 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
       }
       subs.add(mi);
     }
-    IntervalIterator it = combine(subs.stream().map(m -> IntervalMatches.wrapMatches(m, doc)).collect(Collectors.toList()));
+    IntervalIterator it =
+        combine(
+            subs.stream()
+                .map(m -> IntervalMatches.wrapMatches(m, doc))
+                .collect(Collectors.toList()));
     if (it.advance(doc) != doc) {
       return null;
     }
     if (it.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
       return null;
     }
-    return isMinimizing ? new MinimizingConjunctionMatchesIterator(it, subs) : new ConjunctionMatchesIterator(it, subs);
+    return isMinimizing
+        ? new MinimizingConjunctionMatchesIterator(it, subs)
+        : new ConjunctionMatchesIterator(it, subs);
   }
 
-  private static class ConjunctionMatchesIterator implements MatchesIterator {
+  private static class ConjunctionMatchesIterator implements IntervalMatchesIterator {
 
     final IntervalIterator iterator;
-    final List<MatchesIterator> subs;
+    final List<IntervalMatchesIterator> subs;
     boolean cached = true;
 
-    private ConjunctionMatchesIterator(IntervalIterator iterator, List<MatchesIterator> subs) {
+    private ConjunctionMatchesIterator(
+        IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
       this.iterator = iterator;
       this.subs = subs;
     }
@@ -152,9 +160,19 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     public Query getQuery() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int gaps() {
+      return iterator.gaps();
+    }
+
+    @Override
+    public int width() {
+      return iterator.width();
+    }
   }
 
-  private static class SingletonMatchesIterator extends FilterMatchesIterator {
+  static class SingletonMatchesIterator extends FilterMatchesIterator {
 
     boolean exhausted = false;
 
@@ -170,5 +188,4 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
       return exhausted = true;
     }
   }
-
 }

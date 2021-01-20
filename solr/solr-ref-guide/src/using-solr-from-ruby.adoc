@@ -111,4 +111,4 @@ puts 'number of matches = ' + rsp['response']['numFound'].to_s
 rsp['response']['docs'].each { |doc| puts 'name field = ' + doc['name'] }
 ----
 
-For simple interactions with Solr, this may be all you need! If you are building complex interactions with Solr, then consider the libraries mentioned at https://wiki.apache.org/solr/Ruby%20Response%20Format
+For simple interactions with Solr, this may be all you need! If you are building complex interactions with Solr, then consider the libraries mentioned in the https://cwiki.apache.org/confluence/display/solr/Ruby+Response+Format#RubyResponseFormat-Libraries[Solr Wiki].

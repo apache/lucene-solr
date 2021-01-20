@@ -1,6 +1,5 @@
 = Collection Management Commands
-:page-toclevels: 1
-:page-tocclass: right
+:toclevels: 1
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -63,13 +62,6 @@ The number of TLOG replicas to create for this collection. This type of replica 
 `pullReplicas`::
 The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
-`maxShardsPerNode`::
-When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
-+
-If a node is not live when the CREATE action is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas the CREATE action will spread to each node.
-+
-If the entire collection can not be fit into the live nodes, no collection will be created at all. The default `maxShardsPerNode` value is `1`. A value of `-1` means unlimited. If a `policy` is also specified then the stricter of `maxShardsPerNode` and policy rules apply.
-
 `createNodeSet`::
 Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 +
@@ -85,38 +77,32 @@ A `false` value makes the results of a collection creation predictable and gives
 This parameter is ignored if `createNodeSet` is not also specified.
 
 `collection.configName`::
-Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection. If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection. When such a collection (that uses a copy of the _default configset) is deleted, the autocreated configset is not deleted by default.
+Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection.
++
+If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection.
+When such a collection is deleted, its autocreated configset will be deleted by default when it is not in use by any other collection.
 
 `router.field`::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
 +
 Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
+`perReplicaState`::
+If `true` the states of individual replicas will be maintained as individual child of the `state.json`. default is `false`
+
 `property._name_=_value_`::
 Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
 
-`autoAddReplicas`::
-When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
-+
-While this parameter is provided as part of Solr's set of features to provide autoscaling of clusters, it is available even when you have not implemented any other part of autoscaling (such as a policy). See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for more details about this option and how it can be used.
+[WARNING]
+====
+The entries in each core.properties file are vital for Solr to function correctly. Overriding entries can result in unusable collections. Altering these entries by specifying `property._name_=_value_` is an expert-level option and should only be used if you have a thorough understanding of the consequences.
+====
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-`rule`::
-Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
-
-`snitch`::
-Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
-
-`policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
-
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
-
-`withCollection`::
-The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
-See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
 
 `alias`::
 Starting with version 8.1 when a collection is created additionally an alias can be created
@@ -242,14 +228,11 @@ At least one `_attribute_` parameter is required.
 
 The attributes that can be modified are:
 
-* maxShardsPerNode
 * replicationFactor
-* autoAddReplicas
 * collection.configName
 * rule
 * snitch
 * policy
-* withCollection
 * readOnly
 * other custom properties that use a `property.` prefix
 
@@ -660,10 +643,10 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
 
 `/admin/collections?action=REINDEXCOLLECTION&name=_name_`
 
-The REINDEXCOLLECTION command re-indexes a collection using existing data from the
+The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
 
-NOTE: Re-indexing is potentially a lossy operation - some of the existing indexed data that is not
+NOTE: Reindexing is potentially a lossy operation - some of the existing indexed data that is not
 available as stored fields may be lost, so users should use this command
 with caution, evaluating the potential impact by using different source and target
 collection names first, and preserving the source collection until the evaluation is
@@ -671,19 +654,19 @@ complete.
 
 The target collection must not exist (and may not be an alias). If the target
 collection name is the same as the source collection then first a unique sequential name
-will be generated for the target collection, and then after re-indexing is done an alias
+will be generated for the target collection, and then after reindexing is done an alias
 will be created that points from the source name to the actual sequentially-named target collection.
 
-When re-indexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
+When reindexing is started the source collection is put in <<readonlymode,read-only mode>> to ensure that
 all source documents are properly processed.
 
 Using optional parameters a different index schema, collection shape (number of shards and replicas)
 or routing parameters can be requested for the target collection.
 
-Re-indexing is executed as a streaming expression daemon, which runs on one of the
+Reindexing is executed as a streaming expression daemon, which runs on one of the
 source collection's replicas. It is usually a time-consuming operation so it's recommended to execute
-it as an asynchronous request in order to avoid request time outs. Only one re-indexing operation may
-execute concurrently for a given source collection. Long-running, erroneous or crashed re-indexing
+it as an asynchronous request in order to avoid request time outs. Only one reindexing operation may
+execute concurrently for a given source collection. Long-running, erroneous or crashed reindexing
 operations may be terminated by using the `abort` option, which also removes partial results.
 
 === REINDEXCOLLECTION Parameters
@@ -694,9 +677,9 @@ Source collection name, may be an alias. This parameter is required.
 `cmd`::
 Optional command. Default command is `start`. Currently supported commands are:
 * `start` - default, starts processing if not already running,
-* `abort` - aborts an already running re-indexing (or clears a left-over status after a crash),
+* `abort` - aborts an already running reindexing (or clears a left-over status after a crash),
 and deletes partial results,
-* `status` - returns detailed status of a running re-indexing command.
+* `status` - returns detailed status of a running reindexing command.
 
 `target`::
 Target collection name, optional. If not specified a unique name will be generated and
@@ -705,10 +688,10 @@ collection name to the unique sequentially-named collection, effectively "hiding
 the original source collection from regular update and search operations.
 
 `q`::
-Optional query to select documents for re-indexing. Default value is `\*:*`.
+Optional query to select documents for reindexing. Default value is `\*:*`.
 
 `fl`::
-Optional list of fields to re-index. Default value is `*`.
+Optional list of fields to reindex. Default value is `*`.
 
 `rows`::
 Documents are transferred in batches. Depending on the average size of the document large
@@ -721,9 +704,9 @@ source collection.
 
 There's a number of optional parameters that determine the target collection layout. If they
 are not specified in the request then their values are copied from the source collection.
-The following parameters are currently supported (described in details in the <<create,CREATE collection>> section):
-`numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `maxShardsPerNode`,
-`autoAddReplicas`, `shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
+`numShards`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`,
+`shards`, `policy`, `createNodeSet`, `createNodeSet.shuffle`, `router.*`.
 
 `removeSource`::
 Optional boolean. If true then after the processing is successfully finished the source collection will
@@ -732,7 +715,7 @@ be deleted.
 `async`::
 Optional request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
-When the re-indexing process has completed the target collection is marked using
+When the reindexing process has completed the target collection is marked using
 `property.rx: "finished"`, and the source collection state is updated to become read-write.
 On any errors the command will delete any temporary and target collections and also reset the
 state of the source collection's read-only flag.
@@ -770,9 +753,9 @@ for the purpose of indexing and searching. The source collection is assumed to b
   }
 }
 ----
-As a result a new collection `.rx_newCollection_2` has been created, with selected documents re-indexed to 3 shards, and
+As a result a new collection `.rx_newCollection_2` has been created, with selected documents reindexed to 3 shards, and
 with an alias pointing from `newCollection` to this one. The status also shows that the source collection
-was already an alias to `.rx_newCollection_1`, which was likely a result of a previous re-indexing.
+was already an alias to `.rx_newCollection_1`, which was likely a result of a previous reindexing.
 
 [[colstatus]]
 == COLSTATUS: Detailed Status of a Collection's Indexes
@@ -860,7 +843,7 @@ This section also shows `topN` values by size from each field.
 
 Data types shown in the response can be roughly divided into the following groups:
 
-* `storedFields` - represents the raw uncompressed data in stored fields. Eg. for UTF-8 strings this represents
+* `storedFields` - represents the raw uncompressed data in stored fields. For example, for UTF-8 strings this represents
 the aggregated sum of the number of bytes in the strings' UTF-8 representation, for long numbers this is 8 bytes per value, etc.
 
 * `terms_terms` - represents the aggregated size of the term dictionary. The size of this data is affected by the
@@ -876,7 +859,7 @@ has an `omitNorms` flag in the schema, which is common for fields that don't nee
 
 * `termVectors` - represents the aggregated size of term vectors.
 
-* `docValues_*` - represents aggregated size of doc values, by type (eg. `docValues_numeric`, `docValues_binary`, etc).
+* `docValues_*` - represents aggregated size of doc values, by type (e.g., `docValues_numeric`, `docValues_binary`, etc).
 
 * `points` - represents aggregated size of point values.
 
@@ -904,11 +887,8 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 50
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 16,
         "properties": {
-            "autoAddReplicas": "false",
-            "maxShardsPerNode": "-1",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1050,11 +1030,8 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
         "QTime": 26812
     },
     "gettingstarted": {
-        "stateFormat": 2,
         "znodeVersion": 33,
         "properties": {
-            "autoAddReplicas": "false",
-            "maxShardsPerNode": "-1",
             "nrtReplicas": "2",
             "pullReplicas": "0",
             "replicationFactor": "2",
@@ -1232,15 +1209,21 @@ Backs up Solr collections and associated configurations to a shared filesystem -
 
 `/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command takes one copy from each shard for the indexes. For configurations, it backs up the configset that was associated with the collection and metadata.
+The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#making-and-restoring-backups,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
 === BACKUP Parameters
 
 `collection`::
 The name of the collection to be backed up. This parameter is required.
 
+`name`::
+What to name the backup that is created.  This is checked to make sure it doesn't already exist, and otherwise an error message is raised. This parameter is required.
+
 `location`::
 The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
++
+If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
+Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -1268,6 +1251,9 @@ You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> 
 `collection`::
 The collection where the indexes will be restored into. This parameter is required.
 
+`name`::
+The name of the existing backup that you want to restore. This parameter is required.
+
 `location`::
 The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
@@ -1277,35 +1263,16 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
 
-*Override Parameters*
+There are also optional parameters that determine the target collection layout.
+The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):
+`createNodeSet`, `createNodeSet.shuffle`.
 
-Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup:
+Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this command.
 
-`collection.configName`::
-Defines the name of the configurations to use for this collection. These must already be stored in ZooKeeper. If not provided, Solr will default to the collection name as the configuration name.
+*Overridable Parameters*
 
-`replicationFactor`::
-The number of replicas to be created for each shard.
-
-`nrtReplicas`::
-The number of NRT (Near-Real-Time) replicas to create for this collection. This type of replica maintains a transaction log and updates its index locally. This parameter behaves the same way as setting replicationFactor parameter.
-
-`tlogReplicas`::
-The number of TLOG replicas to create for this collection. This type of replica maintains a transaction log but only updates its index via replication from a leader. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`pullReplicas`::
-The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
-
-`maxShardsPerNode`::
-When creating collections, the shards and/or replicas are spread across all available (i.e., live) nodes, and two replicas of the same shard will never be on the same node.
-+
-If a node is not live when the CREATE operation is called, it will not get any parts of the new collection, which could lead to too many replicas being created on a single live node. Defining `maxShardsPerNode` sets a limit on the number of replicas CREATE will spread to each node. If the entire collection can not be fit into the live nodes, no collection will be created at all.
-
-`autoAddReplicas`::
-When set to `true`, enables auto addition of replicas on shared file systems. See the section <<running-solr-on-hdfs.adoc#automatically-add-replicas-in-solrcloud,Automatically Add Replicas in SolrCloud>> for more details on settings and overrides.
-
-`property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
+`collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
 
 [[rebalanceleaders]]
 == REBALANCELEADERS: Rebalance Leaders

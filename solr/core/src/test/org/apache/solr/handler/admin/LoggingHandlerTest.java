@@ -19,19 +19,22 @@ package org.apache.solr.handler.admin;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 
 @SuppressForbidden(reason = "test uses log4j2 because it tests output at a specific level")
+@LogLevel("org.apache.solr.bogus_logger_package.BogusLoggerClass=DEBUG")
 public class LoggingHandlerTest extends SolrTestCaseJ4 {
-
+  private final String PARENT_LOGGER_NAME = "org.apache.solr.bogus_logger_package";
+  private final String CLASS_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusLoggerClass";
+  
   // TODO: This only tests Log4j at the moment, as that's what's defined
   // through the CoreContainer.
 
@@ -45,29 +48,48 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
-    Logger tst = LogManager.getLogger("org.apache.solr.SolrTestCaseJ4");
- 
-    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-    LoggerConfig loggerConfig = ctx.getConfiguration().getLoggerConfig(tst.getName());
-    loggerConfig.setLevel(Level.INFO);
-    ctx.updateLoggers();
     
+    // sanity check our setup...
+    assertNotNull(this.getClass().getAnnotation(LogLevel.class));
+    final String annotationConfig = this.getClass().getAnnotation(LogLevel.class).value();
+    assertTrue("WTF: " + annotationConfig, annotationConfig.startsWith( PARENT_LOGGER_NAME ));
+    assertTrue("WTF: " + annotationConfig, annotationConfig.startsWith( CLASS_LOGGER_NAME ));
+    assertTrue("WTF: " + annotationConfig, annotationConfig.endsWith( Level.DEBUG.toString() ));
+    
+    assertEquals(Level.DEBUG, LogManager.getLogger( CLASS_LOGGER_NAME ).getLevel());
+    
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final Configuration config = ctx.getConfiguration();
+
+    assertEquals("Unexpected config for " + PARENT_LOGGER_NAME + " ... expected 'root' config",
+                 config.getRootLogger(),
+                 config.getLoggerConfig(PARENT_LOGGER_NAME));
+    assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
+
     assertQ("Show Log Levels OK",
             req(CommonParams.QT,"/admin/logging")
-            ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='"+tst.getLevel()+"']"
-            ,"//arr[@name='loggers']/lst/str[.='org.apache']/../null[@name='level']"
+            ,"//arr[@name='loggers']/lst/str[.='"+CLASS_LOGGER_NAME+"']/../str[@name='level'][.='DEBUG']"
+            ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../null[@name='level']"
             );
 
-    assertQ("Set a level",
+    assertQ("Set a (new) level",
             req(CommonParams.QT,"/admin/logging",  
-                "set", tst.getName()+":TRACE")
-            ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='TRACE']"
+                "set", PARENT_LOGGER_NAME+":TRACE")
+            ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='TRACE']"
             );
+    assertEquals(Level.TRACE, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
+    assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
     
+    // NOTE: LoggeringHandler doesn't actually "remove" the LoggerConfig, ...
+    // evidently so people using they UI can see that it was explicitly turned "OFF" ?
     assertQ("Remove a level",
         req(CommonParams.QT,"/admin/logging",  
-            "set", tst.getName()+":null")
-        ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='OFF']"
+            "set", PARENT_LOGGER_NAME+":null")
+        ,"//arr[@name='loggers']/lst/str[.='"+PARENT_LOGGER_NAME+"']/../str[@name='level'][.='OFF']"
         );
+    assertEquals(Level.OFF, config.getLoggerConfig(PARENT_LOGGER_NAME).getLevel());
+    assertEquals(Level.DEBUG, config.getLoggerConfig(CLASS_LOGGER_NAME).getLevel());
+
+    
   }
 }

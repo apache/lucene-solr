@@ -19,7 +19,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr supports an alternate request API which accepts requests composed in part or entirely of JSON objects. This alternate API can be preferable in some situations, where its increased readability and flexibility make it easier to use than the entirely query-param driven alternative.  There is also some functionality which can only be accessed through this JSON request API, such as much of the analytics capabilities of <<json-facet-api.adoc#json-facet-api,JSON Faceting>>
+Solr supports an alternate request API which accepts requests composed in part or entirely of JSON objects. This alternate API can be preferable in some situations, where its increased readability and flexibility make it easier to use than the entirely query-param driven alternative.  There is also some functionality which can only be accessed through this JSON request API, such as much of the analytics capabilities of <<json-facet-api.adoc#facet-analytics-module,JSON Faceting>>
 
 == Building JSON Requests
 The core of the JSON Request API is its ability to specify request parameters as JSON in the request body, as shown by the example below:
@@ -172,7 +172,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-all-qu
 ====
 --
 
-See the <<json-facet-api.adoc#json-facet-api,JSON Facet API>> for more on faceting and analytics commands.
+See the <<json-facet-api.adoc#facet-analytics-module,JSON Facet API>> for more on faceting and analytics commands.
 
 == Supported Properties and Syntax
 
@@ -205,6 +205,9 @@ Right now, only some of Solr's traditional query parameters have first class JSO
 
 |`json.<param_name>`
 |`<param_name>`
+
+|`json.queries.<query_name>`
+|`queries`
 |===
 
 Parameters not specified in the table above can still be used in the main body of JSON API requests, but they must be put within a `params` block as shown in the example below.
@@ -240,7 +243,11 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-query-params
 Parameters placed in a `params` block act as if they were added verbatim to the query-parameters of the request.  The request above is equivalent to:
 
 [source,bash]
+----
 curl "http://localhost:8983/solr/techproducts/query?fl=name,price&q=memory&rows=1"
+----
+
+Usage of `queries` key is described in <<json-query-dsl.adoc#additional-queries,Query DSL>>.
 
 
 === Parameter Substitution / Macro Expansion

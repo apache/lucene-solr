@@ -88,9 +88,9 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   }
 
   @Override
-  protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
+  protected HttpRequestBase createMethod(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection) throws IOException, SolrServerException {
     SolrParams params = request.getParams();
-    if (params.getParams(DELEGATION_TOKEN_PARAM) != null) {
+    if (params != null && params.getParams(DELEGATION_TOKEN_PARAM) != null) {
       throw new IllegalArgumentException(DELEGATION_TOKEN_PARAM + " parameter not supported");
     }
     return super.createMethod(request, collection);

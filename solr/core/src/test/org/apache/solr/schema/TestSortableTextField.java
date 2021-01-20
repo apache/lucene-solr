@@ -193,9 +193,9 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
         assertQ(req("q", search + ":cow", "rows", "0", 
                     "json.facet", "{x:{ type: terms, field:'" + facet + "', mincount:0 }}")
                 , "//*[@numFound='3']"
-                , jpre + "lst[str[@name='val'][.='how now brown cow ?']][int[@name='count'][.=2]]"
-                , jpre + "lst[str[@name='val'][.='holy cow !']][int[@name='count'][.=1]]"
-                , jpre + "lst[str[@name='val'][.='dog and cat']][int[@name='count'][.=0]]"
+                , jpre + "lst[str[@name='val'][.='how now brown cow ?']][long[@name='count'][.=2]]"
+                , jpre + "lst[str[@name='val'][.='holy cow !']][long[@name='count'][.=1]]"
+                , jpre + "lst[str[@name='val'][.='dog and cat']][long[@name='count'][.=0]]"
                 );
         
       }

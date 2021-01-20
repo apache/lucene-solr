@@ -16,57 +16,47 @@
  */
 package org.apache.lucene.search.highlight;
 
-/**
- * Simple {@link Encoder} implementation to escape text for HTML output
- *
- */
+/** Simple {@link Encoder} implementation to escape text for HTML output */
 public class SimpleHTMLEncoder implements Encoder {
-  public SimpleHTMLEncoder() {
-  }
+  public SimpleHTMLEncoder() {}
 
   @Override
-  public String encodeText(String originalText)
-  {
+  public String encodeText(String originalText) {
     return htmlEncode(originalText);
   }
 
-  /**
-   * Encode string into HTML
-   */
-  public final static String htmlEncode(String plainText)
-  {
-    if (plainText == null || plainText.length() == 0)
-    {
+  /** Encode string into HTML */
+  public static final String htmlEncode(String plainText) {
+    if (plainText == null || plainText.length() == 0) {
       return "";
     }
 
     StringBuilder result = new StringBuilder(plainText.length());
 
-    for (int index=0; index<plainText.length(); index++)
-    {
+    for (int index = 0; index < plainText.length(); index++) {
       char ch = plainText.charAt(index);
 
       switch (ch) {
-      case '"':
-        result.append("&quot;");
-        break;
-      case '&':
-        result.append("&amp;");
-        break;
-      case '<':
-        result.append("&lt;");
-        break;
-      case '>':
-        result.append("&gt;");
-        break;
-      case '\'':
-        result.append("&#x27;");
-        break;
-      case '/':
-        result.append("&#x2F;");
-        break;
-      default:
-        result.append(ch);
+        case '"':
+          result.append("&quot;");
+          break;
+        case '&':
+          result.append("&amp;");
+          break;
+        case '<':
+          result.append("&lt;");
+          break;
+        case '>':
+          result.append("&gt;");
+          break;
+        case '\'':
+          result.append("&#x27;");
+          break;
+        case '/':
+          result.append("&#x2F;");
+          break;
+        default:
+          result.append(ch);
       }
     }
 

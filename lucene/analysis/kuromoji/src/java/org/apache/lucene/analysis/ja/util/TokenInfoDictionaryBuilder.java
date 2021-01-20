@@ -28,36 +28,39 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.lucene.analysis.ja.util.DictionaryBuilder.DictionaryFormat;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
-/**
- */
+/** */
 class TokenInfoDictionaryBuilder {
 
   private final String encoding;
   private final Normalizer.Form normalForm;
   private final DictionaryFormat format;
 
-  /** Internal word id - incrementally assigned as entries are read and added. This will be byte offset of dictionary file */
+  /**
+   * Internal word id - incrementally assigned as entries are read and added. This will be byte
+   * offset of dictionary file
+   */
   private int offset = 0;
 
-  public TokenInfoDictionaryBuilder(DictionaryFormat format, String encoding, boolean normalizeEntries) {
+  public TokenInfoDictionaryBuilder(
+      DictionaryFormat format, String encoding, boolean normalizeEntries) {
     this.format = format;
     this.encoding = encoding;
     normalForm = normalizeEntries ? Normalizer.Form.NFKC : null;
   }
-  
+
   public TokenInfoDictionaryWriter build(Path dir) throws IOException {
     try (Stream<Path> files = Files.list(dir)) {
-      List<Path> csvFiles = files
-          .filter(path -> path.getFileName().toString().endsWith(".csv"))
-          .sorted()
-          .collect(Collectors.toList());
+      List<Path> csvFiles =
+          files
+              .filter(path -> path.getFileName().toString().endsWith(".csv"))
+              .sorted()
+              .collect(Collectors.toList());
       return buildDictionary(csvFiles);
     }
   }
@@ -74,7 +77,8 @@ class TokenInfoDictionaryBuilder {
           String[] entry = CSVUtil.parse(line);
 
           if (entry.length < 13) {
-            throw new IllegalArgumentException("Entry in CSV is not valid (13 field values expected): " + line);
+            throw new IllegalArgumentException(
+                "Entry in CSV is not valid (13 field values expected): " + line);
           }
 
           lines.add(formatEntry(entry));
@@ -92,12 +96,12 @@ class TokenInfoDictionaryBuilder {
         }
       }
     }
-    
+
     // sort by term: we sorted the files already and use a stable sort.
     lines.sort(Comparator.comparing(entry -> entry[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = -1; // first ord will be 0
     String lastValue = null;
@@ -105,11 +109,11 @@ class TokenInfoDictionaryBuilder {
     // build token info dictionary
     for (String[] entry : lines) {
       int next = dictionary.put(entry);
-        
-      if(next == offset){
+
+      if (next == offset) {
         throw new IllegalStateException("Failed to process line: " + Arrays.toString(entry));
       }
-      
+
       String token = entry[0];
       if (!token.equals(lastValue)) {
         // new word to add to fst
@@ -120,18 +124,18 @@ class TokenInfoDictionaryBuilder {
         for (int i = 0; i < token.length(); i++) {
           scratch.setIntAt(i, (int) token.charAt(i));
         }
-        fstBuilder.add(scratch.get(), ord);
+        fstCompiler.add(scratch.get(), ord);
       }
       dictionary.addMapping((int) ord, offset);
       offset = next;
     }
-    dictionary.setFST(fstBuilder.finish());
+    dictionary.setFST(fstCompiler.compile());
     return dictionary;
   }
-  
+
   /*
    * IPADIC features
-   * 
+   *
    * 0   - surface
    * 1   - left cost
    * 2   - right cost
@@ -142,7 +146,7 @@ class TokenInfoDictionaryBuilder {
    * 12  - pronounciation
    *
    * UniDic features
-   * 
+   *
    * 0   - surface
    * 1   - left cost
    * 2   - right cost
@@ -153,7 +157,7 @@ class TokenInfoDictionaryBuilder {
    * 12  - surface form
    * 13  - surface reading
    */
-  
+
   private String[] formatEntry(String[] features) {
     if (this.format == DictionaryFormat.IPADIC) {
       return features;
@@ -170,7 +174,7 @@ class TokenInfoDictionaryBuilder {
       features2[8] = features[8];
       features2[9] = features[9];
       features2[10] = features[11];
-      
+
       // If the surface reading is non-existent, use surface form for reading and pronunciation.
       // This happens with punctuation in UniDic and there are possibly other cases as well
       if (features[13].length() == 0) {

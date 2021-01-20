@@ -101,10 +101,10 @@ Use `false` for field types with query analyzers including filters that can matc
 
 [[docvaluesformat]]
 `docValuesFormat`::
-Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in `solrconfig.xml`.
+Defines a custom `DocValuesFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has been configured in `solrconfig.xml`.
 
 `postingsFormat`::
-Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory` has been configured in `solrconfig.xml`.
+Defines a custom `PostingsFormat` to use for fields of this type. This requires that a schema-aware codec, such as the `SchemaCodecFactory`, has been configured in `solrconfig.xml`.
 
 
 [NOTE]

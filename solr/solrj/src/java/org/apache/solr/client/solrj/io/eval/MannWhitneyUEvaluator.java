@@ -19,16 +19,15 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 
 public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator implements ManyValueWorker {
@@ -44,6 +43,7 @@ public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator impleme
 
   @Override
   public Object doWork(Object... values) throws IOException {
+    @SuppressWarnings({"unchecked"})
     List<double[]> mannWhitneyUInput = Arrays.stream(values)
         .map(value -> ((List<Number>) value).stream().mapToDouble(Number::doubleValue).toArray())
         .collect(Collectors.toList());
@@ -51,10 +51,10 @@ public class MannWhitneyUEvaluator extends RecursiveNumericListEvaluator impleme
       MannWhitneyUTest mannwhitneyutest = new MannWhitneyUTest();
       double u = mannwhitneyutest.mannWhitneyU(mannWhitneyUInput.get(0), mannWhitneyUInput.get(1));
       double p = mannwhitneyutest.mannWhitneyUTest(mannWhitneyUInput.get(0), mannWhitneyUInput.get(1));
-      Map<String,Number> m = new HashMap<>();
-      m.put("u-statistic", u);
-      m.put("p-value", p);
-      return new Tuple(m);
+      Tuple tuple = new Tuple();
+      tuple.put("u-statistic", u);
+      tuple.put(StreamParams.P_VALUE, p);
+      return tuple;
     }else{
       throw new IOException(String.format(Locale.ROOT,"%s(...) only works with a list of 2 arrays but a list of %d array(s) was provided.", constructingFactory.getFunctionName(getClass()), mannWhitneyUInput.size()));
     }

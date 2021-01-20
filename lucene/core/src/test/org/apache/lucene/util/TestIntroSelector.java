@@ -36,7 +36,7 @@ public class TestIntroSelector extends LuceneTestCase {
     final int from = random().nextInt(5);
     final int to = from + TestUtil.nextInt(random(), 1, 10000);
     final int max = random().nextBoolean() ? random().nextInt(100) : random().nextInt(100000);
-    Integer[] arr = new Integer[from + to + random().nextInt(5)];
+    Integer[] arr = new Integer[to + random().nextInt(5)];
     for (int i = 0; i < arr.length; ++i) {
       arr[i] = TestUtil.nextInt(random(), 0, max);
     }
@@ -46,25 +46,26 @@ public class TestIntroSelector extends LuceneTestCase {
     Arrays.sort(expected, from, to);
 
     Integer[] actual = arr.clone();
-    IntroSelector selector = new IntroSelector() {
+    IntroSelector selector =
+        new IntroSelector() {
 
-      Integer pivot;
+          Integer pivot;
 
-      @Override
-      protected void swap(int i, int j) {
-        ArrayUtil.swap(actual, i, j);
-      }
+          @Override
+          protected void swap(int i, int j) {
+            ArrayUtil.swap(actual, i, j);
+          }
 
-      @Override
-      protected void setPivot(int i) {
-        pivot = actual[i];
-      }
+          @Override
+          protected void setPivot(int i) {
+            pivot = actual[i];
+          }
 
-      @Override
-      protected int comparePivot(int j) {
-        return pivot.compareTo(actual[j]);
-      }
-    };
+          @Override
+          protected int comparePivot(int j) {
+            return pivot.compareTo(actual[j]);
+          }
+        };
     if (slow) {
       selector.slowSelect(from, to, k);
     } else {
@@ -82,5 +83,4 @@ public class TestIntroSelector extends LuceneTestCase {
       }
     }
   }
-
 }

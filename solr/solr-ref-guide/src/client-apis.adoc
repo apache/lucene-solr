@@ -1,5 +1,5 @@
 = Client APIs
-:page-children: introduction-to-client-apis, choosing-an-output-format, client-api-lineup, using-javascript, using-python, using-solrj, using-solr-from-ruby
+:page-children: introduction-to-client-apis, choosing-an-output-format, using-solrj, using-javascript, using-python, using-solr-from-ruby, client-api-lineup 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,14 +23,12 @@ This section discusses the available client APIs for Solr. It covers the followi
 
 <<choosing-an-output-format.adoc#choosing-an-output-format,Choosing an Output Format>>: Information about choosing a response format in Solr.
 
+<<using-solrj.adoc#using-solrj,Using SolrJ>>: Detailed information about SolrJ, an API for working with Java applications.
+
 <<using-javascript.adoc#using-javascript,Using JavaScript>>: Explains why a client API is not needed for JavaScript responses.
 
 <<using-python.adoc#using-python,Using Python>>: Information about Python and JSON responses.
 
-<<client-api-lineup.adoc#client-api-lineup,Client API Lineup>>: A list of all Solr Client APIs, with links.
-
-<<using-solrj.adoc#using-solrj,Using SolrJ>>: Detailed information about SolrJ, an API for working with Java applications.
-
 <<using-solr-from-ruby.adoc#using-solr-from-ruby,Using Solr From Ruby>>: Detailed information about using Solr with Ruby applications.
 
-<<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>>: Describes the MBean request handler for programmatic access to Solr server statistics and information.
+<<client-api-lineup.adoc#client-api-lineup,Other Clients>>: How to find links to 3rd-party client libraries.

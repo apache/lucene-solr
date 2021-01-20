@@ -19,14 +19,12 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
+import java.util.Random;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.junit.Ignore;
 
-/**
- * Base test case for BitSets.
- */
+/** Base test case for BitSets. */
 @Ignore
 public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCase {
 
@@ -40,9 +38,10 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     if (numBitsSet == numBits) {
       set.set(0, numBits);
     } else {
+      Random random = random();
       for (int i = 0; i < numBitsSet; ++i) {
         while (true) {
-          final int o = random().nextInt(numBits);
+          final int o = random.nextInt(numBits);
           if (!set.get(o)) {
             set.set(o);
             break;
@@ -100,12 +99,13 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
 
   /** Test the {@link BitSet#set} method. */
   public void testSet() throws IOException {
-    final int numBits = 1 + random().nextInt(100000);
+    Random random = random();
+    final int numBits = 1 + random.nextInt(100000);
     BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits);
     T set2 = copyOf(set1, numBits);
-    final int iters = 10000 + random().nextInt(10000);
+    final int iters = 10000 + random.nextInt(10000);
     for (int i = 0; i < iters; ++i) {
-      final int index = random().nextInt(numBits);
+      final int index = random.nextInt(numBits);
       set1.set(index);
       set2.set(index);
     }
@@ -114,13 +114,14 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
 
   /** Test the {@link BitSet#clear(int)} method. */
   public void testClear() throws IOException {
-    final int numBits = 1 + random().nextInt(100000);
+    Random random = random();
+    final int numBits = 1 + random.nextInt(100000);
     for (float percentSet : new float[] {0, 0.01f, 0.1f, 0.5f, 0.9f, 0.99f, 1f}) {
       BitSet set1 = new JavaUtilBitSet(randomSet(numBits, percentSet), numBits);
       T set2 = copyOf(set1, numBits);
-      final int iters = 1 + random().nextInt(numBits * 2);
+      final int iters = 1 + random.nextInt(numBits * 2);
       for (int i = 0; i < iters; ++i) {
-        final int index = random().nextInt(numBits);
+        final int index = random.nextInt(numBits);
         set1.clear(index);
         set2.clear(index);
       }
@@ -130,14 +131,15 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
 
   /** Test the {@link BitSet#clear(int,int)} method. */
   public void testClearRange() throws IOException {
-    final int numBits = 1 + random().nextInt(100000);
+    Random random = random();
+    final int numBits = 1 + random.nextInt(100000);
     for (float percentSet : new float[] {0, 0.01f, 0.1f, 0.5f, 0.9f, 0.99f, 1f}) {
       BitSet set1 = new JavaUtilBitSet(randomSet(numBits, percentSet), numBits);
       T set2 = copyOf(set1, numBits);
-      final int iters = 1 + random().nextInt(100);
+      final int iters = atLeast(random, 10);
       for (int i = 0; i < iters; ++i) {
-        final int from = random().nextInt(numBits);
-        final int to = random().nextInt(numBits + 1);
+        final int from = random.nextInt(numBits);
+        final int to = random.nextInt(numBits + 1);
         set1.clear(from, to);
         set2.clear(from, to);
         assertEquals(set1, set2, numBits);
@@ -153,7 +155,9 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
         return new BitDocIdSet(copyOf(set, numBits), set.cardinality());
       case 2:
         final RoaringDocIdSet.Builder builder = new RoaringDocIdSet.Builder(numBits);
-        for (int i = set.nextSetBit(0); i != DocIdSetIterator.NO_MORE_DOCS; i = i + 1 >= numBits ? DocIdSetIterator.NO_MORE_DOCS : set.nextSetBit(i + 1)) {
+        for (int i = set.nextSetBit(0);
+            i != DocIdSetIterator.NO_MORE_DOCS;
+            i = i + 1 >= numBits ? DocIdSetIterator.NO_MORE_DOCS : set.nextSetBit(i + 1)) {
           builder.add(i);
         }
         return builder.build();
@@ -175,10 +179,11 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     final int numBits = 1 + random().nextInt(100000);
     BitSet set1 = new JavaUtilBitSet(randomSet(numBits, 0), numBits); // empty
     T set2 = copyOf(set1, numBits);
-    
+
     final int iterations = atLeast(10);
     for (int iter = 0; iter < iterations; ++iter) {
-      DocIdSet otherSet = randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
+      DocIdSet otherSet =
+          randomCopy(new JavaUtilBitSet(randomSet(numBits, load), numBits), numBits);
       DocIdSetIterator otherIterator = otherSet.iterator();
       if (otherIterator != null) {
         set1.or(otherIterator);
@@ -269,7 +274,5 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
       }
       return next;
     }
-
   }
-
 }

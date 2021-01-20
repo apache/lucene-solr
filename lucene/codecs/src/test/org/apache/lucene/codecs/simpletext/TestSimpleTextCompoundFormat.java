@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompoundFormatTestCase;
 
@@ -35,6 +34,11 @@ public class TestSimpleTextCompoundFormat extends BaseCompoundFormatTestCase {
 
   @Override
   public void testMissingCodecHeadersAreCaught() {
+    // SimpleText does not catch broken sub-files in CFS!
+  }
+
+  @Override
+  public void testCheckIntegrity() {
     // SimpleText does not catch broken sub-files in CFS!
   }
 }

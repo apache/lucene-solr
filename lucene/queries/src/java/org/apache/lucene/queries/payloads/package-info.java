@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-/** 
+/**
  * The payloads package provides Query mechanisms for finding and using payloads.
- * <p>
- *   The following Query implementations are provided:
- *   <ol>
- *    <li>{@link org.apache.lucene.queries.payloads.PayloadScoreQuery PayloadScoreQuery} -- For all terms matched by
- *        a SpanQuery, boost the score based on the value of the payload located at those terms.</li>
- *   </ol>
+ *
+ * <p>The following Query implementations are provided:
+ *
+ * <ol>
+ *   <li>{@link org.apache.lucene.queries.payloads.PayloadScoreQuery PayloadScoreQuery} -- For all
+ *       terms matched by a SpanQuery, boost the score based on the value of the payload located at
+ *       those terms.
+ * </ol>
  */
 package org.apache.lucene.queries.payloads;

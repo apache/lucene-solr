@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
@@ -31,8 +30,9 @@ import org.apache.lucene.util.TestUtil;
 public class TestDocIdsWriter extends LuceneTestCase {
 
   public void testRandom() throws Exception {
+    int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 1000; ++iter) {
+      for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[random().nextInt(5000)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
@@ -44,8 +44,9 @@ public class TestDocIdsWriter extends LuceneTestCase {
   }
 
   public void testSorted() throws Exception {
+    int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 1000; ++iter) {
+      for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[random().nextInt(5000)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
@@ -59,7 +60,7 @@ public class TestDocIdsWriter extends LuceneTestCase {
 
   private void test(Directory dir, int[] ints) throws Exception {
     final long len;
-    try(IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
+    try (IndexOutput out = dir.createOutput("tmp", IOContext.DEFAULT)) {
       DocIdsWriter.writeDocIds(ints, 0, ints.length, out);
       len = out.getFilePointer();
       if (random().nextBoolean()) {
@@ -74,28 +75,30 @@ public class TestDocIdsWriter extends LuceneTestCase {
     }
     try (IndexInput in = dir.openInput("tmp", IOContext.READONCE)) {
       int[] read = new int[ints.length];
-      DocIdsWriter.readInts(in, ints.length, new IntersectVisitor() {
-        int i = 0;
-        @Override
-        public void visit(int docID) throws IOException {
-          read[i++] = docID;
-        }
+      DocIdsWriter.readInts(
+          in,
+          ints.length,
+          new IntersectVisitor() {
+            int i = 0;
 
-        @Override
-        public void visit(int docID, byte[] packedValue) throws IOException {
-          throw new UnsupportedOperationException();
-        }
+            @Override
+            public void visit(int docID) throws IOException {
+              read[i++] = docID;
+            }
 
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          throw new UnsupportedOperationException();
-        }
+            @Override
+            public void visit(int docID, byte[] packedValue) throws IOException {
+              throw new UnsupportedOperationException();
+            }
 
-      });
+            @Override
+            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+              throw new UnsupportedOperationException();
+            }
+          });
       assertArrayEquals(ints, read);
       assertEquals(len, in.getFilePointer());
     }
     dir.deleteFile("tmp");
   }
-
 }

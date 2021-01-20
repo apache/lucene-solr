@@ -19,36 +19,37 @@ package org.apache.lucene.search.suggest;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
-
 /**
  * Dictionary represented by a text file.
- * 
+ *
  * <p>Format allowed: 1 entry per line:<br>
  * An entry can be: <br>
+ *
  * <ul>
- * <li>suggestion</li>
- * <li>suggestion <code>fieldDelimiter</code> weight</li>
- * <li>suggestion <code>fieldDelimiter</code> weight <code>fieldDelimiter</code> payload</li>
+ *   <li>suggestion
+ *   <li>suggestion <code>fieldDelimiter</code> weight
+ *   <li>suggestion <code>fieldDelimiter</code> weight <code>fieldDelimiter</code> payload
  * </ul>
+ *
  * where the default <code>fieldDelimiter</code> is {@value #DEFAULT_FIELD_DELIMITER}<br>
- * <p>
- * <b>NOTE:</b> 
+ *
+ * <p><b>NOTE:</b>
+ *
  * <ul>
- * <li>In order to have payload enabled, the first entry has to have a payload</li>
- * <li>If the weight for an entry is not specified then a value of 1 is used</li>
- * <li>A payload cannot be specified without having the weight specified for an entry</li>
- * <li>If the payload for an entry is not specified (assuming payload is enabled) 
- *  then an empty payload is returned</li>
- * <li>An entry cannot have more than two <code>fieldDelimiter</code></li>
+ *   <li>In order to have payload enabled, the first entry has to have a payload
+ *   <li>If the weight for an entry is not specified then a value of 1 is used
+ *   <li>A payload cannot be specified without having the weight specified for an entry
+ *   <li>If the payload for an entry is not specified (assuming payload is enabled) then an empty
+ *       payload is returned
+ *   <li>An entry cannot have more than two <code>fieldDelimiter</code>
  * </ul>
- * <p>
- * <b>Example:</b><br>
+ *
+ * <p><b>Example:</b><br>
  * word1 word2 TAB 100 TAB payload1<br>
  * word3 TAB 101<br>
  * word4 word3 TAB 102<br>
@@ -56,50 +57,48 @@ import org.apache.lucene.util.IOUtils;
 public class FileDictionary implements Dictionary {
 
   /**
-   * Tab-delimited fields are most common thus the default, but one can override this via the constructor
+   * Tab-delimited fields are most common thus the default, but one can override this via the
+   * constructor
    */
-  public final static String DEFAULT_FIELD_DELIMITER = "\t";
+  public static final String DEFAULT_FIELD_DELIMITER = "\t";
+
   private BufferedReader in;
   private String line;
   private boolean done = false;
   private final String fieldDelimiter;
 
   /**
-   * Creates a dictionary based on an inputstream.
-   * Using {@link #DEFAULT_FIELD_DELIMITER} as the 
+   * Creates a dictionary based on an inputstream. Using {@link #DEFAULT_FIELD_DELIMITER} as the
    * field separator in a line.
-   * <p>
-   * NOTE: content is treated as UTF-8
+   *
+   * <p>NOTE: content is treated as UTF-8
    */
   public FileDictionary(InputStream dictFile) {
     this(dictFile, DEFAULT_FIELD_DELIMITER);
   }
 
   /**
-   * Creates a dictionary based on a reader.
-   * Using {@link #DEFAULT_FIELD_DELIMITER} as the 
-   * field separator in a line.
+   * Creates a dictionary based on a reader. Using {@link #DEFAULT_FIELD_DELIMITER} as the field
+   * separator in a line.
    */
   public FileDictionary(Reader reader) {
     this(reader, DEFAULT_FIELD_DELIMITER);
   }
-  
+
   /**
-   * Creates a dictionary based on a reader. 
-   * Using <code>fieldDelimiter</code> to separate out the
+   * Creates a dictionary based on a reader. Using <code>fieldDelimiter</code> to separate out the
    * fields in a line.
    */
   public FileDictionary(Reader reader, String fieldDelimiter) {
     in = new BufferedReader(reader);
     this.fieldDelimiter = fieldDelimiter;
   }
-  
+
   /**
-   * Creates a dictionary based on an inputstream.
-   * Using <code>fieldDelimiter</code> to separate out the
-   * fields in a line.
-   * <p>
-   * NOTE: content is treated as UTF-8
+   * Creates a dictionary based on an inputstream. Using <code>fieldDelimiter</code> to separate out
+   * the fields in a line.
+   *
+   * <p>NOTE: content is treated as UTF-8
    */
   public FileDictionary(InputStream dictFile, String fieldDelimiter) {
     in = new BufferedReader(IOUtils.getDecodingReader(dictFile, StandardCharsets.UTF_8));
@@ -121,7 +120,7 @@ public class FileDictionary implements Dictionary {
     private BytesRefBuilder curPayload = new BytesRefBuilder();
     private boolean isFirstLine = true;
     private boolean hasPayloads = false;
-    
+
     private FileIterator() throws IOException {
       line = in.readLine();
       if (line == null) {
@@ -145,7 +144,7 @@ public class FileDictionary implements Dictionary {
         }
       }
     }
-    
+
     @Override
     public long weight() {
       return curWeight;
@@ -201,13 +200,13 @@ public class FileDictionary implements Dictionary {
     public boolean hasPayloads() {
       return hasPayloads;
     }
-    
+
     private void readWeight(String weight) {
       // keep reading floats for bw compat
       try {
         curWeight = Long.parseLong(weight);
       } catch (NumberFormatException e) {
-        curWeight = (long)Double.parseDouble(weight);
+        curWeight = (long) Double.parseDouble(weight);
       }
     }
 

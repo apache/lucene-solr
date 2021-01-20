@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -48,11 +50,14 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Assume;
 import org.junit.Before;
@@ -71,6 +76,7 @@ import org.junit.Test;
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";
+public static final String MULTI_REPLICA_COLLECTIONORALIAS = "streams-multi-replica";
 
 private static final StreamFactory streamFactory = new StreamFactory()
     .withFunctionName("search", CloudSolrStream.class)
@@ -103,7 +109,8 @@ public static void configureCluster() throws Exception {
   } else {
     collection = COLLECTIONORALIAS;
   }
-  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
+      .process(cluster.getSolrClient());
   cluster.waitForActiveCollection(collection, numShards, numShards);
   if (useAlias) {
     CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
@@ -111,6 +118,20 @@ public static void configureCluster() throws Exception {
 
   zkHost = cluster.getZkServer().getZkAddress();
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+
+  // Set up multi-replica collection
+  if (useAlias) {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS + "_collection";
+  } else {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS;
+  }
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1, 1, 1)
+      .process(cluster.getSolrClient());
+  cluster.waitForActiveCollection(collection, numShards, numShards * 3);
+  if (useAlias) {
+    CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  }
+  streamFactory.withCollectionZkHost(MULTI_REPLICA_COLLECTIONORALIAS, zkHost);
 }
 
 private static final String id = "id";
@@ -404,14 +425,17 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 2, 1, 9);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
@@ -514,14 +538,17 @@ public void testParallelRankStream() throws Exception {
       assertEquals(3, tuples.size());
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 9, 1, 2, 0);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 8, 7, 5, 3);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 6, 4);
 
@@ -2305,6 +2332,7 @@ public void testParallelRankStream() throws Exception {
    * streaming expression to only consider data found on the local node.
    */
   @Test
+  @SuppressWarnings({"unchecked"})
   public void streamLocalTests() throws Exception {
 
     new UpdateRequest()
@@ -2554,9 +2582,46 @@ public void testParallelRankStream() throws Exception {
     }
 
   }
+
+  @Test
+  public void testTupleStreamGetShardsPreference() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(new SolrClientCache());
+    streamContext.setRequestReplicaListTransformerGenerator(new RequestReplicaListTransformerGenerator(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null));
+
+    streamContext.setRequestParams(mapParams(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));
+
+    try {
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
+      String collName = strings.size() > 0 ? strings.get(0) : MULTI_REPLICA_COLLECTIONORALIAS;
+      Map<String, String> replicaTypeMap = mapReplicasToReplicaType(zkStateReader.getClusterState().getCollectionOrNull(collName));
+
+      // Test from extra params
+      SolrParams sParams = mapParams("q", "*:*", ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":pull");
+      testTupleStreamSorting(streamContext, sParams, "PULL", replicaTypeMap);
+
+      // Test defaults from streamContext.getParams()
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "NRT", replicaTypeMap);
+
+      // Test defaults from the RLTG
+      streamContext.setRequestParams(new ModifiableSolrParams());
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "TLOG", replicaTypeMap);
+    } finally {
+      streamContext.getSolrClientCache().close();
+    }
+  }
+
+  public void testTupleStreamSorting(StreamContext streamContext, SolrParams solrParams, String replicaType, Map<String, String> replicaTypeMap) throws Exception {
+    List<String> shards = TupleStream.getShards(cluster.getZkClient().getZkServerAddress(), MULTI_REPLICA_COLLECTIONORALIAS, streamContext, solrParams);
+    for (String shard : shards) {
+      assertEquals(shard, replicaType.toUpperCase(Locale.ROOT), replicaTypeMap.getOrDefault(shard, "").toUpperCase(Locale.ROOT));
+    }
+  }
+
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    List<Tuple> tuples = new ArrayList();
+    List<Tuple> tuples = new ArrayList<>();
     for(;;) {
       Tuple t = tupleStream.read();
       if(t.EOF) {
@@ -2592,9 +2657,11 @@ public void testParallelRankStream() throws Exception {
   }
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
+    @SuppressWarnings({"rawtypes"})
     List group = (List)tuple.get("tuples");
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = (Map)group.get(i);
       Long tip = (Long)t.get("id");
       if(tip.intValue() != val) {
@@ -2605,13 +2672,14 @@ public void testParallelRankStream() throws Exception {
     return true;
   }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -2652,4 +2720,67 @@ public void testParallelRankStream() throws Exception {
     return pstream;
   }
 
+  public void testCloudSolrStreamWithoutStreamContext() throws Exception {
+    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "fl", "id", "sort", "id asc");
+    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParams)) {
+      stream.open();
+    }
+  }
+
+  @Test
+  public void testCloudStreamClientCache() throws Exception {
+
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    solrClientCache.getCloudSolrClient(zkHost);
+    streamContext.setSolrClientCache(solrClientCache);
+
+    String expr = "search(" + MULTI_REPLICA_COLLECTIONORALIAS + ",q=*:*,fl=\"a_i\", qt=\"/export\", sort=\"a_i asc\")";
+    try (CloudSolrStream stream = new CloudSolrStream(StreamExpressionParser.parse(expr), streamFactory)) {
+      stream.setStreamContext(streamContext);
+      stream.open();
+      Tuple t = stream.read();
+      while (!t.EOF) {
+        // no-op ... just want to iterate over the tuples
+        t = stream.read();
+      }
+
+      List<String> baseUrls = new LinkedList<>();
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      List<String> resolved = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
+      Set<String> liveNodes = zkStateReader.getClusterState().getLiveNodes();
+      int expectedNumStreams = 0;
+      for (String coll : resolved) {
+        DocCollection dcoll = zkStateReader.getCollection(coll);
+        for (Slice slice : dcoll.getSlices()) {
+          ++expectedNumStreams; // one Stream per slice
+          for (Replica r : slice.getReplicas()) {
+            if (r.isActive(liveNodes)) {
+              baseUrls.add(r.getBaseUrl());
+            }
+          }
+        }
+      }
+      List<TupleStream> solrStreams = stream.children();
+      assertEquals(expectedNumStreams, solrStreams.size());
+      for (TupleStream next : solrStreams) {
+        SolrStream ss = (SolrStream)next;
+        assertTrue(baseUrls.contains(ss.getBaseUrl())); // SolrStream uses the baseUrl of the replica and not the coreUrl
+      }
+
+      // verify core filtering
+      streamContext.setLocal(true);
+
+      for (String coll : resolved) {
+        Replica rr = zkStateReader.getCollection(coll).getReplicas().get(0);
+        streamContext.put("core", rr.core);
+        List<Replica> replicas = TupleStream.getReplicas(zkHost, coll, streamContext, new ModifiableSolrParams());
+        assertEquals("core filter for " + rr.core + " not applied for " + coll + "; replicas: " + replicas, 1, replicas.size());
+        assertEquals("core filter for " + rr.core + " not applied for " + coll, rr, replicas.get(0));
+      }
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
 }

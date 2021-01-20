@@ -1,0 +1,61 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.lucene.gradle.ErrorReportingTestListener
+
+// Display all failed tests at the end of the build.
+
+def failedTests = []
+
+allprojects {
+  tasks.withType(Test) { Test task ->
+    afterTest { desc, result ->
+      if (result.resultType == TestResult.ResultType.FAILURE) {
+        failedTests << [
+            "name": "${desc.className}.${desc.name}",
+            "project": "${test.project.path}",
+            "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc.parent)}"),
+            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}.${desc.name}\" ${task.project.testOptionsForReproduceLine}"
+        ]
+      }
+    }
+
+    afterSuite { desc, result ->
+      if (result.exceptions) {
+        failedTests << [
+            "name": "${desc.name}",
+            "project": "${test.project.path}",
+            "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc)}"),
+            "reproduce": "gradlew ${project.path}:test --tests \"${desc.name}\" ${task.project.testOptionsForReproduceLine}"
+        ]
+      }
+    }
+  }
+}
+
+gradle.buildFinished { result ->
+  if (failedTests) {
+    def formatted = failedTests
+      .sort { a, b -> b.project.compareTo(a.project) }
+      .collect { e -> String.format(Locale.ROOT,
+          "  - %s (%s)\n    Test output: %s\n    Reproduce with: %s\n",
+          e.name, e.project, e.output, e.reproduce) }
+      .join("\n")
+
+    logger.error("\nERROR: The following test(s) have failed:\n${formatted}")
+  }
+}

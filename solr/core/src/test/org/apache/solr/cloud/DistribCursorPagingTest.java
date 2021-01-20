@@ -132,13 +132,6 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
                       CURSOR_MARK_PARAM, CURSOR_MARK_START),
                ErrorCode.BAD_REQUEST, "_docid_");
 
-    // using cursor w/ timeAllowed
-    assertFail(params("q", "*:*", 
-                      "sort", "id desc", 
-                      CommonParams.TIME_ALLOWED, "1000",
-                      CURSOR_MARK_PARAM, CURSOR_MARK_START),
-               ErrorCode.BAD_REQUEST, CommonParams.TIME_ALLOWED);
-
     // using cursor w/ grouping
     assertFail(params("q", "*:*", 
                       "sort", "id desc", 
@@ -615,6 +608,7 @@ public class DistribCursorPagingTest extends AbstractFullDistribZkTestBase {
     LukeRequest req = new LukeRequest("/admin/luke");
     req.setShowSchema(true); 
     NamedList<Object> rsp = controlClient.request(req);
+    @SuppressWarnings({"unchecked"})
     NamedList<Object> fields = (NamedList) ((NamedList)rsp.get("schema")).get("fields");
     ArrayList<String> names = new ArrayList<>(fields.size());
     for (Map.Entry<String,Object> item : fields) {

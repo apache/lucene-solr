@@ -6,7 +6,7 @@
 <!-- This configuration must be used in conjunction with jetty.xml -->
 <!-- and either jetty-https.xml or jetty-spdy.xml (but not both)   -->
 <!-- ============================================================= -->
-<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
   <Call class="org.apache.solr.util.configuration.SSLConfigurationsFactory" name="current">
     <Get name="keyStorePassword" id="keyStorePassword"/>
     <Get name="trustStorePassword" id="trustStorePassword"/>
@@ -17,9 +17,8 @@
   <Set name="TrustStorePassword"><Ref refid="trustStorePassword"/></Set>
   <Set name="NeedClientAuth"><Property name="solr.jetty.ssl.needClientAuth" default="false"/></Set>
   <Set name="WantClientAuth"><Property name="solr.jetty.ssl.wantClientAuth" default="false"/></Set>
-  <Set name="EndpointIdentificationAlgorithm"><Property name="solr.jetty.ssl.verifyClientHostName"/></Set>
-  <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="JKS"/></Set>
-  <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="JKS"/></Set>
+  <Set name="KeyStoreType"><Property name="solr.jetty.keystore.type" default="PKCS12"/></Set>
+  <Set name="TrustStoreType"><Property name="solr.jetty.truststore.type" default="PKCS12"/></Set>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->

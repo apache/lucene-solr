@@ -22,24 +22,28 @@ import java.util.List;
 import java.util.Map;
 
 public class MapWriterMap implements MapWriter {
+  @SuppressWarnings({"rawtypes"})
   private final Map delegate;
 
-  public MapWriterMap(Map delegate) {
+  public MapWriterMap(@SuppressWarnings({"rawtypes"})Map delegate) {
     this.delegate = delegate;
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public void writeMap(EntryWriter ew) throws IOException {
     delegate.forEach(ew.getBiConsumer());
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object _get(String path, Object def) {
     if (path.indexOf('/') == -1) return delegate.getOrDefault(path, def);
     return MapWriter.super._get(path, def);
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object _get(List<String> path, Object def) {
     if (path.size() == 1) return delegate.getOrDefault(path.get(0), def);
     return MapWriter.super._get(path, def);
@@ -47,7 +51,13 @@ public class MapWriterMap implements MapWriter {
 
 
   @Override
-  public Map toMap(Map<String, Object> map) {
+  public int _size() {
+    return delegate.size();
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Map<String,Object> toMap(Map<String, Object> map) {
     return delegate;
   }
 }

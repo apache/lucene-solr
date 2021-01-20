@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
@@ -33,67 +31,70 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-
 public class FuzzyTermOnShortTermsTest extends LuceneTestCase {
-   private final static String FIELD = "field";
-   
-   @Test
-   public void test() throws Exception {
-      // proves rule that edit distance between the two terms
-      // must be > smaller term for there to be a match
-      Analyzer a = getAnalyzer();
-      //these work
-      countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 1);
-      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "abc"), 1), 1);
+  private static final String FIELD = "field";
 
-      countHits(a, new String[]{"abcde"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
-      countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "abcde"), 2), 1);
+  @Test
+  public void test() throws Exception {
+    // proves rule that edit distance between the two terms
+    // must be > smaller term for there to be a match
+    Analyzer a = getAnalyzer();
+    // these work
+    countHits(a, new String[] {"abc"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 1);
+    countHits(a, new String[] {"ab"}, new FuzzyQuery(new Term(FIELD, "abc"), 1), 1);
 
-      // LUCENE-7439: these now work as well:
-      
-      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "a"), 1), 1);
-      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 1);
-      
-      countHits(a, new String[]{"abc"}, new FuzzyQuery(new Term(FIELD, "a"), 2), 1);
-      countHits(a, new String[]{"a"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
+    countHits(a, new String[] {"abcde"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
+    countHits(a, new String[] {"abc"}, new FuzzyQuery(new Term(FIELD, "abcde"), 2), 1);
 
-      countHits(a, new String[]{"abcd"}, new FuzzyQuery(new Term(FIELD, "ab"), 2), 1);
-      countHits(a, new String[]{"ab"}, new FuzzyQuery(new Term(FIELD, "abcd"), 2), 1);
-   }
-   
-   private void countHits(Analyzer analyzer, String[] docs, Query q, int expected) throws Exception {
-      Directory d = getDirectory(analyzer, docs);
-      IndexReader r = DirectoryReader.open(d);
-      IndexSearcher s = new IndexSearcher(r);
-      TotalHitCountCollector c = new TotalHitCountCollector();
-      s.search(q,  c);
-      assertEquals(q.toString(), expected, c.getTotalHits());
-      r.close();
-      d.close();
-   }
-   
-   public static Analyzer getAnalyzer(){
-      return new Analyzer() {
-         @Override
-         public TokenStreamComponents createComponents(String fieldName) {
-            Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
-            return new TokenStreamComponents(tokenizer, tokenizer);
-         }
-      };
-   }
-   public static Directory getDirectory(Analyzer analyzer, String[] vals) throws IOException{
-      Directory directory = newDirectory();
-      RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-          newIndexWriterConfig(analyzer)
-          .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000)).setMergePolicy(newLogMergePolicy()));
+    // LUCENE-7439: these now work as well:
 
-      for (String s : vals){
-         Document d = new Document();
-         d.add(newTextField(FIELD, s, Field.Store.YES));
-         writer.addDocument(d);
-            
+    countHits(a, new String[] {"ab"}, new FuzzyQuery(new Term(FIELD, "a"), 1), 1);
+    countHits(a, new String[] {"a"}, new FuzzyQuery(new Term(FIELD, "ab"), 1), 1);
+
+    countHits(a, new String[] {"abc"}, new FuzzyQuery(new Term(FIELD, "a"), 2), 1);
+    countHits(a, new String[] {"a"}, new FuzzyQuery(new Term(FIELD, "abc"), 2), 1);
+
+    countHits(a, new String[] {"abcd"}, new FuzzyQuery(new Term(FIELD, "ab"), 2), 1);
+    countHits(a, new String[] {"ab"}, new FuzzyQuery(new Term(FIELD, "abcd"), 2), 1);
+  }
+
+  private void countHits(Analyzer analyzer, String[] docs, Query q, int expected) throws Exception {
+    Directory d = getDirectory(analyzer, docs);
+    IndexReader r = DirectoryReader.open(d);
+    IndexSearcher s = new IndexSearcher(r);
+    TotalHitCountCollector c = new TotalHitCountCollector();
+    s.search(q, c);
+    assertEquals(q.toString(), expected, c.getTotalHits());
+    r.close();
+    d.close();
+  }
+
+  public static Analyzer getAnalyzer() {
+    return new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.SIMPLE, true);
+        return new TokenStreamComponents(tokenizer, tokenizer);
       }
-      writer.close();
-      return directory;
-   }
+    };
+  }
+
+  public static Directory getDirectory(Analyzer analyzer, String[] vals) throws IOException {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer =
+        new RandomIndexWriter(
+            random(),
+            directory,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
+                .setMergePolicy(newLogMergePolicy()));
+
+    for (String s : vals) {
+      Document d = new Document();
+      d.add(newTextField(FIELD, s, Field.Store.YES));
+      writer.addDocument(d);
+    }
+    writer.close();
+    return directory;
+  }
 }

@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -51,6 +51,11 @@ public class MockTokenizerFactory extends TokenizerFactory {
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public MockTokenizerFactory() {
+    throw defaultCtorException();
   }
 
   @Override

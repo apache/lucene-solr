@@ -18,12 +18,7 @@
 package org.apache.solr.core;
 
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -54,6 +49,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // deprecate this for 7.0?
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
+      @SuppressWarnings({"rawtypes"})
       NamedList args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
@@ -69,6 +65,7 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       // Still handle just having transientCacheSize defined in the body of solr.xml not in a transient handler clause.
       this.cacheSize = cfg.getTransientCacheSize();
     } else {
+      @SuppressWarnings({"rawtypes"})
       NamedList args = cfg.getTransientCachePluginInfo().initArgs;
       Object obj = args.get("transientCacheSize");
       if (obj != null) {
@@ -76,19 +73,23 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
       }
     }
 
-    log.info("Allocating transient cache for {} transient cores", cacheSize);
     // it's possible for cache
     if (cacheSize < 0) { // Trap old flag
       cacheSize = Integer.MAX_VALUE;
     }
+
     // Now don't allow ridiculous allocations here, if the size is > 1,000, we'll just deal with
     // adding cores as they're opened. This blows up with the marker value of -1.
-    transientCores = new LinkedHashMap<String, SolrCore>(Math.min(cacheSize, 1000), 0.75f, true) {
+    int actualCacheSize = Math.min(cacheSize, 1000);
+    log.info("Allocating transient cache for {} transient cores", actualCacheSize);
+    transientCores = new LinkedHashMap<>(actualCacheSize, 0.75f, true) {
       @Override
       protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
         if (size() > cacheSize) {
           SolrCore coreToClose = eldest.getValue();
-          log.info("Closing transient core [{}]", coreToClose.getName());
+          if (log.isInfoEnabled()) {
+            log.info("Closing transient core [{}]", coreToClose.getName());
+          }
           coreContainer.queueCoreToClose(coreToClose);
           return true;
         }
@@ -100,7 +101,9 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   
   @Override
   public Collection<SolrCore> prepareForShutdown() {
-    // Returna copy of the values
+    // Return a copy of the values
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<SolrCore> ret = new ArrayList(transientCores.values());
     transientCores.clear();
     return ret;
@@ -116,16 +119,16 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
 
   @Override
   public Set<String> getAllCoreNames() {
-    return transientDescriptors.keySet();
+    return Collections.unmodifiableSet(transientDescriptors.keySet());
   }
   
   @Override
   public Set<String> getLoadedCoreNames() {
-    return transientCores.keySet();
+    return Collections.unmodifiableSet(transientCores.keySet());
   }
 
   // Remove a core from the internal structures, presumably it 
-  // being closed. If the core is re-opened, it will be readded by CoreContainer.
+  // being closed. If the core is re-opened, it will be re-added by CoreContainer.
   @Override
   public SolrCore removeCore(String name) {
     return transientCores.remove(name);
@@ -159,19 +162,13 @@ public class TransientSolrCoreCacheDefault extends TransientSolrCoreCache {
   }
 
   @Override
-  public CoreDescriptor removeTransientDescriptor(String name) {
-    return transientDescriptors.remove(name);
+  public Collection<CoreDescriptor> getTransientDescriptors() {
+    return Collections.unmodifiableCollection(transientDescriptors.values());
   }
 
   @Override
-  public List<String> getNamesForCore(SolrCore core) {
-    List<String> ret = new ArrayList<>();
-    for (Map.Entry<String, SolrCore> entry : transientCores.entrySet()) {
-      if (core == entry.getValue()) {
-        ret.add(entry.getKey());
-      }
-    }
-    return ret;
+  public CoreDescriptor removeTransientDescriptor(String name) {
+    return transientDescriptors.remove(name);
   }
 
   // For custom implementations to communicate arbitrary information as necessary.

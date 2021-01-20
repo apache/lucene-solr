@@ -47,7 +47,7 @@ public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdatePr
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     // no trim specific init args
     super.init(args);
   }

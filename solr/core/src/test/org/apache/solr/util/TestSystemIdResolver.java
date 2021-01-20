@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
@@ -87,6 +87,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
         resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
       });
       assertTrue(ioe.getMessage().startsWith("Can't find resource")
+          || ioe.getMessage().contains("access denied")
           || ioe.getMessage().contains("is outside resource loader dir"));
     }
   }

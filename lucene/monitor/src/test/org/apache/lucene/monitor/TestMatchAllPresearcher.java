@@ -23,5 +23,4 @@ public class TestMatchAllPresearcher extends PresearcherTestBase {
   protected Presearcher createPresearcher() {
     return Presearcher.NO_FILTERING;
   }
-
 }

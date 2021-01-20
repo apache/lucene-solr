@@ -1,0 +1,20 @@
+IntelliJ IDEA
+=============
+
+Importing the project as a gradle project should just run out of the box.
+
+
+Eclipse
+=======
+
+Run the following to set up Eclipse project files:
+
+./gradlew eclipse
+
+then import the project into Eclipse with:
+
+File -> Import... -> Existing Project into Workspace
+
+Please note that Eclipse does not distinguish between sub-projects
+and package sets (main/ test) so pretty much all the sources and dependencies
+are available in one large bin.

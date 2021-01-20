@@ -1,0 +1,167 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.apache.tools.ant.types.Commandline
+import org.gradle.api.tasks.testing.logging.*
+import org.apache.lucene.gradle.ErrorReportingTestListener
+
+def resources = scriptResources(buildscript)
+def verboseModeHookInstalled = false
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    project.ext {
+      // This array will collect all test options, including default values and option description.
+      // The actual values of these properties (defaults, project properties) are resolved lazily after evaluation
+      // completes.
+      // [propName: 'tests.foo', value: "bar", description: "Sets foo in tests."],
+      testOptions = [
+          // asserts, debug output.
+          [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
+          [propName: 'tests.workDir',
+           value: { -> file("${buildDir}/tmp/tests-tmp") },
+           description: "Working directory for forked test JVMs",
+           includeInReproLine: false
+          ],
+          // JVM settings
+          [propName: 'tests.minheapsize', value: "256m", description: "Minimum heap size for test JVMs"],
+          [propName: 'tests.heapsize', value: "512m", description: "Heap size for test JVMs"],
+          // Test forks
+          [propName: 'tests.jvms',
+           value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
+           description: "Number of forked test JVMs"],
+          [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+          [propName: 'tests.jvmargs',
+           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1") },
+           description: "Arguments passed to each forked JVM."],
+      ]
+
+      // Resolves test option's value.
+      resolvedTestOption = { propName ->
+        def option = testOptions.find { entry -> entry.propName == propName }
+        if (option == null) {
+          throw new GradleException("No such test option: " + propName)
+        }
+        return propertyOrDefault(option.propName, option.value)
+      }
+
+      testsCwd = file("${buildDir}/tmp/tests-cwd")
+      testsTmpDir = file(resolvedTestOption("tests.workDir"))
+      commonDir = project(":lucene").projectDir
+      commonSolrDir = project(":solr").projectDir
+    }
+
+    def verboseMode = resolvedTestOption("tests.verbose").toBoolean()
+
+    // If we're running in verbose mode and:
+    // 1) worker count > 1
+    // 2) number of 'test' tasks in the build is > 1
+    // then the output would very likely be mangled on the
+    // console. Fail and let the user know what to do.
+    if (verboseMode && !verboseModeHookInstalled) {
+      verboseModeHookInstalled = true
+      if (gradle.startParameter.maxWorkerCount > 1) {
+        gradle.taskGraph.whenReady { graph ->
+          def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+          if (testTasks.size() > 1) {
+            throw new GradleException("Run your tests in verbose mode only with --max-workers=1 option passed to gradle.")
+          }
+        }
+      }
+    }
+
+    tasks.withType(Test) {
+      ext {
+        testOutputsDir = file("${reports.junitXml.destination}/outputs")
+      }
+
+      maxParallelForks = resolvedTestOption("tests.jvms") as Integer
+      if (verboseMode && maxParallelForks != 1) {
+        logger.lifecycle("tests.jvm forced to 1 in verbose mode.")
+        maxParallelForks = 1
+      }
+
+      workingDir testsCwd
+      useJUnit()
+
+      minHeapSize = resolvedTestOption("tests.minheapsize")
+      maxHeapSize = resolvedTestOption("tests.heapsize")
+
+      ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
+
+      jvmArgs Commandline.translateCommandline(resolvedTestOption("tests.jvmargs"))
+      jvmArgs '--illegal-access=deny'
+
+      systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
+      systemProperty 'java.awt.headless', 'true'
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
+      if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+        systemProperty 'java.security.egd', 'file:/dev/./urandom'
+      }
+
+      // jetty-related.
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+
+      // Turn jenkins blood red for hashmap bugs, even on jdk7
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
+      // Pass these to RandomizedRunner so that it doesn't attempt to set them.
+      systemProperty 'junit4.childvm.count', '1'
+      systemProperty 'junit4.childvm.id', '0'
+
+      // Set up cwd and temp locations.
+      systemProperty("java.io.tmpdir", testsTmpDir)
+      systemProperty("tempDir", testsTmpDir)
+      doFirst {
+        testsCwd.mkdirs()
+        testsTmpDir.mkdirs()
+      }
+
+      // Disable HTML report generation. The reports are big and slow to generate.
+      reports.html.enabled = false
+
+      // Set up logging.
+      testLogging {
+        events TestLogEvent.FAILED
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        stackTraceFilters.clear()
+        showStandardStreams false
+      }
+
+      // Set up custom test output handler.
+      doFirst {
+        project.delete testOutputsDir
+      }
+
+      def spillDir = getTemporaryDir().toPath()
+      def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath(), verboseMode)
+      addTestOutputListener(listener)
+      addTestListener(listener)
+
+      doFirst {
+        // Print some diagnostics about locations used.
+        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsCwd, testsTmpDir)
+      }
+    }
+  }
+}

@@ -16,66 +16,70 @@
  */
 package org.apache.lucene.analysis.tr;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test the Turkish lowercase filter.
- */
+/** Test the Turkish lowercase filter. */
 public class TestTurkishLowerCaseFilter extends BaseTokenStreamTestCase {
-  
-  /**
-   * Test composed forms
-   */
+
+  /** Test composed forms */
   public void testTurkishLowerCaseFilter() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("\u0130STANBUL \u0130ZM\u0130R ISPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
-    assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
-        "\u0131sparta",});
+    assertTokenStreamContents(
+        filter,
+        new String[] {
+          "istanbul", "izmir", "\u0131sparta",
+        });
   }
-  
-  /**
-   * Test decomposed forms
-   */
+
+  /** Test decomposed forms */
   public void testDecomposed() throws Exception {
-    TokenStream stream = whitespaceMockTokenizer("\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA");
+    TokenStream stream =
+        whitespaceMockTokenizer("\u0049\u0307STANBUL \u0049\u0307ZM\u0049\u0307R ISPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
-    assertTokenStreamContents(filter, new String[] {"istanbul", "izmir",
-        "\u0131sparta",});
+    assertTokenStreamContents(
+        filter,
+        new String[] {
+          "istanbul", "izmir", "\u0131sparta",
+        });
   }
-  
+
   /**
-   * Test decomposed forms with additional accents
-   * In this example, U+0049 + U+0316 + U+0307 is canonically equivalent
-   * to U+0130 + U+0316, and is lowercased the same way.
+   * Test decomposed forms with additional accents In this example, U+0049 + U+0316 + U+0307 is
+   * canonically equivalent to U+0130 + U+0316, and is lowercased the same way.
    */
   public void testDecomposed2() throws Exception {
-    TokenStream stream = whitespaceMockTokenizer("\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA");
+    TokenStream stream =
+        whitespaceMockTokenizer(
+            "\u0049\u0316\u0307STANBUL \u0049\u0307ZM\u0049\u0307R I\u0316SPARTA");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
-    assertTokenStreamContents(filter, new String[] {"i\u0316stanbul", "izmir",
-        "\u0131\u0316sparta",});
+    assertTokenStreamContents(
+        filter,
+        new String[] {
+          "i\u0316stanbul", "izmir", "\u0131\u0316sparta",
+        });
   }
-  
+
   public void testDecomposed3() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("\u0049\u0307");
     TurkishLowerCaseFilter filter = new TurkishLowerCaseFilter(stream);
     assertTokenStreamContents(filter, new String[] {"i"});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new TurkishLowerCaseFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new TurkishLowerCaseFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

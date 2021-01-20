@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Statistics maintained when running benchmark tasks.
- */
+/** Statistics maintained when running benchmark tasks. */
 package org.apache.lucene.benchmark.byTask.stats;

@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.Optional;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -48,7 +47,8 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    *         Otherwise return the default configuration value for the {@linkplain CoreAdminParams#BACKUP_LOCATION} parameter.
    */
   default String getBackupLocation(String override) {
-    return Optional.ofNullable(override).orElse(getConfigProperty(CoreAdminParams.BACKUP_LOCATION));
+    // If override is null and default backup location is unset, what do we do?
+    return override != null ? override : getConfigProperty(CoreAdminParams.BACKUP_LOCATION);
   }
 
   /**

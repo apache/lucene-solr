@@ -1,0 +1,138 @@
+Dependencies
+============
+
+Each gradle project can have multiple (named) "configurations"
+and each configuration can have dependencies attached to it.
+
+There are some standard conventions so, for example, the Java plugin
+adds standard configurations such as "api", "implementation",
+"testImplementation" and others. These configurations can also inherit
+from each other; more about this typic can be found here:
+
+https://docs.gradle.org/current/userguide/dependency_management_for_java_projects.html#dependency_management_for_java_projects
+https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation
+https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_plugin_and_dependency_management
+
+For the needs of Lucene and Solr we will typically focus on three
+configurations and attach project dependencies to them:
+
+api  - makes a dependency available for main classes, tests and any
+  other modules importing the project (exportable dependency),
+
+implementation - makes a dependency available for main classes, tests
+  but will *not* export the dependency for other modules (so their
+  compilation classpath won't contain it).
+
+testImplementation - makes a dependency only available for test  classes.
+
+
+Adding a library dependency
+---------------------------
+
+Let's say we wish to add a dependency on library "foo.bar:baz" in
+version 1.2 to :lucene:core. Let's assume this library is only
+used internally by the project. The :lucene:core project is configured
+by lucene/core/build.gradle and we would add (or modify) the dependency
+block as follows:
+
+dependencies {
+  implementation "foo.bar:baz"
+}
+
+The "implementation" here is a named configuration; we don't need to declare
+it because it is declared for us by the java-library plugin.
+
+In "normal" gradle the version of the dependency would be present
+directly inside the declaration but we use a plugin
+(palantir-consistent-versions) to manage all dependency versions
+from the top-level (so that conflicts can be resolved globally).
+
+If this is the first time "foo.bar:baz" is added to the project, we'd have
+to add its version to "versions.props" file at the top level of the
+checkout:
+
+foo.bar:baz=1.2
+
+and then regenerate the "versions.lock" file using the following
+command:
+
+gradlew --write-locks
+
+IMPORTANT: The versions.lock file will contain the actual version
+of the dependency picked based on other project dependencies and
+their transitive dependencies. This selected version may be
+different from what each of these actually requires (the highest
+version number will be typically selected). To see which dependencies
+require which version of the library use:
+
+gradlew why --hash=...
+
+where the hash code comes from versions.lock file. For example, at
+the time of writing, jackson-databind has the following entry:
+
+com.fasterxml.jackson.core:jackson-databind:2.10.0 (3 constraints: 931a7796)
+
+and "gradlew why --hash=931a7796" prints:
+
+com.fasterxml.jackson.core:jackson-databind:2.10.0
+        projects -> 2.10.0
+        net.thisptr:jackson-jq -> 2.7.0
+        org.carrot2:carrot2-mini -> 2.9.9.3
+
+Once the dependency is added it always makes sense to see the
+tree of all module dependencies and maybe exclude transitive
+dependencies of foo.bar:baz that we won't need.
+
+
+Inspecting current dependencies
+-------------------------------
+
+The tree of dependencies of a project (in all configurations) can
+be dumped by the following command (example):
+
+gradlew -p lucene\analysis\icu dependencies
+
+But this can be a bit overwhelming; we will most likely be interested
+in just the "publicly visible" and "classpath-visible" configurations.
+
+The publicly visible project dependencies (classes shared by other
+modules importing our module) can be displayed with:
+
+gradlew -p lucene\analysis\icu dependencies --configuration api
+
+And the "private" set of dependencies (real classpath) can be dumped
+with:
+
+gradlew -p lucene\analysis\icu dependencies --configuration runtimeClasspath
+
+
+Excluding a transitive dependency
+---------------------------------
+
+Let's say "foo.bar:baz" has a transitive dependency on project
+"foo.bar:irrelevant" and we know the transitive dependency is not
+crucial for the functioning of "foo.bar:baz". We can exclude it
+by adding an exclusion block to the original declaration:
+
+dependencies {
+  implementation("foo.bar:baz", {
+    exclude group: "foo.bar", module: "irrelevant"
+  })
+}
+
+Note the brackets - they are important and prevent accidental
+mistakes of applying the exclusion to the wrong scope.
+
+
+Updating dependency checksum and licenses
+-----------------------------------------
+
+The last step is to make sure the licenses, notice files and checksums
+are in place for any new dependencies. This command will print what's
+missing and where:
+
+gradlew licenses
+
+To update JAR checksums for licenses use:
+
+gradlew updateLicenses

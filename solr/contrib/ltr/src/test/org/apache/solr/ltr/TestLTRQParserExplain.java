@@ -16,7 +16,11 @@
  */
 package org.apache.solr.ltr;
 
+import java.util.Random;
+
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.ltr.feature.SolrFeature;
+import org.apache.solr.ltr.interleaving.algorithms.TeamDraftInterleaving;
 import org.apache.solr.ltr.model.LinearModel;
 import org.junit.After;
 import org.junit.Before;
@@ -147,6 +151,162 @@ public class TestLTRQParserExplain extends TestRerankBase {
             "65.0 = MultipleAdditiveTreesModel(name=external_model_binary_feature,trees="+trees+") model applied to features, sum of:\n" +
             "  0.0 = tree 0 | \\'user_device_smartphone\\':0.0 <= 0.500001, Go Left | val: 0.0\n" +
             "  65.0 = tree 1 | \\'user_device_tablet\\':1.0 > 0.500001, Go Right | val: 65.0\n'}");
+  }
+
+  @Test
+  public void interleavingModels_shouldReturnExplainForTheModelPicked() throws Exception {
+    TeamDraftInterleaving.setRANDOM(new Random(10));//Random Boolean Choices Generation from Seed: [1,0]
+
+    loadFeature("featureA1", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=popularity}1\"]}");
+    loadFeature("featureA2", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=description}bloomberg\"]}");
+    loadFeature("featureAB", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=popularity}2\"]}");
+    loadFeature("featureB1", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=popularity}5\"]}");
+    loadFeature("featureB2", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=title}different\"]}");
+
+    loadModel("modelA", LinearModel.class.getName(),
+        new String[]{"featureA1", "featureA2", "featureAB"},
+        "{\"weights\":{\"featureA1\":3.0, \"featureA2\":9.0, \"featureAB\":27.0}}");
+
+    loadModel("modelB", LinearModel.class.getName(),
+        new String[]{"featureB1", "featureB2", "featureAB"},
+        "{\"weights\":{\"featureB1\":2.0, \"featureB2\":4.0, \"featureAB\":8.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:bloomberg");
+    query.setParam("debugQuery", "on");
+    query.add("rows", "10");
+    query.add("rq", "{!ltr reRankDocs=10 model=modelA model=modelB}");
+    query.add("fl", "*,score");
+
+    /*
+    Doc6 = "featureA1=1.0 featureA2=1.0 featureB2=1.0", ScoreA(12), ScoreB(4)
+    Doc7 = "featureA2=1.0 featureAB=1.0", ScoreA(36), ScoreB(8)
+    Doc8 = "featureA2=1.0", ScoreA(9), ScoreB(0)
+    Doc9 = "featureA2=1.0 featureB1=1.0", ScoreA(9), ScoreB(2)
+    
+    ModelARerankedList = [7,6,8,9]
+    ModelBRerankedList = [7,6,9,8]
+
+    Random Boolean Choices Generation from Seed: [1,0]
+    
+    */
+
+    int[] expectedInterleaved = new int[]{7, 6, 8, 9};
+    String[] expectedExplains = new String[]{
+        "\n8.0 = LinearModel(name=modelB," +
+            "featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) " +
+            "model applied to features, sum of:\n  " +
+            "0.0 = prod of:\n    2.0 = weight on feature\n    0.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]\n  " +
+            "0.0 = prod of:\n    4.0 = weight on feature\n    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]\n  " +
+            "8.0 = prod of:\n    8.0 = weight on feature\n    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
+        "\n12.0 = LinearModel(name=modelA," +
+            "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) " +
+            "model applied to features, sum of:\n  " +
+            "3.0 = prod of:\n    3.0 = weight on feature\n    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  " +
+            "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  " +
+            "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
+        "\n9.0 = LinearModel(name=modelA," +
+            "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) " +
+            "model applied to features, sum of:\n  " +
+            "0.0 = prod of:\n    3.0 = weight on feature\n    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  " +
+            "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  " +
+            "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
+        "\n2.0 = LinearModel(name=modelB," +
+            "featureWeights=[featureB1=2.0,featureB2=4.0,featureAB=8.0]) " +
+            "model applied to features, sum of:\n  " +
+            "2.0 = prod of:\n    2.0 = weight on feature\n    1.0 = SolrFeature [name=featureB1, params={fq=[{!terms f=popularity}5]}]\n  " +
+            "0.0 = prod of:\n    4.0 = weight on feature\n    0.0 = SolrFeature [name=featureB2, params={fq=[{!terms f=title}different]}]\n  " +
+            "0.0 = prod of:\n    8.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n"};
+    
+   
+
+    String[] tests = new String[16];
+    tests[0] = "/response/numFound/==4";
+    for (int i = 1; i <= 4; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 4] = "/debug/explain/" + expectedInterleaved[(i - 1)] + "=='" + expectedExplains[(i - 1)]+"'}";
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
+  }
+
+  @Test
+  public void interleavingModelsWithOriginalRanking_shouldReturnExplainForTheModelPicked() throws Exception {
+    TeamDraftInterleaving.setRANDOM(new Random(10));//Random Boolean Choices Generation from Seed: [1,0]
+
+    loadFeature("featureA1", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=popularity}1\"]}");
+    loadFeature("featureA2", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=description}bloomberg\"]}");
+    loadFeature("featureAB", SolrFeature.class.getName(),
+        "{\"fq\":[\"{!terms f=popularity}2\"]}");
+
+    loadModel("modelA", LinearModel.class.getName(),
+        new String[]{"featureA1", "featureA2", "featureAB"},
+        "{\"weights\":{\"featureA1\":3.0, \"featureA2\":9.0, \"featureAB\":27.0}}");
+
+    final SolrQuery query = new SolrQuery();
+    query.setQuery("title:bloomberg");
+    query.setParam("debugQuery", "on");
+    query.add("rows", "10");
+    query.add("rq", "{!ltr reRankDocs=10 model=modelA model=_OriginalRanking_}");
+    query.add("fl", "*,score");
+
+    /*
+    Doc6 = "featureA1=1.0 featureA2=1.0 featureB2=1.0", ScoreA(12)
+    Doc7 = "featureA2=1.0 featureAB=1.0", ScoreA(36)
+    Doc8 = "featureA2=1.0", ScoreA(9)
+    Doc9 = "featureA2=1.0 featureB1=1.0", ScoreA(9)
+    
+    ModelARerankedList = [7,6,8,9]
+    OriginalRanking = [9,8,7,6]
+
+    Random Boolean Choices Generation from Seed: [1,0]
+    
+    */
+
+    int[] expectedInterleaved = new int[]{9, 7, 6, 8};
+    String[] expectedExplains = new String[]{
+        "\n0.07662583 = weight(title:bloomberg in 3) [SchemaSimilarity], result of:\n  " +
+            "0.07662583 = score(freq=4.0), computed as boost * idf * tf from:\n    " +
+            "0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:\n      4 = n, number of documents containing term\n      4 = N, total number of documents with field\n    " +
+            "0.72727275 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:\n      4.0 = freq, occurrences of term within document\n      " +
+            "1.2 = k1, term saturation parameter\n      " +
+            "0.75 = b, length normalization parameter\n      " +
+            "4.0 = dl, length of field\n      " +
+            "3.0 = avgdl, average length of field\n",
+        "\n36.0 = LinearModel(name=modelA," +
+            "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) " +
+            "model applied to features, sum of:\n  " +
+            "0.0 = prod of:\n    3.0 = weight on feature\n    0.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  " +
+            "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  " +
+            "27.0 = prod of:\n    27.0 = weight on feature\n    1.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
+        "\n12.0 = LinearModel(name=modelA," +
+            "featureWeights=[featureA1=3.0,featureA2=9.0,featureAB=27.0]) " +
+            "model applied to features, sum of:\n  " +
+            "3.0 = prod of:\n    3.0 = weight on feature\n    1.0 = SolrFeature [name=featureA1, params={fq=[{!terms f=popularity}1]}]\n  " +
+            "9.0 = prod of:\n    9.0 = weight on feature\n    1.0 = SolrFeature [name=featureA2, params={fq=[{!terms f=description}bloomberg]}]\n  " +
+            "0.0 = prod of:\n    27.0 = weight on feature\n    0.0 = SolrFeature [name=featureAB, params={fq=[{!terms f=popularity}2]}]\n",
+        "\n0.07525751 = weight(title:bloomberg in 2) [SchemaSimilarity], result of:\n  " +
+            "0.07525751 = score(freq=3.0), computed as boost * idf * tf from:\n    " +
+            "0.105360515 = idf, computed as log(1 + (N - n + 0.5) / (n + 0.5)) from:\n      4 = n, number of documents containing term\n      4 = N, total number of documents with field\n    " +
+            "0.71428573 = tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:\n      3.0 = freq, occurrences of term within document\n      " +
+            "1.2 = k1, term saturation parameter\n      " +
+            "0.75 = b, length normalization parameter\n      " +
+            "3.0 = dl, length of field\n      " +
+            "3.0 = avgdl, average length of field\n"};
+
+    String[] tests = new String[16];
+    tests[0] = "/response/numFound/==4";
+    for (int i = 1; i <= 4; i++) {
+      tests[i] = "/response/docs/[" + (i - 1) + "]/id==\"" + expectedInterleaved[(i - 1)] + "\"";
+      tests[i + 4] = "/debug/explain/" + expectedInterleaved[(i - 1)] + "=='" + expectedExplains[(i - 1)]+"'}";
+    }
+    assertJQ("/query" + query.toQueryString(), tests);
   }
 
 }

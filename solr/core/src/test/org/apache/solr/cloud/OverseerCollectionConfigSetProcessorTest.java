@@ -37,13 +37,12 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -65,6 +64,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
@@ -82,9 +82,6 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.CLUSTER;
-import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
-import static org.apache.solr.common.params.CollectionAdminParams.USE_LEGACY_REPLICA_ASSIGNMENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
@@ -126,9 +123,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static CoreContainer coreContainerMock;
   private static UpdateShardHandler updateShardHandlerMock;
   private static HttpClient httpClientMock;
-  
+  @SuppressWarnings("rawtypes")
+  private static PlacementPluginFactory placementPluginFactoryMock;
+  private static SolrMetricsContext solrMetricsContextMock;
+
   private static ObjectCache objectCache;
-  private static AutoScalingConfig autoScalingConfig = new AutoScalingConfig(Collections.emptyMap());
   private Map<String, byte[]> zkClientData = new HashMap<>();
   private final Map<String, ClusterState.CollectionRef> collectionsSet = new HashMap<>();
   private final List<ZkNodeProps> replicas = new ArrayList<>();
@@ -150,8 +149,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         OverseerTaskQueue workQueue, DistributedMap runningMap,
         Overseer overseer,
         DistributedMap completedMap,
-        DistributedMap failureMap) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory, null), workQueue, runningMap, completedMap, failureMap);
+        DistributedMap failureMap,
+        SolrMetricsContext solrMetricsContext) {
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap, solrMetricsContext);
     }
     
     @Override
@@ -186,6 +186,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     coreContainerMock = mock(CoreContainer.class);
     updateShardHandlerMock = mock(UpdateShardHandler.class);
     httpClientMock = mock(HttpClient.class);
+    placementPluginFactoryMock = mock(PlacementPluginFactory.class);
+    solrMetricsContextMock = mock(SolrMetricsContext.class);
   }
   
   @AfterClass
@@ -204,11 +206,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkControllerMock = null;
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
+    stateManagerMock = null;;
     cloudManagerMock = null;
     distribStateManagerMock = null;
     coreContainerMock = null;
     updateShardHandlerMock = null;
     httpClientMock = null;
+    placementPluginFactoryMock = null;
+    solrMetricsContextMock = null;
   }
   
   @Before
@@ -238,6 +243,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(coreContainerMock);
     reset(updateShardHandlerMock);
     reset(httpClientMock);
+    reset(placementPluginFactoryMock);
+    reset(solrMetricsContextMock);
 
     zkClientData.clear();
     collectionsSet.clear();
@@ -249,11 +256,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     stopComponentUnderTest();
     super.tearDown();
   }
-  
+
+  @SuppressWarnings("unchecked")
   protected Set<String> commonMocks(int liveNodesCount) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(Http2SolrClient.class))).thenReturn(shardHandlerMock);
-    when(shardHandlerFactoryMock.getShardHandler(any(HttpClient.class))).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
       Object result;
       int count = 0;
@@ -268,6 +274,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(workQueueMock.getTailId()).thenAnswer(invocation -> {
       Object result = null;
+      @SuppressWarnings({"rawtypes"})
       Iterator iter = queue.iterator();
       while(iter.hasNext()) {
         result = iter.next();
@@ -295,7 +302,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
-    when(zkStateReaderMock.getAutoScalingConfig()).thenReturn(autoScalingConfig);
     when(zkStateReaderMock.getAliases()).thenReturn(Aliases.EMPTY);
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
@@ -309,12 +315,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         String slice = replica.getStr(ZkStateReader.SHARD_ID_PROP);
         if (!slices.containsKey(slice)) slices.put(slice, new HashMap<>());
         String replicaName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties()));
+        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties(), docCollection.getName(), slice));
       }
 
       Map<String, Slice> slicesMap = new HashMap<>();
       for (Map.Entry<String, Map<String, Replica>> entry : slices.entrySet()) {
-        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null));
+        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null,docCollection.getName()));
       }
 
       return docCollection.copyWithSlices(slicesMap);
@@ -326,8 +332,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       
       when(zkStateReaderMock.getBaseUrlForNodeName(address)).thenAnswer(invocation -> address.replaceAll("_", "/"));
     }
-
-    when(zkStateReaderMock.getClusterProperty("legacyCloud", "false")).thenReturn("false");
 
     when(solrZkClientMock.getZkClientTimeout()).thenReturn(30000);
     
@@ -370,16 +374,15 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(overseerMock.getCoreContainer()).thenReturn(coreContainerMock);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
+    when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
     
     when(zkControllerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(cloudDataProviderMock.getClusterStateProvider()).thenReturn(clusterStateProviderMock);
     when(clusterStateProviderMock.getClusterState()).thenReturn(clusterStateMock);
     when(clusterStateProviderMock.getLiveNodes()).thenReturn(liveNodes);
-    when(clusterStateProviderMock.getClusterProperties()).thenReturn(Utils.makeMap(DEFAULTS, Utils.makeMap(CLUSTER, Utils.makeMap(USE_LEGACY_REPLICA_ASSIGNMENT, true))));
     when(cloudDataProviderMock.getDistribStateManager()).thenReturn(stateManagerMock);
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
 
     Mockito.doAnswer(
       new Answer<Void>() {
@@ -459,7 +462,6 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
     
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    when(distribStateManagerMock.getAutoScalingConfig()).thenReturn(new AutoScalingConfig(Collections.emptyMap()));
 
     Mockito.doAnswer(
       new Answer<Void>() {
@@ -505,7 +507,9 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           }}).when(distribStateManagerMock).makePath(anyString());
 
     zkClientData.put("/configs/myconfig", new byte[1]);
-    
+
+    when(solrMetricsContextMock.getChildContext(any(Object.class))).thenReturn(solrMetricsContextMock);
+
     return liveNodes;
   }
 
@@ -542,14 +546,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   protected void issueCreateJob(Integer numberOfSlices,
-      Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
+      Integer replicationFactor, List<String> createNodeList, boolean sendCreateNodeList, boolean createNodeSetShuffle) {
     Map<String,Object> propMap = Utils.makeMap(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,
-        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString(),
-        ZkStateReader.MAX_SHARDS_PER_NODE, maxShardsPerNode.toString()
+        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString()
     );
     if (sendCreateNodeList) {
       propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET,
@@ -563,7 +566,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     QueueEvent qe = new QueueEvent("id", Utils.toJSON(props), null){
       @Override
       public void setBytes(byte[] bytes) {
-        lastProcessMessageResult = SolrResponse.deserialize( bytes);
+        lastProcessMessageResult = OverseerSolrResponseSerializer.deserialize(bytes);
       }
     };
     queue.add(qe);
@@ -723,7 +726,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     SEND_NULL
   }
   protected void testTemplate(Integer numberOfNodes, Integer numberOfNodesToCreateOn, CreateNodeListOptions createNodeListOption, Integer replicationFactor,
-      Integer numberOfSlices, Integer maxShardsPerNode,
+      Integer numberOfSlices,
       boolean collectionExceptedToBeCreated) throws Exception {
     assertTrue("Wrong usage of testTemplate. numberOfNodesToCreateOn " + numberOfNodesToCreateOn + " is not allowed to be higher than numberOfNodes " + numberOfNodes, numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
     assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
@@ -741,17 +744,19 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     underTest = new OverseerCollectionConfigSetProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerFactoryMock, ADMIN_PATH, workQueueMock, runningMapMock,
-        overseerMock, completedMapMock, failureMapMock);
+        overseerMock, completedMapMock, failureMapMock, solrMetricsContextMock);
 
 
-    log.info("clusterstate " + clusterStateMock.hashCode());
+    if (log.isInfoEnabled()) {
+      log.info("clusterstate {}", clusterStateMock.hashCode());
+    }
 
     startComponentUnderTest();
     
     final List<String> createNodeListToSend = ((createNodeListOption != CreateNodeListOptions.SEND_NULL) ? createNodeList : null);
     final boolean sendCreateNodeList = (createNodeListOption != CreateNodeListOptions.DONT_SEND);
     final boolean dontShuffleCreateNodeSet = (createNodeListToSend != null) && sendCreateNodeList && random().nextBoolean();
-    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, createNodeListToSend, sendCreateNodeList, !dontShuffleCreateNodeSet);
+    issueCreateJob(numberOfSlices, replicationFactor, createNodeListToSend, sendCreateNodeList, !dontShuffleCreateNodeSet);
     waitForEmptyQueue(10000);
 
     if (collectionExceptedToBeCreated) {
@@ -770,9 +775,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -782,9 +786,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -794,9 +797,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -806,9 +808,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -818,9 +819,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -830,9 +830,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }  
   
   @Test
@@ -842,9 +841,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -854,37 +852,10 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
-  @Test
-  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
-  }
-  
-  @Test
-  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
-  }
-
   @Test
   public void testNoReplicationLimitedNodesToCreateOn()
       throws Exception {
@@ -893,9 +864,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
-    Integer maxShardsPerNode = 3;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
   
   @Test
@@ -906,9 +876,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
-    Integer maxShardsPerNode = 3;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, true);
+        true);
   }
 
   @Test
@@ -919,9 +888,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
+        false);
   }
   
   @Test
@@ -932,9 +900,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
-    Integer maxShardsPerNode = 2;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        maxShardsPerNode, false);
+        false);
   }
 
 }

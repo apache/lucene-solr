@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.FileFloatSource;
@@ -50,6 +51,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * <p>If the external file has already been loaded, and it is changed, those changes will not be visible until a commit has been done.
  * <p>The external file may be sorted or unsorted by the key field, but it will be substantially slower (untested) if it isn't sorted.
  * <p>Fields of this type may currently only be used as a ValueSource in a FunctionQuery.
+ * <p>You can return the value as a field in the document by wrapping it like so: <code>fl=id,field(inventory_count)</code>.
  *
  * @see ExternalFileFieldReloader
  */
@@ -77,7 +79,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
     FileFloatSource source = getFileFloatSource(field);
     return source.getSortField(reverse);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     return null;
@@ -95,7 +97,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
    * @return a FileFloatSource
    */
   public FileFloatSource getFileFloatSource(SchemaField field) {
-    return getFileFloatSource(field, schema.getResourceLoader().getDataDir());
+    return getFileFloatSource(field, SolrRequestInfo.getRequestInfo().getReq().getCore().getDataDir());
   }
 
   /**
@@ -122,7 +124,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
   @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;
-    
+
     if (keyFieldName != null && schema.getFieldType(keyFieldName).isPointField()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "keyField '" + keyFieldName + "' has a Point field type, which is not supported.");

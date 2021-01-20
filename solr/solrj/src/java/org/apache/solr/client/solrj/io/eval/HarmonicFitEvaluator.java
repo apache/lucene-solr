@@ -34,6 +34,7 @@ public class HarmonicFitEvaluator extends RecursiveNumericEvaluator implements M
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length > 3) {
@@ -76,12 +77,14 @@ public class HarmonicFitEvaluator extends RecursiveNumericEvaluator implements M
     double[] coef = curveFitter.fit(points.toList());
     HarmonicOscillator pf = new HarmonicOscillator(coef[0], coef[1], coef[2]);
 
+    @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
     for(double xvalue : x) {
       double yvalue= pf.value(xvalue);
       list.add(yvalue);
     }
 
+    @SuppressWarnings({"unchecked"})
     VectorFunction vectorFunction =  new VectorFunction(pf, list);
     vectorFunction.addToContext("amplitude", coef[0]);
     vectorFunction.addToContext("angularFrequency", coef[1]);

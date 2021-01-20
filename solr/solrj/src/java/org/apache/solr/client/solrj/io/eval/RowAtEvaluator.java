@@ -43,7 +43,7 @@ public class RowAtEvaluator extends RecursiveObjectEvaluator implements TwoValue
       Matrix matrix = (Matrix) value1;
       Number index = (Number) value2;
       double[] row = matrix.getData()[index.intValue()];
-      List<Number> list = new ArrayList();
+      List<Number> list = new ArrayList<>();
       for(double d : row) {
         list.add(d);
       }

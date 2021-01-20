@@ -46,11 +46,12 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +73,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   private final CoreAdminHandlerApi coreAdminHandlerApi;
 
   protected ExecutorService parallelExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(50,
-      new DefaultSolrThreadFactory("parallelCoreAdminExecutor"));
+      new SolrNamedThreadFactory("parallelCoreAdminExecutor"));
 
   protected static int MAX_TRACKED_REQUESTS = 100;
   public static String RUNNING = "running";
@@ -113,17 +114,17 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "CoreAdminHandler should not be configured in solrconf.xml\n" +
                     "it is a special Handler configured directly by the RequestDispatcher");
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, manager.registry(registryName),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getMetricRegistry(),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {

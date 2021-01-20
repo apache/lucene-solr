@@ -15,6 +15,36 @@
  limitations under the License.
 */
 
+/* SOLR-14120: Providing a manual definition for the methods 'includes' and 'startsWith' to support Internet Explorer 11. */
+if (!String.prototype.includes) {
+  String.prototype.includes = function(search, start) { 'use strict';
+  if (search instanceof RegExp) {
+    throw TypeError('first argument must not be a RegExp');
+  } 
+  if (start === undefined) { start = 0; }
+    return this.indexOf(search, start) !== -1;
+  };
+}
+if (!Array.prototype.includes) {
+  Object.defineProperty(Array.prototype, "includes", {
+    enumerable: false,
+    value: function(obj) {
+    var newArr = this.filter(function(el) {
+      return el == obj;
+    });
+    return newArr.length > 0;
+    }
+  });
+}
+if (!String.prototype.startsWith) {
+  Object.defineProperty(String.prototype, 'startsWith', {
+    value: function(search, rawPos) {
+    var pos = rawPos > 0 ? rawPos|0 : 0;
+    return this.substring(pos, pos + search.length) === search;
+    }
+  });
+}
+
 var solrAdminApp = angular.module("solrAdminApp", [
   "ngResource",
   "ngRoute",
@@ -26,6 +56,10 @@ var solrAdminApp = angular.module("solrAdminApp", [
 ]);
 
 solrAdminApp.config([
+  '$locationProvider', function($locationProvider) {
+    $locationProvider.hashPrefix('');
+}])
+.config([
   '$routeProvider', function($routeProvider) {
     $routeProvider.
       when('/', {
@@ -80,10 +114,6 @@ solrAdminApp.config([
         templateUrl: 'partials/java-properties.html',
         controller: 'JavaPropertiesController'
       }).
-      when('/~cluster-suggestions', {
-        templateUrl: 'partials/cluster_suggestions.html',
-        controller: 'ClusterSuggestionsController'
-      }).
       when('/:core/core-overview', {
         templateUrl: 'partials/core_overview.html',
         controller: 'CoreOverviewController'
@@ -99,14 +129,6 @@ solrAdminApp.config([
       when('/:core/analysis', {
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
@@ -137,14 +159,6 @@ solrAdminApp.config([
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/schema', {
         templateUrl: 'partials/schema.html',
@@ -297,24 +311,26 @@ solrAdminApp.config([
         },
         link: function(scope, element, attrs) {
             scope.$watch("data", function(newValue, oldValue) {
-                if (newValue) {
+              if (newValue && !jQuery.isEmptyObject(newValue)) {
                   var treeConfig = {
-                      "plugins" : [ "themes", "json_data", "ui" ],
-                      "json_data" : {
-                        "data" : scope.data,
-                        "progressive_render" : true
-                      },
-                      "core" : {
-                        "animation" : 0
-                      }
+                    'core' : {
+                      'animation' : 0,
+                      'worker': false
+                    }
                   };
 
                   var tree = $(element).jstree(treeConfig);
-                  tree.jstree('open_node','li:first');
+
+                  // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
+                  // Putting the data in the treeConfig makes it stack and doesn't update.
+                  $(element).jstree(true).settings.core.data = scope.data;
+                  $(element).jstree(true).refresh();
+
+                  $(element).jstree('open_node','li:first');
                   if (tree) {
                       element.bind("select_node.jstree", function (event, data) {
                           scope.$apply(function() {
-                              scope.onSelect({url: data.args[0].href, data: data});
+                            scope.onSelect({url: data.node.a_attr.href, data: data});
                           });
                       });
                   }

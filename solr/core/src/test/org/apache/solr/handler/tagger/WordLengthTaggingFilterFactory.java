@@ -26,7 +26,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +63,11 @@ public class WordLengthTaggingFilterFactory extends TokenFilterFactory {
       log.info("set minLength={}", minLength);
       this.minLength = minLength;
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public WordLengthTaggingFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

@@ -18,7 +18,6 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -28,8 +27,7 @@ public class TestSimpleMatcher extends MonitorTestBase {
 
     try (Monitor monitor = newMonitor()) {
       monitor.register(
-          new MonitorQuery("1", parse("test")),
-          new MonitorQuery("2", parse("wibble")));
+          new MonitorQuery("1", parse("test")), new MonitorQuery("2", parse("wibble")));
       Document doc = new Document();
       doc.add(newTextField(FIELD, "test", Field.Store.NO));
 

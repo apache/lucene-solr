@@ -23,8 +23,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -49,7 +47,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -366,7 +363,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
             // forwarded from a collection but we are not buffering so strip original version and apply our own
             // see SOLR-5308
-            log.info("Removing version field from doc: " + cmd.getPrintableId());
+            if (log.isInfoEnabled()) {
+              log.info("Removing version field from doc: {}", cmd.getPrintableId());
+            }
             cmd.solrDoc.remove(CommonParams.VERSION_FIELD);
             versionOnUpdate = 0;
           }
@@ -377,7 +376,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
               && isReplayOrPeersync == false) {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
-            log.info("Leader logic applied but update log is buffering: " + cmd.getPrintableId());
+            if (log.isInfoEnabled()) {
+              log.info("Leader logic applied but update log is buffering: {}", cmd.getPrintableId());
+            }
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.add(cmd);
             return true;
@@ -427,18 +428,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               UpdateCommand fetchedFromLeader = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
 
               if (fetchedFromLeader instanceof DeleteUpdateCommand) {
-                log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document"
-                    + " was deleted at the leader subsequently.", idBytes.utf8ToString());
+                if (log.isInfoEnabled()) {
+                  log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document was deleted at the leader subsequently."
+                      , idBytes.utf8ToString());
+                }
                 versionDelete((DeleteUpdateCommand) fetchedFromLeader);
                 return true;
               } else {
                 assert fetchedFromLeader instanceof AddUpdateCommand;
                 // Newer document was fetched from the leader. Apply that document instead of this current in-place
                 // update.
-                log.info(
-                    "In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
-                    idBytes.utf8ToString(), fetchedFromLeader);
-
+                if (log.isInfoEnabled()) {
+                  log.info(
+                      "In-place update of {} failed to find valid lastVersion to apply to, forced to fetch full doc from leader: {}",
+                      idBytes.utf8ToString(), fetchedFromLeader);
+                }
                 // Make this update to become a non-inplace update containing the full document obtained from the
                 // leader
                 cmd.solrDoc = ((AddUpdateCommand) fetchedFromLeader).solrDoc;
@@ -450,8 +454,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               if (lastVersion != null && Math.abs(lastVersion) > prev) {
                 // this means we got a newer full doc update and in that case it makes no sense to apply the older
                 // inplace update. Drop this update
-                log.info("Update was applied on version: " + prev + ", but last version I have is: " + lastVersion
-                    + ". Dropping current update.");
+                log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update"
+                    , prev, lastVersion);
                 return true;
               } else {
                 // We're good, we should apply this update. First, update the bucket's highest.
@@ -472,7 +476,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
               if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
                 // This update is a repeat, or was reordered. We need to drop this update.
-                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
+                if (log.isDebugEnabled()) {
+                  log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
+                }
                 return true;
               }
             }
@@ -487,13 +493,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       // TODO: possibly set checkDeleteByQueries as a flag on the command?
       doLocalAdd(cmd);
-
-      // if the update updates a doc that is part of a nested structure,
-      // force open a realTimeSearcher to trigger a ulog cache refresh.
-      // This refresh makes RTG handler aware of this update.q
-      if(req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-        ulog.openRealtimeSearcher();
-      }
 
       if (clonedDoc != null) {
         cmd.solrDoc = clonedDoc;
@@ -549,8 +548,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // trying to index this partial update. Since a full update more recent than this partial update has succeeded,
       // we can drop the current update.
       if (log.isDebugEnabled()) {
-        log.debug("Update was applied on version: {}, but last version I have is: {}"
-            + ". Current update should be dropped. id={}", cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
+        log.debug("Update was applied on version: {}, but last version I have is: {} . Current update should be dropped. id={}"
+            , cmd.prevVersion, lastFoundVersion, cmd.getPrintableId());
       }
       return -1;
     } else if (Math.abs(lastFoundVersion) == cmd.prevVersion) {
@@ -562,20 +561,29 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     // We have waited enough, but dependent update didn't arrive. Its time to actively fetch it from leader
-    log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}", 
-        cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
+    if (log.isInfoEnabled()) {
+      log.info("Missing update, on which current in-place update depends on, hasn't arrived. id={}, looking for version={}, last found version={}",
+          cmd.getPrintableId(), cmd.prevVersion, lastFoundVersion);
+    }
     
     UpdateCommand missingUpdate = fetchFullUpdateFromLeader(cmd, versionOnUpdate);
     if (missingUpdate instanceof DeleteUpdateCommand) {
-      log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. " 
-          + "Deleting the document here and skipping this update: Last found version: {}, was looking for: {}", cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
-      versionDelete((DeleteUpdateCommand)missingUpdate);
+      if (log.isInfoEnabled()) {
+        log.info("Tried to fetch document {} from the leader, but the leader says document has been deleted. Deleting the document here and skipping this update: Last found version: {}, was looking for: {}"
+            , cmd.getPrintableId(), lastFoundVersion, cmd.prevVersion);
+      }
+      versionDelete((DeleteUpdateCommand) missingUpdate);
       return -1;
     } else {
       assert missingUpdate instanceof AddUpdateCommand;
-      log.debug("Fetched the document: {}", ((AddUpdateCommand)missingUpdate).getSolrInputDocument());
+      if (log.isDebugEnabled()) {
+        log.debug("Fetched the document: {}", ((AddUpdateCommand) missingUpdate).getSolrInputDocument());
+      }
       versionAdd((AddUpdateCommand)missingUpdate);
-      log.info("Added the fetched document, id="+((AddUpdateCommand)missingUpdate).getPrintableId()+", version="+missingUpdate.getVersion());
+      if (log.isInfoEnabled()) {
+        log.info("Added the fetched document, id= {}, version={}"
+            , ((AddUpdateCommand) missingUpdate).getPrintableId(), missingUpdate.getVersion());
+      }
     }
     return missingUpdate.getVersion();
   }
@@ -588,9 +596,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       lastFoundVersion = lookedUpVersion == null ? 0L : lookedUpVersion;
 
       if (Math.abs(lastFoundVersion) < cmd.prevVersion) {
-        log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}",
-            (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion,
-            isReplayOrPeersync, cmd.getPrintableId());
+        if (log.isDebugEnabled()) {
+          log.debug("Re-ordered inplace update. version={}, prevVersion={}, lastVersion={}, replayOrPeerSync={}, id={}",
+              (cmd.getVersion() == 0 ? versionOnUpdate : cmd.getVersion()), cmd.prevVersion, lastFoundVersion,
+              isReplayOrPeersync, cmd.getPrintableId());
+        }
       }
 
       while (Math.abs(lastFoundVersion) < cmd.prevVersion && !waitTimeout.hasTimedOut()) {
@@ -613,7 +623,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @return AddUpdateCommand containing latest full doc at shard leader for the given id, or null if not found.
    */
   private UpdateCommand fetchFullUpdateFromLeader(AddUpdateCommand inplaceAdd, long versionOnUpdate) throws IOException {
-    String id = inplaceAdd.getPrintableId();
+    String id = inplaceAdd.getIndexedIdStr();
     UpdateShardHandler updateShardHandler = inplaceAdd.getReq().getCore().getCoreContainer().getUpdateShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, false);
@@ -659,60 +669,47 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
     if (!AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) return false;
 
+    if (idField == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Can't do atomic updates without a schema uniqueKeyField");
+    }
+
+    BytesRef rootIdBytes = cmd.getIndexedId(); // root doc; falls back to doc ID if no _route_
+    String rootDocIdString = cmd.getIndexedIdStr();
+
     Set<String> inPlaceUpdatedFields = AtomicUpdateDocumentMerger.computeInPlaceUpdatableFields(cmd);
     if (inPlaceUpdatedFields.size() > 0) { // non-empty means this is suitable for in-place updates
       if (docMerger.doInPlaceUpdateMerge(cmd, inPlaceUpdatedFields)) {
         return true;
-      } else {
-        // in-place update failed, so fall through and re-try the same with a full atomic update
-      }
+      } // in-place update failed, so fall through and re-try the same with a full atomic update
     }
-    
-    // full (non-inplace) atomic update
-    SolrInputDocument sdoc = cmd.getSolrInputDocument();
-    BytesRef idBytes = cmd.getIndexedId();
-    String idString = cmd.getPrintableId();
-    SolrInputDocument oldRootDocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), idBytes, RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN);
 
+    // full (non-inplace) atomic update
+
+    final SolrInputDocument oldRootDocWithChildren =
+        RealTimeGetComponent.getInputDocument(
+            req.getCore(),
+            rootIdBytes,
+            rootIdBytes,
+            null,
+            null,
+            RealTimeGetComponent.Resolution.ROOT_WITH_CHILDREN); // when no children, just fetches the doc
+
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    SolrInputDocument mergedDoc;
     if (oldRootDocWithChildren == null) {
-      if (versionOnUpdate > 0) {
+      if (versionOnUpdate > 0
+          || !rootDocIdString.equals(cmd.getChildDocIdStr())) {
         // could just let the optimistic locking throw the error
-        throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + idString);
-      } else if (req.getParams().get(ShardParams._ROUTE_) != null) {
-        // the specified document could not be found in this shard
-        // and was explicitly routed using _route_
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Could not find document id=" + idString +
-                ", perhaps the wrong \"_route_\" param was supplied");
+        throw new SolrException(ErrorCode.CONFLICT, "Document not found for update.  id=" + rootDocIdString);
       }
+      // create a new doc by default if an old one wasn't found
+      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument(idField.getName(), rootDocIdString));
     } else {
       oldRootDocWithChildren.remove(CommonParams.VERSION_FIELD);
+
+      mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
     }
 
-
-    SolrInputDocument mergedDoc;
-    if(idField == null || oldRootDocWithChildren == null) {
-      // create a new doc by default if an old one wasn't found
-      mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
-    } else {
-      // Safety check: don't allow an update to an existing doc that has children, unless we actually support this.
-      if (req.getSchema().isUsableForChildDocs() // however, next line we see it doesn't support child docs
-          && req.getSchema().supportsPartialUpdatesOfChildDocs() == false
-          && req.getSearcher().count(new TermQuery(new Term(IndexSchema.ROOT_FIELD_NAME, idBytes))) > 1) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "This schema does not support partial updates to nested docs. See ref guide.");
-      }
-
-      String oldRootDocRootFieldVal = (String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME);
-      if(req.getSchema().savesChildDocRelations() && oldRootDocRootFieldVal != null &&
-          !idString.equals(oldRootDocRootFieldVal)) {
-        // this is an update where the updated doc is not the root document
-        SolrInputDocument sdocWithChildren = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(),
-            idBytes, RealTimeGetComponent.Resolution.DOC_WITH_CHILDREN);
-        mergedDoc = docMerger.mergeChildDoc(sdoc, oldRootDocWithChildren, sdocWithChildren);
-      } else {
-        mergedDoc = docMerger.merge(sdoc, oldRootDocWithChildren);
-      }
-    }
     cmd.solrDoc = mergedDoc;
     return true;
   }
@@ -985,7 +982,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() == UpdateLog.State.ACTIVE) {
             // forwarded from a collection but we are not buffering so strip original version and apply our own
             // see SOLR-5308
-            log.info("Removing version field from doc: " + cmd.getId());
+            if (log.isInfoEnabled()) {
+              log.info("Removing version field from doc: {}", cmd.getId());
+            }
             versionOnUpdate = signedVersionOnUpdate = 0;
           }
 
@@ -993,7 +992,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (forwardedFromCollection && ulog.getState() != UpdateLog.State.ACTIVE
               && !isReplayOrPeersync) {
             // we're not in an active state, and this update isn't from a replay, so buffer it.
-            log.info("Leader logic applied but update log is buffering: " + cmd.getId());
+            if (log.isInfoEnabled()) {
+              log.info("Leader logic applied but update log is buffering: {}", cmd.getId());
+            }
             cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
             ulog.delete(cmd);
             return true;
@@ -1036,7 +1037,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered. We need to drop this update.
-              log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
+              if (log.isDebugEnabled()) {
+                log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
+              }
               return true;
             }
           }
@@ -1078,7 +1081,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (ulog == null || ulog.getState() == UpdateLog.State.ACTIVE || (cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
         super.processCommit(cmd);
       } else {
-        log.info("Ignoring commit while not ACTIVE - state: " + ulog.getState() + " replay: " + ((cmd.getFlags() & UpdateCommand.REPLAY) != 0));
+        if (log.isInfoEnabled()) {
+          log.info("Ignoring commit while not ACTIVE - state: {} replay: {}"
+              , ulog.getState(), ((cmd.getFlags() & UpdateCommand.REPLAY) != 0));
+        }
       }
 
     } finally {
@@ -1089,29 +1095,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   @Override
-  public void finish() throws IOException {
-    assertNotFinished();
+  public final void finish() throws IOException {
+    assert ! finished : "lifecycle sanity check";
+    finished = true;
+
+    doDistribFinish();
 
     super.finish();
   }
 
-  protected void assertNotFinished() {
-    assert ! finished : "lifecycle sanity check";
-    finished = true;
-  }
-
-  /**
-   *
-   * {@link AddUpdateCommand#isNested} is set in {@link org.apache.solr.update.processor.NestedUpdateProcessorFactory},
-   * which runs on leader and replicas just before run time processor
-   * @return whether this update changes a value of a nested document
-   */
-  private static boolean shouldRefreshUlogCaches(AddUpdateCommand cmd) {
-    // should be set since this method should only be called after DistributedUpdateProcessor#doLocalAdd,
-    // which runs post-processor in the URP chain, having NestedURP set cmd#isNested.
-    assert !cmd.getReq().getSchema().savesChildDocRelations() || cmd.isNested != null;
-    // true if update adds children
-    return Boolean.TRUE.equals(cmd.isNested);
+  protected void doDistribFinish() throws IOException {
+    // no-op for derived classes to implement
   }
 
   /**

@@ -197,19 +197,6 @@
       "items": {
         "type": "string"
       }
-    },
-    "add-runtimelib": {
-      "#include": "core.config.Commands.runtimeLib"
-    },
-    "update-runtimelib": {
-      "#include": "core.config.Commands.runtimeLib"
-    },
-    "delete-runtimelib": {
-      "type":"array",
-      "description": "Deletes one or more runtime libraries (runtimeLibs), using the name given when the runtimeLib was created. Define more than one runtimeLibs by separating the list of names with commas.",
-      "items": {
-        "type": "string"
-      }
     }
   }
 }

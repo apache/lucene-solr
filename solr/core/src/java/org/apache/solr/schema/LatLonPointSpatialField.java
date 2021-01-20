@@ -27,6 +27,7 @@ import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
@@ -57,6 +58,7 @@ import static java.math.RoundingMode.CEILING;
  * coordinates in lat/lon decimal degrees.  The accuracy is about a centimeter (1.042cm).
  */
 // TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
+@SuppressWarnings({"rawtypes"})
 public class LatLonPointSpatialField extends AbstractSpatialFieldType implements SchemaAware {
   private IndexSchema schema;
 
@@ -76,7 +78,15 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
   }
-  
+
+  @Override
+  public String toExternal(IndexableField f) {
+    if (f.numericValue() != null) {
+      return decodeDocValueToString(f.numericValue().longValue());
+    }
+    return super.toExternal(f);
+  }
+
   /**
    * Decodes the docValues number into latitude and longitude components, formatting as "lat,lon".
    * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective

@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.queryparser.flexible.core.builders;
 
-import junit.framework.Assert;
-
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -28,45 +26,39 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 public class TestQueryTreeBuilder extends LuceneTestCase {
-  
+
   @Test
   public void testSetFieldBuilder() throws QueryNodeException {
     QueryTreeBuilder qtb = new QueryTreeBuilder();
     qtb.setBuilder("field", new DummyBuilder());
     Object result = qtb.build(new FieldQueryNode(new UnescapedCharSequence("field"), "foo", 0, 0));
-    Assert.assertEquals("OK", result);
-    
+    assertEquals("OK", result);
+
     // LUCENE-4890
     qtb = new QueryTreeBuilder();
     qtb.setBuilder(DummyQueryNodeInterface.class, new DummyBuilder());
     result = qtb.build(new DummyQueryNode());
-    Assert.assertEquals("OK", result);
+    assertEquals("OK", result);
   }
-  
-  private static interface DummyQueryNodeInterface extends QueryNode {
-    
-  }
-  
-  private static abstract class AbstractDummyQueryNode extends QueryNodeImpl implements DummyQueryNodeInterface {
-    
-  }
-  
+
+  private static interface DummyQueryNodeInterface extends QueryNode {}
+
+  private abstract static class AbstractDummyQueryNode extends QueryNodeImpl
+      implements DummyQueryNodeInterface {}
+
   private static class DummyQueryNode extends AbstractDummyQueryNode {
 
     @Override
     public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
       return "DummyQueryNode";
     }
-    
   }
-  
+
   private static class DummyBuilder implements QueryBuilder {
 
     @Override
     public Object build(QueryNode queryNode) throws QueryNodeException {
       return "OK";
     }
-    
   }
-
 }

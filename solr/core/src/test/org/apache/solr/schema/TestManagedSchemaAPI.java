@@ -51,6 +51,8 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   public void test() throws Exception {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+
         .process(cluster.getSolrClient());
     testModifyField(collection);
     testReloadAndAddSimple(collection);
@@ -97,7 +99,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
     assertEquals(0, addFieldResponse.getStatus());
     assertNull(addFieldResponse.getResponse().get("errors"));
 
-    log.info("added new field="+fieldName);
+    log.info("added new field={}", fieldName);
   }
 
   private void testModifyField(String collection) throws IOException, SolrServerException {

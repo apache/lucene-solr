@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,7 +63,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
   protected SolrHttpRequestRetryHandler(final int retryCount, final Collection<Class<? extends IOException>> clazzes) {
     super();
     this.retryCount = retryCount;
-    this.nonRetriableClasses = new HashSet<Class<? extends IOException>>();
+    this.nonRetriableClasses = new HashSet<>();
     for (final Class<? extends IOException> clazz : clazzes) {
       this.nonRetriableClasses.add(clazz);
     }
@@ -108,17 +109,14 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       log.debug("Do not retry, over max retry count");
       return false;
     }
-    if (this.nonRetriableClasses.contains(exception.getClass())) {
-      log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
-      return false;
-    } else {
-      for (final Class<? extends IOException> rejectException : this.nonRetriableClasses) {
-        if (rejectException.isInstance(exception)) {
-          log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
-          return false;
-        }
+
+    if (!isRetriable(exception)) {
+      if (log.isDebugEnabled()) {
+        log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
       }
+      return false;
     }
+
     final HttpClientContext clientContext = HttpClientContext.adapt(context);
     final HttpRequest request = clientContext.getRequest();
     
@@ -135,7 +133,25 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
     log.debug("Do not retry, no allow rules matched");
     return false;
   }
-  
+
+  private boolean isRetriable(IOException exception) {
+    // Workaround for "recv failed" issue on hard-aborted sockets on Windows
+    // (and other operating systems, possibly).
+    // https://issues.apache.org/jira/browse/SOLR-13778
+    if (exception instanceof SSLException &&
+        Arrays.stream(exception.getSuppressed()).anyMatch((t) -> t instanceof SocketException)) {
+      return true;
+    }
+
+    // Fast check for exact class followed by slow-check with instanceof.
+    if (nonRetriableClasses.contains(exception.getClass())
+        || nonRetriableClasses.stream().anyMatch(rejectException -> rejectException.isInstance(exception))) {
+      return false;
+    }
+
+    return true;
+  }
+
   public int getRetryCount() {
     return retryCount;
   }

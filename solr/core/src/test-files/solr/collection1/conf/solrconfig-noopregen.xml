@@ -27,7 +27,7 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
   <query>
     <cache name="myPerSegmentCache" 
-           class="solr.LRUCache"
+           class="solr.CaffeineCache"
            size="3"
            initialSize="0"
            autowarmCount="100%"

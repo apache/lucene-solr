@@ -1,5 +1,7 @@
 = Solr Plugins
-:page-children: adding-custom-plugins-in-solrcloud-mode
+:page-children: libs, \
+    package-manager, \
+    cluster-plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -17,8 +19,44 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr allows you to load custom code to perform a variety of tasks within Solr, from custom Request Handlers to process your searches, to custom Analyzers and Token Filters for your text field. You can even load custom Field Types. These pieces of custom code are called plugins.
+One of Solr's strengths is providing a rich platform of functionality with the option of adding your own custom components running within Solr.
 
-Not everyone will need to create plugins for their Solr instances - what's provided is usually enough for most applications. However, if there's something that you need, you may want to review the Solr Wiki documentation on plugins at http://wiki.apache.org/solr/SolrPlugins[SolrPlugins].
+Solr calls such components *plugins* when the implementation is configurable.
+Surely you have seen many already throughout Solr's configuration via the "class" reference.
+Common examples are Request Handlers, Search Components, and Query Parsers to process your searches, and Token Filters for processing text.
 
-If you have a plugin you would like to use, and you are running in SolrCloud mode, you can use the Blob Store API and the Config API to load the jars to Solr. The commands to use are described in the section <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Adding Custom Plugins in SolrCloud Mode>>.
+Most apps don't need to create plugins because Solr offers a rich set of them built-in.
+However if you do, start by looking at the code for existing similar plugins.
+Writing your own is an advanced subject that is out of scope of the reference guide.
+One resource is the Solr Wiki documentation on plugins at https://cwiki.apache.org/confluence/display/solr/SolrPlugins[SolrPlugins], which is rather out-of-date but has some utility.
+
+== Types of Plugins ==
+
+There are essentially two types of plugins in Solr:
+
+* Collection level plugins. These are registered on individual collections, either by hand-editing the `solrconfig.xml` or schema files for the collection's configset or by using the <<config-api.adoc#config-api,config API>> or <<schema-api.adoc#schema-api,schema API>>. Examples of these are query parsers, request handlers, update request processors, value source parsers, response writers etc.
+
+* Cluster level (or Core Container level) plugins. These are plugins that are installed at a cluster level and every Solr node has one instance each of these plugins. Examples of these are <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication and authorization plugins>>, <<metrics-reporting.adoc#reporters,metrics reporters>>, https://issues.apache.org/jira/browse/SOLR-14404[cluster level request handlers] etc.
+
+== Installing Plugins ==
+
+Most plugins are built-in to Solr and there is nothing to install.
+The subject here is how to make other plugins available to Solr, including those in contrib modules.
+Plugins are packaged into a Java jar file and may have other dependent jar files to function.
+
+The next sections describe some options:
+
+* <<libs.adoc#lib-directories,Lib Directories>>:
+Describes where to put the plugin's JAR files on the file system; either in one of the special places or a place convenient to you along with a  `<lib/>` directive in `solrconfig.xml`.
+This has been the standard approach since Solr's inception.
+It's simple and reliable but it's entirely on you to ensure that all nodes in a cluster have them.
+Contrib modules ship with Solr so there's no effort for them but not so for other plugins (yours or 3rd party).
+
+* <<package-manager.adoc#package-manager,Package Management>>:
+Describes a new and experimental system to manage packages of plugins in SolrCloud.
+It includes CLI commands, cluster-wide installation, use of plugin registries that host plugins, cryptographically signed plugins for security, and more.
+Only some plugins support this as of now (support for more types of plugins coming soon).
+
+* <<cluster-plugins.adoc#cluster-plugins,Cluster Plugins>>:
+Describes the API used for managing cluster-level plugins such as request handlers,
+cluster-level event producer and replica placement plugins.

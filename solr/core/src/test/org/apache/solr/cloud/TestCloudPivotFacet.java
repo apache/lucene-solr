@@ -25,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -114,7 +115,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   //commented 2-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   public void test() throws Exception {
 
-    waitForThingsToLevelOut(30000); // TODO: why would we have to wait?
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS); // TODO: why would we have to wait?
     // 
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -361,7 +362,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
       // no stats for this pivot, nothing to check
 
       // TODO: use a trace param to know if/how-many to expect ?
-      log.info("No stats to check for => " + message);
+      log.info("No stats to check for => {}", message);
       return;
     }
     
@@ -379,7 +380,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
         // StatsComponent results being "null" (and not even included in the 
         // getFieldStatsInfo() Map due to specila SolrJ logic) 
 
-        log.info("Requested stats missing in verification query, pivot stats: " + pivotStats);
+        log.info("Requested stats missing in verification query, pivot stats: {}", pivotStats);
         assertEquals("Special Count", 0L, pivotStats.getCount().longValue());
         assertEquals("Special Missing", 
                      constraint.getCount(), pivotStats.getMissing().longValue());

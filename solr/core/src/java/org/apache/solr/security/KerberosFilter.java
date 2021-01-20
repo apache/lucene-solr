@@ -91,12 +91,14 @@ public class KerberosFilter extends AuthenticationFilter {
     if (authzPlugin instanceof RuleBasedAuthorizationPlugin) {
       RuleBasedAuthorizationPlugin ruleBased = (RuleBasedAuthorizationPlugin) authzPlugin;
       if (request.getHeader(KerberosPlugin.ORIGINAL_USER_PRINCIPAL_HEADER) != null &&
-          ruleBased.doesUserHavePermission(request.getUserPrincipal().getName(), PermissionNameProvider.Name.ALL)) {
+          ruleBased.doesUserHavePermission(request.getUserPrincipal(), PermissionNameProvider.Name.ALL)) {
         request = new HttpServletRequestWrapper(request) {
           @Override
           public Principal getUserPrincipal() {
             String originalUserPrincipal = originalRequest.getHeader(KerberosPlugin.ORIGINAL_USER_PRINCIPAL_HEADER);
-            log.info("Substituting user principal from {} to {}.", originalRequest.getUserPrincipal(), originalUserPrincipal);
+            if (log.isInfoEnabled()) {
+              log.info("Substituting user principal from {} to {}.", originalRequest.getUserPrincipal(), originalUserPrincipal);
+            }
             return new Principal() {
               @Override
               public String getName() {

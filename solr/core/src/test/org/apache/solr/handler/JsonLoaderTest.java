@@ -294,6 +294,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     String content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
+    @SuppressWarnings({"rawtypes"})
     Map obj = (Map) Utils.fromJSONString(content);
     assertEquals(Boolean.TRUE, obj.get("bool"));
     assertEquals("v0", obj.get("f0"));
@@ -418,6 +419,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       assertOnlyValue("i am the parent", parent, "name");
       assertOnlyValue("parent", parent, "cat");
 
+      @SuppressWarnings({"unchecked"})
       List<SolrInputDocument> childDocs1 = (List) ((parent.getField("children")).getValue());
 
       assertEquals(2, childDocs1.size());
@@ -434,6 +436,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         assertOnlyValue("test-new-label", child2, "test_s");
         assertOnlyValue("child", child2, "cat");
 
+        @SuppressWarnings({"unchecked"})
         List<SolrInputDocument> childDocs2 = (List) ((child2.getField("grandchildren")).getValue());
 
         assertEquals(1, childDocs2.size());
@@ -944,6 +947,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     SolrInputDocument one = add.solrDoc;
     assertEquals("1", one.getFieldValue("id"));
 
+    @SuppressWarnings({"unchecked"})
     List<SolrInputDocument> children = (List) one.getFieldValues("children");
     SolrInputDocument two = children.get(0);
     assertEquals("2", two.getFieldValue("id"));

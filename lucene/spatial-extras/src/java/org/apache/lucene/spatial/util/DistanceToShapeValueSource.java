@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -41,11 +40,11 @@ public class DistanceToShapeValueSource extends DoubleValuesSource {
   private final double multiplier;
   private final DistanceCalculator distCalc;
 
-  //TODO if DoubleValues returns NaN; will things be ok?
+  // TODO if DoubleValues returns NaN; will things be ok?
   private final double nullValue;
 
-  public DistanceToShapeValueSource(ShapeValuesSource shapeValueSource, Point queryPoint,
-                                    double multiplier, SpatialContext ctx) {
+  public DistanceToShapeValueSource(
+      ShapeValuesSource shapeValueSource, Point queryPoint, double multiplier, SpatialContext ctx) {
     this.shapeValueSource = shapeValueSource;
     this.queryPoint = queryPoint;
     this.multiplier = multiplier;
@@ -55,25 +54,34 @@ public class DistanceToShapeValueSource extends DoubleValuesSource {
 
   @Override
   public String toString() {
-    return "distance(" + queryPoint + " to " + shapeValueSource.toString() + ")*" + multiplier + ")";
+    return "distance("
+        + queryPoint
+        + " to "
+        + shapeValueSource.toString()
+        + ")*"
+        + multiplier
+        + ")";
   }
 
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
 
     final ShapeValues shapeValues = shapeValueSource.getValues(readerContext);
 
-    return DoubleValues.withDefault(new DoubleValues() {
-      @Override
-      public double doubleValue() throws IOException {
-        return distCalc.distance(queryPoint, shapeValues.value().getCenter()) * multiplier;
-      }
+    return DoubleValues.withDefault(
+        new DoubleValues() {
+          @Override
+          public double doubleValue() throws IOException {
+            return distCalc.distance(queryPoint, shapeValues.value().getCenter()) * multiplier;
+          }
 
-      @Override
-      public boolean advanceExact(int doc) throws IOException {
-        return shapeValues.advanceExact(doc);
-      }
-    }, nullValue);
+          @Override
+          public boolean advanceExact(int doc) throws IOException {
+            return shapeValues.advanceExact(doc);
+          }
+        },
+        nullValue);
   }
 
   @Override

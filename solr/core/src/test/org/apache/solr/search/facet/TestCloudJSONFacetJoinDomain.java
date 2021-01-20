@@ -109,6 +109,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -208,10 +209,45 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       SolrException e = expectThrows(SolrException.class, () -> {
           final SolrParams req = params("q", "*:*", "json.facet",
                                         "{ x : { type:terms, field:x_s, domain: { join:"+join+" } } }");
-          final NamedList trash = getRandClient(random()).request(new QueryRequest(req));
+          getRandClient(random()).request(new QueryRequest(req));
         });
       assertEquals(join + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
       assertTrue(join + " -> " + e, e.getMessage().contains("'join' domain change"));
+    }
+  }
+
+  public void testJoinMethodSyntax() throws Exception {
+    // 'method' value that doesn't exist at all
+    {
+      final String joinJson = "{from:foo, to:bar, method:invalidValue}";
+      SolrException e = expectThrows(SolrException.class, () -> {
+        final SolrParams req = params("q", "*:*", "json.facet",
+            "{ x : { type:terms, field:x_s, domain: { join:"+joinJson+" } } }");
+        getRandClient(random()).request(new QueryRequest(req));
+      });
+      assertEquals(joinJson + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(joinJson + " -> " + e, e.getMessage().contains("join method 'invalidValue' not supported"));
+    }
+
+    // 'method' value that exists on joins generally but isn't supported for join domain transforms
+    {
+      final String joinJson = "{from:foo, to:bar, method:crossCollection}";
+      SolrException e = expectThrows(SolrException.class, () -> {
+        final SolrParams req = params("q", "*:*", "json.facet",
+            "{ x : { type:terms, field:x_s, domain: { join:"+joinJson+" } } }");
+        getRandClient(random()).request(new QueryRequest(req));
+      });
+      assertEquals(joinJson + " -> " + e, SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue(joinJson + " -> " + e, e.getMessage().contains("Join method crossCollection not supported"));
+    }
+
+
+    // Valid, supported method value
+    {
+      final String joinJson = "{from:" +strfield(1)+ ", to:"+strfield(1)+", method:index}";
+        final SolrParams req = params("q", "*:*", "json.facet", "{ x : { type:terms, field:x_s, domain: { join:"+joinJson+" } } }");
+        getRandClient(random()).request(new QueryRequest(req));
+        // For the purposes of this test, we're not interested in the response so much as that Solr will accept a valid 'method' value
     }
   }
 
@@ -440,6 +476,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
     QueryResponse rsp = null;
     // JSON Facets not (currently) available from QueryResponse...
+    @SuppressWarnings({"rawtypes"})
     NamedList topNamedList = null;
     try {
       rsp = (new QueryRequest(initParams)).process(getRandClient(random()));
@@ -451,6 +488,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                  e.getMessage(), e);
     }
     try {
+      @SuppressWarnings({"rawtypes"})
       final NamedList facetResponse = (NamedList) topNamedList.get("facets");
       assertNotNull("null facet results?", facetResponse);
       assertEquals("numFound mismatch with top count?",
@@ -474,13 +512,15 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   private void assertFacetCountsAreCorrect(final AtomicInteger maxBucketsToCheck,
                                            final Map<String,TermFacet> expected,
                                            final SolrParams baseParams,
-                                           final NamedList actualFacetResponse) throws SolrServerException, IOException {
+                                           @SuppressWarnings({"rawtypes"})final NamedList actualFacetResponse) throws SolrServerException, IOException {
 
     for (Map.Entry<String,TermFacet> entry : expected.entrySet()) {
       final String facetKey = entry.getKey();
       final TermFacet facet = entry.getValue();
+      @SuppressWarnings({"rawtypes"})
       final NamedList results = (NamedList) actualFacetResponse.get(facetKey);
       assertNotNull(facetKey + " key missing from: " + actualFacetResponse, results);
+      @SuppressWarnings({"unchecked", "rawtypes"})
       final List<NamedList> buckets = (List<NamedList>) results.get("buckets");
       assertNotNull(facetKey + " has null buckets: " + actualFacetResponse, buckets);
 
@@ -492,7 +532,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                      0, docsWithField);
       }
       
-      for (NamedList bucket : buckets) {
+      for (@SuppressWarnings({"rawtypes"})NamedList bucket : buckets) {
         final long count = ((Number) bucket.get("count")).longValue();
         final String fieldVal = bucket.get("val").toString(); // int or stringified int
 

@@ -25,10 +25,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.apache.solr.common.util.NamedList;
-
-import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
 
 
 /**
@@ -101,8 +100,8 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    * set multiple fields with the included contents.  This will replace any existing 
    * field with the given name
    */
-  @SuppressWarnings("unchecked")
-  public void setField(String name, Object value) 
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public void setField(String name, Object value)
   {
     if( value instanceof Object[] ) {
       value = new ArrayList(Arrays.asList( (Object[])value ));
@@ -188,6 +187,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   public Object getFirstValue(String name) {
     Object v = _fields.get( name );
     if (v == null || !(v instanceof Collection)) return v;
+    @SuppressWarnings({"rawtypes"})
     Collection c = (Collection)v;
     if (c.size() > 0 ) {
       return c.iterator().next();
@@ -233,6 +233,33 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
   @Override
   public Iterator<Entry<String, Object>> iterator() {
     return _fields.entrySet().iterator();
+  }
+
+  /** Beta API; may change at will. */
+  // TODO SOLR-15063 reconcile SolrDocumentBase/SolrDocument/SolrInputDocument debacle
+  public void visitSelfAndNestedDocs(BiConsumer<String, SolrDocument> consumer) {
+    consumer.accept(null, this);
+    for (Entry<String, Object> keyVal : entrySet()) {
+      final Object value = keyVal.getValue();
+      if (value instanceof SolrDocument) {
+        consumer.accept(keyVal.getKey(), (SolrDocument) value);
+      } else if (value instanceof Collection) {
+        Collection<?> cVal = (Collection<?>) value;
+        for (Object v : cVal) {
+          if (v instanceof SolrDocument) {
+            consumer.accept(keyVal.getKey(), (SolrDocument) v);
+          } else {
+            break; // either they are all SolrDocs, or none are
+          }
+        }
+      }
+    }
+
+    if (_childDocuments != null) {
+      for (SolrDocument childDocument : _childDocuments) {
+        consumer.accept(null, childDocument);
+      }
+    }
   }
 
   //-----------------------------------------------------------------------------------------
@@ -289,14 +316,14 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
       /** Get the field Value */
       @Override
       public Object get(Object key) { 
-        return convertCharSeq(getFirstValue( (String)key));
+        return getFirstValue( (String)key);
       }
       
       // Easily Supported methods
       @Override
       public boolean containsKey(Object key) { return _fields.containsKey( key ); }
       @Override
-      public Set<String>  keySet()           { return (Set<String>) convertCharSeq(_fields.keySet());  }
+      public Set<String>  keySet()           { return _fields.keySet();  }
       @Override
       public int          size()             { return _fields.size();    }
       @Override
@@ -368,7 +395,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Object remove(Object key) {
-    return convertCharSeq(_fields.remove(key));
+    return _fields.remove(key);
   }
 
   @Override
@@ -378,7 +405,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
   @Override
   public Collection<Object> values() {
-    return convertCharSeq(_fields.values());
+    return _fields.values();
   }
 
   @Override
@@ -408,6 +435,8 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
    }
 
   @Override
+  
+  @Deprecated
   public int getChildDocumentCount() {
     if (_childDocuments == null) return 0;
     return _childDocuments.size();

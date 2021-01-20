@@ -29,7 +29,7 @@ public class TSTLookupFactory extends LookupFactory {
   private static final String FILENAME = "tst.dat";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     return new TSTLookup(getTempDir(), "suggester");
   }
 

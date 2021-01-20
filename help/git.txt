@@ -1,0 +1,27 @@
+git
+===
+
+A list of resources that may be helpful for those learning git:
+
+ - Dawid's task-oriented help:
+   https://github.com/dweiss/lucene-git-guides
+
+ - git for computer scientists (a nice writeup on how git is essentially a graph
+   of commits and labels attached to those commits):
+   https://eagain.net/articles/git-for-computer-scientists/
+
+ - git pro (book)
+   https://git-scm.com/book/en/v2
+
+ - git workflows, their pros and cons:
+   https://help.github.com/articles/what-is-a-good-git-workflow/
+
+
+git blame
+=========
+
+Git blame shows the last revision that touched a line in a given file. Certain
+reformatting commits may stand in the way here. Please issue the following
+command so that git ignores those irrelevant commits:
+
+git config blame.ignoreRevsFile .git-blame-ignore-revs

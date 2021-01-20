@@ -396,9 +396,15 @@ Correlation is a measure of the linear correlation between two vectors. Correlat
 
 Three correlation types are supported:
 
+<<<<<<< HEAD
 * *pearsons* (default)
 * *kendalls*
 * *spearmans*
+=======
+The example below uses arrays created by the `array` function. Its important to note that
+vectorized data from SolrCloud collections can be used with any function that
+operates on arrays.
+>>>>>>> master
 
 The type of correlation is specified by adding the *type* named parameter in the
 function call.

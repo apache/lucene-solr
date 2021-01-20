@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.de;
 
-
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link GermanNormalizationFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_denorm" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,7 +30,8 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.LowerCaseFilterFactory"/&gt;
  *     &lt;filter class="solr.GermanNormalizationFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
+ * &lt;/fieldType&gt;</pre>
+ *
  * @since 3.6.0
  * @lucene.spi {@value #NAME}
  */
@@ -41,13 +41,18 @@ public class GermanNormalizationFilterFactory extends TokenFilterFactory {
   public static final String NAME = "germanNormalization";
 
   /** Creates a new GermanNormalizationFilterFactory */
-  public GermanNormalizationFilterFactory(Map<String,String> args) {
+  public GermanNormalizationFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
+  /** Default ctor for compatibility with SPI */
+  public GermanNormalizationFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);

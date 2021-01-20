@@ -239,9 +239,21 @@ public class FunctionQParser extends QParser {
    * @return List&lt;ValueSource&gt;
    */
   public List<ValueSource> parseValueSourceList() throws SyntaxError {
+    return parseValueSourceList(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER);
+  }
+
+  /**
+   * Parse a list of ValueSource.  Must be the final set of arguments
+   * to a ValueSource.
+   *
+   * @param flags - customize parsing behavior
+   *
+   * @return List&lt;ValueSource&gt;
+   */
+  public List<ValueSource> parseValueSourceList(int flags) throws SyntaxError {
     List<ValueSource> sources = new ArrayList<>(3);
     while (hasMoreArguments()) {
-      sources.add(parseValueSource(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER));
+      sources.add(parseValueSource(flags));
     }
     return sources;
   }
@@ -327,7 +339,7 @@ public class FunctionQParser extends QParser {
     if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
-        valueSource = new LongConstValueSource(num.longValue());
+        valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());
       } else if (num instanceof Double) {
         valueSource = new DoubleConstValueSource(num.doubleValue());
       } else {
@@ -344,15 +356,23 @@ public class FunctionQParser extends QParser {
         throw new SyntaxError("Missing param " + param + " while parsing function '" + sp.val + "'");
       }
 
-      QParser subParser = subQuery(val, "func");
-      if (subParser instanceof FunctionQParser) {
-        ((FunctionQParser)subParser).setParseMultipleSources(true);
-      }
-      Query subQuery = subParser.getQuery();
-      if (subQuery instanceof FunctionQuery) {
-        valueSource = ((FunctionQuery) subQuery).getValueSource();
+      if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0 && req.getSchema().getFieldOrNull(val) != null) {
+        // Don't try to create a ValueSource for the field, just use a placeholder.
+        // this handles the case like x=myfunc($qq)&qq=something
+        valueSource = new FieldNameValueSource(val);
       } else {
-        valueSource = new QueryValueSource(subQuery, 0.0f);
+        QParser subParser = subQuery(val, "func");
+        if (subParser instanceof FunctionQParser) {
+          ((FunctionQParser) subParser).setParseMultipleSources(true);
+        }
+        Query subQuery = subParser.getQuery();
+        if (subQuery == null) {
+          valueSource = new ConstValueSource(0.0f);
+        } else if (subQuery instanceof FunctionQuery) {
+          valueSource = ((FunctionQuery) subQuery).getValueSource();
+        } else {
+          valueSource = new QueryValueSource(subQuery, 0.0f);
+        }
       }
 
       /***
@@ -399,9 +419,9 @@ public class FunctionQParser extends QParser {
         sp.expect(")");
       } else {
         if ("true".equals(id)) {
-          valueSource = new BoolConstValueSource(true);
+          valueSource = ValueSourceParser.BoolConstValueSource.TRUE;
         } else if ("false".equals(id)) {
-          valueSource = new BoolConstValueSource(false);
+          valueSource = ValueSourceParser.BoolConstValueSource.FALSE;
         } else {
           if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0) {
             // Don't try to create a ValueSource for the field, just use a placeholder.
@@ -424,31 +444,33 @@ public class FunctionQParser extends QParser {
 
   /** @lucene.experimental */
   public AggValueSource parseAgg(int flags) throws SyntaxError {
-    String id = sp.getId();
+    String origId = sp.getId();
     AggValueSource vs = null;
-    boolean hasParen = false;
+    boolean hasParen;
 
-    if ("agg".equals(id)) {
+    if ("agg".equals(origId)) {
       hasParen = sp.opt("(");
       vs = parseAgg(flags | FLAG_IS_AGG);
     } else {
       // parse as an aggregation...
-      if (!id.startsWith("agg_")) {
-        id = "agg_" + id;
-      }
-
+      String id = origId.startsWith("agg_")? origId: "agg_" + origId;
       hasParen = sp.opt("(");
 
       ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
       if (argParser == null) {
-        throw new SyntaxError("Unknown aggregation " + id + " in (" + sp + ")");
+        argParser = req.getCore().getValueSourceParser(origId);
+        if (argParser == null) {
+          throw new SyntaxError("Unknown aggregation '" + origId + "' in input (" + sp + ")");
+        } else {
+          throw new SyntaxError("Expected multi-doc aggregation from '" +  origId +
+              "' but got per-doc function in input (" + sp + ")");
+        }
       }
 
       ValueSource vv = argParser.parse(this);
       if (!(vv instanceof AggValueSource)) {
-        if (argParser == null) { // why this??
-          throw new SyntaxError("Expected aggregation from " + id + " but got (" + vv + ") in (" + sp + ")");
-        }
+        throw new SyntaxError("Expected multi-doc aggregation from '" + origId +
+            "' but got (" + vv + ") in (" + sp + ")");
       }
       vs = (AggValueSource) vv;
     }

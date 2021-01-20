@@ -131,12 +131,11 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   //       contained in an array or map, a negative value indicates
   //       that the size could not be reliably determined.
   //
-
+  
   @Override
   public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore) throws IOException
-  {
-    writeMapOpener((maxScore==null) ? 3 : 4);
+      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
+    writeMapOpener(headerSize(maxScore, numFoundExact));
     incLevel();
     writeKey("numFound",false);
     writeLong(null,numFound);
@@ -144,17 +143,29 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     writeKey("start",false);
     writeLong(null,start);
 
-    if (maxScore!=null) {
+    if (maxScore != null) {
       writeMapSeparator();
       writeKey("maxScore",false);
       writeFloat(null,maxScore);
     }
+    
+    if (numFoundExact != null) {
+      writeMapSeparator();
+      writeKey("numFoundExact",false);
+      writeBool(null, numFoundExact);
+    }
     writeMapSeparator();
-    // indent();
     writeKey("docs",false);
     writeArrayOpener(size);
 
     incLevel();
+  } 
+
+  protected int headerSize(Float maxScore, Boolean numFoundExact) {
+    int headerSize = 3;
+    if (maxScore != null) headerSize++;
+    if (numFoundExact != null) headerSize++;
+    return headerSize;
   }
 
   @Override

@@ -86,7 +86,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     // Need enough shards that we have some shards that don't have any docs on them.
     CollectionAdminRequest.createCollection(COLLECTION, "conf1", 4, 1)
-        .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(COLLECTION, 4, 4);
@@ -179,7 +178,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
-    Solr11035BandAid(client, COLLECTION, "id", 0, "*:*", "DocValuesNotINdexedTest.clean");
     resetFields(fieldsToTestSingle);
     resetFields(fieldsToTestMulti);
     resetFields(fieldsToTestGroupSortFirst);
@@ -255,7 +253,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(docs)
         .commit(client, COLLECTION);
-    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*", "DocValuesNotINdexedTest.testGroupSorting");
 
     checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
     checkSortOrder(client, fieldsToTestGroupSortFirst, "desc", new String[]{"3", "1", "2", "4"}, new String[]{"2", "3", "1", "4"});
@@ -298,7 +295,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .add(docs)
         .commit(client, COLLECTION);
 
-    Solr11035BandAid(client, COLLECTION, "id", 4, "*:*", "DocValuesNotINdexedTest.testGroupingDocAbsent");
     // when grouping on any of these DV-only (not indexed) fields we expect exactly 4 groups except for Boolean.
     for (FieldProps prop : fieldsToTestGroupSortFirst) {
       // Special handling until SOLR-9802 is fixed
@@ -361,8 +357,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     new UpdateRequest()
         .add(docs)
         .commit(client, COLLECTION);
-
-    Solr11035BandAid(client, COLLECTION,"id", 59, "*:*", "DocValuesNotINdexedTest.doGroupingDvOnly");
 
     // OK, we should have one group with 10 entries for null, a group with 1 entry and 7 groups with 7
     for (FieldProps prop : fieldProps) {

@@ -51,7 +51,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private void createCollection(String collection) throws IOException, SolrServerException {
     assertEquals(0, CollectionAdminRequest.createCollection(collection,
         "conf", 2, 1)
-        .setMaxShardsPerNode(1).process(cluster.getSolrClient()).getStatus());
+        .process(cluster.getSolrClient()).getStatus());
     for (int i = 1; i < NUM_REPLICAS_OF_SHARD1; i++) {
       assertTrue(
           CollectionAdminRequest.addReplicaToShard(collection, "shard1").process(cluster.getSolrClient()).isSuccess()

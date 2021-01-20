@@ -16,11 +16,6 @@
  */
 package org.apache.solr.security.hadoop;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,6 +23,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,9 +37,9 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    HdfsTestUtil.checkAssumptions();
 
-    setupMiniKdc();
+    kerberosTestServices = KerberosUtils.setupMiniKdc(createTempDir());
 
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
@@ -54,53 +50,8 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    System.clearProperty("java.security.auth.login.config");
-    System.clearProperty("solr.kerberos.principal");
-    System.clearProperty("solr.kerberos.keytab");
-    System.clearProperty("solr.kerberos.name.rules");
-    System.clearProperty("solr.jaas.debug");
-    if (kerberosTestServices != null) {
-      kerberosTestServices.stop();
-    }
+    KerberosUtils.cleanupMiniKdc(kerberosTestServices);
     kerberosTestServices = null;
-  }
-
-  private static void setupMiniKdc() throws Exception {
-    System.setProperty("solr.jaas.debug", "true");
-    String kdcDir = createTempDir()+File.separator+"minikdc";
-    String solrClientPrincipal = "solr";
-    File keytabFile = new File(kdcDir, "keytabs");
-    kerberosTestServices = KerberosTestServices.builder()
-        .withKdc(new File(kdcDir))
-        .withJaasConfiguration(solrClientPrincipal, keytabFile, "SolrClient")
-        .build();
-    String solrServerPrincipal = "HTTP/127.0.0.1";
-    kerberosTestServices.start();
-    kerberosTestServices.getKdc().createPrincipal(keytabFile, solrServerPrincipal, solrClientPrincipal);
-
-    String jaas = "SolrClient {\n"
-        + " com.sun.security.auth.module.Krb5LoginModule required\n"
-        + " useKeyTab=true\n"
-        + " keyTab=\"" + keytabFile.getAbsolutePath() + "\"\n"
-        + " storeKey=true\n"
-        + " useTicketCache=false\n"
-        + " doNotPrompt=true\n"
-        + " debug=true\n"
-        + " principal=\"" + solrClientPrincipal + "\";\n"
-        + "};";
-
-    String jaasFilePath = kdcDir+File.separator+"jaas-client.conf";
-    FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
-    System.setProperty("java.security.auth.login.config", jaasFilePath);
-    System.setProperty("solr.kerberos.jaas.appname", "SolrClient"); // Get this app name from the jaas file
-
-    System.setProperty("solr.kerberos.principal", solrServerPrincipal);
-    System.setProperty("solr.kerberos.keytab", keytabFile.getAbsolutePath());
-    // Extracts 127.0.0.1 from HTTP/127.0.0.1@EXAMPLE.COM
-    System.setProperty("solr.kerberos.name.rules", "RULE:[1:$1@$0](.*EXAMPLE.COM)s/@.*//"
-        + "\nRULE:[2:$2@$0](.*EXAMPLE.COM)s/@.*//"
-        + "\nDEFAULT"
-        );
   }
 
   @Test
@@ -119,13 +70,13 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
         NUM_SHARDS, REPLICATION_FACTOR);
     create.process(solrClient);
     // The metrics counter for wrong credentials here really just means  
-    assertAuthMetricsMinimums(6, 3, 0, 3, 0, 0);
+    assertAuthMetricsMinimums(4, 2, 0, 2, 0, 0);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     solrClient.add(collectionName, doc);
     solrClient.commit(collectionName);
-    assertAuthMetricsMinimums(10, 5, 0, 5, 0, 0);
+    assertAuthMetricsMinimums(8, 4, 0, 4, 0, 0);
 
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -135,7 +86,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     CollectionAdminRequest.Delete deleteReq = CollectionAdminRequest.deleteCollection(collectionName);
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
-        solrClient.getZkStateReader(), true, true, 330);
-    assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
-  }
+        solrClient.getZkStateReader(), true, 330);
+    // cookie was used to avoid re-authentication
+    assertAuthMetricsMinimums(11, 7, 0, 4, 0, 0);  }
 }

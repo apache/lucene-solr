@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.junit.Before;
@@ -48,20 +49,28 @@ public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
       }
     }
     assertU(commit());
-    assertQ(
-        req(
-            SpellCheckComponent.COMPONENT_NAME, "true",
-            SpellCheckComponent.SPELLCHECK_DICT, "direct",
-            SpellingParams.SPELLCHECK_COUNT, "10",
-            SpellingParams.SPELLCHECK_COLLATE, "true",
-            SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "5",
-            SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
-            CommonParams.Q, "a_s:lpve",
-            CommonParams.QT, "/spellCheckCompRH_Direct",
-            SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "5",
-            CommonParams.FQ, "{!collapse field=group_i}",
-            "expand", "true"),
-        "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='a_s:love'");
+
+    for (SolrParams params : new SolrParams[]{
+        params(CommonParams.FQ, "{!collapse field=group_i}"),
+        params(CommonParams.FQ, "${bleh}", "bleh", "{!collapse field=group_i}"), // substitution
+        params(CommonParams.FQ, "{!tag=collapser}{!collapse field=group_i}"), // with tag & collapse in localparams
+        params(CommonParams.FQ, "{!collapse tag=collapser field=group_i}")
+    }) {
+      assertQ(
+          req(params,
+              SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_DICT, "direct",
+          SpellingParams.SPELLCHECK_COUNT, "10",
+          SpellingParams.SPELLCHECK_COLLATE, "true",
+          SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, "5",
+          SpellingParams.SPELLCHECK_MAX_COLLATIONS, "1",
+          CommonParams.Q, "a_s:lpve",
+          CommonParams.QT, "/spellCheckCompRH_Direct",
+          SpellingParams.SPELLCHECK_COLLATE_MAX_COLLECT_DOCS, "5",
+          "expand", "true"),
+          "//lst[@name='spellcheck']/lst[@name='collations']/str[@name='collation']='a_s:love'"
+      );
+    }
   }
 
 }

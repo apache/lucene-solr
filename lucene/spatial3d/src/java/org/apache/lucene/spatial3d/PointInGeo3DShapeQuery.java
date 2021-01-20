@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -29,22 +28,22 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
-import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** Finds all previously indexed points that fall within the specified polygon.
+/**
+ * Finds all previously indexed points that fall within the specified polygon.
  *
  * <p>The field must be indexed using {@link Geo3DPoint}.
  *
- * @lucene.experimental */
-
+ * @lucene.experimental
+ */
 final class PointInGeo3DShapeQuery extends Query implements Accountable {
-  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInGeo3DShapeQuery.class);
+  private static final long BASE_RAM_BYTES =
+      RamUsageEstimator.shallowSizeOfInstance(PointInGeo3DShapeQuery.class);
 
   final String field;
   final GeoShape shape;
@@ -56,13 +55,6 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
     this.shape = shape;
     this.shapeBounds = new XYZBounds();
     shape.getBounds(shapeBounds);
-
-    if (shape instanceof BasePlanetObject) {
-      BasePlanetObject planetObject = (BasePlanetObject) shape;
-      if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
-        throw new IllegalArgumentException("this qurey requires PlanetModel.WGS84, but got: " + planetObject.getPlanetModel());
-      }
-    }
   }
 
   @Override
@@ -73,10 +65,11 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
 
-    // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
-    // used in the first pass:
+    // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this
+    // is an inverted structure and should be used in the first pass:
 
     return new ConstantScoreWeight(this, boost) {
 
@@ -121,7 +114,6 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 
@@ -135,13 +127,11 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) &&
-           equalsTo(getClass().cast(other));
+    return sameClassAs(other) && equalsTo(getClass().cast(other));
   }
-  
+
   private boolean equalsTo(PointInGeo3DShapeQuery other) {
-    return field.equals(other.field) &&
-           shape.equals(other.shape);
+    return field.equals(other.field) && shape.equals(other.shape);
   }
 
   @Override
@@ -169,9 +159,9 @@ final class PointInGeo3DShapeQuery extends Query implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES +
-        RamUsageEstimator.sizeOfObject(field) +
-        RamUsageEstimator.sizeOfObject(shape) +
-        RamUsageEstimator.sizeOfObject(shapeBounds);
+    return BASE_RAM_BYTES
+        + RamUsageEstimator.sizeOfObject(field)
+        + RamUsageEstimator.sizeOfObject(shape)
+        + RamUsageEstimator.sizeOfObject(shapeBounds);
   }
 }

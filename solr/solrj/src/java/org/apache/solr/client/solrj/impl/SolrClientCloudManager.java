@@ -37,8 +37,8 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -61,22 +61,36 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
+  private final boolean closeObjectCache;
   private volatile boolean isClosed;
 
   public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient) {
+    this(queueFactory, solrClient, null);
+  }
+
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, CloudSolrClient solrClient,
+                                ObjectCache objectCache) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
     this.zkStateReader = solrClient.getZkStateReader();
     this.zkClient = zkStateReader.getZkClient();
     this.stateManager = new ZkDistribStateManager(zkClient);
     this.isClosed = false;
-    this.objectCache = new ObjectCache();
+    if (objectCache == null) {
+      this.objectCache = new ObjectCache();
+      closeObjectCache = true;
+    } else {
+      this.objectCache = objectCache;
+      this.closeObjectCache = false;
+    }
   }
 
   @Override
   public void close() {
     isClosed = true;
-    IOUtils.closeQuietly(objectCache);
+    if (closeObjectCache) {
+      IOUtils.closeQuietly(objectCache);
+    }
   }
 
   @Override
@@ -110,7 +124,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   @Override
-  public SolrResponse request(SolrRequest req) throws IOException {
+  public SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException {
     try {
       return req.process(solrClient);
     } catch (SolrServerException e) {
@@ -172,6 +186,9 @@ public class SolrClientCloudManager implements SolrCloudManager {
     } else {
       return EMPTY;
     }
+  }
+  public SolrZkClient getZkClient() {
+    return zkClient;
   }
 
   @Override

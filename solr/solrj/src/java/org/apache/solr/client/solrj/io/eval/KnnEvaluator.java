@@ -52,6 +52,7 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
     }
 
     if(values[1] instanceof List) {
+      @SuppressWarnings({"unchecked"})
       List<Number> nums = (List<Number>)values[1];
       vec = new double[nums.size()];
       for(int i=0; i<nums.size(); i++) {
@@ -84,7 +85,7 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
                               DistanceMeasure distanceMeasure) {
 
     double[][] data = observations.getData();
-    TreeSet<Neighbor> neighbors = new TreeSet();
+    TreeSet<Neighbor> neighbors = new TreeSet<>();
     for(int i=0; i<data.length; i++) {
       double distance = distanceMeasure.compute(vec, data[i]);
       neighbors.add(new Neighbor(i, distance));
@@ -95,9 +96,9 @@ public class KnnEvaluator extends RecursiveObjectEvaluator implements ManyValueW
 
     double[][] out = new double[neighbors.size()][];
     List<String> rowLabels = observations.getRowLabels();
-    List<String> newRowLabels = new ArrayList();
-    List<Number> indexes = new ArrayList();
-    List<Number> distances = new ArrayList();
+    List<String> newRowLabels = new ArrayList<>();
+    List<Number> indexes = new ArrayList<>();
+    List<Number> distances = new ArrayList<>();
     int i=-1;
 
     while(neighbors.size() > 0) {

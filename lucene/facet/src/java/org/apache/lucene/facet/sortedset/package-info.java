@@ -16,7 +16,7 @@
  */
 
 /**
- * Provides faceting capabilities over facets that were indexed 
- * with {@link org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField}.
+ * Provides faceting capabilities over facets that were indexed with {@link
+ * org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField}.
  */
 package org.apache.lucene.facet.sortedset;

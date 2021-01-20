@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.QueryVisitor;
 
 class ExtendedIntervalsSource extends IntervalsSource {
@@ -49,12 +47,14 @@ class ExtendedIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator in = source.matches(field, ctx, doc);
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc)
+      throws IOException {
+    IntervalMatchesIterator in = source.matches(field, ctx, doc);
     if (in == null) {
       return null;
     }
-    IntervalIterator wrapped = new ExtendedIntervalIterator(IntervalMatches.wrapMatches(in, doc), before, after);
+    IntervalIterator wrapped =
+        new ExtendedIntervalIterator(IntervalMatches.wrapMatches(in, doc), before, after);
     return IntervalMatches.asMatches(wrapped, in, doc);
   }
 
@@ -78,7 +78,9 @@ class ExtendedIntervalsSource extends IntervalsSource {
     if (inner.size() == 0) {
       return Collections.singleton(this);
     }
-    return inner.stream().map(s -> new ExtendedIntervalsSource(s, before, after)).collect(Collectors.toSet());
+    return inner.stream()
+        .map(s -> new ExtendedIntervalsSource(s, before, after))
+        .collect(Collectors.toSet());
   }
 
   @Override
@@ -86,9 +88,7 @@ class ExtendedIntervalsSource extends IntervalsSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ExtendedIntervalsSource that = (ExtendedIntervalsSource) o;
-    return before == that.before &&
-        after == that.after &&
-        Objects.equals(source, that.source);
+    return before == that.before && after == that.after && Objects.equals(source, that.source);
   }
 
   @Override

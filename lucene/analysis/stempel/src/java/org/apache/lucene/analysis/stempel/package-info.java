@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Stempel: Algorithmic Stemmer
- */
+/** Stempel: Algorithmic Stemmer */
 package org.apache.lucene.analysis.stempel;

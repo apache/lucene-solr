@@ -1,5 +1,4 @@
 = Major Changes in Solr 8
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -23,11 +22,11 @@ This page highlights the biggest changes, including new features you may want to
 
 == Solr 8 Upgrade Planning
 
-Before staring an upgrade to Solr 8, please take the time to review all information about changes from the version you are currently on up to Solr 8.
+Before starting an upgrade to Solr 8, please take the time to review all information about changes from the version you are currently on up to Solr 8.
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 7.4, you should review changes made in all subsequent 7.x releases in addition to changes for 8.0.
 
-A thorough review of the list in <<Major Changes in Earlier 7.x Versions>>, below, as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 8.
+A thorough review of the list in <<Major Changes in Earlier 7.x Versions>>, below, as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] in your Solr instance will help you plan your migration to Solr 8.
 
 === Upgrade Prerequisites
 
@@ -80,7 +79,7 @@ In order to support SSL over HTTP/2 connections, Solr uses ALPN.
 Java 8 does not include an implementation of ALPN, therefore Solr will start with HTTP/1 only when SSL is enabled and Java 8 is in use.
 
 ==== Client Changes for HTTP/2
-{solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
+{solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
 with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
 `HttpSolrClient` and `ConcurrentUpdateSolrClient` for sending most internal requests (sent by
 `UpdateShardHandler` and `HttpShardHandler`).
@@ -89,9 +88,9 @@ However this causes the following changes in configuration and authentication se
 
 * The `updateShardHandler` parameter `maxConnections` is no longer used and has been removed.
 * The `HttpShardHandler` parameter `maxConnections` parameter is no longer being used and has been removed.
-*  Custom {solr-javadocs}/solr-core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
+*  Custom {solr-javadocs}/core/org/apache/solr/security/AuthenticationPlugin.html[`AuthenticationPlugin`]
 implementations must provide their own setup for `Http2SolrClient` through implementing
-{solr-javadocs}/solr-core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
+{solr-javadocs}/core/org/apache/solr/security/HttpClientBuilderPlugin.html[`HttpClientBuilderPlugin.setup`], or
 internal requests will not be able to be authenticated.
 
 ==== Metrics Changes for HTTP/2
@@ -192,7 +191,7 @@ This syntax has been removed entirely and if sent to Solr it will now produce an
 The pattern language is very similar but not the same.
 Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and that's it.
 +
-For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, or simply examine the `_default` configSet (found in `server/solr/configsets`).
+For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, or simply examine the `_default` configset (found in `server/solr/configsets`).
 +
 Also note that the default set of date patterns (formats) have expanded from previous releases to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
 
@@ -257,8 +256,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 * A new command-line option is available via `bin/solr autoscaling` to calculate autoscaling policy suggestions and diagnostic information outside of the running Solr cluster. This option can use the existing autoscaling policy, or test the impact of a new one from a file located on the server filesystem.
-+
-These options have been documented in the section <<solrcloud-autoscaling-policy-preferences.adoc#testing-autoscaling-configuration-and-suggestions,Testing Autoscaling Configuration and Suggestions>>.
 
 === Dependency Updates in 8.0
 
@@ -272,7 +269,7 @@ Please be sure to review this list so you understand what may have changed betwe
 
 === Solr 7.7
 
-See the https://wiki.apache.org/solr/ReleaseNote77[7.7 Release Notes] for an overview of the main new features in Solr 7.7.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote77[7.7 Release Notes] for an overview of the main new features in Solr 7.7.
 
 When upgrading to Solr 7.7.x, users should be aware of the following major changes from v7.6:
 
@@ -294,7 +291,7 @@ For more information, see the <<distributed-requests.adoc#configuring-the-shardh
 
 === Solr 7.6
 
-See the https://wiki.apache.org/solr/ReleaseNote76[7.6 Release Notes] for an overview of the main new features in Solr 7.6.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote76[7.6 Release Notes] for an overview of the main new features in Solr 7.6.
 
 When upgrading to Solr 7.6, users should be aware of the following major changes from v7.5:
 
@@ -351,7 +348,7 @@ For more information about the directory factory configuration in Solr, see the 
 
 === Solr 7.5
 
-See the https://wiki.apache.org/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote75[7.5 Release Notes] for an overview of the main new features in Solr 7.5.
 
 When upgrading to Solr 7.5, users should be aware of the following major changes from v7.4:
 
@@ -381,7 +378,7 @@ The `TieredMergePolicy` will also reclaim resources from segments that exceed `m
 
 === Solr 7.4
 
-See the https://wiki.apache.org/solr/ReleaseNote74[7.4 Release Notes] for an overview of the main new features in Solr 7.4.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote74[7.4 Release Notes] for an overview of the main new features in Solr 7.4.
 
 When upgrading to Solr 7.4, users should be aware of the following major changes from v7.3:
 
@@ -393,17 +390,17 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Legacy Scaling (non-SolrCloud)*
 
-* In the <<index-replication.adoc#index-replication,master-slave model>> of scaling Solr, a slave no longer commits an empty index when a completely new index is detected on master during replication. To return to the previous behavior pass `false` to `skipCommitOnMasterVersionZero` in the slave section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the <<index-replication.adoc#index-replication,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 
 === Solr 7.3
 
-See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote73[7.3 Release Notes] for an overview of the main new features in Solr 7.3.
 
 When upgrading to Solr 7.3, users should be aware of the following major changes from v7.2:
 
-*ConfigSets*
+*Configsets*
 
 * Collections created without specifying a configset name have used a copy of the `_default` configset since Solr 7.0. Before 7.3, the copied configset was named the same as the collection name, but from 7.3 onwards it will be named with a new ".AUTOCREATED" suffix. This is to prevent overwriting custom configset names.
 
@@ -415,7 +412,7 @@ When upgrading to Solr 7.3, users should be aware of the following major changes
 
 * The behaviour of the autoscaling system will now pause all triggers from execution between the start of actions and the end of a cool down period. The triggers will resume after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event completed and during this time all triggers continued to run but any events were rejected and tried later.
 
-* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the <<solrcloud-autoscaling-api.adoc#change-autoscaling-properties,`set-properties` Autoscaling API>> which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
+* The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the `actionThrottlePeriodSeconds` setting in the Autoscaling API which is now non-operational. Use the `triggerCooldownPeriodSeconds` parameter instead to pause event processing.
 
 * The default value of `autoReplicaFailoverWaitAfterExpiration`, used with the AutoAddReplicas feature, has increased to 120 seconds from the previous default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown.
 
@@ -443,7 +440,7 @@ If you are upgrading from a version earlier than Solr 7.2, please see previous v
 
 === Solr 7.2
 
-See the https://wiki.apache.org/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote72[7.2 Release Notes] for an overview of the main new features in Solr 7.2.
 
 When upgrading to Solr 7.2, users should be aware of the following major changes from v7.1:
 
@@ -469,7 +466,7 @@ If you are upgrading from a version earlier than Solr 7.1, please see previous v
 
 === Solr 7.1
 
-See the https://wiki.apache.org/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
+See the https://cwiki.apache.org/confluence/display/solr/ReleaseNote71[7.1 Release Notes] for an overview of the main new features of Solr 7.1.
 
 When upgrading to Solr 7.1, users should be aware of the following major changes from v7.0:
 
@@ -481,8 +478,6 @@ Existing users of this feature should not have to change anything. However, they
 
 ** Behavior: Changing the `autoAddReplicas` property from disabled (`false`) to enabled (`true`) using <<collection-management.adoc#modifycollection,MODIFYCOLLECTION API>> no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while `autoAddReplicas` was enabled. The parameters `autoReplicaFailoverBadNodeExpiration` and `autoReplicaFailoverWorkLoopDelay` are no longer used.
 ** Deprecations: Enabling/disabling autoAddReplicas cluster-wide with the API will be deprecated; use suspend/resume trigger APIs with `name=".auto_add_replicas"` instead.
-+
-More information about the changes to this feature can be found in the section <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,SolrCloud Automatically Adding Replicas>>.
 
 *Metrics Reporters*
 
@@ -498,7 +493,7 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 
 *ReplicationHandler*
 
-* In the ReplicationHandler, the `master.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (master, slave, cloud).
+* In the ReplicationHandler, the `leader.commitReserveDuration` sub-element is deprecated. Instead please configure a direct `commitReserveDuration` element for use in all modes (leader, follower, cloud).
 
 *RunExecutableListener*
 

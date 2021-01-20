@@ -80,7 +80,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 2 * RamUsageEstimator.NUM_BYTES_INT     // valueCount,bitsPerValue
+        + 2 * Integer.BYTES     // valueCount,bitsPerValue
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
         + RamUsageEstimator.sizeOf(blocks);
   }
@@ -109,6 +109,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
     // bulk get
     assert index %% valuesPerBlock == 0;
+    @SuppressWarnings("deprecation")
     final PackedInts.Decoder decoder = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
     assert decoder.longBlockCount() == 1;
     assert decoder.longValueCount() == valuesPerBlock;
@@ -153,6 +154,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
 
     // bulk set
     assert index %% valuesPerBlock == 0;
+    @SuppressWarnings("deprecation")
     final BulkOperation op = BulkOperation.of(PackedInts.Format.PACKED_SINGLE_BLOCK, bitsPerValue);
     assert op.longBlockCount() == 1;
     assert op.longValueCount() == valuesPerBlock;
@@ -214,6 +216,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   protected PackedInts.Format getFormat() {
     return PackedInts.Format.PACKED_SINGLE_BLOCK;
   }

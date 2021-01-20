@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
+import java.util.Properties;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.SortField;
-
-import java.util.Properties;
 
 public class SearchWithSortTaskTest extends BenchmarkTestCase {
 

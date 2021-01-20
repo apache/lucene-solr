@@ -54,6 +54,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object ... values) throws IOException {
 
     if(values.length < 3) {
@@ -105,6 +106,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
       outcomeData[i] = outcomes.get(i).doubleValue();
     }
 
+    @SuppressWarnings({"rawtypes"})
     Map map = new HashMap();
     map.put("k", k);
     map.put("observations", observations.getRowCount());
@@ -222,6 +224,7 @@ public class KnnRegressionEvaluator extends RecursiveObjectEvaluator implements 
 
       Matrix obs = scaledObservations != null ? scaledObservations : observations;
       Matrix knn = KnnEvaluator.search(obs, values, k, distanceMeasure);
+      @SuppressWarnings({"unchecked"})
       List<Number> indexes = (List<Number>)knn.getAttribute("indexes");
 
       if(robust) {

@@ -18,20 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -40,17 +26,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -78,6 +61,18 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -88,17 +83,18 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     // TODO maybe we can inherit createCollection's options/code
 
     String restoreCollectionName = message.getStr(COLLECTION_PROP);
     String backupName = message.getStr(NAME); // of backup
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
+    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
-    BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
+    BackupRepository repository = cc.newBackupRepository(repo);
 
     URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
     URI backupPath = repository.resolve(location, backupName);
@@ -107,12 +103,20 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     Properties properties = backupMgr.readBackupProperties(location, backupName);
     String backupCollection = properties.getProperty(BackupManager.COLLECTION_NAME_PROP);
+
+    // Test if the collection is of stateFormat 1 (i.e. not 2) supported pre Solr 9, in which case can't restore it.
+    Object format = properties.get("stateFormat");
+    if (format != null && !"2".equals(format)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Collection " + backupCollection + " is in stateFormat=" + format +
+              " no longer supported in Solr 9 and above. It can't be restored. If it originates in Solr 8 you can restore" +
+              " it there, migrate it to stateFormat=2 and backup again, it will then be restorable on Solr 9");
+    }
     String backupCollectionAlias = properties.getProperty(BackupManager.COLLECTION_ALIAS_PROP);
     DocCollection backupCollectionState = backupMgr.readCollectionState(location, backupName, backupCollection);
 
     // Get the Solr nodes to restore a collection.
     final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
-        zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
+            zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
 
     int numShards = backupCollectionState.getActiveSlices().size();
 
@@ -130,16 +134,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     int numPullReplicas = getInt(message, PULL_REPLICAS, backupCollectionState.getNumPullReplicas(), 0);
     int totalReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     assert totalReplicasPerShard > 0;
-    
-    int maxShardsPerNode = message.getInt(MAX_SHARDS_PER_NODE, backupCollectionState.getMaxShardsPerNode());
-    int availableNodeCount = nodeList.size();
-    if (maxShardsPerNode != -1 && (numShards * totalReplicasPerShard) > (availableNodeCount * maxShardsPerNode)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST,
-          String.format(Locale.ROOT, "Solr cloud with available number of nodes:%d is insufficient for"
-              + " restoring a collection with %d shards, total replicas per shard %d and maxShardsPerNode %d."
-              + " Consider increasing maxShardsPerNode value OR number of available nodes.",
-              availableNodeCount, numShards, totalReplicasPerShard, maxShardsPerNode));
-    }
 
     //Upload the configs
     String configName = (String) properties.get(CollectionAdminParams.COLL_CONF);
@@ -153,21 +147,17 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Starting restore into collection={} with backup_name={} at location={}", restoreCollectionName, backupName,
-        location);
+            location);
 
     //Create core-less collection
     {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       propMap.put("fromApi", "true"); // mostly true.  Prevents autoCreated=true in the collection state.
-      if (properties.get(STATE_FORMAT) == null) {
-        propMap.put(STATE_FORMAT, "2");
-      }
       propMap.put(REPLICATION_FACTOR, numNrtReplicas);
       propMap.put(NRT_REPLICAS, numNrtReplicas);
       propMap.put(TLOG_REPLICAS, numTlogReplicas);
       propMap.put(PULL_REPLICAS, numPullReplicas);
-      properties.put(MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
       for (String collProp : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
@@ -182,7 +172,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(CollectionAdminParams.COLL_CONF, restoreConfigName);
 
       // router.*
-      @SuppressWarnings("unchecked")
       Map<String, Object> routerProps = (Map<String, Object>) backupCollectionState.getProperties().get(DocCollection.DOC_ROUTER);
       for (Map.Entry<String, Object> pair : routerProps.entrySet()) {
         propMap.put(DocCollection.DOC_ROUTER + "." + pair.getKey(), pair.getValue());
@@ -199,7 +188,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(backupSlice.getName(),
-              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties()));
+                  new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties(), restoreCollectionName));
         }
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, newSlices);
       }
@@ -231,208 +220,212 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
 
     List<String> sliceNames = new ArrayList<>();
     restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
-    PolicyHelper.SessionWrapper sessionWrapper = null;
 
-    try {
-      Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
-          .forCollection(restoreCollectionName)
-          .forShard(sliceNames)
-          .assignNrtReplicas(numNrtReplicas)
-          .assignTlogReplicas(numTlogReplicas)
-          .assignPullReplicas(numPullReplicas)
-          .onNodes(nodeList)
-          .build();
-      Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
-      Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, restoreCollection);
-      List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
-      sessionWrapper = PolicyHelper.getLastSessionWrapper(true);
+    Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+            .forCollection(restoreCollectionName)
+            .forShard(sliceNames)
+            .assignNrtReplicas(numNrtReplicas)
+            .assignTlogReplicas(numTlogReplicas)
+            .assignPullReplicas(numPullReplicas)
+            .onNodes(nodeList)
+            .build();
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
+        ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+        clusterState, restoreCollection);
+    List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
 
-      CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
+    CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
 
-      //Create one replica per shard and copy backed up data to it
-      for (Slice slice : restoreCollection.getSlices()) {
+    //Create one replica per shard and copy backed up data to it
+    for (Slice slice : restoreCollection.getSlices()) {
+      if (log.isInfoEnabled()) {
         log.info("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
-        HashMap<String, Object> propMap = new HashMap<>();
-        propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
-        propMap.put(COLLECTION_PROP, restoreCollectionName);
-        propMap.put(SHARD_ID_PROP, slice.getName());
+      }
+      HashMap<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD);
+      propMap.put(COLLECTION_PROP, restoreCollectionName);
+      propMap.put(SHARD_ID_PROP, slice.getName());
 
-        if (numNrtReplicas >= 1) {
-          propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
-        } else if (numTlogReplicas >= 1) {
-          propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
+      if (numNrtReplicas >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.NRT.name());
+      } else if (numTlogReplicas >= 1) {
+        propMap.put(REPLICA_TYPE, Replica.Type.TLOG.name());
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unexpected number of replicas, replicationFactor, " +
+                Replica.Type.NRT + " or " + Replica.Type.TLOG + " must be greater than 0");
+      }
+
+      // Get the first node matching the shard to restore in
+      String node;
+      for (ReplicaPosition replicaPosition : replicaPositions) {
+        if (Objects.equals(replicaPosition.shard, slice.getName())) {
+          node = replicaPosition.node;
+          propMap.put(CoreAdminParams.NODE, node);
+          replicaPositions.remove(replicaPosition);
+          break;
+        }
+      }
+
+      // add async param
+      if (asyncId != null) {
+        propMap.put(ASYNC, asyncId);
+      }
+      ocmh.addPropertyParams(message, propMap);
+      final NamedList addReplicaResult = new NamedList();
+      ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
+        Object addResultFailure = addReplicaResult.get("failure");
+        if (addResultFailure != null) {
+          SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
+          if (failure == null) {
+            failure = new SimpleOrderedMap();
+            results.add("failure", failure);
+          }
+          failure.addAll((NamedList) addResultFailure);
         } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Unexpected number of replicas, replicationFactor, " +
-              Replica.Type.NRT + " or " + Replica.Type.TLOG + " must be greater than 0");
-        }
-
-        // Get the first node matching the shard to restore in
-        String node;
-        for (ReplicaPosition replicaPosition : replicaPositions) {
-          if (Objects.equals(replicaPosition.shard, slice.getName())) {
-            node = replicaPosition.node;
-            propMap.put(CoreAdminParams.NODE, node);
-            replicaPositions.remove(replicaPosition);
-            break;
+          SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
+          if (success == null) {
+            success = new SimpleOrderedMap();
+            results.add("success", success);
           }
+          success.addAll((NamedList) addReplicaResult.get("success"));
         }
-
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
-        ocmh.addPropertyParams(message, propMap);
-        final NamedList addReplicaResult = new NamedList();
-        ocmh.addReplica(clusterState, new ZkNodeProps(propMap), addReplicaResult, () -> {
-          Object addResultFailure = addReplicaResult.get("failure");
-          if (addResultFailure != null) {
-            SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");
-            if (failure == null) {
-              failure = new SimpleOrderedMap();
-              results.add("failure", failure);
-            }
-            failure.addAll((NamedList) addResultFailure);
-          } else {
-            SimpleOrderedMap success = (SimpleOrderedMap) results.get("success");
-            if (success == null) {
-              success = new SimpleOrderedMap();
-              results.add("success", success);
-            }
-            success.addAll((NamedList) addReplicaResult.get("success"));
-          }
-          countDownLatch.countDown();
-        });
-      }
-
-      boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
-      if (!allIsDone) {
-        throw new TimeoutException("Initial replicas were not created within 1 hour. Timing out.");
-      }
-      Object failures = results.get("failure");
-      if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
-        log.error("Restore failed to create initial replicas.");
-        ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
-        return;
-      }
-
-      //refresh the location copy of collection state
-      restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
-
-      {
-        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
-        // Copy data from backed up index to each replica
-        for (Slice slice : restoreCollection.getSlices()) {
-          ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
-          params.set(NAME, "snapshot." + slice.getName());
-          params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
-          params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-          shardRequestTracker.sliceCmd(clusterState, params, null, slice, shardHandler);
-        }
-        shardRequestTracker.processResponses(new NamedList(), shardHandler, true, "Could not restore core");
-      }
-
-      {
-        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
-
-        for (Slice s : restoreCollection.getSlices()) {
-          for (Replica r : s.getReplicas()) {
-            String nodeName = r.getNodeName();
-            String coreNodeName = r.getCoreName();
-            Replica.State stateRep = r.getState();
-
-            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
-                stateRep.name());
-
-            ModifiableSolrParams params = new ModifiableSolrParams();
-            params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-            params.set(CoreAdminParams.NAME, coreNodeName);
-
-            shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
-          }
-
-          shardRequestTracker.processResponses(new NamedList(), shardHandler, true,
-              "REQUESTAPPLYUPDATES calls did not succeed");
-        }
-      }
-
-      //Mark all shards in ACTIVE STATE
-      {
-        HashMap<String, Object> propMap = new HashMap<>();
-        propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-        propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
-        for (Slice shard : restoreCollection.getSlices()) {
-          propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
-        }
-        ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
-      }
-
-      if (totalReplicasPerShard > 1) {
-        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
-        for (Slice slice : restoreCollection.getSlices()) {
-
-          //Add the remaining replicas for each shard, considering it's type
-          int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
-
-          // We already created either a NRT or an TLOG replica as leader
-          if (numNrtReplicas > 0) {
-            createdNrtReplicas++;
-          } else if (createdTlogReplicas > 0) {
-            createdTlogReplicas++;
-          }
-
-          for (int i = 1; i < totalReplicasPerShard; i++) {
-            Replica.Type typeToCreate;
-            if (createdNrtReplicas < numNrtReplicas) {
-              createdNrtReplicas++;
-              typeToCreate = Replica.Type.NRT;
-            } else if (createdTlogReplicas < numTlogReplicas) {
-              createdTlogReplicas++;
-              typeToCreate = Replica.Type.TLOG;
-            } else {
-              createdPullReplicas++;
-              typeToCreate = Replica.Type.PULL;
-              assert createdPullReplicas <= numPullReplicas: "Unexpected number of replicas";
-            }
-
-            log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
-            HashMap<String, Object> propMap = new HashMap<>();
-            propMap.put(COLLECTION_PROP, restoreCollectionName);
-            propMap.put(SHARD_ID_PROP, slice.getName());
-            propMap.put(REPLICA_TYPE, typeToCreate.name());
-
-            // Get the first node matching the shard to restore in
-            String node;
-            for (ReplicaPosition replicaPosition : replicaPositions) {
-              if (Objects.equals(replicaPosition.shard, slice.getName())) {
-                node = replicaPosition.node;
-                propMap.put(CoreAdminParams.NODE, node);
-                replicaPositions.remove(replicaPosition);
-                break;
-              }
-            }
-
-            // add async param
-            if (asyncId != null) {
-              propMap.put(ASYNC, asyncId);
-            }
-            ocmh.addPropertyParams(message, propMap);
-
-            ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
-          }
-        }
-      }
-
-      if (backupCollectionAlias != null && !backupCollectionAlias.equals(backupCollection)) {
-        log.debug("Restoring alias {} -> {}", backupCollectionAlias, backupCollection);
-        ocmh.zkStateReader.aliasesManager
-            .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(backupCollectionAlias, backupCollection));
-      }
-
-      log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
-    } finally {
-      if (sessionWrapper != null) sessionWrapper.release();
+        countDownLatch.countDown();
+      });
     }
+
+    boolean allIsDone = countDownLatch.await(1, TimeUnit.HOURS);
+    if (!allIsDone) {
+      throw new TimeoutException("Initial replicas were not created within 1 hour. Timing out.");
+    }
+    Object failures = results.get("failure");
+    if (failures != null && ((SimpleOrderedMap) failures).size() > 0) {
+      log.error("Restore failed to create initial replicas.");
+      ocmh.cleanupCollection(restoreCollectionName, new NamedList<Object>());
+      return;
+    }
+
+    //refresh the location copy of collection state
+    restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
+
+    {
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+      // Copy data from backed up index to each replica
+      for (Slice slice : restoreCollection.getSlices()) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
+        params.set(NAME, "snapshot." + slice.getName());
+        params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
+        params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
+        shardRequestTracker.sliceCmd(clusterState, params, null, slice, shardHandler);
+      }
+      shardRequestTracker.processResponses(new NamedList(), shardHandler, true, "Could not restore core");
+    }
+
+    {
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+
+      for (Slice s : restoreCollection.getSlices()) {
+        for (Replica r : s.getReplicas()) {
+          String nodeName = r.getNodeName();
+          String coreNodeName = r.getCoreName();
+          Replica.State stateRep = r.getState();
+
+          if (log.isDebugEnabled()) {
+            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+                    stateRep.name());
+          }
+
+          ModifiableSolrParams params = new ModifiableSolrParams();
+          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+          params.set(CoreAdminParams.NAME, coreNodeName);
+
+          shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+        }
+
+        shardRequestTracker.processResponses(new NamedList(), shardHandler, true,
+                "REQUESTAPPLYUPDATES calls did not succeed");
+      }
+    }
+
+    //Mark all shards in ACTIVE STATE
+    {
+      HashMap<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+      propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
+      for (Slice shard : restoreCollection.getSlices()) {
+        propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
+      }
+      ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
+    }
+
+    if (totalReplicasPerShard > 1) {
+      if (log.isInfoEnabled()) {
+        log.info("Adding replicas to restored collection={}", restoreCollection.getName());
+      }
+      for (Slice slice : restoreCollection.getSlices()) {
+
+        //Add the remaining replicas for each shard, considering it's type
+        int createdNrtReplicas = 0, createdTlogReplicas = 0, createdPullReplicas = 0;
+
+        // We already created either a NRT or an TLOG replica as leader
+        if (numNrtReplicas > 0) {
+          createdNrtReplicas++;
+        } else if (createdTlogReplicas > 0) {
+          createdTlogReplicas++;
+        }
+
+        for (int i = 1; i < totalReplicasPerShard; i++) {
+          Replica.Type typeToCreate;
+          if (createdNrtReplicas < numNrtReplicas) {
+            createdNrtReplicas++;
+            typeToCreate = Replica.Type.NRT;
+          } else if (createdTlogReplicas < numTlogReplicas) {
+            createdTlogReplicas++;
+            typeToCreate = Replica.Type.TLOG;
+          } else {
+            createdPullReplicas++;
+            typeToCreate = Replica.Type.PULL;
+            assert createdPullReplicas <= numPullReplicas : "Unexpected number of replicas";
+          }
+
+          if (log.isDebugEnabled()) {
+            log.debug("Adding replica for shard={} collection={} of type {} ", slice.getName(), restoreCollection, typeToCreate);
+          }
+          HashMap<String, Object> propMap = new HashMap<>();
+          propMap.put(COLLECTION_PROP, restoreCollectionName);
+          propMap.put(SHARD_ID_PROP, slice.getName());
+          propMap.put(REPLICA_TYPE, typeToCreate.name());
+
+          // Get the first node matching the shard to restore in
+          String node;
+          for (ReplicaPosition replicaPosition : replicaPositions) {
+            if (Objects.equals(replicaPosition.shard, slice.getName())) {
+              node = replicaPosition.node;
+              propMap.put(CoreAdminParams.NODE, node);
+              replicaPositions.remove(replicaPosition);
+              break;
+            }
+          }
+
+          // add async param
+          if (asyncId != null) {
+            propMap.put(ASYNC, asyncId);
+          }
+          ocmh.addPropertyParams(message, propMap);
+
+          ocmh.addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results, null);
+        }
+      }
+    }
+
+    if (backupCollectionAlias != null && !backupCollectionAlias.equals(backupCollection)) {
+      log.debug("Restoring alias {} -> {}", backupCollectionAlias, backupCollection);
+      ocmh.zkStateReader.aliasesManager
+              .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(backupCollectionAlias, backupCollection));
+    }
+
+    log.info("Completed restoring collection={} backupName={}", restoreCollection, backupName);
+
   }
 
   private int getInt(ZkNodeProps message, String propertyName, Integer count, int defaultValue) {

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Spanish.
- */
+/** Analyzer for Spanish. */
 package org.apache.lucene.analysis.es;

@@ -15,7 +15,9 @@
 
 org.apache.lucene.codecs.asserting.AssertingCodec
 org.apache.lucene.codecs.cheapbastard.CheapBastardCodec
+org.apache.lucene.codecs.compressing.DeflateWithPresetCompressingCodec
 org.apache.lucene.codecs.compressing.FastCompressingCodec
 org.apache.lucene.codecs.compressing.FastDecompressionCompressingCodec
 org.apache.lucene.codecs.compressing.HighCompressionCompressingCodec
+org.apache.lucene.codecs.compressing.LZ4WithPresetCompressingCodec
 org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec

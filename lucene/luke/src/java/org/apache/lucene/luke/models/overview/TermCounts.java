@@ -23,13 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.luke.models.util.IndexUtils;
 
-/**
- * An utility class that collects term counts terms for all fields in a index.
- */
+/** An utility class that collects term counts terms for all fields in a index. */
 final class TermCounts {
 
   private final Map<String, Long> termCountMap;
@@ -39,18 +36,17 @@ final class TermCounts {
     termCountMap = IndexUtils.countTerms(reader, IndexUtils.getFieldNames(reader));
   }
 
-  /**
-   * Returns the total number of terms in this index.
-   */
+  /** Returns the total number of terms in this index. */
   long numTerms() {
     return termCountMap.values().stream().mapToLong(Long::longValue).sum();
   }
 
   /**
    * Returns all fields with the number of terms for each field sorted by {@link TermCountsOrder}
+   *
    * @param order - sort order
    */
-  Map<String, Long> sortedTermCounts(TermCountsOrder order){
+  Map<String, Long> sortedTermCounts(TermCountsOrder order) {
     Objects.requireNonNull(order);
 
     Comparator<Map.Entry<String, Long>> comparator;
@@ -76,7 +72,8 @@ final class TermCounts {
   private Map<String, Long> sortedTermCounts(Comparator<Map.Entry<String, Long>> comparator) {
     return termCountMap.entrySet().stream()
         .sorted(comparator)
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
   }
-
 }

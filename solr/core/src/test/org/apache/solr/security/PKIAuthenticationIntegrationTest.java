@@ -83,7 +83,6 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
             count.incrementAndGet();
           }
         }
-        return true;
     };
 
     MockAuthenticationPlugin.predicate = servletRequest -> {

@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.ar;
 
-
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link ArabicNormalizationFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_arnormal" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -41,11 +40,16 @@ public class ArabicNormalizationFilterFactory extends TokenFilterFactory {
   public static final String NAME = "arabicNormalization";
 
   /** Creates a new ArabicNormalizationFilterFactory */
-  public ArabicNormalizationFilterFactory(Map<String,String> args) {
+  public ArabicNormalizationFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public ArabicNormalizationFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override

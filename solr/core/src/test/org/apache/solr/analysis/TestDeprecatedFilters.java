@@ -24,7 +24,7 @@ public class TestDeprecatedFilters extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-master.xml","schema-deprecations.xml");
+    initCore("solrconfig-leader.xml","schema-deprecations.xml");
   }
 
   public void testLowerCaseTokenizer() {

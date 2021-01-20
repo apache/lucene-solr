@@ -16,13 +16,16 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import junit.framework.Assert;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
@@ -30,6 +33,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
 
@@ -39,13 +43,14 @@ import org.junit.Test;
  * @since solr 1.3
  */
 @Limit(bytes=20000)
+@SuppressWarnings({"rawtypes"})
 public class QueryResponseTest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleRangeFacetResponse.xml")) {
       assertNotNull(is);
 
@@ -107,7 +112,7 @@ public class QueryResponseTest extends SolrTestCase {
   public void testGroupResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -214,7 +219,7 @@ public class QueryResponseTest extends SolrTestCase {
     XMLResponseParser parser = new XMLResponseParser();
     NamedList<Object> response = null;
 
-    try (SolrResourceLoader loader = new SolrResourceLoader();
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
          InputStream is = loader.openResource("solrj/sampleSimpleGroupResponse.xml")) {
       assertNotNull(is);
       try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -258,7 +263,7 @@ public class QueryResponseTest extends SolrTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testIntervalFacetsResponse() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    try(SolrResourceLoader loader = new SolrResourceLoader()) {
+    try(SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath())) {
       InputStream is = loader.openResource("solrj/sampleIntervalFacetsResponse.xml");
       assertNotNull(is);
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
@@ -297,6 +302,30 @@ public class QueryResponseTest extends SolrTestCase {
       
     }
     
+  }
+
+  @Test
+  public void testExplainMapResponse() throws IOException {
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> response;
+
+    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
+         InputStream is = loader.openResource("solrj/sampleDebugResponse.xml")) {
+          assertNotNull(is);
+      try (Reader in = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+          response = parser.processResponse(in);
+      }
+    }
+
+    QueryResponse qr = new QueryResponse(response, null);
+    assertNotNull(qr);
+
+    Map<String, Object> explainMap = qr.getExplainMap();
+    assertNotNull(explainMap);
+    assertEquals(2, explainMap.size());
+    Object[] values = explainMap.values().toArray();
+    assertTrue(values[0] instanceof SimpleOrderedMap);
+    assertTrue(values[1] instanceof SimpleOrderedMap);
   }
 
 }

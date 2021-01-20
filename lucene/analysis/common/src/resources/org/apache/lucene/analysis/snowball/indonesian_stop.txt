@@ -1,0 +1,99 @@
+ | From https://snowballstem.org/algorithms/indonesian/stop.txt
+ | This file is distributed under the BSD License.
+ | See https://snowballstem.org/license.html
+ | Also see https://opensource.org/licenses/bsd-license.html
+ |  - Encoding was converted to UTF-8.
+ |  - This notice was added.
+ |
+ | NOTE: To use this file with StopFilterFactory, you must specify format="snowball"
+yang		| that
+dan		| and
+di		| in
+dari		| from
+ini		| this
+pada kepada	| at, to [person]
+ada adalah	| there is, is
+dengan		| with
+untuk		| for
+dalam		| in the
+oleh		| by
+sebagai		| as
+juga		| also, too
+ke		| to
+atau		| or
+tidak		| not
+itu		| that
+sebuah		| a
+tersebut	| the
+dapat		| can, may
+ia		| he/she, yes
+telah		| already
+satu		| one
+memiliki	| have
+mereka		| they
+bahwa		| that
+lebih		| more, more than
+karena		| because, since
+seorang		| one person, same
+akan		| will, about to
+seperti		| as, like
+secara		| on
+kemudian	| later, then
+beberapa	| some
+banyak		| many
+antara		| between
+setelah		| after
+yaitu		| that is
+hanya		| only
+hingga		| to
+serta		| along with
+sama		| same, and
+dia		| he/she/it (informal)
+tetapi		| but
+namun		| however
+melalui		| through
+bisa		| can
+sehingga	| so
+ketika		| when
+suatu		| a
+sendiri		| own (adverb)
+bagi		| for
+semua		| all
+harus		| must
+setiap		| each, every
+maka		| then
+maupun		| as well
+tanpa		| without
+saja		| only
+jika		| if
+bukan		| not
+belum		| not yet
+sedangkan	| while
+yakni		| i.e.
+meskipun	| although
+hampir		| almost
+kita		| we/us (inclusive)
+demikian	| thereby
+daripada	| from/than/instead of
+apa		| what/which/or/eh
+ialah		| is
+sana		| there
+begitu		| so
+seseorang	| someone
+selain		| besides
+terlalu		| too
+ataupun		| or
+saya		| me/I (formal)
+bila		| if/when
+bagaimana	| how
+tapi		| but
+apabila		| when/if
+kalau		| if
+kami		| we/us (exclusive)
+melainkan	| but (rather)
+boleh		| may,can
+aku		| I/me (informal)
+anda		| you (formal)
+kamu		| you (informal)
+beliau		| he/she/it (formal)
+kalian		| you (plural)

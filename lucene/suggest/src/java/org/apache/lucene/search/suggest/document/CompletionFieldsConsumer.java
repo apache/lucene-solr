@@ -16,10 +16,13 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
+import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.INDEX_EXTENSION;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -38,22 +41,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.CODEC_NAME;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.INDEX_EXTENSION;
-
 /**
- * <p>
- * Weighted FSTs for any indexed {@link SuggestField} is built on {@link #write(Fields,NormsProducer)}.
- * A weighted FST maps the analyzed forms of a field to its
- * surface form and document id. FSTs are stored in the CompletionDictionary (.lkp).
- * </p>
- * <p>
- * The file offsets of a field's FST are stored in the CompletionIndex (.cmp)
- * along with the field's internal number {@link FieldInfo#number} on {@link #close()}.
- * </p>
+ * Weighted FSTs for any indexed {@link SuggestField} is built on {@link
+ * #write(Fields,NormsProducer)}. A weighted FST maps the analyzed forms of a field to its surface
+ * form and document id. FSTs are stored in the CompletionDictionary (.lkp).
  *
+ * <p>The file offsets of a field's FST are stored in the CompletionIndex (.cmp) along with the
+ * field's internal number {@link FieldInfo#number} on {@link #close()}.
  */
 final class CompletionFieldsConsumer extends FieldsConsumer {
 
@@ -62,16 +56,26 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
   private final SegmentWriteState state;
   private IndexOutput dictOut;
   private FieldsConsumer delegateFieldsConsumer;
+  private final String codecName;
 
-  CompletionFieldsConsumer(PostingsFormat delegatePostingsFormat, SegmentWriteState state) throws IOException {
+  CompletionFieldsConsumer(
+      String codecName, PostingsFormat delegatePostingsFormat, SegmentWriteState state)
+      throws IOException {
+    this.codecName = codecName;
     this.delegatePostingsFormatName = delegatePostingsFormat.getName();
     this.state = state;
-    String dictFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
+    String dictFile =
+        IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
     boolean success = false;
     try {
       this.delegateFieldsConsumer = delegatePostingsFormat.fieldsConsumer(state);
       dictOut = state.directory.createOutput(dictFile, state.context);
-      CodecUtil.writeIndexHeader(dictOut, CODEC_NAME, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          dictOut,
+          codecName,
+          COMPLETION_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
       success = true;
     } finally {
       if (success == false) {
@@ -88,7 +92,8 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
       CompletionTermWriter termWriter = new CompletionTermWriter();
       Terms terms = fields.terms(field);
       if (terms == null) {
-        // this can happen from ghost fields, where the incoming Fields iterator claims a field exists but it does not
+        // this can happen from ghost fields, where the incoming Fields iterator claims a field
+        // exists but it does not
         continue;
       }
       TermsEnum termsEnum = terms.iterator();
@@ -102,10 +107,10 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
       // store lookup, if needed
       long filePointer = dictOut.getFilePointer();
       if (termWriter.finish(dictOut)) {
-        seenFields.put(field, new CompletionMetaData(filePointer,
-            termWriter.minWeight,
-            termWriter.maxWeight,
-            termWriter.type));
+        seenFields.put(
+            field,
+            new CompletionMetaData(
+                filePointer, termWriter.minWeight, termWriter.maxWeight, termWriter.type));
       }
     }
   }
@@ -118,11 +123,18 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
       return;
     }
     closed = true;
-    String indexFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
+    String indexFile =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
     boolean success = false;
     try (IndexOutput indexOut = state.directory.createOutput(indexFile, state.context)) {
       delegateFieldsConsumer.close();
-      CodecUtil.writeIndexHeader(indexOut, CODEC_NAME, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          indexOut,
+          codecName,
+          COMPLETION_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
       /*
        * we write the delegate postings format name so we can load it
        * without getting an instance in the ctor
@@ -184,21 +196,20 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     }
 
     /**
-     * Stores the built FST in <code>output</code>
-     * Returns true if there was anything stored, false otherwise
+     * Stores the built FST in <code>output</code> Returns true if there was anything stored, false
+     * otherwise
      */
     public boolean finish(IndexOutput output) throws IOException {
       boolean stored = builder.store(output);
-      assert stored || docCount == 0 : "the FST is null but docCount is != 0 actual value: [" + docCount + "]";
+      assert stored || docCount == 0
+          : "the FST is null but docCount is != 0 actual value: [" + docCount + "]";
       if (docCount == 0) {
         minWeight = 0;
       }
       return stored;
     }
 
-    /**
-     * Writes all postings (surface form, weight, document id) for <code>term</code>
-     */
+    /** Writes all postings (surface form, weight, document id) for <code>term</code> */
     public void write(BytesRef term, TermsEnum termsEnum) throws IOException {
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.PAYLOADS);
       builder.startTerm(term);
@@ -209,7 +220,8 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
           postingsEnum.nextPosition();
           assert postingsEnum.getPayload() != null;
           BytesRef payload = postingsEnum.getPayload();
-          ByteArrayDataInput input = new ByteArrayDataInput(payload.bytes, payload.offset, payload.length);
+          ByteArrayDataInput input =
+              new ByteArrayDataInput(payload.bytes, payload.offset, payload.length);
           int len = input.readVInt();
           scratch.grow(len);
           scratch.setLength(len);

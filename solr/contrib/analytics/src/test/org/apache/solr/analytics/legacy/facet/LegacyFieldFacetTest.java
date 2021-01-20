@@ -21,6 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -416,6 +419,20 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
     reqParamas[reqFacetParamas.length+1] = "asc";
     setResponse(h.query(request(reqFacetParamas)));
   }
+
+  @Test
+  public void timeAllowedTest() throws Exception {
+    String query = "int_id: [0 TO " + random().nextInt(INT) + "] AND long_ld: [0 TO " + random().nextInt(LONG) + "]";
+    try (SolrQueryRequest req = req(fileToStringArr(LegacyFieldFacetTest.class, fileName), "q", query, "timeAllowed", "0", "cache", "false")) {
+      SolrQueryResponse resp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
+
+      Assert.assertEquals(resp.getResponseHeader().toString(), 0, resp.getResponseHeader().get("status"));
+      Boolean partialResults = resp.getResponseHeader().getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+      assertNotNull("No partial results header returned: " + resp.getResponseHeader().toString(), partialResults);
+      assertTrue("The request was not stopped halfway through, the partial results header was false", partialResults);
+    }
+  }
+
 
   @SuppressWarnings("unchecked")
   @Test
@@ -1057,6 +1074,7 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static void assertEquals(String mes, Object actual, Object expected) {
     Collections.sort((List<Comparable>) actual);
     Collections.sort((List<Comparable>)  expected);

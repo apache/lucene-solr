@@ -16,7 +16,10 @@
  */
 package org.apache.solr.search.facet;
 
+import java.io.IOException;
+
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
@@ -32,6 +35,10 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
 
   private static void indexBooksAndReviews() throws Exception {
     final Client client = Client.localClient();
+    indexDocs(client);
+  }
+
+  private static void indexDocs(final Client client) throws IOException, SolrServerException, Exception {
     client.deleteByQuery("*:*", null);
 
     SolrInputDocument book1 = sdoc(
@@ -61,7 +68,9 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "author_s", "dan",
             "comment_t", "This book was too long."));
     client.add(book1, null);
-
+    if (rarely()) {
+      client.commit();
+    }
     SolrInputDocument book2 = sdoc(
         "id",         "book2",
         "type_s",     "book",
@@ -128,7 +137,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "  }" +
             "}"
         )
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1_c1," +
             "        comment_t:\"A great start to what looks like an epic series!\"}," +
             "      {id:book2_c1," +
@@ -165,7 +174,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "  }" +
             "}"
         )
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -211,7 +220,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "        facet: {" +
             "           in_books: \"unique(_root_)\" }}}}}" )
 
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -265,7 +274,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "        facet: {" +
             "           in_books: \"unique(_root_)\" }}}}}" )
 
-        , "response=={numFound:2,start:0,docs:[" +
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[" +
             "      {id:book1," +
             "        title_t:\"The Way of Kings\"}," +
             "      {id:book2," +
@@ -322,7 +331,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "           in_books: \"unique(_root_)\" }}"+
         "}" )
 
-        , "response=={numFound:0,start:0,docs:[]}"
+        , "response=={numFound:0,start:0,'numFoundExact':true,docs:[]}"
         , "facets=={ count:0," +
             "comments_for_author:{" +
             "    buckets:[ {val:mary,    count:1, in_books:1} ]}," +
@@ -335,28 +344,90 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
     );
   }
 
+  public void testBoolExclusion() throws Exception {
+    final Client client = Client.localClient();
+    ModifiableSolrParams p = params("rows", "0");
+    client.testJQ(params(p,
+            "json.queries", "{'childquery':'comment_t:*'," +
+                    "'parentquery':'type_s:book'," +
+                    "'child.fq':[  {'#author':{'field':{'f':'author_s','query':'dan'}}}," +
+                                  "{'#stars':{'field':{'f':'stars_i','query':'4'}}}]," +
+                    "'snowcrash':{'field':{'f':'title_t','query':'Snow Crash'}}" +
+                    "}",
+            "json.query", "{'#top':{'parent':{'which':{'param':'parentquery'}," +
+                                             "'query':{'bool':{'filter':{'param':'child.fq'}," +
+                                                              "'must':{'param':'childquery'}" +
+                    "}}}}}",
+            "json.facet", "{" +
+                    "'comments_for_author':{'domain':{" +
+                                "'excludeTags':'top', " +
+                                "'blockChildren':'{!v=$parentquery}'," +
+                                "'filter':'{!bool filter=$child.fq filter=$childquery excludeTags=author}'" +
+                            "}," +
+                            "'type':'terms', 'field':'author_s'" +
+                    "}" +
+                    "  ,comments_for_stars: {" +
+                                        " domain: { excludeTags:top, " +
+                                              "'blockChildren':'{!v=$parentquery}'," +
+                                              " filter:\"{!bool filter=$child.fq  excludeTags=stars filter=$childquery}\" }," +
+                            "type:terms, field:stars_i" +
+                    "}" +
+                    ",comments_for_stars_parent_filter: {" +
+                                          "domain: { " +
+                                            "excludeTags:top, " +
+                                            "'blockChildren':'{!v=$parentquery}'," +
+                                            "filter:[\"{!bool filter=$child.fq  excludeTags=stars filter=$childquery}\","
+                                          + "\"{!child of=$parentquery}{!bool filter=$snowcrash}}\"] }," +
+                            "type:terms, field:stars_i"+
+                    " }" +
+            "}",
+            "json.fields", "'id,title_t'")
+            , "response=={numFound:0,start:0,'numFoundExact':true,docs:[]}"
+            , "facets=={ count:0," +
+                    "comments_for_author:{" +
+                    "    buckets:[ {val:mary,    count:1} ]}" +
+                    "," +
+                    "comments_for_stars:{" +
+                    "    buckets:[ {val:2, count:1}," +
+                    "              {val:3, count:1} ]}," +
+                    "comments_for_stars_parent_filter:{" +
+                    "    buckets:[ {val:2, count:1} ]}" +
+                    "}");
+  }
+
   public void testUniqueBlock() throws Exception {
     final Client client = Client.localClient();
     ModifiableSolrParams p = params("rows","0");
+
+    // unique block using field and query logic
     client.testJQ(params(p, "q", "{!parent tag=top which=type_s:book v=$childquery}"
         , "childquery", "comment_t:*"
-        , "fl", "id", "fl" , "title_t" 
+        , "fl", "id", "fl" , "title_t"
+        , "root", "_root_"
+        , "parentQuery", "type_s:book"
         , "json.facet", "{" +
             "  types: {" +
-            "    domain: { blockChildren:\"type_s:book\"" +  
-             "            }," +
+            "    domain: { blockChildren:\"type_s:book\"" +
+            "            }," +
             "    type:terms," +
-            "    field:type_s,"
-            + "  limit:-1," +
+            "    field:type_s," +
+            "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlock(_root_)\" }"+//}}," +
+            "           in_books1: \"uniqueBlock(_root_)\"," + // field logic
+            "           in_books2: \"uniqueBlock($root)\"," + // field reference logic
+            "           via_query1:\"uniqueBlock({!v=type_s:book})\", " + // query logic
+            "           via_query2:\"uniqueBlock({!v=$parentQuery})\" ," + // query reference logic
+            "           partial_query:\"uniqueBlock({!v=cat_s:fantasy})\" ," + // first doc hit only, never count afterwards
+            "           query_no_match:\"uniqueBlock({!v=cat_s:horor})\" }" +
             "  }" +
-        "}" )
+            "}" )
 
-        , "response=={numFound:2,start:0,docs:[]}"
+        , "response=={numFound:2,start:0,'numFoundExact':true,docs:[]}"
         , "facets=={ count:2," +
             "types:{" +
-            "    buckets:[ {val:review,    count:5, in_books:2} ]}" +
+            "    buckets:[ {val:review, count:5, in_books1:2, in_books2:2, "
+            + "                                  via_query1:2, via_query2:2, "
+            + "                                  partial_query:1, query_no_match:0} ]}" +
             "}"
     );
   }

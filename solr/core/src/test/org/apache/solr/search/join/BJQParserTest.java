@@ -336,8 +336,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   
   @Test
-  public void nullInit() {
-    new BlockJoinParentQParserPlugin().init(null);
+  public void nullInit() throws Exception {
+    final BlockJoinParentQParserPlugin blockJoinParentQParserPlugin = new BlockJoinParentQParserPlugin();
+    blockJoinParentQParserPlugin.init(null);
+    blockJoinParentQParserPlugin.close();
   }
 
   private final static String eParent[] = new String[]{"//*[@numFound='1']",

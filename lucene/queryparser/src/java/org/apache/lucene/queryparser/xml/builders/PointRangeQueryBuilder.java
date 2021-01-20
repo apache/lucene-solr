@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
@@ -25,12 +24,15 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 
 /**
  * Creates a range query across 1D {@link PointValues}. The table below specifies the required
  * attributes and the defaults if optional attributes are omitted:
- * <table summary="supported attributes">
+ *
+ * <table>
+ * <caption>supported attributes</caption>
  * <tr>
  * <th>Attribute name</th>
  * <th>Values</th>
@@ -45,13 +47,13 @@ import org.w3c.dom.Element;
  * </tr>
  * <tr>
  * <td>lowerTerm</td>
- * <td>Specified by <tt>type</tt></td>
+ * <td>Specified by <code>type</code></td>
  * <td>No</td>
  * <td>Integer.MIN_VALUE Long.MIN_VALUE Float.NEGATIVE_INFINITY Double.NEGATIVE_INFINITY</td>
  * </tr>
  * <tr>
  * <td>upperTerm</td>
- * <td>Specified by <tt>type</tt></td>
+ * <td>Specified by <code>type</code></td>
  * <td>No</td>
  * <td>Integer.MAX_VALUE Long.MAX_VALUE Float.POSITIVE_INFINITY Double.POSITIVE_INFINITY</td>
  * </tr>
@@ -62,10 +64,9 @@ import org.w3c.dom.Element;
  * <td>int</td>
  * </tr>
  * </table>
- * <p>
- * A {@link ParserException} will be thrown if an error occurs parsing the
- * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
- * specified by <tt>type</tt>.
+ *
+ * <p>A {@link ParserException} will be thrown if an error occurs parsing the supplied <code>
+ * lowerTerm</code> or <code>upperTerm</code> into the numeric type specified by <code>type</code>.
  */
 public class PointRangeQueryBuilder implements QueryBuilder {
 
@@ -78,19 +79,23 @@ public class PointRangeQueryBuilder implements QueryBuilder {
     String type = DOMUtils.getAttribute(e, "type", "int");
     try {
       if (type.equalsIgnoreCase("int")) {
-        return IntPoint.newRangeQuery(field,
+        return IntPoint.newRangeQuery(
+            field,
             (lowerTerm == null ? Integer.MIN_VALUE : Integer.parseInt(lowerTerm)),
             (upperTerm == null ? Integer.MAX_VALUE : Integer.parseInt(upperTerm)));
       } else if (type.equalsIgnoreCase("long")) {
-        return LongPoint.newRangeQuery(field,
+        return LongPoint.newRangeQuery(
+            field,
             (lowerTerm == null ? Long.MIN_VALUE : Long.parseLong(lowerTerm)),
             (upperTerm == null ? Long.MAX_VALUE : Long.parseLong(upperTerm)));
       } else if (type.equalsIgnoreCase("double")) {
-        return DoublePoint.newRangeQuery(field,
+        return DoublePoint.newRangeQuery(
+            field,
             (lowerTerm == null ? Double.NEGATIVE_INFINITY : Double.parseDouble(lowerTerm)),
             (upperTerm == null ? Double.POSITIVE_INFINITY : Double.parseDouble(upperTerm)));
       } else if (type.equalsIgnoreCase("float")) {
-        return FloatPoint.newRangeQuery(field,
+        return FloatPoint.newRangeQuery(
+            field,
             (lowerTerm == null ? Float.NEGATIVE_INFINITY : Float.parseFloat(lowerTerm)),
             (upperTerm == null ? Float.POSITIVE_INFINITY : Float.parseFloat(upperTerm)));
       } else {

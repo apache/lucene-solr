@@ -34,7 +34,9 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
@@ -42,6 +44,7 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
@@ -52,6 +55,8 @@ import org.junit.Test;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
@@ -77,6 +82,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testInitArgsOrSysPropConfig() throws Exception {
     try(HdfsDirectoryFactory hdfsFactory = new HdfsDirectoryFactory()) {
       // test sys prop config
@@ -193,7 +199,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
       props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
       factory.init(new NamedList<>(props));
-      factory.initializeMetrics(metricManager, registry, "foo", scope);
+      factory.initializeMetrics(new SolrMetricsContext(metricManager, registry, "foo"), scope);
 
       // get the metrics map for the locality bean
       MetricsMap metrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper) metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();

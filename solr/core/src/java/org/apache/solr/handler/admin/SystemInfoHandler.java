@@ -18,25 +18,21 @@ package org.apache.solr.handler.admin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
-import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import com.codahale.metrics.Gauge;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -44,6 +40,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.security.AuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
@@ -111,9 +109,9 @@ public class SystemInfoHandler extends RequestHandlerBase
       InetAddress addr = InetAddress.getLocalHost();
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
-      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. " +
-               "Set the '"+PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP+"' sysprop to true on startup to " +
-               "prevent future lookups if DNS can not be fixed.", e);
+      log.warn("Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}"
+          , PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP
+          , " sysprop to true on startup to prevent future lookups if DNS can not be fixed.", e);
       hostname = null;
       return;
     }
@@ -121,10 +119,9 @@ public class SystemInfoHandler extends RequestHandlerBase
     
     if (15000D < timer.getTime()) {
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
-      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. " +
-               "Set the '{}' sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
-               readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
-    
+      log.warn("Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' {}"
+          , readableTime, PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
+          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.");
     }
   }
 
@@ -142,10 +139,14 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
-    if (cc != null)
-      rsp.add( "solr_home", cc.getSolrHome());
+    if (cc != null) {
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+    }
+
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
+    rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
@@ -193,7 +194,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
-    dirs.add("instance", core.getResourceLoader().getInstancePath().toString());
+    dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add( "data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {
@@ -227,47 +228,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       }
     });
 
-    // Try some command line things:
-    try { 
-      if (!Constants.WINDOWS) {
-        info.add( "uname",  execute( "uname -a" ) );
-        info.add( "uptime", execute( "uptime" ) );
-      }
-    } catch( Exception ex ) {
-      log.warn("Unable to execute command line tools to get operating system properties.", ex);
-    } 
     return info;
-  }
-  
-  /**
-   * Utility function to execute a function
-   */
-  private static String execute( String cmd )
-  {
-    InputStream in = null;
-    Process process = null;
-    
-    try {
-      process = Runtime.getRuntime().exec(cmd);
-      in = process.getInputStream();
-      // use default charset from locale here, because the command invoked also uses the default locale:
-      return IOUtils.toString(new InputStreamReader(in, Charset.defaultCharset()));
-    } catch( Exception ex ) {
-      // ignore - log.warn("Error executing command", ex);
-      return "(error executing: " + cmd + ")";
-    } catch (Error err) {
-      if (err.getMessage() != null && (err.getMessage().contains("posix_spawn") || err.getMessage().contains("UNIXProcess"))) {
-        log.warn("Error forking command due to JVM locale bug (see https://issues.apache.org/jira/browse/SOLR-6387): " + err.getMessage());
-        return "(error executing: " + cmd + ")";
-      }
-      throw err;
-    } finally {
-      if (process != null) {
-        IOUtils.closeQuietly( process.getOutputStream() );
-        IOUtils.closeQuietly( process.getInputStream() );
-        IOUtils.closeQuietly( process.getErrorStream() );
-      }
-    }
   }
   
   /**
@@ -357,7 +318,43 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "jmx", jmx );
     return jvm;
   }
-  
+
+  /**
+   * Get Security Info
+   */
+  public SimpleOrderedMap<Object> getSecurityInfo(SolrQueryRequest req)
+  {
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+
+    if (cc != null) {
+      if (cc.getAuthenticationPlugin() != null) {
+        info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
+      }
+      if (cc.getAuthorizationPlugin() != null) {
+        info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+      }
+    }
+
+    // User principal
+    String username = null;
+    if (req.getUserPrincipal() != null) {
+      username = req.getUserPrincipal().getName();
+      info.add("username", username);
+
+      // Mapped roles for this principal
+      @SuppressWarnings("resource")
+      AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
+      if (auth != null) {
+        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+        Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
+        info.add("roles", roles);
+      }
+    }
+
+    return info;
+  }
+
+
   private static SimpleOrderedMap<Object> getLuceneInfo() {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 

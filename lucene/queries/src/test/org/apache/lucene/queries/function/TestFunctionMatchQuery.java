@@ -17,13 +17,17 @@
 
 package org.apache.lucene.queries.function;
 
-import java.io.IOException;
+import static org.apache.lucene.queries.function.FunctionMatchQuery.DEFAULT_MATCH_COST;
 
+import java.io.IOException;
+import java.util.function.DoublePredicate;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,6 +36,7 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
 
   static IndexReader reader;
   static IndexSearcher searcher;
+  private static final DoubleValuesSource in = DoubleValuesSource.fromFloatField(FLOAT_FIELD);
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -46,7 +51,6 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
   }
 
   public void testRangeMatching() throws IOException {
-    DoubleValuesSource in = DoubleValuesSource.fromFloatField(FLOAT_FIELD);
     FunctionMatchQuery fmq = new FunctionMatchQuery(in, d -> d >= 2 && d < 4);
     TopDocs docs = searcher.search(fmq, 10);
 
@@ -55,7 +59,25 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
     assertEquals(13, docs.scoreDocs[1].doc);
 
     QueryUtils.check(random(), fmq, searcher, rarely());
-
   }
 
+  public void testTwoPhaseIteratorMatchCost() throws IOException {
+    DoublePredicate predicate = d -> true;
+
+    // should use default match cost
+    FunctionMatchQuery fmq = new FunctionMatchQuery(in, predicate);
+    assertEquals(DEFAULT_MATCH_COST, getMatchCost(fmq), 0.1);
+
+    // should use client defined match cost
+    fmq = new FunctionMatchQuery(in, predicate, 200);
+    assertEquals(200, getMatchCost(fmq), 0.1);
+  }
+
+  private static float getMatchCost(FunctionMatchQuery fmq) throws IOException {
+    LeafReaderContext ctx = reader.leaves().get(0);
+    return fmq.createWeight(searcher, ScoreMode.TOP_DOCS, 1)
+        .scorer(ctx)
+        .twoPhaseIterator()
+        .matchCost();
+  }
 }

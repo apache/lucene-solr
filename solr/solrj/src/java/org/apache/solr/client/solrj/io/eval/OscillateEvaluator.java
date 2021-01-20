@@ -32,6 +32,7 @@ public class OscillateEvaluator extends RecursiveNumericEvaluator implements Man
   }
 
   @Override
+  @SuppressWarnings({"unchecked"})
   public Object doWork(Object... objects) throws IOException{
 
     if(objects.length != 3) {
@@ -46,6 +47,7 @@ public class OscillateEvaluator extends RecursiveNumericEvaluator implements Man
     HarmonicOscillator pf = new HarmonicOscillator(amp, om, phase);
     double[] x = new double[128];
 
+    @SuppressWarnings({"rawtypes"})
     List list = new ArrayList();
     for(int i=0; i<128; i++) {
       double yvalue= pf.value(i);

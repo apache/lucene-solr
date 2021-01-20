@@ -170,4 +170,4 @@ fq={!field f=dateRange op=Contains}[2013 TO 2018]
 
 Unlike most local parameters, `op` is actually _not_ defined by any query parser (`field`), it is defined by the field type, in this case `DateRangeField`. In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018. Multi-valued overlapping indexed ranges in a document are effectively coalesced.
 
-For a DateRangeField example use-case, see http://wiki.apache.org/solr/DateRangeField[see Solr's community wiki].
+For a DateRangeField example use-case, see https://cwiki.apache.org/confluence/display/solr/DateRangeField[see Solr's community wiki].

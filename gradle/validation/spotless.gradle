@@ -1,0 +1,114 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * LUCENE-9564: This adds automatic (and enforced) code formatting using
+ * spotless and Google Java Format.
+ */
+
+def resources = scriptResources(buildscript)
+
+configure(project(":lucene").subprojects) { prj ->
+  plugins.withType(JavaPlugin) {
+    prj.apply plugin: 'com.diffplug.spotless'
+
+    spotless {
+      java {
+        // TODO: Work out how to support multiple different header files (we have
+        // classes in the codebase that have original headers). We currently use
+        // Apache RAT to enforce headers so this is of lesser priority.
+        //
+        // licenseHeaderFile file("${resources}/asl-header.txt"), '^(\\s*package)'
+
+        lineEndings 'UNIX'
+        endWithNewline()
+        googleJavaFormat('1.9')
+
+        // Apply to all Java sources
+        target "src/**/*.java"
+
+        // Exclude certain files (generated ones, mostly).
+        switch (project.path) {
+          case ":lucene:core":
+            targetExclude "**/StandardTokenizerImpl.java"
+            break
+
+          case ":lucene:analysis:common":
+            targetExclude "**/HTMLStripCharFilter.java",
+                "**/UAX29URLEmailTokenizerImpl.java",
+                "**/tartarus/**"
+            break
+
+          case ":lucene:test-framework":
+            targetExclude "**/EmojiTokenizationTestUnicode_11_0.java",
+                "**/WordBreakTestUnicode_9_0_0.java"
+            break
+
+          case ":lucene:expressions":
+            targetExclude "**/JavascriptLexer.java",
+                "**/JavascriptParser.java",
+                "**/JavascriptVisitor.java"
+            break
+
+          case ":lucene:queryparser":
+            targetExclude "**/classic/ParseException.java",
+              "**/classic/QueryParser.java",
+              "**/classic/QueryParserConstants.java",
+              "**/classic/QueryParserTokenManager.java",
+              "**/classic/Token.java",
+              "**/classic/TokenMgrError.java",
+              "**/standard/parser/ParseException.java",
+              "**/standard/parser/StandardSyntaxParser.java",
+              "**/standard/parser/StandardSyntaxParserConstants.java",
+              "**/standard/parser/StandardSyntaxParserTokenManager.java",
+              "**/standard/parser/Token.java",
+              "**/standard/parser/TokenMgrError.java",
+              "**/surround/parser/ParseException.java",
+              "**/surround/parser/QueryParser.java",
+              "**/surround/parser/QueryParserConstants.java",
+              "**/surround/parser/QueryParserTokenManager.java",
+              "**/surround/parser/Token.java",
+              "**/surround/parser/TokenMgrError.java"
+            break
+        }
+      }
+    }
+
+    // Workaround for an odd problem in spotless where it fails because
+    // of a missing folder.
+    spotlessJava {
+      doFirst {
+        project.mkdir("${buildDir}/spotless/spotlessJava")
+      }
+    }
+  }
+
+  // Add an alias to 'spotlessApply' simply called 'tidy' and wire up
+  // spotlessCheck to convention's check.
+  task tidy() {
+    description "Applies formatters and cleanups to sources."
+    group "verification"
+  }
+
+  tasks.matching { task -> task.name == "spotlessApply" }.configureEach { v ->
+    tidy.dependsOn v
+  }
+
+  tasks.matching { task -> task.name == "spotlessCheck" }.configureEach { v ->
+    check.dependsOn v
+  }
+}

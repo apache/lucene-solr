@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,52 +39,62 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.annotation.SolrThreadUnsafe;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
+import org.apache.solr.util.SimplePostTool;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
-
+@SolrThreadUnsafe
 public class DistribPackageStore implements PackageStore {
   static final long MAX_PKG_SIZE = Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
+  /**
+   * This is where al the files in the package store are listed
+   */
+  static final String ZK_PACKAGESTORE = "/packagestore";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
 
+  private final Path solrhome;
+
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    ensurePackageStoreDir(coreContainer.getResourceLoader().getInstancePath());
-
+    this.solrhome = Paths.get(this.coreContainer.getSolrHome());
+    ensurePackageStoreDir(Paths.get(coreContainer.getSolrHome()));
   }
-
-  private String myNode() {
-    return coreContainer.getZkController().getNodeName();
-  }
-
-
-
-
 
   @Override
   public Path getRealpath(String path) {
+    return _getRealPath(path, solrhome);
+  }
+
+  private static Path _getRealPath(String path, Path solrHome) {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    if (path.charAt(0) != File.separatorChar) {
+    if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
-    return new File(this.coreContainer.getResourceLoader().getInstancePath() +
-        File.separator + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
+    return new File(solrHome +
+            File.separator + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
   }
 
   class FileInfo {
@@ -96,10 +107,18 @@ public class DistribPackageStore implements PackageStore {
       this.path = path;
     }
 
+    ByteBuffer getFileData(boolean validate) throws IOException {
+      if (fileData == null) {
+        try (FileInputStream fis = new FileInputStream(getRealpath(path).toFile())) {
+          fileData = SimplePostTool.inputStreamToByteArray(fis);
+        }
+      }
+      return fileData;
+    }
+
     public String getMetaPath() {
       if (metaPath == null) {
-        int idx = path.lastIndexOf('/');
-        metaPath = path.substring(0, idx + 1) + "." + path.substring(idx + 1) + ".json";
+        metaPath = _getMetapath(path);
       }
       return metaPath;
     }
@@ -109,30 +128,11 @@ public class DistribPackageStore implements PackageStore {
       synchronized (DistribPackageStore.this) {
         this.metaData = meta;
         this.fileData = data;
-        Path realpath = getRealpath(path);
-        File file = realpath.toFile();
-        File parent = file.getParentFile();
-        if (!parent.exists()) {
-          parent.mkdirs();
-        }
-        Map m = (Map) Utils.fromJSON(meta.array());
-        if (m == null || m.isEmpty()) {
-          throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
+        _persistToFile(solrhome, path, data, meta);
+        if (log.isInfoEnabled()) {
+          log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
         }
 
-
-        File metdataFile = getRealpath(getMetaPath()).toFile();
-
-        try (FileOutputStream fos = new FileOutputStream(metdataFile)) {
-          fos.write(meta.array(), 0, meta.limit());
-        }
-        IOUtils.fsync(metdataFile.toPath(), false);
-
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-          fos.write(data.array(), 0, data.limit());
-        }
-        log.info("persisted a file {} and metadata. sizes {} {}", path, data.limit(), meta.limit());
-        IOUtils.fsync(file.toPath(), false);
       }
     }
 
@@ -170,7 +170,7 @@ public class DistribPackageStore implements PackageStore {
       try {
         IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
       } catch (IOException e) {
-        log.error("Unable to delete files: " + path);
+        log.error("Unable to delete files: {}", path);
       }
 
     }
@@ -182,20 +182,21 @@ public class DistribPackageStore implements PackageStore {
       String baseUrl = url.replace("/solr", "/api");
 
       ByteBuffer metadata = null;
+      @SuppressWarnings({"rawtypes"})
       Map m = null;
       try {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            baseUrl + "/node/files" + getMetaPath(),
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE));
-        m = (Map) Utils.fromJSON(metadata.array());
+                baseUrl + "/node/files" + getMetaPath(),
+                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+        m = (Map) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
 
       try {
         ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            baseUrl + "/node/files" + path,
-            Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+                baseUrl + "/node/files" + path,
+                Utils.newBytesConsumer((int) MAX_PKG_SIZE));
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");
         if (!sha512.equals(expected)) {
@@ -219,10 +220,10 @@ public class DistribPackageStore implements PackageStore {
           String baseurl = stateReader.getBaseUrlForNodeName(liveNode);
           String url = baseurl.replace("/solr", "/api");
           String reqUrl = url + "/node/files" + path +
-              "?meta=true&wt=javabin&omitHeader=true";
+                  "?meta=true&wt=javabin&omitHeader=true";
           boolean nodeHasBlob = false;
           Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
-          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", getMetaPath())) != null) {
+          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", path)) != null) {
             nodeHasBlob = true;
           }
 
@@ -284,6 +285,11 @@ public class DistribPackageStore implements PackageStore {
         }
 
         @Override
+        public long size() {
+          return realPath().toFile().length();
+        }
+
+        @Override
         public void writeMap(EntryWriter ew) throws IOException {
           MetaData metaData = readMetaData();
           ew.put(CommonParams.NAME, getSimpleName());
@@ -291,8 +297,10 @@ public class DistribPackageStore implements PackageStore {
             ew.put("dir", true);
             return;
           }
+
+          ew.put("size", size());
           ew.put("timestamp", getTimeStamp());
-          if(metaData != null)
+          if (metaData != null)
             metaData.writeMap(ew);
 
         }
@@ -312,7 +320,6 @@ public class DistribPackageStore implements PackageStore {
     }
   }
 
-
   @Override
   public void put(FileEntry entry) throws IOException {
     FileInfo info = new FileInfo(entry.path);
@@ -320,15 +327,28 @@ public class DistribPackageStore implements PackageStore {
     Utils.writeJson(entry.getMetaData(), baos, true);
     byte[] bytes = baos.toByteArray();
     info.persistToFile(entry.buf, ByteBuffer.wrap(bytes, 0, bytes.length));
-    tmpFiles.put(entry.getPath(), info);
-    List<String> nodes =  coreContainer.getPackageStoreAPI().shuffledNodes();
+    distribute(info);
+  }
+
+  private void distribute(FileInfo info) {
+    try {
+      String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
+      coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName, false, true);
+      coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path, info.getDetails().getMetaData().sha512.getBytes(UTF_8),
+              CreateMode.PERSISTENT, true);
+    } catch (Exception e) {
+      throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
+    }
+    tmpFiles.put(info.path, info);
+
+    List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
     try {
       for (String node : nodes) {
         String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-        String url = baseUrl.replace("/solr", "/api") + "/node/files" + entry.getPath() + "?getFrom=";
+        String url = baseUrl.replace("/solr", "/api") + "/node/files" + info.path + "?getFrom=";
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
@@ -353,29 +373,22 @@ public class DistribPackageStore implements PackageStore {
           //fire and forget
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
-          log.info("Node: " + node +
-              " failed to respond for blob notification", e);
+          log.info("Node: {} failed to respond for file fetch notification", node, e);
           //ignore the exception
           // some nodes may be down or not responding
         }
         i++;
       }
     } finally {
-      new Thread(() -> {
+      coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
         try {
-          // keep the jar in memory for 10 secs , so that
-          //every node can download it from memory without the file system
           Thread.sleep(10 * 1000);
-        } catch (Exception e) {
-          //don't care
         } finally {
-          tmpFiles.remove(entry.getPath());
+          tmpFiles.remove(info.path);
         }
-      }).start();
-
-
+        return null;
+      });
     }
-
   }
 
   @Override
@@ -393,7 +406,14 @@ public class DistribPackageStore implements PackageStore {
     }
 
     if (from == null || "*".equals(from)) {
-      f.fetchFromAnyNode();
+      log.info("Missing file in package store: {}", path);
+      if (f.fetchFromAnyNode()) {
+        log.info("Successfully downloaded : {}", path);
+        return true;
+      } else {
+        log.info("Unable to download file : {}", path);
+        return false;
+      }
 
     } else {
       f.fetchFileFromNodeAndPersist(from);
@@ -422,9 +442,18 @@ public class DistribPackageStore implements PackageStore {
     new FileInfo(path).readData(consumer);
   }
 
+  @Override
+  public void syncToAllNodes(String path) throws IOException {
+    FileInfo fi = new FileInfo(path);
+    if (!fi.exists(true, false)) {
+      throw new SolrException(BAD_REQUEST, "No such file : " + path);
+    }
+    fi.getFileData(true);
+    distribute(fi);
+  }
 
   @Override
-  public List list(String path, Predicate<String> predicate) {
+  public List<FileDetails> list(String path, Predicate<String> predicate) {
     File file = getRealpath(path).toFile();
     List<FileDetails> fileDetails = new ArrayList<>();
     FileType type = getType(path, false);
@@ -445,6 +474,64 @@ public class DistribPackageStore implements PackageStore {
     return fileDetails;
   }
 
+  @Override
+  public void delete(String path) {
+    deleteLocal(path);
+    List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
+    HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
+    for (String node : nodes) {
+      String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
+      String url = baseUrl.replace("/solr", "/api") + "/node/files" + path;
+      HttpDelete del = new HttpDelete(url);
+      coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));//invoke delete command on all nodes asynchronously
+    }
+  }
+
+  private void checkInZk(String path) {
+    try {
+      //fail if file exists
+      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path, true)) {
+        throw new SolrException(BAD_REQUEST, "The path exist ZK, delete and retry");
+      }
+
+    } catch (SolrException se) {
+      throw se;
+    } catch (Exception e) {
+      log.error("Could not connect to ZK", e);
+    }
+  }
+
+  @Override
+  public void deleteLocal(String path) {
+    checkInZk(path);
+    FileInfo f = new FileInfo(path);
+    f.deleteFile();
+  }
+
+  @Override
+  public void refresh(String path) {
+    try {
+      @SuppressWarnings({"rawtypes"})
+      List l = null;
+      try {
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE + path, null, true);
+      } catch (KeeperException.NoNodeException e) {
+        // does not matter
+      }
+      if (l != null && !l.isEmpty()) {
+        @SuppressWarnings({"rawtypes"})
+        List myFiles = list(path, s -> true);
+        for (Object f : l) {
+          if (!myFiles.contains(f)) {
+            log.info("{} does not exist locally, downloading.. ", f);
+            fetch(path + "/" + f.toString(), "*");
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.error("Could not refresh files in {}", path, e);
+    }
+  }
 
   @Override
   public FileType getType(String path, boolean fetchMissing) {
@@ -453,13 +540,17 @@ public class DistribPackageStore implements PackageStore {
       if (fetch(path, null)) {
         file = getRealpath(path).toFile();
       }
-      if (!file.exists()) return FileType.NOFILE;
     }
+    return _getFileType(file);
+  }
+
+  public static FileType _getFileType(File file) {
+    if (!file.exists()) return FileType.NOFILE;
     if (file.isDirectory()) return FileType.DIRECTORY;
     return isMetaDataFile(file.getName()) ? FileType.METADATA : FileType.FILE;
   }
 
-  private boolean isMetaDataFile(String file) {
+  public static boolean isMetaDataFile(String file) {
     return file.charAt(0) == '.' && file.endsWith(".json");
   }
 
@@ -472,12 +563,78 @@ public class DistribPackageStore implements PackageStore {
           log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome);
         }
       } catch (Exception e) {
-        log.warn("Unable to create [" + packageStoreDir + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", packageStoreDir, solrHome, e);
       }
     }
   }
 
   public static Path getPackageStoreDirPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), PackageStoreAPI.PACKAGESTORE_DIRECTORY).toAbsolutePath();
+    return solrHome.resolve(PackageStoreAPI.PACKAGESTORE_DIRECTORY);
+  }
+
+  private static String _getMetapath(String path) {
+    int idx = path.lastIndexOf('/');
+    return path.substring(0, idx + 1) + "." + path.substring(idx + 1) + ".json";
+  }
+
+  /**
+   * Internal API
+   */
+  public static void _persistToFile(Path solrHome, String path, ByteBuffer data, ByteBuffer meta) throws IOException {
+    Path realpath = _getRealPath(path, solrHome);
+    File file = realpath.toFile();
+    File parent = file.getParentFile();
+    if (!parent.exists()) {
+      parent.mkdirs();
+    }
+    @SuppressWarnings({"rawtypes"})
+    Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
+    if (m == null || m.isEmpty()) {
+      throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
+    }
+
+
+    File metdataFile = _getRealPath(_getMetapath(path), solrHome).toFile();
+
+    try (FileOutputStream fos = new FileOutputStream(metdataFile)) {
+      fos.write(meta.array(), 0, meta.limit());
+    }
+    IOUtils.fsync(metdataFile.toPath(), false);
+
+    try (FileOutputStream fos = new FileOutputStream(file)) {
+      fos.write(data.array(), 0, data.limit());
+    }
+    IOUtils.fsync(file.toPath(), false);
+  }
+
+  @Override
+  public Map<String, byte[]> getKeys() throws IOException {
+    return _getKeys(solrhome);
+  }
+
+
+  // reads local keys file
+  private static Map<String, byte[]> _getKeys(Path solrhome) throws IOException {
+    Map<String, byte[]> result = new HashMap<>();
+    Path keysDir = _getRealPath(PackageStoreAPI.KEYS_DIR, solrhome);
+
+    File[] keyFiles = keysDir.toFile().listFiles();
+    if (keyFiles == null) return result;
+    for (File keyFile : keyFiles) {
+      if (keyFile.isFile() && !isMetaDataFile(keyFile.getName())) {
+        try (InputStream fis = new FileInputStream(keyFile)) {
+          result.put(keyFile.getName(), SimplePostTool.inputStreamToByteArray(fis).array());
+        }
+      }
+    }
+    return result;
+  }
+
+  public static void deleteZKFileEntry(SolrZkClient client, String path) {
+    try {
+      client.delete(ZK_PACKAGESTORE + path, -1, true);
+    } catch (KeeperException | InterruptedException e) {
+      log.error("", e);
+    }
   }
 }

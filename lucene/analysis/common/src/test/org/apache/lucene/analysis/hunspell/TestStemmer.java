@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-
 import org.junit.BeforeClass;
 
 public class TestStemmer extends StemmerTestBase {
@@ -58,9 +57,9 @@ public class TestStemmer extends StemmerTestBase {
     assertStemsTo("olr", "olr");
     assertStemsTo("solr", "olr");
   }
-  
+
   // some bogus stuff that should not stem (empty lists)!
-  public void testBogusStems() {    
+  public void testBogusStems() {
     assertStemsTo("abs");
     assertStemsTo("abe");
     assertStemsTo("sab");

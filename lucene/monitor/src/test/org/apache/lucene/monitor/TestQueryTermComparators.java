@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -58,15 +57,12 @@ public class TestQueryTermComparators extends LuceneTestCase {
     Term term = new Term("f", "foobar");
 
     QueryTree node1 = QueryTree.term(term, 1);
-    QueryTree node2 = QueryTree.disjunction(
-        QueryTree.term(term, 1),
-        QueryTree.term(term, 1));
+    QueryTree node2 = QueryTree.disjunction(QueryTree.term(term, 1), QueryTree.term(term, 1));
 
     QueryTree conjunction = QueryTree.conjunction(node1, node2);
     Set<Term> terms = new HashSet<>();
     conjunction.collectTerms((f, b) -> terms.add(new Term(f, b)));
     assertEquals(1, terms.size());
-
   }
 
   public void testFieldWeights() {
@@ -87,17 +83,14 @@ public class TestQueryTermComparators extends LuceneTestCase {
     termfreqs.put("s", 47088);
     TermWeightor weight = TermWeightor.termFreqWeightor(termfreqs, 100, 0.8);
 
-    assertTrue(weight.applyAsDouble(new Term("f", "france")) >
-        weight.applyAsDouble(new Term("f", "s")));
-
+    assertTrue(
+        weight.applyAsDouble(new Term("f", "france")) > weight.applyAsDouble(new Term("f", "s")));
   }
 
   public void testFieldSpecificTermWeightNorms() {
-    TermWeightor weight = TermWeightor.termAndFieldWeightor(0.1,
-        new Term("field1", "f"),
-        new Term("field1", "g"));
+    TermWeightor weight =
+        TermWeightor.termAndFieldWeightor(0.1, new Term("field1", "f"), new Term("field1", "g"));
     assertEquals(0.1, weight.applyAsDouble(new Term("field1", "f")), 0);
     assertEquals(1, weight.applyAsDouble(new Term("field2", "f")), 0);
   }
-
 }

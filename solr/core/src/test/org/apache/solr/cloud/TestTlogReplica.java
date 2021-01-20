@@ -39,7 +39,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,6 +47,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -60,10 +60,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -71,12 +72,12 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12313")
 public class TestTlogReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -90,14 +91,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("metricsEnabled", "true");
+    System.setProperty("solr.waitToSeeReplicasInStateTimeoutSeconds", "30");
     configureCluster(2) // 2 + random().nextInt(3)
         .addConfig("conf", configset("cloud-minimal-inplace-updates"))
         .configure();
-    Boolean useLegacyCloud = rarely();
-    log.info("Using legacyCloud?: {}", useLegacyCloud);
-    CollectionAdminRequest.ClusterProp clusterPropRequest = CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, String.valueOf(useLegacyCloud));
-    CollectionAdminResponse response = clusterPropRequest.process(cluster.getSolrClient());
-    assertEquals(0, response.getStatus());
   }
 
   @AfterClass
@@ -149,80 +147,73 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
-  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testCreateDelete() throws Exception {
-    try {
-      switch (random().nextInt(3)) {
-        case 0:
-          CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
-          .setMaxShardsPerNode(100)
-          .process(cluster.getSolrClient());
-          cluster.waitForActiveCollection(collectionName, 2, 8);
-          break;
-        case 1:
-          // Sometimes don't use SolrJ
-          String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s&maxShardsPerNode=%s",
-              cluster.getRandomJetty(random()).getBaseUrl(),
-              collectionName, "conf",
-              2,    // numShards
-              4,    // tlogReplicas
-              100); // maxShardsPerNode
-          HttpGet createCollectionGet = new HttpGet(url);
-          HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
-          assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-          cluster.waitForActiveCollection(collectionName, 2, 8);
-          break;
-        case 2:
-          // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
-          String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s, maxShardsPerNode:%s}}",
-              collectionName, "conf",
-              2,    // numShards
-              4,    // tlogReplicas
-              100); // maxShardsPerNode
-          HttpPost createCollectionPost = new HttpPost(url);
-          createCollectionPost.setHeader("Content-type", "application/json");
-          createCollectionPost.setEntity(new StringEntity(requestBody));
-          httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
-          assertEquals(200, httpResponse.getStatusLine().getStatusCode());
-          cluster.waitForActiveCollection(collectionName, 2, 8);
-          break;
-      }
+    switch (random().nextInt(3)) {
+      case 0:
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 0, 4, 0)
+        .process(cluster.getSolrClient());
+        cluster.waitForActiveCollection(collectionName, 2, 8);
+        break;
+      case 1:
+        // Sometimes don't use SolrJ
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&tlogReplicas=%s",
+            cluster.getRandomJetty(random()).getBaseUrl(),
+            collectionName, "conf",
+            2,    // numShards
+            4);   // tlogReplicas
+        HttpGet createCollectionGet = new HttpGet(url);
+        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        cluster.waitForActiveCollection(collectionName, 2, 8);
+        break;
+      case 2:
+        // Sometimes use V2 API
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+        String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, tlogReplicas:%s}}",
+            collectionName, "conf",
+            2,    // numShards
+            4);   // tlogReplicas
 
-      boolean reloaded = false;
-      while (true) {
-        DocCollection docCollection = getCollectionState(collectionName);
-        assertNotNull(docCollection);
-        assertEquals("Expecting 2 shards",
-            2, docCollection.getSlices().size());
-        assertEquals("Expecting 4 relpicas per shard",
-            8, docCollection.getReplicas().size());
-        assertEquals("Expecting 8 tlog replicas, 4 per shard",
-            8, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
-        assertEquals("Expecting no nrt replicas",
-            0, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
-        assertEquals("Expecting no pull replicas",
-            0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
-        for (Slice s:docCollection.getSlices()) {
-          assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
-          List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
-          assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
-              4, shardElectionNodes.size());
-        }
-        assertUlogPresence(docCollection);
-        if (reloaded) {
-          break;
-        } else {
-          // reload
-          CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
-          .process(cluster.getSolrClient());
-          assertEquals(0, response.getStatus());
-          waitForState("failed waiting for active colletion", collectionName, clusterShape(2, 8));
-          reloaded = true;
-        }
+        HttpPost createCollectionPost = new HttpPost(url);
+        createCollectionPost.setHeader("Content-type", "application/json");
+        createCollectionPost.setEntity(new StringEntity(requestBody));
+        httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        cluster.waitForActiveCollection(collectionName, 2, 8);
+        break;
+    }
+
+    boolean reloaded = false;
+    while (true) {
+      DocCollection docCollection = getCollectionState(collectionName);
+      assertNotNull(docCollection);
+      assertEquals("Expecting 2 shards",
+          2, docCollection.getSlices().size());
+      assertEquals("Expecting 4 relpicas per shard",
+          8, docCollection.getReplicas().size());
+      assertEquals("Expecting 8 tlog replicas, 4 per shard",
+          8, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+      assertEquals("Expecting no nrt replicas",
+          0, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+      assertEquals("Expecting no pull replicas",
+          0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+      for (Slice s:docCollection.getSlices()) {
+        assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
+        List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
+        assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
+            4, shardElectionNodes.size());
       }
-    } finally {
-      zkClient().printLayoutToStream(System.out);
+      assertUlogPresence(docCollection);
+      if (reloaded) {
+        break;
+      } else {
+        // reload
+        CollectionAdminResponse response = CollectionAdminRequest.reloadCollection(collectionName)
+        .process(cluster.getSolrClient());
+        assertEquals(0, response.getStatus());
+        waitForState("failed waiting for active colletion", collectionName, clusterShape(2, 8));
+        reloaded = true;
+      }
     }
   }
 
@@ -254,7 +245,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
                 "stats", "true");
             QueryResponse statsResponse = tlogReplicaClient.query(req);
             assertEquals("Append replicas should recive all updates. Replica: " + r + ", response: " + statsResponse,
-                1L, ((Map<String, Object>)((NamedList<Object>)statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
+                1L, ((Map<String, Object>)(statsResponse.getResponse()).findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get("UPDATE.updateHandler.cumulativeAdds.count"));
             break;
           } catch (AssertionError e) {
             if (t.hasTimedOut()) {
@@ -334,7 +325,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     int numReplicas = random().nextBoolean()?1:2;
     int numNrtReplicas = random().nextBoolean()?0:2;
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, numNrtReplicas, numReplicas, 0)
-      .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
     waitForState("Unexpected replica count", collectionName, activeReplicaCount(numNrtReplicas, numReplicas, 0));
     DocCollection docCollection = assertNumberOfReplicas(numNrtReplicas, numReplicas, 0, false, true);
@@ -409,17 +399,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     docCollection = assertNumberOfReplicas(0, 1, 0, true, true);
 
     // Wait until a new leader is elected
-    TimeOut t = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!t.hasTimedOut()) {
-      docCollection = getCollectionState(collectionName);
-      Replica leader = docCollection.getSlice("shard1").getLeader();
-      if (leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
-        break;
-      }
-      Thread.sleep(500);
-    }
-    assertFalse("Timeout waiting for a new leader to be elected", t.hasTimedOut());
-
+    waitForLeaderChange(leaderJetty, "shard1");
+    
     // There is a new leader, I should be able to add and commit
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     cluster.getSolrClient().commit(collectionName);
@@ -428,7 +409,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
     // Start back the node
     if (removeReplica) {
-      CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
+      addReplicaWithRetries();
+      
     } else {
       leaderJetty.start();
     }
@@ -437,6 +419,23 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
   }
 
+  private void addReplicaWithRetries() throws SolrServerException, IOException {
+    int maxAttempts = 3;
+    for (int i = 0; i < maxAttempts ; i++) {
+      try {
+        CollectionAdminResponse respone = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
+        // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a Jira to address that separately. for now, we'll retry
+        if (respone.isSuccess()) {
+          break;
+        }
+        log.error("Unsuccessful attempt to add replica. Attempt: {}/{}", i, maxAttempts);
+      } catch (SolrException e) {
+        log.error("Exception while adding replica. Attempt: {}/{}", i, maxAttempts, e);
+      }
+    }
+  }
+
+  @Ignore
   public void testKillTlogReplica() throws Exception {
     DocCollection docCollection = createAndWaitForCollection(1, 0, 2, 0);
 
@@ -448,6 +447,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     pullReplicaJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+    waitForLeaderChange(pullReplicaJetty, "shard1");
 //    // Also wait for the replica to be placed in state="down"
 //    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
 
@@ -461,7 +461,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   @Test
-  // Removed BadApple on 2018-05-21
   public void testOnlyLeaderIndexes() throws Exception {
     createAndWaitForCollection(1, 0, 2, 0);
 
@@ -474,12 +473,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
 
     {
-      long docsPending = (long) getSolrCore(true).get(0).getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      long docsPending = (long) getSolrCore(true).get(0).getSolrMetricsContext().getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
       assertEquals("Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),4, docsPending);
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
-      long docsPending = (long) solrCore.getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      long docsPending = (long) solrCore.getSolrMetricsContext().getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
       assertEquals("Expected non docs are pending in core " + solrCore.getCoreDescriptor(),0, docsPending);
     }
 
@@ -525,7 +524,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     checkRTG(120,150, cluster.getJettySolrRunners());
-    waitForReplicasCatchUp(20);
+    waitForReplicasCatchUp(4 * REPLICATION_TIMEOUT_SECS);
   }
 
   @SuppressWarnings("unchecked")
@@ -557,7 +556,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "7"));
       ureq.setParam("collection", collectionName);
-      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
@@ -565,10 +563,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
       log.info("Min RF not achieved yet. retrying");
     }
     checkRTG(3,7, cluster.getJettySolrRunners());
-    DirectUpdateHandler2.commitOnClose = false;
-    solrRunner.stop();
-    waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
-    DirectUpdateHandler2.commitOnClose = true;
+    try {
+      TestInjection.skipIndexWriterCommitOnClose = true;
+      solrRunner.stop();
+      waitForState("Replica still up", collectionName, activeReplicaCount(0,1,0));
+    } finally {
+      TestInjection.skipIndexWriterCommitOnClose = false;
+    }
     solrRunner.start();
     waitForState("Replica didn't recover", collectionName, activeReplicaCount(0,2,0));
     waitForNumDocsInAllReplicas(5, getNonLeaderReplias(collectionName), 10); //timeout for stale collection state
@@ -595,7 +596,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "8"));
       ureq.setParam("collection", collectionName);
-      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
@@ -658,7 +658,11 @@ public class TestTlogReplica extends SolrCloudTestCase {
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
     oldLeaderJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    new UpdateRequest()
+
+    // Even after the replica is gone, a leader may not be elected yet. Wait for it. 
+    waitForLeaderChange(oldLeaderJetty, "shard1");
+    
+    new UpdateRequest()   
         .add(sdoc("id", "3"))
         .add(sdoc("id", "4"))
         .process(cloudClient, collectionName);
@@ -668,6 +672,92 @@ public class TestTlogReplica extends SolrCloudTestCase {
     new UpdateRequest()
         .commit(cloudClient, collectionName);
     waitForNumDocsInAllActiveReplicas(4, 0);
+  }
+  public void testRebalanceLeaders() throws Exception {
+    createAndWaitForCollection(1,0,2,0);
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), collectionName);
+
+    // Find a replica which isn't leader
+    DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    Slice slice = docCollection.getSlices().iterator().next();
+    Replica newLeader = null;
+    for (Replica replica : slice.getReplicas()) {
+      if (slice.getLeader() == replica) continue;
+      newLeader = replica;
+      break;
+    }
+    assertNotNull("Failed to find a candidate of new leader", newLeader);
+
+    // Set preferredLeader flag to the replica
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.ADDREPLICAPROP.toString());
+    params.set("collection", collectionName);
+    params.set("shard", slice.getName());
+    params.set("replica", newLeader.getName());
+    params.set("property", "preferredLeader");
+    params.set("property.value", "true");
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    cloudClient.request(request);
+
+    // Wait until a preferredleader flag is set to the new leader candidate
+    TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      Map<String, Slice> slices = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getSlicesMap();
+      Replica me = slices.get(slice.getName()).getReplica(newLeader.getName());
+      if (me.getBool("property.preferredleader", false)) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertFalse("Timeout waiting for setting preferredleader flag", timeout.hasTimedOut());
+
+    // Rebalance leaders
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.REBALANCELEADERS.toString());
+    params.set("collection", collectionName);
+    params.set("maxAtOnce", "10");
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    cloudClient.request(request);
+
+    // Wait until a new leader is elected
+    timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      docCollection = getCollectionState(collectionName);
+      Replica leader = docCollection.getSlice(slice.getName()).getLeader();
+      if (leader != null && leader.getName().equals(newLeader.getName()) &&
+          leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertFalse("Timeout waiting for a new leader to be elected", timeout.hasTimedOut());
+
+    new UpdateRequest()
+        .add(sdoc("id", "1"))
+        .add(sdoc("id", "2"))
+        .add(sdoc("id", "3"))
+        .add(sdoc("id", "4"))
+        .process(cloudClient, collectionName);
+    checkRTG(1,4, cluster.getJettySolrRunners());
+    new UpdateRequest()
+        .commit(cloudClient, collectionName);
+    waitForNumDocsInAllActiveReplicas(4);
+  }
+  private void waitForLeaderChange(JettySolrRunner oldLeaderJetty, String shardName) {
+    waitForState("Expect new leader", collectionName,
+        (liveNodes, collectionState) -> {
+          Replica leader = collectionState.getLeader(shardName);
+          if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+            return false;
+          }
+          return oldLeaderJetty == null || !leader.getNodeName().equals(oldLeaderJetty.getNodeName());
+        }
+    );
   }
 
   public void testOutOfOrderDBQWithInPlaceUpdates() throws Exception {
@@ -687,16 +777,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
-    String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     oldLeaderJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    waitForState("Expect new leader", collectionName,
-        (liveNodes, collectionState) -> {
-          Replica leader = collectionState.getLeader("shard1");
-          if (leader == null) return false;
-          return !leader.getNodeName().equals(oldLeaderNodeName);
-        }
-    );
+    waitForLeaderChange(oldLeaderJetty, "shard1");
     oldLeaderJetty.start();
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
@@ -740,7 +823,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private DocCollection createAndWaitForCollection(int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) throws SolrServerException, IOException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, numNrtReplicas, numTlogReplicas, numPullReplicas)
-    .setMaxShardsPerNode(100)
     .process(cluster.getSolrClient());
     int numReplicasPerShard = numNrtReplicas + numTlogReplicas + numPullReplicas;
     waitForState("Expected collection to be created with " + numShards + " shards and  " + numReplicasPerShard + " replicas",
@@ -958,6 +1040,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private long getTimesCopyOverOldUpdates(SolrCore core) {
-    return ((Meter)core.getMetricRegistry().getMetrics().get("TLOG.copyOverOldUpdates.ops")).getCount();
+    return ((Meter)core.getSolrMetricsContext().getMetricRegistry().getMetrics().get("TLOG.copyOverOldUpdates.ops")).getCount();
   }
 }

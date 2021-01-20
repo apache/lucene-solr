@@ -30,7 +30,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -445,7 +445,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   public void testConcurrentAdds() throws Exception {
     final int NUM_DOCS = atLeast(50);
     final int MAX_CONCURENT = atLeast(10);
-    ExecutorService runner = ExecutorUtil.newMDCAwareFixedThreadPool(MAX_CONCURENT, new DefaultSolrThreadFactory("TestDocBasedVersionConstraints"));
+    ExecutorService runner = ExecutorUtil.newMDCAwareFixedThreadPool(MAX_CONCURENT, new SolrNamedThreadFactory("TestDocBasedVersionConstraints"));
     // runner = Executors.newFixedThreadPool(1);    // to test single threaded
     try {
       for (int id = 0; id < NUM_DOCS; id++) {

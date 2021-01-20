@@ -32,6 +32,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -81,6 +82,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
 
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -116,6 +118,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     // Should have segments in the directory pointed to by the ${DATA_TEST}.
     File test = new File(dataDir, "index");
     assertTrue("Should have found index dir at " + test.getAbsolutePath(), test.exists());
+    admin.close();
   }
 
   @Test
@@ -123,6 +126,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     final File workDir = createTempDir().toFile();
     
     final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir.toPath());
 
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
@@ -190,12 +194,13 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
            CoreAdminParams.CoreAdminAction.STATUS.toString(),
            CoreAdminParams.CORE, "bogus_dir_core"),
          resp);
-    Map<String,Exception> failures = 
+    @SuppressWarnings("unchecked")
+    Map<String,Exception> failures =
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    NamedList<Object> status = 
-      (NamedList<Object>)resp.getValues().get("status");
+    @SuppressWarnings({"rawtypes"})
+    NamedList status = (NamedList)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 
     assertEquals("wrong number of core failures", 1, failures.size());
@@ -242,7 +247,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertNotNull("Core should have been renamed!", cd);
 
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
-
+    admin.close();
   }
 
   @Test
@@ -338,7 +343,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    HttpSolrClient.RemoteSolrException rse = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl() + "/corex", DEFAULT_CONNECTION_TIMEOUT,
           DEFAULT_CONNECTION_TIMEOUT * 1000)) {
         client.query(new SolrQuery("id:*"));
@@ -346,7 +351,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         runner.stop();
       }
     });
-    assertTrue(rse.getMessage().contains("Can not find: /solr/corex/select"));
+    assertEquals("Should have received a 404 error", 404,  rse.code());
   }
   
   @Test
@@ -416,5 +421,6 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
           , resp);
     });
     assertEquals("Expected error message for non-existent core.", "Missing required parameter: core", e.getMessage());
+    admin.close();
   }
 }

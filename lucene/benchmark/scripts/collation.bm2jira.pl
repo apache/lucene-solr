@@ -40,17 +40,17 @@ while (<>) {
 }
 
 # Print out platform info
-print "JAVA:\n", `java -version 2>&1`, "\nOS:\n";
-if ($^O =~ /win/i) {
-  print "$^O\n";
-  eval {
-    require Win32;
-    print Win32::GetOSName(), "\n", Win32::GetOSVersion(), "\n";
-  };
-  die "Error loading Win32: $@" if ($@);
-} else {
-  print `uname -a 2>&1`;
-}
+#print "JAVA:\n", `java -version 2>&1`, "\nOS:\n";
+#if ($^O =~ /win/i) {
+#  print "$^O\n";
+#  eval {
+#    require Win32;
+#    print Win32::GetOSName(), "\n", Win32::GetOSVersion(), "\n";
+#  };
+#  die "Error loading Win32: $@" if ($@);
+#} else {
+#  print `uname -a 2>&1`;
+#}
 
 print "\n||Language||java.text||ICU4J||KeywordAnalyzer||ICU4J Improvement||\n";
 

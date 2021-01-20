@@ -81,7 +81,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       fail("no overseer leader!");
     }
   }
-  
+
   @After
   public void afterTest() throws Exception {
     try {
@@ -95,14 +95,16 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
     String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
-    log.info("total_jettys: " + cluster.getJettySolrRunners().size());
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
     int REPLICATION = 2;
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
-    create.setMaxShardsPerNode(2);
-    create.setAutoAddReplicas(false);
+    // random create tlog or pull type replicas with nrt
+    boolean isTlog = random().nextBoolean();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -126,8 +128,8 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       }
     }
 
-    int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll);
-    int targetNumCores = getNumOfCores(cloudClient, targetNode, coll);
+    int sourceNumCores = getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name());
+    int targetNumCores = getNumOfCores(cloudClient, targetNode, coll, replica.getType().name());
 
     CollectionAdminRequest.MoveReplica moveReplica = createMoveReplicaRequest(coll, replica, targetNode);
     moveReplica.setInPlaceMove(inPlaceMove);
@@ -146,13 +148,13 @@ public class MoveReplicaTest extends SolrCloudTestCase {
       Thread.sleep(500);
     }
     assertTrue(success);
-    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll));
-    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll));
+    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
+    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
     // wait for recovery
     boolean recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
-      log.debug("###### " + collState);
+      log.debug("###### {}", collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
       boolean hasLeaders = true;
@@ -162,7 +164,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
             continue;
           }
           if (!r.isActive(Collections.singleton(targetNode))) {
-            log.info("Not active: " + r);
+            log.info("Not active: {}", r);
             allActive = false;
           }
         }
@@ -180,7 +182,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         recovered = true;
         break;
       } else {
-        log.info("--- waiting, allActive=" + allActive + ", hasLeaders=" + hasLeaders);
+        log.info("--- waiting, allActive={}, hasLeaders={}", allActive, hasLeaders);
         Thread.sleep(1000);
       }
     }
@@ -196,7 +198,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
-      log.debug("###### " + collState);
+      log.debug("###### {}", collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
       boolean hasLeaders = true;
@@ -206,7 +208,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
             continue;
           }
           if (!r.isActive(Collections.singleton(replica.getNodeName()))) {
-            log.info("Not active yet: " + r);
+            log.info("Not active yet: {}", r);
             allActive = false;
           }
         }
@@ -230,6 +232,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
+
   //Commented out 5-Dec-2017
   // @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11458")
   @Test
@@ -242,8 +245,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, REPLICATION);
-    create.setAutoAddReplicas(false);
+    // random create tlog or pull type replicas with nrt
+    boolean isTlog = random().nextBoolean();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, 1, isTlog ? 1 : 0, !isTlog ? 1 : 0);
     cloudClient.request(create);
 
     addDocs(coll, 100);
@@ -296,7 +300,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertFalse(success);
 
-    log.info("--- current collection state: " + cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    if (log.isInfoEnabled()) {
+      log.info("--- current collection state: {}", cloudClient.getZkStateReader().getClusterState().getCollection(coll));
+    }
     assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
   }
 
@@ -315,28 +321,40 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   }
 
   private void checkNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, int expectedCores) throws IOException, SolrServerException {
-    assertEquals(nodeName + " does not have expected number of cores",expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
+    assertEquals(nodeName + " does not have expected number of cores", expectedCores, getNumOfCores(cloudClient, nodeName, collectionName));
   }
 
   private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName) throws IOException, SolrServerException {
+    return getNumOfCores(cloudClient, nodeName, collectionName, null);
+  }
+
+  private int getNumOfCores(CloudSolrClient cloudClient, String nodeName, String collectionName, String replicaType) throws IOException, SolrServerException {
     try (HttpSolrClient coreclient = getHttpSolrClient(cloudClient.getZkStateReader().getBaseUrlForNodeName(nodeName))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(null, coreclient);
       if (status.getCoreStatus().size() == 0) {
         return 0;
       }
-      // filter size by collection name
-      if (collectionName == null) {
+      if (collectionName == null && replicaType == null) {
         return status.getCoreStatus().size();
-      } else {
-        int size = 0;
-        for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
+      }
+      // filter size by collection name
+      int size = 0;
+      for (Map.Entry<String, NamedList<Object>> stringNamedListEntry : status.getCoreStatus()) {
+        if (collectionName != null) {
           String coll = (String) stringNamedListEntry.getValue().findRecursive("cloud", "collection");
-          if (collectionName.equals(coll)) {
-            size++;
+          if (!collectionName.equals(coll)) {
+            continue;
           }
         }
-        return size;
+        if (replicaType != null) {
+          String type = (String) stringNamedListEntry.getValue().findRecursive("cloud", "replicaType");
+          if (!replicaType.equals(type)) {
+            continue;
+          }
+        }
+        size++;
       }
+      return size;
     }
   }
 

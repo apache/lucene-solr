@@ -467,12 +467,14 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
     SolrQueryResponse rsp = loadLocal("extraction/solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true");
     assertTrue("rsp is null and it shouldn't be", rsp != null);
+    @SuppressWarnings({"rawtypes"})
     NamedList list = rsp.getValues();
 
     String extraction = (String) list.get("solr-word.pdf");
     assertTrue("extraction is null and it shouldn't be", extraction != null);
     assertTrue(extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
 
+    @SuppressWarnings({"rawtypes"})
     NamedList nl = (NamedList) list.get("solr-word.pdf_metadata");
     assertTrue("nl is null and it shouldn't be", nl != null);
     Object title = nl.get("title");
@@ -507,6 +509,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             ExtractingParams.EXTRACT_ONLY, "true"
     );
     assertTrue("rsp is null and it shouldn't be", rsp != null);
+    @SuppressWarnings({"rawtypes"})
     NamedList list = rsp.getValues();
     String val = (String) list.get("example.html");
     assertEquals("News", val.trim()); //there is only one matching <a> tag

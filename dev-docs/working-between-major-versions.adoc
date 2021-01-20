@@ -1,0 +1,63 @@
+= Working between Multiple Major versions
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Working between multiple major versions of `lucene-solr` is often a necessary part of committing code, due to backports and testing.
+For some versions, this is an even bigger issue because `8.x` and `9.x` use different build systems, ant and gradle.
+Switching between these branches will result in many files left around that are not tracked by the other branch.
+Even when the build system between branches is the same, major refactoring can produce the same issues.
+These orphaned files can impact the use of `precommit`, IntelliJ, and other tools.
+
+== Git Worktree
+
+https://git-scm.com/docs/git-worktree[Git worktree] is a feature of git that allows you to have different directories store separate checkouts of the same repository, at the same time.
+The git metadata is shared between the different directories, so any remotes added or local commits made from one worktree are available to all other worktrees as well.
+
+For Lucene-Solr, this allows us to have separate directories (worktrees) that manage the checkouts of `master` and `branch_8x` (or any other major branch).
+One can make a commit on `master`, then easily switch directories and cherry-pick the commit onto `branch_8x` without having to worry about gradle or ant files.
+This setup also allows the commit to be tested on `master` and `branch_8x` simultaneously.
+
+=== Setup
+
+Wherever you store your source code, create a root folder for lucene-solr.
+
+```
+mkdir lucene-solr
+```
+
+This folder is not a git folder however. Instead, it will hold all of our lucene-solr git checkouts.
+
+```bash
+cd lucene-solr
+# Master will be the main lucene-solr checkout, that all worktrees stem from.
+git clone git@github.com:apache/lucene-solr.git master
+cd master
+# For each branch that you want a separate directory created for, add a worktree
+git worktree add ../8x branch_8x
+# If you plan on working on older versions of Solr as well, make worktrees for them too
+git worktree add ../7x branch_7x
+```
+
+=== Using the Worktrees
+
+It's not necessary to create a worktree for every branch you are working on.
+Creating repositories for each relevant major version is likely sufficient, because the differences between minor versions is likely not great enough to require a whole new folder.
+Therefore most developers will only need 2, master and the lastest major version.
+Whenever working on a minor release branch, you can easily use the worktree that corresponds to the same major version.
+
+If you are using IntelliJ, you will likely want to load each of the worktrees as a separate project.
+That way when you switch between them, IntelliJ will not have to re-build the project fully.

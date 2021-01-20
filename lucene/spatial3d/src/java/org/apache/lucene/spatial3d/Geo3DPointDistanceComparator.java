@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial3d;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -32,33 +31,40 @@ import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
 
 /**
- * Compares documents by distance from an origin point, using a GeoDistanceShape to compute the distance
- * <p>
- * When the least competitive item on the priority queue changes (setBottom), we recompute
- * a bounding box representing competitive distance to the top-N. Then in compareBottom, we can
+ * Compares documents by distance from an origin point, using a GeoDistanceShape to compute the
+ * distance
+ *
+ * <p>When the least competitive item on the priority queue changes (setBottom), we recompute a
+ * bounding box representing competitive distance to the top-N. Then in compareBottom, we can
  * quickly reject hits based on bounding box alone without computing distance for every element.
  */
 class Geo3DPointDistanceComparator extends FieldComparator<Double> implements LeafFieldComparator {
   final String field;
-  
+
   final GeoDistanceShape distanceShape;
+  private final PlanetModel planetModel;
 
   final double[] values;
   double bottomDistance;
   double topValue;
   SortedNumericDocValues currentDocs;
-  
+
   XYZBounds priorityQueueBounds;
-  
+
   // the number of times setBottom has been called (adversary protection)
   int setBottomCounter = 0;
 
-  public Geo3DPointDistanceComparator(String field, final GeoDistanceShape distanceShape, int numHits) {
+  public Geo3DPointDistanceComparator(
+      String field,
+      final PlanetModel planetModel,
+      final GeoDistanceShape distanceShape,
+      int numHits) {
     this.field = field;
     this.distanceShape = distanceShape;
+    this.planetModel = planetModel;
     this.values = new double[numHits];
   }
-  
+
   @Override
   public void setScorer(Scorable scorer) {}
 
@@ -66,7 +72,7 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
   public int compare(int slot1, int slot2) {
     return Double.compare(values[slot1], values[slot2]);
   }
-  
+
   @Override
   public void setBottom(int slot) {
     bottomDistance = values[slot];
@@ -81,12 +87,12 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
     }
     setBottomCounter++;
   }
-  
+
   @Override
   public void setTopValue(Double value) {
     topValue = value.doubleValue();
   }
-  
+
   @Override
   public int compareBottom(int doc) throws IOException {
     if (doc > currentDocs.docID()) {
@@ -95,7 +101,7 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
     if (doc < currentDocs.docID()) {
       return Double.compare(bottomDistance, Double.POSITIVE_INFINITY);
     }
-    
+
     int numValues = currentDocs.docValueCount();
     assert numValues > 0;
 
@@ -105,29 +111,33 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
 
       // Test against bounds.
       // First we need to decode...
-      final double x = Geo3DDocValuesField.decodeXValue(encoded);
-      final double y = Geo3DDocValuesField.decodeYValue(encoded);
-      final double z = Geo3DDocValuesField.decodeZValue(encoded);
-      
-      if (x > priorityQueueBounds.getMaximumX() ||
-        x < priorityQueueBounds.getMinimumX() ||
-        y > priorityQueueBounds.getMaximumY() ||
-        y < priorityQueueBounds.getMinimumY() ||
-        z > priorityQueueBounds.getMaximumZ() ||
-        z < priorityQueueBounds.getMinimumZ()) {
+      final double x = planetModel.getDocValueEncoder().decodeXValue(encoded);
+      final double y = planetModel.getDocValueEncoder().decodeYValue(encoded);
+      final double z = planetModel.getDocValueEncoder().decodeZValue(encoded);
+
+      if (x > priorityQueueBounds.getMaximumX()
+          || x < priorityQueueBounds.getMinimumX()
+          || y > priorityQueueBounds.getMaximumY()
+          || y < priorityQueueBounds.getMinimumY()
+          || z > priorityQueueBounds.getMaximumZ()
+          || z < priorityQueueBounds.getMinimumZ()) {
         continue;
       }
 
-      cmp = Math.max(cmp, Double.compare(bottomDistance, distanceShape.computeDistance(DistanceStyle.ARC, x, y, z)));
+      cmp =
+          Math.max(
+              cmp,
+              Double.compare(
+                  bottomDistance, distanceShape.computeDistance(DistanceStyle.ARC, x, y, z)));
     }
     return cmp;
   }
-  
+
   @Override
   public void copy(int slot, int doc) throws IOException {
     values[slot] = computeMinimumDistance(doc);
   }
-  
+
   @Override
   public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
     LeafReader reader = context.reader();
@@ -138,13 +148,13 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
     currentDocs = DocValues.getSortedNumeric(reader, field);
     return this;
   }
-  
+
   @Override
   public Double value(int slot) {
     // Return the arc distance
-    return Double.valueOf(values[slot] * PlanetModel.WGS84_MEAN);
+    return Double.valueOf(values[slot] * planetModel.getMeanRadius());
   }
-  
+
   @Override
   public int compareTop(int doc) throws IOException {
     return Double.compare(topValue, computeMinimumDistance(doc));
@@ -159,10 +169,12 @@ class Geo3DPointDistanceComparator extends FieldComparator<Double> implements Le
       final int numValues = currentDocs.docValueCount();
       for (int i = 0; i < numValues; i++) {
         final long encoded = currentDocs.nextValue();
-        final double distance = distanceShape.computeDistance(DistanceStyle.ARC,
-                                                              Geo3DDocValuesField.decodeXValue(encoded),
-                                                              Geo3DDocValuesField.decodeYValue(encoded),
-                                                              Geo3DDocValuesField.decodeZValue(encoded));
+        final double distance =
+            distanceShape.computeDistance(
+                DistanceStyle.ARC,
+                planetModel.getDocValueEncoder().decodeXValue(encoded),
+                planetModel.getDocValueEncoder().decodeYValue(encoded),
+                planetModel.getDocValueEncoder().decodeZValue(encoded));
         minValue = Math.min(minValue, distance);
       }
     }

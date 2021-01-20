@@ -31,11 +31,9 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -50,6 +48,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.StreamParams;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -62,12 +61,16 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  * The exception are {@link Types#DATE}, {@link Types#TIME} or {@link Types#TIMESTAMP}
  * which are determined by the JDBC type.
  * 
- * <table rules="all" frame="box" cellpadding="3" summary="Supported Java Types">
+ * <table class="padding3">
+ * <caption>Supported Java Types</caption>
+ * <thead style="border: 1px solid">
  * <tr>
  *   <th>Java or JDBC Type</th>
  *   <th>Tuple Type</th>
  *   <th>Notes</th>
  * </tr>
+ * </thead>
+ * <tbody style="border: 1px solid">
  * <tr>
  *   <td>Boolean</td>
  *   <td>Boolean</td>
@@ -113,6 +116,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  *   <td>String</td>
  *   <td>See {@link DateTimeFormatter#ISO_INSTANT}</td>
  * </tr>
+ * </tbody>
  * </table>
  * 
  * @since 6.0.0
@@ -510,22 +514,20 @@ public class JDBCStream extends TupleStream implements Expressible {
   
   public Tuple read() throws IOException {
     
-    try{
-      Map<Object,Object> fields = new HashMap<>();
-      if(resultSet.next()){
+    try {
+      Tuple tuple = new Tuple();
+      if (resultSet.next()) {
         // we have a record
-        for(ResultSetValueSelector selector : valueSelectors){
-          fields.put(selector.getColumnName(), selector.selectValue(resultSet));
+        for (ResultSetValueSelector selector : valueSelectors) {
+          tuple.put(selector.getColumnName(), selector.selectValue(resultSet));
         }
-      }
-      else{
+      } else {
         // we do not have a record
-        fields.put("EOF", true);
+        tuple.put(StreamParams.EOF, true);
       }
       
-      return new Tuple(fields);
-    }
-    catch(SQLException e){
+      return tuple;
+    } catch (SQLException e) {
       throw new IOException(String.format(Locale.ROOT, "Failed to read next record with error '%s'", e.getMessage()), e);
     }
   }

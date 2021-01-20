@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm;
 
 /**
@@ -100,14 +101,13 @@ class ClassificationUpdateProcessor
   public void processAdd(AddUpdateCommand cmd)
       throws IOException {
     SolrInputDocument doc = cmd.getSolrInputDocument();
-    Document luceneDocument = cmd.getLuceneDocument();
-    String assignedClass;
     Object documentClass = doc.getFieldValue(trainingClassField);
     if (documentClass == null) {
+      Document luceneDocument = DocumentBuilder.toDocument(doc, cmd.getReq().getSchema(), false, true);
       List<ClassificationResult<BytesRef>> assignedClassifications = classifier.getClasses(luceneDocument, maxOutputClasses);
       if (assignedClassifications != null) {
         for (ClassificationResult<BytesRef> singleClassification : assignedClassifications) {
-          assignedClass = singleClassification.getAssignedClass().utf8ToString();
+          String assignedClass = singleClassification.getAssignedClass().utf8ToString();
           doc.addField(predictedClassField, assignedClass);
         }
       }

@@ -60,141 +60,148 @@ public class MedianFunction {
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a date or numeric parameter.");
   });
-}
-abstract class NumericMedianFunction<T extends Comparable<T>> extends AbstractDoubleValue implements ReductionFunction {
-  protected SortedListCollector<T> collector;
-  public static final String name = MedianFunction.name;
-  private final String exprStr;
 
-  public NumericMedianFunction(DoubleValueStream param, SortedListCollector<T> collector) {
-    this.collector = collector;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
+  abstract static class NumericMedianFunction<T extends Comparable<T>> extends AbstractDoubleValue implements ReductionFunction {
+    protected SortedListCollector<T> collector;
+    public static final String name = MedianFunction.name;
+    private final String exprStr;
 
-  protected abstract double collectOrd(int ord);
-
-  @Override
-  public double getDouble() {
-    int size = collector.size();
-    if (size == 0) {
-      return 0;
+    public NumericMedianFunction(DoubleValueStream param, SortedListCollector<T> collector) {
+      this.collector = collector;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
     }
-    if (size % 2 == 0) {
-      return (collectOrd(size/2) + collectOrd(size/2 - 1))/2;
-    } else {
-      return collectOrd(size/2);
+
+    protected abstract double collectOrd(int ord);
+
+    @Override
+    public double getDouble() {
+      int size = collector.size();
+      if (size == 0) {
+        return 0;
+      }
+      if (size % 2 == 0) {
+        return (collectOrd(size/2) + collectOrd(size/2 - 1))/2;
+      } else {
+        return collectOrd(size/2);
+      }
     }
-  }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedListCollector<T>)sync.apply(collector);
-    collector.calcMedian();
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
-  }
-}
-class IntMedianFunction extends NumericMedianFunction<Integer> {
-  public IntMedianFunction(IntValueStream param) {
-    super((DoubleValueStream) param, new SortedIntListCollector(param));
-  }
-
-  @Override
-  protected double collectOrd(int ord) {
-    return collector.get(ord);
-  }
-}
-class LongMedianFunction extends NumericMedianFunction<Long> {
-  public LongMedianFunction(LongValueStream param) {
-    super((DoubleValueStream) param, new SortedLongListCollector(param));
-  }
-
-  @Override
-  protected double collectOrd(int ord) {
-    return collector.get(ord);
-  }
-}
-class FloatMedianFunction extends NumericMedianFunction<Float> {
-  public FloatMedianFunction(FloatValueStream param) {
-    super((DoubleValueStream) param, new SortedFloatListCollector(param));
-  }
-
-  @Override
-  protected double collectOrd(int ord) {
-    return collector.get(ord);
-  }
-}
-class DoubleMedianFunction extends NumericMedianFunction<Double> {
-  public DoubleMedianFunction(DoubleValueStream param) {
-    super(param, new SortedDoubleListCollector(param));
-  }
-
-  @Override
-  protected double collectOrd(int ord) {
-    return collector.get(ord);
-  }
-}
-class DateMedianFunction extends AbstractDateValue implements ReductionFunction {
-  private SortedLongListCollector collector;
-  public static final String name = MedianFunction.name;
-  private final String exprStr;
-
-  public DateMedianFunction(DateValueStream param) {
-    this.collector = new SortedLongListCollector(param);
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
-  }
-
-  @Override
-  public long getLong() {
-    int size = collector.size();
-    if (size == 0) {
-      return 0;
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
     }
-    if (size % 2 == 0) {
-      return (collector.get(size/2) + collector.get(size/2 - 1))/2;
-    } else {
-      return collector.get(size/2);
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedListCollector<T>)sync.apply(collector);
+      collector.calcMedian();
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
     }
   }
-  @Override
-  public boolean exists() {
-    return collector.size() > 0;
+
+  static class IntMedianFunction extends NumericMedianFunction<Integer> {
+    public IntMedianFunction(IntValueStream param) {
+      super((DoubleValueStream) param, new SortedIntListCollector(param));
+    }
+
+    @Override
+    protected double collectOrd(int ord) {
+      return collector.get(ord);
+    }
   }
 
-  @Override
-  public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
-    collector = (SortedLongListCollector)sync.apply(collector);
-    collector.calcMedian();
+  static class LongMedianFunction extends NumericMedianFunction<Long> {
+    public LongMedianFunction(LongValueStream param) {
+      super((DoubleValueStream) param, new SortedLongListCollector(param));
+    }
+
+    @Override
+    protected double collectOrd(int ord) {
+      return collector.get(ord);
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
+  static class FloatMedianFunction extends NumericMedianFunction<Float> {
+    public FloatMedianFunction(FloatValueStream param) {
+      super((DoubleValueStream) param, new SortedFloatListCollector(param));
+    }
+
+    @Override
+    protected double collectOrd(int ord) {
+      return collector.get(ord);
+    }
   }
 
-  @Override
-  public ExpressionType getExpressionType() {
-    return ExpressionType.REDUCTION;
+  static class DoubleMedianFunction extends NumericMedianFunction<Double> {
+    public DoubleMedianFunction(DoubleValueStream param) {
+      super(param, new SortedDoubleListCollector(param));
+    }
+
+    @Override
+    protected double collectOrd(int ord) {
+      return collector.get(ord);
+    }
+  }
+
+  static class DateMedianFunction extends AbstractDateValue implements ReductionFunction {
+    private SortedLongListCollector collector;
+    public static final String name = MedianFunction.name;
+    private final String exprStr;
+
+    public DateMedianFunction(DateValueStream param) {
+      this.collector = new SortedLongListCollector(param);
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
+    }
+
+    @Override
+    public long getLong() {
+      int size = collector.size();
+      if (size == 0) {
+        return 0;
+      }
+      if (size % 2 == 0) {
+        return (collector.get(size/2) + collector.get(size/2 - 1))/2;
+      } else {
+        return collector.get(size/2);
+      }
+    }
+    @Override
+    public boolean exists() {
+      return collector.size() > 0;
+    }
+
+    @Override
+    public void synchronizeDataCollectors(UnaryOperator<ReductionDataCollector<?>> sync) {
+      collector = (SortedLongListCollector)sync.apply(collector);
+      collector.calcMedian();
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+
+    @Override
+    public ExpressionType getExpressionType() {
+      return ExpressionType.REDUCTION;
+    }
   }
 }
+

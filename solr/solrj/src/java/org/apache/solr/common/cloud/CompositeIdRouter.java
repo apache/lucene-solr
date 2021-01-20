@@ -26,12 +26,56 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-//
-// user!uniqueid
-// app!user!uniqueid
-// user/4!uniqueid
-// app/2!user/4!uniqueid
-//
+/**
+ * CompositeIdRouter partitions ids based on a {@link #SEPARATOR}, hashes each partition and merges the hashes together
+ * to map the id to a slice. This allows bucketing of like groups of ids.
+ *
+ * Allows basic separation split between 32 bits as example given below, or using {@link #bitsSeparator} can specify exact bits
+ * <pre>
+ * Example inputs:
+ * user!uniqueid
+ * app!user!uniqueid
+ * user/4!uniqueid
+ * app/2!user/4!uniqueid
+ * </pre>
+ * Lets say you had a set of records you want to index together such as a contact in a database, using a prefix of contact!contactid
+ * would allow all contact ids to be bucketed together.
+ *
+ * <pre>
+ * An Example:
+ * If the id "contact!0000000KISS is passed 😘
+ * Take "contact"" and hash it with murmurhash3_x86_32
+ * result: -541354036
+ * bits: 11011111101110111001011111001100
+ *
+ * Take 0000000KISS and hash it with murmurhash3_x86_32
+ * result: 2099700320
+ * bits: 01111101001001101110001001100000
+ *
+ * Now we take the bits and apply a mask, since this is 32 bits the mask is the first 16 bits or the last 16 bits
+ * So uppermask = 0xFFFF0000  11111111111111110000000000000000
+ * So we bitwise AND to get half the original hash and only the upper 16 bits for 00T
+ * 11011111101110111001011111001100
+ * 11111111111111110000000000000000
+ * ________________________________
+ * 11011111101110110000000000000000
+ *
+ * lowermask = 0x0000FFFF 00000000000000001111111111111111
+ * So we bitwise AND and get the lower 16 bits of the original hash for 0000000KISS
+ * 01111101001001101110001001100000
+ * 00000000000000001111111111111111
+ * ________________________________
+ * 00000000000000001110001001100000
+ *
+ * Now we combine the hashes with a bitwise OR
+ * 11011111101110110000000000000000
+ * 00000000000000001110001001100000
+ * ________________________________
+ * 11011111101110111110001001100000
+ *
+ * 11011111101110111110001001100000 is the hash we return, bucketing the suffixed by prefix type prefix!suffix
+ * </pre>
+ */
 public class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
@@ -149,7 +193,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     int max = range.max;
 
     assert max >= min;
-    if (partitions == 0) return Collections.EMPTY_LIST;
+    if (partitions == 0) return Collections.emptyList();
     long rangeSize = (long) max - (long) min;
     long rangeStep = Math.max(1, rangeSize / partitions);
 

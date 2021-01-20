@@ -291,6 +291,20 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return fromIndex;
   }
 
+  /**
+   * A helper method for other plugins to create single-core JoinQueries
+   *
+   * @param subQuery the query to define the starting set of documents on the "left side" of the join
+   * @param fromField "left side" field name to use in the join
+   * @param toField "right side" field name to use in the join
+   * @param scoreMode the score statistic to produce while joining
+   *
+   * @see JoinQParserPlugin#createJoinQuery(Query, String, String, String)
+   */
+  public static Query createJoinQuery(Query subQuery, String fromField, String toField, ScoreMode scoreMode) {
+    return new SameCoreJoinQuery(subQuery, fromField, toField, scoreMode);
+  }
+
   private static String resolveAlias(String fromIndex, ZkController zkController) {
     final Aliases aliases = zkController.getZkStateReader().getAliases();
     try {
@@ -309,7 +323,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: multiple shards not yet supported " + fromIndex);
+            "SolrCloud join: To join with a sharded collection, use method=crossCollection.");
 
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {
@@ -327,8 +341,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "SolrCloud join: No active replicas for "+fromIndex+
-              " found in node " + nodeName);
+          "SolrCloud join: To join with a collection that might not be co-located, use method=crossCollection.");
 
     return fromReplica;
   }

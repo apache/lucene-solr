@@ -33,7 +33,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.restlet.ext.servlet.ServerServlet;
 
 import static org.apache.solr.common.util.Utils.toJSONString;
 
@@ -51,9 +50,6 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
-    final ServletHolder solrRestApi = new ServletHolder("SolrSchemaRestApi", ServerServlet.class);
-    solrRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi");
-    extraServlets.put(solrRestApi, "/schema/*");
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
@@ -298,6 +294,82 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     // was it really deleted?
     assertJDelete(endpoint+"/fröhlich",
+        "/error/code==404");
+  }
+
+  /**
+   * Can we add and single term synonyms with weight
+   */
+  @Test
+  public void testManagedSynonyms_singleTermWithWeight_shouldHandleSynonym() throws Exception  {
+    String endpoint = "/schema/analysis/synonyms/englishgraph";
+
+    assertJQ(endpoint,
+        "/synonymMappings/initArgs/ignoreCase==false",
+        "/synonymMappings/managedMap=={}");
+
+    // does not exist
+    assertJQ(endpoint+"/tiger",
+        "/error/code==404");
+
+    Map<String,List<String>> syns = new HashMap<>();
+
+    // now put a synonym
+    syns.put("tiger", Arrays.asList("tiger|1.0"));
+    assertJPut(endpoint,
+        toJSONString(syns),
+        "/responseHeader/status==0");
+
+    // and check if it exists
+    assertJQ(endpoint,
+        "/synonymMappings/managedMap/tiger==['tiger|1.0']");
+
+    // verify delete works
+    assertJDelete(endpoint+"/tiger",
+        "/responseHeader/status==0");
+
+
+    // was it really deleted?
+    assertJDelete(endpoint+"/tiger",
+        "/error/code==404");
+  }
+
+  /**
+   * Can we add multi term synonyms with weight
+   */
+  @Test
+  public void testManagedSynonyms_multiTermWithWeight_shouldHandleSynonym() throws Exception  {
+    String endpoint = "/schema/analysis/synonyms/englishgraph";
+
+    assertJQ(endpoint,
+        "/synonymMappings/initArgs/ignoreCase==false",
+        "/synonymMappings/managedMap=={}");
+
+    // does not exist
+    assertJQ(endpoint+"/tiger",
+        "/error/code==404");
+
+    Map<String,List<String>> syns = new HashMap<>();
+
+    // now put a synonym
+    List<String> tigerSyonyms = Arrays.asList("tiger|1.0", "panthera tigris|0.9", "Shere Kan|0.8");
+    syns.put("tiger", tigerSyonyms);
+    String jsonTigerSynonyms = toJSONString(syns);
+    assertJPut(endpoint,
+        jsonTigerSynonyms,
+        "/responseHeader/status==0");
+
+    // and check if it exists
+    assertJQ(endpoint,
+        "/synonymMappings/managedMap/tiger==[\"Shere Kan|0.8\",\"panthera tigris|0.9\",\"tiger|1.0\"]");
+
+    // verify delete works
+    assertJDelete(endpoint+"/tiger",
+        "/responseHeader/status==0");
+
+
+    // was it really deleted?
+    assertJDelete(endpoint+"/tiger",
         "/error/code==404");
   }
 }

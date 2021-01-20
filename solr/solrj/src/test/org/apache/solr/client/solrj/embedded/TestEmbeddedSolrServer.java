@@ -45,7 +45,7 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   public void testGetCoreContainer() {
     Assert.assertEquals(cores, ((EmbeddedSolrServer)getSolrCore0()).getCoreContainer());
-    Assert.assertEquals(cores, ((EmbeddedSolrServer)getSolrCore1()).getCoreContainer());
+    Assert.assertEquals(cores, (getSolrCore1()).getCoreContainer());
   }
   
   public void testClose() throws IOException {

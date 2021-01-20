@@ -16,17 +16,13 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.util.PriorityQueue;
 
-/**
- * Base class for Scorers that score disjunctions.
- */
+/** Base class for Scorers that score disjunctions. */
 abstract class DisjunctionScorer extends Scorer {
 
   private final boolean needsScores;
@@ -36,7 +32,8 @@ abstract class DisjunctionScorer extends Scorer {
   private final BlockMaxDISI blockMaxApprox;
   private final TwoPhase twoPhase;
 
-  protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode) throws IOException {
+  protected DisjunctionScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode)
+      throws IOException {
     super(weight);
     if (subScorers.size() <= 1) {
       throw new IllegalArgumentException("There must be at least 2 subScorers");
@@ -51,7 +48,8 @@ abstract class DisjunctionScorer extends Scorer {
       for (Scorer scorer : subScorers) {
         scorer.advanceShallow(0);
       }
-      this.blockMaxApprox = new BlockMaxDISI(new DisjunctionDISIApproximation(this.subScorers), this);
+      this.blockMaxApprox =
+          new BlockMaxDISI(new DisjunctionDISIApproximation(this.subScorers), this);
       this.approximation = blockMaxApprox;
     } else {
       this.approximation = new DisjunctionDISIApproximation(this.subScorers);
@@ -105,12 +103,13 @@ abstract class DisjunctionScorer extends Scorer {
     private TwoPhase(DocIdSetIterator approximation, float matchCost) {
       super(approximation);
       this.matchCost = matchCost;
-      unverifiedMatches = new PriorityQueue<DisiWrapper>(DisjunctionScorer.this.subScorers.size()) {
-        @Override
-        protected boolean lessThan(DisiWrapper a, DisiWrapper b) {
-          return a.matchCost < b.matchCost;
-        }
-      };
+      unverifiedMatches =
+          new PriorityQueue<DisiWrapper>(DisjunctionScorer.this.subScorers.size()) {
+            @Override
+            protected boolean lessThan(DisiWrapper a, DisiWrapper b) {
+              return a.matchCost < b.matchCost;
+            }
+          };
     }
 
     DisiWrapper getSubMatches() throws IOException {
@@ -124,20 +123,20 @@ abstract class DisjunctionScorer extends Scorer {
       unverifiedMatches.clear();
       return verifiedMatches;
     }
-    
+
     @Override
     public boolean matches() throws IOException {
       verifiedMatches = null;
       unverifiedMatches.clear();
-      
+
       for (DisiWrapper w = subScorers.topList(); w != null; ) {
         DisiWrapper next = w.next;
-        
+
         if (w.twoPhaseView == null) {
           // implicitly verified, move it to verifiedMatches
           w.next = verifiedMatches;
           verifiedMatches = w;
-          
+
           if (needsScores == false) {
             // we can stop here
             return true;
@@ -147,11 +146,11 @@ abstract class DisjunctionScorer extends Scorer {
         }
         w = next;
       }
-      
+
       if (verifiedMatches != null) {
         return true;
       }
-      
+
       // verify subs that have an two-phase iterator
       // least-costly ones first
       while (unverifiedMatches.size() > 0) {
@@ -162,10 +161,10 @@ abstract class DisjunctionScorer extends Scorer {
           return true;
         }
       }
-      
+
       return false;
     }
-    
+
     @Override
     public float matchCost() {
       return matchCost;
@@ -174,7 +173,7 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public final int docID() {
-   return subScorers.top().doc;
+    return subScorers.top().doc;
   }
 
   BlockMaxDISI getBlockMaxApprox() {
@@ -205,5 +204,4 @@ abstract class DisjunctionScorer extends Scorer {
     }
     return children;
   }
-
 }

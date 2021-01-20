@@ -27,6 +27,7 @@ import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.OldAnalyticsParams;
 import org.apache.solr.analytics.util.OldAnalyticsRequestConverter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Computes analytics requests.
@@ -35,7 +36,7 @@ public class AnalyticsComponent extends SearchComponent {
   public static final String COMPONENT_NAME = "analytics";
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     AnalyticsRequestParser.init();
   }
 
@@ -142,6 +143,9 @@ public class AnalyticsComponent extends SearchComponent {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER, reqManager.createOldResponse());
       } else {
         rb.rsp.add(AnalyticsResponseHeadings.COMPLETED_HEADER, reqManager.createResponse());
+      }
+      if (reqManager.isPartialResults()) {
+        rb.rsp.getResponseHeader().asShallowMap().put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY,true);
       }
     }
 

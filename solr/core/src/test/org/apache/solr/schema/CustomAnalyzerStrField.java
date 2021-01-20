@@ -21,8 +21,8 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.solr.analysis.TokenizerChain;

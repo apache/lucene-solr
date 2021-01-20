@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.uniformsplit.sharedterms;
 import java.io.IOException;
 import java.util.List;
 import java.util.RandomAccess;
-
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PostingsEnum;
@@ -30,8 +29,8 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Combines {@link PostingsEnum} for the same term for a given field from
- * multiple segments. It is used during segment merging.
+ * Combines {@link PostingsEnum} for the same term for a given field from multiple segments. It is
+ * used during segment merging.
  *
  * @lucene.experimental
  */
@@ -41,21 +40,20 @@ public class STMergingTermsEnum extends TermsEnum {
   protected final MultiSegmentsPostingsEnum multiPostingsEnum;
   protected BytesRef term;
 
-  /**
-   * Constructs a {@link STMergingTermsEnum} for a given field.
-   */
+  /** Constructs a {@link STMergingTermsEnum} for a given field. */
   protected STMergingTermsEnum(String fieldName, int numSegments) {
     this.fieldName = fieldName;
     multiPostingsEnum = new MultiSegmentsPostingsEnum(numSegments);
   }
 
   /**
-   * Resets this {@link STMergingTermsEnum} with a new term and its list of
-   * {@link STUniformSplitTermsWriter.SegmentPostings} to combine.
+   * Resets this {@link STMergingTermsEnum} with a new term and its list of {@link
+   * STUniformSplitTermsWriter.SegmentPostings} to combine.
    *
    * @param segmentPostings List sorted by segment index.
    */
-  protected void reset(BytesRef term, List<STUniformSplitTermsWriter.SegmentPostings> segmentPostings) {
+  protected void reset(
+      BytesRef term, List<STUniformSplitTermsWriter.SegmentPostings> segmentPostings) {
     this.term = term;
     multiPostingsEnum.reset(segmentPostings);
   }
@@ -127,11 +125,12 @@ public class STMergingTermsEnum extends TermsEnum {
   }
 
   /**
-   * Combines multiple segments {@link PostingsEnum} as a single {@link PostingsEnum},
-   * for one field and one term.
-   * <p>
-   * This {@link PostingsEnum} does not extend {@link org.apache.lucene.index.FilterLeafReader.FilterPostingsEnum}
-   * because it updates the delegate for each segment.
+   * Combines multiple segments {@link PostingsEnum} as a single {@link PostingsEnum}, for one field
+   * and one term.
+   *
+   * <p>This {@link PostingsEnum} does not extend {@link
+   * org.apache.lucene.index.FilterLeafReader.FilterPostingsEnum} because it updates the delegate
+   * for each segment.
    */
   protected class MultiSegmentsPostingsEnum extends PostingsEnum {
 
@@ -150,6 +149,7 @@ public class STMergingTermsEnum extends TermsEnum {
 
     /**
      * Resets/reuse this {@link PostingsEnum}.
+     *
      * @param segmentPostingsList List of segment postings ordered by segment index.
      */
     protected void reset(List<STUniformSplitTermsWriter.SegmentPostings> segmentPostingsList) {
@@ -224,10 +224,13 @@ public class STMergingTermsEnum extends TermsEnum {
       }
     }
 
-    protected PostingsEnum getPostings(STUniformSplitTermsWriter.SegmentPostings segmentPostings) throws IOException {
-      // The field is present in the segment because it is one of the segments provided in the reset() method.
+    protected PostingsEnum getPostings(STUniformSplitTermsWriter.SegmentPostings segmentPostings)
+        throws IOException {
+      // The field is present in the segment because it is one of the segments provided in the
+      // reset() method.
       return reusablePostingsEnums[segmentPostings.segmentIndex] =
-                      segmentPostings.getPostings(fieldName, reusablePostingsEnums[segmentPostings.segmentIndex], postingsFlags);
+          segmentPostings.getPostings(
+              fieldName, reusablePostingsEnums[segmentPostings.segmentIndex], postingsFlags);
     }
 
     @Override

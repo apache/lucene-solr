@@ -16,44 +16,34 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.NRTSuggester.encode;
+
 import java.io.IOException;
 import java.util.PriorityQueue;
-
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 
-import static org.apache.lucene.search.suggest.document.NRTSuggester.encode;
-
-/**
- * Builder for {@link NRTSuggester}
- *
- */
+/** Builder for {@link NRTSuggester} */
 final class NRTSuggesterBuilder {
 
-  /**
-   * Label used to separate surface form and docID
-   * in the output
-   */
+  /** Label used to separate surface form and docID in the output */
   public static final int PAYLOAD_SEP = ConcatenateGraphFilter.SEP_LABEL;
 
-  /**
-   * Marks end of the analyzed input and start of dedup
-   * byte.
-   */
+  /** Marks end of the analyzed input and start of dedup byte. */
   public static final int END_BYTE = 0x0;
 
   private final PairOutputs<Long, BytesRef> outputs;
-  private final Builder<PairOutputs.Pair<Long, BytesRef>> builder;
+  private final FSTCompiler<PairOutputs.Pair<Long, BytesRef>> fstCompiler;
   private final IntsRefBuilder scratchInts = new IntsRefBuilder();
   private final BytesRefBuilder analyzed = new BytesRefBuilder();
   private final PriorityQueue<Entry> entries;
@@ -62,37 +52,32 @@ final class NRTSuggesterBuilder {
 
   private int maxAnalyzedPathsPerOutput = 0;
 
-  /**
-   * Create a builder for {@link NRTSuggester}
-   */
+  /** Create a builder for {@link NRTSuggester} */
   public NRTSuggesterBuilder() {
     this.payloadSep = PAYLOAD_SEP;
     this.endByte = END_BYTE;
-    this.outputs = new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton());
+    this.outputs =
+        new PairOutputs<>(PositiveIntOutputs.getSingleton(), ByteSequenceOutputs.getSingleton());
     this.entries = new PriorityQueue<>();
-    this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
   }
 
-  /**
-   * Initializes an FST input term to add entries against
-   */
+  /** Initializes an FST input term to add entries against */
   public void startTerm(BytesRef analyzed) {
     this.analyzed.copyBytes(analyzed);
     this.analyzed.append((byte) endByte);
   }
 
   /**
-   * Adds an entry for the latest input term, should be called after
-   * {@link #startTerm(org.apache.lucene.util.BytesRef)} on the desired input
+   * Adds an entry for the latest input term, should be called after {@link
+   * #startTerm(org.apache.lucene.util.BytesRef)} on the desired input
    */
   public void addEntry(int docID, BytesRef surfaceForm, long weight) throws IOException {
     BytesRef payloadRef = NRTSuggester.PayLoadProcessor.make(surfaceForm, docID, payloadSep);
     entries.add(new Entry(payloadRef, encode(weight)));
   }
 
-  /**
-   * Writes all the entries for the FST input term
-   */
+  /** Writes all the entries for the FST input term */
   public void finishTerm() throws IOException {
     int numArcs = 0;
     int numDedupBytes = 1;
@@ -108,22 +93,22 @@ final class NRTSuggesterBuilder {
       }
       analyzed.setByteAt(analyzed.length() - 1, (byte) numArcs++);
       Util.toIntsRef(analyzed.get(), scratchInts);
-      builder.add(scratchInts.get(), outputs.newPair(entry.weight, entry.payload));
+      fstCompiler.add(scratchInts.get(), outputs.newPair(entry.weight, entry.payload));
     }
     maxAnalyzedPathsPerOutput = Math.max(maxAnalyzedPathsPerOutput, entries.size());
     entries.clear();
   }
 
   /**
-   * Builds and stores a FST that can be loaded with
-   * {@link NRTSuggester#load(IndexInput, CompletionPostingsFormat.FSTLoadMode)})}
+   * Builds and stores a FST that can be loaded with {@link NRTSuggester#load(IndexInput,
+   * CompletionPostingsFormat.FSTLoadMode)})}
    */
   public boolean store(DataOutput output) throws IOException {
-    final FST<PairOutputs.Pair<Long, BytesRef>> build = builder.finish();
-    if (build == null) {
+    final FST<PairOutputs.Pair<Long, BytesRef>> fst = fstCompiler.compile();
+    if (fst == null) {
       return false;
     }
-    build.save(output);
+    fst.save(output, output);
 
     /* write some more  meta-info */
     assert maxAnalyzedPathsPerOutput > 0;
@@ -134,12 +119,9 @@ final class NRTSuggesterBuilder {
   }
 
   /**
-   * Num arcs for nth dedup byte:
-   * if n <= 5: 1 + (2 * n)
-   * else: (1 + (2 * n)) * n
-   * <p>
-   * TODO: is there a better way to make the fst built to be
-   * more TopNSearcher friendly?
+   * Num arcs for nth dedup byte: if n <= 5: 1 + (2 * n) else: (1 + (2 * n)) * n
+   *
+   * <p>TODO: is there a better way to make the fst built to be more TopNSearcher friendly?
    */
   private static int maxNumArcsForDedupByte(int currentNumDedupBytes) {
     int maxArcs = 1 + (2 * currentNumDedupBytes);
@@ -149,7 +131,7 @@ final class NRTSuggesterBuilder {
     return Math.min(maxArcs, 255);
   }
 
-  private final static class Entry implements Comparable<Entry> {
+  private static final class Entry implements Comparable<Entry> {
     final BytesRef payload;
     final long weight;
 

@@ -46,10 +46,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
@@ -76,7 +76,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   public void beforeTest() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
     
     // validate that the schema was not changed to an unexpected state
@@ -88,6 +87,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   
   @After
   public void afterTest() {
+    TestInjection.reset(); // do after every test, don't wait for AfterClass
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {
@@ -107,7 +107,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   public void stressLogReplay() throws Exception {
     final int NUM_UPDATES = 150;
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -176,7 +176,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
             "/response/docs==[{'val_i_dvo':"+entry.getValue()+"}]");
       }
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -187,7 +186,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     
     try {
 
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -234,10 +233,13 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.REPLAYING, h.getCore().getUpdateHandler().getUpdateLog().getState());
       // check metrics
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> replayingLogs = (Gauge<Integer>)metrics.get("TLOG.replay.remaining.logs");
       assertTrue(replayingLogs.getValue().intValue() > 0);
+      @SuppressWarnings({"unchecked"})
       Gauge<Long> replayingDocs = (Gauge<Long>)metrics.get("TLOG.replay.remaining.bytes");
       assertTrue(replayingDocs.getValue().longValue() > 0);
       Meter replayDocs = (Meter)metrics.get("TLOG.replay.ops");
@@ -294,7 +296,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -305,7 +306,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   public void testNewDBQAndDocMatchingOldDBQDuringLogReplay() throws Exception {
     try {
 
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -366,7 +367,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
                , "/response/docs==[{'id':'B0'}, {'id':'B3'}, {'id':'B5'}, {'id':'B6'}]");
       
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -483,7 +483,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
     try {
 
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -528,7 +528,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
     } catch (Throwable thr) {
       throw new Exception(thr);
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -538,7 +537,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testBuffering() throws Exception {
 
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -573,8 +572,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
+      @SuppressWarnings({"unchecked"})
       Gauge<Integer> bufferedOps = (Gauge<Integer>)metrics.get("TLOG.buffered.ops");
       int initialOps = bufferedOps.getValue();
       Meter applyingBuffered = (Meter)metrics.get("TLOG.applyingBuffered.ops");
@@ -712,7 +713,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(0, bufferedOps.getValue().intValue());
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -725,7 +725,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testDropBuffered() throws Exception {
 
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -858,7 +858,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -870,7 +869,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testBufferedMultipleCalls() throws Exception {
 
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -964,7 +963,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -1009,7 +1007,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testExistOldBufferLog() throws Exception {
 
-    DirectUpdateHandler2.commitOnClose = false;
+    TestInjection.skipIndexWriterCommitOnClose = true;
 
     SolrQueryRequest req = req();
     UpdateHandler uhandler = req.getCore().getUpdateHandler();
@@ -1083,7 +1081,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       
       assertJQ(req("qt","/get", "id", "Q7") ,"/doc/id==Q7");
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -1127,7 +1124,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // make sure that log isn't needlessly replayed after a clean close
   @Test
   public void testCleanShutdown() throws Exception {
-    DirectUpdateHandler2.commitOnClose = true;
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -1168,7 +1164,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(10, logReplay.availablePermits());
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
 
@@ -1186,7 +1181,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testRemoveOldLogs() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -1297,7 +1292,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       resetExceptionIgnores();
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -1310,7 +1304,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testTruncatedLog() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -1368,7 +1362,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions","3"), "/versions==["+v106+","+v105+","+v104+"]");
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -1381,7 +1374,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testCorruptLog() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
       File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
@@ -1435,7 +1428,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       deleteLogs();
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -1447,7 +1439,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @Test
   public void testRecoveryMultipleLogs() throws Exception {
     try {
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -1510,7 +1502,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertJQ(req("q","*:*") ,"/response/numFound==6");
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -1521,7 +1512,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
     try {
 
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
@@ -1637,7 +1628,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
 
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
     }
@@ -1690,17 +1680,22 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
     String response = JQ(req);
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map) Utils.fromJSONString(response);
+    @SuppressWarnings({"rawtypes"})
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map)rsp.get("doc");
     } else if (rsp.containsKey("docs")) {
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)rsp.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);
       }
     } else if (rsp.containsKey("response")) {
+      @SuppressWarnings({"rawtypes"})
       Map responseMap = (Map)rsp.get("response");
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)responseMap.get("docs");
       if (lst.size() > 0) {
         doc = (Map)lst.get(0);

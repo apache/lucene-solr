@@ -41,7 +41,7 @@ public class DateEvaluator extends RecursiveObjectEvaluator implements ManyValue
   }
 
   @Override
-  public Object doWork(Object values[]) throws IOException {
+  public Object doWork(Object... values) throws IOException {
     String sdate = values[0].toString();
     String template = values[1].toString();
 

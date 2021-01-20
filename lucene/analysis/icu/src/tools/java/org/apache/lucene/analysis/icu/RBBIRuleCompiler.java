@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
+import com.ibm.icu.text.RuleBasedBreakIterator;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,42 +27,42 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import com.ibm.icu.text.RuleBasedBreakIterator;
-
 /**
- * Command-line utility to converts RuleBasedBreakIterator (.rbbi) files into
- * binary compiled form (.brk).
+ * Command-line utility to converts RuleBasedBreakIterator (.rbbi) files into binary compiled form
+ * (.brk).
  */
 public class RBBIRuleCompiler {
-  
+
   static String getRules(File ruleFile) throws IOException {
     StringBuilder rules = new StringBuilder();
     InputStream in = new FileInputStream(ruleFile);
     BufferedReader cin = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     String line = null;
     while ((line = cin.readLine()) != null) {
-      if (!line.startsWith("#"))
+      if (!line.startsWith("#")) {
         rules.append(line);
+      }
       rules.append('\n');
     }
     cin.close();
     in.close();
     return rules.toString();
   }
-  
+
   static void compile(File srcDir, File destDir) throws Exception {
-    File files[] = srcDir.listFiles(new FilenameFilter() {
-      public boolean accept(File dir, String name) {
-        return name.endsWith("rbbi");
-      }});
+    File files[] =
+        srcDir.listFiles(
+            new FilenameFilter() {
+              public boolean accept(File dir, String name) {
+                return name.endsWith("rbbi");
+              }
+            });
     if (files == null) throw new IOException("Path does not exist: " + srcDir);
     for (int i = 0; i < files.length; i++) {
       File file = files[i];
-      File outputFile = new File(destDir, 
-          file.getName().replaceAll("rbbi$", "brk"));
+      File outputFile = new File(destDir, file.getName().replaceAll("rbbi$", "brk"));
       String rules = getRules(file);
-      System.err.print("Compiling " + file.getName() + " to "
-          + outputFile.getName() + ": ");
+      System.err.print("Compiling " + file.getName() + " to " + outputFile.getName() + ": ");
       /*
        * if there is a syntax error, compileRules() may succeed. the way to
        * check is to try to instantiate from the string. additionally if the
@@ -84,7 +84,7 @@ public class RBBIRuleCompiler {
       System.err.println(outputFile.length() + " bytes.");
     }
   }
-  
+
   public static void main(String args[]) throws Exception {
     if (args.length < 2) {
       System.err.println("Usage: RBBIRuleComputer <sourcedir> <destdir>");

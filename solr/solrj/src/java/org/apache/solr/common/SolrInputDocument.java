@@ -159,8 +159,8 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    * Remove a field from the document
    *
    * @param name The field name whose field is to be removed from the document
-   * @return the previous field with <tt>name</tt>, or
-   *         <tt>null</tt> if there was no field for <tt>key</tt>.
+   * @return the previous field with <code>name</code>, or
+   *         <code>null</code> if there was no field for <code>key</code>.
    */
   public SolrInputField removeField(String name) {
     return _fields.remove( name );
@@ -278,6 +278,33 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     }
   }
 
+  /** Beta API; may change at will. */
+  // TODO SOLR-15063 reconcile SolrDocumentBase/SolrDocument/SolrInputDocument debacle
+  public void visitSelfAndNestedDocs(BiConsumer<String, SolrInputDocument> consumer) {
+    consumer.accept(null, this);
+    for (SolrInputField field : values()) {
+      final Object value = field.getValue();
+      if (value instanceof SolrInputDocument) {
+        consumer.accept(field.name, (SolrInputDocument) value);
+      } else if (value instanceof Collection) {
+        Collection<?> cVal = (Collection<?>) value;
+        for (Object v : cVal) {
+          if (v instanceof SolrInputDocument) {
+            consumer.accept(field.name, (SolrInputDocument) v);
+          } else {
+            break; // either they are all solr docs, or none are
+          }
+        }
+      }
+    }
+
+    if (_childDocuments != null) {
+      for (SolrInputDocument childDocument : _childDocuments) {
+        consumer.accept(null, childDocument);
+      }
+    }
+  }
+
   /** Returns the list of child documents, or null if none. */
   public List<SolrInputDocument> getChildDocuments() {
     return _childDocuments;
@@ -289,6 +316,7 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
 
   @Override
+  @Deprecated
   public int getChildDocumentCount() {
     return hasChildDocuments() ? _childDocuments.size(): 0;
   }

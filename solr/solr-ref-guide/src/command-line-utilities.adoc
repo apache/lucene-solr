@@ -36,7 +36,7 @@ ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell
 
 == Using Solr's ZooKeeper CLI
 
-Use the `help` option to get a list of available commands from the script itself, as in `./server/scripts/cloud-scrips/zkcli.sh help`.
+Use the `help` option to get a list of available commands from the script itself, as in `./server/scripts/cloud-scripts/zkcli.sh help`.
 
 Both `zkcli.sh` (for Unix environments) and `zkcli.bat` (for Windows environments) support the following command line options:
 
@@ -128,7 +128,7 @@ Using the boostrap command with a ZooKeeper chroot in the `-zkhost` parameter, e
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /my_zk_file.txt /tmp/my_local_file.txt
 ----
 
-=== Link a Collection to a ConfigSet
+=== Link a Collection to a Configset
 
 [source,bash]
 ----

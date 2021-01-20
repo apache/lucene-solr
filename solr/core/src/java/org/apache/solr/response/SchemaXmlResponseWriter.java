@@ -28,7 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class SchemaXmlResponseWriter implements QueryResponseWriter {
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     /* NOOP */
   }
 

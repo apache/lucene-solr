@@ -28,12 +28,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.util.Constants;
 
 /** Basic tests for WindowsFS */
 public class TestWindowsFS extends MockFileSystemTestCase {
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -46,11 +45,11 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** Test Files.delete fails if a file has an open inputstream against it */
   public void testDeleteOpenFile() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
@@ -60,33 +59,40 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
-  
+
   /** Test Files.deleteIfExists fails if a file has an open inputstream against it */
   public void testDeleteIfExistsOpenFile() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
 
-    IOException e = expectThrows(IOException.class, () -> Files.deleteIfExists(dir.resolve("stillopen")));
+    IOException e =
+        expectThrows(IOException.class, () -> Files.deleteIfExists(dir.resolve("stillopen")));
     assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
-  
+
   /** Test Files.rename fails if a file has an open inputstream against it */
   // TODO: what does windows do here?
   public void testRenameOpenFile() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
     InputStream is = Files.newInputStream(dir.resolve("stillopen"));
 
-    IOException e = expectThrows(IOException.class, () ->
-        Files.move(dir.resolve("stillopen"), dir.resolve("target"), StandardCopyOption.ATOMIC_MOVE));
+    IOException e =
+        expectThrows(
+            IOException.class,
+            () ->
+                Files.move(
+                    dir.resolve("stillopen"),
+                    dir.resolve("target"),
+                    StandardCopyOption.ATOMIC_MOVE));
     assertTrue(e.getMessage().contains("access denied"));
     is.close();
   }
@@ -96,31 +102,32 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     final Path file = dir.resolve("thefile");
     final CyclicBarrier barrier = new CyclicBarrier(2);
     final AtomicBoolean stopped = new AtomicBoolean(false);
-    Thread t = new Thread() {
-      @Override
-      public void run() {
-        try {
-          barrier.await();
-        } catch (Exception ex) {
-          throw new RuntimeException(ex);
-        }
-        while (stopped.get() == false) {
-          try {
-            if (random().nextBoolean()) {
-              Files.delete(file);
-            } else if (random().nextBoolean()) {
-              Files.deleteIfExists(file);
-            } else {
-              Path target = file.resolveSibling("other");
-              Files.move(file, target);
-              Files.delete(target);
+    Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              barrier.await();
+            } catch (Exception ex) {
+              throw new RuntimeException(ex);
             }
-          } catch (IOException ex) {
-            // continue
+            while (stopped.get() == false) {
+              try {
+                if (random().nextBoolean()) {
+                  Files.delete(file);
+                } else if (random().nextBoolean()) {
+                  Files.deleteIfExists(file);
+                } else {
+                  Path target = file.resolveSibling("other");
+                  Files.move(file, target);
+                  Files.delete(target);
+                }
+              } catch (IOException ex) {
+                // continue
+              }
+            }
           }
-        }
-      }
-    };
+        };
     t.start();
     barrier.await();
     try {
@@ -132,10 +139,16 @@ public class TestWindowsFS extends MockFileSystemTestCase {
           stream.write(0);
           // just create
         } catch (FileNotFoundException | NoSuchFileException ex) {
-          assertEquals("File handle leaked - file is closed but still registered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+          assertEquals(
+              "File handle leaked - file is closed but still registered",
+              0,
+              ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
           assertFalse("caught FNF on close", opened);
         }
-        assertEquals("File handle leaked - file is closed but still registered", 0, ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
+        assertEquals(
+            "File handle leaked - file is closed but still registered",
+            0,
+            ((WindowsFS) dir.getFileSystem().provider()).openFiles.size());
         Files.deleteIfExists(file);
       }
     } finally {
@@ -159,7 +172,8 @@ public class TestWindowsFS extends MockFileSystemTestCase {
     file.write(2);
     file.close();
 
-    Files.move(dir.resolve("otherFile"), dir.resolve("target"), StandardCopyOption.REPLACE_EXISTING);
+    Files.move(
+        dir.resolve("otherFile"), dir.resolve("target"), StandardCopyOption.REPLACE_EXISTING);
     assertTrue(Files.exists(dir.resolve("target")));
     assertFalse(Files.exists(dir.resolve("otherFile")));
     try (InputStream stream = Files.newInputStream(dir.resolve("target"))) {

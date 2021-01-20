@@ -72,7 +72,14 @@ public class ExecutorUtil {
   }
 
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
+    if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
+    awaitTermination(pool);
+  }
+
+  public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
+    if (pool == null) return;
+    pool.shutdownNow(); // Disable new tasks from being submitted; interrupt existing tasks
     awaitTermination(pool);
   }
 
@@ -113,7 +120,7 @@ public class ExecutorUtil {
    * Create a cached thread pool using a named thread factory
    */
   public static ExecutorService newMDCAwareCachedThreadPool(String name) {
-    return newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(name));
+    return newMDCAwareCachedThreadPool(new SolrNamedThreadFactory(name));
   }
 
   /**
@@ -183,9 +190,11 @@ public class ExecutorUtil {
       final String submitterContextStr = ctxStr.length() <= MAX_THREAD_NAME_LEN ? ctxStr : ctxStr.substring(0, MAX_THREAD_NAME_LEN);
       final Exception submitterStackTrace = enableSubmitterStackTrace ? new Exception("Submitter stack trace") : null;
       final List<InheritableThreadLocalProvider> providersCopy = providers;
+      @SuppressWarnings({"rawtypes"})
       final ArrayList<AtomicReference> ctx = providersCopy.isEmpty() ? null : new ArrayList<>(providersCopy.size());
       if (ctx != null) {
         for (int i = 0; i < providers.size(); i++) {
+          @SuppressWarnings({"rawtypes"})
           AtomicReference reference = new AtomicReference();
           ctx.add(reference);
           providersCopy.get(i).store(reference);

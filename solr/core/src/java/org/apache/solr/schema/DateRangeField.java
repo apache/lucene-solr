@@ -143,7 +143,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String startStr, String endStr, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String startStr, String endStr, boolean minInclusive, boolean maxInclusive) {
     if (parser == null) {//null when invoked by SimpleFacets.  But getQueryFromSpatialArgs expects to get localParams.
       final SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
       parser = new QParser("", null, requestInfo.getReq().getParams(), requestInfo.getReq()) {

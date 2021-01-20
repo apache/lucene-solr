@@ -36,6 +36,7 @@ limitations under the License.
       <div>ZK connection string: {{zkState.zkHost}}</div>
       <div>Ensemble size: {{zkState.ensembleSize}}</div>
       <div>Ensemble mode: {{zkState.mode}}</div>
+      <div>Dynamic reconfig enabled: {{zkState.dynamicReconfig}}</div>
       
       <table id="zk-table">
         <thead>
@@ -61,7 +62,7 @@ limitations under the License.
             <td ng-class="details"></td>
             <td ng-repeat="host in zkState.details" ng-class="details"></td>
           </tr>
-          <tr ng-repeat="key in detailKeys" ng-show="showDetails">
+          <tr ng-repeat="key in detailKeys | filter: notEmptyRow" ng-show="showDetails">
             <td>{{key}}</td>
             <td ng-repeat="host in zkState.details">
               {{host[key]}}

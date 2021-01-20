@@ -56,7 +56,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     SolrZkClient zkClient = zkStateReader.getZkClient();
@@ -68,11 +68,11 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     if (nodeExists = zkClient.exists(ZkStateReader.ROLES, true)) {
       roles = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true));
     } else {
-      roles = new LinkedHashMap(1);
+      roles = new LinkedHashMap<>(1);
     }
 
     List nodeList = (List) roles.get(roleName);
-    if (nodeList == null) roles.put(roleName, nodeList = new ArrayList());
+    if (nodeList == null) roles.put(roleName, nodeList = new ArrayList<>());
     if (ADDROLE == operation) {
       log.info("Overseer role added to {}", node);
       if (!nodeList.contains(node)) nodeList.add(node);

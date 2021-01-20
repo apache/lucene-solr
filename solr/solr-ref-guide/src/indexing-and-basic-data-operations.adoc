@@ -4,7 +4,6 @@
   uploading-data-with-index-handlers, +
   indexing-nested-documents, +
   uploading-data-with-solr-cell-using-apache-tika, +
-  uploading-structured-data-store-data-with-the-data-import-handler, +
   updating-parts-of-documents, +
   detecting-languages-during-indexing, +
   de-duplication, +
@@ -41,8 +40,6 @@ This section describes how Solr adds data to its index. It covers the following 
 * *<<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>>*: Detailed information about indexing and schema configuration for nested documents.
 
 * *<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>*: Information about using the Solr Cell framework to upload data for indexing.
-
-* *<<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>*: Information about uploading and indexing data from a structured data store.
 
 * *<<updating-parts-of-documents.adoc#updating-parts-of-documents,Updating Parts of Documents>>*: Information about how to use atomic updates and optimistic concurrency with Solr.
 

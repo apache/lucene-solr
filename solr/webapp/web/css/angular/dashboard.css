@@ -144,8 +144,8 @@ limitations under the License.
 #content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
 #content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
 #content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }
-#content #dashboard #replication.master h2 { background-image: url( ../../img/ico/node-master.png ); }
-#content #dashboard #replication.slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #dashboard #replication.leader h2 { background-image: url( ../../img/ico/node-leader.png ); }
+#content #dashboard #replication.follower h2 { background-image: url( ../../img/ico/node-follower.png ); }
 #content #dashboard #instance h2 { background-image: url( ../../img/ico/server.png ); }
 #content #dashboard #collection h2 { background-image: url( ../../img/ico/book-open-text.png ); }
 #content #dashboard #shards h2 { background-image: url( ../../img/ico/documents-stack.png ); }

@@ -31,10 +31,11 @@ import java.util.concurrent.Future;
 
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
+import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -47,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.handler.AnalyticsHandler;
 import org.apache.solr.handler.component.AnalyticsComponent;
 import org.apache.solr.response.AnalyticsShardResponseWriter;
@@ -141,7 +142,7 @@ public class AnalyticsShardRequestManager {
    * @throws IOException if an exception occurs while sending requests.
    */
   private void streamFromShards() throws IOException {
-    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("SolrAnalyticsStream"));
+    ExecutorService service = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("SolrAnalyticsStream"));
     List<Future<SolrException>> futures = new ArrayList<>();
     List<AnalyticsShardRequester> openers = new ArrayList<>();
     for (String replicaUrl : replicaUrls) {
@@ -154,7 +155,11 @@ public class AnalyticsShardRequestManager {
       for (Future<SolrException> f : futures) {
         SolrException e = f.get();
         if (e != null) {
-          throw e;
+          if (TimeExceededStubException.isIt(e)) {
+            manager.setPartialResults(true);
+          } else {
+            throw e;
+          }
         }
       }
     } catch (InterruptedException e1) {
@@ -188,6 +193,7 @@ public class AnalyticsShardRequestManager {
     solrParams.add(CommonParams.WT, AnalyticsShardResponseWriter.NAME);
     solrParams.add(CommonParams.Q, paramsIn.get(CommonParams.Q));
     solrParams.add(CommonParams.FQ, paramsIn.getParams(CommonParams.FQ));
+    solrParams.add(CommonParams.TIME_ALLOWED, paramsIn.get(CommonParams.TIME_ALLOWED,"-1"));
     solrParams.add(AnalyticsRequestParser.analyticsParamName, analyticsRequest);
 
     return solrParams;

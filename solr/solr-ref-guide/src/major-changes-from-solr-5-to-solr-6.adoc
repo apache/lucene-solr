@@ -18,7 +18,7 @@
 
 There are some major changes in Solr 6 to consider before starting to migrate your configurations and indexes.
 
-There are many hundreds of changes, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> section as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
+There are many hundreds of changes, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> section as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 6. This section attempts to highlight some of the major changes you should be aware of.
 
 == Highlights of New Features in Solr 6
 
@@ -44,7 +44,7 @@ Built on streaming expressions, new in Solr 6 is a <<parallel-sql-interface.adoc
 
 === Cross Data Center Replication
 
-Replication across data centers is now possible with <<cross-data-center-replication-cdcr.adoc#cross-data-center-replication-cdcr,Cross Data Center Replication>>. Using an active-passive model, a SolrCloud cluster can be replicated to another data center, and monitored with a new API.
+Replication across data centers is now possible with Cross Data Center Replication. Using an active-passive model, a SolrCloud cluster can be replicated to another data center, and monitored with a new API.
 
 === Graph QueryParser
 

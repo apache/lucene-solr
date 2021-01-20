@@ -24,46 +24,43 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Similarity implementation that randomizes Similarity implementations
- * per-field.
- * <p>
- * The choices are 'sticky', so the selected algorithm is always used
- * for the same field.
+ * Similarity implementation that randomizes Similarity implementations per-field.
+ *
+ * <p>The choices are 'sticky', so the selected algorithm is always used for the same field.
  */
 public class RandomSimilarity extends PerFieldSimilarityWrapper {
   final BM25Similarity defaultSim = new BM25Similarity();
   final List<Similarity> knownSims;
-  Map<String,Similarity> previousMappings = new HashMap<>();
+  Map<String, Similarity> previousMappings = new HashMap<>();
   final int perFieldSeed;
   final boolean shouldQueryNorm;
-  
+
   public RandomSimilarity(Random random) {
     perFieldSeed = random.nextInt();
     shouldQueryNorm = random.nextBoolean();
     knownSims = new ArrayList<>(allSims);
     Collections.shuffle(knownSims, random);
   }
-  
+
   @Override
   public synchronized Similarity get(String field) {
     assert field != null;
     Similarity sim = previousMappings.get(field);
     if (sim == null) {
-      sim = knownSims.get(Math.max(0, Math.abs(perFieldSeed ^ field.hashCode())) % knownSims.size());
+      sim =
+          knownSims.get(Math.max(0, Math.abs(perFieldSeed ^ field.hashCode())) % knownSims.size());
       previousMappings.put(field, sim);
     }
     return sim;
   }
-  
+
   // all the similarities that we rotate through
   /** The DFR basic models to test. */
   static BasicModel[] BASIC_MODELS = {
     new BasicModelG(), new BasicModelIF(), new BasicModelIn(), new BasicModelIne(),
   };
   /** The DFR aftereffects to test. */
-  static AfterEffect[] AFTER_EFFECTS = {
-    new AfterEffectB(), new AfterEffectL()
-  };
+  static AfterEffect[] AFTER_EFFECTS = {new AfterEffectB(), new AfterEffectL()};
   /** The DFR normalizations to test. */
   static Normalization[] NORMALIZATIONS = {
     new NormalizationH1(), new NormalizationH2(),
@@ -73,18 +70,16 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
     // new Normalization.NoNormalization()
   };
   /** The distributions for IB. */
-  static Distribution[] DISTRIBUTIONS = {
-    new DistributionLL(), new DistributionSPL()
-  };
+  static Distribution[] DISTRIBUTIONS = {new DistributionLL(), new DistributionSPL()};
   /** Lambdas for IB. */
-  static Lambda[] LAMBDAS = {
-    new LambdaDF(), new LambdaTTF()
-  };
+  static Lambda[] LAMBDAS = {new LambdaDF(), new LambdaTTF()};
   /** Independence measures for DFI */
   static Independence[] INDEPENDENCE_MEASURES = {
-    new IndependenceStandardized(), new IndependenceSaturated(), new IndependenceChiSquared() 
+    new IndependenceStandardized(), new IndependenceSaturated(), new IndependenceChiSquared()
   };
+
   static List<Similarity> allSims;
+
   static {
     allSims = new ArrayList<>();
     allSims.add(new ClassicSimilarity());
@@ -116,7 +111,7 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
       allSims.add(new DFISimilarity(independence));
     }
   }
-  
+
   @Override
   public synchronized String toString() {
     return "RandomSimilarity(queryNorm=" + shouldQueryNorm + "): " + previousMappings.toString();

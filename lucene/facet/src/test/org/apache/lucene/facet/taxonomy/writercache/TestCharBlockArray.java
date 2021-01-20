@@ -24,7 +24,6 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.lucene.facet.FacetTestCase;
 
 public class TestCharBlockArray extends FacetTestCase {
@@ -33,7 +32,12 @@ public class TestCharBlockArray extends FacetTestCase {
     CharBlockArray array = new CharBlockArray();
     StringBuilder builder = new StringBuilder();
 
-    final int n = 100 * 1000;
+    final int n;
+    if (TEST_NIGHTLY) {
+      n = 100 * 1000;
+    } else {
+      n = 1000;
+    }
 
     byte[] buffer = new byte[50];
 
@@ -42,9 +46,11 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-          .onUnmappableCharacter(CodingErrorAction.REPLACE)
-          .onMalformedInput(CodingErrorAction.REPLACE);
+      CharsetDecoder decoder =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onUnmappableCharacter(CodingErrorAction.REPLACE)
+              .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       array.append(s);
       builder.append(s);
@@ -55,11 +61,13 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-          .onUnmappableCharacter(CodingErrorAction.REPLACE)
-          .onMalformedInput(CodingErrorAction.REPLACE);
+      CharsetDecoder decoder =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onUnmappableCharacter(CodingErrorAction.REPLACE)
+              .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
-      array.append((CharSequence)s);
+      array.append((CharSequence) s);
       builder.append(s);
     }
 
@@ -68,9 +76,11 @@ public class TestCharBlockArray extends FacetTestCase {
       int size = 1 + random().nextInt(50);
       // This test is turning random bytes into a string,
       // this is asking for trouble.
-      CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
-          .onUnmappableCharacter(CodingErrorAction.REPLACE)
-          .onMalformedInput(CodingErrorAction.REPLACE);
+      CharsetDecoder decoder =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onUnmappableCharacter(CodingErrorAction.REPLACE)
+              .onMalformedInput(CodingErrorAction.REPLACE);
       String s = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
       for (int j = 0; j < s.length(); j++) {
         array.append(s.charAt(j));
@@ -89,15 +99,16 @@ public class TestCharBlockArray extends FacetTestCase {
 
     BufferedInputStream in = new BufferedInputStream(Files.newInputStream(f));
     array = CharBlockArray.open(in);
-    assertEqualsInternal("GrowingCharArray<->StringBuilder mismatch after flush/load.", builder, array);
+    assertEqualsInternal(
+        "GrowingCharArray<->StringBuilder mismatch after flush/load.", builder, array);
     in.close();
   }
 
-  private static void assertEqualsInternal(String msg, StringBuilder expected, CharBlockArray actual) {
+  private static void assertEqualsInternal(
+      String msg, StringBuilder expected, CharBlockArray actual) {
     assertEquals(msg, expected.length(), actual.length());
     for (int i = 0; i < expected.length(); i++) {
       assertEquals(msg, expected.charAt(i), actual.charAt(i));
     }
   }
-
 }

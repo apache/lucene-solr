@@ -43,6 +43,11 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   protected String other = null;
   protected boolean isIndexInfoNeeded = true;
   protected CoreAdminParams.CoreAdminAction action = null;
+
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
   
   //a create core request
   public static class Create extends CoreAdminRequest {

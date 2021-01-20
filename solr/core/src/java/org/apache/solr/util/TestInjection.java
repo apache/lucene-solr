@@ -16,11 +16,11 @@
  */
 package org.apache.solr.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -32,11 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,9 +74,11 @@ public class TestInjection {
    * If non-null, then this class should be used for accessing random entropy
    * @see #random
    */
+  @SuppressWarnings({"rawtypes"})
   private static final Class LUCENE_TEST_CASE;
   
   static {
+    @SuppressWarnings({"rawtypes"})
     Class nonFinalTemp = null;
     try {
       ClassLoader classLoader = MethodHandles.lookup().lookupClass().getClassLoader();
@@ -95,6 +99,7 @@ public class TestInjection {
       return null;
     } else {
       try {
+        @SuppressWarnings({"unchecked"})
         Method randomMethod = LUCENE_TEST_CASE.getMethod("random");
         return (Random) randomMethod.invoke(null);
       } catch (Exception e) {
@@ -104,10 +109,12 @@ public class TestInjection {
   }
   
   public volatile static String nonGracefullClose = null;
-
+  
   public volatile static String failReplicaRequests = null;
   
   public volatile static String failUpdateRequests = null;
+
+  public volatile static String leaderTragedy = null;
 
   public volatile static String nonExistentCoreExceptionAfterUnload = null;
 
@@ -127,6 +134,8 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
+  public volatile static CountDownLatch directUpdateLatch = null;
+
   public volatile static CountDownLatch reindexLatch = null;
 
   public volatile static String reindexFailure = null;
@@ -139,15 +148,22 @@ public class TestInjection {
 
   private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
-  public volatile static Integer delayBeforeSlaveCommitRefresh=null;
+  public volatile static Integer delayBeforeFollowerCommitRefresh=null;
 
   public volatile static Integer delayInExecutePlanAction=null;
 
   public volatile static boolean failInExecutePlanAction = false;
 
-  public volatile static boolean uifOutOfMemoryError = false;
+  /**
+   * Defaults to <code>false</code>, If set to <code>true</code>, 
+   * then {@link #injectSkipIndexWriterCommitOnClose} will return <code>true</code>
+   *
+   * @see #injectSkipIndexWriterCommitOnClose
+   * @see org.apache.solr.update.DirectUpdateHandler2#closeWriter
+   */
+  public volatile static boolean skipIndexWriterCommitOnClose = false;
 
-  public volatile static Map<String, String> additionalSystemProps = null;
+  public volatile static boolean uifOutOfMemoryError = false;
 
   private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
   
@@ -157,10 +173,10 @@ public class TestInjection {
   }
 
   public static void reset() {
-    additionalSystemProps = null;
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
+    leaderTragedy = null;
     nonExistentCoreExceptionAfterUnload = null;
     updateLogReplayRandomPause = null;
     updateRandomPause = null;
@@ -168,15 +184,17 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    directUpdateLatch = null;
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
     countPrepRecoveryOpPauseForever = new AtomicInteger(0);
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
-    delayBeforeSlaveCommitRefresh = null;
+    delayBeforeFollowerCommitRefresh = null;
     delayInExecutePlanAction = null;
     failInExecutePlanAction = false;
+    skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
@@ -248,8 +266,9 @@ public class TestInjection {
         if (rand.nextBoolean()) {
           throw new TestShutdownFailError("Test exception for non graceful close");
         } else {
-          
+          final Timer timer = new Timer();
           final Thread cthread = Thread.currentThread();
+
           TimerTask task = new TimerTask() {
             @Override
             public void run() {
@@ -266,11 +285,10 @@ public class TestInjection {
               }
               
               cthread.interrupt();
-              timers.remove(this);
-              cancel();
+              timers.remove(timer);
             }
           };
-          Timer timer = new Timer();
+
           timers.add(timer);
           timer.schedule(task, rand.nextInt(500));
         }
@@ -279,6 +297,21 @@ public class TestInjection {
     return true;
   }
 
+  /**
+   * Returns the value of {@link #skipIndexWriterCommitOnClose}.
+   *
+   * @param indexWriter used only for logging
+   * @see #skipIndexWriterCommitOnClose
+   * @see org.apache.solr.update.DirectUpdateHandler2#closeWriter
+   */
+  public static boolean injectSkipIndexWriterCommitOnClose(Object indexWriter) {
+    if (skipIndexWriterCommitOnClose) {
+      log.info("Inject failure: skipIndexWriterCommitOnClose={}: {}",
+               skipIndexWriterCommitOnClose, indexWriter);
+    }
+    return skipIndexWriterCommitOnClose;
+  }
+  
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
       Random rand = random();
@@ -308,6 +341,39 @@ public class TestInjection {
       }
     }
 
+    return true;
+  }
+
+  public static boolean injectLeaderTragedy(SolrCore core) {
+    if (leaderTragedy != null) {
+      Random rand = random();
+      if (null == rand) return true;
+
+      Pair<Boolean, Integer> pair = parseValue(leaderTragedy);
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
+
+      if (! core.getCoreDescriptor().getCloudDescriptor().isLeader()) {
+        return true;
+      }
+
+      if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
+        RefCounted<IndexWriter> writer = null;
+        try {
+          writer = core.getSolrCoreState().getIndexWriter(null);
+          writer.get().onTragicEvent(new Exception("injected tragedy"), "injection");
+        } catch (IOException e) {
+          // Problem getting the writer, but that will likely bubble up later
+          return true;
+        } finally {
+          if (writer != null) {
+            writer.decref();
+          }
+        }
+
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Random tragedy fail");
+      }
+    }
     return true;
   }
   
@@ -412,7 +478,7 @@ public class TestInjection {
       boolean enabled = pair.first();
       int chanceIn100 = pair.second();
       if (enabled && rand.nextInt(100) >= (100 - chanceIn100)) {
-        log.info("Injecting failure: " + label);
+        log.info("Injecting failure: {}", label);
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error: " + label);
       }
     }
@@ -432,6 +498,18 @@ public class TestInjection {
       try {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectDirectUpdateLatch() {
+    if (directUpdateLatch != null) {
+      try {
+        log.info("Waiting in DirectUpdateHandler2 for up to 60s");
+        return directUpdateLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
@@ -482,20 +560,16 @@ public class TestInjection {
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
   }
 
-  public static boolean injectDelayBeforeSlaveCommitRefresh() {
-    if (delayBeforeSlaveCommitRefresh!=null) {
+  public static boolean injectDelayBeforeFollowerCommitRefresh() {
+    if (delayBeforeFollowerCommitRefresh!=null) {
       try {
-        log.info("Pausing IndexFetcher for {}ms", delayBeforeSlaveCommitRefresh);
-        Thread.sleep(delayBeforeSlaveCommitRefresh);
+        log.info("Pausing IndexFetcher for {}ms", delayBeforeFollowerCommitRefresh);
+        Thread.sleep(delayBeforeFollowerCommitRefresh);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
     }
     return true;
-  }
-
-  public static Map<String,String> injectAdditionalProps() {
-    return additionalSystemProps;
   }
 
   public static boolean injectUIFOutOfMemoryError() {

@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
@@ -30,20 +29,16 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * A {@link CompletionQuery} which takes a regular expression
- * as the prefix of the query term.
+ * A {@link CompletionQuery} which takes a regular expression as the prefix of the query term.
  *
- * <p>
- * Example usage of querying a prefix of 'sug' and 'sub'
- * as a regular expression against a suggest field 'suggest_field':
+ * <p>Example usage of querying a prefix of 'sug' and 'sub' as a regular expression against a
+ * suggest field 'suggest_field':
  *
  * <pre class="prettyprint">
  *  CompletionQuery query = new RegexCompletionQuery(new Term("suggest_field", "su[g|b]"));
  * </pre>
  *
- * <p>
- * See {@link RegExp} for the supported regular expression
- * syntax
+ * <p>See {@link RegExp} for the supported regular expression syntax
  *
  * @lucene.experimental
  */
@@ -52,25 +47,22 @@ public class RegexCompletionQuery extends CompletionQuery {
   private final int flags;
   private final int maxDeterminizedStates;
 
-  /**
-   * Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, BitsProducer)}
-   * with no filter
-   */
+  /** Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, BitsProducer)} with no filter */
   public RegexCompletionQuery(Term term) {
     this(term, null);
   }
 
   /**
-   * Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, int, int, BitsProducer)}
-   * enabling all optional regex syntax and <code>maxDeterminizedStates</code> of
-   * {@value Operations#DEFAULT_MAX_DETERMINIZED_STATES}
+   * Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, int, int, BitsProducer)} enabling
+   * all optional regex syntax and <code>maxDeterminizedStates</code> of {@value
+   * Operations#DEFAULT_MAX_DETERMINIZED_STATES}
    */
   public RegexCompletionQuery(Term term, BitsProducer filter) {
     this(term, RegExp.ALL, Operations.DEFAULT_MAX_DETERMINIZED_STATES, filter);
   }
   /**
-   * Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, int, int, BitsProducer)}
-   * with no filter
+   * Calls {@link RegexCompletionQuery#RegexCompletionQuery(Term, int, int, BitsProducer)} with no
+   * filter
    */
   public RegexCompletionQuery(Term term, int flags, int maxDeterminizedStates) {
     this(term, flags, maxDeterminizedStates, null);
@@ -79,38 +71,37 @@ public class RegexCompletionQuery extends CompletionQuery {
   /**
    * Constructs a regular expression completion query
    *
-   * @param term query is run against {@link Term#field()} and {@link Term#text()}
-   *             is interpreted as a regular expression
+   * @param term query is run against {@link Term#field()} and {@link Term#text()} is interpreted as
+   *     a regular expression
    * @param flags used as syntax_flag in {@link RegExp#RegExp(String, int)}
    * @param maxDeterminizedStates used in {@link RegExp#toAutomaton(int)}
    * @param filter used to query on a sub set of documents
    */
-  public RegexCompletionQuery(Term term, int flags, int maxDeterminizedStates, BitsProducer filter) {
+  public RegexCompletionQuery(
+      Term term, int flags, int maxDeterminizedStates, BitsProducer filter) {
     super(term, filter);
     this.flags = flags;
     this.maxDeterminizedStates = maxDeterminizedStates;
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     // If an empty regex is provided, we return an automaton that matches nothing. This ensures
     // consistency with PrefixCompletionQuery, which returns no results for an empty term.
-    Automaton automaton = getTerm().text().isEmpty()
-        ? Automata.makeEmpty()
-        : new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates);
+    Automaton automaton =
+        getTerm().text().isEmpty()
+            ? Automata.makeEmpty()
+            : new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates);
     return new CompletionWeight(this, automaton);
   }
 
-  /**
-   * Get the regex flags
-   */
+  /** Get the regex flags */
   public int getFlags() {
     return flags;
   }
 
-  /**
-   * Get the maximum number of states permitted in the determinized automaton
-   */
+  /** Get the maximum number of states permitted in the determinized automaton */
   public int getMaxDeterminizedStates() {
     return maxDeterminizedStates;
   }

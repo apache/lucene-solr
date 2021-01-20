@@ -81,17 +81,6 @@ public interface CollectionAdminParams {
   String COLL_CONF = "collection.configName";
 
   /**
-   * The name of the collection with which a collection is to be co-located
-   */
-  String WITH_COLLECTION = "withCollection";
-
-  /**
-   * The reverse-link to WITH_COLLECTION flag. It is stored in the cluster state of the `withCollection`
-   * and points to the collection on which the `withCollection` was specified.
-   */
-  String COLOCATED_WITH = "COLOCATED_WITH";
-
-  /**
    * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
    *
    * e.g. {defaults:{collection:{replicationFactor:2}}}
@@ -103,12 +92,6 @@ public interface CollectionAdminParams {
    * {defaults: {cluster:{useLegacyReplicaAssignment:false}}}
    */
   String CLUSTER = "cluster";
-
-  /**
-   * This cluster property decides whether Solr should use the legacy round-robin replica placement strategy
-   * or the autoscaling policy based strategy to assign replicas to nodes. The default is false.
-   */
-  String USE_LEGACY_REPLICA_ASSIGNMENT = "useLegacyReplicaAssignment";
 
   /**
    * When creating a collection create also a specified alias.
@@ -127,4 +110,9 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+  /**
+   * When AddReplica is called with this set to true, then we do not try to find node assignments
+   * for the add replica API. If set to true, a valid "node" should be specified.
+   */
+  String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 }

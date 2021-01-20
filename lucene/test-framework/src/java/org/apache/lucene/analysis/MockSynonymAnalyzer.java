@@ -25,4 +25,3 @@ public class MockSynonymAnalyzer extends Analyzer {
     return new TokenStreamComponents(tokenizer, new MockSynonymFilter(tokenizer));
   }
 }
-

@@ -38,9 +38,9 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
   private static final Pattern oldFieldFacetPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+FIELD_FACET+")$", Pattern.CASE_INSENSITIVE);
   private static final Pattern oldFieldFacetParamPattern =
-      Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+FIELD_FACET+")\\.([^\\.]+)\\.("+FieldFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
+      Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+FIELD_FACET+")\\.(.*(?=\\.))\\.("+FieldFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
   private static final Pattern oldRangeFacetParamPattern =
-      Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+RANGE_FACET+")\\.([^\\.]+)\\.("+RangeFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
+      Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+RANGE_FACET+")\\.(.*(?=\\.))\\.("+RangeFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
   private static final Pattern oldQueryFacetParamPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+QUERY_FACET+")\\.([^\\.]+)\\.("+QUERY+")$", Pattern.CASE_INSENSITIVE);
 

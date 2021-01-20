@@ -16,24 +16,20 @@
  */
 package org.apache.lucene.spatial;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.apache.lucene.spatial.query.SpatialArgsParser;
-import org.apache.lucene.spatial.query.SpatialOperation;
-import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.lucene.spatial.query.SpatialArgsParser;
+import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assert;
+import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Rectangle;
 
-
-/**
- * Make sure we are reading the tests as expected
- */
+/** Make sure we are reading the tests as expected */
 public class TestTestFramework extends LuceneTestCase {
 
   @Test
@@ -42,27 +38,27 @@ public class TestTestFramework extends LuceneTestCase {
 
     InputStream in = getClass().getClassLoader().getResourceAsStream(name);
     SpatialContext ctx = SpatialContext.GEO;
-    Iterator<SpatialTestQuery> iter = SpatialTestQuery.getTestQueries(
-        new SpatialArgsParser(), ctx, name, in );//closes the InputStream
+    Iterator<SpatialTestQuery> iter =
+        SpatialTestQuery.getTestQueries(
+            new SpatialArgsParser(), ctx, name, in); // closes the InputStream
     List<SpatialTestQuery> tests = new ArrayList<>();
-    while( iter.hasNext() ) {
-      tests.add( iter.next() );
+    while (iter.hasNext()) {
+      tests.add(iter.next());
     }
-    Assert.assertEquals( 3, tests.size() );
+    Assert.assertEquals(3, tests.size());
 
     SpatialTestQuery sf = tests.get(0);
     // assert
-    assertEquals( 1, sf.ids.size() );
-    Assert.assertTrue( sf.ids.get(0).equals( "G5391959" ) );
-    Assert.assertTrue( sf.args.getShape() instanceof Rectangle);
+    assertEquals(1, sf.ids.size());
+    Assert.assertTrue(sf.ids.get(0).equals("G5391959"));
+    Assert.assertTrue(sf.args.getShape() instanceof Rectangle);
     assertEquals(SpatialOperation.Intersects, sf.args.getOperation());
   }
 
   @Test
   public void spatialExample() throws Exception {
-    //kind of a hack so that SpatialExample is tested despite
+    // kind of a hack so that SpatialExample is tested despite
     // it not starting or ending with "Test".
     SpatialExample.main(null);
   }
-
 }

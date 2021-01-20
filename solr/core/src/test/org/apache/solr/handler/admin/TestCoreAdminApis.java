@@ -35,14 +35,17 @@ import static org.mockito.Mockito.*;
 
 public class TestCoreAdminApis extends SolrTestCaseJ4 {
 
+  @SuppressWarnings({"unchecked"})
   public void testCalls() throws Exception {
     Map<String, Object[]> calls = new HashMap<>();
     CoreContainer mockCC = getCoreContainerMock(calls, new HashMap<>());
 
-    CoreAdminHandler  coreAdminHandler = new CoreAdminHandler(mockCC);
-    ApiBag apiBag = new ApiBag(false);
-    for (Api api : coreAdminHandler.getApis()) {
-      apiBag.register(api, Collections.EMPTY_MAP);
+    ApiBag apiBag;
+    try (CoreAdminHandler  coreAdminHandler = new CoreAdminHandler(mockCC)) {
+       apiBag = new ApiBag(false);
+       for (Api api : coreAdminHandler.getApis()) {
+         apiBag.register(api, Collections.EMPTY_MAP);
+       }
     }
     TestCollectionAPIs.makeCall(apiBag, "/cores", SolrRequest.METHOD.POST,
         "{create:{name: hello, instanceDir : someDir, schema: 'schema.xml'}}", mockCC);
@@ -69,6 +72,7 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE ,params[1]);
   }
 
+  @SuppressWarnings({"unchecked"})
   public static CoreContainer getCoreContainerMock(final Map<String, Object[]> in,Map<String,Object> out ) {
     assumeWorkingMockito();
     

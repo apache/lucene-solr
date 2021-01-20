@@ -1,8 +1,4 @@
-*.iml
-
 /bin/*.pid
-
-/contrib/dataimporthandler/test-lib/
 
 /core/test-lib/
 
@@ -15,9 +11,6 @@
 /example/solr/zoo_data
 /example/work/*
 /example/exampledocs/post.jar
-/example/example-DIH/**/data
-/example/example-DIH/**/dataimport.properties
-/example/example-DIH/solr/mail/lib/*.jar
 
 /package
 
@@ -29,3 +22,6 @@
 
 *.out
 *.err
+
+lib/
+test-lib/

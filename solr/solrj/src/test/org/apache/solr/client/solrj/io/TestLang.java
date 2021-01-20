@@ -20,16 +20,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.function.Supplier;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.eval.*;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-
 import org.junit.Test;
 
 @Slow
@@ -37,7 +45,7 @@ import org.junit.Test;
 public class TestLang extends SolrTestCase {
 
   private static final String[] allFunctions = {
-      "search", "facet", "facet2D", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
+      "search", "facet", "facet2D", "update", "delete", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
       "unique", "top", "group", "reduce", "parallel", "rollup", "stats", "innerJoin",
       "leftOuterJoin", "hashJoin", "outerHashJoin", "intersect", "complement", "sort",
       "train", "features", "daemon", "shortestPath", "gatherNodes", "nodes",
@@ -77,17 +85,17 @@ public class TestLang extends SolrTestCase {
       "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export",
       "zplot", "natural", "repeat", "movingMAD", "hashRollup", "noop", "var", "stddev", "recNum", "isNull",
       "notNull", "matches", "projectToBorder", "double", "long", "parseCSV", "parseTSV", "dateTime",
-       "split", "upper", "trim", "lower", "trunc", "cosine"};
+       "split", "upper", "trim", "lower", "trunc", "cosine", "dbscan", "per", "std", "drill", "input"};
 
   @Test
   public void testLang() {
-    List<String> functions = new ArrayList();
+    List<String> functions = new ArrayList<>();
     for(String f : allFunctions) {
       functions.add(f);
     }
     StreamFactory factory = new StreamFactory();
     Lang.register(factory);
-    Map<String,Class<? extends Expressible>> registeredFunctions = factory.getFunctionNames();
+    Map<String, Supplier<Class<? extends Expressible>>> registeredFunctions = factory.getFunctionNames();
 
     //Check that each function that is expected is registered.
     for(String func : functions) {

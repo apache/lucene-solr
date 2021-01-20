@@ -131,785 +131,802 @@ public class ReplaceFunction {
       return new StringStreamReplaceFunction((StringValueStream)baseExpr,(StringValue)compExpr,(StringValue)fillExpr);
     }
     if (baseExpr instanceof AnalyticsValue) {
-      return new ValueReplaceFunction((AnalyticsValue)baseExpr,(AnalyticsValue)compExpr,(AnalyticsValue)fillExpr);
+      return new ValueReplaceFunction((AnalyticsValue)baseExpr,compExpr,fillExpr);
     }
     return new StreamReplaceFunction(baseExpr,compExpr,fillExpr);
 
   });
-}
-class StreamReplaceFunction extends AbstractAnalyticsValueStream {
-  private final AnalyticsValueStream baseExpr;
-  private final AnalyticsValue compExpr;
-  private final AnalyticsValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
 
-  public StreamReplaceFunction(AnalyticsValueStream baseExpr, AnalyticsValue compExpr, AnalyticsValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+  static class StreamReplaceFunction extends AbstractAnalyticsValueStream {
+    private final AnalyticsValueStream baseExpr;
+    private final AnalyticsValue compExpr;
+    private final AnalyticsValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  @Override
-  public void streamObjects(Consumer<Object> cons) {
-    Object compValue = compExpr.getObject();
-    if (compExpr.exists()) {
-      final Object fillValue = fillExpr.getObject();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamObjects(value -> {
-        if (value.equals(compValue)) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    public StreamReplaceFunction(AnalyticsValueStream baseExpr, AnalyticsValue compExpr, AnalyticsValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
+
+    @Override
+    public void streamObjects(Consumer<Object> cons) {
+      Object compValue = compExpr.getObject();
+      if (compExpr.exists()) {
+        final Object fillValue = fillExpr.getObject();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamObjects(value -> {
+          if (value.equals(compValue)) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamObjects(cons);
+      }
     }
-    else {
-      baseExpr.streamObjects(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class ValueReplaceFunction extends AbstractAnalyticsValue {
-  private final AnalyticsValue baseExpr;
-  private final AnalyticsValue compExpr;
-  private final AnalyticsValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class ValueReplaceFunction extends AbstractAnalyticsValue {
+    private final AnalyticsValue baseExpr;
+    private final AnalyticsValue compExpr;
+    private final AnalyticsValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public ValueReplaceFunction(AnalyticsValue baseExpr, AnalyticsValue compExpr, AnalyticsValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public Object getObject() {
-    Object value = baseExpr.getObject();
-    exists = baseExpr.exists();
-    Object comp = compExpr.getObject();
-    if (exists && compExpr.exists() && value.equals(comp)) {
-      value = fillExpr.getObject();
-      exists = fillExpr.exists();
+    public ValueReplaceFunction(AnalyticsValue baseExpr, AnalyticsValue compExpr, AnalyticsValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public Object getObject() {
+      Object value = baseExpr.getObject();
+      exists = baseExpr.exists();
+      Object comp = compExpr.getObject();
+      if (exists && compExpr.exists() && value.equals(comp)) {
+        value = fillExpr.getObject();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanStreamReplaceFunction extends AbstractBooleanValueStream {
-  private final BooleanValueStream baseExpr;
-  private final BooleanValue compExpr;
-  private final BooleanValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class BooleanStreamReplaceFunction extends AbstractBooleanValueStream {
+    private final BooleanValueStream baseExpr;
+    private final BooleanValue compExpr;
+    private final BooleanValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public BooleanStreamReplaceFunction(BooleanValueStream baseExpr, BooleanValue compExpr, BooleanValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public BooleanStreamReplaceFunction(BooleanValueStream baseExpr, BooleanValue compExpr, BooleanValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamBooleans(BooleanConsumer cons) {
-    boolean compValue = compExpr.getBoolean();
-    if (compExpr.exists()) {
-      final boolean fillValue = fillExpr.getBoolean();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamBooleans(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamBooleans(BooleanConsumer cons) {
+      boolean compValue = compExpr.getBoolean();
+      if (compExpr.exists()) {
+        final boolean fillValue = fillExpr.getBoolean();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamBooleans(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamBooleans(cons);
+      }
     }
-    else {
-      baseExpr.streamBooleans(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class BooleanReplaceFunction extends AbstractBooleanValue {
-  private final BooleanValue baseExpr;
-  private final BooleanValue compExpr;
-  private final BooleanValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class BooleanReplaceFunction extends AbstractBooleanValue {
+    private final BooleanValue baseExpr;
+    private final BooleanValue compExpr;
+    private final BooleanValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public BooleanReplaceFunction(BooleanValue baseExpr, BooleanValue compExpr, BooleanValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public boolean getBoolean() {
-    boolean value = baseExpr.getBoolean();
-    exists = baseExpr.exists();
-    boolean comp = compExpr.getBoolean();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getBoolean();
-      exists = fillExpr.exists();
+    public BooleanReplaceFunction(BooleanValue baseExpr, BooleanValue compExpr, BooleanValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public boolean getBoolean() {
+      boolean value = baseExpr.getBoolean();
+      exists = baseExpr.exists();
+      boolean comp = compExpr.getBoolean();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getBoolean();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntStreamReplaceFunction extends AbstractIntValueStream {
-  private final IntValueStream baseExpr;
-  private final IntValue compExpr;
-  private final IntValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class IntStreamReplaceFunction extends AbstractIntValueStream {
+    private final IntValueStream baseExpr;
+    private final IntValue compExpr;
+    private final IntValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public IntStreamReplaceFunction(IntValueStream baseExpr, IntValue compExpr, IntValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public IntStreamReplaceFunction(IntValueStream baseExpr, IntValue compExpr, IntValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamInts(IntConsumer cons) {
-    int compValue = compExpr.getInt();
-    if (compExpr.exists()) {
-      final int fillValue = fillExpr.getInt();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamInts(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamInts(IntConsumer cons) {
+      int compValue = compExpr.getInt();
+      if (compExpr.exists()) {
+        final int fillValue = fillExpr.getInt();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamInts(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamInts(cons);
+      }
     }
-    else {
-      baseExpr.streamInts(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class IntReplaceFunction extends AbstractIntValue {
-  private final IntValue baseExpr;
-  private final IntValue compExpr;
-  private final IntValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class IntReplaceFunction extends AbstractIntValue {
+    private final IntValue baseExpr;
+    private final IntValue compExpr;
+    private final IntValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public IntReplaceFunction(IntValue baseExpr, IntValue compExpr, IntValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public int getInt() {
-    int value = baseExpr.getInt();
-    exists = baseExpr.exists();
-    int comp = compExpr.getInt();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getInt();
-      exists = fillExpr.exists();
+    public IntReplaceFunction(IntValue baseExpr, IntValue compExpr, IntValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public int getInt() {
+      int value = baseExpr.getInt();
+      exists = baseExpr.exists();
+      int comp = compExpr.getInt();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getInt();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongStreamReplaceFunction extends AbstractLongValueStream {
-  private final LongValueStream baseExpr;
-  private final LongValue compExpr;
-  private final LongValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class LongStreamReplaceFunction extends AbstractLongValueStream {
+    private final LongValueStream baseExpr;
+    private final LongValue compExpr;
+    private final LongValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public LongStreamReplaceFunction(LongValueStream baseExpr, LongValue compExpr, LongValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public LongStreamReplaceFunction(LongValueStream baseExpr, LongValue compExpr, LongValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long compValue = compExpr.getLong();
-    if (compExpr.exists()) {
-      final long fillValue = fillExpr.getLong();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamLongs(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long compValue = compExpr.getLong();
+      if (compExpr.exists()) {
+        final long fillValue = fillExpr.getLong();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamLongs(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamLongs(cons);
+      }
     }
-    else {
-      baseExpr.streamLongs(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class LongReplaceFunction extends AbstractLongValue {
-  private final LongValue baseExpr;
-  private final LongValue compExpr;
-  private final LongValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class LongReplaceFunction extends AbstractLongValue {
+    private final LongValue baseExpr;
+    private final LongValue compExpr;
+    private final LongValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public LongReplaceFunction(LongValue baseExpr, LongValue compExpr, LongValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = baseExpr.getLong();
-    exists = baseExpr.exists();
-    long comp = compExpr.getLong();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getLong();
-      exists = fillExpr.exists();
+    public LongReplaceFunction(LongValue baseExpr, LongValue compExpr, LongValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = baseExpr.getLong();
+      exists = baseExpr.exists();
+      long comp = compExpr.getLong();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getLong();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatStreamReplaceFunction extends AbstractFloatValueStream {
-  private final FloatValueStream baseExpr;
-  private final FloatValue compExpr;
-  private final FloatValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class FloatStreamReplaceFunction extends AbstractFloatValueStream {
+    private final FloatValueStream baseExpr;
+    private final FloatValue compExpr;
+    private final FloatValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public FloatStreamReplaceFunction(FloatValueStream baseExpr, FloatValue compExpr, FloatValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public FloatStreamReplaceFunction(FloatValueStream baseExpr, FloatValue compExpr, FloatValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamFloats(FloatConsumer cons) {
-    float compValue = compExpr.getFloat();
-    if (compExpr.exists()) {
-      final float fillValue = fillExpr.getFloat();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamFloats(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamFloats(FloatConsumer cons) {
+      float compValue = compExpr.getFloat();
+      if (compExpr.exists()) {
+        final float fillValue = fillExpr.getFloat();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamFloats(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamFloats(cons);
+      }
     }
-    else {
-      baseExpr.streamFloats(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class FloatReplaceFunction extends AbstractFloatValue {
-  private final FloatValue baseExpr;
-  private final FloatValue compExpr;
-  private final FloatValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class FloatReplaceFunction extends AbstractFloatValue {
+    private final FloatValue baseExpr;
+    private final FloatValue compExpr;
+    private final FloatValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public FloatReplaceFunction(FloatValue baseExpr, FloatValue compExpr, FloatValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public float getFloat() {
-    float value = baseExpr.getFloat();
-    exists = baseExpr.exists();
-    float comp = compExpr.getFloat();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getFloat();
-      exists = fillExpr.exists();
+    public FloatReplaceFunction(FloatValue baseExpr, FloatValue compExpr, FloatValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public float getFloat() {
+      float value = baseExpr.getFloat();
+      exists = baseExpr.exists();
+      float comp = compExpr.getFloat();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getFloat();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleStreamReplaceFunction extends AbstractDoubleValueStream {
-  private final DoubleValueStream baseExpr;
-  private final DoubleValue compExpr;
-  private final DoubleValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class DoubleStreamReplaceFunction extends AbstractDoubleValueStream {
+    private final DoubleValueStream baseExpr;
+    private final DoubleValue compExpr;
+    private final DoubleValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DoubleStreamReplaceFunction(DoubleValueStream baseExpr, DoubleValue compExpr, DoubleValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public DoubleStreamReplaceFunction(DoubleValueStream baseExpr, DoubleValue compExpr, DoubleValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamDoubles(DoubleConsumer cons) {
-    double compValue = compExpr.getDouble();
-    if (compExpr.exists()) {
-      final double fillValue = fillExpr.getDouble();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamDoubles(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamDoubles(DoubleConsumer cons) {
+      double compValue = compExpr.getDouble();
+      if (compExpr.exists()) {
+        final double fillValue = fillExpr.getDouble();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamDoubles(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamDoubles(cons);
+      }
     }
-    else {
-      baseExpr.streamDoubles(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DoubleReplaceFunction extends AbstractDoubleValue {
-  private final DoubleValue baseExpr;
-  private final DoubleValue compExpr;
-  private final DoubleValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class DoubleReplaceFunction extends AbstractDoubleValue {
+    private final DoubleValue baseExpr;
+    private final DoubleValue compExpr;
+    private final DoubleValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DoubleReplaceFunction(DoubleValue baseExpr, DoubleValue compExpr, DoubleValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public double getDouble() {
-    double value = baseExpr.getDouble();
-    exists = baseExpr.exists();
-    double comp = compExpr.getDouble();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getDouble();
-      exists = fillExpr.exists();
+    public DoubleReplaceFunction(DoubleValue baseExpr, DoubleValue compExpr, DoubleValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public double getDouble() {
+      double value = baseExpr.getDouble();
+      exists = baseExpr.exists();
+      double comp = compExpr.getDouble();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getDouble();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateStreamReplaceFunction extends AbstractDateValueStream {
-  private final DateValueStream baseExpr;
-  private final DateValue compExpr;
-  private final DateValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class DateStreamReplaceFunction extends AbstractDateValueStream {
+    private final DateValueStream baseExpr;
+    private final DateValue compExpr;
+    private final DateValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DateStreamReplaceFunction(DateValueStream baseExpr, DateValue compExpr, DateValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public DateStreamReplaceFunction(DateValueStream baseExpr, DateValue compExpr, DateValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamLongs(LongConsumer cons) {
-    long compValue = compExpr.getLong();
-    if (compExpr.exists()) {
-      final long fillValue = fillExpr.getLong();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamLongs(value -> {
-        if (value == compValue) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamLongs(LongConsumer cons) {
+      long compValue = compExpr.getLong();
+      if (compExpr.exists()) {
+        final long fillValue = fillExpr.getLong();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamLongs(value -> {
+          if (value == compValue) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamLongs(cons);
+      }
     }
-    else {
-      baseExpr.streamLongs(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class DateReplaceFunction extends AbstractDateValue {
-  private final DateValue baseExpr;
-  private final DateValue compExpr;
-  private final DateValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class DateReplaceFunction extends AbstractDateValue {
+    private final DateValue baseExpr;
+    private final DateValue compExpr;
+    private final DateValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public DateReplaceFunction(DateValue baseExpr, DateValue compExpr, DateValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public long getLong() {
-    long value = baseExpr.getLong();
-    exists = baseExpr.exists();
-    long comp = compExpr.getLong();
-    if (exists && compExpr.exists() && value == comp) {
-      value = fillExpr.getLong();
-      exists = fillExpr.exists();
+    public DateReplaceFunction(DateValue baseExpr, DateValue compExpr, DateValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
     }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
+
+    boolean exists = false;
+
+    @Override
+    public long getLong() {
+      long value = baseExpr.getLong();
+      exists = baseExpr.exists();
+      long comp = compExpr.getLong();
+      if (exists && compExpr.exists() && value == comp) {
+        value = fillExpr.getLong();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}
-class StringStreamReplaceFunction extends AbstractStringValueStream {
-  private final StringValueStream baseExpr;
-  private final StringValue compExpr;
-  private final StringValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
+  static class StringStreamReplaceFunction extends AbstractStringValueStream {
+    private final StringValueStream baseExpr;
+    private final StringValue compExpr;
+    private final StringValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
 
-  public StringStreamReplaceFunction(StringValueStream baseExpr, StringValue compExpr, StringValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
+    public StringStreamReplaceFunction(StringValueStream baseExpr, StringValue compExpr, StringValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
 
-  @Override
-  public void streamStrings(Consumer<String> cons) {
-    String compValue = compExpr.getString();
-    if (compExpr.exists()) {
-      final String fillValue = fillExpr.getString();
-      final boolean fillExists = fillExpr.exists();
-      baseExpr.streamStrings(value -> {
-        if (value.equals(compValue)) {
-          if (fillExists) {
-            cons.accept(fillValue);
+    @Override
+    public void streamStrings(Consumer<String> cons) {
+      String compValue = compExpr.getString();
+      if (compExpr.exists()) {
+        final String fillValue = fillExpr.getString();
+        final boolean fillExists = fillExpr.exists();
+        baseExpr.streamStrings(value -> {
+          if (value.equals(compValue)) {
+            if (fillExists) {
+              cons.accept(fillValue);
+            }
+          } else {
+            cons.accept(value);
           }
-        } else {
-          cons.accept(value);
-        }
-      });
+        });
+      }
+      else {
+        baseExpr.streamStrings(cons);
+      }
     }
-    else {
-      baseExpr.streamStrings(cons);
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
     }
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
+  static class StringReplaceFunction extends AbstractStringValue {
+    private final StringValue baseExpr;
+    private final StringValue compExpr;
+    private final StringValue fillExpr;
+    public static final String name = ReplaceFunction.name;
+    private final String exprStr;
+    private final ExpressionType funcType;
+
+    public StringReplaceFunction(StringValue baseExpr, StringValue compExpr, StringValue fillExpr) throws SolrException {
+      this.baseExpr = baseExpr;
+      this.compExpr = compExpr;
+      this.fillExpr = fillExpr;
+      this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
+      this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
+    }
+
+    boolean exists = false;
+
+    @Override
+    public String getString() {
+      String value = baseExpr.getString();
+      exists = baseExpr.exists();
+      String comp = compExpr.getString();
+      if (exists && compExpr.exists() && value.equals(comp)) {
+        value = fillExpr.getString();
+        exists = fillExpr.exists();
+      }
+      return value;
+    }
+    @Override
+    public boolean exists() {
+      return exists;
+    }
+
+    @Override
+    public String getName() {
+      return name;
+    }
+    @Override
+    public String getExpressionStr() {
+      return exprStr;
+    }
+    @Override
+    public ExpressionType getExpressionType() {
+      return funcType;
+    }
   }
 }
-class StringReplaceFunction extends AbstractStringValue {
-  private final StringValue baseExpr;
-  private final StringValue compExpr;
-  private final StringValue fillExpr;
-  public static final String name = ReplaceFunction.name;
-  private final String exprStr;
-  private final ExpressionType funcType;
 
-  public StringReplaceFunction(StringValue baseExpr, StringValue compExpr, StringValue fillExpr) throws SolrException {
-    this.baseExpr = baseExpr;
-    this.compExpr = compExpr;
-    this.fillExpr = fillExpr;
-    this.exprStr = AnalyticsValueStream.createExpressionString(name,baseExpr,compExpr,fillExpr);
-    this.funcType = AnalyticsValueStream.determineMappingPhase(exprStr,baseExpr,compExpr,fillExpr);
-  }
-
-  boolean exists = false;
-
-  @Override
-  public String getString() {
-    String value = baseExpr.getString();
-    exists = baseExpr.exists();
-    String comp = compExpr.getString();
-    if (exists && compExpr.exists() && value.equals(comp)) {
-      value = fillExpr.getString();
-      exists = fillExpr.exists();
-    }
-    return value;
-  }
-  @Override
-  public boolean exists() {
-    return exists;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-  @Override
-  public String getExpressionStr() {
-    return exprStr;
-  }
-  @Override
-  public ExpressionType getExpressionType() {
-    return funcType;
-  }
-}

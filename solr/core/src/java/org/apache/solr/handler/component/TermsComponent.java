@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,16 +40,13 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -82,20 +78,12 @@ public class TermsComponent extends SearchComponent {
   public static final int UNLIMITED_MAX_COUNT = -1;
   public static final String COMPONENT_NAME = "terms";
 
-  // This needs to be created here too, because Solr doesn't call init(...) on default components. Bug?
-  private WhitelistHostChecker whitelistHostChecker = new WhitelistHostChecker(
-      null, 
-      !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
-
   @Override
-  public void init( NamedList args )
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
   {
     super.init(args);
-    whitelistHostChecker = new WhitelistHostChecker(
-        (String) args.get(HttpShardHandlerFactory.INIT_SHARDS_WHITELIST), 
-        !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
   }
-  
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
@@ -103,39 +91,6 @@ public class TermsComponent extends SearchComponent {
     //the terms parameter is also used by json facet API. So we will get errors if we try to parse as boolean
     if (params.get(TermsParams.TERMS, "false").equals("true")) {
       rb.doTerms = true;
-    } else {
-      return;
-    }
-
-    // TODO: temporary... this should go in a different component.
-    String shards = params.get(ShardParams.SHARDS);
-    if (shards != null) {
-      rb.isDistrib = true;
-      if (params.get(ShardParams.SHARDS_QT) == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No shards.qt parameter specified");
-      }
-      List<String> lst = StrUtils.splitSmart(shards, ",", true);
-      checkShardsWhitelist(rb, lst);
-      rb.shards = lst.toArray(new String[lst.size()]);
-    }
-  }
-
-  protected void checkShardsWhitelist(final ResponseBuilder rb, final List<String> lst) {
-    final List<String> urls = new LinkedList<String>();
-    for (final String ele : lst) {
-      urls.addAll(StrUtils.splitSmart(ele, '|'));
-    }
-    
-    if (whitelistHostChecker.isWhitelistHostCheckingEnabled() && rb.req.getCore().getCoreContainer().getZkController() == null && !whitelistHostChecker.hasExplicitWhitelist()) {
-      throw new SolrException(ErrorCode.FORBIDDEN, "TermsComponent "+HttpShardHandlerFactory.INIT_SHARDS_WHITELIST
-          +" not configured but required when using the '"+ShardParams.SHARDS+"' parameter with the TermsComponent."
-          +HttpShardHandlerFactory.SET_SOLR_DISABLE_SHARDS_WHITELIST_CLUE);
-    } else {
-      ClusterState cs = null;
-      if (rb.req.getCore().getCoreContainer().getZkController() != null) {
-        cs = rb.req.getCore().getCoreContainer().getZkController().getClusterState();
-      }
-      whitelistHostChecker.checkWhitelist(cs, urls.toString(), urls);
     }
   }
 
@@ -201,14 +156,14 @@ public class TermsComponent extends SearchComponent {
         SchemaField sf = rb.req.getSchema().getFieldOrNull(field);
         if (sf != null && sf.getType().isPointField()) {
           // FIXME: terms.ttf=true is not supported for pointFields
-          if (lowerStr!=null || upperStr!=null || prefix!=null || regexp!=null) {
+          if (lowerStr != null || upperStr != null || prefix != null || regexp != null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
           }
 
+          PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+          MutableValue mv = valueIterator.getMutableValue();
           if (sort) {
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             BoundedTreeSet<CountPair<MutableValue, Integer>> queue = new BoundedTreeSet<>(limit);
 
             for (; ; ) {
@@ -221,7 +176,7 @@ public class TermsComponent extends SearchComponent {
             }
 
             for (CountPair<MutableValue, Integer> item : queue) {
-              fieldTerms.add(item.key.toString(), item.val);
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(item.key.toObject()), item.val);
             }
             continue;
           } else {
@@ -229,28 +184,24 @@ public class TermsComponent extends SearchComponent {
             // streaming solution that is deferred until writing the response
             // TODO: we can't use the streaming solution until XML writer supports PushWriter!
             termsResult.add(field, (MapWriter) ew -> {
-              PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-              MutableValue mv = valueIterator.getMutableValue();
               int num = 0;
               for(;;) {
                 long count = valueIterator.getNextCount();
                 if (count < 0) break;
                 if (count < freqmin || count > freqmax) continue;
                 if (++num > limit) break;
-                ew.put(mv.toString(), (int)count); // match the numeric type of terms
+                ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
               }
             });
              ***/
 
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             int num = 0;
             for(;;) {
               long count = valueIterator.getNextCount();
               if (count < 0) break;
               if (count < freqmin || count > freqmax) continue;
               if (++num > limit) break;
-              fieldTerms.add(mv.toString(), (int)count); // match the numeric type of terms
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
             }
             continue;
           }
@@ -418,6 +369,7 @@ public class TermsComponent extends SearchComponent {
         th.parse(terms);
 
 
+        @SuppressWarnings({"unchecked"})
         NamedList<Number> stats = (NamedList<Number>)srsp.getSolrResponse().getResponse().get("indexstats");
         if(stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
@@ -434,6 +386,7 @@ public class TermsComponent extends SearchComponent {
     }
 
     TermsHelper ti = rb._termsHelper;
+    @SuppressWarnings({"rawtypes"})
     NamedList terms = ti.buildResponse();
 
     rb.rsp.add("terms", terms);

@@ -27,14 +27,12 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
@@ -73,7 +71,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-metricreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                               "solrconfig.xml", "schema.xml"));
@@ -118,6 +116,11 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
 
+    Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
+    assertNotNull(gauge.getValue());
+    h.getCore().close();
+    assertEquals(metricManager.nullString(), gauge.getValue());
+
     deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
@@ -133,7 +136,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
+    Timer timer = metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
     long initialCount = timer.getCount();
 
@@ -173,24 +176,12 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.fs.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.usableSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.path"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.spins"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.totalSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.usableSpace"));
     assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.path"));
-    assertTrue(metrics.containsKey("CONTAINER.fs.coreRoot.spins"));
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
-    boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
-    g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
-    assertEquals(spins, g.getValue());
-    g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
-    if (cc.getConfig().getSolrDataHome() != null) {
-      spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
-      assertEquals(spins, g.getValue());
-    } else {
-      assertEquals(spins, g.getValue());
-    }
+    assertEquals(g.getValue(), cc.getSolrHome());
   }
 }

@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -41,99 +39,90 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Util;
 
 /**
  * FST-based term dict, using metadata as FST output.
  *
- * The FST directly holds the mapping between &lt;term, metadata&gt;.
+ * <p>The FST directly holds the mapping between &lt;term, metadata&gt;.
  *
- * Term metadata consists of three parts:
- * 1. term statistics: docFreq, totalTermFreq;
- * 2. monotonic long[], e.g. the pointer to the postings list for that term;
- * 3. generic byte[], e.g. other information need by postings reader.
+ * <p>Term metadata consists of three parts: 1. term statistics: docFreq, totalTermFreq; 2.
+ * monotonic long[], e.g. the pointer to the postings list for that term; 3. generic byte[], e.g.
+ * other information need by postings reader.
  *
- * <p>
- * File:
+ * <p>File:
+ *
  * <ul>
- *   <li><tt>.tst</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><code>.tst</code>: <a href="#Termdictionary">Term Dictionary</a>
  * </ul>
- * <p>
  *
- * <a name="Termdictionary"></a>
- * <h3>Term Dictionary</h3>
- * <p>
- *  The .tst contains a list of FSTs, one for each field.
- *  The FST maps a term to its corresponding statistics (e.g. docfreq) 
- *  and metadata (e.g. information for postings list reader like file pointer
- *  to postings list).
- * </p>
- * <p>
- *  Typically the metadata is separated into two parts:
- *  <ul>
- *   <li>
- *    Monotonical long array: Some metadata will always be ascending in order
- *    with the corresponding term. This part is used by FST to share outputs between arcs.
- *   </li>
- *   <li>
- *    Generic byte array: Used to store non-monotonic metadata.
- *   </li>
- *  </ul>
+ * <p><a id="Termdictionary"></a>
+ *
+ * <h2>Term Dictionary</h2>
+ *
+ * <p>The .tst contains a list of FSTs, one for each field. The FST maps a term to its corresponding
+ * statistics (e.g. docfreq) and metadata (e.g. information for postings list reader like file
+ * pointer to postings list).
+ *
+ * <p>Typically the metadata is separated into two parts:
+ *
+ * <ul>
+ *   <li>Monotonical long array: Some metadata will always be ascending in order with the
+ *       corresponding term. This part is used by FST to share outputs between arcs.
+ *   <li>Generic byte array: Used to store non-monotonic metadata.
+ * </ul>
  *
  * File format:
+ *
  * <ul>
- *  <li>TermsDict(.tst) --&gt; Header, <i>PostingsHeader</i>, FieldSummary, DirOffset</li>
- *  <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, SumTotalTermFreq?, 
- *                                      SumDocFreq, DocCount, LongsSize, TermFST &gt;<sup>NumFields</sup></li>
- *  <li>TermFST --&gt; {@link FST FST&lt;TermData&gt;}</li>
- *  <li>TermData --&gt; Flag, BytesSize?, LongDelta<sup>LongsSize</sup>?, Byte<sup>BytesSize</sup>?, 
- *                      &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) &gt; ? </li>
- *  <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *  <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
- *  <li>DocFreq, LongsSize, BytesSize, NumFields,
- *        FieldNumber, DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
- *  <li>TotalTermFreq, NumTerms, SumTotalTermFreq, SumDocFreq, LongDelta --&gt; 
- *        {@link DataOutput#writeVLong VLong}</li>
+ *   <li>TermsDict(.tst) --&gt; Header, <i>PostingsHeader</i>, FieldSummary, DirOffset
+ *   <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, SumTotalTermFreq?, SumDocFreq,
+ *       DocCount, LongsSize, TermFST &gt;<sup>NumFields</sup>
+ *   <li>TermFST --&gt; {@link FST FST&lt;TermData&gt;}
+ *   <li>TermData --&gt; Flag, BytesSize?, LongDelta<sup>LongsSize</sup>?,
+ *       Byte<sup>BytesSize</sup>?, &lt; DocFreq[Same?], (TotalTermFreq-DocFreq) &gt; ?
+ *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}
+ *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}
+ *   <li>DocFreq, LongsSize, BytesSize, NumFields, FieldNumber, DocCount --&gt; {@link
+ *       DataOutput#writeVInt VInt}
+ *   <li>TotalTermFreq, NumTerms, SumTotalTermFreq, SumDocFreq, LongDelta --&gt; {@link
+ *       DataOutput#writeVLong VLong}
  * </ul>
- * <p>Notes:</p>
+ *
+ * <p>Notes:
+ *
  * <ul>
- *  <li>
- *   The format of PostingsHeader and generic meta bytes are customized by the specific postings implementation:
- *   they contain arbitrary per-file data (such as parameters or versioning information), and per-term data
- *   (non-monotonic ones like pulsed postings data).
- *  </li>
- *  <li>
- *   The format of TermData is determined by FST, typically monotonic metadata will be dense around shallow arcs,
- *   while in deeper arcs only generic bytes and term statistics exist.
- *  </li>
- *  <li>
- *   The byte Flag is used to indicate which part of metadata exists on current arc. Specially the monotonic part
- *   is omitted when it is an array of 0s.
- *  </li>
- *  <li>
- *   Since LongsSize is per-field fixed, it is only written once in field summary.
- *  </li>
+ *   <li>The format of PostingsHeader and generic meta bytes are customized by the specific postings
+ *       implementation: they contain arbitrary per-file data (such as parameters or versioning
+ *       information), and per-term data (non-monotonic ones like pulsed postings data).
+ *   <li>The format of TermData is determined by FST, typically monotonic metadata will be dense
+ *       around shallow arcs, while in deeper arcs only generic bytes and term statistics exist.
+ *   <li>The byte Flag is used to indicate which part of metadata exists on current arc. Specially
+ *       the monotonic part is omitted when it is an array of 0s.
+ *   <li>Since LongsSize is per-field fixed, it is only written once in field summary.
  * </ul>
  *
  * @lucene.experimental
  */
-
 public class FSTTermsWriter extends FieldsConsumer {
   static final String TERMS_EXTENSION = "tfp";
   static final String TERMS_CODEC_NAME = "FSTTerms";
   public static final int TERMS_VERSION_START = 2;
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
-  
+
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   IndexOutput out;
   final int maxDoc;
   final List<FieldMetaData> fields = new ArrayList<>();
 
-  public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter) throws IOException {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
+  public FSTTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter)
+      throws IOException {
+    final String termsFileName =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, TERMS_EXTENSION);
 
     this.postingsWriter = postingsWriter;
     this.fieldInfos = state.fieldInfos;
@@ -142,10 +131,14 @@ public class FSTTermsWriter extends FieldsConsumer {
 
     boolean success = false;
     try {
-      CodecUtil.writeIndexHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT,
-                                        state.segmentInfo.getId(), state.segmentSuffix);   
+      CodecUtil.writeIndexHeader(
+          out,
+          TERMS_CODEC_NAME,
+          TERMS_VERSION_CURRENT,
+          state.segmentInfo.getId(),
+          state.segmentSuffix);
 
-      this.postingsWriter.init(out, state); 
+      this.postingsWriter.init(out, state);
       success = true;
     } finally {
       if (!success) {
@@ -160,7 +153,7 @@ public class FSTTermsWriter extends FieldsConsumer {
 
   @Override
   public void write(Fields fields, NormsProducer norms) throws IOException {
-    for(String field : fields) {
+    for (String field : fields) {
       Terms terms = fields.terms(field);
       if (terms == null) {
         continue;
@@ -179,7 +172,7 @@ public class FSTTermsWriter extends FieldsConsumer {
         if (term == null) {
           break;
         }
-            
+
         BlockTermState termState = postingsWriter.writeTerm(term, termsEnum, docsSeen, norms);
         if (termState != null) {
           termsWriter.finishTerm(term, termState);
@@ -199,7 +192,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       try {
         // write field summary
         final long dirStart = out.getFilePointer();
-        
+
         out.writeVInt(fields.size());
         for (FieldMetaData field : fields) {
           out.writeVInt(field.fieldInfo.number);
@@ -209,8 +202,7 @@ public class FSTTermsWriter extends FieldsConsumer {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          out.writeVInt(field.longsSize);
-          field.dict.save(out);
+          field.dict.save(out, out);
         }
         writeTrailer(out, dirStart);
         CodecUtil.writeFooter(out);
@@ -232,25 +224,28 @@ public class FSTTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    public final int longsSize;
     public final FST<FSTTermOutputs.TermData> dict;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<FSTTermOutputs.TermData> fst) {
+    public FieldMetaData(
+        FieldInfo fieldInfo,
+        long numTerms,
+        long sumTotalTermFreq,
+        long sumDocFreq,
+        int docCount,
+        FST<FSTTermOutputs.TermData> fst) {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
       this.dict = fst;
     }
   }
 
   final class TermsWriter {
-    private final Builder<FSTTermOutputs.TermData> builder;
+    private final FSTCompiler<FSTTermOutputs.TermData> fstCompiler;
     private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
 
     private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
@@ -259,32 +254,32 @@ public class FSTTermsWriter extends FieldsConsumer {
     TermsWriter(FieldInfo fieldInfo) {
       this.numTerms = 0;
       this.fieldInfo = fieldInfo;
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      postingsWriter.setField(fieldInfo);
+      this.outputs = new FSTTermOutputs(fieldInfo);
+      this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     public void finishTerm(BytesRef text, BlockTermState state) throws IOException {
       // write term meta data into fst
       final FSTTermOutputs.TermData meta = new FSTTermOutputs.TermData();
-      meta.longs = new long[longsSize];
       meta.bytes = null;
       meta.docFreq = state.docFreq;
       meta.totalTermFreq = state.totalTermFreq;
-      postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
+      postingsWriter.encodeTerm(metaWriter, fieldInfo, state, true);
       if (metaWriter.size() > 0) {
         meta.bytes = metaWriter.toArrayCopy();
         metaWriter.reset();
       }
-      builder.add(Util.toIntsRef(text, scratchTerm), meta);
+      fstCompiler.add(Util.toIntsRef(text, scratchTerm), meta);
       numTerms++;
     }
 
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<FSTTermOutputs.TermData> fst = builder.finish();
-        fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
+        final FST<FSTTermOutputs.TermData> fst = fstCompiler.compile();
+        fields.add(
+            new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, fst));
       }
     }
   }

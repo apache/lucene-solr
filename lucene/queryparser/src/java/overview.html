@@ -21,7 +21,7 @@
     </title>
   </head>
   <body>
-  Apache Lucene QueryParsers.
+  <h1>Apache Lucene QueryParsers.</h1>
   <p>
   This module provides a number of queryparsers:
   <ul>
@@ -33,16 +33,16 @@
      <li><a href="#surround">Surround</a>
      <li><a href="#xml">XML</a>
   </ul>
-  <hr/>
-  <h2><a name="classic">Classic</a></h2>
+  <hr>
+  <h2><a id="classic">Classic</a></h2>
   A Simple Lucene QueryParser implemented with JavaCC.
-  <h2><a name="analyzing">Analyzing</a></h2>
+  <h2><a id="analyzing">Analyzing</a></h2>
   QueryParser that passes Fuzzy-, Prefix-, Range-, and WildcardQuerys through the given analyzer.
-  <h2><a name="complexphrase">Complex Phrase</a></h2>
+  <h2><a id="complexphrase">Complex Phrase</a></h2>
   QueryParser which permits complex phrase query syntax eg "(john jon jonathan~) peters*"
-  <h2><a name="extendable">Extendable</a></h2>
+  <h2><a id="extendable">Extendable</a></h2>
   Extendable QueryParser provides a simple and flexible extension mechanism by overloading query field names.
-  <h2><a name="flexible">Flexible</a></h2>
+  <h2><a id="flexible">Flexible</a></h2>
 <p>
 This project contains the new Lucene query parser implementation, which matches the syntax of the core QueryParser but offers a more modular architecture to enable customization.
 </p>
@@ -53,7 +53,6 @@ It's currently divided in 2 main packages:
 <li>{@link org.apache.lucene.queryparser.flexible.core}: it contains the query parser API classes, which should be extended by query parser implementations. </li>
 <li>{@link org.apache.lucene.queryparser.flexible.standard}: it contains the current Lucene query parser implementation using the new query parser API.</li>
 </ul>
-</p>
 
 <h3>Features</h3>
 
@@ -156,13 +155,11 @@ you don't need to worry about dealing with those.
       config.setAnalyzer(new WhitespaceAnalyzer());
       Query query = qpHelper.parse("apache AND lucene", "defaultField");
 </pre>
-<h2><a name="surround">Surround</a></h2>
+<h2><a id="surround">Surround</a></h2>
 <p>
 A QueryParser that supports the Span family of queries as well as pre and infix notation.
 </p>
-<h2><a name="xml">XML</a></h2>
+<h2><a id="xml">XML</a></h2>
 A QueryParser that produces Lucene Query objects from XML streams.
-<p>
-</p>
   </body>
 </html>

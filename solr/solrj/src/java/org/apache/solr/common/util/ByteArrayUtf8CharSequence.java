@@ -180,6 +180,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return new ByteArrayUtf8CharSequence(bytes, 0, length, utf16, hashCode);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Map.Entry convertCharSeq(Map.Entry e) {
     if (e.getKey() instanceof Utf8CharSequence || e.getValue() instanceof Utf8CharSequence) {
       return new AbstractMap.SimpleEntry(convertCharSeq(e.getKey()), convertCharSeq(e.getValue()));
@@ -188,6 +189,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static Collection convertCharSeq(Collection vals) {
     if (vals == null) return vals;
     boolean needsCopy = false;
@@ -200,9 +202,9 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     if (needsCopy) {
       Collection copy =  null;
       if (vals instanceof Set){
-        copy = new HashSet(vals.size());
+        copy = new HashSet<>(vals.size());
       } else {
-        copy = new ArrayList(vals.size());
+        copy = new ArrayList<>(vals.size());
       }
       for (Object o : vals) copy.add(convertCharSeq(o));
       return copy;

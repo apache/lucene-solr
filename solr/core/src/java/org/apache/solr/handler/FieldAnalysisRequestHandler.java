@@ -37,13 +37,14 @@ import java.util.Set;
 
 /**
  * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:
- * <table border="1" summary="table of parameters">
+ * <table style="border: 1px solid">
+ * <caption>table of parameters</caption>
  * <tr>
- * <th align="left">Name</th>
- * <th align="left">Type</th>
- * <th align="left">required</th>
- * <th align="left">Description</th>
- * <th align="left">Multi-valued</th>
+ * <th style="text-align:left">Name</th>
+ * <th style="text-align:left">Type</th>
+ * <th style="text-align:left">required</th>
+ * <th style="text-align:left">Description</th>
+ * <th style="text-align:left">Multi-valued</th>
  * </tr>
  * <tr>
  * <td>analysis.fieldname</td>
@@ -92,6 +93,7 @@ import java.util.Set;
 public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   protected NamedList doAnalysis(SolrQueryRequest req) throws Exception {
     FieldAnalysisRequest analysisRequest = resolveAnalysisRequest(req);
     IndexSchema indexSchema = req.getSchema();
@@ -102,8 +104,6 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   public String getDescription() {
     return "Provide a breakdown of the analysis process of field/query text";
   }
-
-  // ================================================= Helper methods ================================================
 
   /**
    * Resolves the AnalysisRequest based on the parameters in the given SolrParams.
@@ -173,6 +173,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    *
    * @return The analysis breakdown as a named list.
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
     NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
@@ -209,6 +210,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * @return NamedList containing the tokens produced by the analyzers of the given field, separated into an index and
    *         a query group
    */ // package access for testing
+  @SuppressWarnings({"rawtypes"})
   NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();

@@ -57,7 +57,12 @@ public class TestRadixSelector extends LuceneTestCase {
     }
     final int sharedPrefixLength = Math.min(arr[0].length, TestUtil.nextInt(random(), 1, maxLen));
     for (int i = 1; i < arr.length; ++i) {
-      System.arraycopy(arr[0].bytes, arr[0].offset, arr[i].bytes, arr[i].offset, Math.min(sharedPrefixLength, arr[i].length));
+      System.arraycopy(
+          arr[0].bytes,
+          arr[0].offset,
+          arr[i].bytes,
+          arr[i].offset,
+          Math.min(sharedPrefixLength, arr[i].length));
     }
     doTest(arr, from, to, maxLen);
   }
@@ -70,25 +75,25 @@ public class TestRadixSelector extends LuceneTestCase {
 
     BytesRef[] actual = arr.clone();
     final int enforcedMaxLen = random().nextBoolean() ? maxLen : Integer.MAX_VALUE;
-    RadixSelector selector = new RadixSelector(enforcedMaxLen) {
+    RadixSelector selector =
+        new RadixSelector(enforcedMaxLen) {
 
-      @Override
-      protected void swap(int i, int j) {
-        ArrayUtil.swap(actual, i, j);
-      }
+          @Override
+          protected void swap(int i, int j) {
+            ArrayUtil.swap(actual, i, j);
+          }
 
-      @Override
-      protected int byteAt(int i, int k) {
-        assertTrue(k < enforcedMaxLen);
-        BytesRef b = actual[i];
-        if (k >= b.length) {
-          return -1;
-        } else {
-          return Byte.toUnsignedInt(b.bytes[b.offset + k]);
-        }
-      }
-
-    };
+          @Override
+          protected int byteAt(int i, int k) {
+            assertTrue(k < enforcedMaxLen);
+            BytesRef b = actual[i];
+            if (k >= b.length) {
+              return -1;
+            } else {
+              return Byte.toUnsignedInt(b.bytes[b.offset + k]);
+            }
+          }
+        };
     selector.select(from, to, k);
 
     assertEquals(expected[k], actual[k]);
@@ -102,5 +107,4 @@ public class TestRadixSelector extends LuceneTestCase {
       }
     }
   }
-
 }

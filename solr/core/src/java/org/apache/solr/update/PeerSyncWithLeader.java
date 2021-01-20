@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -37,9 +36,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +68,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private Timer syncTime;
   private Counter syncErrors;
   private Counter syncSkipped;
+  private SolrMetricsContext solrMetricsContext;
 
   public PeerSyncWithLeader(SolrCore core, String leaderUrl, int nUpdates) {
     this.core = core;
@@ -90,10 +89,16 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
-    syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
-    syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
+    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
+    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
   }
 
   // start of peersync related debug messages.  includes the core name for correlation.
@@ -124,13 +129,14 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    MDCLoggingContext.setCore(core);
     Timer.Context timerContext = null;
     try {
-      log.info(msg() + "START leader=" + leaderUrl + " nUpdates=" + nUpdates);
+      if (log.isInfoEnabled()) {
+        log.info("{} START leader={} nUpdates={}", msg(), leaderUrl, nUpdates);
+      }
 
       if (debug) {
-        log.debug(msg() + "startingVersions=" + startingVersions.size() + " " + startingVersions);
+        log.debug("{} startingVersions={} {}", msg(), startingVersions.size(), startingVersions);
       }
       // check if we already in sync to begin with
       if(doFingerprint && alreadyInSync()) {
@@ -158,8 +164,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       long smallestNewUpdate = Math.abs(ourUpdates.get(ourUpdates.size() - 1));
 
       if (Math.abs(startingVersions.get(0)) < smallestNewUpdate) {
-        log.warn(msg()
-            + "too many updates received since start - startingUpdates no longer overlaps with our currentUpdates");
+        log.warn("{} too many updates received since start - startingUpdates no longer overlaps with our currentUpdates", msg());
         syncErrors.inc();
         return PeerSync.PeerSyncResult.failure();
       }
@@ -173,7 +178,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
       boolean success = doSync(ourUpdates, ourLowThreshold, ourHighThreshold);
 
-      log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
+      if (log.isInfoEnabled()) {
+        log.info("{} DONE. sync {}", msg(), (success ? "succeeded" : "failed"));
+      }
       if (!success) {
         syncErrors.inc();
       }
@@ -187,7 +194,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       } catch (IOException e) {
         log.warn("{} unable to close client to leader", msg(), e);
       }
-      MDCLoggingContext.clear();
     }
   }
 
@@ -221,14 +227,17 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private MissedUpdatesRequest buildMissedUpdatesRequest(NamedList<Object> rsp) {
     // we retrieved the last N updates from the replica
+    @SuppressWarnings({"unchecked"})
     List<Long> otherVersions = (List<Long>)rsp.get("versions");
-    log.info(msg() + " Received " + otherVersions.size() + " versions from " + leaderUrl);
+    if (log.isInfoEnabled()) {
+      log.info("{} Received {} versions from {}", msg(), otherVersions.size(), leaderUrl);
+    }
 
     if (otherVersions.isEmpty()) {
       return MissedUpdatesRequest.UNABLE_TO_SYNC;
     }
 
-    MissedUpdatesRequest updatesRequest = missedUpdatesFinder.find(otherVersions, leaderUrl, () -> core.getSolrConfig().useRangeVersionsForPeerSync && canHandleVersionRanges());
+    MissedUpdatesRequest updatesRequest = missedUpdatesFinder.find(otherVersions, leaderUrl);
     if (updatesRequest == MissedUpdatesRequest.EMPTY) {
       if (doFingerprint) return MissedUpdatesRequest.UNABLE_TO_SYNC;
       return MissedUpdatesRequest.ALREADY_IN_SYNC;
@@ -238,7 +247,10 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   }
 
   private NamedList<Object> requestUpdates(MissedUpdatesRequest missedUpdatesRequest) {
-    log.info(msg() + "Requesting updates from " + leaderUrl + " n=" + missedUpdatesRequest.totalRequestedUpdates + " versions=" + missedUpdatesRequest.versionsAndRanges);
+    if (log.isInfoEnabled()) {
+      log.info("{} Requesting updates from {} n={} versions={}", msg(), leaderUrl
+          , missedUpdatesRequest.totalRequestedUpdates, missedUpdatesRequest.versionsAndRanges);
+    }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/get");
@@ -252,10 +264,11 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private boolean handleUpdates(NamedList<Object> rsp, long numRequestedUpdates, IndexFingerprint leaderFingerprint) {
     // missed updates from leader, it does not contains updates from bufferedUpdates
+    @SuppressWarnings({"unchecked"})
     List<Object> updates = (List<Object>)rsp.get("updates");
 
     if (updates.size() < numRequestedUpdates) {
-      log.error(msg() + " Requested " + numRequestedUpdates + " updates from " + leaderUrl + " but retrieved " + updates.size());
+      log.error("{} Requested {} updated from {} but retrieved {}", msg(), numRequestedUpdates, leaderUrl, updates.size());
       return false;
     }
 
@@ -273,6 +286,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     // TODO leader should do fingerprint and retrieve recent updates version in atomic
     if (leaderFingerprint != null) {
       boolean existDBIOrDBQInTheGap = updates.stream().anyMatch(e -> {
+        @SuppressWarnings({"unchecked"})
         List<Object> u = (List<Object>) e;
         long version = (Long) u.get(1);
         int oper = (Integer)u.get(0) & UpdateLog.OPERATION_MASK;
@@ -282,6 +296,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       if (!existDBIOrDBQInTheGap) {
         // it is safe to use leaderFingerprint.maxVersionEncountered as cut point now.
         updates.removeIf(e -> {
+          @SuppressWarnings({"unchecked"})
           List<Object> u = (List<Object>) e;
           long version = (Long) u.get(1);
           return version > leaderFingerprint.getMaxVersionEncountered();
@@ -295,19 +310,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return false;
     }
     return true;
-  }
-
-  // determine if leader can handle version ranges
-  private boolean canHandleVersionRanges() {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/get");
-    params.set(DISTRIB, false);
-    params.set("checkCanHandleVersionRanges", false);
-
-    NamedList<Object> rsp = request(params, "Failed on determine if leader can handle version ranges");
-    Boolean canHandleVersionRanges = rsp.getBooleanArg("canHandleVersionRanges");
-
-    return canHandleVersionRanges != null && canHandleVersionRanges;
   }
 
   private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
@@ -388,7 +390,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       this.nUpdates = nUpdates;
     }
 
-    public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom, Supplier<Boolean> canHandleVersionRanges) {
+    public MissedUpdatesRequest find(List<Long> leaderVersions, Object updateFrom) {
       leaderVersions.sort(absComparator);
       log.debug("{} sorted versions from {} = {}", logPrefix, leaderVersions, updateFrom);
 
@@ -402,12 +404,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       // In that case, we will fail on compute fingerprint with the current leader and start segments replication
 
       boolean completeList = leaderVersions.size() < nUpdates;
-      MissedUpdatesRequest updatesRequest;
-      if (canHandleVersionRanges.get()) {
-        updatesRequest = handleVersionsWithRanges(leaderVersions, completeList);
-      } else {
-        updatesRequest = handleIndividualVersions(leaderVersions, completeList);
-      }
+      MissedUpdatesRequest updatesRequest = handleVersionsWithRanges(leaderVersions, completeList);
 
       if (updatesRequest.totalRequestedUpdates > nUpdates) {
         log.info("{} PeerSync will fail because number of missed updates is more than:{}", logPrefix, nUpdates);

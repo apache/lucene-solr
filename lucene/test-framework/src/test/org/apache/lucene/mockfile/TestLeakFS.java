@@ -26,20 +26,25 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /** Basic tests for LeakFS */
 public class TestLeakFS extends MockFileSystemTestCase {
-  
+
   @Override
   protected Path wrap(Path path) {
     FileSystem fs = new LeakFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** Test leaks via Files.newInputStream */
   public void testLeakInputStream() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
@@ -49,21 +54,21 @@ public class TestLeakFS extends MockFileSystemTestCase {
     assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
-  
+
   /** Test leaks via Files.newOutputStream */
   public void testLeakOutputStream() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream leak = Files.newOutputStream(dir.resolve("leaky"));
     Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
     assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
-  
+
   /** Test leaks via FileChannel.open */
   public void testLeakFileChannel() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
@@ -73,24 +78,34 @@ public class TestLeakFS extends MockFileSystemTestCase {
     assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
-  
+
   /** Test leaks via AsynchronousFileChannel.open */
-  public void testLeakAsyncFileChannel() throws IOException {
+  public void testLeakAsyncFileChannel() throws IOException, InterruptedException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
-    AsynchronousFileChannel leak = AsynchronousFileChannel.open(dir.resolve("stillopen"));
-    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
-    assertTrue(e.getMessage().contains("file handle leaks"));
-    leak.close();
+
+    ExecutorService executorService =
+        Executors.newFixedThreadPool(1, new NamedThreadFactory("async-io"));
+    try {
+      AsynchronousFileChannel leak =
+          AsynchronousFileChannel.open(
+              dir.resolve("stillopen"), Collections.emptySet(), executorService);
+      Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+      assertTrue(e.getMessage().contains("file handle leaks"));
+      leak.close();
+    } finally {
+      executorService.shutdown();
+      executorService.awaitTermination(5, TimeUnit.SECONDS);
+    }
   }
-  
+
   /** Test leaks via Files.newByteChannel */
   public void testLeakByteChannel() throws IOException {
     Path dir = wrap(createTempDir());
-    
+
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();

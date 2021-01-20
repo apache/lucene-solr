@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 
+@SuppressWarnings({"unchecked"})
 public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   private final HttpClient httpClient;

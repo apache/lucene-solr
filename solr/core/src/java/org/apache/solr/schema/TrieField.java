@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see PointField
  */
 @Deprecated
 public class TrieField extends NumericFieldType {
@@ -298,10 +299,10 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
-      return super.getRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
+      return super.getSpecializedRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }
     int ps = precisionStep;
     Query query;
@@ -517,7 +518,7 @@ public class TrieField extends NumericFieldType {
 
     if (!indexed && !stored && !docValues) {
       if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
+        log.trace("Ignoring unindexed/unstored field: {}", field);
       return null;
     }
     

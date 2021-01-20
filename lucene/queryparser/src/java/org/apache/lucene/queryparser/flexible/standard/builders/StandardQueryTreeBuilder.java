@@ -33,25 +33,23 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNod
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PrefixWildcardQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.SynonymQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.Query;
 
 /**
- * This query tree builder only defines the necessary map to build a
- * {@link Query} tree object. It should be used to generate a {@link Query} tree
- * object from a query node tree processed by a
+ * This query tree builder only defines the necessary map to build a {@link Query} tree object. It
+ * should be used to generate a {@link Query} tree object from a query node tree processed by a
  * {@link StandardQueryNodeProcessorPipeline}.
- * 
+ *
  * @see QueryTreeBuilder
  * @see StandardQueryNodeProcessorPipeline
  */
-public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
-    StandardQueryBuilder {
-  
+public class StandardQueryTreeBuilder extends QueryTreeBuilder implements StandardQueryBuilder {
+
   public StandardQueryTreeBuilder() {
     setBuilder(GroupQueryNode.class, new GroupQueryNodeBuilder());
     setBuilder(FieldQueryNode.class, new FieldQueryNodeBuilder());
@@ -64,21 +62,17 @@ public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
     setBuilder(WildcardQueryNode.class, new WildcardQueryNodeBuilder());
     setBuilder(TokenizedPhraseQueryNode.class, new PhraseQueryNodeBuilder());
     setBuilder(MatchNoDocsQueryNode.class, new MatchNoDocsQueryNodeBuilder());
-    setBuilder(PrefixWildcardQueryNode.class,
-        new PrefixWildcardQueryNodeBuilder());
+    setBuilder(PrefixWildcardQueryNode.class, new PrefixWildcardQueryNodeBuilder());
     setBuilder(TermRangeQueryNode.class, new TermRangeQueryNodeBuilder());
     setBuilder(RegexpQueryNode.class, new RegexpQueryNodeBuilder());
     setBuilder(SlopQueryNode.class, new SlopQueryNodeBuilder());
-    setBuilder(SynonymQueryNode.class,
-        new SynonymQueryNodeBuilder());
+    setBuilder(SynonymQueryNode.class, new SynonymQueryNodeBuilder());
     setBuilder(MultiPhraseQueryNode.class, new MultiPhraseQueryNodeBuilder());
     setBuilder(MatchAllDocsQueryNode.class, new MatchAllDocsQueryNodeBuilder());
-    
   }
-  
+
   @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     return (Query) super.build(queryNode);
   }
-  
 }

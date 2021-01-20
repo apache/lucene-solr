@@ -38,6 +38,13 @@ A ranking model computes the scores used to rerank documents. Irrespective of an
 * features that represent the document being scored
 * features that represent the query for which the document is being scored
 
+==== Interleaving
+
+Interleaving is an approach to Online Search Quality evaluation that allows to compare two models interleaving their results in the final ranked list returned to the user.
+
+* currently only the Team Draft Interleaving algorithm is supported (and its implementation assumes all results are from the same shard)
+
+
 ==== Feature
 
 A feature is a value, a number, that represents some quantity or quality of the document being scored or of the query for which documents are being scored. For example documents often have a 'recency' quality and 'number of past purchases' might be a quantity that is passed to Solr as part of the search query.
@@ -55,23 +62,23 @@ The LTR contrib module includes several feature classes as well as support for c
 [cols=",,,",options="header",]
 |===
 |Feature |Class |Example parameters |<<External Feature Information>>
-|field length |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
-|field value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
-|original score |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
-|solr query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
-|solr filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
-|solr query + filter query |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
-|value |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
+|field length |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldLengthFeature.html[FieldLengthFeature] |`{"field":"title"}` |not (yet) supported
+|field value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/FieldValueFeature.html[FieldValueFeature] |`{"field":"hits"}` |not (yet) supported
+|original score |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/OriginalScoreFeature.html[OriginalScoreFeature] |`{}` |not applicable
+|solr query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified)` `,3.16e-11,1,1)"}` |supported
+|solr filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"fq":["{!terms f=category}book"]}` |supported
+|solr query + filter query |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] |`{"q":"{!func}` `recip(ms(NOW,last_modified),` `3.16e-11,1,1)",` `"fq":["{!terms f=category}book"]}` |supported
+|value |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] |`{"value":"$\{userFromMobile}","required":true}` |supported
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature]) | |
 |===
 
 [cols=",,",options="header",]
 |===
 |Normalizer |Class |Example parameters
-|Identity |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
-|MinMax |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
-|Standard |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
+|Identity |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/IdentityNormalizer.html[IdentityNormalizer] |`{}`
+|MinMax |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/MinMaxNormalizer.html[MinMaxNormalizer] |`{"min":"0", "max":"50" }`
+|Standard |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/StandardNormalizer.html[StandardNormalizer] |`{"avg":"42","std":"6"}`
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer]) |
 |===
 
 ==== Feature Extraction
@@ -85,12 +92,12 @@ Feature selection and model training take place offline and outside Solr. The lt
 [cols=",,",options="header",]
 |===
 |General form |Class |Specific examples
-|Linear |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
-|Multiple Additive Trees |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
-|Neural Network |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
-|(wrapper) |{solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
-|(custom) |(custom class extending {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
+|Linear |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LinearModel.html[LinearModel] |RankSVM, Pranking
+|Multiple Additive Trees |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/MultipleAdditiveTreesModel.html[MultipleAdditiveTreesModel] |LambdaMART, Gradient Boosted Regression Trees (GBRT)
+|Neural Network |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/NeuralNetworkModel.html[NeuralNetworkModel] |RankNet
+|(wrapper) |{solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/DefaultWrapperModel.html[DefaultWrapperModel] |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/AdapterModel.html[AdapterModel]) |(not applicable)
+|(custom) |(custom class extending {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel]) |(not applicable)
 |===
 
 == Quick Start with LTR
@@ -151,7 +158,7 @@ To extract features as part of a query, add `[features]` to the `fl` parameter, 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -216,14 +223,14 @@ To rerank the results of a query, add the `rq` parameter to your search, for exa
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score
 
-The addition of the `rq` parameter will not change the output XML of the search.
+The addition of the `rq` parameter will not change the output of the search.
 
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter, for example:
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -247,9 +254,92 @@ The output XML will include feature values as a comma-separated list, resembling
   }}
 ----
 
+=== Running a Rerank Query Interleaving Two Models
+
+To rerank the results of a query, interleaving two models (myModelA, myModelB) add the `rq` parameter to your search, passing two models in input, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score
+
+To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score,[interleaving]
+
+The output will include the model picked for each search result, resembling the output shown here:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0,
+    "params":{
+      "q":"test",
+      "fl":"id,score,[interleaving]",
+      "rq":"{!ltr model=myModelA model=myModelB reRankDocs=100}"}},
+  "response":{"numFound":2,"start":0,"maxScore":1.0005897,"docs":[
+      {
+        "id":"GB18030TEST",
+        "score":1.0005897,
+        "[interleaving]":"myModelB"},
+      {
+        "id":"UTF8TEST",
+        "score":0.79656565,
+        "[interleaving]":"myModelA"}]
+  }}
+----
+
+=== Running a Rerank Query Interleaving a Model with the Original Ranking
+When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking.
+To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
+
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score
+
+The addition of the `rq` parameter will not change the output of the search.
+
+To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score,[interleaving]
+
+The output will include the model picked for each search result, resembling the output shown here:
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0,
+    "params":{
+      "q":"test",
+      "fl":"id,score,[features]",
+      "rq":"{!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}"}},
+  "response":{"numFound":2,"start":0,"maxScore":1.0005897,"docs":[
+      {
+        "id":"GB18030TEST",
+        "score":1.0005897,
+        "[interleaving]":"_OriginalRanking_"},
+      {
+        "id":"UTF8TEST",
+        "score":0.79656565,
+        "[interleaving]":"myModel"}]
+  }}
+----
+
+=== Running a Rerank Query with Interleaving Passing a Specific Algorithm
+To rerank the results of a query, interleaving two models using a specific algorithm, add the `interleavingAlgorithm` local parameter to the ltr query parser, for example:
+
+[source,text]
+http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100 interleavingAlgorithm=TeamDraft}&fl=id,score
+
+Currently the only (and default) algorithm supported is 'TeamDraft'.
+
 === External Feature Information
 
-The {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
+The {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/ValueFeature.html[ValueFeature] and {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/SolrFeature.html[SolrFeature] classes support the use of external feature information, `efi` for short.
 
 ==== Uploading Features
 
@@ -371,7 +461,7 @@ Read more about model evolution in the <<LTR Lifecycle>> section of this page.
 
 === Training Example
 
-Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
+Example training data and a demo `train_and_upload_demo_model.py` script can be found in the `solr/contrib/ltr/example` folder in the https://gitbox.apache.org/repos/asf?p=lucene-solr.git;a=tree;f=solr/contrib/ltr/example[Apache lucene-solr Git repository] (mirrored on https://github.com/apache/lucene-solr/tree/releases/lucene-solr/{solr-docs-version}.0/solr/contrib/ltr/example[github.com]). This example folder is not shipped in the Solr binary release.
 
 == Installation of LTR
 
@@ -402,7 +492,7 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 [source,xml]
 ----
 <cache name="QUERY_DOC_FV"
-       class="solr.search.LRUCache"
+       class="solr.search.CaffeineCache"
        size="4096"
        initialSize="2048"
        autowarmCount="4096"
@@ -418,17 +508,24 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 </transformer>
 ----
 
+* Declaration of the `[interleaving]` transformer.
++
+[source,xml]
+----
+<transformer name="interleaving" class="org.apache.solr.ltr.response.transform.LTRInterleavingTransformerFactory"/>
+----
+
 === Advanced Options
 
 ==== LTRThreadModule
 
-A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/solr-ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
+A thread module can be configured for the query parser and/or the transformer to parallelize the creation of feature weights. For details, please refer to the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/LTRThreadModule.html[LTRThreadModule] javadocs.
 
 ==== Feature Vector Customization
 
 The features transformer returns dense CSV values such as `featureA=0.1,featureB=0.2,featureC=0.3,featureD=0.0`.
 
-For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/solr-ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
+For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can customize the {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/response/transform/LTRFeatureLoggerTransformerFactory.html[feature logger transformer] declaration in `solrconfig.xml` as follows:
 
 [source,xml]
 ----
@@ -443,16 +540,17 @@ For sparse CSV output such as `featureA:0.1 featureB:0.2 featureC:0.3` you can c
 ==== Implementation and Contributions
 
 How does Solr Learning-To-Rank work under the hood?::
-Please refer to the `ltr` {solr-javadocs}/solr-ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
+Please refer to the `ltr` {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/package-summary.html[javadocs] for an implementation overview.
 
 How could I write additional models and/or features?::
-Contributions for further models, features and normalizers are welcome. Related links:
+Contributions for further models, features, normalizers and interleaving algorithms are welcome. Related links:
 +
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
-* {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
-* http://wiki.apache.org/solr/HowToContribute
-* http://wiki.apache.org/lucene-java/HowToContribute
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
+* {solr-javadocs}/contrib/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
+* https://cwiki.apache.org/confluence/display/solr/HowToContribute
+* https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 
 == LTR Lifecycle
 
@@ -533,7 +631,7 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 }
 ----
 
-First, add the directory to Solr's resource paths with a <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
+First, add the directory to Solr's resource paths with a <<libs.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
 
 [source,xml]
 ----
@@ -779,3 +877,7 @@ The feature store and the model store are both <<managed-resources.adoc#managed-
 * "Learning to Rank in Solr" presentation at Lucene/Solr Revolution 2015 in Austin:
 ** Slides: http://www.slideshare.net/lucidworks/learning-to-rank-in-solr-presented-by-michael-nilsson-diego-ceccarelli-bloomberg-lp
 ** Video: https://www.youtube.com/watch?v=M7BKwJoh96s
+
+* The importance of Online Testing in Learning To Rank:
+** Blog: https://sease.io/2020/04/the-importance-of-online-testing-in-learning-to-rank-part-1.html
+** Blog: https://sease.io/2020/05/online-testing-for-learning-to-rank-interleaving.html

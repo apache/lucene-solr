@@ -18,12 +18,11 @@
 package org.apache.lucene.analysis.core;
 
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-/** 
- * Factory for {@link FlattenGraphFilter}. 
+/**
+ * Factory for {@link FlattenGraphFilter}.
  *
  * @lucene.experimental
  * @since 6.4.0
@@ -35,13 +34,18 @@ public class FlattenGraphFilterFactory extends TokenFilterFactory {
   public static final String NAME = "flattenGraph";
 
   /** Creates a new FlattenGraphFilterFactory */
-  public FlattenGraphFilterFactory(Map<String,String> args) {
+  public FlattenGraphFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
+  /** Default ctor for compatibility with SPI */
+  public FlattenGraphFilterFactory() {
+    throw defaultCtorException();
+  }
+
   @Override
   public TokenStream create(TokenStream input) {
     return new FlattenGraphFilter(input);

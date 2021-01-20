@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
@@ -25,43 +24,49 @@ import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 
 /**
- * {@link Scorer} which returns the result of {@link FunctionValues#floatVal(int)} as
- * the score for a document, and which filters out documents that don't match {@link #matches(int)}.
- * This Scorer has a {@link TwoPhaseIterator}.  This is similar to {@link FunctionQuery},
- * with an added filter.
- * <p>
- * Note: If the scores are needed, then the underlying value will probably be
- * fetched/computed twice -- once to filter and next to return the score.  If that's non-trivial then
- * consider wrapping it in an implementation that will cache the current value.
- * </p>
+ * {@link Scorer} which returns the result of {@link FunctionValues#floatVal(int)} as the score for
+ * a document, and which filters out documents that don't match {@link #matches(int)}. This Scorer
+ * has a {@link TwoPhaseIterator}. This is similar to {@link FunctionQuery}, with an added filter.
+ *
+ * <p>Note: If the scores are needed, then the underlying value will probably be fetched/computed
+ * twice -- once to filter and next to return the score. If that's non-trivial then consider
+ * wrapping it in an implementation that will cache the current value.
  *
  * @see FunctionQuery
  * @lucene.experimental
  */
 public abstract class ValueSourceScorer extends Scorer {
+  // Fixed cost for a single iteration of the TwoPhaseIterator instance
+  private static final int DEF_COST = 5;
+
   protected final FunctionValues values;
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
 
-  protected ValueSourceScorer(Weight weight, LeafReaderContext readerContext, FunctionValues values) {
+  protected ValueSourceScorer(
+      Weight weight, LeafReaderContext readerContext, FunctionValues values) {
     super(weight);
     this.values = values;
-    final DocIdSetIterator approximation = DocIdSetIterator.all(readerContext.reader().maxDoc()); // no approximation!
-    this.twoPhaseIterator = new TwoPhaseIterator(approximation) {
-      @Override
-      public boolean matches() throws IOException {
-        return ValueSourceScorer.this.matches(approximation.docID());
-      }
+    final DocIdSetIterator approximation =
+        DocIdSetIterator.all(readerContext.reader().maxDoc()); // no approximation!
+    this.twoPhaseIterator =
+        new TwoPhaseIterator(approximation) {
+          @Override
+          public boolean matches() throws IOException {
+            return ValueSourceScorer.this.matches(approximation.docID());
+          }
 
-      @Override
-      public float matchCost() {
-        return 100; // TODO: use cost of ValueSourceScorer.this.matches()
-      }
-    };
+          @Override
+          public float matchCost() {
+            return ValueSourceScorer.this.matchCost();
+          }
+        };
     this.disi = TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator);
   }
 
-  /** Override to decide if this document matches. It's called by {@link TwoPhaseIterator#matches()}. */
+  /**
+   * Override to decide if this document matches. It's called by {@link TwoPhaseIterator#matches()}.
+   */
   public abstract boolean matches(int doc) throws IOException;
 
   @Override
@@ -94,4 +99,16 @@ public abstract class ValueSourceScorer extends Scorer {
     return Float.POSITIVE_INFINITY;
   }
 
+  /**
+   * Cost evaluation function which defines the cost of access for the TwoPhaseIterator for this
+   * class This method should be overridden for specifying custom cost methods. Used by {@link
+   * TwoPhaseIterator#matchCost()} for the instance owned by this class
+   *
+   * @return cost of access
+   * @lucene.experimental
+   */
+  protected float matchCost() {
+    // Cost of iteration is fixed cost + cost exposed by delegated FunctionValues instance
+    return DEF_COST + values.cost();
+  }
 }

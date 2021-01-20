@@ -169,6 +169,7 @@ public class SolrSnapshotManager {
       throws InterruptedException, KeeperException {
     String zkPath = getSnapshotMetaDataZkPath(collectionName, Optional.of(commitName));
     try {
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> data = (Map<String, Object>)Utils.fromJSON(zkClient.getData(zkPath, null, null, true));
       return Optional.of(new CollectionSnapshotMetaData(data));
     } catch (KeeperException ex) {
@@ -227,7 +228,9 @@ public class SolrSnapshotManager {
       public void onInit(List<? extends IndexCommit> commits) throws IOException {
         for (IndexCommit ic : commits) {
           if (gen == ic.getGeneration()) {
-            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            if (log.isInfoEnabled()) {
+              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            }
             ic.delete();
           }
         }
@@ -258,7 +261,9 @@ public class SolrSnapshotManager {
       public void onInit(List<? extends IndexCommit> commits) throws IOException {
         for (IndexCommit ic : commits) {
           if (!genNumbers.contains(ic.getGeneration())) {
-            log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            if (log.isInfoEnabled()) {
+              log.info("Deleting non-snapshotted index commit with generation {}", ic.getGeneration());
+            }
             ic.delete();
           }
         }
@@ -277,13 +282,14 @@ public class SolrSnapshotManager {
    * @param dir The index directory storing the snapshot.
    * @throws IOException in case of I/O errors.
    */
+
+  @SuppressWarnings({"try", "unused"})
   private static void deleteSnapshotIndexFiles(SolrCore core, Directory dir, IndexDeletionPolicy delPolicy) throws IOException {
     IndexWriterConfig conf = core.getSolrConfig().indexConfig.toIndexWriterConfig(core);
     conf.setOpenMode(OpenMode.APPEND);
     conf.setMergePolicy(NoMergePolicy.INSTANCE);//Don't want to merge any commits here!
     conf.setIndexDeletionPolicy(delPolicy);
     conf.setCodec(core.getCodec());
-
     try (SolrIndexWriter iw = new SolrIndexWriter("SolrSnapshotCleaner", dir, conf)) {
       // Do nothing. The only purpose of opening index writer is to invoke the Lucene IndexDeletionPolicy#onInit
       // method so that we can cleanup the files associated with specified index commit.

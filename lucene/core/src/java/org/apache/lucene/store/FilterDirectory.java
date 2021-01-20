@@ -16,24 +16,26 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 
-/** Directory implementation that delegates calls to another directory.
- *  This class can be used to add limitations on top of an existing
- *  {@link Directory} implementation such as
- *  {@link NRTCachingDirectory} or to add additional
- *  sanity checks for tests. However, if you plan to write your own
- *  {@link Directory} implementation, you should consider extending directly
- *  {@link Directory} or {@link BaseDirectory} rather than try to reuse
- *  functionality of existing {@link Directory}s by extending this class.
- *  @lucene.internal */
+/**
+ * Directory implementation that delegates calls to another directory. This class can be used to add
+ * limitations on top of an existing {@link Directory} implementation such as {@link
+ * NRTCachingDirectory} or to add additional sanity checks for tests. However, if you plan to write
+ * your own {@link Directory} implementation, you should consider extending directly {@link
+ * Directory} or {@link BaseDirectory} rather than try to reuse functionality of existing {@link
+ * Directory}s by extending this class.
+ *
+ * @lucene.internal
+ */
 public abstract class FilterDirectory extends Directory {
 
-  /** Get the wrapped instance by <code>dir</code> as long as this reader is
-   *  an instance of {@link FilterDirectory}.  */
+  /**
+   * Get the wrapped instance by <code>dir</code> as long as this reader is an instance of {@link
+   * FilterDirectory}.
+   */
   public static Directory unwrap(Directory dir) {
     while (dir instanceof FilterDirectory) {
       dir = ((FilterDirectory) dir).in;
@@ -69,13 +71,13 @@ public abstract class FilterDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createOutput(String name, IOContext context)
-      throws IOException {
+  public IndexOutput createOutput(String name, IOContext context) throws IOException {
     return in.createOutput(name, context);
   }
 
   @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
     return in.createTempOutput(prefix, suffix, context);
   }
 
@@ -95,8 +97,7 @@ public abstract class FilterDirectory extends Directory {
   }
 
   @Override
-  public IndexInput openInput(String name, IOContext context)
-      throws IOException {
+  public IndexInput openInput(String name, IOContext context) throws IOException {
     return in.openInput(name, context);
   }
 

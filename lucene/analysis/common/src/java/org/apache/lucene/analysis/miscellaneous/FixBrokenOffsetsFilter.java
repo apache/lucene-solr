@@ -18,12 +18,11 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
-/** 
+/**
  * A filter to correct offsets that illegally go backwards.
  *
  * @deprecated Fix the token filters that create broken offsets in the first place.

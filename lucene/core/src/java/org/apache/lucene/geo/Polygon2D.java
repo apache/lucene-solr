@@ -16,35 +16,37 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
- * <p>
- * Loosely based on the algorithm described in <a href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
+ *
+ * <p>Loosely based on the algorithm described in <a
+ * href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
- * @lucene.internal
  */
-
-public class Polygon2D implements Component2D {
-  /** minimum latitude of this geometry's bounding box area */
-  final private double minY;
-  /** maximum latitude of this geometry's bounding box area */
-  final private double maxY;
-  /** minimum longitude of this geometry's bounding box area */
-  final private double minX;
-  /** maximum longitude of this geometry's bounding box area */
-  final private double maxX;
+final class Polygon2D implements Component2D {
+  /** minimum Y of this geometry's bounding box area */
+  private final double minY;
+  /** maximum Y of this geometry's bounding box area */
+  private final double maxY;
+  /** minimum X of this geometry's bounding box area */
+  private final double minX;
+  /** maximum X of this geometry's bounding box area */
+  private final double maxX;
   /** tree of holes, or null */
-  final protected Component2D holes;
-  /** Edges of the polygon represented as a 2-d interval tree.*/
+  protected final Component2D holes;
+  /** Edges of the polygon represented as a 2-d interval tree. */
   final EdgeTree tree;
-  /** helper boolean for points on boundary */
-  final private AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
-  protected Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
+  private Polygon2D(
+      final double minX,
+      final double maxX,
+      final double minY,
+      final double maxY,
+      double[] x,
+      double[] y,
+      Component2D holes) {
     this.minY = minY;
     this.maxY = maxY;
     this.minX = minX;
@@ -53,8 +55,26 @@ public class Polygon2D implements Component2D {
     this.tree = EdgeTree.createTree(x, y);
   }
 
-  protected Polygon2D(Polygon polygon, Component2D holes) {
-    this(polygon.minLon, polygon.maxLon, polygon.minLat, polygon.maxLat, polygon.getPolyLons(), polygon.getPolyLats(), holes);
+  private Polygon2D(XYPolygon polygon, Component2D holes) {
+    this(
+        polygon.minX,
+        polygon.maxX,
+        polygon.minY,
+        polygon.maxY,
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyX()),
+        XYEncodingUtils.floatArrayToDoubleArray(polygon.getPolyY()),
+        holes);
+  }
+
+  private Polygon2D(Polygon polygon, Component2D holes) {
+    this(
+        polygon.minLon,
+        polygon.maxLon,
+        polygon.minLat,
+        polygon.maxLat,
+        polygon.getPolyLons(),
+        polygon.getPolyLats(),
+        holes);
   }
 
   @Override
@@ -79,25 +99,14 @@ public class Polygon2D implements Component2D {
 
   /**
    * Returns true if the point is contained within this polygon.
-   * <p>
-   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
+   *
+   * <p>See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
    */
   @Override
   public boolean contains(double x, double y) {
-    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY)) {
-      return internalContains(x, y);
-    }
-    return false;
-  }
-
-  private boolean internalContains(double x, double y) {
-    containsBoundary.set(false);
-    if (tree.contains(x, y, containsBoundary)) {
-      if (holes != null && holes.contains(x, y)) {
-        return false;
-      }
-      return true;
+    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY) && tree.contains(x, y)) {
+      return holes == null || holes.contains(x, y) == false;
     }
     return false;
   }
@@ -122,15 +131,15 @@ public class Polygon2D implements Component2D {
     // check each corner: if < 4 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfCorners(minX, maxX, minY, maxY);
     if (numCorners == 4) {
-      if (tree.crossesBox(minX, maxX, minY, maxY, false)) {
+      if (tree.crossesBox(minX, maxX, minY, maxY, true)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
-    }  else if (numCorners == 0) {
+    } else if (numCorners == 0) {
       if (Component2D.containsPoint(tree.x1, tree.y1, minX, maxX, minY, maxY)) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crossesBox(minX, maxX, minY, maxY, false)) {
+      if (tree.crossesBox(minX, maxX, minY, maxY, true)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -139,100 +148,189 @@ public class Polygon2D implements Component2D {
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
-                                 double ax, double ay, double bx, double by, double cx, double cy) {
+  public boolean intersectsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
-      return Relation.CELL_OUTSIDE_QUERY;
+      return false;
     }
-    // check any holes
-    if (holes != null) {
-      Relation holeRelation = holes.relateTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
-      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
-        return Relation.CELL_CROSSES_QUERY;
-      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
-        return Relation.CELL_OUTSIDE_QUERY;
-      }
+    if (contains(aX, aY)
+        || contains(bX, bY)
+        || tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
+      return holes == null || holes.containsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
     }
-    if (ax == bx && bx == cx && ay == by && by == cy) {
-      // indexed "triangle" is a point: shortcut by checking contains
-      return internalContains(ax, ay) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
-    } else if (ax == cx && ay == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(minX, maxX, minY, maxY, ax, ay, bx, by);
-    } else if (ax == bx && ay == by) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(minX, maxX, minY, maxY, bx, by, cx, cy);
-    } else if (bx == cx && by == cy) {
-      // indexed "triangle" is a line segment: shortcut by calling appropriate method
-      return relateIndexedLineSegment(minX, maxX, minY, maxY, cx, cy, ax, ay);
-    }
-    // indexed "triangle" is a triangle:
-    return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+    return false;
   }
 
-  /** relates an indexed line segment (a "flat triangle") with the polygon */
-  private Relation relateIndexedLineSegment(double minX, double maxX, double minY, double maxY,
-                                            double a2x, double a2y, double b2x, double b2y) {
-    // check endpoints of the line segment
-    int numCorners = 0;
-    if (contains(a2x, a2y)) {
-      ++numCorners;
+  @Override
+  public boolean intersectsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
-    if (contains(b2x, b2y)) {
-      ++numCorners;
+    if (contains(aX, aY)
+        || contains(bX, bY)
+        || contains(cX, cY)
+        || Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        || tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, true)) {
+      return holes == null
+          || holes.containsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
     }
-
-    if (numCorners == 2) {
-      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (tree.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
-    }
-    return Relation.CELL_CROSSES_QUERY;
+    return false;
   }
 
-  /** relates an indexed triangle with the polygon */
-  private Relation relateIndexedTriangle(double minX, double maxX, double minY, double maxY,
-                                         double ax, double ay, double bx, double by, double cx, double cy) {
-    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
-    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
-    if (numCorners == 3) {
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_INSIDE_QUERY;
-    } else if (numCorners == 0) {
-      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
-        return Relation.CELL_CROSSES_QUERY;
-      }
-      return Relation.CELL_OUTSIDE_QUERY;
+  @Override
+  public boolean containsLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
-    return Relation.CELL_CROSSES_QUERY;
+    if (contains(aX, aY)
+        && contains(bX, bY)
+        && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, false) == false) {
+      return holes == null || holes.intersectsLine(minX, maxX, minY, maxY, aX, aY, bX, bY) == false;
+    }
+    return false;
   }
 
-  private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
-    int containsCount = 0;
-    if (contains(ax, ay)) {
-      containsCount++;
+  @Override
+  public boolean containsTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      double bX,
+      double bY,
+      double cX,
+      double cY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return false;
     }
-    if (contains(bx, by)) {
-      containsCount++;
+    if (contains(aX, aY)
+        && contains(bX, bY)
+        && contains(cX, cY)
+        && tree.crossesTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY, false) == false) {
+      return holes == null
+          || holes.intersectsTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY) == false;
     }
-    if (containsCount == 1) {
-      return containsCount;
+    return false;
+  }
+
+  @Override
+  public WithinRelation withinPoint(double x, double y) {
+    return contains(x, y) ? WithinRelation.NOTWITHIN : WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinLine(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY) {
+    if (ab == true
+        && Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)
+            == false
+        && tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
+      return WithinRelation.NOTWITHIN;
     }
-    if (contains(cx, cy)) {
-      containsCount++;
+    return WithinRelation.DISJOINT;
+  }
+
+  @Override
+  public WithinRelation withinTriangle(
+      double minX,
+      double maxX,
+      double minY,
+      double maxY,
+      double aX,
+      double aY,
+      boolean ab,
+      double bX,
+      double bY,
+      boolean bc,
+      double cX,
+      double cY,
+      boolean ca) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
     }
-    return containsCount;
+
+    // if any of the points is inside the polygon, the polygon cannot be within this indexed
+    // shape because points belong to the original indexed shape.
+    if (contains(aX, aY) || contains(bX, bY) || contains(cX, cY)) {
+      return WithinRelation.NOTWITHIN;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (tree.crossesLine(minX, maxX, minY, maxY, aX, aY, bX, bY, true)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (tree.crossesLine(minX, maxX, minY, maxY, bX, bY, cX, cY, true)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesLine(minX, maxX, minY, maxY, cX, cY, aX, aY, true)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (Component2D.pointInTriangle(
+            minX, maxX, minY, maxY, tree.x1, tree.y1, aX, aY, bX, bY, cX, cY)
+        == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
   }
 
   // returns 0, 4, or something in between
@@ -259,18 +357,23 @@ public class Polygon2D implements Component2D {
     return containsCount;
   }
 
-  /** Builds a Polygon2D from multipolygon */
-  public static Component2D create(Polygon... polygons) {
-    Component2D components[] = new Component2D[polygons.length];
-    for (int i = 0; i < components.length; i++) {
-      Polygon gon = polygons[i];
-      Polygon gonHoles[] = gon.getHoles();
-      Component2D holes = null;
-      if (gonHoles.length > 0) {
-        holes = create(gonHoles);
-      }
-      components[i] = new Polygon2D(gon, holes);
+  /** Builds a Polygon2D from LatLon polygon */
+  static Component2D create(Polygon polygon) {
+    Polygon gonHoles[] = polygon.getHoles();
+    Component2D holes = null;
+    if (gonHoles.length > 0) {
+      holes = LatLonGeometry.create(gonHoles);
     }
-    return ComponentTree.create(components);
+    return new Polygon2D(polygon, holes);
+  }
+
+  /** Builds a Polygon2D from XY polygon */
+  static Component2D create(XYPolygon polygon) {
+    XYPolygon gonHoles[] = polygon.getHoles();
+    Component2D holes = null;
+    if (gonHoles.length > 0) {
+      holes = XYGeometry.create(gonHoles);
+    }
+    return new Polygon2D(polygon, holes);
   }
 }

@@ -22,7 +22,7 @@ Preventing duplicate or near duplicate documents from entering an index or taggi
 
 * MD5Signature: 128-bit hash used for exact duplicate detection.
 * Lookup3Signature: 64-bit hash used for exact duplicate detection. This is much faster than MD5 and smaller to index.
-* http://wiki.apache.org/solr/TextProfileSignature[TextProfileSignature]: Fuzzy hashing implementation from Apache Nutch for near duplicate detection. It's tunable but works best on longer text.
+* https://cwiki.apache.org/confluence/display/solr/TextProfileSignature[TextProfileSignature]: Fuzzy hashing implementation from Apache Nutch for near duplicate detection. It's tunable but works best on longer text.
 
 Other, more sophisticated algorithms for fuzzy/near hashing can be added later.
 

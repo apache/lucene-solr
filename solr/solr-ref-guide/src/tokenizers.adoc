@@ -50,7 +50,7 @@ You configure the tokenizer for a text field type in `schema.xml` with a `<token
 ====
 --
 
-The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.util.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
+The name/class attribute names a factory class that will instantiate a tokenizer object when needed. Tokenizer factory classes implement the `org.apache.lucene.analysis.TokenizerFactory`. A TokenizerFactory's `create()` method accepts a Reader and returns a TokenStream. When Solr creates the tokenizer it passes a Reader object that provides the content of the text field.
 
 Arguments may be passed to tokenizer factories by setting attributes on the `<tokenizer>` element.
 
@@ -83,8 +83,6 @@ Arguments may be passed to tokenizer factories by setting attributes on the `<to
 --
 
 The following sections describe the tokenizer factory classes included in this release of Solr.
-
-For user tips about Solr's tokenizers, see http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters.
 
 == Standard Tokenizer
 
@@ -516,7 +514,7 @@ The default configuration for `solr.ICUTokenizerFactory` provides UAX#29 word br
 [IMPORTANT]
 ====
 
-To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<resource-and-plugin-loading.adoc#resources-and-plugins-on-the-filesystem,Resources and Plugins on the Filesystem>>). See the `solr/contrib/analysis-extras/README.txt` for information on which jars you need to add.
+To use this tokenizer, you must add additional .jars to Solr's classpath (as described in the section <<solr-plugins.adoc#installing-plugins,Solr Plugins>>). See the `solr/contrib/analysis-extras/README.md` for information on which jars you need to add.
 
 ====
 

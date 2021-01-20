@@ -18,8 +18,10 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.JavaBinCodec;
@@ -40,6 +42,13 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
+
+    // don't store base_url if we have a node_name to recompute from when we read back from ZK
+    // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
+    if (this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      this.propMap.remove(ZkStateReader.BASE_URL_PROP);
+    }
+
     // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
     // Always wrapping introduces a memory leak.
   }
@@ -91,11 +100,12 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Create Replica from json string that is typically stored in zookeeper.
    */
+  @SuppressWarnings({"unchecked"})
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, Object> props = null;
+    Map<String, Object> props;
     if (bytes[0] == 2) {
-      try {
-        props = (Map<String, Object>) new JavaBinCodec().unmarshal(bytes);
+      try (JavaBinCodec jbc = new JavaBinCodec()) {
+        props = (Map<String, Object>) jbc.unmarshal(bytes);
       } catch (IOException e) {
         throw new RuntimeException("Unable to parse javabin content");
       }
@@ -107,15 +117,26 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
+    // don't write out the base_url if we have a node_name
+    if (propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      final Map<String,Object> filtered = new HashMap<>();
+      // stream / collect is no good here as the Collector doesn't like null values
+      propMap.forEach((key, value) -> {
+        if (!ZkStateReader.BASE_URL_PROP.equals(key)) {
+          filtered.put(key, value);
+        }
+      });
+      jsonWriter.write(filtered);
+    } else {
+      jsonWriter.write(propMap);
+    }
   }
   
   /**
    * Get a string property value.
    */
   public String getStr(String key) {
-    Object o = propMap.get(key);
-    return o == null ? null : o.toString();
+    return getStr(key, null);
   }
 
   /**
@@ -129,8 +150,17 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get a string property value.
    */
-  public String getStr(String key,String def) {
+  public String getStr(String key, String def) {
     Object o = propMap.get(key);
+
+    // TODO: This "hack" should not be needed but keeping it here b/c we removed the base_url from the map in the ctor
+    if (o == null && def == null && ZkStateReader.BASE_URL_PROP.equals(key)) {
+      final String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
+      if (nodeName != null) {
+        o = UrlScheme.INSTANCE.getBaseUrlForNodeName(nodeName);
+      }
+    }
+
     return o == null ? def : o.toString();
   }
 
@@ -141,14 +171,6 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public String toString() {
     return toJSONString(this);
-    /***
-    StringBuilder sb = new StringBuilder();
-    Set<Entry<String,Object>> entries = propMap.entrySet();
-    for(Entry<String,Object> entry : entries) {
-      sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
-    }
-    return sb.toString();
-    ***/
   }
 
   /**
@@ -157,7 +179,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public boolean containsKey(String key) {
     return propMap.containsKey(key);
   }
-
+  
   public boolean getBool(String key, boolean b) {
     Object o = propMap.get(key);
     if (o == null) return b;
@@ -168,5 +190,10 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public boolean equals(Object that) {
     return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(propMap);
   }
 }

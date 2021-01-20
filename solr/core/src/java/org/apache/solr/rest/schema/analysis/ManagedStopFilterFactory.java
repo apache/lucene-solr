@@ -47,6 +47,11 @@ public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
     super(args);    
   }
   
+  /** Default ctor for compatibility with SPI */
+  public ManagedStopFilterFactory() {
+    throw defaultCtorException();
+  }
+
   /**
    * This analysis component knows the most logical "path"
    * for which to manage stop words from.

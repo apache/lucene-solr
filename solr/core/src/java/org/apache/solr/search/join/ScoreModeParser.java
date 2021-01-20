@@ -25,6 +25,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.search.SyntaxError;
 
 class ScoreModeParser {
+  @SuppressWarnings("serial")
   final private static Map<String, ScoreMode> lowerAndCapitalCase = 
       Collections.unmodifiableMap( new HashMap<String, ScoreMode>() {
     {

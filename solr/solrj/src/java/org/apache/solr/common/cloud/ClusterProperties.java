@@ -19,11 +19,13 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Utils;
@@ -108,10 +110,32 @@ public class ClusterProperties {
   public void setClusterProperties(Map<String, Object> properties) throws IOException, KeeperException, InterruptedException {
     client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, zkData -> {
       if (zkData == null) return Utils.toJSON(convertCollectionDefaultsToNestedFormat(properties));
+      @SuppressWarnings({"unchecked"})
       Map<String, Object> zkJson = (Map<String, Object>) Utils.fromJSON(zkData);
       zkJson = convertCollectionDefaultsToNestedFormat(zkJson);
       boolean modified = Utils.mergeJson(zkJson, convertCollectionDefaultsToNestedFormat(properties));
       return modified ? Utils.toJSON(zkJson) : null;
+    });
+  }
+
+
+  /**Set this object at the json path
+   *
+   * @param obj the Object to be set
+   * @param path the json path
+   */
+  @SuppressWarnings("unchecked")
+  public void update(MapWriter obj, String... path) throws KeeperException, InterruptedException{
+    client.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> {
+      Map<String, Object> zkJson;
+      if (bytes == null) {
+        // no previous properties - initialize
+        zkJson = new LinkedHashMap<>();
+      } else {
+        zkJson = (Map<String, Object>) Utils.fromJSON(bytes);
+      }
+      Utils.setObjectByPath(zkJson, Arrays.asList(path), obj);
+      return Utils.toJSON(zkJson);
     });
   }
 
@@ -122,6 +146,7 @@ public class ClusterProperties {
    * @param properties the properties to be converted
    * @return the converted map
    */
+  @SuppressWarnings({"unchecked"})
   static Map<String, Object> convertCollectionDefaultsToNestedFormat(Map<String, Object> properties) {
     if (properties.containsKey(COLLECTION_DEF)) {
       Map<String, Object> values = (Map<String, Object>) properties.remove(COLLECTION_DEF);
@@ -161,6 +186,7 @@ public class ClusterProperties {
       Stat s = new Stat();
       try {
         if (client.exists(ZkStateReader.CLUSTER_PROPS, true)) {
+          @SuppressWarnings({"rawtypes"})
           Map properties = (Map) Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, s, true));
           if (propertyValue == null) {
             //Don't update ZK unless absolutely necessary.
@@ -176,6 +202,7 @@ public class ClusterProperties {
             }
           }
         } else {
+          @SuppressWarnings({"rawtypes"})
           Map properties = new LinkedHashMap();
           properties.put(propertyName, propertyValue);
           client.create(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);

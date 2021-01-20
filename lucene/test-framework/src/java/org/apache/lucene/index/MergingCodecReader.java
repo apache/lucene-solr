@@ -21,28 +21,30 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.util.CloseableThreadLocal;
 
 /**
- * {@link CodecReader} wrapper that performs all reads using the merging
- * instance of the index formats.
+ * {@link CodecReader} wrapper that performs all reads using the merging instance of the index
+ * formats.
  */
 public class MergingCodecReader extends FilterCodecReader {
 
-  private final CloseableThreadLocal<StoredFieldsReader> fieldsReader = new CloseableThreadLocal<StoredFieldsReader>() {
-    @Override
-    protected StoredFieldsReader initialValue() {
-      return in.getFieldsReader().getMergeInstance();
-    }
-  };
-  private final CloseableThreadLocal<NormsProducer> normsReader = new CloseableThreadLocal<NormsProducer>() {
-    @Override
-    protected NormsProducer initialValue() {
-      NormsProducer norms = in.getNormsReader();
-      if (norms == null) {
-        return null;
-      } else {
-        return norms.getMergeInstance();
-      }
-    }
-  };
+  private final CloseableThreadLocal<StoredFieldsReader> fieldsReader =
+      new CloseableThreadLocal<StoredFieldsReader>() {
+        @Override
+        protected StoredFieldsReader initialValue() {
+          return in.getFieldsReader().getMergeInstance();
+        }
+      };
+  private final CloseableThreadLocal<NormsProducer> normsReader =
+      new CloseableThreadLocal<NormsProducer>() {
+        @Override
+        protected NormsProducer initialValue() {
+          NormsProducer norms = in.getNormsReader();
+          if (norms == null) {
+            return null;
+          } else {
+            return norms.getMergeInstance();
+          }
+        }
+      };
   // TODO: other formats too
 
   /** Wrap the given instance. */
@@ -71,5 +73,4 @@ public class MergingCodecReader extends FilterCodecReader {
     // same content, we can delegate
     return in.getReaderCacheHelper();
   }
-
 }

@@ -32,6 +32,7 @@ import org.junit.Test;
  * Simple tests for {@link DirectSolrSpellChecker}
  */
 @SuppressTempFileChecks(bugUrl = "https://issues.apache.org/jira/browse/SOLR-1877 Spellcheck IndexReader leak bug?")
+@SuppressWarnings({"rawtypes"})
 public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
   private static SpellingQueryConverter queryConverter;
@@ -51,8 +52,10 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  @SuppressWarnings({"unchecked"})
   public void test() throws Exception {
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
+    @SuppressWarnings({"rawtypes"})
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
@@ -62,20 +65,25 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     checker.init(spellchecker, core);
 
     h.getCore().withSearcher(searcher -> {
+
+      // check that 'fob' is corrected to 'foo'
       Collection<Token> tokens = queryConverter.convert("fob");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertNotNull("result shouldn't be null", result);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
       Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-      assertTrue(entry.getKey() + " is not equal to " + "foo", entry.getKey().equals("foo") == true);
+      assertEquals("foo", entry.getKey());
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
+      // check that 'super' is *not* corrected
       spellOpts.tokens = queryConverter.convert("super");
       result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
-      suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions is not null and it should be", suggestions == null);
+      assertNotNull("result shouldn't be null", result);
+      suggestions = result.get(spellOpts.tokens.iterator().next());
+      assertNotNull("suggestions shouldn't be null", suggestions);
+      assertTrue("suggestions should be empty", suggestions.isEmpty());
       return null;
     });
   }
@@ -88,6 +96,46 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/int[@name='freq']=2",
         "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='true'"
     );
-  }  
+  }
+
+  @Test
+  public void testMaxQueryLength() throws Exception {
+    testMaxQueryLength(true);
+    testMaxQueryLength(false);
+  }
+
+  private void testMaxQueryLength(Boolean limitQueryLength) throws Exception {
+
+    DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
+    NamedList<Object> spellchecker = new NamedList<>();
+    spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
+    spellchecker.add(SolrSpellChecker.FIELD, "teststop");
+    spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
+
+    // demonstrate that "anothar" is not corrected when maxQueryLength is set to a small number
+    if (limitQueryLength) spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
+
+    SolrCore core = h.getCore();
+    checker.init(spellchecker, core);
+
+    h.getCore().withSearcher(searcher -> {
+      Collection<Token> tokens = queryConverter.convert("anothar");
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+      SpellingResult result = checker.getSuggestions(spellOpts);
+      assertNotNull("result shouldn't be null", result);
+      Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      assertNotNull("suggestions shouldn't be null", suggestions);
+
+      if (limitQueryLength) {
+        assertTrue("suggestions should be empty", suggestions.isEmpty());
+      } else {
+        assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
+        Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
+        assertEquals("another", entry.getKey());
+      }
+
+      return null;
+    });
+  }
   
 }

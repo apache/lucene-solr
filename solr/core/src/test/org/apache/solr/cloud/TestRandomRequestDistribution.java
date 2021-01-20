@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 
 import com.codahale.metrics.Counter;
@@ -59,7 +60,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
   @Test
   @BaseDistributedSearchTestCase.ShardsFixed(num = 3)
   public void test() throws Exception {
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
     for (CloudJettyRunner cloudJetty : cloudJettys) {
       nodeNames.add(cloudJetty.nodeName);
@@ -111,14 +112,14 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     DocCollection b1x1 = clusterState.getCollection("b1x1");
     Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
     assertEquals(1, replicas.size());
-    String baseUrl = replicas.iterator().next().getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
 
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
       
-      log.info("Making requests to " + baseUrl + "a1x2");
+      log.info("Making requests to {} a1x2", baseUrl);
       while (uniqueCoreNames.size() < counters.keySet().size() && expectedTotalRequests < 1000L) {
         expectedTotalRequests++;
         client.query(new SolrQuery("*:*"));
@@ -134,7 +135,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         assertEquals("Sanity Check: Num Queries So Far Doesn't Match Total????",
                      expectedTotalRequests, actualTotalRequests);
       }
-      log.info("Total requests: " + expectedTotalRequests);
+      log.info("Total requests: {}", expectedTotalRequests);
       assertEquals("either request randomization code is broken of this test seed is really unlucky, " +
                    "Gave up waiting for requests to hit every core at least once after " +
                    expectedTotalRequests + " requests",
@@ -170,7 +171,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     //Simulate a replica being in down state.
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-        ZkStateReader.BASE_URL_PROP, notLeader.getStr(ZkStateReader.BASE_URL_PROP),
         ZkStateReader.NODE_NAME_PROP, notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
         ZkStateReader.COLLECTION_PROP, "football",
         ZkStateReader.SHARD_ID_PROP, "shard1",
@@ -178,7 +178,9 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
         ZkStateReader.ROLES_PROP, "",
         ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());
 
-    log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+    if (log.isInfoEnabled()) {
+      log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
+    }
     ZkDistributedQueue q = jettys.get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
     q.offer(Utils.toJSON(m));
 
@@ -186,10 +188,10 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     //Query against the node which hosts the down replica
 
-    String baseUrl = notLeader.getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = notLeader.getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
-    log.info("Firing queries against path=" + path);
+    log.info("Firing queries against path={}", path);
     try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
 
       SolrCore leaderCore = null;

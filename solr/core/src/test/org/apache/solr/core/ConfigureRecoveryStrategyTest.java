@@ -66,7 +66,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
 
   public void testAlmostAllMethodsAreFinal() throws Exception {
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
-      if (Modifier.isStatic(m.getModifiers())) continue;
+      if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       final String methodName = m.getName();
       if ("getReplicateLeaderUrl".equals(methodName)) {
         assertFalse(m.toString(), Modifier.isFinal(m.getModifiers()));

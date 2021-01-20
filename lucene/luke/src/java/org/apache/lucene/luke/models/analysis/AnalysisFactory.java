@@ -23,5 +23,4 @@ public class AnalysisFactory {
   public Analysis newInstance() {
     return new AnalysisImpl();
   }
-
 }

@@ -64,7 +64,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     // When new collection is created, the old term nodes will be removed
     CollectionAdminRequest.createCollection(collection, 2, 2)
         .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
-        .setMaxShardsPerNode(1000)
         .process(cluster.getSolrClient());
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       waitFor(2, () -> zkShardTerms.getTerms().size());
@@ -126,6 +125,28 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.doneRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 
+    }
+  }
+
+  @Test
+  public void testCoreRemovalWhileRecovering() {
+    String collection = "recoveringFlagRemoval";
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
+      zkShardTerms.registerTerm("replica1_rem");
+      zkShardTerms.registerTerm("replica2_rem");
+
+      // normal case when leader failed to send an update to replica
+      zkShardTerms.ensureTermsIsHigher("replica1_rem", Collections.singleton("replica2_rem"));
+      zkShardTerms.startRecovering("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), 0);
+
+      // Remove core, and check if the correct core was removed as well as the recovering term for that core
+      zkShardTerms.removeTerm("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica1_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), -1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), -1);
     }
   }
 
@@ -242,13 +263,6 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
-  public void testEnsureTermsIsHigher() {
-    Map<String, Long> map = new HashMap<>();
-    map.put("leader", 0L);
-    ZkShardTerms.Terms terms = new ZkShardTerms.Terms(map, 0);
-    terms = terms.increaseTerms("leader", Collections.singleton("replica"));
-    assertEquals(1L, terms.getTerm("leader").longValue());
-  }
 
   public void testSetTermToZero() {
     String collection = "setTermToZero";

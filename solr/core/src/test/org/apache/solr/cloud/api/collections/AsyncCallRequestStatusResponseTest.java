@@ -53,7 +53,6 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     int numShards = 4;
     int numReplicas = 1;
     Create createCollection = CollectionAdminRequest.createCollection("asynccall", "conf", numShards, numReplicas);
-    createCollection.setMaxShardsPerNode(100);
     String asyncId =
         createCollection.processAsync(cluster.getSolrClient());
 

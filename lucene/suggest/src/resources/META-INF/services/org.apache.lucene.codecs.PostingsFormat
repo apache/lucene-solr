@@ -31,3 +31,4 @@
 #  limitations under the License.
 
 org.apache.lucene.search.suggest.document.Completion50PostingsFormat
+org.apache.lucene.search.suggest.document.Completion84PostingsFormat

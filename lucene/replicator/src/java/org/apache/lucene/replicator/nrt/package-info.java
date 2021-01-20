@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * <h1>Near-real-time replication framework</h1>
- */
+
+/** Near-real-time replication framework */
 package org.apache.lucene.replicator.nrt;

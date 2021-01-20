@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.el;
 
-
 import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
 
-/** 
- * Factory for {@link GreekLowerCaseFilter}. 
+/**
+ * Factory for {@link GreekLowerCaseFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_glc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -39,13 +38,18 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "greekLowercase";
- 
+
   /** Creates a new GreekLowerCaseFilterFactory */
-  public GreekLowerCaseFilterFactory(Map<String,String> args) {
+  public GreekLowerCaseFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
+  }
+
+  /** Default ctor for compatibility with SPI */
+  public GreekLowerCaseFilterFactory() {
+    throw defaultCtorException();
   }
 
   @Override
@@ -58,4 +62,3 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
     return create(input);
   }
 }
-

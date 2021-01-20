@@ -31,6 +31,11 @@ In this section you will learn how to start a SolrCloud cluster using startup sc
 This tutorial assumes that you're already familiar with the basics of using Solr. If you need a refresher, please see the <<getting-started.adoc#getting-started,Getting Started section>> to get a grounding in Solr concepts. If you load documents as part of that exercise, you should start over with a fresh Solr installation for these SolrCloud tutorials.
 ====
 
+[WARNING]
+====
+For security reasons, Solr nodes only accept connections from localhost by default.  Administrators setting up SolrCloud deployments with multiple nodes must override this setting.  For more details see <<securing-solr.adoc#network-configuration,here>>.
+====
+
 == SolrCloud Example
 
 === Interactive Startup

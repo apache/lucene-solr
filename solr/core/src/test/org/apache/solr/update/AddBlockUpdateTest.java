@@ -66,7 +66,7 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -114,8 +114,8 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     inputFactory = XMLInputFactory.newInstance();
 
     exe = // Executors.newSingleThreadExecutor();
-    rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new DefaultSolrThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
-        .newMDCAwareCachedThreadPool(new DefaultSolrThreadFactory("AddBlockUpdateTest"));
+    rarely() ? ExecutorUtil.newMDCAwareFixedThreadPool(atLeast(2), new SolrNamedThreadFactory("AddBlockUpdateTest")) : ExecutorUtil
+        .newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("AddBlockUpdateTest"));
 
     counter.set(0);
     initCore("solrconfig.xml", "schema15.xml");

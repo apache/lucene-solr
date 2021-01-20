@@ -18,38 +18,40 @@ package org.apache.lucene.queryparser.flexible.core.nodes;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
+import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 
 /**
- * A {@link ModifierQueryNode} indicates the modifier value (+,-,?,NONE) for
- * each term on the query string. For example "+t1 -t2 t3" will have a tree of:
+ * A {@link ModifierQueryNode} indicates the modifier value (+,-,?,NONE) for each term on the query
+ * string. For example "+t1 -t2 t3" will have a tree of:
+ *
  * <blockquote>
+ *
  * &lt;BooleanQueryNode&gt; &lt;ModifierQueryNode modifier="MOD_REQ"&gt; &lt;t1/&gt;
  * &lt;/ModifierQueryNode&gt; &lt;ModifierQueryNode modifier="MOD_NOT"&gt; &lt;t2/&gt;
  * &lt;/ModifierQueryNode&gt; &lt;t3/&gt; &lt;/BooleanQueryNode&gt;
+ *
  * </blockquote>
  */
 public class ModifierQueryNode extends QueryNodeImpl {
 
-  /**
-   * Modifier type: such as required (REQ), prohibited (NOT)
-   */
+  /** Modifier type: such as required (REQ), prohibited (NOT) */
   public enum Modifier {
-    MOD_NONE, MOD_NOT, MOD_REQ;
+    MOD_NONE,
+    MOD_NOT,
+    MOD_REQ;
 
     @Override
     public String toString() {
       switch (this) {
-      case MOD_NONE:
-        return "MOD_NONE";
-      case MOD_NOT:
-        return "MOD_NOT";
-      case MOD_REQ:
-        return "MOD_REQ";
+        case MOD_NONE:
+          return "MOD_NONE";
+        case MOD_NOT:
+          return "MOD_NOT";
+        case MOD_REQ:
+          return "MOD_REQ";
       }
       // this code is never executed
       return "MOD_DEFAULT";
@@ -57,12 +59,12 @@ public class ModifierQueryNode extends QueryNodeImpl {
 
     public String toDigitString() {
       switch (this) {
-      case MOD_NONE:
-        return "";
-      case MOD_NOT:
-        return "-";
-      case MOD_REQ:
-        return "+";
+        case MOD_NONE:
+          return "";
+        case MOD_NOT:
+          return "-";
+        case MOD_REQ:
+          return "+";
       }
       // this code is never executed
       return "";
@@ -70,12 +72,12 @@ public class ModifierQueryNode extends QueryNodeImpl {
 
     public String toLargeString() {
       switch (this) {
-      case MOD_NONE:
-        return "";
-      case MOD_NOT:
-        return "NOT ";
-      case MOD_REQ:
-        return "+";
+        case MOD_NONE:
+          return "";
+        case MOD_NOT:
+          return "NOT ";
+        case MOD_REQ:
+          return "+";
       }
       // this code is never executed
       return "";
@@ -86,16 +88,14 @@ public class ModifierQueryNode extends QueryNodeImpl {
 
   /**
    * Used to store the modifier value on the original query string
-   * 
-   * @param query
-   *          - QueryNode subtree
-   * @param mod
-   *          - Modifier Value
+   *
+   * @param query - QueryNode subtree
+   * @param mod - Modifier Value
    */
   public ModifierQueryNode(QueryNode query, Modifier mod) {
     if (query == null) {
-      throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "query", "null"));
+      throw new QueryNodeError(
+          new MessageImpl(QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "query", "null"));
     }
 
     allocate();
@@ -114,14 +114,17 @@ public class ModifierQueryNode extends QueryNodeImpl {
 
   @Override
   public String toString() {
-    return "<modifier operation='" + this.modifier.toString() + "'>" + "\n"
-        + getChild().toString() + "\n</modifier>";
+    return "<modifier operation='"
+        + this.modifier.toString()
+        + "'>"
+        + "\n"
+        + getChild().toString()
+        + "\n</modifier>";
   }
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChild() == null)
-      return "";
+    if (getChild() == null) return "";
 
     String leftParenthensis = "";
     String rightParenthensis = "";
@@ -132,11 +135,15 @@ public class ModifierQueryNode extends QueryNodeImpl {
     }
 
     if (getChild() instanceof BooleanQueryNode) {
-      return this.modifier.toLargeString() + leftParenthensis
-          + getChild().toQueryString(escapeSyntaxParser) + rightParenthensis;
+      return this.modifier.toLargeString()
+          + leftParenthensis
+          + getChild().toQueryString(escapeSyntaxParser)
+          + rightParenthensis;
     } else {
-      return this.modifier.toDigitString() + leftParenthensis
-          + getChild().toQueryString(escapeSyntaxParser) + rightParenthensis;
+      return this.modifier.toDigitString()
+          + leftParenthensis
+          + getChild().toQueryString(escapeSyntaxParser)
+          + rightParenthensis;
     }
   }
 
@@ -154,5 +161,4 @@ public class ModifierQueryNode extends QueryNodeImpl {
     list.add(child);
     this.set(list);
   }
-
 }

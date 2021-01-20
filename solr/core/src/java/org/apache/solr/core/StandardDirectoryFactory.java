@@ -60,7 +60,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   protected LockFactory createLockFactory(String rawLockType) throws IOException {
     if (null == rawLockType) {
       rawLockType = DirectoryFactory.LOCK_TYPE_NATIVE;
-      log.warn("No lockType configured, assuming '"+rawLockType+"'.");
+      log.warn("No lockType configured, assuming '{}'.", rawLockType);
     }
     final String lockType = rawLockType.toLowerCase(Locale.ROOT).trim();
     switch (lockType) {
@@ -84,22 +84,9 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     
     return super.normalize(cpath);
   }
-  
-  @Override
-  public boolean exists(String path) throws IOException {
-    // we go by the persistent storage ... 
-    File dirFile = new File(path);
-    return dirFile.canRead() && dirFile.list().length > 0;
-  }
-  
+
   public boolean isPersistent() {
     return true;
-  }
-  
-  @Override
-  public boolean isAbsolute(String path) {
-    // back compat
-    return new File(path).isAbsolute();
   }
   
   @Override

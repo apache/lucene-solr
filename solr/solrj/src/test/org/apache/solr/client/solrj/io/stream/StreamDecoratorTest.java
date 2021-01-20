@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -56,8 +57,12 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Assume;
@@ -91,7 +96,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       collection = COLLECTIONORALIAS;
     }
 
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collection, 2, 2);
     
@@ -488,6 +494,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     TupleStream stream;
     List<Tuple> tuples;
     Tuple t0, t1, t2;
+    @SuppressWarnings({"rawtypes"})
     List<Map> maps0, maps1, maps2;
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
@@ -1559,14 +1566,17 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assert (tuples.size() == 3);
 
       Tuple t0 = tuples.get(0);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps0 = t0.getMaps("group");
       assertMaps(maps0, 0, 1, 2, 9);
 
       Tuple t1 = tuples.get(1);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps1 = t1.getMaps("group");
       assertMaps(maps1, 3, 5, 7, 8);
 
       Tuple t2 = tuples.get(2);
+      @SuppressWarnings({"rawtypes"})
       List<Map> maps2 = t2.getMaps("group");
       assertMaps(maps2, 4, 6);
 
@@ -2291,7 +2301,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       
       assertEquals(1, tuples.size());
-      assertFalse(tuples.get(0).fields.containsKey("extra_s"));
+      assertFalse(tuples.get(0).getFields().containsKey("extra_s"));
     
     } finally {
       solrClientCache.close();
@@ -2670,7 +2680,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testUpdateStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
     new UpdateRequest()
@@ -2696,7 +2707,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     try {
       //Copy all docs to destinationCollection
-      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
+      // confirm update() stream defaults to ignoring _version_ field in tuples
+      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,_version_,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
       stream = new UpdateStream(expression, factory);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
@@ -2763,7 +2775,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelUpdateStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
     new UpdateRequest()
@@ -2861,7 +2874,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelDaemonUpdateStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
     new UpdateRequest()
@@ -3035,7 +3049,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelTerminatingDaemonUpdateStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
     new UpdateRequest()
@@ -3221,7 +3236,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testCommitStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
     new UpdateRequest()
@@ -3314,7 +3330,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelCommitStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
     new UpdateRequest()
@@ -3412,7 +3429,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelDaemonCommitStream() throws Exception {
 
-    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
     new UpdateRequest()
@@ -3629,11 +3647,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
-    CollectionAdminRequest.createCollection("modelCollection", "ml", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("modelCollection", "ml", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("modelCollection", 2, 2);
-    CollectionAdminRequest.createCollection("uknownCollection", "ml", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("uknownCollection", "ml", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("uknownCollection", 2, 2);
-    CollectionAdminRequest.createCollection("checkpointCollection", "ml", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("checkpointCollection", "ml", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("checkpointCollection", 2, 2);
 
     UpdateRequest updateRequest = new UpdateRequest();
@@ -3650,7 +3671,20 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     updateRequest.add(id, String.valueOf(1), "text_s", "a b e e f");
     updateRequest.commit(cluster.getSolrClient(), "uknownCollection");
 
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    // find a node with a replica
+    ClusterState clusterState = cluster.getSolrClient().getClusterStateProvider().getClusterState();
+    DocCollection coll = clusterState.getCollection(COLLECTIONORALIAS);
+    String node = coll.getReplicas().iterator().next().getNodeName();
+    String url = null;
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getNodeName().equals(node)) {
+        url = jetty.getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+        break;
+      }
+    }
+    if (url == null) {
+      fail("unable to find a node with replica");
+    }
     TupleStream updateTrainModelStream;
     ModifiableSolrParams paramsLoc;
 
@@ -3779,6 +3813,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple1 = tuples.get(0);
+    @SuppressWarnings({"unchecked", "rawtypes"})
     List<Map> results = (List<Map>)tuple1.get("results");
     assertTrue(results.size() == 2);
     assertTrue(results.get(0).get("id").equals("hello1"));
@@ -3843,11 +3878,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
   @Test
   public void testExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("workQueue", 2, 2);
-    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("mainCorpus", 2, 2);
-    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("destination", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("destination", 2, 2);
 
     UpdateRequest workRequest = new UpdateRequest();
@@ -3909,11 +3947,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelExecutorStream() throws Exception {
-    CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(),DEFAULT_TIMEOUT);
 
-    CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    CollectionAdminRequest.createCollection("destination1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("destination1", "conf", 2, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster.waitForActiveCollection("workQueue1", 2, 2);
     cluster.waitForActiveCollection("mainCorpus1", 2, 2);
@@ -4267,6 +4308,155 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
   }
 
+  public void testDeleteStream() throws Exception {
+    final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    final SolrClient client = cluster.getSolrClient();
+    
+    { final UpdateRequest req = new UpdateRequest();
+      for (int i = 0; i < 20; i++) {
+        req.add(id, "doc_"+i, "deletable_s", "yup");
+      }
+      assertEquals(0, req.commit(cluster.getSolrClient(), COLLECTIONORALIAS).getStatus());
+    }
+
+    // fetch the _version_ param assigned each doc to test optimistic concurrency later...
+    final Map<String,Long> versions = new HashMap<>();  
+    { final QueryResponse allDocs = client.query(COLLECTIONORALIAS, params("q","deletable_s:yup",
+                                                                           "rows","100"));
+      assertEquals(20L, allDocs.getResults().getNumFound());
+      for (SolrDocument doc : allDocs.getResults()) {
+        versions.put(doc.getFirstValue("id").toString(), (Long) doc.getFirstValue("_version_"));
+      }
+    }
+                 
+    { // trivially delete 1 doc
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,     "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,   "
+        + "              tuple(id=doc_2)))                     "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+      
+      assertEquals(20L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // delete 5 docs, spread across 3 batches (2 + 2 + 1)
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,          "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=2,list(    " // NOTE: batch size
+        + "               tuple(id=doc_3),                          "
+        + "               tuple(id=doc_11),                         "
+        + "               tuple(id=doc_7),                          "
+        + "               tuple(id=doc_17),                         "
+        + "               tuple(id=doc_15),                         "
+        + "              ) ) )                                      "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(3, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+      assertEquals(4L, tuples.get(1).get("totalIndexed"));
+      assertEquals(5L, tuples.get(2).get("totalIndexed"));
+      
+      assertEquals(20L - 1L - 5L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // attempt to delete 2 docs, one with correct version, one with "stale" version that should fail
+      // but config uses TolerantUpdateProcessorFactory so batch should still be ok...
+      //
+      // It would be nice it there was a more explicit, targetted, option for update() and delete() to
+      // ensure that even if one "batch" fails it continues with other batches.
+      // See TODO in UpdateStream
+
+      final long v13_ok = versions.get("doc_13").longValue();
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,list(     "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "               tuple(id=doc_13,_version_="+v13_ok+"),      "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(2L, tuples.get(0).get("totalIndexed"));
+
+      // should still be in the index due to version conflict...
+      assertEquals(1L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      // should not be in the index due to successful delete...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_13")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // by using pruneVersionField=true we should be able to ignore optimistic concurrency constraints,
+      // and delete docs even if the stream we are wrapping returns _version_ values that are no
+      // longer valid...
+      final long v10_bad = versions.get("doc_10").longValue() - 42L;
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,            "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=10,          "
+        + "              pruneVersionField=true, list(                "
+        + "               tuple(id=doc_10,_version_="+v10_bad+"),     "
+        + "              ) ) )                                        "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(1L, tuples.get(0).get("totalIndexed"));
+
+      // _version_should have been ignored and doc deleted anyway...
+      assertEquals(0L, client.query(COLLECTIONORALIAS,
+                                    params("q","id:doc_10")).getResults().getNumFound());
+      
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+    }
+
+    { // now test a "realistic" DBQ type situation, confirm all (remaining) matching docs deleted...
+      final String expr
+        = "commit("+COLLECTIONORALIAS+",waitSearcher=true,                "
+        + "       delete("+COLLECTIONORALIAS+",batchSize=99,              "
+        + "              search("+COLLECTIONORALIAS+",qt=\"/export\",     "
+        + "                     q=\"deletable_s:yup\",                    "
+        + "                     sort=\"id asc\",fl=\"id,_version_\"       "
+        + "              ) ) )                                            "
+        ;
+      final SolrStream stream = new SolrStream(url, params("qt", "/stream", "expr", expr));
+      
+      final List<Tuple> tuples = getTuples(stream);
+      assertEquals(1, tuples.size());
+      assertEquals(20L - 1L - 5L - 1L - 1L,
+                   tuples.get(0).get("totalIndexed"));
+
+      // shouldn't be anything left...
+      assertEquals(0L,
+                   client.query(COLLECTIONORALIAS,
+                                params("q","deletable_s:yup")).getResults().getNumFound());
+      
+    }
+    
+  }
+
+
+  
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     List<Tuple> tuples = new ArrayList<Tuple>();
 
@@ -4299,7 +4489,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
+        if(!tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
         }
       }
@@ -4309,7 +4499,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
-        if(tuple.fields.containsKey(field)){
+        if(tuple.getFields().containsKey(field)){
           throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
         }
       }
@@ -4352,13 +4542,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return true;
   }
   
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
+  protected boolean assertMaps(@SuppressWarnings({"rawtypes"})List<Map> maps, int... ids) throws Exception {
     if(maps.size() != ids.length) {
       throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
     }
 
     int i=0;
     for(int val : ids) {
+      @SuppressWarnings({"rawtypes"})
       Map t = maps.get(i);
       String tip = (String)t.get("id");
       if(!tip.equals(Integer.toString(val))) {
@@ -4369,7 +4560,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return true;
   }
 
-  private boolean assertList(List list, Object... vals) throws Exception {
+  private boolean assertList(@SuppressWarnings({"rawtypes"})List list, Object... vals) throws Exception {
 
     if(list.size() != vals.length) {
       throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);

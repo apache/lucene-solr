@@ -1,5 +1,4 @@
 = Major Changes in Solr 7
-:page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -22,7 +21,7 @@ Solr 7 is a major new release of Solr which introduces new features and a number
 == Upgrade Planning
 There are major changes in Solr 7 to consider before starting to migrate your configurations and indexes. This page is designed to highlight the biggest changes - new features you may want to be aware of, but also changes in default behavior and deprecated features that have been removed.
 
-There are many hundreds of changes in Solr 7, however, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> as well as the {solr-javadocs}/changes/Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 7. This section attempts to highlight some of the major changes you should be aware of.
+There are many hundreds of changes in Solr 7, however, so a thorough review of the <<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>> as well as the {solr-javadocs}/changes//Changes.html[CHANGES.txt] file in your Solr instance will help you plan your migration to Solr 7. This section attempts to highlight some of the major changes you should be aware of.
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 6.2, you should review changes made in all subsequent 6.x releases in addition to changes for 7.0.
 
@@ -48,8 +47,6 @@ Solr autoscaling is a new suite of features in Solr to make managing a SolrCloud
 
 At its core, Solr autoscaling provides users with a rule syntax to define preferences and policies for how to distribute nodes and shards in a cluster, with the goal of maintaining a balance in the cluster. As of Solr 7, Solr will take any policy or preference rules into account when determining where to place new shards and replicas created or moved with various Collections API commands.
 
-See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Autoscaling>> for details on the options available in 7.0. Expect more features to be released in subsequent 7.x releases in this area.
-
 === Other Features & Enhancements
 
 // TODO 7.1 - update link to docs when complete
@@ -67,13 +64,13 @@ See the section <<solrcloud-autoscaling.adoc#solrcloud-autoscaling,SolrCloud Aut
 
 == Configuration and Default Changes
 
-=== New Default ConfigSet
+=== New Default Configset
 Several changes have been made to configsets that ship with Solr; not only their content but how Solr behaves in regard to them:
 
 * The `data_driven_configset` and `basic_configset` have been removed, and replaced by the `_default` configset. The `sample_techproducts_configset` also remains, and is designed for use with the example documents shipped with Solr in the `example/exampledocs` directory.
 * When creating a new collection, if you do not specify a configset, the `_default` will be used.
 ** If you use SolrCloud, the `_default` configset will be automatically uploaded to ZooKeeper.
-** If you use standalone mode, the instanceDir will be created automatically, using the `_default` configset as it's basis.
+** If you use standalone mode, the instanceDir will be created automatically, using the `_default` configset as its basis.
 
 === Schemaless Improvements
 
@@ -121,7 +118,7 @@ This may affect users who bring up replicas and they are automatically registere
 * The `handleSelect` parameter in `solrconfig.xml` now defaults to `false` if the `luceneMatchVersion` is 7.0.0 or above. This causes Solr to ignore the `qt` parameter if it is present in a request. If you have request handlers without a leading '/', you can set `handleSelect="true"` or consider migrating your configuration.
 +
 The `qt` parameter is still used as a SolrJ special parameter that specifies the request handler (tail URL path) to use.
-* The lucenePlusSort query parser (aka the "Old Lucene Query Parser") has been deprecated and is no longer implicitly defined. If you wish to continue using this parser until Solr 8 (when it will be removed), you must register it in your `solrconfig.xml`, as in: `<queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>`.
+* The `lucenePlusSort` query parser (aka the "Old Lucene Query Parser") has been deprecated and is no longer implicitly defined. If you wish to continue using this parser until Solr 8 (when it will be removed), you must register it in your `solrconfig.xml`, as in: `<queryParser name="lucenePlusSort" class="solr.OldLuceneQParserPlugin"/>`.
 * The name of `TemplateUpdateRequestProcessorFactory` is changed to `template` from `Template` and the name of `AtomicUpdateProcessorFactory` is changed to `atomic` from `Atomic`
 ** Also, `TemplateUpdateRequestProcessorFactory` now uses `{}` instead of `${}` for `template`.
 

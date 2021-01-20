@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 public class TestCharsRefBuilder extends LuceneTestCase {
 
   public void testAppend() {
@@ -44,5 +43,4 @@ public class TestCharsRefBuilder extends LuceneTestCase {
     builder.append((CharSequence) null, 1, 3);
     assertEquals("nullnull", builder.toString());
   }
-
 }

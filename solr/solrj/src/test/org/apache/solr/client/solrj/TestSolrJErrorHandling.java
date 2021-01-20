@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import java.io.BufferedOutputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -99,7 +99,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       sb.append("\n\t").append(entry.getValue()).append(") ").append(entry.getKey());
     }
 
-    log.error(sb.toString());
+    log.error("{}", sb);
   }
 
   @Test
@@ -205,7 +205,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     try {
       client.add(manyDocs(threadNum*1000000, 1000));
     }
-    catch (HttpSolrClient.RemoteSolrException e) {
+    catch (BaseHttpSolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     }
@@ -251,11 +251,11 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       } catch (IOException e) {
         // a real HTTP client probably wouldn't try to read past the end and would thus
         // not get an exception until the *next* http request.
-        log.error("CAUGHT IOException, but already read " + sb.length() + " : " + getChain(e));
+        log.error("CAUGHT IOException, but already read {} : {}", sb.length(), getChain(e));
       }
       if (n <= 0) break;
       sb.append(new String(buf, 0, n, StandardCharsets.UTF_8));
-      log.info("BUFFER=" + sb.toString());
+      log.info("BUFFER={}", sb);
       break;  // for now, assume we got whole response in one read... otherwise we could block when trying to read again
     }
     return sb.toString();
@@ -286,7 +286,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     try {
       code = conn.getResponseCode();
     } catch (Throwable th) {
-      log.error("ERROR DURING conn.getResponseCode():",th);
+      log.error("ERROR DURING conn.getResponseCode():", th);
     }
 
 /***
@@ -299,7 +299,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
  at java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:480)
  */
 
-    log.info("CODE=" + code);
+    log.info("CODE= {}", code);
     InputStream is;
     if (code == 200) {
       is = conn.getInputStream();
@@ -313,7 +313,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     }
 
     String rbody = IOUtils.toString(is, StandardCharsets.UTF_8);
-    log.info("RESPONSE BODY:" + rbody);
+    log.info("RESPONSE BODY:{}", rbody);
   }
 
   @Test
@@ -354,7 +354,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       out.flush();
 
       String rbody = getResponse(in);  // This will throw a connection reset exception if you try to read past the end of the HTTP response
-      log.info("RESPONSE BODY:" + rbody);
+      log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
 
       /***
@@ -366,7 +366,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       out.flush();
 
       rbody = getResponse(in);
-      log.info("RESPONSE BODY:" + rbody);
+      log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
       ***/
     }

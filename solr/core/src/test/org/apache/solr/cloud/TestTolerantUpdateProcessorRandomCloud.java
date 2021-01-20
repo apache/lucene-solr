@@ -264,8 +264,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       final UpdateResponse rsp = req.process(client);
       assertUpdateTolerantErrors(client.toString() + " => " + expectedErrors.toString(), rsp,
                                  expectedErrors.toArray(new ExpectedErr[expectedErrors.size()]));
-               
-      log.info("END ITER #{}, expecting #docs: {}", i, expectedDocIds.cardinality());
+
+      if (log.isInfoEnabled()) {
+        log.info("END ITER #{}, expecting #docs: {}", i, expectedDocIds.cardinality());
+      }
 
       assertEquals("post update commit failed?", 0, CLOUD_CLIENT.commit().getStatus());
       
@@ -273,7 +275,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         if (expectedDocIds.cardinality() == countDocs(CLOUD_CLIENT)) {
           break;
         }
-        log.info("sleeping to give searchers a chance to re-open #" + j);
+        log.info("sleeping to give searchers a chance to re-open #{}", j);
         Thread.sleep(200);
       }
 
@@ -289,7 +291,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       for (int b = x.nextSetBit(0); 0 <= b; b = x.nextSetBit(b+1)) {
         final boolean expectedBit = expectedDocIds.get(b);
         final boolean actualBit = actualDocIds.get(b);
-        log.error("bit #"+b+" mismatch: expected {} BUT actual {}", expectedBit, actualBit);
+        log.error("bit #{} mismatch: expected {} BUT actual {}", b, expectedBit, actualBit);
       }
       assertEquals(x.cardinality() + " mismatched bits",
                    expectedDocIds.cardinality(), actualDocIds.cardinality());

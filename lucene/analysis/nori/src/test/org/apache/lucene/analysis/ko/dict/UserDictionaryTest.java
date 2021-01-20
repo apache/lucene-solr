@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.ko.dict;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.analysis.ko.TestKoreanTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
@@ -40,7 +39,8 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertEquals(2, wordIds.size());
     assertNull(dictionary.getMorphemes(wordIds.get(0), sArray, 0, s.length()));
 
-    Dictionary.Morpheme[] decompound = dictionary.getMorphemes(wordIds.get(1), sArray, 0, s.length());
+    Dictionary.Morpheme[] decompound =
+        dictionary.getMorphemes(wordIds.get(1), sArray, 0, s.length());
     assertNotNull(decompound);
     assertEquals(2, decompound.length);
     assertEquals(decompound[0].posTag, POS.Tag.NNG);
@@ -54,7 +54,7 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertEquals(1, wordIds.size());
     assertNull(dictionary.getMorphemes(wordIds.get(0), sArray, 0, s.length()));
   }
-  
+
   @Test
   public void testRead() {
     UserDictionary dictionary = TestKoreanTokenizer.readDict();

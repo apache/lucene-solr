@@ -16,27 +16,22 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.BytesRef;
 
-/**
- * A decompressor.
- */
+/** A decompressor. */
 public abstract class Decompressor implements Cloneable {
 
   /** Sole constructor, typically called from sub-classes. */
   protected Decompressor() {}
 
   /**
-   * Decompress bytes that were stored between offsets <code>offset</code> and
-   * <code>offset+length</code> in the original stream from the compressed
-   * stream <code>in</code> to <code>bytes</code>. After returning, the length
-   * of <code>bytes</code> (<code>bytes.length</code>) must be equal to
-   * <code>length</code>. Implementations of this method are free to resize
-   * <code>bytes</code> depending on their needs.
+   * Decompress bytes that were stored between offsets <code>offset</code> and <code>offset+length
+   * </code> in the original stream from the compressed stream <code>in</code> to <code>bytes</code>
+   * . After returning, the length of <code>bytes</code> (<code>bytes.length</code>) must be equal
+   * to <code>length</code>. Implementations of this method are free to resize <code>bytes</code>
+   * depending on their needs.
    *
    * @param in the input that stores the compressed stream
    * @param originalLength the length of the original data (before compression)
@@ -44,9 +39,9 @@ public abstract class Decompressor implements Cloneable {
    * @param length bytes after <code>offset+length</code> do not need to be decompressed
    * @param bytes a {@link BytesRef} where to store the decompressed data
    */
-  public abstract void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException;
+  public abstract void decompress(
+      DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException;
 
   @Override
   public abstract Decompressor clone();
-
 }

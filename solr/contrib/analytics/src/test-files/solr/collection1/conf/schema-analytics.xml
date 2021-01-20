@@ -62,6 +62,8 @@
   <fieldType name="double_pnt" class="solr.DoublePointField" docValues="true" />
   <fieldType name="date_pnt" class="solr.DatePointField" docValues="true" />
 
+  <field name="long.dotfield" type="long_pnt"/>
+
   <fieldType name="boolean" class="solr.BoolField" docValues="true"/>
   <fieldType name="string" class="solr.StrField" docValues="true"/>
 

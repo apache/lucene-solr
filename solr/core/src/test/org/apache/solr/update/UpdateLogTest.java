@@ -183,6 +183,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
       // verify that the document is deleted, by doing an RTG call
       assertJQ(req("qt","/get", "id","1"), "=={'doc':null}");
     } else { // dbi
+      @SuppressWarnings({"rawtypes"})
       List entry = ((List)ulog.lookup(DOC_1_INDEXED_ID));
       assertEquals(UpdateLog.DELETE, (int)entry.get(UpdateLog.FLAGS_IDX) & UpdateLog.OPERATION_MASK);
     }

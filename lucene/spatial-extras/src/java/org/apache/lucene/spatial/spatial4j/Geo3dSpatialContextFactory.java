@@ -18,7 +18,6 @@
 package org.apache.lucene.spatial.spatial4j;
 
 import java.util.Map;
-
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
@@ -30,19 +29,13 @@ import org.locationtech.spatial4j.context.SpatialContextFactory;
  */
 public class Geo3dSpatialContextFactory extends SpatialContextFactory {
 
-  /**
-   * The default planet model
-   */
+  /** The default planet model */
   private static final PlanetModel DEFAULT_PLANET_MODEL = PlanetModel.SPHERE;
 
-  /**
-   * The planet model
-   */
+  /** The planet model */
   public PlanetModel planetModel;
 
-  /**
-   * Empty Constructor.
-   */
+  /** Empty Constructor. */
   public Geo3dSpatialContextFactory() {
     this.binaryCodecClass = Geo3dBinaryCodec.class;
     this.shapeFactoryClass = Geo3dShapeFactory.class;
@@ -72,6 +65,8 @@ public class Geo3dSpatialContextFactory extends SpatialContextFactory {
         this.planetModel = PlanetModel.SPHERE;
       } else if (planetModel.equalsIgnoreCase("wgs84")) {
         this.planetModel = PlanetModel.WGS84;
+      } else if (planetModel.equalsIgnoreCase("clarke1866")) {
+        this.planetModel = PlanetModel.CLARKE_1866;
       } else {
         throw new RuntimeException("Unknown planet model: " + planetModel);
       }

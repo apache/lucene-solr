@@ -112,8 +112,9 @@ public class ManagedWordSetResource extends ManagedResource
     } else {
       storeManagedData(new ArrayList<String>(0)); // stores an empty word set      
     }
-    
-    log.info("Loaded "+managedWords.size()+" words for "+getResourceId());      
+    if (log.isInfoEnabled()) {
+      log.info("Loaded {} words for {}", managedWords.size(), getResourceId());
+    }
   }
           
   /**
@@ -162,7 +163,7 @@ public class ManagedWordSetResource extends ManagedResource
     boolean madeChanges = false;
     List<String> words = (List<String>)updates;
     
-    log.info("Applying updates: "+words);
+    log.info("Applying updates: {}", words);
     boolean ignoreCase = getIgnoreCase();    
     for (String word : words) {
       if (ignoreCase)

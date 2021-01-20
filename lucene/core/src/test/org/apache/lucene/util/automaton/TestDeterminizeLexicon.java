@@ -16,23 +16,21 @@
  */
 package org.apache.lucene.util.automaton;
 
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Not thorough, but tries to test determinism correctness
- * somewhat randomly, by determinizing a huge random lexicon.
+ * Not thorough, but tries to test determinism correctness somewhat randomly, by determinizing a
+ * huge random lexicon.
  */
 public class TestDeterminizeLexicon extends LuceneTestCase {
   private List<Automaton> automata = new ArrayList<>();
   private List<String> terms = new ArrayList<>();
-  
+
   public void testLexicon() throws Exception {
     int num = atLeast(1);
     for (int i = 0; i < num; i++) {
@@ -46,7 +44,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
       assertLexicon();
     }
   }
-  
+
   public void assertLexicon() throws Exception {
     Collections.shuffle(automata, random());
     Automaton lex = Operations.union(automata);
@@ -55,10 +53,13 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
     for (String s : terms) {
       assertTrue(Operations.run(lex, s));
     }
-    final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex, false, 1000000);
-    for (String s : terms) {
-      byte bytes[] = s.getBytes(StandardCharsets.UTF_8);
-      assertTrue(lexByte.run(bytes, 0, bytes.length));
+    if (TEST_NIGHTLY) {
+      // TODO: very wasteful of RAM to do this without minimizing first.
+      final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex, false, 1000000);
+      for (String s : terms) {
+        byte bytes[] = s.getBytes(StandardCharsets.UTF_8);
+        assertTrue(lexByte.run(bytes, 0, bytes.length));
+      }
     }
   }
 }

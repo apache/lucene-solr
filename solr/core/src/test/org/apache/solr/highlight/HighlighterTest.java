@@ -200,7 +200,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     try (Analyzer a1 = new WhitespaceAnalyzer()) {
       TokenStream tokenStream = a1.tokenStream("", "a b c d e f g h i j k l m n");
 
-      try (OffsetWindowTokenFilter tots = new OffsetWindowTokenFilter(tokenStream)) {
+      try (DefaultSolrHighlighter.OffsetWindowTokenFilter tots = new DefaultSolrHighlighter.OffsetWindowTokenFilter(tokenStream)) {
         for (String v : multivalued) {
           TokenStream ts1 = tots.advanceToNextWindowOfLength(v.length());
           ts1.reset();
@@ -917,6 +917,24 @@ public class HighlighterTest extends SolrTestCaseJ4 {
               localRequest, new String[] {})));
       assertEquals(highlightedSetExpected, highlightedSetActual);
     }
+
+    // SOLR-11334
+    args.put("hl.fl", "title, text"); // comma then space
+    lrf = h.getRequestFactory("", 0, 10, args);
+    request = lrf.makeRequest("test");
+    highlighter = HighlightComponent.getHighlighter(h.getCore());
+    highlightFieldNames = Arrays.asList(highlighter.getHighlightFields(null,
+        request, new String[] {}));
+    assertEquals("Expected one field to highlight on", 2, highlightFieldNames
+        .size());
+    assertTrue("Expected to highlight on field \"title\"",
+        highlightFieldNames.contains("title"));
+    assertTrue("Expected to highlight on field \"text\"",
+        highlightFieldNames.contains("text"));
+    assertFalse("Expected to not highlight on field \"\"",
+        highlightFieldNames.contains(""));
+
+    request.close();
   }
 
   @Test

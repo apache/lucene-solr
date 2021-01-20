@@ -17,14 +17,47 @@
 
 package org.apache.solr.security;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.solr.common.StringUtils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 
+import java.io.IOException;
+import java.net.URL;
+import java.security.spec.InvalidKeySpecException;
+
 public class PublicKeyHandler extends RequestHandlerBase {
   public static final String PATH = "/admin/info/key";
-  final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
+
+  final CryptoKeys.RSAKeyPair keyPair;
+
+  @VisibleForTesting
+  public PublicKeyHandler() {
+    keyPair = new CryptoKeys.RSAKeyPair();
+  }
+
+  public PublicKeyHandler(CloudConfig config) throws IOException, InvalidKeySpecException {
+    keyPair = createKeyPair(config);
+  }
+
+  private CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) throws IOException, InvalidKeySpecException {
+    if (config == null) {
+      return new CryptoKeys.RSAKeyPair();
+    }
+
+    String publicKey = config.getPkiHandlerPublicKeyPath();
+    String privateKey = config.getPkiHandlerPrivateKeyPath();
+
+    // If both properties unset, then we fall back to generating a new key pair
+    if (StringUtils.isEmpty(publicKey) && StringUtils.isEmpty(privateKey)) {
+      return new CryptoKeys.RSAKeyPair();
+    }
+
+    return new CryptoKeys.RSAKeyPair(new URL(privateKey), new URL(publicKey));
+  }
 
   public String getPublicKey() {
     return keyPair.getPublicKeyStr();

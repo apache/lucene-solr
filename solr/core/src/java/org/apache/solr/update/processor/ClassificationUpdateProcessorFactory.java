@@ -63,7 +63,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   private ClassificationUpdateProcessorParams classificationParams;
 
   @Override
-  public void init(final NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})final NamedList args) {
     if (args != null) {
       params = args.toSolrParams();
       classificationParams = new ClassificationUpdateProcessorParams();

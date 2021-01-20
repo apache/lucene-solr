@@ -16,70 +16,75 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
-/**
- * Dictionary interface for retrieving morphological data
- * by id.
- */
+/** Dictionary interface for retrieving morphological data by id. */
 public interface Dictionary {
-  
+
   public static final String INTERNAL_SEPARATOR = "\u0000";
-  
+
   /**
    * Get left id of specified word
+   *
    * @return left id
    */
   public int getLeftId(int wordId);
-  
+
   /**
    * Get right id of specified word
+   *
    * @return right id
    */
   public int getRightId(int wordId);
-  
+
   /**
    * Get word cost of specified word
+   *
    * @return word's cost
    */
   public int getWordCost(int wordId);
-  
+
   /**
    * Get Part-Of-Speech of tokens
+   *
    * @param wordId word ID of token
    * @return Part-Of-Speech of the token
    */
   public String getPartOfSpeech(int wordId);
-  
+
   /**
    * Get reading of tokens
+   *
    * @param wordId word ID of token
    * @return Reading of the token
    */
   public String getReading(int wordId, char surface[], int off, int len);
-  
+
   /**
    * Get base form of word
+   *
    * @param wordId word ID of token
    * @return Base form (only different for inflected words, otherwise null)
    */
   public String getBaseForm(int wordId, char surface[], int off, int len);
-  
+
   /**
    * Get pronunciation of tokens
+   *
    * @param wordId word ID of token
    * @return Pronunciation of the token
    */
   public String getPronunciation(int wordId, char surface[], int off, int len);
-  
+
   /**
    * Get inflection type of tokens
+   *
    * @param wordId word ID of token
    * @return inflection type, or null
    */
   public String getInflectionType(int wordId);
-  
+
   /**
    * Get inflection form of tokens
+   *
    * @param wordId word ID of token
    * @return inflection form, or null
    */

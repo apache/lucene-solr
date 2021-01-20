@@ -20,7 +20,16 @@
 
 == A Visual Guide
 
+<<<<<<< HEAD
 image::images/math-expressions/searchiris.png[]
+=======
+This user guide provides an overview of the different areas of
+mathematical coverage starting with basic scalar math and
+ending with machine learning. Along the way the guide covers variables
+and data structures and techniques for combining Solr's
+powerful streams with mathematical functions to make every
+record in your SolrCloud cluster computable.
+>>>>>>> master
 
 == Table of Contents
 
@@ -63,6 +72,9 @@ image::images/math-expressions/searchiris.png[]
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 
 *<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
+<<<<<<< HEAD
 
 *<<logs.adoc#log-analytics,Appendix A>>*: Solr log analytics and visualization.
 
+=======
+>>>>>>> master

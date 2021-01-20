@@ -47,6 +47,7 @@ public class ReverseEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("l1", l1);
 
+    @SuppressWarnings({"rawtypes"})
     List result = ((List<?>)factory.constructEvaluator("reverse(l1)").evaluate(new Tuple(values)));
 
     Assert.assertEquals(4.5, result.get(0));

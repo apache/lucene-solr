@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Boolean USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
@@ -234,11 +235,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
@@ -275,9 +278,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.shutdown();
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
   }
 
   @Before
@@ -344,7 +350,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
+      if (log.isInfoEnabled()) {
+        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
+      }
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
@@ -386,7 +394,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
 
     return activeReplicas == expectedReplicas;
 
@@ -442,6 +450,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;
@@ -490,4 +499,21 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     cluster.waitForAllNodes(timeoutSeconds);
   }
 
+  public static Map<String, String> mapReplicasToReplicaType(DocCollection collection) {
+    Map<String, String> replicaTypeMap = new HashMap<>();
+    for (Slice slice : collection.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String coreUrl = replica.getCoreUrl();
+        // It seems replica reports its core URL with a trailing slash while shard
+        // info returned from the query doesn't. Oh well. We will include both, just in case
+        replicaTypeMap.put(coreUrl, replica.getType().toString());
+        if (coreUrl.endsWith("/")) {
+          replicaTypeMap.put(coreUrl.substring(0, coreUrl.length() - 1), replica.getType().toString());
+        }else {
+          replicaTypeMap.put(coreUrl + "/", replica.getType().toString());
+        }
+      }
+    }
+    return replicaTypeMap;
+  }
 }

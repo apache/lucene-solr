@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
-
 public class TestHighCompressionMode extends AbstractTestCompressionMode {
 
   @Override

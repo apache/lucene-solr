@@ -20,9 +20,9 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.search.Query;
 
 /**
- * Abstract base query maker. 
- * Each query maker should just implement the {@link #prepareQueries()} method.
- **/
+ * Abstract base query maker. Each query maker should just implement the {@link #prepareQueries()}
+ * method.
+ */
 public abstract class AbstractQueryMaker implements QueryMaker {
 
   protected int qnum = 0;
@@ -50,7 +50,11 @@ public abstract class AbstractQueryMaker implements QueryMaker {
     StringBuilder sb = new StringBuilder();
     if (queries != null) {
       for (int i = 0; i < queries.length; i++) {
-        sb.append(i).append(". ").append(queries[i].getClass().getSimpleName()).append(" - ").append(queries[i].toString());
+        sb.append(i)
+            .append(". ")
+            .append(queries[i].getClass().getSimpleName())
+            .append(" - ")
+            .append(queries[i].toString());
         sb.append(newline);
       }
     }
@@ -61,20 +65,20 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   public Query makeQuery() throws Exception {
     return queries[nextQnum()];
   }
-  
+
   // return next qnum
   protected synchronized int nextQnum() {
     int res = qnum;
-    qnum = (qnum+1) % queries.length;
+    qnum = (qnum + 1) % queries.length;
     return res;
   }
 
   /*
-  *  (non-Javadoc)
-  * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
-  */
+   *  (non-Javadoc)
+   * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
+   */
   @Override
   public Query makeQuery(int size) throws Exception {
-    throw new Exception(this+".makeQuery(int size) is not supported!");
+    throw new Exception(this + ".makeQuery(int size) is not supported!");
   }
 }

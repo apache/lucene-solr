@@ -38,6 +38,7 @@ public interface PermissionNameProvider {
     COLL_READ_PERM("collection-admin-read", null),
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
+    ZK_READ_PERM("zk-read", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
@@ -47,17 +48,18 @@ public interface PermissionNameProvider {
     SECURITY_EDIT_PERM("security-edit", null),
     SECURITY_READ_PERM("security-read", null),
     METRICS_READ_PERM("metrics-read", null),
-    AUTOSCALING_READ_PERM("autoscaling-read", null),
-    AUTOSCALING_WRITE_PERM("autoscaling-write", null),
-    AUTOSCALING_HISTORY_READ_PERM("autoscaling-history-read", null),
     METRICS_HISTORY_READ_PERM("metrics-history-read", null),
     FILESTORE_READ_PERM("filestore-read", null),
     FILESTORE_WRITE_PERM("filestore-write", null),
+    PACKAGE_EDIT_PERM("package-edit", null),
+    PACKAGE_READ_PERM("package-read", null),
+
     ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
     ;
     final String name;
     final Set<String> collName;
 
+    @SuppressWarnings({"unchecked"})
     Name(String s, Object collName) {
       name = s;
       this.collName = collName instanceof Set? (Set<String>)collName : singleton((String)collName);

@@ -29,8 +29,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.servlet.ServletUtils;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -46,7 +49,7 @@ import static org.apache.solr.security.AuditEvent.EventType.ERROR;
  */
 public class AuditEvent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private StringBuffer requestUrl;
+  private String baseUrl;
   private String nodeName;
   private String message;
   private Level level;
@@ -67,10 +70,10 @@ public class AuditEvent {
   private EventType eventType;
   private AuthorizationResponse autResponse;
   private RequestType requestType;
-  private double QTime = -1;
+  private double qTime = -1;
   private int status = -1;
   private Throwable exception;
-  
+
   /* Predefined event types. Custom types can be made through constructor */
   public enum EventType {
     AUTHENTICATED("Authenticated", "User successfully authenticated", Level.INFO, -1),
@@ -129,13 +132,16 @@ public class AuditEvent {
     this.solrPort = httpRequest.getLocalPort();
     this.solrIp = httpRequest.getLocalAddr();
     this.clientIp = httpRequest.getRemoteAddr();
-    this.resource = httpRequest.getContextPath();
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
-    this.requestUrl = httpRequest.getRequestURL();
+    this.baseUrl = httpRequest.getRequestURL().toString();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
+    SolrRequestParsers.parseQueryString(httpQueryString).forEach(sp -> {
+      this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
+    });
 
+    setResource(ServletUtils.getPathAfterContext(httpRequest));
     setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
@@ -162,11 +168,13 @@ public class AuditEvent {
     this(eventType, httpRequest);
     this.collections = authorizationContext.getCollectionRequests()
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
-    this.resource = authorizationContext.getResource();
+    setResource(authorizationContext.getResource());
     this.requestType = RequestType.convertType(authorizationContext.getRequestType());
-    authorizationContext.getParams().forEach(p -> {
-      this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
-    });
+    if (authorizationContext.getParams() != null) {
+      authorizationContext.getParams().forEach(p -> {
+        this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
+      });
+    }
   }
 
   /**
@@ -217,75 +225,135 @@ public class AuditEvent {
       }
     }
   }
-  
+
+  /**
+   * The human readable message about this event
+   */
   public String getMessage() {
     return message;
   }
 
+  /**
+   * Level of this event. Can be INFO, WARN or ERROR
+   * @return {@link Level} enum
+   */
   public Level getLevel() {
     return level;
   }
 
+  /**
+   * Date that the event happened
+   */
   public Date getDate() {
     return date;
   }
 
+  /**
+   * Username of logged in user, or null if no authenticated user
+   */
   public String getUsername() {
     return username;
   }
 
+  /**
+   * Session identifier
+   */
   public String getSession() {
     return session;
   }
 
+  /**
+   * IP address of the client doing the request
+   */
   public String getClientIp() {
     return clientIp;
   }
-  
+
+  /**
+   * A general purpose context map with potential extra information about the event
+   */
   public Map<String, Object> getContext() {
     return context;
   }
-  
+
+  /**
+   * List of collection names involved in request
+   */
   public List<String> getCollections() {
     return collections;
   }
 
+  /**
+   * Identifies the resource being operated on. This is not the same as URL path.
+   * For queries the resource is relative to collection name, e.g. /select or /update.
+   * For other events the resource may be /api/node/health or /admin/collection
+   */
   public String getResource() {
     return resource;
   }
 
+  /**
+   * The HTTP method. E.g. GET, POST, PUT
+   */
   public String getHttpMethod() {
     return httpMethod;
   }
 
+  /**
+   * Query part of URL or null if query part
+   */
   public String getHttpQueryString() {
     return httpQueryString;
   }
 
+  /**
+   * EventType tells the outcome of the event such as REJECTED, UNAUTHORIZED or ERROR
+   * @return {@link EventType} enum
+   */
   public EventType getEventType() {
     return eventType;
   }
 
+  /**
+   * Host name of the Solr node logging the event
+   */
   public String getSolrHost() {
     return solrHost;
   }
 
+  /**
+   * IP address of the Solr node logging the event
+   */
   public String getSolrIp() {
     return solrIp;
   }
 
+  /**
+   * Port number of the Solr node logging the event
+   */
   public int getSolrPort() {
     return solrPort;
   }
 
+  /**
+   * Map of all HTTP request headers belonging to the request
+   */
   public Map<String, String> getHeaders() {
     return headers;
   }
 
+  /**
+   * Map of all Solr request parameters attached to the request. Pulled from url
+   */
   public Map<String, List<String>> getSolrParams() {
     return solrParams;
   }
 
+  /**
+   * Gets first value of a certain Solr request parameter
+   * @param key name of request parameter to retrieve
+   * @return String value of the first value, regardless of number of valies
+   */
   public String getSolrParamAsString(String key) {
     List<String> v = getSolrParams().get(key);
     if (v != null && v.size() > 0) {
@@ -293,42 +361,84 @@ public class AuditEvent {
     }
     return null;
   }
-  
+
+  /**
+   * The authorization response object from authorization plugin, or null authz has not happened
+   */
   public AuthorizationResponse getAutResponse() {
     return autResponse;
   }
 
+  /**
+   * Node name of Solr node, on the internal format host:port_context, e.g. 10.0.0.1:8983_solr
+   */
   public String getNodeName() {
     return nodeName;
   }
 
+  /**
+   * Determines the type of request. Can be ADMIN, SEARCH, UPDATE, STREAMING, UNKNOWN
+   * @return {@link RequestType} enum
+   */
   public RequestType getRequestType() {
     return requestType;
   }
 
+  /**
+   * HTTP status code of event, i.e. 200 = OK, 401 = unauthorized
+   */
   public int getStatus() {
     return status;
   }
 
+  /**
+   * Request time in milliseconds for completed requests
+   */
   public double getQTime() {
-    return QTime;
+    return qTime;
   }
-  
+
+  /**
+   * In case of ERROR event, find the exception causing the error
+   */
   public Throwable getException() {
     return exception;
   }
 
+  /**
+   * Get baseUrl as StringBuffer for back compat with previous version
+   * @deprecated Please use {@link #getBaseUrl()} instead
+   * @return StringBuffer of the base url without query part
+   */
+  @Deprecated
+  @JsonIgnore
   public StringBuffer getRequestUrl() {
-    return requestUrl;
+    return new StringBuffer(baseUrl);
+  }
+
+  /**
+   * Full URL of the original request. This is {@link #baseUrl} + "?" + {@link #httpQueryString}.
+   * Returns null if not set
+   */
+  public String getUrl() {
+    if (baseUrl == null) return null;
+    return baseUrl + (httpQueryString != null ? "?" + httpQueryString : "");
+  }
+
+  /**
+   * First part of URL of the request, but not including request parameters, or null if not set
+   */
+  public String getBaseUrl() {
+    return baseUrl;
   }
 
   // Setters, builder style
   
-  public AuditEvent setRequestUrl(StringBuffer requestUrl) {
-    this.requestUrl = requestUrl;
+  public AuditEvent setBaseUrl(String baseUrl) {
+    this.baseUrl = baseUrl;
     return this;
   }
-  
+
   public AuditEvent setSession(String session) {
     this.session = session;
     return this;
@@ -375,7 +485,7 @@ public class AuditEvent {
   }
 
   public AuditEvent setResource(String resource) {
-    this.resource = resource;
+    this.resource = normalizeResourcePath(resource);
     return this;
   }
 
@@ -424,8 +534,8 @@ public class AuditEvent {
     return this;
   }
 
-  public AuditEvent setQTime(double QTime) {
-    this.QTime = QTime;
+  public AuditEvent setQTime(double qTime) {
+    this.qTime = qTime;
     return this;
   }
 
@@ -447,30 +557,35 @@ public class AuditEvent {
   }
 
   private RequestType findRequestType() {
-    if (ADMIN_PATH_REGEXES.stream().map(Pattern::compile)
-            .anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
-    if (SEARCH_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
-    if (INDEXING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
-    if (STREAMING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (resource == null) return RequestType.UNKNOWN;
+    if (SEARCH_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
+    if (INDEXING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
+    if (STREAMING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (ADMIN_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
     return RequestType.UNKNOWN;
   }
-  
+
+  protected String normalizeResourcePath(String resourcePath) {
+    if (resourcePath == null) return "";
+    return resourcePath.replaceFirst("^/____v2", "/api");
+  }
+
   private static final List<String> ADMIN_PATH_REGEXES = Arrays.asList(
-      "^/solr/admin/.*",
-      "^/api/(c|collections)/$",
+      "^/admin/.*",
+      "^/api/(c|collections)$",
       "^/api/(c|collections)/[^/]+/config$",
       "^/api/(c|collections)/[^/]+/schema$",
       "^/api/(c|collections)/[^/]+/shards.*",
       "^/api/cores.*$",
-      "^/api/node$",
-      "^/api/cluster$");
+      "^/api/node.*$",
+      "^/api/cluster.*$");
 
   private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
-
   private static final List<String> INDEXING_PATH_REGEXES = Collections.singletonList(".*/update.*");
-
   private static final List<String> SEARCH_PATH_REGEXES = Arrays.asList(".*/select.*", ".*/query.*");
+
+  private static final List<Pattern> ADMIN_PATH_PATTERNS = ADMIN_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> STREAMING_PATH_PATTERNS = STREAMING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> INDEXING_PATH_PATTERNS = INDEXING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> SEARCH_PATH_PATTERNS = SEARCH_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
 }

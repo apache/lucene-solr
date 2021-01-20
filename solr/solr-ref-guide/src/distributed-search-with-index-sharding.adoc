@@ -61,7 +61,7 @@ The following components support distributed search:
 
 === Shards Whitelist
 
-The nodes allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`. This whitelist is automatically configured for SolrCloud but needs explicit configuration for master/slave mode. Read more details in the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>>.
+The nodes allowed in the `shards` parameter is configurable through the `shardsWhitelist` property in `solr.xml`. This whitelist is automatically configured for SolrCloud but needs explicit configuration for leader/follower mode. Read more details in the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>>.
 
 == Limitations to Distributed Search
 
