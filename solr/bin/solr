@@ -171,6 +171,7 @@ fi
 # Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=("--module=quickstart")
+SOLR_JETTY_CONFIG+=("--module=started")
 SOLR_SSL_OPTS=""
 
 if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
@@ -2172,8 +2173,8 @@ function start_solr() {
     export JETTY_HOME="$SOLR_SERVER_DIR"
     export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     export JETTY_ARGS="${SOLR_JETTY_CONFIG[@]} $SOLR_JETTY_ADDL_CONFIG"
-    export JAVA_OPTIONS="${SOLR_START_OPTS[@]}" "$SOLR_ADDL_ARGS" "-XX:-UseBiasedLocking" "-Dsolr.log.muteconsole" "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh" "$SOLR_PORT" "$SOLR_LOGS_DIR"
-
+    export JAVA_OPTIONS="-Djetty.state=${SOLR_HOME}/jetty.state ${SOLR_START_OPTS[@]}" "$SOLR_ADDL_ARGS" "-XX:-UseBiasedLocking" "-Dsolr.log.muteconsole" "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh" "$SOLR_PORT" "$SOLR_LOGS_DIR"
+    export JETTY_STATE="${SOLR_HOME}/jetty.state"
     bash $SOLR_SERVER_DIR/../bin/jetty.sh start
   fi
 

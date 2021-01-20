@@ -131,16 +131,16 @@ running()
 
 started()
 {
-  # wait for 60s to see "STARTED" in PID file, needs jetty-started.xml as argument
-  for ((T = 0; T < $(($3 / 4)); T++))
+  # wait to see "STARTED" in PID file, needs jetty-started.xml as argument
+  for ((T = 0; T < 300; T++))
   do
-    sleep 4
     [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
     [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
     [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
-    local PID=$(cat "$2" 2>/dev/null) || return 1
-    kill -0 "$PID" 2>/dev/null || return 1
+    #local PID=$(cat "$2" 2>/dev/null) || return 1
+    #kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
+    sleep .1
   done
 
   return 1;
@@ -420,11 +420,6 @@ JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY
 JETTY_START=$JETTY_HOME/start.jar
 START_INI=$JETTY_BASE/start.ini
 START_D=$JETTY_BASE/start.d
-if [ ! -f "$START_INI" -a ! -d "$START_D" ]
-then
-  echo "Cannot find a start.ini file or a start.d directory in your JETTY_BASE directory: $JETTY_BASE" >&2
-  exit 1
-fi
 
 case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
@@ -496,17 +491,12 @@ case "$ACTION" in
 
     fi
 
-    if expr "${JETTY_ARGS[*]}" : '.*jetty-started.xml.*' >/dev/null
+    if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
     then
-      if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
-      then
-        echo "OK `date`"
-      else
-        echo "FAILED `date`"
-        exit 1
-      fi
+      echo "OK `date`"
     else
-      echo "ok `date`"
+      echo "FAILED `date`"
+      exit 1
     fi
 
     ;;
