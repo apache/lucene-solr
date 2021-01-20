@@ -1005,7 +1005,7 @@ public class ZkController implements Closeable, Runnable {
     //
     //    });
     //   synchronized (initLock) {
-    log.info("making shutdown watcher for cluster");
+    if (log.isDebugEnabled()) log.debug("making shutdown watcher for cluster");
     try {
       zkClient.exists(CLUSTER_SHUTDOWN, new Watcher() {
         @Override
@@ -1014,7 +1014,7 @@ public class ZkController implements Closeable, Runnable {
             return;
           }
 
-          log.info("Got even for shutdown {}" + event);
+          log.info("Got event for shutdown {}" + event);
           if (event.getType().equals(Event.EventType.NodeCreated)) {
             log.info("Shutdown zk node created, shutting down");
             shutdown();

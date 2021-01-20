@@ -140,7 +140,7 @@ started()
     #local PID=$(cat "$2" 2>/dev/null) || return 1
     #kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
-    sleep .1
+    sleep .3
   done
 
   return 1;
@@ -442,7 +442,7 @@ fi
 ##################################################
 case "$ACTION" in
   start)
-    echo -n "Starting Jetty: "
+    echo -n "Starting Solr: "
 
     if (( NO_START )); then
       echo "Not starting ${NAME} - NO_START=1";

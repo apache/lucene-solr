@@ -45,6 +45,7 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -106,11 +107,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {} {} {}",
+    log.warn("expected pre init of xml factories {} {} {}",
         FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
   }
 
   private volatile StopRunnable stopRunnable;
+  private volatile Future<?> loadCoresFuture;
 
   private static class LiveThread extends Thread {
     @Override
@@ -177,9 +179,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   @Override
   public void init(FilterConfig config) throws ServletException {
     log.info("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
-    if (log.isTraceEnabled()) {
-      log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
-    }
 
     Properties extraProperties = (Properties) config.getServletContext().getAttribute(PROPERTIES_ATTRIBUTE);
     if (extraProperties == null) extraProperties = new Properties();
@@ -189,15 +188,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       initCall.run();
     }
 
-    log.info("Using extra properties {}", extraProperties);
+    if (extraProperties.size() > 0) {
+      log.info("Using extra properties {}", extraProperties);
+    }
 
     CoreContainer coresInit = null;
     try {
 
       StartupLoggingUtils.checkLogDir();
-      if (log.isInfoEnabled()) {
-        log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
-      }
+
+      log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+
       logWelcomeBanner();
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null && !Arrays.asList("false", "0", "off", "no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
@@ -232,6 +233,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         if (log.isDebugEnabled()) {
           log.debug("user.dir={}", System.getProperty("user.dir"));
         }
+        loadCoresFuture.get();
       } catch (Throwable t) {
         // catch this so our filter still works
         log.error("Could not start Solr. Check solr/home property and the logs");
@@ -241,11 +243,11 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
     } finally {
-      log.trace("SolrDispatchFilter.init() done");
       if (cores != null) {
         this.httpClient = cores.getUpdateShardHandler().getTheSharedHttpClient().getHttpClient();
       }
       init.countDown();
+      log.info("SolrDispatchFilter.init() end");
     }
   }
 
@@ -358,7 +360,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         return cores.isShutDown();
       }
     });
-    cores.load();
+    loadCoresFuture = ParWork.getRootSharedExecutor().submit(() -> cores.load());
     return cores;
   }
 

@@ -20,11 +20,14 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
@@ -126,9 +129,11 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     indexThread.safeStop();
     indexThread.join();
 
-    assertTrue(!oldIndexDir1.exists());
-    assertTrue(!oldIndexDir2.exists());
+    TimeOut timeout = new TimeOut(500, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("", () -> !oldIndexDir1.exists());
 
+    TimeOut timeout2 = new TimeOut(500, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    timeout2.waitFor("", () -> !oldIndexDir2.exists());
 
     jetty.stop();
   }

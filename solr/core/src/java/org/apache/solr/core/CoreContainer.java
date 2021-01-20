@@ -148,6 +148,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -156,11 +157,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CoreContainer implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static {
-    log.warn("expected pre init of xml factories {} {} {} {} {}",
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
-  }
 
   final SolrCores solrCores = new SolrCores(this);
   private final boolean isZkAware;
@@ -222,7 +218,7 @@ public class CoreContainer implements Closeable {
 
   private final PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
-  private volatile boolean asyncSolrCoreLoad;
+  private volatile boolean asyncSolrCoreLoad = true;
 
   protected volatile SecurityConfHandler securityConfHandler;
 
@@ -342,7 +338,7 @@ public class CoreContainer implements Closeable {
   }
 
   public CoreContainer(NodeConfig config, CoresLocator locator) {
-    this(config, locator, config.getCloudConfig() != null);
+    this(config, locator, true);
   }
 
   public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
@@ -627,7 +623,7 @@ public class CoreContainer implements Closeable {
    */
   public static CoreContainer createAndLoad(Path solrHome, Path configFile, SolrZkClient zkClient) throws IOException {
     NodeConfig config = new SolrXmlConfig().fromFile(solrHome, configFile, new Properties());
-    CoreContainer cc = new CoreContainer(zkClient, config, new CorePropertiesLocator(config.getCoreRootDirectory()), true);
+    CoreContainer cc = new CoreContainer(zkClient, config, new CorePropertiesLocator(config.getCoreRootDirectory()), false);
     try {
       cc.load();
     } catch (Exception e) {
@@ -685,7 +681,8 @@ public class CoreContainer implements Closeable {
   /**
    * Load the cores defined for this CoreContainer
    */
-  public synchronized void load() {
+  public void load() {
+    long start = System.nanoTime();
     if (log.isDebugEnabled()) {
       log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
     }
@@ -926,8 +923,7 @@ public class CoreContainer implements Closeable {
     } finally {
 
       startedLoadingCores = true;
-      if (coreLoadFutures != null) {
-
+      if (coreLoadFutures != null && !asyncSolrCoreLoad) {
         for (Future<SolrCore> future : coreLoadFutures) {
           try {
             future.get();
@@ -946,7 +942,7 @@ public class CoreContainer implements Closeable {
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
-
+    log.info("load took {}ms", TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs

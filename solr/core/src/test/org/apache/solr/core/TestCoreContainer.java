@@ -206,7 +206,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     Path solrHome = createTempDir();
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
-    final CoreContainer cc = new CoreContainer(new SolrXmlConfig().fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
+    final CoreContainer cc = new CoreContainer(new SolrXmlConfig().fromString(solrHome, CONFIGSETS_SOLR_XML), cl, false);
     Path corePath = solrHome.resolve("badcore");
     CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
         "configSet", "nosuchconfigset");
