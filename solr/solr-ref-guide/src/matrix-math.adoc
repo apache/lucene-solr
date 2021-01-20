@@ -16,20 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Matrices are used
-as both inputs and outputs of many mathematical functions.
+Matrices are used as both inputs and outputs of many mathematical functions.
 This section of the user guide covers the basics of matrix creation,
 manipulation and matrix math.
-
-<<Matrices, Matrices>> -
-<<Row and Column Labels, Labels>> -
-<<Visualization, Visualization>> -
-<<Accessing Rows and Columns, Rows and Columns>> -
-<<Attributes, Attributes>> -
-<<Dimensions, Dimensions>> -
-<<Transposition, Transposition>> -
-<<Summations, Summations>> -
-<<Scalar Matrix Math, Matrix Math>>
 
 == Matrices
 
@@ -70,22 +59,21 @@ responds with:
         "RESPONSE_TIME": 0
       }
     ]
-  }
+  }}
 ----
 
 == Row and Column Labels
 
 A matrix can have column and rows and labels. The functions
-`setRowLabels`, `setColumnLabels`, `getRowLabels` and `getColumnLabels`
-can be used to set and get the labels. The label values
-are set using string arrays.
+`setRowLabels`, `setColumnLabels`, `getRowLabels`, and `getColumnLabels`
+can be used to set and get the labels.
+The label values are set using string arrays.
 
 The example below sets the row and column labels. In other sections of the
 user guide examples are shown where functions return matrices
 with the labels already set.
 
-Below is a simple example of setting and
-getting row and column labels
+Below is a simple example of setting and getting row and column labels
 on a matrix.
 
 [source,text]
@@ -128,9 +116,8 @@ responds with:
 
 == Visualization
 
-The `zplot` function can plot matrices as a heat map using the *heat* named parameter.
-Heat maps are powerful visualization tools for displaying *correlation* and *distance*
-matrices described later in the guide.
+The `zplot` function can plot matrices as a heat map using the `heat` named parameter.
+Heat maps are powerful visualization tools for displaying <<statistics.adoc#correlation-matrices,*correlation*>> and <<machine-learning.adoc#distance-and-distance-matrices,*distance*>> matrices described later in the guide.
 The example below shows a 2x2 matrix visualized using the heat map
 visualization in Apache Zeppelin.
 
@@ -341,9 +328,9 @@ responds with:
 == Scalar Matrix Math
 
 The same scalar math functions that apply to vectors can also be applied to matrices: `scalarAdd`, `scalarSubtract`,
-`scalarMultiply`, `scalarDivide`. Below is an example of the `scalarAdd` function
-which adds a scalar value to each element in a matrix.
+`scalarMultiply`, `scalarDivide`.
 
+Below is an example of the `scalarAdd` function which adds a scalar value to each element in a matrix.
 
 [source,text]
 ----
@@ -352,8 +339,7 @@ let(a=matrix(array(1, 2),
     b=scalarAdd(10, a))
 ----
 
-When this expression is sent to the `/stream` handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -387,7 +373,7 @@ Two matrices can be added and subtracted using the `ebeAdd` and `ebeSubtract` fu
 which perform element-by-element addition
 and subtraction of matrices.
 
-Below is a simple example of an element-by-element addition of a matrix by itself:
+Below is a simple example of an element-by-element addition using `ebeAdd` of a matrix by itself:
 
 [source,text]
 ----
@@ -396,8 +382,7 @@ let(a=matrix(array(1, 2),
     b=ebeAdd(a, a))
 ----
 
-When this expression is sent to the `/stream` handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -427,8 +412,8 @@ responds with:
 
 == Matrix Multiplication
 
-Matrix multiplication can be accomplished using the `matrixMult` function. Below is a simple
-example of matrix multiplication:
+Matrix multiplication can be accomplished using the `matrixMult` function.
+Below is a simple example of matrix multiplication:
 
 [source,text]
 ----

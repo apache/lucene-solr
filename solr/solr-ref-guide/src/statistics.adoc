@@ -16,16 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 This section of the user guide covers the core statistical functions
 available in math expressions.
-
-
-<<descriptive-statistics, Descriptive Statistics>> - <<Histograms and Frequency Tables, Histograms>> -
-<<Frequency Tables, Frequency Tables>> - <<Percentiles, Percentiles>> - <<Quantile Plots, Quantile Plots>> -
-<<Correlation and Covariance, Correlation and Covariance>> - <<Statistical Inference Tests, Inference Tests>> -
-<<Transformations, Transformations>> - <<Z-scores, Z-scores>>
-
 
 == Descriptive Statistics
 
@@ -34,7 +26,7 @@ numeric array. The `describe` function returns a single *tuple* with name/value
 pairs containing the descriptive statistics.
 
 Below is a simple example that selects a random sample of documents from the *logs* collection,
-vectorizes the *response_d* field in the result set and uses the `describe` function to
+vectorizes the `response_d` field in the result set and uses the `describe` function to
 return descriptive statistics about the vector.
 
 [source,text]
@@ -97,7 +89,7 @@ The `hist` function creates a histogram designed for usage with continuous data.
 
 In the example below a histogram is used to visualize a random sample of
 response times from the logs collection. The example retrieves the
-random sample with the `random` function and creates a vector from the *response_d* field
+random sample with the `random` function and creates a vector from the `response_d` field
 in the result set. Then the `hist` function is applied to the vector
 to return a histogram with 22 bins. The `hist` function returns a
 list of tuples with summary statistics for each bin.
@@ -170,7 +162,7 @@ image::images/math-expressions/cumProb.png[]
 
 Custom histograms can be defined and visualized by combining the output from multiple
 `stats` functions into a single histogram. Instead of automatically binning a numeric
-field the custom histogram allows for comparision of bins based on queries.
+field the custom histogram allows for comparison of bins based on queries.
 
 NOTE: The `stats` function is first discussed in the *Searching, Sampling and Aggregation* section of the
 user guide.
@@ -202,15 +194,15 @@ the occurrence of each discrete data value and returns a list of tuples with the
 frequency statistics for each value.
 
 Below is an example of a frequency table built from a result set
-of rounded *differences* in daily opening stock prises for the stock ticker *amzn*.
+of rounded *differences* in daily opening stock prices for the stock ticker *amzn*.
 
 This example is interesting because it shows a multi-step process to arrive
 at the result. The first step is to *search* for records in the the *stocks*
 collection with a ticker of *amzn*. Notice that the result set is sorted by
-date ascending and it returns the *open_d* field which is the opening price for
+date ascending and it returns the `open_d` field which is the opening price for
 the day.
 
-The *open_d* field is then vectorized and set to variable *b*, which now contains
+The `open_d` field is then vectorized and set to variable *b*, which now contains
 a vector of opening prices ordered by date ascending.
 
 The `diff` function is then used to calculate the *first difference* for the
@@ -287,8 +279,8 @@ rounded to integers. The most frequently occurring value is 0 with 1494 occurren
 == Percentiles
 
 The `percentile` function returns the estimated value for a specific percentile in
-a sample set. The example below returns a random sample containing the *response_d* field
-from the logs collection. The *response_d* field is vectorized and the 20th percentile
+a sample set. The example below returns a random sample containing the `response_d` field
+from the logs collection. The `response_d` field is vectorized and the 20th percentile
 is calculated for the vector:
 
 [source,text]
@@ -319,7 +311,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The `percentile` function can also compute an array of percentile values.
 The example below is computing the 20th, 40th, 60th and 80th percentiles for a random sample
-of the *response_d* field:
+of the `response_d` field:
 
 [source,text]
 ----
@@ -364,13 +356,13 @@ In this example the distribution of daily stock price changes for two stock tick
 *amzn*, are visualized with a quantile plot.
 
 The example first creates an array of values representing the percentiles that will be calculated and sets this array
-to variable *p*. Then random samples of the *change_d* field are drawn for the tickers *amzn* and *goog*. The *change_d* field
-represents the change in stock price for one day. Then the *change_d* field is vectorized for both samples and placed
+to variable *p*. Then random samples of the `change_d` field are drawn for the tickers *amzn* and *goog*. The `change_d` field
+represents the change in stock price for one day. Then the `change_d` field is vectorized for both samples and placed
 in the variables *amzn* and *goog*. The `percentile` function is then used to calculate the percentiles for both vectors. Notice that
 the variable *p* is used to specify the list of percentiles that are calculated.
 
 Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated
-percentile values for both distributions on the *y axis*. And a line plot is used
+percentile values for both distributions on the *y-axis*. And a line plot is used
 to visualize the QQ plot.
 
 image::images/math-expressions/quantile-plot.png[]
@@ -396,20 +388,14 @@ Correlation is a measure of the linear correlation between two vectors. Correlat
 
 Three correlation types are supported:
 
-<<<<<<< HEAD
 * *pearsons* (default)
 * *kendalls*
 * *spearmans*
-=======
-The example below uses arrays created by the `array` function. Its important to note that
-vectorized data from SolrCloud collections can be used with any function that
-operates on arrays.
->>>>>>> master
 
 The type of correlation is specified by adding the *type* named parameter in the
 function call.
 
-In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
+In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
 the logs collection using the `random` function. The fields are vectorized into the
 variables *x* and *y* and then *Spearman's* correlation for
 the two vectors is calculated using the `corr` function.
@@ -428,13 +414,13 @@ of the matrix.
 The example below demonstrates the power of correlation matrices combined with 2 dimensional faceting.
 
 In this example the `facet2D` function is used to generate a two dimensional facet aggregation
-over the fields *complaint_type_s* and *zip_s* from the *nyc311* complaints database.
+over the fields `complaint_type_s` and `zip_s` from the *nyc311* complaints database.
 The *top 20* complaint types and the *top 25* zip codes for each complaint type are aggregated.
-The result is a stream of tuples each containing the fields *complaint_type_s*, *zip_s* and
+The result is a stream of tuples each containing the fields `complaint_type_s`, `zip_s` and
 the count for the pair.
 
-The `pivot` function is then used to pivot the fields into a *matrix* with the *zip_s*
-field as the *rows* and the *complaint_type_s* field as the *columns*. The `count(*)` field populates
+The `pivot` function is then used to pivot the fields into a *matrix* with the `zip_s`
+field as the *rows* and the `complaint_type_s` field as the *columns*. The `count(*)` field populates
 the values in the cells of the matrix.
 
 The `corr` function is then used correlate the *columns* of the matrix. This produces a correlation matrix
@@ -446,7 +432,7 @@ Finally the `zplot` function is used to plot the correlation matrix as a heat ma
 image::images/math-expressions/corrmatrix.png[]
 
 Notice in the example the correlation matrix is square with complaint types shown on both
-the *x* and *y* axises. The color of the cells in the heat map shows the
+the *x* and y-axises. The color of the cells in the heat map shows the
 intensity of the correlation between the complaint types.
 
 The heat map is interactive, so mousing over one of the cells pops up the values
@@ -463,7 +449,7 @@ Covariance is an unscaled measure of correlation.
 
 The `cov` function calculates the covariance of two vectors of data.
 
-In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
+In the example below a random sample containing two fields, `filesize_d` and `response_d`, is drawn from
 the logs collection using the `random` function. The fields are vectorized into the
 variables *x* and *y* and then the covariance for
 the two vectors is calculated using the `cov` function.
@@ -552,7 +538,7 @@ from the same population.
 drawn from the same population.
 
 * `mannWhitney`: The Mann-Whitney test is a non-parametric test that tests if two
-samples of continuous were pulled
+samples of continuous data were pulled
 from the same population. The Mann-Whitney test is often used instead of the T-test when the
 underlying assumptions of the T-test are not
 met.

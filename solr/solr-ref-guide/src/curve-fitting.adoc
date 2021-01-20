@@ -18,17 +18,12 @@
 
 These functions support constructing a curve through bivariate non-linear data.
 
-<<Polynomial Curve Fitting, Polynomial>> -
-<<Gaussian Curve Fitting, Gaussian>> -
-<<Harmonic Curve Fitting, Harmonic>>
-
-
 == Polynomial Curve Fitting
 
 The `polyfit` function is a general purpose curve fitter used to model
 the non-linear relationship between two random variables.
 
-The `polyfit` function is passed *x* and *y* axes and fits a smooth curve to the data.
+The `polyfit` function is passed x- and y-axes and fits a smooth curve to the data.
 If only a single array is provided it is treated as the y-axis and a sequence is generated
 for the x-axis. A third parameter can be added that specifies the degree of the polynomial. If the degree is
 not provided a 3 degree polynomial is used by default. The higher
@@ -43,9 +38,9 @@ are the predicted curve.
 
 image::images/math-expressions/polyfit.png[]
 
-In the example above a random sample containing two fields, *filesize_d*
-and *response_d*, is drawn from the *logs* collection.
-The two fields are vectorized and set to the variables *x* and *y*.
+In the example above a random sample containing two fields, `filesize_d`
+and `response_d`, is drawn from the `logs` collection.
+The two fields are vectorized and set to the variables `x` and `y`.
 
 Then the `polyfit` function is used to fit a non-linear model to the data using a 5 degree
 polynomial. The `polyfit` function returns a model that is then directly plotted
@@ -54,7 +49,6 @@ by `zplot` along with the original observations.
 The fitted model can also be used
 by the `predict` function in the same manner as linear regression. The example below
 uses the fitted model to predict a response time for a file size of 42000.
-
 
 image::images/math-expressions/polyfit-predict.png[]
 
@@ -70,7 +64,7 @@ The residuals can be calculated and visualized in the same manner as linear
 regression as well. In the example below the `ebeSubtract` function is used
 to subtract the fitted model from the observed values, to
 calculate a vector of residuals. The residuals are then plotted in a *residual plot*
-with the predictions along the *x* axis and the model error on the *y* axis.
+with the predictions along the x-axis and the model error on the y-axis.
 
 image::images/math-expressions/polyfit-resid.png[]
 
@@ -78,17 +72,16 @@ image::images/math-expressions/polyfit-resid.png[]
 == Gaussian Curve Fitting
 
 The `gaussfit` function fits a smooth curve through a Gaussian peak. The `gaussfit`
-function takes an *x* and *y* axis and fits a smooth gaussian curve to the data. If
-only one vector of numbers is passed, `gaussfit` will treat it as the *y* axis
-and will generate a sequence for the *x* access.
+function takes an x- and y-axis and fits a smooth gaussian curve to the data. If
+only one vector of numbers is passed, `gaussfit` will treat it as the y-axis
+and will generate a sequence for the x-axis.
 
 One of the interesting use cases for `gaussfit` is to visualize how well a regression
 model's residuals fit a normal distribution.
 
-One of the characteristics of a well
-fit regression model is that its residuals will ideally fit a normal distribution. We can
-test this by building a histogram of the residuals and then fitting a gaussian curve to the
-curve of the histogram.
+One of the characteristics of a well-fit regression model is that its residuals will ideally fit a normal distribution.
+We can
+test this by building a histogram of the residuals and then fitting a gaussian curve to the curve of the histogram.
 
 In the example below the residuals from a `polyfit` regression are modeled with the
 `hist` function to return a histogram with 32 bins. The `hist` function returns
@@ -98,8 +91,8 @@ observations in the
 bin. If the residuals are normally distributed we would expect the bin counts
 to roughly follow a gaussian curve.
 
-The bin count vector is then passed to `gaussfit` as the *y* axis. `gaussfit` generates
-a sequence for the *x* axis and then fits the gaussian curve to data.
+The bin count vector is then passed to `gaussfit` as the y-axis. `gaussfit` generates
+a sequence for the x-axis and then fits the gaussian curve to data.
 
 `zplot` is then used to plot the original bin counts and the fitted curve. In the
 example below, the blue line is the bin counts, and the smooth yellow line is the
@@ -129,16 +122,14 @@ oscillations. This is particularly true if the sine wave has noise. After the cu
 extrapolated to any point in time in the past or future.
 
 
-In the example below the orginal control points are shown in blue and the fitted curve is shown in yellow.
+In the example below the original control points are shown in blue and the fitted curve is shown in yellow.
 
 image::images/math-expressions/harmfit.png[]
 
 
-The output of `harmfit` is a model that can be used by the `predict` function to interpolate and exptrapolate
-the sine wave. In the example below the `natural` function creates an *x* axis from 0 to 127
+The output of `harmfit` is a model that can be used by the `predict` function to interpolate and extrapolate
+the sine wave. In the example below the `natural` function creates an x-axis from 0 to 127
 used to predict results for the model. This extrapolates the sine wave out to 128 points, when
 the original model curve had only 19 control points.
 
 image::images/math-expressions/harmfit2.png[]
-
-

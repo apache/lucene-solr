@@ -74,7 +74,7 @@ This expression returns the following response:
 }
 ----
 
-=== Visualization
+== Visualization
 
 In the Zeppelin-Solr interpreter you can simply type in scalar math functions and the
 result will be shown in a table format.
@@ -85,8 +85,6 @@ The *Number* visualization can be used to visualize the number with text and ico
 
 image::images/math-expressions/num.png[]
 
-
-
 == Streaming Scalar Math
 
 Scalar math expressions can also be applied to each tuple in a stream
@@ -96,13 +94,13 @@ The `select` function can also use math expressions to compute
 new values and add them to the outgoing tuples.
 
 In the example below the `select` expression is wrapping a search
-expression. The `select` function is selecting the *response_d* field
-and computing a new field called *new_response* using the `mult` math
+expression. The `select` function is selecting the `response_d` field
+and computing a new field called `new_response` using the `mult` math
 expression.
 
-The first parameter of the `mult` expression is the *response_d* field.
+The first parameter of the `mult` expression is the `response_d` field.
 The second parameter is the scalar value 10. This multiplies the value
-of the *response_d* field in each tuple by 10.
+of the `response_d` field in each tuple by 10.
 
 [source,text]
 ----
@@ -139,13 +137,13 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-=== Visualization
+== Visualization
 
 The expression above can be visualized as a table using Zeppelin-Solr.
 
 image::images/math-expressions/stream.png[]
 
-By switching to one of the line chart visualizations the two variables can be plotted on the x and y axis.
+By switching to one of the line chart visualizations the two variables can be plotted on the x and y-axis.
 
 image::images/math-expressions/line.png[]
 
@@ -158,4 +156,3 @@ The following scalar math functions are available in the math expressions librar
 `pow`, `mod`, `ceil`, `floor`, `sin`, `asin`,
 `sinh`, `cos`, `acos`, `cosh`, `tan`, `atan`,
 `tanh`, `round`, `precision`, `recip`, `sqrt`, `cbrt`
-

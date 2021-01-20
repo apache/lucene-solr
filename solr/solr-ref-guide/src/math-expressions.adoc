@@ -1,5 +1,6 @@
 = Streaming Expressions and Math Expressions
-:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, statistics, probability-distributions, simulations, time-series, regression, numerical-analysis, curve-fitting, dsp, machine-learning, computational-geometry
+:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, computational-geometry, logs
+:page-show-toc: false
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -20,22 +21,13 @@
 
 == A Visual Guide
 
-<<<<<<< HEAD
 image::images/math-expressions/searchiris.png[]
-=======
-This user guide provides an overview of the different areas of
-mathematical coverage starting with basic scalar math and
-ending with machine learning. Along the way the guide covers variables
-and data structures and techniques for combining Solr's
-powerful streams with mathematical functions to make every
-record in your SolrCloud cluster computable.
->>>>>>> master
 
 == Table of Contents
 
-*<<visualization.adoc#visualization,Visualizations>>*: Gallery of Streaming Expressions and Math Expressions visualizations.
+*<<visualization.adoc#visualization,Visualizations>>*: Gallery of streaming expression and math expression visualizations.
 
-*<<math-start.adoc#math-start,Getting Started>>*: Getting started with Streaming Expressions, Math Expressions and visualization.
+*<<math-start.adoc#math-start,Getting Started>>*: Getting started with streaming expressions, math expressions, and visualization.
 
 *<<loading.adoc#data-loading,Data Loading>>*: Visualizing, transforming and loading CSV files.
 
@@ -72,9 +64,5 @@ record in your SolrCloud cluster computable.
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 
 *<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
-<<<<<<< HEAD
 
 *<<logs.adoc#log-analytics,Appendix A>>*: Solr log analytics and visualization.
-
-=======
->>>>>>> master

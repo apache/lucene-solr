@@ -17,18 +17,8 @@
 // under the License.
 
 
-Streaming Expressions provides a powerful set of functions for transforming result sets. This section
-of the user guide provides an overview of useful transformations applied to result sets.
-
-
-<<Selecting and Adding Fields, Selecting>> -
-<<Filtering Tuples, Filtering>> -
-<<Paging, Paging>> -
-<<Handling Nulls, Handling Nulls>> -
-<<Regex Matching, Regex Matching>> -
-<<Sorting, Sorting>> -
-<<Rollups, Rollups>>
-
+Streaming expressions provides a powerful set of functions for transforming result sets.
+This section of the user guide provides an overview of useful transformations applied to result sets.
 
 == Selecting and Adding Fields
 
@@ -58,7 +48,7 @@ The `having` function can be used to filter tuples in the stream based on
 boolean logic.
 
 In the example below the `having` function is filtering the output of the
-`facet` function to only emit tuples that have `count(*)` greater then 20404.
+`facet` function to only emit tuples that have `count(*)` greater than 20404.
 
 image::images/math-expressions/having.png[]
 
@@ -108,7 +98,7 @@ to test if a field in the record matches a specific
 regular expression. This allows for sophisticated regex matching over search results.
 
 The example below uses the `matches` function to return all records where
-the *complaint_type_s* field ends with *Commercial*.
+the `complaint_type_s` field ends with *Commercial*.
 
 image::images/math-expressions/search-matches.png[]
 
