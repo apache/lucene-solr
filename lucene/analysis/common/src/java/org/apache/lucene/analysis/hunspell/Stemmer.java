@@ -412,7 +412,7 @@ final class Stemmer {
   }
 
   private boolean isAffixCompatible(
-      int affix, int prevFlag, int recursionDepth, boolean allowEmptyAppendFlags) {
+      int affix, int prevFlag, int recursionDepth, boolean previousWasPrefix) {
     int append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
     if (recursionDepth == 0) {
@@ -432,8 +432,7 @@ final class Stemmer {
           dictionary.onlyincompound == -1
               || !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
       if (allowed) {
-        return (appendFlags.length == 0 && allowEmptyAppendFlags)
-            || Dictionary.hasFlag(appendFlags, (char) prevFlag);
+        return previousWasPrefix || Dictionary.hasFlag(appendFlags, (char) prevFlag);
       }
     }
 
