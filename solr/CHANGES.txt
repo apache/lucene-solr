@@ -186,8 +186,8 @@ Other Changes
 
 * SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
 
-* SOLR-14067: StatelessScriptUpdateProcessor moved to it's own /contrib/scripting/ package instead
- of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessor for simpler name. (Eric Pugh)
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
+ of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
 
 Bug Fixes
 ---------------------

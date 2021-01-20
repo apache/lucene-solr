@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * An update request processor factory that enables the use of update
  * processors implemented as scripts which can be loaded from the
- * configSet.  Previously known as the StatelessScriptUpdateProcessor.
+ * configSet.  Previously known as the StatelessScriptUpdateProcessorFactory.
  * </p>
  * <p>
  * This factory requires at least one configuration parameter named
