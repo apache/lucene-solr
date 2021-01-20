@@ -69,7 +69,6 @@ public class ModificationRequestImpl {
    * @param docCollection Solr collection
    * @param shardName shard name
    * @param replicaNames replica names (aka. core-node names)
-   * @return
    */
   public static DeleteReplicasRequest deleteReplicasRequest(DocCollection docCollection, String shardName, Set<String> replicaNames) {
     SolrCollection solrCollection = SimpleClusterAbstractionsImpl.SolrCollectionImpl.fromDocCollection(docCollection);

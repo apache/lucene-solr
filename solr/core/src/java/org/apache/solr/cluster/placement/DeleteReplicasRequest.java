@@ -22,7 +22,7 @@ import org.apache.solr.cluster.Replica;
 import java.util.Set;
 
 /**
- *
+ * Delete replicas request.
  */
 public interface DeleteReplicasRequest extends ModificationRequest {
   Set<Replica> getReplicas();

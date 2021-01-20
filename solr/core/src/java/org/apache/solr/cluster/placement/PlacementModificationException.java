@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * Exception thrown when a placement modification is rejected by the placement plugin.
+ * Additional details about the reasons are provided if available
+ * in {@link #getRejectedModifications()} or in the {@link #toString()} methods.
  */
 public class PlacementModificationException extends PlacementException {
   private final Map<String, String> rejectedModifications = new HashMap<>();
@@ -25,10 +27,18 @@ public class PlacementModificationException extends PlacementException {
     super(cause);
   }
 
+  /**
+   * Add information about the modification that cause this exception.
+   * @param modification requested modification details
+   * @param reason reason for rejection
+   */
   public void addRejectedModification(String modification, String reason) {
     rejectedModifications.put(modification, reason);
   }
 
+  /**
+   * Return rejected modifications and reasons for rejections.
+   */
   public Map<String, String> getRejectedModifications() {
     return rejectedModifications;
   }

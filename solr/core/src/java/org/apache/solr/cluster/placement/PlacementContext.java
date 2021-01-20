@@ -20,7 +20,7 @@ package org.apache.solr.cluster.placement;
 import org.apache.solr.cluster.Cluster;
 
 /**
- *
+ * Placement context makes it easier to pass around and access main placement-related components.
  */
 public interface PlacementContext {
   /**

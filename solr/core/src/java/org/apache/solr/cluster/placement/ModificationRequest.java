@@ -20,7 +20,7 @@ package org.apache.solr.cluster.placement;
 import org.apache.solr.cluster.SolrCollection;
 
 /**
- *
+ * Collection modification request.
  */
 public interface ModificationRequest {
   /**
