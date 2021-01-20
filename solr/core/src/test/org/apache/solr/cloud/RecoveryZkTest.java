@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -37,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 
 @Slow
+@LuceneTestCase.Nightly // this test can randomly get stuck waiting a bit after finishing successfully while it waits for prep recovery op to time out
+// I think waitForActiveCollection prob has a little hole on startup where it sees stale state and a live ephem node.
 public class RecoveryZkTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
