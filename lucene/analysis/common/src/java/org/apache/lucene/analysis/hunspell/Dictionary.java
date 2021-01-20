@@ -941,7 +941,7 @@ public class Dictionary {
       reuse.append(caseFold(word.charAt(i)));
     }
     reuse.append(FLAG_SEPARATOR);
-    reuse.append(HIDDEN_FLAG);
+    flagParsingStrategy.appendFlag(HIDDEN_FLAG, reuse);
     reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
     writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
   }
@@ -1261,6 +1261,8 @@ public class Dictionary {
      * @return Parsed flags
      */
     abstract char[] parseFlags(String rawFlags);
+
+    abstract void appendFlag(char flag, StringBuilder to);
   }
 
   /**
@@ -1271,6 +1273,11 @@ public class Dictionary {
     @Override
     public char[] parseFlags(String rawFlags) {
       return rawFlags.toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(flag);
     }
   }
 
@@ -1299,6 +1306,14 @@ public class Dictionary {
         flags = ArrayUtil.copyOfSubArray(flags, 0, upto);
       }
       return flags;
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      if (to.length() > 0) {
+        to.append(",");
+      }
+      to.append((int) flag);
     }
   }
 
@@ -1333,6 +1348,12 @@ public class Dictionary {
       char[] flags = new char[builder.length()];
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append((char) (flag >> 8));
+      to.append((char) (flag & 0xff));
     }
   }
 
