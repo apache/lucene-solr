@@ -23,11 +23,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.StrUtils;
+
+import org.apache.solr.core.PluginInfo;
+
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -46,11 +50,17 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class CacheConfig implements MapSerializable{
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private String nodeName;
 
+
+  /**
+   * When this object is created, the core is not yet available . So, if the class is to be
+   * loaded from a package we should have a corresponding core
+   *
+   */
   @SuppressWarnings({"rawtypes"})
-  private Class<? extends SolrCache> clazz;
+  private Supplier<Class<? extends SolrCache>> clazz;
   private Map<String,String> args;
   private CacheRegenerator regenerator;
 
@@ -64,9 +74,10 @@ public class CacheConfig implements MapSerializable{
 
   @SuppressWarnings({"rawtypes"})
   public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
-    this.clazz = clazz;
+    this.clazz = () -> clazz;
     this.args = args;
     this.regenerator = regenerator;
+    this.nodeName = args.get(NAME);
   }
 
   public CacheRegenerator getRegenerator() {
@@ -85,7 +96,7 @@ public class CacheConfig implements MapSerializable{
       Node node = nodes.item(i);
       if ("true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
         CacheConfig config = getConfig(solrConfig, node.getNodeName(),
-                                       DOMUtil.toMap(node.getAttributes()), configPath);
+                DOMUtil.toMap(node.getAttributes()), configPath);
         result.put(config.args.get(NAME), config);
       }
     }
@@ -133,20 +144,32 @@ public class CacheConfig implements MapSerializable{
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
+    if (config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
+    config.clazz = new Supplier<>() {
+      @SuppressWarnings("rawtypes")
+      Class<SolrCache> loadedClass;
+
+      @Override
+      @SuppressWarnings("rawtypes")
+      public Class<? extends SolrCache> get() {
+        if (loadedClass != null) return loadedClass;
+        return loadedClass = (Class<SolrCache>) loader.findClass(
+                new PluginInfo("cache", Collections.singletonMap("class", config.cacheImpl)),
+                SolrCache.class, true);
+      }
+    };
     config.regenImpl = config.args.get("regenerator");
-    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
     if (config.regenImpl != null) {
       config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
     }
-    
+
     return config;
   }
 
   @SuppressWarnings({"rawtypes"})
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.getConstructor().newInstance();
+      SolrCache cache = clazz.get().getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
@@ -158,11 +181,8 @@ public class CacheConfig implements MapSerializable{
   }
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public Map<String, Object> toMap(Map<String, Object> map) {
-    @SuppressWarnings({"rawtypes"})
-    Map result = Collections.unmodifiableMap(args);
-    return result;
+    return new HashMap<>(args);
   }
 
   public String getNodeName() {

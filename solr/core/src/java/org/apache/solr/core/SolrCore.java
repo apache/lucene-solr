@@ -755,7 +755,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
+      indexReaderFactory = resourceLoader.newInstance(info, IndexReaderFactory.class, true);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -955,6 +955,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.resourceLoader.initCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
@@ -1202,26 +1203,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
-    if (coreContainer != null) {
-      final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
-      if (cd != null) {
-        parentContext.gauge(() -> {
-          if (cd.getCollectionName() != null) {
-            return cd.getCollectionName();
-          } else {
-            return parentContext.nullString();
-          }
-        }, true, "collection", Category.CORE.toString());
 
-        parentContext.gauge(() -> {
-          if (cd.getShardId() != null) {
-            return cd.getShardId();
-          } else {
-            return parentContext.nullString();
-          }
-        }, true, "shard", Category.CORE.toString());
-      }
+    final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
+    if (cd != null) {
+      parentContext.gauge(cd::getCollectionName, true, "collection", Category.CORE.toString());
+      parentContext.gauge(cd::getShardId, true, "shard", Category.CORE.toString());
+      parentContext.gauge(cd::isLeader, true, "isLeader", Category.CORE.toString());
+      parentContext.gauge(
+          () -> String.valueOf(cd.getLastPublished()),
+          true,
+          "replicaState",
+          Category.CORE.toString());
     }
+
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
@@ -1241,7 +1235,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
     if (null != coreDescriptor.getCloudDescriptor()) {
-      // we are evidently running in cloud mode.  
+      // we are evidently running in cloud mode.
       //
       // In cloud mode, version field is required for correct consistency
       // ideally this check would be more fine grained, and individual features
@@ -1405,7 +1399,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
+      factory = resourceLoader.newInstance( info, CodecFactory.class, true);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {
@@ -1443,8 +1437,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
-      cache = createInitInstance(pluginInfo, StatsCache.class, null,
-          LocalStatsCache.class.getName());
+      cache = resourceLoader.newInstance( pluginInfo, StatsCache.class, true);
+      initPlugin(pluginInfo ,cache);
       if (log.isDebugEnabled()) {
         log.debug("Using statsCache impl: {}", cache.getClass().getName());
       }
@@ -2134,7 +2128,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           newReader = currentReader;
         }
 
-        // for now, turn off caches if this is for a realtime reader 
+        // for now, turn off caches if this is for a realtime reader
         // (caches take a little while to instantiate)
         final boolean useCaches = !realtime;
         final String newName = realtime ? "realtime" : "main";
@@ -3177,7 +3171,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void cleanupOldIndexDirectories(boolean reload) {
     final DirectoryFactory myDirFactory = getDirectoryFactory();
     final String myDataDir = getDataDir();
-    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected 
+    final String myIndexDir = getNewIndexDir(); // ensure the latest replicated index is protected
     final String coreName = getName();
     if (myDirFactory != null && myDataDir != null && myIndexDir != null) {
       Thread cleanupThread = new Thread(() -> {
@@ -3279,6 +3273,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.coreContainer = coreContainer;
       this.coreName = coreName;
       this.coreId = coreId;
+    }
+    public void reload() {
+      coreContainer.reload(coreName, coreId);
     }
 
     public void withCore(Consumer<SolrCore> r) {

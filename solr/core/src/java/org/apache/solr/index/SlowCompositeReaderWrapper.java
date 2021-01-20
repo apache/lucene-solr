@@ -88,7 +88,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
+      int createdVersionMajor = reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
+      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }

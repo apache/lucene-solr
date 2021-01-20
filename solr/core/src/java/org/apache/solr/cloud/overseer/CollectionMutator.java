@@ -25,13 +25,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +40,12 @@ public class CollectionMutator {
 
   protected final SolrCloudManager cloudManager;
   protected final DistribStateManager stateManager;
+  protected final SolrZkClient zkClient;
 
   public CollectionMutator(SolrCloudManager cloudManager) {
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getDistribStateManager();
+    this.zkClient = SliceMutator.getZkClient(cloudManager);
   }
 
   public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {
@@ -107,7 +103,21 @@ public class CollectionMutator {
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
+    PerReplicaStatesOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      if (prop.equals(DocCollection.PER_REPLICA_STATE)) {
+        String val = message.getStr(DocCollection.PER_REPLICA_STATE);
+        if (val == null) continue;
+        boolean enable = Boolean.parseBoolean(val);
+        if (enable == coll.isPerReplicaState()) {
+          //already enabled
+          log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
+          continue;
+        }
+        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+      }
+
+
       if (message.containsKey(prop)) {
         hasAnyOps = true;
         if (message.get(prop) == null)  {
@@ -136,8 +146,12 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion()));
+    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
+    if (replicaOps == null){
+      return new ZkWriteCommand(coll.getName(), collection);
+    } else {
+      return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
+    }
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {

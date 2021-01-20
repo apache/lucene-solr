@@ -78,10 +78,12 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     int replicas = 2 ;
     CollectionAdminRequest.createCollection(people, configName, shards, replicas)
         .withProperty("config", "solrconfig-doctransformers.xml")
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .withProperty("schema", "schema-docValuesJoin.xml")
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .withProperty("config", "solrconfig-doctransformers.xml")
         .withProperty("schema", 
               differentUniqueId ? "schema-minimal-with-another-uniqkey.xml":

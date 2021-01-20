@@ -45,7 +45,7 @@ This plugin provides no additional checking beyond what has been configured via 
 This plugin will configure the user principal for the request based on the X500 subject present in the client certificate.
 Authorization plugins will need to accept and handle the full subject name, for example:
 
-[source]
+[source,text]
 ----
 CN=Solr User,OU=Engineering,O=Example Inc.,C=US
 ----
@@ -58,4 +58,3 @@ It is best practice to verify the actual contents of certificates issued by your
 
 With certificate authentication enabled, all client requests must include a valid certificate.
 This is identical to the <<enabling-ssl.adoc#example-client-actions,client requirements>> when using SSL.
-

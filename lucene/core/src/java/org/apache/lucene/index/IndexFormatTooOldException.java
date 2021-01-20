@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Objects;
 import org.apache.lucene.store.DataInput;
+import org.apache.lucene.util.Version;
 
 /** This exception is thrown when Lucene detects an index that is too old for this Lucene version */
 public class IndexFormatTooOldException extends IOException {
@@ -42,7 +43,9 @@ public class IndexFormatTooOldException extends IOException {
             + resourceDescription
             + "): "
             + reason
-            + ". This version of Lucene only supports indexes created with release 8.0 and later.");
+            + ". This version of Lucene only supports indexes created with release "
+            + Version.MIN_SUPPORTED_MAJOR
+            + ".0 and later by default.");
     this.resourceDescription = resourceDescription;
     this.reason = reason;
     this.version = null;
@@ -81,7 +84,9 @@ public class IndexFormatTooOldException extends IOException {
             + minVersion
             + " and "
             + maxVersion
-            + "). This version of Lucene only supports indexes created with release 8.0 and later.");
+            + "). This version of Lucene only supports indexes created with release "
+            + Version.MIN_SUPPORTED_MAJOR
+            + ".0 and later.");
     this.resourceDescription = resourceDescription;
     this.version = version;
     this.minVersion = minVersion;
