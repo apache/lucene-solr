@@ -77,7 +77,7 @@ The examples below demonstrate univariate and bivariate scatter
 plots of random samples.
 Statistical modeling with random samples
 is covered in the <<statistics.adoc#statistics,Statistics>>, <<probability-distributions.adoc#probability-distributions,Probability>>, <<regression.adoc#regression,Linear Regression>>, <<curve-fitting.adoc#curve-fitting,Curve Fitting>>,
-and <<machine-learning.adoc#maching-learning,Machine Learning>> sections.
+and <<machine-learning.adoc#machine-learning,Machine Learning>> sections.
 
 === Univariate Scatter Plots
 

@@ -18,8 +18,8 @@
 
 This section of the user guide provides an introduction to Solr log analytics.
 
-NOTE: This is an appendix of the <<math-expressions.adoc#,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are covered in detail in the guide.
-See the <<math-start.adoc#,Getting Started>> chapter to learn how to get started with visualizations and Apache Zeppelin.
+NOTE: This is an appendix of the <<math-expressions.adoc#math-expressions,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are covered in detail in the guide.
+See the <<math-start.adoc#math-start,Getting Started>> chapter to learn how to get started with visualizations and Apache Zeppelin.
 
 == Loading
 
