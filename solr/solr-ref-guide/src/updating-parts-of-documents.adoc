@@ -437,7 +437,7 @@ The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure 
 </processor>
 ----
 
-Note that `versionField` is a comma delimited list of fields to check for version numbers.
+Note that `versionField` is a comma-delimited list of fields to check for version numbers.
 Once configured, this update processor will reject (HTTP error code 409) any attempt to update an existing document where the value of the `my_version_l` field in the "new" document is not greater then the value of that field in the existing document.
 
 .versionField vs `\_version_`
@@ -458,7 +458,7 @@ The value of this option should be the name of a request parameter that the proc
 +
 When using this request parameter, any Delete By Id command with a high enough document version number to succeed will be internally converted into an Add Document command that replaces the existing document with a new one which is empty except for the Unique Key and `versionField` to keeping a record of the deleted version so future Add Document commands will fail if their "new" version is not high enough.
 +
-If `versionField` is specified as a list, then this parameter too must be specified as a comma delimited list of the same size so that the parameters correspond with the fields.
+If `versionField` is specified as a list, then this parameter too must be specified as a comma-delimited list of the same size so that the parameters correspond with the fields.
 
 `supportMissingVersionOnOldDocs`::
 This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.

@@ -246,7 +246,7 @@ Setting the hostname of the Solr server is recommended, especially when running 
 
 === Environment Banner in Admin UI
 
-To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
+To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma-delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
 
 * `prod`
 * `test,label=Functional+test`

@@ -516,7 +516,7 @@ Example: `rowidOffset=10`
 
 The same feature used to index CSV documents can also be easily used to index tab-delimited files (TSV files) and even handle backslash escaping rather than CSV encapsulation.
 
-For example, one can dump a MySQL table to a tab delimited file with:
+For example, one can dump a MySQL table to a tab-delimited file with:
 
 [source,sql]
 ----
