@@ -31,7 +31,7 @@ import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.junit.Before;
 import org.junit.Test;
 
-public class StreamUtilsTest extends BenchmarkTestCase {
+public class TestStreamUtils extends BenchmarkTestCase {
   private static final String TEXT = "Some-Text...";
   private Path testDir;
 

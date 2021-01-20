@@ -73,7 +73,7 @@ public class TestWriteEnwikiLineDocTask extends BenchmarkTestCase {
     try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
       String line = br.readLine();
       TestWriteLineDocTask.assertHeaderLine(line);
-      for (int i=0; i<n; i++) {
+      for (int i = 0; i < n; i++) {
         line = br.readLine();
         assertNotNull(line);
         String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));

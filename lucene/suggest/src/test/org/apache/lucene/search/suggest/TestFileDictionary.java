@@ -29,10 +29,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Test;
 
-
 public class TestFileDictionary extends LuceneTestCase {
-  
-  private Map.Entry<List<String>, String> generateFileEntry(String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
+
+  private Map.Entry<List<String>, String> generateFileEntry(
+      String fieldDelimiter, boolean hasWeight, boolean hasPayload) {
     List<String> entryValues = new ArrayList<>();
     StringBuilder sb = new StringBuilder();
     String term = TestUtil.randomSimpleString(random(), 1, 300);

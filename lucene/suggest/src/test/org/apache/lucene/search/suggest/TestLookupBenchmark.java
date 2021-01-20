@@ -50,18 +50,18 @@ import org.junit.Ignore;
 /** Benchmarks tests for implementations of {@link Lookup} interface. */
 @Ignore("COMMENT ME TO RUN BENCHMARKS!")
 public class TestLookupBenchmark extends LuceneTestCase {
-  @SuppressWarnings({"unchecked","deprecation"})
-  private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
-      FuzzySuggester.class,
-      AnalyzingSuggester.class,
-      AnalyzingInfixSuggester.class,
-      JaspellLookup.class, 
-      TSTLookup.class,
-      FSTCompletionLookup.class,
-      WFSTCompletionLookup.class,
-      BlendedInfixSuggester.class,
-      FreeTextSuggester.class
-      );
+  @SuppressWarnings({"unchecked", "deprecation"})
+  private final List<Class<? extends Lookup>> benchmarkClasses =
+      Arrays.asList(
+          FuzzySuggester.class,
+          AnalyzingSuggester.class,
+          AnalyzingInfixSuggester.class,
+          JaspellLookup.class,
+          TSTLookup.class,
+          FSTCompletionLookup.class,
+          WFSTCompletionLookup.class,
+          BlendedInfixSuggester.class,
+          FreeTextSuggester.class);
 
   private static final int rounds = 15;
   private static final int warmup = 5;
@@ -69,7 +69,7 @@ public class TestLookupBenchmark extends LuceneTestCase {
   private final int num = 7;
   private final boolean onlyMorePopular = false;
 
-  private final static Random random = new Random(0xdeadbeef);
+  private static final Random random = new Random(0xdeadbeef);
 
   /** Input term/weight pairs. */
   private static Input[] dictionaryInput;
@@ -83,7 +83,7 @@ public class TestLookupBenchmark extends LuceneTestCase {
     assert false : "disable assertions before running benchmarks!";
     List<Input> input = readTop50KWiki();
     Collections.shuffle(input, random);
-    TestLookupBenchmark.dictionaryInput = input.toArray(new Input [input.size()]);
+    TestLookupBenchmark.dictionaryInput = input.toArray(new Input[input.size()]);
     Collections.shuffle(input, random);
     TestLookupBenchmark.benchmarkInput = input;
   }

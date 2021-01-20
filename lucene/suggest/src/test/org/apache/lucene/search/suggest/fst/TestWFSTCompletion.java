@@ -26,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestWFSTCompletion extends LuceneTestCase {
-  
+
   public void testBasic() throws Exception {
     Input keys[] =
         new Input[] {

@@ -50,10 +50,9 @@ import org.junit.Ignore;
 public class TestFreeTextSuggester extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo bar baz blah", 50),
-        new Input("boo foo bar foo bee", 20)
-    );
+    Iterable<Input> keys =
+        TestAnalyzingSuggester.shuffle(
+            new Input("foo bar baz blah", 50), new Input("boo foo bar foo bee", 20));
 
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
@@ -97,9 +96,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringBuild() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo\u001ebar baz", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("foo\u001ebar baz", 50));
     Analyzer analyzer = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
     expectThrows(
@@ -114,9 +111,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
   public void testIllegalByteDuringQuery() throws Exception {
     // Default separator is INFORMATION SEPARATOR TWO
     // (0x1e), so no input token is allowed to contain it
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo bar baz", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("foo bar baz", 50));
     Analyzer analyzer = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
     sug.build(new InputArrayIterator(keys));
@@ -200,9 +195,8 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure you can suggest based only on unigram model:
   public void testUnigrams() throws Exception {
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo bar baz blah boo foo bar foo bee", 50)
-    );
+    Iterable<Input> keys =
+        TestAnalyzingSuggester.shuffle(new Input("foo bar baz blah boo foo bar foo bee", 50));
 
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 1, (byte) 0x20);
@@ -214,9 +208,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Make sure the last token is not duplicated
   public void testNoDupsAcrossGrams() throws Exception {
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo bar bar bar bar", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("foo bar bar bar bar", 50));
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
@@ -226,9 +218,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   // Lookup of just empty string produces unicode only matches:
   public void testEmptyString() throws Exception {
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("foo bar bar bar bar", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("foo bar bar bar bar", 50));
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
@@ -255,9 +245,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
           }
         };
 
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("wizard of oz", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("wizard of oz", 50));
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
     assertEquals("wizard _ oz/1.00", toString(sug.lookup("wizard of", 10)));
@@ -283,9 +271,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
           }
         };
 
-    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(
-        new Input("wizard of of oz", 50)
-    );
+    Iterable<Input> keys = TestAnalyzingSuggester.shuffle(new Input("wizard of of oz", 50));
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 3, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
     assertEquals("", toString(sug.lookup("wizard of of", 10)));

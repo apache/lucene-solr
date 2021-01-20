@@ -49,7 +49,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class DocumentValueSourceDictionaryTest extends LuceneTestCase {
+public class TestDocumentValueSourceDictionary extends LuceneTestCase {
 
   static final String FIELD_NAME = "f1";
   static final String WEIGHT_FIELD_NAME_1 = "w1";

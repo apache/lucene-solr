@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Testcase for {@link org.apache.lucene.classification.utils.DocToDoubleVectorUtils} */
-public class DocToTestDoubleVectorUtils extends LuceneTestCase {
+public class TestDocToDoubleVectorUtils extends LuceneTestCase {
 
   private IndexReader index;
   private Directory dir;

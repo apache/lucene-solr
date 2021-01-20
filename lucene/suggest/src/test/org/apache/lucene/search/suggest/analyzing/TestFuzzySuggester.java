@@ -51,7 +51,7 @@ import org.apache.lucene.util.automaton.FiniteStringsIterator;
 import org.apache.lucene.util.fst.Util;
 
 public class TestFuzzySuggester extends LuceneTestCase {
-  
+
   public void testRandomEdits() throws IOException {
     List<Input> keys = new ArrayList<>();
     int numTerms = atLeast(100);
@@ -283,24 +283,23 @@ public class TestFuzzySuggester extends LuceneTestCase {
 
   public void testGraphDups() throws Exception {
 
-    final Analyzer analyzer = new TestAnalyzingSuggester.MultiCannedAnalyzer(
-        new CannedTokenStream(
-            token("wifi", 1, 1),
-            token("hotspot", 0, 2),
-            token("network", 1, 1),
-            token("is", 1, 1),
-            token("slow", 1, 1)),
-        new CannedTokenStream(
-            token("wi", 1, 1),
-            token("hotspot", 0, 3),
-            token("fi", 1, 1),
-            token("network", 1, 1),
-            token("is", 1, 1),
-            token("fast", 1, 1)),
-        new CannedTokenStream(
-            token("wifi", 1, 1),
-            token("hotspot",0,2),
-            token("network",1,1)));
+    final Analyzer analyzer =
+        new TestAnalyzingSuggester.MultiCannedAnalyzer(
+            new CannedTokenStream(
+                token("wifi", 1, 1),
+                token("hotspot", 0, 2),
+                token("network", 1, 1),
+                token("is", 1, 1),
+                token("slow", 1, 1)),
+            new CannedTokenStream(
+                token("wi", 1, 1),
+                token("hotspot", 0, 3),
+                token("fi", 1, 1),
+                token("network", 1, 1),
+                token("is", 1, 1),
+                token("fast", 1, 1)),
+            new CannedTokenStream(
+                token("wifi", 1, 1), token("hotspot", 0, 2), token("network", 1, 1)));
 
     Input keys[] =
         new Input[] {

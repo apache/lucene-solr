@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.util.automaton;
 
-import static org.apache.lucene.util.automaton.FiniteStringsIteratorTest.getFiniteStrings;
+import static org.apache.lucene.util.automaton.TestFiniteStringsIterator.getFiniteStrings;
 
 import java.util.List;
 import org.apache.lucene.util.IntsRef;
