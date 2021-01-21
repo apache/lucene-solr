@@ -1988,13 +1988,14 @@ public class IndexWriter
   }
 
   /**
-   * Return an unmodifiable set of all field names as visible
-   * from this IndexWriter, across all segments of the index.
+   * Return an unmodifiable set of all field names as visible from this IndexWriter, across all
+   * segments of the index.
    *
    * @lucene.experimental
    */
   public Set<String> getFieldNames() {
-    return globalFieldNumberMap.getFieldNames(); // FieldNumbers#getFieldNames() returns an unmodifiableSet
+    // FieldNumbers#getFieldNames() returns an unmodifiableSet
+    return globalFieldNumberMap.getFieldNames();
   }
 
   // for test purpose
