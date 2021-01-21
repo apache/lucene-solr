@@ -52,14 +52,14 @@ final class Stemmer {
    */
   public Stemmer(Dictionary dictionary) {
     this.dictionary = dictionary;
+    prefixReader = dictionary.prefixes == null ? null : dictionary.prefixes.getBytesReader();
+    suffixReader = dictionary.suffixes == null ? null : dictionary.suffixes.getBytesReader();
     for (int level = 0; level < 3; level++) {
       if (dictionary.prefixes != null) {
         prefixArcs[level] = new FST.Arc<>();
-        prefixReaders[level] = dictionary.prefixes.getBytesReader();
       }
       if (dictionary.suffixes != null) {
         suffixArcs[level] = new FST.Arc<>();
-        suffixReaders[level] = dictionary.suffixes.getBytesReader();
       }
     }
     formStep = dictionary.formStep();
@@ -254,12 +254,11 @@ final class Stemmer {
   }
 
   // some state for traversing FSTs
-  private final FST.BytesReader[] prefixReaders = new FST.BytesReader[3];
+  private final FST.BytesReader prefixReader;
+  private final FST.BytesReader suffixReader;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private final FST.Arc<IntsRef>[] prefixArcs = new FST.Arc[3];
-
-  private final FST.BytesReader[] suffixReaders = new FST.BytesReader[3];
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private final FST.Arc<IntsRef>[] suffixArcs = new FST.Arc[3];
@@ -304,7 +303,6 @@ final class Stemmer {
 
     if (doPrefix && dictionary.prefixes != null) {
       FST<IntsRef> fst = dictionary.prefixes;
-      FST.BytesReader bytesReader = prefixReaders[recursionDepth];
       FST.Arc<IntsRef> arc = prefixArcs[recursionDepth];
       fst.getFirstArc(arc);
       IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
@@ -313,7 +311,7 @@ final class Stemmer {
       for (int i = 0; i < limit; i++) {
         if (i > 0) {
           int ch = word[i - 1];
-          if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+          if (fst.findTargetArc(ch, arc, arc, prefixReader) == null) {
             break;
           } else if (arc.output() != NO_OUTPUT) {
             output = fst.outputs.add(output, arc.output());
@@ -353,7 +351,6 @@ final class Stemmer {
 
     if (doSuffix && dictionary.suffixes != null) {
       FST<IntsRef> fst = dictionary.suffixes;
-      FST.BytesReader bytesReader = suffixReaders[recursionDepth];
       FST.Arc<IntsRef> arc = suffixArcs[recursionDepth];
       fst.getFirstArc(arc);
       IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
@@ -362,7 +359,7 @@ final class Stemmer {
       for (int i = length; i >= limit; i--) {
         if (i < length) {
           int ch = word[i];
-          if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+          if (fst.findTargetArc(ch, arc, arc, suffixReader) == null) {
             break;
           } else if (arc.output() != NO_OUTPUT) {
             output = fst.outputs.add(output, arc.output());
