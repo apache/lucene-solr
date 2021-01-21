@@ -35,7 +35,6 @@ import java.util.concurrent.Callable;
 
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
-import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -77,10 +76,9 @@ public class DeleteReplicaCmd implements Cmd {
     }
     boolean parallel = message.getBool("parallel", false);
 
-    PlacementPlugin placementPlugin = ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance();
     //If a count is specified the strategy needs be different
     if (message.getStr(COUNT_PROP) != null) {
-      deleteReplicaBasedOnCount(clusterState, message, results, onComplete, parallel, placementPlugin);
+      deleteReplicaBasedOnCount(clusterState, message, results, onComplete, parallel);
       return;
     }
 
@@ -104,7 +102,7 @@ public class DeleteReplicaCmd implements Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Invalid shard name : " +  shard + " in collection : " +  collectionName);
     }
-    deleteCore(clusterState, coll, shard, replicaName, message, results, onComplete, parallel, placementPlugin);
+    deleteCore(clusterState, coll, shard, replicaName, message, results, onComplete, parallel, true);
   }
 
 
@@ -117,8 +115,7 @@ public class DeleteReplicaCmd implements Cmd {
                                  ZkNodeProps message,
                                  @SuppressWarnings({"rawtypes"})NamedList results,
                                  Runnable onComplete,
-                                 boolean parallel,
-                                 PlacementPlugin placementPlugin)
+                                 boolean parallel)
           throws KeeperException, IOException, InterruptedException {
     ocmh.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
     int count = Integer.parseInt(message.getStr(COUNT_PROP));
@@ -150,7 +147,7 @@ public class DeleteReplicaCmd implements Cmd {
     }
 
     // verify that all replicas can be deleted
-    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(placementPlugin, clusterState, coll);
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.overseer.getCoreContainer(), clusterState, coll);
     for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
       Slice shardSlice = entry.getKey();
       String shardId = shardSlice.getName();
@@ -166,7 +163,7 @@ public class DeleteReplicaCmd implements Cmd {
       for (String replica: replicas) {
         log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
         // don't verify with the placement plugin - we already did it
-        deleteCore(clusterState, coll, shardId, replica, message, results, onComplete, parallel, null);
+        deleteCore(clusterState, coll, shardId, replica, message, results, onComplete, parallel, false);
       }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);
@@ -231,7 +228,7 @@ public class DeleteReplicaCmd implements Cmd {
                   @SuppressWarnings({"rawtypes"})NamedList results,
                   Runnable onComplete,
                   boolean parallel,
-                  PlacementPlugin placementPlugin) throws KeeperException, IOException, InterruptedException {
+                  boolean verifyPlacement) throws KeeperException, IOException, InterruptedException {
 
     Slice slice = coll.getSlice(shardId);
     Replica replica = slice.getReplica(replicaName);
@@ -252,8 +249,10 @@ public class DeleteReplicaCmd implements Cmd {
     }
 
     // verify that we are allowed to delete this replica
-    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(placementPlugin, clusterState, coll);
-    assignStrategy.verifyDeleteReplicas(ocmh.cloudManager, coll, shardId, Set.of(replicaName));
+    if (verifyPlacement) {
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.overseer.getCoreContainer(), clusterState, coll);
+      assignStrategy.verifyDeleteReplicas(ocmh.cloudManager, coll, shardId, Set.of(replicaName));
+    }
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);

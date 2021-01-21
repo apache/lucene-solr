@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.solr.cloud.Overseer;
-import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -93,10 +92,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       collection = extCollection;
     }
 
-    PlacementPlugin placementPlugin = ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance();
     // verify the placement modifications caused by the deletion are allowed
     DocCollection coll = state.getCollection(collection);
-    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(placementPlugin, state, coll);
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.overseer.getCoreContainer(), state, coll);
     assignStrategy.verifyDeleteCollection(ocmh.cloudManager, coll);
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
