@@ -1445,10 +1445,12 @@ public final class ManagedIndexSchema extends IndexSchema {
      newSchema.fieldsWithDefaultValue.addAll((Set<? extends SchemaField>) new HashSet<>(fieldsWithDefaultValue).clone());
 
      newSchema.fieldTypes = new ConcurrentHashMap<>((HashMap) new HashMap<>(fieldTypes).clone());
-     synchronized (newSchema.fields) {
+     synchronized (fields) {
        newSchema.fields.putAll((Map<? extends String,? extends SchemaField>) new HashMap<>(fields).clone());
      }
-     newSchema.dynamicFields.addAll((Collection<? extends DynamicField>) new HashSet<>(dynamicFields).clone());
+     synchronized (dynamicFields) {
+       newSchema.dynamicFields.addAll((Collection<? extends DynamicField>) new HashSet<>(dynamicFields).clone());
+     }
      newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
      newSchema.copyFieldTargetCounts = new ConcurrentHashMap<>((HashMap) new HashMap<>(copyFieldTargetCounts).clone());
      newSchema.dynamicCopyFields = new DynamicCopy[dynamicCopyFields.length];

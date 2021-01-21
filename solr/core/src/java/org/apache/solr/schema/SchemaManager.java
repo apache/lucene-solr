@@ -154,7 +154,7 @@ public class SchemaManager {
             core.getCoreContainer().reload(core.getName());
           }
         } catch (SolrException e) {
-          log.warn(errorMsg);
+          log.warn(errorMsg, e);
           errors = singletonList(errorMsg + e.getMessage());
         }
         break;
