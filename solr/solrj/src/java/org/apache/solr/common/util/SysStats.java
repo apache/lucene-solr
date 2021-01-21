@@ -19,9 +19,9 @@ public class SysStats extends Thread {
     private static final Logger log = LoggerFactory
         .getLogger(MethodHandles.lookup().lookupClass());
 
-    public static final double OUR_LOAD_HIGH = 1.5;
+    public static final double OUR_LOAD_HIGH = 1.0;
     public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
-    static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+    public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
     private final long refreshIntervalMs;
 
     private long refreshInterval;
@@ -34,6 +34,10 @@ public class SysStats extends Thread {
     private static volatile SysStats sysStats;
     private volatile double totalUsage;
     private volatile double sysLoad;
+
+    public static void main(String[] args) {
+        System.out.println("avail procs:" + PROC_COUNT);
+    }
 
     public static SysStats getSysStats() {
         if (sysStats == null) {
@@ -82,7 +86,7 @@ public class SysStats extends Thread {
                 values = new HashSet<>(threadTimeMap.values());
 
                 for (ThreadTime threadTime : values) {
-                    threadTime.setCurrent(threadBean.getThreadCpuTime(threadTime.getId()));
+                    threadTime.setLast(threadBean.getThreadCpuTime(threadTime.getId()));
                 }
 
                 double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
@@ -116,8 +120,13 @@ public class SysStats extends Thread {
             if (gatherThreadStats) {
                 double usage = 0D;
                 for (ThreadTime threadTime : values) {
-                    threadTime.setLast(threadBean.getThreadCpuTime(threadTime.getId()));
-                    usage += ( threadTime.getLast() - threadTime.getCurrent()) / (refreshInterval * 2.0f);
+                    long time = threadBean.getThreadCpuTime(threadTime.getId());
+                    if (time > 0) {
+                        long diff = time - threadTime.getLast();
+                        if (diff > 0) {
+                            usage += diff / (refreshInterval * 2.0f);
+                        }
+                    }
                 }
                 totalUsage = usage;
                 gatherThreadStats = false;

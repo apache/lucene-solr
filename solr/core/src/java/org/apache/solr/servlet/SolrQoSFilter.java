@@ -50,17 +50,16 @@ public class SolrQoSFilter extends QoSFilter {
   @Override
   public void init(FilterConfig filterConfig) {
     super.init(filterConfig);
-    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 10000);
+    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 5000);
     super.setMaxRequests(_origMaxRequests);
     super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 20000));
-    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 500));
+    super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 2000));
   }
 
   @Override
   // nocommit - this is all just test/prototype - we should extract an actual strategy for adjusting on load
   // allow the user to select and configure one
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     HttpServletRequest req = (HttpServletRequest) request;
     String source = req.getHeader(QoSParams.REQUEST_SOURCE);
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
@@ -71,27 +70,42 @@ public class SolrQoSFilter extends QoSFilter {
       if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
       double ourLoad = sysStats.getTotalUsage();
       if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
+      double sLoad = sysStats.getSystemLoad();
       if (ourLoad > SysStats.OUR_LOAD_HIGH) {
+
         int cMax = getMaxRequests();
         if (cMax > 5) {
-          int max = Math.max(5, (int) ((double)cMax * 0.60D));
-          log.warn("Our individual load is {}, set max concurrent requests to {}", ourLoad, max);
-          updateMaxRequests(max);
+          int max = Math.max(5, (int) ((double) cMax * 0.30D));
+          log.warn("Our individual load is {}", ourLoad);
+          updateMaxRequests(max, sLoad, ourLoad);
         }
+
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
-        double sLoad = sysStats.getSystemLoad();
-        if (sLoad > 1.3) {
-          int cMax = getMaxRequests();
-          if (cMax > 5) {
-            int max = Math.max(5, (int) ((double) cMax * 0.60D));
-            log.warn("System load is {}, set max concurrent requests to {}", sLoad, max);
-            updateMaxRequests(max);
+        if (ourLoad < 0.70 && sLoad < 1.0 && _origMaxRequests != getMaxRequests()) {
+          if (sLoad < 0.9) {
+            if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
+            updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
+          } else {
+            updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 1.5D)), sLoad, ourLoad);
           }
-        } else if (sLoad < 0.95 && _origMaxRequests != getMaxRequests()) {
+        } else {
+          if (sLoad > 1.1) {
+            int cMax = getMaxRequests();
+            if (cMax > 5) {
+              int max = Math.max(5, (int) ((double) cMax * 0.30D));
+            //  log.warn("System load is {} and our load is {} procs is {}, set max concurrent requests to {}", sLoad, ourLoad, SysStats.PROC_COUNT, max);
+              updateMaxRequests(max, sLoad, ourLoad);
+            }
+          } else if (ourLoad < 0.70 && sLoad < 1.0 && _origMaxRequests != getMaxRequests()) {
+            if (sLoad < 0.9) {
+              if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
+              updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
+            } else {
+              updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 1.5D)), sLoad, ourLoad);
+            }
 
-          if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
-          updateMaxRequests(_origMaxRequests);
+          }
         }
       }
 
@@ -104,8 +118,9 @@ public class SolrQoSFilter extends QoSFilter {
     }
   }
 
-  private void updateMaxRequests(int max) {
-    if (System.currentTimeMillis() - lastUpdate < 3000)  {
+  private void updateMaxRequests(int max, double sLoad, double ourLoad) {
+    if (System.currentTimeMillis() - lastUpdate > 2000) {
+      log.warn("Set max request to {} sload={} ourload={}", max, sLoad, ourLoad);
       lastUpdate = System.currentTimeMillis();
       setMaxRequests(max);
     }
