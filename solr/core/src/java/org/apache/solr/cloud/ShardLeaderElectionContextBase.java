@@ -181,11 +181,16 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       //assert leaderZkNodeParentVersion != null;
 
     } catch (NoNodeException e) {
+      log.warn("No node exists for election", e);
       throw new AlreadyClosedException("No node exists for election");
     } catch (KeeperException.NodeExistsException e) {
-      throw new AlreadyClosedException("Node already exists for election");
+      log.warn("Node already exists for election", e);
+
+      zkClient.delete(leaderPath, -1);
+
+      runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
     } catch (Throwable t) {
-      ParWork.propagateInterrupt(t);
+      log.warn("Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: ", t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);
     }
     return true;

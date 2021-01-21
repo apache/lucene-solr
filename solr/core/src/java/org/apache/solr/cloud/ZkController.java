@@ -417,6 +417,14 @@ public class ZkController implements Closeable, Runnable {
 
     started = true;
 
+    try {
+      if (zkClient.exists( ZkStateReader.LIVE_NODES_ZKNODE + "/" + getNodeName())) {
+        removeEphemeralLiveNode();
+      }
+    } catch (Exception e) {
+      ParWork.propagateInterrupt("Error Removing ephemeral live node. Continuing to close CoreContainer", e);
+    }
+
     this.overseer = new Overseer(cc.getUpdateShardHandler(), CommonParams.CORES_HANDLER_PATH, this, cloudConfig);
     try {
       this.overseerRunningMap = Overseer.getRunningMap(zkClient);
@@ -1407,7 +1415,7 @@ public class ZkController implements Closeable, Runnable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
 
-      if (log.isDebugEnabled()) log.debug("Wait to see leader for {}, {}", collection, shardId);
+      log.info("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = null;
       for (int i = 0; i < 30; i++) {
 //        if (leaderElector.isLeader()) {

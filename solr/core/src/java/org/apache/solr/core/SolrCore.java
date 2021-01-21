@@ -748,7 +748,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           // another recovery waiting behind us, let it run now instead of after we finish
           log.info("Skipping reload because there is another in line behind");
           lock.unlock();
-          Thread.sleep(50);
+          Thread.sleep(10);
           lock.lock();
           lock.unlock();
           return null;

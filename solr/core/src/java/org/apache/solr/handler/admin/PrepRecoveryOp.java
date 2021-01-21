@@ -80,7 +80,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         final Replica replica = c.getReplica(cname);
 
         if (replica != null) {
-          if (replica.getState() == waitForState || replica.getState() == Replica.State.ACTIVE && coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
+          if (replica.getState() == waitForState && coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
             // if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
             log.info("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
             return true;

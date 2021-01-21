@@ -44,7 +44,7 @@ public class TimedVersionBucket extends VersionBucket {
     boolean success = false;
 
     try {
-      success = lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
+      success = lock.tryLock() || lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS);
 
       if (success) {
         return function.apply();

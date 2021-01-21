@@ -319,6 +319,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     log.info("There may be a better leader candidate than us - will cancel election, rejoin election, and kick off recovery");
 
     leaderElector.retryElection(false);
+
+    core.getSolrCoreState().doRecovery(core);
   }
 
   public String getShardId() {

@@ -52,7 +52,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
-  private final ReentrantLock recoveryLock = new ReentrantLock(true);
+  private final ReentrantLock recoveryLock = new ReentrantLock(false);
 
   private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", Integer.getInteger("solr.recoveryThrottle", 0));
 
@@ -190,7 +190,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     boolean acquired = false;
     do {
       try {
-        acquired = lock.tryLock(100, TimeUnit.MILLISECONDS);
+        acquired = lock.tryLock() || lock.tryLock(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e) {
         log.warn("WARNING - Dangerous interrupt", e);
       }
@@ -346,16 +346,10 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           return;
         }
 
-
         // if we can't get the lock, another recovery is running
         // we check to see if there is already one waiting to go
         // after the current one, and if there is, bail
         boolean locked = recoveryLock.tryLock();
-
-        if (!locked && recoveryWaiting.get() > 1) {
-          log.info("Skipping recovery because there is another already queued");
-          return;
-        }
 
 //        if (closed || prepForClose) {
 //          return;
@@ -363,8 +357,8 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         if (!locked) {
           recoveryWaiting.incrementAndGet();
           if (log.isDebugEnabled()) log.debug("Wait for recovery lock");
-          cancelRecovery();
-          while (!recoveryLock.tryLock(250, TimeUnit.MILLISECONDS)) {
+          cancelRecovery(true, false);
+          while (!(recoveryLock.tryLock() || recoveryLock.tryLock(500, TimeUnit.MILLISECONDS))) {
             if (closed || prepForClose) {
               log.warn("Skipping recovery because we are closed");
               recoveryWaiting.decrementAndGet();
@@ -379,12 +373,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           }
         }
 
+        recoverying = true;
+
         // to be air tight we must also check after lock
         if (prepForClose || closed || corecontainer.isShutDown()) {
           log.info("Skipping recovery due to being closed");
           return;
         }
-        recoverying = true;
 
         recoveryThrottle.minimumWaitBetweenActions();
         recoveryThrottle.markAttemptingAction();
@@ -435,6 +430,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void cancelRecovery(boolean wait, boolean prepForClose) {
+    log.info("Cancel recovery");
     recoverying = false;
     
     if (prepForClose) {

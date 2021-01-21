@@ -231,6 +231,7 @@ public class ZkStateWriter {
                       slice.setLeader(null);
                       replica.setState(Replica.State.DOWN);
                       updates.getProperties().put(replica.getName(), Replica.State.getShortState(Replica.State.DOWN));
+                      updates.getProperties().remove("leader");
                       dirtyState.add(docColl.getName());
                     }
                   }

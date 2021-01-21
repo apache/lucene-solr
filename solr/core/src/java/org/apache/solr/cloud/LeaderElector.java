@@ -485,7 +485,7 @@ public class LeaderElector implements Closeable {
       }
       Future<?> jf = joinFuture;
       if (jf != null) {
-        jf.cancel(true);
+        jf.cancel(false);
 //        if (!shouldRejectJoins()) {
 //          try {
 //            jf.get(500, TimeUnit.MILLISECONDS);

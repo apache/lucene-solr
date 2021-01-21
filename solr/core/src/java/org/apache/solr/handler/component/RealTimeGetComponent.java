@@ -1144,9 +1144,6 @@ public class RealTimeGetComponent extends SearchComponent
       // TODO: more complex response?
       rb.rsp.add("sync", success);
 
-      if (!success && rb.req.getCore().getCoreContainer().isZooKeeperAware() && !rb.req.getCore().getSolrCoreState().isRecoverying()) {
-        rb.req.getCore().getSolrCoreState().doRecovery(rb.req.getCore().getCoreContainer(), rb.req.getCore().getCoreDescriptor());
-      }
     } catch (IOException e) {
       log.error("Error while closing", e);
     }

@@ -337,7 +337,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   final public void doRecovery(SolrCore core) throws Exception {
+    int tries = 0;
     while (!isClosed()) {
+      tries++;
       try {
         try {
           if (prevSendPreRecoveryHttpUriRequest != null) {
@@ -370,11 +372,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         if (successfulRecovery) {
+          close = true;
           break;
+        } else {
+          log.info("Trying another loop to recover after failing try={}", tries);
         }
 
       } catch (Exception e) {
-        log.info("Exception trying to recover, try again", e);
+        log.info("Exception trying to recover, try again try={}", tries, e);
       }
     }
   }
@@ -593,10 +598,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500);
 
-        if (isClosed()) {
-          throw new AlreadyClosedException();
-        }
-
         log.info("Begin buffering updates. core=[{}]", coreName);
         // recalling buffer updates will drop the old buffer tlog
         ulog.bufferUpdates();
@@ -632,26 +633,34 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
-          boolean syncSuccess;
-          try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core, leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
-            syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
-          }
-          if (syncSuccess) {
-            SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-            log.info("PeerSync was successful, commit to force open a new searcher");
-            // force open a new searcher
-            core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-            req.close();
-            log.info("PeerSync stage of recovery was successful.");
+          try {
+            boolean syncSuccess;
+            try (PeerSyncWithLeader peerSyncWithLeader = new PeerSyncWithLeader(core, leader.getCoreUrl(), ulog.getNumRecordsToKeep())) {
+              syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
+            }
+            if (syncSuccess) {
+              SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+              log.info("PeerSync was successful, commit to force open a new searcher");
+              // force open a new searcher
+              core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+              req.close();
+              log.info("PeerSync stage of recovery was successful.");
 
-            // solrcloud_debug
-            // cloudDebugLog(core, "synced");
+              // solrcloud_debug
+              // cloudDebugLog(core, "synced");
 
-            log.info("Replaying updates buffered during PeerSync.");
-            replay(core);
+              log.info("Replaying updates buffered during PeerSync.");
+              replay(core);
 
-            // sync success
-            successfulRecovery = true;
+              // sync success
+              successfulRecovery = true;
+            } else {
+              successfulRecovery = false;
+            }
+
+          } catch (Exception e) {
+            log.error("PeerSync exception", e);
+            successfulRecovery = false;
           }
 
           if (!successfulRecovery) {
@@ -681,6 +690,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             log.info("Interrupted or already closed, bailing on recovery");
             close = true;
             successfulRecovery = false;
+            break;
           } catch (Exception e) {
             successfulRecovery = false;
             log.error("Error while trying to recover", e);
@@ -710,14 +720,16 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
             publishedActive = true;
+            close = true;
 
           } catch (AlreadyClosedException e) {
             log.error("Already closed");
             successfulRecovery = false;
+            close = true;
           } catch (Exception e) {
             log.error("Could not publish as ACTIVE after successful recovery", e);
             successfulRecovery = false;
-           // core.getSolrCoreState().doRecovery(core);
+            close = false;
           }
 
 
@@ -731,7 +743,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
       }
 
-      if (!successfulRecovery) {
+      if (!successfulRecovery && !isClosed()) {
         // lets pause for a moment and we need to try again...
         // TODO: we don't want to retry for some problems?
         // Or do a fall off retry...
@@ -754,9 +766,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
       }
 
-      if (!successfulRecovery) {
+      if (!successfulRecovery && !isClosed()) {
         waitForRetry();
-      } else {
+      } else if (successfulRecovery) {
         break;
       }
     }

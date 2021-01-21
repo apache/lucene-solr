@@ -1108,6 +1108,7 @@ public class IndexFetcher {
                   throw e;
                 } catch (Exception e) {
                   log.error("Problem downloading file {}", file, e);
+                  throw e;
                 } finally {
                   fileFetchRequests.remove(file.get(NAME));
                 }

@@ -1036,7 +1036,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               ReentrantLock ruleExpiryLock = req.getCore().getRuleExpiryLock();
               if (!ruleExpiryLock.isLocked()) {
                 try {
-                  if (ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
+                  if (ruleExpiryLock.tryLock() || ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
                     log.info("Going to expire routing rule");
                     try {
                       // nocommit TODO: needs to use the statepublisher

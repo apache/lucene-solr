@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -885,6 +886,27 @@ public class CoreContainer implements Closeable {
       status |= CORE_DISCOVERY_COMPLETE;
 
       for (final CoreDescriptor cd : cds) {
+        if (isZooKeeperAware()) {
+          String collection = cd.getCollectionName();
+          try {
+            zkSys.zkController.zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+              if (c != null) {
+                Replica replica = c.getReplica(cd.getName());
+
+                if (replica.getState().equals(State.DOWN)) {
+                  return true;
+                }
+
+              }
+              return false;
+            });
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+          } catch (TimeoutException e) {
+            log.error("Timeout", e);
+          }
+        }
+
         if (log.isDebugEnabled()) log.debug("Process core descriptor {} {} {}", cd.getName(), cd.isTransient(), cd.isLoadOnStartup());
         if (cd.isTransient() || !cd.isLoadOnStartup()) {
           solrCores.addCoreDescriptor(cd);
@@ -914,32 +936,9 @@ public class CoreContainer implements Closeable {
           }));
         }
       }
-      if (zkSys != null && zkSys.getZkController() != null) {
+      if (isZooKeeperAware()) {
+
         ParWork.getRootSharedExecutor().submit(() -> {
-          Collection<SolrCore> cores = getCores(); // TODO use the cores we just launched, this may not be populated yet
-          for (SolrCore core : cores) {
-            CoreDescriptor desc = core.getCoreDescriptor();
-            String collection = desc.getCollectionName();
-            try {
-              zkSys.zkController.zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
-                if (c != null) {
-                  List<Replica> replicas = c.getReplicas();
-                  for (Replica replica : replicas) {
-                    if (replica.getNodeName().equals(zkSys.zkController.getNodeName())) {
-                      if (!replica.getState().equals(Replica.State.DOWN)) {
-                        return false;
-                      }
-                    }
-                  }
-                }
-                return true;
-              });
-            } catch (InterruptedException e) {
-              ParWork.propagateInterrupt(e);
-            } catch (TimeoutException e) {
-              log.error("Timeout", e);
-            }
-          }
           zkSys.getZkController().createEphemeralLiveNode();
         });
       }

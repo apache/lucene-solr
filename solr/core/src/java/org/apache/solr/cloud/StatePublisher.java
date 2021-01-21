@@ -148,7 +148,7 @@ public class StatePublisher implements Closeable {
         Replica replica = zkStateReader.getClusterState().getCollection(collection).getReplica(core);
         String lastState = stateCache.get(core);
         // nocommit
-        if (collection != null && replica != null && state.equals(lastState) && replica.getState().toString().equals(state)) {
+        if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
           log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
           // nocommit
           return;
