@@ -6,9 +6,10 @@ ICONV B b
 ICONV C c
 ICONV I i
 
-OCONV 4
-OCONV a A
-OCONV b B
+# Testing also whitespace and comments.
+OCONV 4 # space, space
+OCONV	a A # tab, space, space
+OCONV	b	B # tab, tab, space
 OCONV c C
 OCONV i I
 
