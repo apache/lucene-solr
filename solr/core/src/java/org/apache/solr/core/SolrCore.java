@@ -717,12 +717,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (coreContainer.isShutDown() || isClosed() || closing) {
       throw new AlreadyClosedException();
     }
-    ReentrantLock schemaLock = null;
-    if (schema instanceof ManagedIndexSchema) {
-      schemaLock = ((ManagedIndexSchema) schema).getSchemaLock();
-      schemaLock.lock();
-    }
-
     // only one reload at a time
     ReentrantLock lock = getUpdateHandler().getSolrCoreState().getReloadLock();
     boolean locked = lock.tryLock();
@@ -807,9 +801,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     } finally {
       if (lock != null && lock.isHeldByCurrentThread()) {
         lock.unlock();
-      }
-      if (schemaLock != null && schemaLock.isHeldByCurrentThread()) {
-        schemaLock.unlock();
       }
     }
   }
