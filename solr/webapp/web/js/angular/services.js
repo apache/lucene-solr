@@ -58,7 +58,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Logging',
   ['$resource', function($resource) {
-    return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
+    return $resource('admin/info/logging', {'wt':'json', 'nodes': 'all', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
       "setLevel": {}

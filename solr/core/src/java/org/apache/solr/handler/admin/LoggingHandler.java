@@ -49,8 +49,10 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
 
   @SuppressWarnings({"rawtypes"})
   private LogWatcher watcher;
+  private CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
+    this.cc = cc;
     this.watcher = cc.getLogging();
   }
   
@@ -62,6 +64,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   public void inform(SolrCore core) {
     if (watcher == null) {
       watcher = core.getCoreContainer().getLogging();
+    }
+    if (cc == null) {
+      cc = core.getCoreContainer();
     }
   }
 
@@ -151,6 +156,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
       rsp.add("loggers", info);
     }
     rsp.setHttpCaching(false);
+    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+      return; // Request was proxied to other node
+    }
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////
