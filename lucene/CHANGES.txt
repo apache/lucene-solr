@@ -180,6 +180,9 @@ Improvements
 * LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
   and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
 
+* LUCENE-9674: Implement faster advance on VectorValues using binary search.
+  (Anand Kotriwal, Mike Sokolov)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
