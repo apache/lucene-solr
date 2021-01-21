@@ -29,6 +29,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,7 +76,6 @@ import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
@@ -948,7 +948,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
             graph.render(bi.getGraphics());
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ImageIO.write(bi, "png", baos);
-            values.add(name, Base64.byteArrayToBase64(baos.toByteArray()));
+            values.add(name, Base64.getEncoder().encodeToString(baos.toByteArray()));
             break;
           case STRING:
             str.setLength(0);

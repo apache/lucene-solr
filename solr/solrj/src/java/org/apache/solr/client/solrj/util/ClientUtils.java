@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -29,7 +31,6 @@ import java.util.Map.Entry;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.XML;
@@ -111,10 +112,10 @@ public class ClientUtils
       v = ((Date)v).toInstant().toString();
     } else if (v instanceof byte[]) {
       byte[] bytes = (byte[]) v;
-      v = Base64.byteArrayToBase64(bytes, 0, bytes.length);
+      v = Base64.getEncoder().encodeToString(bytes);
     } else if (v instanceof ByteBuffer) {
       ByteBuffer bytes = (ByteBuffer) v;
-      v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
+      v = new String(Base64.getEncoder().encode(bytes).array(), StandardCharsets.ISO_8859_1);
     }
 
     XML.Writable valWriter = null;

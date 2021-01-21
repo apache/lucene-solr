@@ -18,10 +18,10 @@ package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Objects;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 
@@ -72,7 +72,7 @@ public class VersionedData implements MapWriter {
     }
     ew.put("mode", mode.toString());
     if (data != null) {
-      ew.put("data", Base64.byteArrayToBase64(data));
+      ew.put("data", Base64.getEncoder().encodeToString(data));
     }
   }
 

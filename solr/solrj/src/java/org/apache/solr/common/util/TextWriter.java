@@ -19,8 +19,11 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -164,7 +167,7 @@ public interface TextWriter extends PushWriter {
   }
 
   default void writeByteArr(String name, byte[] buf, int offset, int len) throws IOException {
-    writeStr(name, Base64.byteArrayToBase64(buf, offset, len), false);
+    writeStr(name, new String(Base64.getEncoder().encode(ByteBuffer.wrap(buf, offset, len)).array(), StandardCharsets.ISO_8859_1), false);
   }
 
   default void writeInt(String name, int val) throws IOException {

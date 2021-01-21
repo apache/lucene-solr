@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PublicKey;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +43,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -161,7 +161,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private static  PKIHeaderData parseCipher(String cipher, PublicKey key) {
     byte[] bytes;
     try {
-      bytes = CryptoKeys.decryptRSA(Base64.base64ToByteArray(cipher), key);
+      bytes = CryptoKeys.decryptRSA(Base64.getDecoder().decode(cipher), key);
     } catch (Exception e) {
       log.error("Decryption failed , key must be wrong", e);
       return null;
@@ -304,7 +304,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
     byte[] payload = s.getBytes(UTF_8);
     byte[] payloadCipher = publicKeyHandler.keyPair.encrypt(ByteBuffer.wrap(payload));
-    String base64Cipher = Base64.byteArrayToBase64(payloadCipher);
+    String base64Cipher = Base64.getEncoder().encodeToString(payloadCipher);
     log.trace("generateToken: usr={} token={}", usr, base64Cipher);
     return Optional.of(base64Cipher);
   }

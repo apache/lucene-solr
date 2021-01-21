@@ -18,7 +18,9 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,7 +69,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.query.SolrRangeQuery;
@@ -1327,7 +1328,7 @@ public abstract class FieldType extends FieldProperties {
       return null;
     }
     final BytesRef val = (BytesRef)value;
-    return Base64.byteArrayToBase64(val.bytes, val.offset, val.length);
+    return new String(Base64.getEncoder().encode(val.wrapToByteBuffer()).array(), StandardCharsets.ISO_8859_1);
   }
 
   /**
@@ -1338,7 +1339,7 @@ public abstract class FieldType extends FieldProperties {
       return null;
     }
     final String val = (String)value;
-    final byte[] bytes = Base64.base64ToByteArray(val);
+    final byte[] bytes = Base64.getDecoder().decode(val);
     return new BytesRef(bytes);
   }
 

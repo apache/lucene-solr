@@ -26,12 +26,12 @@ import org.apache.solr.common.SolrException.ErrorCode;
 
 import static org.apache.solr.common.params.CursorMarkParams.*;
 
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.ByteArrayOutputStream;
@@ -183,7 +183,7 @@ public final class CursorMark {
 
     List<Object> pieces = null;
     try {
-      final byte[] rawData = Base64.base64ToByteArray(serialized);
+      final byte[] rawData = Base64.getDecoder().decode(serialized);
       try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayInputStream in = new ByteArrayInputStream(rawData)){
         pieces = (List<Object>) jbc.unmarshal(in);
         boolean b = false;
@@ -260,7 +260,7 @@ public final class CursorMark {
     try (JavaBinCodec jbc = new JavaBinCodec(); ByteArrayOutputStream out = new ByteArrayOutputStream(256)) {
       jbc.marshal(marshalledValues, out);
       byte[] rawData = out.toByteArray();
-      return Base64.byteArrayToBase64(rawData, 0, rawData.length);
+      return Base64.getEncoder().encodeToString(rawData);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
                               "Unable to format search after totem", ex);

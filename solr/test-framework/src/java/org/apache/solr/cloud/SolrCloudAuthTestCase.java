@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +41,6 @@ import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
@@ -239,7 +239,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
 
   protected static String makeBasicAuthHeader(String user, String pwd) {
     String userPass = user + ":" + pwd;
-    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
   }
 
   static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {

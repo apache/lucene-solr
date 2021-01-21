@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,6 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -442,7 +442,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("clientId", "solr-cluster");
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
-    String headerJson = new String(Base64.base64ToByteArray(headerBase64), StandardCharsets.UTF_8);
+    String headerJson = new String(Base64.getDecoder().decode(headerBase64), StandardCharsets.UTF_8);
     Map<String,String> parsed = (Map<String, String>) Utils.fromJSONString(headerJson);
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals("http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
