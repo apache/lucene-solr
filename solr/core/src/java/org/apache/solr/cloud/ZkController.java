@@ -1186,7 +1186,6 @@ public class ZkController implements Closeable, Runnable {
         //          });
       //}
 
-      // nocommit
       publishDownStates();
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);

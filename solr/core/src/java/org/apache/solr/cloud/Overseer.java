@@ -737,6 +737,7 @@ public class Overseer implements SolrCloseable {
     protected final ZkController zkController;
     protected final String path;
     protected final Overseer overseer;
+    protected List<String> startItems;
     protected volatile boolean closed;
     protected final ReentrantLock ourLock = new ReentrantLock(true);
 
@@ -745,9 +746,6 @@ public class Overseer implements SolrCloseable {
       this.zkController = cc.getZkController();
       this.overseer = zkController.getOverseer();
       this.path = path;
-      List<String> items = setWatch();
-      log.info("Overseer found entries on start {}", items);
-      processQueueItems(items, true);
     }
 
     private List<String> setWatch() {
@@ -828,6 +826,9 @@ public class Overseer implements SolrCloseable {
 
     public WorkQueueWatcher(CoreContainer cc) throws KeeperException {
       super(cc, Overseer.OVERSEER_QUEUE);
+      startItems = super.setWatch();
+      log.info("Overseer found entries on start {}", startItems);
+      processQueueItems(startItems, true);
     }
 
     @Override
@@ -877,6 +878,11 @@ public class Overseer implements SolrCloseable {
         failureMap = Overseer.getFailureMap(cc.getZkController().getZkClient());
         runningMap = Overseer.getRunningMap(cc.getZkController().getZkClient());
         completedMap = Overseer.getCompletedMap(cc.getZkController().getZkClient());
+
+        startItems = super.setWatch();
+
+        log.info("Overseer found entries on start {}", startItems);
+        processQueueItems(startItems, true);
       }
 
       @Override
@@ -913,9 +919,6 @@ public class Overseer implements SolrCloseable {
       }
 
       private void runAsync(List<String> items, List<String> fullPaths, Map<String,byte[]> data, boolean onStart) {
-        if (configMessageHandler == null) {
-          return;
-        }
         ZkStateWriter zkWriter = overseer.getZkStateWriter();
         if (zkWriter == null) {
           log.warn("Overseer appears closed");
@@ -1012,7 +1015,7 @@ public class Overseer implements SolrCloseable {
                 }
 
               } catch (Exception e) {
-                log.warn("Exception deleting processed zk nodes", e);
+                log.error("Exception processing entry", e);
               }
             });
 
