@@ -360,16 +360,18 @@ public class RecoveryStrategy implements Runnable, Closeable {
           close = true;
           return;
         }
-
+        boolean successfulRecovery;
         if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
           if (log.isDebugEnabled()) log.debug("Sync or replica recovery");
-          doSyncOrReplicateRecovery(core);
+          successfulRecovery = doSyncOrReplicateRecovery(core);
         } else {
           if (log.isDebugEnabled()) log.debug("Replicate only recovery");
-          doReplicateOnlyRecovery(core);
+          successfulRecovery = doReplicateOnlyRecovery(core);
         }
 
-        break;
+        if (successfulRecovery) {
+          break;
+        }
 
       } catch (Exception e) {
         log.info("Exception trying to recover, try again", e);
@@ -377,7 +379,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
 
-  final private void doReplicateOnlyRecovery(SolrCore core) throws Exception {
+  final private boolean doReplicateOnlyRecovery(SolrCore core) throws Exception {
     boolean successfulRecovery = false;
 
     // if (core.getUpdateHandler().getUpdateLog() != null) {
@@ -485,10 +487,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     log.info("Finished recovery process, successful=[{}]", successfulRecovery);
+
+    return successfulRecovery;
   }
 
   // TODO: perhaps make this grab a new core each time through the loop to handle core reloads?
-  public final void doSyncOrReplicateRecovery(SolrCore core) throws Exception {
+  public final boolean doSyncOrReplicateRecovery(SolrCore core) throws Exception {
     log.info("Do peersync or replication recovery core={} collection={}", coreName, coreDescriptor.getCollectionName());
 
     Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
@@ -511,7 +515,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       SolrException.log(log, "No UpdateLog found - cannot recover.");
       close = true;
       recoveryFailed(zkController, baseUrl, this.coreDescriptor);
-      return;
+      return false;
     }
 
     // we temporary ignore peersync for tlog replicas
@@ -767,6 +771,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       log.error("Illegal state, successful recovery, but did not publish active");
       throw new SolrException(ErrorCode.SERVER_ERROR, "Illegal state, successful recovery, but did not publish active");
     }
+
+    return successfulRecovery;
   }
 
   private final void waitForRetry() {
