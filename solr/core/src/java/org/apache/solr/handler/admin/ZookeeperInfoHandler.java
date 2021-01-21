@@ -674,10 +674,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
                 // verify this collection matches the status filter
                 if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
                   matchesStatusFilter.add(collection);
-                  collectionStates.put(collection, collectionState);
+                  collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON((Map<String, Object>) collectionState));
                 }
               } else {
-                collectionStates.put(collection, collectionState);
+                collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON((Map<String, Object>) collectionState));
               }
             } else {
               // looks like an external collection ...
@@ -702,10 +702,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
                   // verify this collection matches the filtered state
                   if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
                     matchesStatusFilter.add(collection);
-                    collectionStates.put(collection, collectionState);
+                    collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON((Map<String, Object>) collectionState));
                   }
                 } else {
-                  collectionStates.put(collection, collectionState);
+                  collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON((Map<String, Object>) collectionState));
                 }
               }
             }
