@@ -98,6 +98,10 @@ final class Stemmer {
     List<CharsRef> list = doStem(word, length, false);
     if (wordCase == WordCase.UPPER) {
       caseFoldTitle(word, length);
+      char[] aposCase = capitalizeAfterApostrophe(titleBuffer, length);
+      if (aposCase != null) {
+        list.addAll(doStem(aposCase, length, true));
+      }
       list.addAll(doStem(titleBuffer, length, true));
     }
     if (wordCase == WordCase.UPPER || wordCase == WordCase.TITLE) {
@@ -136,6 +140,23 @@ final class Stemmer {
     System.arraycopy(word, 0, lowerBuffer, 0, length);
     lowerBuffer[0] = dictionary.caseFold(lowerBuffer[0]);
     return lowerBuffer;
+  }
+
+  // Special prefix handling for Catalan, French, Italian:
+  // prefixes separated by apostrophe (SANT'ELIA -> Sant'+Elia).
+  char[] capitalizeAfterApostrophe(char[] word, int length) {
+    for (int i = 1; i < length - 1; i++) {
+      if (word[i] == '\'') {
+        char next = word[i + 1];
+        char upper = Character.toUpperCase(next);
+        if (upper != next) {
+          char[] copy = ArrayUtil.copyOfSubArray(word, 0, length);
+          copy[i + 1] = Character.toUpperCase(upper);
+          return copy;
+        }
+      }
+    }
+    return null;
   }
 
   List<CharsRef> doStem(char[] word, int length, boolean caseVariant) {

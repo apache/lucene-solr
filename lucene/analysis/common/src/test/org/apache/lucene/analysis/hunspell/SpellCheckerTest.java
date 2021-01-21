@@ -27,6 +27,11 @@ import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
   @Test
+  public void allcaps() throws Exception {
+    doTest("allcaps");
+  }
+
+  @Test
   public void i53643_numbersWithSeparators() throws Exception {
     doTest("i53643");
   }
