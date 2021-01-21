@@ -2035,7 +2035,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher = (n, c) -> {
-      if (isClosed()) return true;
+      // if (isClosed()) return true;
       docCollection.set(c);
       boolean matches = predicate.matches(this.liveNodes, c);
       if (matches)

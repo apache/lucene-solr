@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.cloud.ZkShardTerms;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -80,6 +81,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
         if (replica != null) {
           if (replica.getState() == waitForState || replica.getState() == Replica.State.ACTIVE && coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
+            // if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
             log.info("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
             return true;
           }
@@ -89,7 +91,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       });
 
     } catch (TimeoutException | InterruptedException e) {
-      SolrZkClient.checkInterrupted(e);
+      ParWork.propagateInterrupt(e);
       String error = errorMessage.get();
       if (error == null)
         error = "Timeout waiting for collection state. \n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
@@ -106,9 +108,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         log.info("refresh shard terms for core {}", cname);
         shardTerms.refreshTerms(false);
       }
-    } catch (NullPointerException e) {
-      if (log.isDebugEnabled()) log.debug("No shards found", e);
-      // likely deleted shard/collection
+    } catch (Exception e) {
+       log.error("Exception while looking at refreshing shard terms", e);
     }
 
   }

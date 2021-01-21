@@ -322,7 +322,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         replicationHandler = (ReplicationHandler) handler;
 
         doRecovery(core);
-        }
+      }
     } catch (InterruptedException e) {
       log.info("InterruptedException, won't do recovery", e);
       return;
@@ -340,24 +340,25 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!isClosed()) {
       try {
         try {
-          Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
-          if (leader != null && leader.getName().equals(coreName) &&  zkController.getZkClient().exists(COLLECTIONS_ZKNODE + "/" + coreDescriptor.getCollectionName() + "/leaders/" + coreDescriptor.getCloudDescriptor().getShardId() + "/leader")) {
-            log.info("We are the leader, STOP recovery");
-            close = true;
-            return;
+          if (prevSendPreRecoveryHttpUriRequest != null) {
+            prevSendPreRecoveryHttpUriRequest.cancel();
           }
-          if (core.isClosing() || core.getCoreContainer().isShutDown()) {
-            log.info("We are closing, STOP recovery");
-            close = true;
-            return;
-          }
-        } catch (InterruptedException e) {
-          log.info("InterruptedException", e);
-          throw new SolrException(ErrorCode.BAD_REQUEST, e);
-        } catch (TimeoutException e) {
-          log.info("Timeout waiting for leader", e);
-          continue;
-          //   throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          prevSendPreRecoveryHttpUriRequest = null;
+        } catch (NullPointerException e) {
+          // expected
+        }
+
+        Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
+        if (leader != null && leader.getName().equals(coreName) && zkController.getZkClient()
+            .exists(COLLECTIONS_ZKNODE + "/" + coreDescriptor.getCollectionName() + "/leaders/" + coreDescriptor.getCloudDescriptor().getShardId() + "/leader")) {
+          log.info("We are the leader, STOP recovery");
+          close = true;
+          return;
+        }
+        if (core.isClosing() || core.getCoreContainer().isShutDown()) {
+          log.info("We are closing, STOP recovery");
+          close = true;
+          return;
         }
 
         if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
@@ -367,6 +368,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
           if (log.isDebugEnabled()) log.debug("Replicate only recovery");
           doReplicateOnlyRecovery(core);
         }
+
+        break;
 
       } catch (Exception e) {
         log.info("Exception trying to recover, try again", e);
@@ -891,7 +894,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Sending prep recovery command to {} for core {} params={}", leaderBaseUrl, leaderCoreName, prepCmd.getParams());
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "15000"));
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "5000"));
     // nocommit
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(cc.getUpdateShardHandler().
         getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
@@ -903,7 +906,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         prevSendPreRecoveryHttpUriRequest = result;
         try {
-          boolean success = latch.await(15, TimeUnit.SECONDS);
+          boolean success = latch.await(5, TimeUnit.SECONDS);
           if (!success) {
             result.cancel();
             throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout waiting for prep recovery cmd on leader");
