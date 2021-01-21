@@ -895,9 +895,7 @@ public class CoreContainer implements Closeable {
           if (isZooKeeperAware() && !CloudUtil.checkIfValidCloudCore(this, cd)) {
             continue;
           }
-//          if (isZooKeeperAware()) {
-//            ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false));
-//          }
+
           coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
             SolrCore core;
             try {
@@ -918,36 +916,32 @@ public class CoreContainer implements Closeable {
       }
       if (zkSys != null && zkSys.getZkController() != null) {
         ParWork.getRootSharedExecutor().submit(() -> {
-//          Collection<SolrCore> cores = getCores();
-//          for (SolrCore core : cores) {
-//            CoreDescriptor desc = core.getCoreDescriptor();
-//            String collection = desc.getCollectionName();
-//            try {
-//              zkSys.getZkController().zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
-//                if (c != null) {
-//                  List<Replica> replicas = c.getReplicas();
-//                  for (Replica replica : replicas) {
-//                    if (replica.getNodeName().equals(zkSys.getZkController().getNodeName())) {
-//                      if (!replica.getState().equals(Replica.State.DOWN)) {
-//                        //log.info("Found state {} {}", replica.getState(), replica.getNodeName());
-//                        return false;
-//                      }
-//                    }
-//                  }
-//                }
-//                return true;
-//              });
-//            } catch (InterruptedException e) {
-//              ParWork.propagateInterrupt(e);
-//              return;
-//            } catch (TimeoutException e) {
-//              log.error("Timeout", e);
-//            }
-//          }
-
+          Collection<SolrCore> cores = getCores(); // TODO use the cores we just launched, this may not be populated yet
+          for (SolrCore core : cores) {
+            CoreDescriptor desc = core.getCoreDescriptor();
+            String collection = desc.getCollectionName();
+            try {
+              zkSys.zkController.zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+                if (c != null) {
+                  List<Replica> replicas = c.getReplicas();
+                  for (Replica replica : replicas) {
+                    if (replica.getNodeName().equals(zkSys.zkController.getNodeName())) {
+                      if (!replica.getState().equals(Replica.State.DOWN)) {
+                        return false;
+                      }
+                    }
+                  }
+                }
+                return true;
+              });
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+            } catch (TimeoutException e) {
+              log.error("Timeout", e);
+            }
+          }
           zkSys.getZkController().createEphemeralLiveNode();
         });
-
       }
     } finally {
 
