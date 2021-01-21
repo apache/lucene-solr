@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-9680: IndexWriter#getFieldNames() method added to get fields present in index.
+  This method was removed in LUCENE-8909. (Oren Ovadia)
+
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
 * LUCENE-9004: Approximate nearest vector search via NSW graphs

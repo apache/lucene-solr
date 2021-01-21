@@ -1987,6 +1987,16 @@ public class IndexWriter
     return dvUpdates;
   }
 
+  /**
+   * Return an unmodifiable set of all field names as visible
+   * from this IndexWriter, across all segments of the index.
+   *
+   * @lucene.experimental
+   */
+  public Set<String> getFieldNames() {
+    return globalFieldNumberMap.getFieldNames(); // FieldNumbers#getFieldNames() returns an unmodifiableSet
+  }
+
   // for test purpose
   final synchronized int getSegmentCount() {
     return segmentInfos.size();
