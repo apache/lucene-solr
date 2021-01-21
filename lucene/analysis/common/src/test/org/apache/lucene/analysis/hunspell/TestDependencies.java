@@ -38,5 +38,8 @@ public class TestDependencies extends StemmerTestBase {
     assertStemsTo("hydration", "hydrate");
     assertStemsTo("dehydrate", "hydrate");
     assertStemsTo("dehydration", "hydrate");
+
+    assertStemsTo("calorie", "calorie", "calorie");
+    assertStemsTo("calories", "calorie");
   }
 }
