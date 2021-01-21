@@ -942,28 +942,28 @@ public class Overseer implements SolrCloseable {
                 try {
                   String operation = message.getStr(Overseer.QUEUE_OPERATION);
 
-                  if (onStart) {
-                    log.info("Found operation on start {} {}", responsePath, message);
-
-                    Stat stat = zkController.getZkClient().exists(responsePath, null);
-                    if (stat != null && stat.getDataLength() == 0) {
-                      log.info("Found response and no data on start for {} {}", message, responsePath);
-
-                      OverseerSolrResponse rsp = collMessageHandler.processMessage(message, "cleanup", zkWriter);
-                      if (rsp == null) {
-                      //  zkController.getZkClient().delete(entry.getKey(), -1);
-                        log.info("Set response data since operation looked okay {} {}", message, responsePath);
-                        NamedList response = new NamedList();
-                        response.add("success", true);
-                        OverseerSolrResponse osr = new OverseerSolrResponse(response);
-                        byte[] sdata = OverseerSolrResponseSerializer.serialize(osr);
-                        zkController.getZkClient().setData(responsePath, sdata, true);
-                        return;
-                      } else {
-                        log.info("Tried to cleanup partially executed cmd {} {}", message, responsePath);
-                      }
-                    }
-                  }
+//                  if (onStart) {
+//                    log.info("Found operation on start {} {}", responsePath, message);
+//
+//                    Stat stat = zkController.getZkClient().exists(responsePath, null);
+//                    if (stat != null && stat.getDataLength() == 0) {
+//                      log.info("Found response and no data on start for {} {}", message, responsePath);
+//
+//                      OverseerSolrResponse rsp = collMessageHandler.processMessage(message, "cleanup", zkWriter);
+//                      if (rsp == null) {
+//                      //  zkController.getZkClient().delete(entry.getKey(), -1);
+//                        log.info("Set response data since operation looked okay {} {}", message, responsePath);
+//                        NamedList response = new NamedList();
+//                        response.add("success", true);
+//                        OverseerSolrResponse osr = new OverseerSolrResponse(response);
+//                        byte[] sdata = OverseerSolrResponseSerializer.serialize(osr);
+//                        zkController.getZkClient().setData(responsePath, sdata, true);
+//                        return;
+//                      } else {
+//                        log.info("Tried to cleanup partially executed cmd {} {}", message, responsePath);
+//                      }
+//                    }
+//                  }
 
                   if (operation == null) {
                     log.error("Msg does not have required " + Overseer.QUEUE_OPERATION + ": {}", message);
