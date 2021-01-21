@@ -58,6 +58,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
+import static org.apache.solr.common.params.CommonAdminParams.SKIP_FREE_SPACE_CHECK;
 
 
 public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
@@ -129,10 +130,16 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");
     }
 
+
     RTimerTree t;
     if (ocmh.overseer.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
       t = timings.sub("checkDiskSpace");
-      checkDiskSpace(collectionName, slice.get(), parentShardLeader, splitMethod, ocmh.cloudManager);
+      boolean skipFreeSpaceCheck = message.getBool(SKIP_FREE_SPACE_CHECK, false);
+      if(skipFreeSpaceCheck) {
+        log.debug("Skipping check for sufficient disk space", message);
+      } else {
+        checkDiskSpace(collectionName, slice.get(), parentShardLeader, splitMethod, ocmh.cloudManager);
+      }
       t.stop();
     }
 
