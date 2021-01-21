@@ -1203,26 +1203,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : getIndexDir(), true, "indexDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullNumber() : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
-    if (coreContainer != null) {
-      final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
-      if (cd != null) {
-        parentContext.gauge(() -> {
-          if (cd.getCollectionName() != null) {
-            return cd.getCollectionName();
-          } else {
-            return parentContext.nullString();
-          }
-        }, true, "collection", Category.CORE.toString());
 
-        parentContext.gauge(() -> {
-          if (cd.getShardId() != null) {
-            return cd.getShardId();
-          } else {
-            return parentContext.nullString();
-          }
-        }, true, "shard", Category.CORE.toString());
-      }
+    final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
+    if (cd != null) {
+      parentContext.gauge(cd::getCollectionName, true, "collection", Category.CORE.toString());
+      parentContext.gauge(cd::getShardId, true, "shard", Category.CORE.toString());
+      parentContext.gauge(cd::isLeader, true, "isLeader", Category.CORE.toString());
+      parentContext.gauge(
+          () -> String.valueOf(cd.getLastPublished()),
+          true,
+          "replicaState",
+          Category.CORE.toString());
     }
+
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();

@@ -53,7 +53,7 @@ Specifies the field from which to retrieve terms. This parameter is required if 
 Example: `terms.fl=title`
 
 `terms.list`::
-Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma-delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 +
 Example: `terms.list=termA,termB,termC`
 +
@@ -353,7 +353,7 @@ The `shards` parameter is subject to a host whitelist that has to be configured 
 +
 By default the whitelist will be populated with all live nodes when running in SolrCloud mode. If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`.
 +
-See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works. 
+See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works.
 
 `shards.qt`::
 Specifies the request handler Solr uses for requests to shards.

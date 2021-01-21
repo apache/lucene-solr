@@ -49,16 +49,14 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(1, ordList.length);
 
     BytesRef ref = new BytesRef();
-    dictionary.flagLookup.get(ordList.ints[0], ref);
-    char[] flags = Dictionary.decodeFlags(ref);
+    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
 
     int offset = random().nextInt(10);
     ordList = dictionary.lookupWord((" ".repeat(offset) + "lucen").toCharArray(), offset, 5);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
-    dictionary.flagLookup.get(ordList.ints[0], ref);
-    flags = Dictionary.decodeFlags(ref);
+    flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -76,8 +74,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
-    dictionary.flagLookup.get(ordList.ints[0], ref);
-    char[] flags = Dictionary.decodeFlags(ref);
+    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -95,8 +92,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
-    dictionary.flagLookup.get(ordList.ints[0], ref);
-    char[] flags = Dictionary.decodeFlags(ref);
+    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
 
     affixStream.close();
@@ -114,8 +110,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
-    dictionary.flagLookup.get(ordList.ints[0], ref);
-    char[] flags = Dictionary.decodeFlags(ref);
+    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
 
     affixStream.close();

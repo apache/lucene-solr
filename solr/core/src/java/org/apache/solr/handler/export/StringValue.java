@@ -38,13 +38,14 @@ class StringValue implements SortValue {
   protected LongValues toGlobal = LongValues.IDENTITY; // this segment to global ordinal. NN;
   protected SortedDocValues docValues;
 
-  protected int currentOrd;
+  public int currentOrd;
   protected int lastDocID;
   private boolean present;
 
   private BytesRef lastBytes;
   private String lastString;
   private int lastOrd = -1;
+  private int leafOrd = -1;
 
   public StringValue(SortedDocValues globalDocValues, String field, IntComp comp)  {
     this.globalDocValues = globalDocValues;
@@ -74,18 +75,22 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(int docId) throws IOException {
+    //System.out.println(docId +":"+lastDocID);
+    /*
     if (docId < lastDocID) {
       throw new AssertionError("docs were sent out-of-order: lastDocID=" + lastDocID + " vs doc=" + docId);
     }
 
     lastDocID = docId;
+    */
 
     if (docId > docValues.docID()) {
       docValues.advance(docId);
     }
+
     if (docId == docValues.docID()) {
       present = true;
-      currentOrd = (int) toGlobal.get(docValues.ordValue());
+      currentOrd = docValues.ordValue();
     } else {
       present = false;
       currentOrd = -1;
@@ -98,9 +103,12 @@ class StringValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    StringValue v = (StringValue)sv;
+    StringValue v = (StringValue) sv;
     this.currentOrd = v.currentOrd;
     this.present = v.present;
+    this.leafOrd = v.leafOrd;
+    this.lastOrd = v.lastOrd;
+    this.toGlobal = v.toGlobal;
   }
 
   public Object getCurrentValue() throws IOException {
@@ -113,11 +121,27 @@ class StringValue implements SortValue {
     return lastBytes;
   }
 
+  public void toGlobalValue(SortValue previousValue) {
+    lastOrd = currentOrd;
+    StringValue sv = (StringValue) previousValue;
+    if (sv.lastOrd == currentOrd) {
+      //Take the global ord from the previousValue unless we are a -1 which is the same in both global and leaf ordinal
+      if(this.currentOrd != -1) {
+        this.currentOrd = sv.currentOrd;
+      }
+    } else {
+      if(this.currentOrd > -1) {
+        this.currentOrd = (int) toGlobal.get(this.currentOrd);
+      }
+    }
+  }
+
   public String getField() {
     return field;
   }
 
   public void setNextReader(LeafReaderContext context) throws IOException {
+    leafOrd = context.ord;
     if (ordinalMap != null) {
       toGlobal = ordinalMap.getGlobalOrds(context.ord);
     }
@@ -128,6 +152,7 @@ class StringValue implements SortValue {
   public void reset() {
     this.currentOrd = comp.resetValue();
     this.present = false;
+    lastDocID = 0;
   }
 
   public int compareTo(SortValue o) {

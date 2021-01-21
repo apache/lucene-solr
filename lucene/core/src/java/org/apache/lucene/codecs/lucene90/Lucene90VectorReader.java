@@ -22,6 +22,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -386,9 +387,19 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      // We could do better by log-binary search in ordToDoc, but this is never used
-      return slowAdvance(target);
+    public int advance(int target) {
+      assert docID() < target;
+      ord = Arrays.binarySearch(fieldEntry.ordToDoc, ord + 1, fieldEntry.ordToDoc.length, target);
+      if (ord < 0) {
+        ord = -(ord + 1);
+      }
+      assert ord >= 0 && ord <= fieldEntry.ordToDoc.length;
+      if (ord == fieldEntry.ordToDoc.length) {
+        doc = NO_MORE_DOCS;
+      } else {
+        doc = fieldEntry.ordToDoc[ord];
+      }
+      return doc;
     }
 
     @Override
