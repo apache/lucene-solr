@@ -48,7 +48,8 @@ def workDir = file("work")
 task run(type: JavaExec) {
   description "Run a perf test (optional: -PtaskAlg=conf/your-algorithm-file -PmaxHeapSize=1G)"
   main 'org.apache.lucene.benchmark.byTask.Benchmark'
-  classpath sourceSets.main.runtimeClasspath
+  classpath sourceSets.main.runtimeClasspath + project.rootProject.files("solr/solrj/build/classes/java/main") +
+          project.rootProject.files("solr/solrj/build/resources/main") + project.rootProject.files("solr/solrj/build/lib/*")
   // allow these to be specified on the CLI via -PtaskAlg=  for example
   args = [propertyOrDefault('taskAlg', 'conf/micro-standard.alg')]
 
