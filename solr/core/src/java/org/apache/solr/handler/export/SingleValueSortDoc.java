@@ -25,6 +25,7 @@ class SingleValueSortDoc extends SortDoc {
 
   protected SortValue value1;
 
+  @Override
   public SortValue getSortValue(String field) {
     if (value1.getField().equals(field)) {
       return value1;
@@ -32,12 +33,14 @@ class SingleValueSortDoc extends SortDoc {
     return null;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
     value1.setNextReader(context);
   }
 
+  @Override
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
@@ -45,16 +48,18 @@ class SingleValueSortDoc extends SortDoc {
     this.value1.reset();
   }
 
+  @Override
   public void setValues(int docId) throws IOException {
     this.docId = docId;
     value1.setCurrentValue(docId);
   }
 
+  @Override
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((SingleValueSortDoc)sortDoc).value1);
+    value1.setCurrentValue(((SingleValueSortDoc) sortDoc).value1);
   }
 
   public SingleValueSortDoc(SortValue value1) {
@@ -62,25 +67,39 @@ class SingleValueSortDoc extends SortDoc {
     this.value1 = value1;
   }
 
+  @Override
+  public void setGlobalValues(SortDoc previous) {
+    SortValue previousValue = ((SingleValueSortDoc) previous).value1;
+    value1.toGlobalValue(previousValue);
+  }
+
+  @Override
   public SortDoc copy() {
     return new SingleValueSortDoc(value1.copy());
   }
 
+  @Override
   public boolean lessThan(Object o) {
-    SingleValueSortDoc sd = (SingleValueSortDoc)o;
+    SingleValueSortDoc sd = (SingleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
-      return docId+docBase > sd.docId+sd.docBase;
+      return docId + docBase > sd.docId + sd.docBase;
     }
   }
 
-  public int compareTo(Object o) {
-    SingleValueSortDoc sd = (SingleValueSortDoc)o;
-    return value1.compareTo(sd.value1);
+  @Override
+  public int compareTo(SortDoc o) {
+    SingleValueSortDoc sd = (SingleValueSortDoc) o;
+    int comp = value1.compareTo(sd.value1);
+    if (comp == 0) {
+      return  (sd.docId + sd.docBase) - (docId + docBase);
+    } else {
+      return comp;
+    }
   }
 
   public String toString() {

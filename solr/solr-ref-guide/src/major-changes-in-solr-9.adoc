@@ -108,7 +108,7 @@ _(raw; not yet edited)_
 
 * SOLR-11775: Return long value for facet count in Json Facet module irrespective of number of shards (hossman, Munendra S N)
 
-* SOLR-12823: Remove /clusterstate.json support, i.e. support for collections created with stateFormat=1 as well as support
+* SOLR-12823: Remove /clusterstate.json support, i.e., support for collections created with stateFormat=1 as well as support
   for Collection API MIGRATESTATEFORMAT action. Also removes support for cluster property `legacyCloud` (as if always false now).
 
 * SOLR-14656: Autoscaling framework removed
@@ -143,6 +143,9 @@ _(raw; not yet edited)_
 * SOLR-14654: plugins cannot be loaded using "runtimeLib=true" option. Use the package manager to use and load plugins
 
 * SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
+
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
+ of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
 
 === Upgrade Prerequisites in Solr 9
 

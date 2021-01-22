@@ -34,6 +34,30 @@ import org.apache.lucene.util.SmallFloat;
 public class BM25Similarity extends Similarity {
   private final float k1;
   private final float b;
+  private final boolean discountOverlaps;
+
+  /**
+   * BM25 with the supplied parameter values.
+   *
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero)
+   *     are discounted from the document's length.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is not
+   *     within the range {@code [0..1]}
+   */
+  public BM25Similarity(float k1, float b, boolean discountOverlaps) {
+    if (Float.isFinite(k1) == false || k1 < 0) {
+      throw new IllegalArgumentException(
+          "illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
+    this.k1 = k1;
+    this.b = b;
+    this.discountOverlaps = discountOverlaps;
+  }
 
   /**
    * BM25 with the supplied parameter values.
@@ -44,15 +68,7 @@ public class BM25Similarity extends Similarity {
    *     within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
-    if (Float.isFinite(k1) == false || k1 < 0) {
-      throw new IllegalArgumentException(
-          "illegal k1 value: " + k1 + ", must be a non-negative finite value");
-    }
-    if (Float.isNaN(b) || b < 0 || b > 1) {
-      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
-    }
-    this.k1 = k1;
-    this.b = b;
+    this(k1, b, true);
   }
 
   /**
@@ -62,9 +78,27 @@ public class BM25Similarity extends Similarity {
    *   <li>{@code k1 = 1.2}
    *   <li>{@code b = 0.75}
    * </ul>
+   *
+   * and the supplied parameter value:
+   *
+   * @param discountOverlaps True if overlap tokens (tokens with a position of increment of zero)
+   *     are discounted from the document's length.
+   */
+  public BM25Similarity(boolean discountOverlaps) {
+    this(1.2f, 0.75f, discountOverlaps);
+  }
+
+  /**
+   * BM25 with these default values:
+   *
+   * <ul>
+   *   <li>{@code k1 = 1.2}
+   *   <li>{@code b = 0.75}
+   *   <li>{@code discountOverlaps = true}
+   * </ul>
    */
   public BM25Similarity() {
-    this(1.2f, 0.75f);
+    this(1.2f, 0.75f, true);
   }
 
   /** Implemented as <code>log(1 + (docCount - docFreq + 0.5)/(docFreq + 0.5))</code>. */
@@ -83,23 +117,9 @@ public class BM25Similarity extends Similarity {
   }
 
   /**
-   * True if overlap tokens (tokens with a position of increment of zero) are discounted from the
-   * document's length.
-   */
-  protected boolean discountOverlaps = true;
-
-  /**
-   * Sets whether overlap tokens (Tokens with 0 position increment) are ignored when computing norm.
-   * By default this is true, meaning overlap tokens do not count when computing norms.
-   */
-  public void setDiscountOverlaps(boolean v) {
-    discountOverlaps = v;
-  }
-
-  /**
    * Returns true if overlap tokens are discounted from the document's length.
    *
-   * @see #setDiscountOverlaps
+   * @see #BM25Similarity(float, float, boolean)
    */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;

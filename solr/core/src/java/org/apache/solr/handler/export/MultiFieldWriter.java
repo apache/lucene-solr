@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.function.LongFunction;
 
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -41,6 +38,8 @@ class MultiFieldWriter extends FieldWriter {
   private boolean numeric;
   private CharsRefBuilder cref = new CharsRefBuilder();
   private final LongFunction<Object> bitsToValue;
+  private IntObjectHashMap<Object> docValuesCache = new IntObjectHashMap<>();
+
 
   public MultiFieldWriter(String field, FieldType fieldType, SchemaField schemaField, boolean numeric) {
     this.field = field;
@@ -54,25 +53,59 @@ class MultiFieldWriter extends FieldWriter {
     }
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex) throws IOException {
     if (this.fieldType.isPointField()) {
-      SortedNumericDocValues vals = DocValues.getSortedNumeric(reader, this.field);
+      int readerOrd = readerContext.ord;
+      SortedNumericDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        SortedNumericDocValues sortedNumericDocValues = (SortedNumericDocValues) docValuesCache.get(readerOrd);
+        if(sortedNumericDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = sortedNumericDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getSortedNumeric(readerContext.reader(), this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (!vals.advanceExact(sortDoc.docId)) return false;
+
+      final SortedNumericDocValues docVals = vals;
+
       out.put(this.field,
           (IteratorWriter) w -> {
-            for (int i = 0, count = vals.docValueCount(); i < count; i++) {
-              w.add(bitsToValue.apply(vals.nextValue()));
+            for (int i = 0, count = docVals.docValueCount(); i < count; i++) {
+              w.add(bitsToValue.apply(docVals.nextValue()));
             }
           });
       return true;
     } else {
-      SortedSetDocValues vals = DocValues.getSortedSet(reader, this.field);
+      int readerOrd = readerContext.ord;
+      SortedSetDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        SortedSetDocValues sortedSetDocValues = (SortedSetDocValues) docValuesCache.get(readerOrd);
+        if(sortedSetDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = sortedSetDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getSortedSet(readerContext.reader(), this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (vals.advance(sortDoc.docId) != sortDoc.docId) return false;
+
+      final SortedSetDocValues docVals = vals;
+
       out.put(this.field,
           (IteratorWriter) w -> {
             long o;
-            while((o = vals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
-              BytesRef ref = vals.lookupOrd(o);
+            while((o = docVals.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+              BytesRef ref = docVals.lookupOrd(o);
               fieldType.indexedToReadable(ref, cref);
               IndexableField f = fieldType.createField(schemaField, cref.toString());
               if (f == null) w.add(cref.toString());

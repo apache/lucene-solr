@@ -34,18 +34,20 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -74,6 +76,8 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
+  private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
+
   private static final String ALIAS_KEY = "AF";
   private static final String MORPH_ALIAS_KEY = "AM";
   private static final String PREFIX_KEY = "PFX";
@@ -86,6 +90,10 @@ public class Dictionary {
   private static final String OCONV_KEY = "OCONV";
   private static final String FULLSTRIP_KEY = "FULLSTRIP";
   private static final String LANG_KEY = "LANG";
+  private static final String BREAK_KEY = "BREAK";
+  private static final String FORBIDDENWORD_KEY = "FORBIDDENWORD";
+  private static final String COMPOUNDMIN_KEY = "COMPOUNDMIN";
+  private static final String COMPOUNDRULE_KEY = "COMPOUNDRULE";
   private static final String KEEPCASE_KEY = "KEEPCASE";
   private static final String NEEDAFFIX_KEY = "NEEDAFFIX";
   private static final String PSEUDOROOT_KEY = "PSEUDOROOT";
@@ -102,6 +110,7 @@ public class Dictionary {
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
+  Breaks breaks = Breaks.DEFAULT;
 
   // all condition checks used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
@@ -118,12 +127,18 @@ public class Dictionary {
   char[] stripData;
   int[] stripOffsets;
 
-  // 8 bytes per affix
-  byte[] affixData = new byte[64];
+  // 4 chars per affix, each char representing an unsigned 2-byte integer
+  char[] affixData = new char[32];
   private int currentAffix = 0;
 
+  // offsets in affixData
+  static final int AFFIX_FLAG = 0;
+  static final int AFFIX_STRIP_ORD = 1;
+  static final int AFFIX_CONDITION = 2;
+  static final int AFFIX_APPEND = 3;
+
   // Default flag parsing strategy
-  private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
+  FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
 
   // AF entries
   private String[] aliases;
@@ -148,7 +163,10 @@ public class Dictionary {
   int circumfix = -1; // circumfix flag, or -1 if one is not defined
   int keepcase = -1; // keepcase flag, or -1 if one is not defined
   int needaffix = -1; // needaffix flag, or -1 if one is not defined
+  int forbiddenword = -1; // forbiddenword flag, or -1 if one is not defined
   int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
+  int compoundMin = 3;
+  List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
@@ -233,10 +251,9 @@ public class Dictionary {
       readAffixFile(aff2, decoder);
 
       // read dictionary entries
-      IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
-      FSTCompiler<IntsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, o);
-      readDictionaryFiles(tempDir, tempFileNamePrefix, dictionaries, decoder, fstCompiler);
-      words = fstCompiler.compile();
+      IndexOutput unsorted = mergeDictionaries(tempDir, tempFileNamePrefix, dictionaries, decoder);
+      String sortedFile = sortWordsOffline(tempDir, tempFileNamePrefix, unsorted);
+      words = readSortedDictionaries(tempDir, sortedFile);
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
       success = true;
@@ -248,6 +265,10 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(aff);
       }
     }
+  }
+
+  int formStep() {
+    return hasStemExceptions ? 2 : 1;
   }
 
   /** Looks up Hunspell word forms from the dictionary */
@@ -394,6 +415,26 @@ public class Dictionary {
       } else if (line.startsWith(LANG_KEY)) {
         language = line.substring(LANG_KEY.length()).trim();
         alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+      } else if (line.startsWith(BREAK_KEY)) {
+        breaks = parseBreaks(reader, line);
+      } else if (line.startsWith(FORBIDDENWORD_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal FORBIDDENWORD declaration", reader.getLineNumber());
+        }
+        forbiddenword = flagParsingStrategy.parseFlag(parts[1]);
+      } else if (line.startsWith(COMPOUNDMIN_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal COMPOUNDMIN declaration", reader.getLineNumber());
+        }
+        compoundMin = Math.max(1, Integer.parseInt(parts[1]));
+      } else if (line.startsWith(COMPOUNDRULE_KEY)) {
+        String[] parts = line.split("\\s+");
+        if (parts.length != 2) {
+          throw new ParseException("Illegal COMPOUNDRULE header", reader.getLineNumber());
+        }
+        this.compoundRules = parseCompoundRules(reader, Integer.parseInt(parts[1]));
       }
     }
 
@@ -415,6 +456,45 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private List<CompoundRule> parseCompoundRules(LineNumberReader reader, int num)
+      throws IOException, ParseException {
+    String line;
+    List<CompoundRule> compoundRules = new ArrayList<>();
+    for (int i = 0; i < num; i++) {
+      line = reader.readLine();
+      String[] parts = line.split("\\s+");
+      if (!line.startsWith(COMPOUNDRULE_KEY) || parts.length != 2) {
+        throw new ParseException("COMPOUNDRULE rule expected", reader.getLineNumber());
+      }
+      compoundRules.add(new CompoundRule(parts[1], this));
+    }
+    return compoundRules;
+  }
+
+  private Breaks parseBreaks(LineNumberReader reader, String line)
+      throws IOException, ParseException {
+    Set<String> starting = new LinkedHashSet<>();
+    Set<String> ending = new LinkedHashSet<>();
+    Set<String> middle = new LinkedHashSet<>();
+    int num = Integer.parseInt(line.substring(BREAK_KEY.length()).trim());
+    for (int i = 0; i < num; i++) {
+      line = reader.readLine();
+      String[] parts = line.split("\\s+");
+      if (!line.startsWith(BREAK_KEY) || parts.length != 2) {
+        throw new ParseException("BREAK chars expected", reader.getLineNumber());
+      }
+      String breakStr = parts[1];
+      if (breakStr.startsWith("^")) {
+        starting.add(breakStr.substring(1));
+      } else if (breakStr.endsWith("$")) {
+        ending.add(breakStr.substring(0, breakStr.length() - 1));
+      } else {
+        middle.add(breakStr);
+      }
+    }
+    return new Breaks(starting, ending, middle);
   }
 
   private FST<IntsRef> affixFST(TreeMap<String, List<Integer>> affixes) throws IOException {
@@ -480,12 +560,9 @@ public class Dictionary {
     boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX_PATTERN);
 
     int numLines = Integer.parseInt(args[3]);
-    affixData = ArrayUtil.grow(affixData, (currentAffix << 3) + (numLines << 3));
-    ByteArrayDataOutput affixWriter =
-        new ByteArrayDataOutput(affixData, currentAffix << 3, numLines << 3);
+    affixData = ArrayUtil.grow(affixData, currentAffix * 4 + numLines * 4);
 
     for (int i = 0; i < numLines; i++) {
-      assert affixWriter.getPosition() == currentAffix << 3;
       String line = reader.readLine();
       String[] ruleArgs = line.split("\\s+");
 
@@ -581,12 +658,13 @@ public class Dictionary {
             "Too many unique append flags, please report this to dev@lucene.apache.org");
       }
 
-      affixWriter.writeShort((short) flag);
-      affixWriter.writeShort((short) stripOrd.intValue());
+      int dataStart = currentAffix * 4;
+      affixData[dataStart + AFFIX_FLAG] = flag;
+      affixData[dataStart + AFFIX_STRIP_ORD] = (char) stripOrd.intValue();
       // encode crossProduct into patternIndex
       int patternOrd = patternIndex << 1 | (crossProduct ? 1 : 0);
-      affixWriter.writeShort((short) patternOrd);
-      affixWriter.writeShort((short) appendFlagsOrd);
+      affixData[dataStart + AFFIX_CONDITION] = (char) patternOrd;
+      affixData[dataStart + AFFIX_APPEND] = (char) appendFlagsOrd;
 
       if (needsInputCleaning) {
         CharSequence cleaned = cleanInput(affixArg, sb);
@@ -600,6 +678,10 @@ public class Dictionary {
       affixes.computeIfAbsent(affixArg, __ -> new ArrayList<>()).add(currentAffix);
       currentAffix++;
     }
+  }
+
+  char affixData(int affixIndex, int offset) {
+    return affixData[affixIndex * 4 + offset];
   }
 
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
@@ -784,25 +866,13 @@ public class Dictionary {
     }
   }
 
-  /**
-   * Reads the dictionary file through the provided InputStreams, building up the words map
-   *
-   * @param dictionaries InputStreams to read the dictionary file through
-   * @param decoder CharsetDecoder used to decode the contents of the file
-   * @throws IOException Can be thrown while reading from the file
-   */
-  private void readDictionaryFiles(
+  private IndexOutput mergeDictionaries(
       Directory tempDir,
       String tempFileNamePrefix,
       List<InputStream> dictionaries,
-      CharsetDecoder decoder,
-      FSTCompiler<IntsRef> words)
+      CharsetDecoder decoder)
       throws IOException {
-    BytesRefBuilder flagsScratch = new BytesRefBuilder();
-    IntsRefBuilder scratchInts = new IntsRefBuilder();
-
     StringBuilder sb = new StringBuilder();
-
     IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
     try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
       for (InputStream dictionary : dictionaries) {
@@ -826,32 +896,58 @@ public class Dictionary {
               hasStemExceptions = parseStemException(line.substring(morphStart + 1)) != null;
             }
           }
-          if (needsInputCleaning) {
-            int flagSep = line.indexOf(FLAG_SEPARATOR);
-            if (flagSep == -1) {
-              flagSep = line.indexOf(MORPH_SEPARATOR);
-            }
-            if (flagSep == -1) {
-              CharSequence cleansed = cleanInput(line, sb);
-              writer.write(cleansed.toString().getBytes(StandardCharsets.UTF_8));
-            } else {
-              String text = line.substring(0, flagSep);
-              CharSequence cleansed = cleanInput(text, sb);
-              if (cleansed != sb) {
-                sb.setLength(0);
-                sb.append(cleansed);
-              }
-              sb.append(line.substring(flagSep));
-              writer.write(sb.toString().getBytes(StandardCharsets.UTF_8));
-            }
-          } else {
-            writer.write(line.getBytes(StandardCharsets.UTF_8));
-          }
+
+          writeNormalizedWordEntry(sb, writer, line);
         }
       }
       CodecUtil.writeFooter(unsorted);
     }
+    return unsorted;
+  }
 
+  private void writeNormalizedWordEntry(
+      StringBuilder reuse, ByteSequencesWriter writer, String line) throws IOException {
+    int flagSep = line.indexOf(FLAG_SEPARATOR);
+    int morphSep = line.indexOf(MORPH_SEPARATOR);
+    assert morphSep > 0;
+    assert morphSep > flagSep;
+    int sep = flagSep < 0 ? morphSep : flagSep;
+
+    CharSequence toWrite;
+    if (needsInputCleaning) {
+      cleanInput(line, sep, reuse);
+      reuse.append(line, sep, line.length());
+      toWrite = reuse;
+    } else {
+      toWrite = line;
+    }
+
+    String written = toWrite.toString();
+    sep = written.length() - (line.length() - sep);
+    writer.write(written.getBytes(StandardCharsets.UTF_8));
+
+    WordCase wordCase = WordCase.caseOf(written, sep);
+    if (wordCase == WordCase.MIXED || wordCase == WordCase.UPPER && flagSep > 0) {
+      addHiddenCapitalizedWord(reuse, writer, written.substring(0, sep), written.substring(sep));
+    }
+  }
+
+  private void addHiddenCapitalizedWord(
+      StringBuilder reuse, ByteSequencesWriter writer, String word, String afterSep)
+      throws IOException {
+    reuse.setLength(0);
+    reuse.append(Character.toUpperCase(word.charAt(0)));
+    for (int i = 1; i < word.length(); i++) {
+      reuse.append(caseFold(word.charAt(i)));
+    }
+    reuse.append(FLAG_SEPARATOR);
+    flagParsingStrategy.appendFlag(HIDDEN_FLAG, reuse);
+    reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
+    writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
+  }
+
+  private String sortWordsOffline(
+      Directory tempDir, String tempFileNamePrefix, IndexOutput unsorted) throws IOException {
     OfflineSorter sorter =
         new OfflineSorter(
             tempDir,
@@ -901,17 +997,19 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, unsorted.getName());
       }
     }
+    return sorted;
+  }
 
-    boolean success2 = false;
+  private FST<IntsRef> readSortedDictionaries(Directory tempDir, String sorted) throws IOException {
+    boolean success = false;
+
+    EntryGrouper grouper = new EntryGrouper();
 
     try (ByteSequencesReader reader =
         new ByteSequencesReader(tempDir.openChecksumInput(sorted, IOContext.READONCE), sorted)) {
 
       // TODO: the flags themselves can be double-chars (long) or also numeric
       // either way the trick is to encode them as char... but they must be parsed differently
-
-      String currentEntry = null;
-      IntsRefBuilder currentOrds = new IntsRefBuilder();
 
       while (true) {
         BytesRef scratch = reader.next();
@@ -952,42 +1050,15 @@ public class Dictionary {
           }
         }
 
-        int cmp = currentEntry == null ? 1 : entry.compareTo(currentEntry);
-        if (cmp < 0) {
-          throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
-        } else {
-          encodeFlags(flagsScratch, wordForm);
-          int ord = flagLookup.add(flagsScratch.get());
-          if (ord < 0) {
-            // already exists in our hash
-            ord = (-ord) - 1;
-          }
-          // finalize current entry, and switch "current" if necessary
-          if (cmp > 0 && currentEntry != null) {
-            Util.toUTF32(currentEntry, scratchInts);
-            words.add(scratchInts.get(), currentOrds.get());
-          }
-          // swap current
-          if (cmp > 0) {
-            currentEntry = entry;
-            currentOrds = new IntsRefBuilder(); // must be this way
-          }
-          if (hasStemExceptions) {
-            currentOrds.append(ord);
-            currentOrds.append(stemExceptionID);
-          } else {
-            currentOrds.append(ord);
-          }
-        }
+        grouper.add(entry, wordForm, stemExceptionID);
       }
 
       // finalize last entry
-      assert currentEntry != null;
-      Util.toUTF32(currentEntry, scratchInts);
-      words.add(scratchInts.get(), currentOrds.get());
-      success2 = true;
+      grouper.flushGroup();
+      success = true;
+      return grouper.words.compile();
     } finally {
-      if (success2) {
+      if (success) {
         tempDir.deleteFile(sorted);
       } else {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, sorted);
@@ -995,7 +1066,75 @@ public class Dictionary {
     }
   }
 
-  static char[] decodeFlags(BytesRef b) {
+  private class EntryGrouper {
+    final FSTCompiler<IntsRef> words =
+        new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
+    private final List<char[]> group = new ArrayList<>();
+    private final List<Integer> stemExceptionIDs = new ArrayList<>();
+    private final BytesRefBuilder flagsScratch = new BytesRefBuilder();
+    private final IntsRefBuilder scratchInts = new IntsRefBuilder();
+    private String currentEntry = null;
+
+    void add(String entry, char[] flags, int stemExceptionID) throws IOException {
+      if (!entry.equals(currentEntry)) {
+        if (currentEntry != null) {
+          if (entry.compareTo(currentEntry) < 0) {
+            throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
+          }
+          flushGroup();
+        }
+        currentEntry = entry;
+      }
+
+      group.add(flags);
+      if (hasStemExceptions) {
+        stemExceptionIDs.add(stemExceptionID);
+      }
+    }
+
+    void flushGroup() throws IOException {
+      IntsRefBuilder currentOrds = new IntsRefBuilder();
+
+      boolean hasNonHidden = false;
+      for (char[] flags : group) {
+        if (!hasHiddenFlag(flags)) {
+          hasNonHidden = true;
+          break;
+        }
+      }
+
+      for (int i = 0; i < group.size(); i++) {
+        char[] flags = group.get(i);
+        if (hasNonHidden && hasHiddenFlag(flags)) {
+          continue;
+        }
+
+        encodeFlags(flagsScratch, flags);
+        int ord = flagLookup.add(flagsScratch.get());
+        if (ord < 0) {
+          ord = -ord - 1; // already exists in our hash
+        }
+        currentOrds.append(ord);
+        if (hasStemExceptions) {
+          currentOrds.append(stemExceptionIDs.get(i));
+        }
+      }
+
+      Util.toUTF32(currentEntry, scratchInts);
+      words.add(scratchInts.get(), currentOrds.get());
+
+      group.clear();
+      stemExceptionIDs.clear();
+    }
+  }
+
+  static boolean hasHiddenFlag(char[] flags) {
+    return hasFlag(flags, HIDDEN_FLAG);
+  }
+
+  char[] decodeFlags(int entryId, BytesRef b) {
+    this.flagLookup.get(entryId, b);
+
     if (b.length == 0) {
       return CharsRef.EMPTY_CHARS;
     }
@@ -1080,6 +1219,24 @@ public class Dictionary {
     return null;
   }
 
+  boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {
+    if (forbiddenword != -1) {
+      IntsRef forms = lookupWord(word, 0, length);
+      return forms != null && hasFlag(forms, (char) forbiddenword, scratch);
+    }
+    return false;
+  }
+
+  boolean hasFlag(IntsRef forms, char flag, BytesRef scratch) {
+    int formStep = formStep();
+    for (int i = 0; i < forms.length; i += formStep) {
+      if (hasFlag(forms.ints[forms.offset + i], flag, scratch)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Abstraction of the process of parsing flags taken from the affix and dic files */
   abstract static class FlagParsingStrategy {
 
@@ -1104,6 +1261,8 @@ public class Dictionary {
      * @return Parsed flags
      */
     abstract char[] parseFlags(String rawFlags);
+
+    abstract void appendFlag(char flag, StringBuilder to);
   }
 
   /**
@@ -1114,6 +1273,11 @@ public class Dictionary {
     @Override
     public char[] parseFlags(String rawFlags) {
       return rawFlags.toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(flag);
     }
   }
 
@@ -1142,6 +1306,14 @@ public class Dictionary {
         flags = ArrayUtil.copyOfSubArray(flags, 0, upto);
       }
       return flags;
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      if (to.length() > 0) {
+        to.append(",");
+      }
+      to.append((int) flag);
     }
   }
 
@@ -1177,6 +1349,20 @@ public class Dictionary {
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append((char) (flag >> 8));
+      to.append((char) (flag & 0xff));
+    }
+  }
+
+  boolean hasCompounding() {
+    return compoundRules != null;
+  }
+
+  boolean hasFlag(int entryId, char flag, BytesRef scratch) {
+    return hasFlag(decodeFlags(entryId, scratch), flag);
   }
 
   static boolean hasFlag(char[] flags, char flag) {
@@ -1184,9 +1370,13 @@ public class Dictionary {
   }
 
   CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
+    return cleanInput(input, input.length(), reuse);
+  }
+
+  private CharSequence cleanInput(CharSequence input, int prefixLength, StringBuilder reuse) {
     reuse.setLength(0);
 
-    for (int i = 0; i < input.length(); i++) {
+    for (int i = 0; i < prefixLength; i++) {
       char ch = input.charAt(i);
 
       if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0) {
@@ -1303,5 +1493,22 @@ public class Dictionary {
     }
 
     return DEFAULT_TEMP_DIR;
+  }
+
+  /** Possible word breaks according to BREAK directives */
+  static class Breaks {
+    private static final Set<String> MINUS = Collections.singleton("-");
+    static final Breaks DEFAULT = new Breaks(MINUS, MINUS, MINUS);
+    final String[] starting, ending, middle;
+
+    Breaks(Collection<String> starting, Collection<String> ending, Collection<String> middle) {
+      this.starting = starting.toArray(new String[0]);
+      this.ending = ending.toArray(new String[0]);
+      this.middle = middle.toArray(new String[0]);
+    }
+
+    boolean isNotEmpty() {
+      return middle.length > 0 || starting.length > 0 || ending.length > 0;
+    }
   }
 }

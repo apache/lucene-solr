@@ -40,25 +40,54 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 
 === Solr 8.8
 
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]
+for an overview of the main new features of Solr 8.8.
+
+When upgrading to 8.8.x users should be aware of the following major changes from 8.7.
+
 *Nested Documents*
 
-** When doing atomic/partial updates to a child document:
-*** Supply the `\_root_` field (the ID of the root document) so that Solr understands you are manipulating a child document and not a root document.
-In its absence, Solr looks at the `\_route_` parameter but that may go away because it's not an ideal substitute.
+* When doing atomic/partial updates to a child document:
+** Supply the `\_root_` field (the ID of the root document) so that Solr understands you are manipulating a child document and not a root document.
+In its absence, Solr looks at the `\_route_` parameter but this may change in the future because it's not an ideal substitute.
 If neither are present, Solr assumes you are updating a root document.
 If this assumption is false, Solr will do a cheap check that usually detects the problem and will
 throw an exception to alert you of the need to specify the Root ID.
 This backwards incompatible change was done to increase performance and robustness.
-*** This feature no longer requires stored=true or docValues=true on the `\_root_` field.  You might
-have it for other purposes though (e.g. for `uniqueBlock(...)`)
-*** This feature no longer requires the `\_nest_path_` field, although you probably ought to
+** This feature no longer requires `stored=true` or `docValues=true` on the `\_root_` field.
+You might have it for other purposes though (e.g., for `uniqueBlock(...)`).
+** This feature no longer requires the `\_nest_path_` field, although you probably ought to
 continue to define it as it's useful for other things.
 
 *Removed Contribs*
 
-* The search results clustering contrib has been removed from 8.x Solr line due to lack
-  of Java 1.8 compatibility in the dependency providing on-line clustering of search results.
-  See SOLR-14981 for more details.
+* The search results clustering contrib (Carrot2) has been removed from 8.x Solr due to lack of Java 1.8 compatibility in the dependency that provides online clustering of search results. The contrib will be re-introduced in Solr 9.0.
+
+*Learning to Rank*
+
+* Interleaving support has been added to Learning to Rank (LTR).
+Currently only the Team Draft Interleaving algorithm is supported.
+For examples using this feature, see the section <<learning-to-rank.adoc#running-a-rerank-query-interleaving-two-models,Running a Rerank Query Interleaving Two Models>>.
+
+*Metrics*
+
+* Two metrics have been added for SolrCloud's Overseer:
+** `solr_metrics_overseer_stateUpdateQueueSize`
+** `solr_metrics_overseer_collectionWorkQueueSize`
+
+*Prometheus Exporter*
+
+* The `./bin` scripts included with the Prometheus Exporter contrib now allow use of custom java options with environment variables.
+See the section <<monitoring-solr-with-prometheus-and-grafana.adoc#environment-variable-options,Environment Variable Options>> for more details.
+* The default Grafana dashboards now include panels for query performance monitoring.
+The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
+* The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
+
+*Solr Home*
+
+* The internal logic for identifying 'Solr Home' (`solr.solr.home`) has been refactored to make testing less error prone.
+Plugin developers using `SolrPaths.locateSolrHome()` or 'new `SolrResourceLoader`' should check deprecation warnings as existing some existing functionality will be removed in 9.0.
+https://issues.apache.org/jira/browse/SOLR-14934[SOLR-14934] has more technical details about this change for those concerned.
 
 === Solr 8.7
 

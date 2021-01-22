@@ -88,7 +88,7 @@ This functionality is enabled by default, but can be disabled via a runtime para
 A configset is uploaded in a "trusted" mode if authentication is enabled and the upload operation is performed as an authenticated request. Without authentication, a configset is uploaded in an "untrusted" mode. Upon creation of a collection using an "untrusted" configset, the following functionality will not work:
 
 * The XSLT transformer (`tr` parameter) cannot be used at request processing time.
-* If specified in the configset, the StatelessScriptUpdateProcessor will not initialize.
+* If specified in the configset, the ScriptUpdateProcessorFactory will not initialize.
 * Collections won't initialize if <lib> directives are used in the configset. (Note: Libraries added to Solr's classpath don't need the <lib> directive)
 
 If you use any of these parameters or features, you must have enabled security features in your Solr installation and you must upload the configset as an authenticated user.

@@ -489,7 +489,7 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 
 *Streaming Expressions*
 
-* All Stream Evaluators in `solrj.io.eval` have been refactored to have a simpler and more robust structure. This simplifies and condenses the code required to implement a new Evaluator and makes it much easier for evaluators to handle differing data types (primitives, objects, arrays, lists, and so forth).
+* All stream evaluators in `solrj.io.eval` have been refactored to have a simpler and more robust structure. This simplifies and condenses the code required to implement a new Evaluator and makes it much easier for evaluators to handle differing data types (primitives, objects, arrays, lists, and so forth).
 
 *ReplicationHandler*
 
