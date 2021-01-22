@@ -87,7 +87,7 @@ public class SolrQoSFilter extends QoSFilter {
             if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
             updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
           } else {
-            updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 3)), sLoad, ourLoad);
+            updateMaxRequests(Math.min(_origMaxRequests, getMaxRequests() * 3), sLoad, ourLoad);
           }
         } else {
           if (ourLoad > 0.90 && sLoad > 1.5) {
@@ -102,7 +102,7 @@ public class SolrQoSFilter extends QoSFilter {
               if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
               updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
             } else {
-              updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 3)), sLoad, ourLoad);
+              updateMaxRequests(Math.min(_origMaxRequests, getMaxRequests() * 3), sLoad, ourLoad);
             }
 
           }
