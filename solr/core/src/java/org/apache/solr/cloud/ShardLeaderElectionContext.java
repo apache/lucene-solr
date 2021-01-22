@@ -109,6 +109,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         return false;
       }
       try {
+
+        core.getSolrCoreState().cancelRecovery(true, false);
+
         ActionThrottle lt;
 
         MDCLoggingContext.setCore(core);
@@ -188,11 +191,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             // - we were active
             // before, so become leader anyway if no one else has any versions either
             if (result.getOtherHasVersions().orElse(false)) {
-              log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
+              log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader {}", coreName);
               rejoinLeaderElection(core);
               return false;
             } else {
-              log.info("We failed sync, but we have no versions - we can't sync in that case - we did not find versions on other replicas, so become leader anyway");
+              log.info("We failed sync, but we have no versions - we can't sync in that case - we did not find versions on other replicas, so become leader anyway {}", coreName);
               success = true;
             }
           }
@@ -215,7 +218,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 //          }
 //        }
         if (!success) {
-          log.info("Sync with potential leader failed, rejoining election ...");
+          log.info("Sync with potential leader failed, rejoining election {} ...", coreName);
           rejoinLeaderElection(core);
           return false;
         }
@@ -329,7 +332,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           throws InterruptedException, KeeperException, IOException {
     // remove our ephemeral and re join the election
 
-    log.info("There may be a better leader candidate than us - will cancel election, rejoin election, and kick off recovery");
+    log.info("There may be a better leader candidate than us - will cancel election, rejoin election, and kick off recovery {}", core.getName());
 
     leaderElector.retryElection(false);
 

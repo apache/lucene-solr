@@ -447,11 +447,14 @@ public class LeaderElector implements Closeable {
   }
 
   @Override
-  public void close() throws IOException {
+  public synchronized void close() throws IOException {
     assert ObjectReleaseTracker.release(this);
     state = CLOSED;
     this.isClosed = true;
+
     IOUtils.closeQuietly(watcher);
+    watcher = null;
+
     if (context != null) {
       try {
         context.cancelElection();
@@ -461,9 +464,9 @@ public class LeaderElector implements Closeable {
     }
     try {
       if (joinFuture != null) {
-        joinFuture.cancel(false);
+        joinFuture.get();
       }
-    } catch (NullPointerException e) {
+    } catch (Exception e) {
       // okay
     }
   }
@@ -588,9 +591,7 @@ public class LeaderElector implements Closeable {
       log.info("Closed, won't rejoin election");
       throw new AlreadyClosedException();
     }
-    ElectionWatcher watcher = this.watcher;
-    IOUtils.closeQuietly(watcher);
-    this.watcher = null;
+
     IOUtils.closeQuietly(this);
     context.leaderSeqPath = null;
     context.watchedSeqPath = null;
@@ -602,6 +603,7 @@ public class LeaderElector implements Closeable {
     isClosed = false;
     isCancelled = false;
     joinFuture = null;
+    state = OUT_OF_ELECTION;
     joinElection(true, joinAtHead);
   }
 

@@ -183,6 +183,11 @@ public class ZkController implements Closeable, Runnable {
     return  elector;
   }
 
+  public LeaderElector getLeaderElector(String name) {
+    LeaderElector elector = leaderElectors.get(name);
+    return elector;
+  }
+
   static class ContextKey {
 
     private String collection;
@@ -2084,24 +2089,13 @@ public class ZkController implements Closeable, Runnable {
       MDCLoggingContext.setCoreDescriptor(cc, cc.getCoreDescriptor(coreName));
 
       log.info("Rejoin the shard leader election.");
-
-      ContextKey contextKey = new ContextKey(collectionName, coreName);
-
-
-      Map<String, Object> props = new HashMap<>();
-      props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-
-      Replica replica = new Replica(coreName, props, collectionName, shardId, zkStateReader);
-
-      LeaderElector elect =  leaderElectors.get(replica.getName());
-
-      ShardLeaderElectionContext context = new ShardLeaderElectionContext(elect, shardId, collectionName,
-          coreName, replica, this, getCoreContainer());
-
-      context.leaderSeqPath = context.electionPath + LeaderElector.ELECTION_NODE + "/" + electionNode;
-      elect.setup(context);
-
-      elect.retryElection(params.getBool(REJOIN_AT_HEAD_PROP, false));
+      LeaderElector elect =  leaderElectors.get(coreName);
+      if (elect != null) {
+        elect.retryElection(params.getBool(REJOIN_AT_HEAD_PROP, false));
+      }
+      try (SolrCore core = getCoreContainer().getCore(coreName)) {
+        core.getSolrCoreState().doRecovery(core);
+      }
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
