@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -102,10 +101,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         log.error("No SolrCore found, cannot become leader {}", coreName);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "No SolrCore found, cannot become leader " + coreName);
+        throw new AlreadyClosedException("No SolrCore found, cannot become leader " + coreName);
       }
       if (core.isClosing() || core.getCoreContainer().isShutDown()) {
         log.info("We are closed, will not become leader");
+        closed = true;
+        cancelElection();
         return false;
       }
       try {
@@ -255,15 +256,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         zkController.publish(zkNodes);
 
-      } catch (AlreadyClosedException | InterruptedException e) {
-        ParWork.propagateInterrupt("Already closed or interrupted, bailing..", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      } catch (SessionExpiredException e) {
-        SolrException.log(log, "SessionExpired", e);
+      } catch (AlreadyClosedException e) {
+        log.info("Already closed or interrupted, bailing..", e);
         throw e;
+      } catch (InterruptedException e) {
+        log.warn("Already closed or interrupted, bailing..", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);
-        // we could not publish ourselves as leader - try and rejoin election
+        // we could not register ourselves as leader - try and rejoin election
 
         rejoinLeaderElection(core);
         return false;
@@ -271,7 +272,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
 
     } catch (AlreadyClosedException e) {
-      log.info("CoreContainer is shutting down, won't become leader");
+      log.info("Already closed, won't become leader");
+      closed = true;
+      cancelElection();
+      throw e;
     } finally {
       MDCLoggingContext.clear();
     }

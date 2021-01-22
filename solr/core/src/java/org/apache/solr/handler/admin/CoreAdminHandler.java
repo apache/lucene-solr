@@ -208,6 +208,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         } finally {
           MDC.remove("CoreAdminHandler.asyncId");
           MDC.remove("CoreAdminHandler.action");
+          MDCLoggingContext.clear();
         }
       }
     } finally {
