@@ -251,8 +251,8 @@ final class Stemmer {
    * @param previous previous affix that was removed (so we dont remove same one twice)
    * @param prevFlag Flag from a previous stemming step that need to be cross-checked with any
    *     affixes in this recursive step
-   * @param prefixFlag flag of the most inner removed prefix, so that when removing a suffix, it's
-   *     also checked against the word
+   * @param prefixId ID of the most inner removed prefix, so that when removing a suffix, it's also
+   *     checked against the word
    * @param recursionDepth current recursiondepth
    * @param doPrefix true if we should remove prefixes
    * @param doSuffix true if we should remove suffixes
@@ -270,7 +270,7 @@ final class Stemmer {
       int length,
       int previous,
       int prevFlag,
-      int prefixFlag,
+      int prefixId,
       int recursionDepth,
       boolean doPrefix,
       boolean doSuffix,
@@ -398,7 +398,7 @@ final class Stemmer {
                     strippedWord,
                     strippedWord.length,
                     suffix,
-                    prefixFlag,
+                    prefixId,
                     recursionDepth,
                     false,
                     circumfix,
@@ -474,9 +474,9 @@ final class Stemmer {
    * @param strippedWord Word the affix has been removed and the strip added
    * @param length valid length of stripped word
    * @param affix HunspellAffix representing the affix rule itself
-   * @param prefixFlag when we already stripped a prefix, we cant simply recurse and check the
-   *     suffix, unless both are compatible so we must check dictionary form against both to add it
-   *     as a stem!
+   * @param prefixId when we already stripped a prefix, we cant simply recurse and check the suffix,
+   *     unless both are compatible so we must check dictionary form against both to add it as a
+   *     stem!
    * @param recursionDepth current recursion depth
    * @param prefix true if we are removing a prefix (false if it's a suffix)
    * @return List of stems for the word, or an empty list if none are found
@@ -485,14 +485,13 @@ final class Stemmer {
       char[] strippedWord,
       int length,
       int affix,
-      int prefixFlag,
+      int prefixId,
       int recursionDepth,
       boolean prefix,
       boolean circumfix,
       boolean caseVariant)
       throws IOException {
     char flag = dictionary.affixData(affix, Dictionary.AFFIX_FLAG);
-    char append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
     List<CharsRef> stems = new ArrayList<>();
 
@@ -500,16 +499,15 @@ final class Stemmer {
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
         char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
-        if (Dictionary.hasFlag(wordFlags, flag)) {
+        if (Dictionary.hasFlag(wordFlags, flag) || isFlagAppendedByAffix(prefixId, flag)) {
           // confusing: in this one exception, we already chained the first prefix against the
           // second,
           // so it doesnt need to be checked against the word
           boolean chainedPrefix = dictionary.complexPrefixes && recursionDepth == 1 && prefix;
-          if (!chainedPrefix
-              && prefixFlag >= 0
-              && !Dictionary.hasFlag(wordFlags, (char) prefixFlag)) {
-            // see if we can chain prefix thru the suffix continuation class (only if it has any!)
-            if (!dictionary.hasFlag(append, (char) prefixFlag, scratch)) {
+          if (!chainedPrefix && prefixId >= 0) {
+            char prefixFlag = dictionary.affixData(prefixId, Dictionary.AFFIX_FLAG);
+            if (!Dictionary.hasFlag(wordFlags, prefixFlag)
+                && !isFlagAppendedByAffix(affix, prefixFlag)) {
               continue;
             }
           }
@@ -517,8 +515,7 @@ final class Stemmer {
           // if circumfix was previously set by a prefix, we must check this suffix,
           // to ensure it has it, and vice versa
           if (dictionary.circumfix != -1) {
-            boolean suffixCircumfix =
-                dictionary.hasFlag(append, (char) dictionary.circumfix, scratch);
+            boolean suffixCircumfix = isFlagAppendedByAffix(affix, (char) dictionary.circumfix);
             if (circumfix != suffixCircumfix) {
               continue;
             }
@@ -541,14 +538,14 @@ final class Stemmer {
     // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we
     // have that flag
     if (dictionary.circumfix != -1 && !circumfix && prefix) {
-      circumfix = dictionary.hasFlag(append, (char) dictionary.circumfix, scratch);
+      circumfix = isFlagAppendedByAffix(affix, (char) dictionary.circumfix);
     }
 
     if (isCrossProduct(affix) && recursionDepth <= 1) {
       boolean doPrefix;
       if (recursionDepth == 0) {
         if (prefix) {
-          prefixFlag = flag;
+          prefixId = affix;
           doPrefix = dictionary.complexPrefixes && dictionary.twoStageAffix;
           // we took away the first prefix.
           // COMPLEXPREFIXES = true:  combine with a second prefix and another suffix
@@ -564,7 +561,7 @@ final class Stemmer {
       } else {
         doPrefix = false;
         if (prefix && dictionary.complexPrefixes) {
-          prefixFlag = flag;
+          prefixId = affix;
           // we took away the second prefix: go look for another suffix
         } else if (prefix || dictionary.complexPrefixes || !dictionary.twoStageAffix) {
           return stems;
@@ -578,7 +575,7 @@ final class Stemmer {
               length,
               affix,
               flag,
-              prefixFlag,
+              prefixId,
               recursionDepth + 1,
               doPrefix,
               true,
@@ -588,6 +585,12 @@ final class Stemmer {
     }
 
     return stems;
+  }
+
+  private boolean isFlagAppendedByAffix(int affixId, char flag) {
+    if (affixId < 0) return false;
+    int appendId = dictionary.affixData(affixId, Dictionary.AFFIX_APPEND);
+    return dictionary.hasFlag(appendId, flag, scratch);
   }
 
   private boolean isCrossProduct(int affix) {
