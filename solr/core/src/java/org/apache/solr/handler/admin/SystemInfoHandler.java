@@ -341,7 +341,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       // Mapped roles for this principal
       @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
-      if (auth != null) {
+      if (auth instanceof RuleBasedAuthorizationPluginBase) {
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
