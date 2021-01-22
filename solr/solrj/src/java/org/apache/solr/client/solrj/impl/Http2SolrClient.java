@@ -443,7 +443,7 @@ public class Http2SolrClient extends SolrClient {
         req.request.idleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
       }
     } catch (Exception e) {
-      asyncListener.onFailure(e);
+      asyncListener.onFailure(e, 500);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
     final ResponseParser parser = solrRequest.getResponseParser() == null
@@ -470,7 +470,7 @@ public class Http2SolrClient extends SolrClient {
 
             } catch (Exception e) {
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-                asyncListener.onFailure(e);
+                asyncListener.onFailure(e, 500);
               }
             } finally {
               arrived = true;
@@ -485,7 +485,7 @@ public class Http2SolrClient extends SolrClient {
           super.onFailure(response, failure);
           try {
             if (SolrException.getRootCause(failure) != CANCELLED_EXCEPTION) {
-              asyncListener.onFailure(failure);
+              asyncListener.onFailure(failure, response.getStatus());
             } else {
               asyncListener.onSuccess(new NamedList<>());
             }
@@ -521,7 +521,7 @@ public class Http2SolrClient extends SolrClient {
     } catch (Exception e) {
 
       if (e != CANCELLED_EXCEPTION) {
-        asyncListener.onFailure(e);
+        asyncListener.onFailure(e, 500);
       }
       //log.info("UNREGISTER TRACKER");
      // asyncTracker.arrive();
@@ -540,14 +540,14 @@ public class Http2SolrClient extends SolrClient {
     try {
       req = makeRequest(solrRequest, collection);
     } catch (Exception e) {
-      asyncListener.onFailure(e);
+      asyncListener.onFailure(e, 500);
       return FAILED_MAKING_REQUEST_CANCELLABLE;
     }
     MyInputStreamResponseListener mysl = new MyInputStreamResponseListener(httpClient, asyncListener);
     try {
       req.request.send(mysl);
     } catch (Exception e) {
-      asyncListener.onFailure(e);
+      asyncListener.onFailure(e, 500);
 
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
     }
@@ -1461,7 +1461,7 @@ public class Http2SolrClient extends SolrClient {
     public void onFailure(Response response, Throwable failure) {
       super.onFailure(response, failure);
       try {
-        asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+        asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure), response.getStatus());
       } catch (Exception e) {
         log.error("Exception in async failure listener", e);
       }

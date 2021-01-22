@@ -201,7 +201,7 @@ public class HttpShardHandler extends ShardHandler {
         responses.add(srsp);
       }
 
-      public void onFailure(Throwable throwable) {
+      public void onFailure(Throwable throwable, int code) {
         ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         srsp.setException(throwable);
         if (throwable instanceof SolrException) {

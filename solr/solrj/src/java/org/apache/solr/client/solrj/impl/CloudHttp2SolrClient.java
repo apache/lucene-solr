@@ -331,7 +331,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     }
 
     @Override
-    public void onFailure(Throwable t) {
+    public void onFailure(Throwable t, int code) {
       tsExceptions.put(url, t);
       latch.countDown();
     }

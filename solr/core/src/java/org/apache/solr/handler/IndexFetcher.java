@@ -1908,7 +1908,7 @@ public class IndexFetcher {
           }
 
           @Override
-          public void onFailure(Throwable throwable) {
+          public void onFailure(Throwable throwable, int code) {
             log.error("Exception fetching file", throwable);
           }
         });

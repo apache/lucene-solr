@@ -120,7 +120,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
           try {
             url = it.nextOrError(e);
           } catch (Exception ex) {
-            asyncListener.onFailure(e);
+            asyncListener.onFailure(e, 500);
             return;
           }
           try {
@@ -136,7 +136,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
             MDC.remove("LBSolrClient.url");
           }
         } else {
-          asyncListener.onFailure(e);
+          asyncListener.onFailure(e, 500);
         }
       }
     };
@@ -144,7 +144,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       Cancellable cancellable = doRequest(it.nextOrError(), req, rsp, isNonRetryable, it.isServingZombieServer(), retryListener);
       currentCancellable.set(cancellable);
     } catch (SolrServerException e) {
-      asyncListener.onFailure(e);
+      asyncListener.onFailure(e, 500);
     }
     return () -> {
 
@@ -177,7 +177,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       }
 
       @Override
-      public void onFailure(Throwable oe) {
+      public void onFailure(Throwable oe, int code) {
         try {
           throw (Exception) oe;
         } catch (BaseHttpSolrClient.RemoteExecutionException e) {

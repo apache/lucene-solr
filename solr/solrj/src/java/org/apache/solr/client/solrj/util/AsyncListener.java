@@ -31,6 +31,6 @@ public interface AsyncListener<T> {
   }
 
   void onSuccess(T t);
-  void onFailure(Throwable throwable);
+  void onFailure(Throwable throwable, int code);
 
 }

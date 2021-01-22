@@ -971,7 +971,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     @Override
-    public void onFailure(Throwable throwable) {
+    public void onFailure(Throwable throwable, int code) {
       try {
         latch.countDown();
       } catch (NullPointerException e) {

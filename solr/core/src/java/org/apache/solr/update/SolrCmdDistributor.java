@@ -66,6 +66,7 @@ public class SolrCmdDistributor implements Closeable {
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
   private final Set<Cancellable> cancels = ConcurrentHashMap.newKeySet(32);
+  private volatile Throwable cancelExeption;
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler) {
     assert ObjectReleaseTracker.track(this);
@@ -83,6 +84,13 @@ public class SolrCmdDistributor implements Closeable {
 
   public void finish() {
     assert !finished : "lifecycle sanity check";
+
+    if (cancelExeption != null) {
+      Throwable exp = cancelExeption;
+      cancelExeption = null;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
+    }
+
     if (isClosed == null || isClosed != null && !isClosed.isClosed()) {
       solrClient.waitForOutstandingRequests();
     } else {
@@ -222,6 +230,12 @@ public class SolrCmdDistributor implements Closeable {
 
   private void submit(final Req req) {
 
+    if (cancelExeption != null) {
+      Throwable exp = cancelExeption;
+      cancelExeption = null;
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
+    }
+
     if (log.isDebugEnabled()) {
       log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
     }
@@ -266,9 +280,15 @@ public class SolrCmdDistributor implements Closeable {
         }
 
         @Override
-        public void onFailure(Throwable t) {
-          log.error("Exception sending dist update", t);
+        public void onFailure(Throwable t, int code) {
+          log.error("Exception sending dist update {}", code, t);
           cancels.remove(cancelIndex);
+
+          if (code == 404) {
+            cancelExeption = t;
+            return;
+          }
+
           Error error = new Error();
           error.t = t;
           error.req = req;
