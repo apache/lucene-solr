@@ -190,7 +190,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT), true);
 
         try {
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 1000);
+          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 1000, false);
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -645,7 +645,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           + "failed since we're not in cloud mode.");
     }
     try {
-      return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId()).getCoreUrl();
+      return zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 1500, false).getCoreUrl();
     } catch (InterruptedException | TimeoutException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception during fetching from leader.", e);
@@ -717,14 +717,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     try {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 100);
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 100, false);
       isLeader = leaderReplica.getName().equals(desc.getName());
       if (log.isTraceEnabled()) log.trace("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 1500, false);
         }
       }
 
@@ -891,7 +891,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     Slice mySlice = coll.getSlice(myShardId);
     final Slice.State state = mySlice.getState();
     if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
-      Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
+      Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId, 1500, false);
       boolean amILeader = myLeader.getName().equals(desc.getName());
       if (amILeader) {
         // Does the document belong to my hash range as well?

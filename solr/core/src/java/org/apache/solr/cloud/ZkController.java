@@ -1433,11 +1433,8 @@ public class ZkController implements Closeable, Runnable {
             throw new AlreadyClosedException();
           }
 
-          leader = zkStateReader.getLeaderRetry(collection, shardId, 500);
+          leader = zkStateReader.getLeaderRetry(collection, shardId, 500, false);
 
-          if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + shardId  + "/leader")) {
-            break;
-          }
         } catch (TimeoutException timeoutException) {
 
         }

@@ -980,6 +980,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException, TimeoutException {
+    return getLeaderRetry(collection, shard, timeout, true);
+  }
+
+  /**
+   * Get shard leader properties, with retry if none exist.
+   */
+  public Replica getLeaderRetry(String collection, String shard, int timeout, boolean mustBeLive) throws InterruptedException, TimeoutException {
 
     DocCollection coll = getClusterState().getCollectionOrNull(collection);
 
@@ -987,12 +994,20 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Slice slice = coll.getSlice(shard);
       if (slice != null) {
         Replica leader = slice.getLeader();
-        if (leader != null && leader.getState() == Replica.State.ACTIVE && isNodeLive(leader.getNodeName())) {
+        boolean valid;
+        try {
+          valid = mustBeLive ? isNodeLive(leader.getNodeName()) || zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + slice.getName() + "/leader") : isNodeLive(leader.getNodeName());
+        } catch (KeeperException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (InterruptedException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+        if (leader != null && leader.getState() == Replica.State.ACTIVE && valid) {
           return leader;
         }
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE && isNodeLive(replica.getNodeName())) {
+          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE && valid) {
             return replica;
           }
         }
@@ -1007,15 +1022,36 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         Slice slice = c.getSlice(shard);
         if (slice == null) return false;
         Replica leader = slice.getLeader();
-        if (leader != null && leader.getState() == Replica.State.ACTIVE && isNodeLive(leader.getNodeName())) {
-          returnLeader.set(leader);
-          return true;
+
+        if (leader != null && leader.getState() == Replica.State.ACTIVE) {
+          boolean valid = false;
+          try {
+            valid = mustBeLive ?  isNodeLive(leader.getNodeName()) || zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + slice.getName()  + "/leader") : isNodeLive(leader.getNodeName());
+          } catch (KeeperException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          } catch (InterruptedException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+          if (valid) {
+            returnLeader.set(leader);
+            return true;
+          }
         }
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
-          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE && isNodeLive(replica.getNodeName())) {
-            returnLeader.set(replica);
-            return true;
+          if ("true".equals(replica.getProperty(LEADER_PROP)) && replica.getState() == Replica.State.ACTIVE) {
+            boolean valid = false;
+            try {
+              valid = mustBeLive ?  zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + slice.getName()  + "/leader") : isNodeLive(leader.getNodeName());
+            } catch (KeeperException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            } catch (InterruptedException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+            if (valid) {
+              returnLeader.set(replica);
+              return true;
+            }
           }
         }
 

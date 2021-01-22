@@ -350,7 +350,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
           // expected
         }
 
-        Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
+        Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500, false);
+
         if (leader != null && leader.getName().equals(coreName)) {
           log.info("We are the leader, STOP recovery");
           close = true;
@@ -404,7 +405,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         Replica leader;
         try {
-          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500);
+          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500, false);
 
           if (leader != null && leader.getName().equals(coreName)) {
             log.info("We are the leader, STOP recovery");
