@@ -412,7 +412,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     // cause leader migration by expiring the current leader's zk session
     chaosMonkey.expireSession(leaderJetty);
 
-    String expectedNewLeaderCoreNodeName = notLeaders.get(0).getName();
+    String expectedNewLeaderReplicaName = notLeaders.get(0).getName();
     long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < timeout) {
       String currentLeaderName = null;
@@ -422,7 +422,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         currentLeaderName = currentLeader.getName();
       } catch (Exception exc) {}
 
-      if (expectedNewLeaderCoreNodeName.equals(currentLeaderName))
+      if (expectedNewLeaderReplicaName.equals(currentLeaderName))
         break; // new leader was elected after zk session expiration
 
       Thread.sleep(500);
@@ -430,7 +430,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     Replica currentLeader =
         cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    assertEquals(expectedNewLeaderCoreNodeName, currentLeader.getName());
+    assertEquals(expectedNewLeaderReplicaName, currentLeader.getName());
 
     // TODO: This test logic seems to be timing dependent and fails on Jenkins
     // need to come up with a better approach

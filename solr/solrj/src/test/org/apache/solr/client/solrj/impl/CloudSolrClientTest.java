@@ -880,7 +880,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
                  .process(cluster.getSolrClient()).getStatus());
     cluster.waitForActiveCollection(COL, 1, 1);
 
-    // determine the coreNodeName of only current replica
+    // determine the replicaName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();

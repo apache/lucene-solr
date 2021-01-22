@@ -35,9 +35,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CommonParams.REPLICA_NAME;
 
 /**
  * Metadata about a {@link SolrCore}.
@@ -61,7 +64,8 @@ public class CoreDescriptor {
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
   public static final String CORE_TRANSIENT = "transient";
-  public static final String CORE_NODE_NAME = "coreNodeName";
+  @Deprecated
+  public static final String CORE_NODE_NAME = REPLICA_NAME;
   public static final String CORE_CONFIGSET = "configSet";
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
@@ -120,7 +124,7 @@ public class CoreDescriptor {
       CORE_SHARD,
       CORE_COLLECTION,
       CORE_ROLES,
-      CORE_NODE_NAME,
+      REPLICA_NAME,
       CloudDescriptor.NUM_SHARDS
   );
 

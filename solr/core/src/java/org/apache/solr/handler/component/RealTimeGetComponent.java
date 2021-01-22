@@ -126,7 +126,7 @@ public class RealTimeGetComponent extends SearchComponent
         if (replicaType == Replica.Type.PULL) {
           throw new SolrException(ErrorCode.BAD_REQUEST, 
               String.format(Locale.ROOT, "%s can't handle realtime get requests. Replicas of type %s do not support these type of requests", 
-                  cloudDesc.getCoreNodeName(),
+                  cloudDesc.getReplicaName(),
                   Replica.Type.PULL));
         } 
         // non-leader TLOG replicas should not respond to distrib /get requests, but internal requests are OK

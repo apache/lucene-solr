@@ -92,7 +92,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     timeOut.waitFor("Expected data dir and instance dir of " + replica.getName() + " is deleted", ()
         -> !Files.exists(replicaCd.getInstanceDir()) && !FileUtils.fileExists(replicaCd.getDataDir()));
 
-    // Check that we can't create a core with no coreNodeName
+    // Check that we can't create a core with no replicaName
     try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
       Exception e = expectThrows(Exception.class, () -> {
         CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
@@ -101,7 +101,7 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
         createRequest.setShardId("shard2");
         queryClient.request(createRequest);
       });
-      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("coreNodeName missing"));
+      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("replicaName missing"));
 
     }
   }

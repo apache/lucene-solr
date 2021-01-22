@@ -91,7 +91,8 @@ public abstract class CoreAdminParams
 
   public static final String REQUESTID = "requestid";
 
-  public static final String CORE_NODE_NAME = "coreNodeName";
+  @Deprecated
+  public static final String CORE_NODE_NAME = CommonParams.REPLICA_NAME;
   
   /** Prefix for core property name=value pair **/
   public final static String PROPERTY_PREFIX = "property.";

@@ -169,7 +169,7 @@ public class ClusterStateMutator {
     return null;
   }
 
-  public static String getAssignedCoreNodeName(DocCollection collection, String forNodeName, String forCoreName) {
+  public static String getAssignedReplicaName(DocCollection collection, String forNodeName, String forCoreName) {
     Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {

@@ -54,9 +54,9 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   private final Object lock = new Object();
 
   public ShardLeaderElectionContextBase(LeaderElector leaderElector,
-                                        final String shardId, final String collection, final String coreNodeName,
+                                        final String shardId, final String collection, final String replicaName,
                                         ZkNodeProps props, ZkController zkController) {
-    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+    super(replicaName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
         + "/leader_elect/" + shardId, ZkStateReader.getShardLeadersPath(
         collection, shardId), props, zkController.getZkClient());
     this.leaderElector = leaderElector;

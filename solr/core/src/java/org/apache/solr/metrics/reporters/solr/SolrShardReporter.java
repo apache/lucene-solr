@@ -136,8 +136,8 @@ public class SolrShardReporter extends SolrCoreReporter {
       log.warn("period={}, not starting shard reporter ", period);
       return;
     }
-    // our id is coreNodeName
-    String id = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+    // our id is replicaName
+    String id = core.getCoreDescriptor().getCloudDescriptor().getReplicaName();
     // target registry is the leaderRegistryName
     String groupId = core.getCoreMetricManager().getLeaderRegistryName();
     if (groupId == null) {

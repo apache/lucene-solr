@@ -105,14 +105,14 @@ public class ClusterStateUtil {
   }
   
   /**
-   * Wait to see an entry in the ClusterState with a specific coreNodeName and
+   * Wait to see an entry in the ClusterState with a specific replicaName and
    * baseUrl.
    * 
    * @param zkStateReader
    *          to use for ClusterState
    * @param collection
    *          to look in
-   * @param coreNodeName
+   * @param replicaName
    *          to wait for
    * @param baseUrl
    *          to wait for
@@ -121,14 +121,14 @@ public class ClusterStateUtil {
    * @return false if timed out
    */
   public static boolean waitToSeeLiveReplica(ZkStateReader zkStateReader,
-      String collection, String coreNodeName, String baseUrl,
+      String collection, String replicaName, String baseUrl,
       int timeoutInMs) {
     long timeout = System.nanoTime()
         + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
     
     while (System.nanoTime() < timeout) {
       log.debug("waiting to see replica just created live collection={} replica={} baseUrl={}",
-          collection, coreNodeName, baseUrl);
+          collection, replicaName, baseUrl);
       ClusterState clusterState = zkStateReader.getClusterState();
       if (clusterState != null) {
         DocCollection docCollection = clusterState.getCollection(collection);
@@ -140,9 +140,9 @@ public class ClusterStateUtil {
             for (Replica replica : replicas) {
               // on a live node?
               boolean live = clusterState.liveNodesContain(replica.getNodeName());
-              String rcoreNodeName = replica.getName();
+              String rReplicaName = replica.getName();
               String rbaseUrl = replica.getBaseUrl();
-              if (live && coreNodeName.equals(rcoreNodeName)
+              if (live && replicaName.equals(rReplicaName)
                   && baseUrl.equals(rbaseUrl)) {
                 // found it
                 return true;

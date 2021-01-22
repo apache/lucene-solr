@@ -89,9 +89,9 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private long runLeaderDelay = 0;
 
     public TestLeaderElectionContext(LeaderElector leaderElector,
-        String shardId, String collection, String coreNodeName, ZkNodeProps props,
+        String shardId, String collection, String replicaName, ZkNodeProps props,
         ZkController zkController, long runLeaderDelay) {
-      super (leaderElector, shardId, collection, coreNodeName, props, zkController);
+      super (leaderElector, shardId, collection, replicaName, props, zkController);
       this.runLeaderDelay = runLeaderDelay;
     }
 

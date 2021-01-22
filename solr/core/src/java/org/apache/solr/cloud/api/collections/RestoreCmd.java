@@ -327,17 +327,17 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice s : restoreCollection.getSlices()) {
         for (Replica r : s.getReplicas()) {
           String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
+          String replicaName = r.getCoreName();
           Replica.State stateRep = r.getState();
 
           if (log.isDebugEnabled()) {
-            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, replicaName={}, state={}", nodeName, replicaName,
                     stateRep.name());
           }
 
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
+          params.set(CoreAdminParams.NAME, replicaName);
 
           shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
         }

@@ -269,7 +269,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   }
 
   /**
-   * returns a map whose key is the coreNodeName and whose value is data about that core needed for the test
+   * returns a map whose key is the replicaName and whose value is data about that core needed for the test
    */
   private Map<String,ReplicaData> getTestDataForAllReplicas() throws IOException, SolrServerException {
     Map<String,ReplicaData> results = new HashMap<>();

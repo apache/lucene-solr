@@ -229,7 +229,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     Properties props = new Properties();
     props.put(CoreDescriptor.CORE_SHARD, shardId);
     props.put(CoreDescriptor.CORE_COLLECTION, collection);
-    props.put(CoreDescriptor.CORE_NODE_NAME, name);
+    props.put(CommonParams.REPLICA_NAME, name);
     CloudDescriptor cd = new CloudDescriptor(null, name, props);
     cd.setHasRegistered(registered);
     cd.setLastPublished(state);

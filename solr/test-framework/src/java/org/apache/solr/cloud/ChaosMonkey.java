@@ -406,9 +406,9 @@ public class ChaosMonkey {
     
     Slice slice = docCollection.getSlice(sliceName);
     
-    ZkNodeProps props = slice.getReplicasMap().get(cjetty.coreNodeName);
+    ZkNodeProps props = slice.getReplicasMap().get(cjetty.replicaName);
     if (props == null) {
-      throw new RuntimeException("shard name " + cjetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
+      throw new RuntimeException("shard name " + cjetty.replicaName + " not found in " + slice.getReplicasMap().keySet());
     }
     return Replica.Type.valueOf(props.getStr(ZkStateReader.REPLICA_TYPE));
   }
@@ -424,9 +424,9 @@ public class ChaosMonkey {
       
       Slice slice = docCollection.getSlice(sliceName);
       
-      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
+      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.replicaName);
       if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
+        throw new RuntimeException("shard name " + cloudJetty.replicaName + " not found in " + slice.getReplicasMap().keySet());
       }
       
       final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));
@@ -453,9 +453,9 @@ public class ChaosMonkey {
       
       Slice slice = docCollection.getSlice(sliceName);
       
-      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.coreNodeName);
+      ZkNodeProps props = slice.getReplicasMap().get(cloudJetty.replicaName);
       if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + slice.getReplicasMap().keySet());
+        throw new RuntimeException("shard name " + cloudJetty.replicaName + " not found in " + slice.getReplicasMap().keySet());
       }
       
       final Replica.State state = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP));

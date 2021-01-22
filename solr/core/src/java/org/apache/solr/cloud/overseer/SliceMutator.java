@@ -83,13 +83,13 @@ public class SliceMutator {
       log.error("Invalid Collection/Slice {}/{} ", coll, slice);
       return ZkStateWriter.NO_OP;
     }
-    String coreNodeName;
+    String replicaName;
     if (message.getStr(ZkStateReader.CORE_NODE_NAME_PROP) != null) {
-      coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+      replicaName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     } else {
-      coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
+      replicaName = Assign.assignReplicaName(stateManager, collection);
     }
-    Replica replica = new Replica(coreNodeName,
+    Replica replica = new Replica(replicaName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
             ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
@@ -287,10 +287,10 @@ public class SliceMutator {
     return ZkStateWriter.NO_OP;
   }
 
-  public static DocCollection updateReplica(DocCollection collection, final Slice slice, String coreNodeName, final Replica replica) {
+  public static DocCollection updateReplica(DocCollection collection, final Slice slice, String replicaName, final Replica replica) {
     Map<String, Replica> replicasCopy = slice.getReplicasCopy();
     if (replica == null) {
-      replicasCopy.remove(coreNodeName);
+      replicasCopy.remove(replicaName);
     } else {
       replicasCopy.put(replica.getName(), replica);
     }

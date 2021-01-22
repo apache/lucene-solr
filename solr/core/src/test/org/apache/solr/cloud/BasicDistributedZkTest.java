@@ -1167,7 +1167,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
         if (random().nextBoolean()) {
           // sometimes we use an explicit core node name
-          createCmd.setCoreNodeName("anode" + nodeCounter.incrementAndGet());
+          createCmd.setReplicaName("anode" + nodeCounter.incrementAndGet());
         }
 
         if (shardId == null) {

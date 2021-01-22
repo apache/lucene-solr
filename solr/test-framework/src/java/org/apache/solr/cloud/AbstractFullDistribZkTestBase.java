@@ -159,7 +159,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public static class CloudJettyRunner {
     public JettySolrRunner jetty;
     public String nodeName;
-    public String coreNodeName;
+    public String replicaName;
     public String url;
     public CloudSolrServerClient client;
     public ZkNodeProps info;
@@ -877,7 +877,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             cjr.jetty = jetty;
             cjr.info = replica;
             cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-            cjr.coreNodeName = entry.getKey();
+            cjr.replicaName = entry.getKey();
             // TODO: no trailing slash on end desired, so replica.getCoreUrl is not applicable here
             cjr.url = replica.getBaseUrl() + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);

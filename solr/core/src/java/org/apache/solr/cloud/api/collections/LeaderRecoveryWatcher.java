@@ -40,7 +40,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
    *
    * @param collectionId   collection name
    * @param shardId        shard id
-   * @param replicaId      source replica name (coreNodeName)
+   * @param replicaId      source replica name
    * @param targetCore     specific target core name - if null then any active replica will do
    * @param latch countdown when recovered
    */

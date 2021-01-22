@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -62,7 +63,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     private Integer numShards;
     private String shardId;
     private String roles;
-    private String coreNodeName;
+    private String replicaName;
     private Boolean loadOnStartup;
     private Boolean isTransient;
     private String collectionConfigName;
@@ -83,7 +84,9 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
     public void setRoles(String roles) {this.roles = roles;}
-    public void setCoreNodeName(String coreNodeName) {this.coreNodeName = coreNodeName;}
+    public void setReplicaName(String replicaName) {this.replicaName = replicaName;}
+    @Deprecated
+    public void setCoreNodeName(String coreNodeName) {this.replicaName = coreNodeName;}
     public void setIsTransient(Boolean isTransient) { this.isTransient = isTransient; }
     public void setIsLoadOnStartup(Boolean loadOnStartup) { this.loadOnStartup = loadOnStartup;}
     public void setCollectionConfigName(String name) { this.collectionConfigName = name;}
@@ -99,7 +102,9 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
-    public String getCoreNodeName() { return coreNodeName; }
+    @Deprecated
+    public String getCoreNodeName() { return replicaName; }
+    public String getReplicaName() { return replicaName; }
     public Boolean getIsLoadOnStartup() { return loadOnStartup; }
     public Boolean getIsTransient() { return isTransient; }
     public String getCollectionConfigName() { return collectionConfigName;}
@@ -156,8 +161,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       if (roles != null) {
         params.set( CoreAdminParams.ROLES, roles);
       }
-      if (coreNodeName != null) {
-        params.set( CoreAdminParams.CORE_NODE_NAME, coreNodeName);
+      if (replicaName != null) {
+        params.set(CommonParams.REPLICA_NAME, replicaName);
       }
 
       if (isTransient != null) {
@@ -196,11 +201,22 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public String getNodeName() {
       return nodeName;
     }
-    
+
+    @Deprecated
     public String getCoreNodeName() {
       return coreNodeName;
     }
 
+    @Deprecated
+    public String getReplicaName() {
+      return coreNodeName;
+    }
+
+    public void setReplicaName(String replicaName) {
+      this.coreNodeName = replicaName;
+    }
+
+    @Deprecated
     public void setCoreNodeName(String coreNodeName) {
       this.coreNodeName = coreNodeName;
     }

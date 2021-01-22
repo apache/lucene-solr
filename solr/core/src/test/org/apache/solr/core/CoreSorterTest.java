@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.junit.Test;
 
@@ -187,7 +188,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     Map<String,String> props = map(
         CoreDescriptor.CORE_SHARD, r.getShard(),
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
-        CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
+        CommonParams.REPLICA_NAME, r.getNodeName()
     );
     return new CoreDescriptor(r.getCoreName(), TEST_PATH(), props , null, mock(ZkController.class));
   }

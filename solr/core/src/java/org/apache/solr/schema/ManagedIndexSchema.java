@@ -222,14 +222,14 @@ public final class ManagedIndexSchema extends IndexSchema {
    * Block up to a specified maximum time until we see agreement on the schema
    * version in ZooKeeper across all replicas for a collection.
    */
-  public static void waitForSchemaZkVersionAgreement(String collection, String localCoreNodeName,
+  public static void waitForSchemaZkVersionAgreement(String collection, String localReplicaName,
                                                      int schemaZkVersion, ZkController zkController, int maxWaitSecs)
   {
     RTimer timer = new RTimer();
 
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
-    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
+    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localReplicaName))
       concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion));
     if (concurrentTasks.isEmpty())
       return; // nothing to wait for ...
@@ -278,7 +278,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     } catch (InterruptedException ie) {
       log.warn("Core {} was interrupted waiting for schema version {} to propagate to {} replicas for collection {}"
-          , localCoreNodeName, schemaZkVersion, concurrentTasks.size(), collection);
+          , localReplicaName, schemaZkVersion, concurrentTasks.size(), collection);
       Thread.currentThread().interrupt();
     } finally {
       if (!parallelExecutor.isShutdown())
@@ -291,7 +291,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String localCoreNodeName) {
+  protected static List<String> getActiveReplicaCoreUrls(ZkController zkController, String collection, String localReplicaName) {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -304,7 +304,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
-            if (!localCoreNodeName.equals(replica.getName()) &&
+            if (!localReplicaName.equals(replica.getName()) &&
                 replica.getState() == Replica.State.ACTIVE &&
                 liveNodes.contains(replica.getNodeName())) {
               ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);

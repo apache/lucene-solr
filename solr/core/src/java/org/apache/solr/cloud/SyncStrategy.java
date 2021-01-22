@@ -155,7 +155,7 @@ public class SyncStrategy {
   private PeerSync.PeerSyncResult syncWithReplicas(ZkController zkController, SolrCore core,
       ZkNodeProps props, String collection, String shardId, boolean peerSyncOnlyWithActive) throws Exception {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
-        .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+        .getReplicaProps(collection, shardId,core.getCoreDescriptor().getCloudDescriptor().getReplicaName());
     
     if (isClosed) {
       log.info("We have been closed, won't sync with replicas");
@@ -197,7 +197,7 @@ public class SyncStrategy {
     List<ZkCoreNodeProps> nodes = zkController
         .getZkStateReader()
         .getReplicaProps(collection, shardId,
-            cd.getCloudDescriptor().getCoreNodeName());
+            cd.getCloudDescriptor().getReplicaName());
     if (nodes == null) {
       if (log.isInfoEnabled()) {
         log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));

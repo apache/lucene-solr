@@ -139,11 +139,11 @@ public class ZkController implements Closeable {
   static class ContextKey {
 
     private String collection;
-    private String coreNodeName;
+    private String replicaName;
 
-    public ContextKey(String collection, String coreNodeName) {
+    public ContextKey(String collection, String replicaName) {
       this.collection = collection;
-      this.coreNodeName = coreNodeName;
+      this.replicaName = replicaName;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class ZkController implements Closeable {
       result = prime * result
           + ((collection == null) ? 0 : collection.hashCode());
       result = prime * result
-          + ((coreNodeName == null) ? 0 : coreNodeName.hashCode());
+          + ((replicaName == null) ? 0 : replicaName.hashCode());
       return result;
     }
 
@@ -166,15 +166,15 @@ public class ZkController implements Closeable {
       if (collection == null) {
         if (other.collection != null) return false;
       } else if (!collection.equals(other.collection)) return false;
-      if (coreNodeName == null) {
-        if (other.coreNodeName != null) return false;
-      } else if (!coreNodeName.equals(other.coreNodeName)) return false;
+      if (replicaName == null) {
+        if (other.replicaName != null) return false;
+      } else if (!replicaName.equals(other.replicaName)) return false;
       return true;
     }
 
     @Override
     public String toString() {
-      return collection + ':' + coreNodeName;
+      return collection + ':' + replicaName;
     }
   }
 
@@ -209,7 +209,7 @@ public class ZkController implements Closeable {
   private int leaderVoteWait;
   private int leaderConflictResolveWait;
 
-  private boolean genericCoreNodeNames;
+  private boolean genericReplicaNames;
 
   private int clientTimeout;
 
@@ -284,7 +284,7 @@ public class ZkController implements Closeable {
 
     this.cloudConfig = cloudConfig;
 
-    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
+    this.genericReplicaNames = cloudConfig.getGenericReplicaNames();
 
     // be forgiving and strip this off leading/trailing slashes
     // this allows us to support users specifying hostContext="/" in
@@ -554,10 +554,10 @@ public class ZkController implements Closeable {
           Thread.currentThread().interrupt();
         }
 
-        final String coreZkNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
+        final String replicaName = descriptor.getCloudDescriptor().getReplicaName();
         try {
-          log.debug("calling waitForLeaderToSeeDownState for coreZkNodeName={} collection={} shard={}", new Object[]{coreZkNodeName, collection, slice});
-          waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
+          log.debug("calling waitForLeaderToSeeDownState for replicaName={} collection={} shard={}", new Object[]{replicaName, collection, slice});
+          waitForLeaderToSeeDownState(descriptor, replicaName);
         } catch (Exception e) {
           log.warn("There was a problem while making a best effort to ensure the leader has seen us as down, this is not unexpected as Zookeeper has just reconnected after a session expiration", e);
           if (isClosed) {
@@ -584,9 +584,9 @@ public class ZkController implements Closeable {
   private ContextKey closeExistingElectionContext(CoreDescriptor cd) {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    final String replicaName = cd.getCloudDescriptor().getReplicaName();
 
-    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    ContextKey contextKey = new ContextKey(collection, replicaName);
     ElectionContext prevContext = electionContexts.get(contextKey);
 
     if (prevContext != null) {
@@ -709,7 +709,7 @@ public class ZkController implements Closeable {
     if (shard == null) return;
 
     // if this replica is not a leader, it will be put in recovery state by the leader
-    String leader = cd.getCloudDescriptor().getCoreNodeName();
+    String leader = cd.getCloudDescriptor().getReplicaName();
     if (shard.getReplica(leader) != shard.getLeader()) return;
 
     Set<String> liveNodes = getClusterState().getLiveNodes();
@@ -1041,7 +1041,7 @@ public class ZkController implements Closeable {
         boolean foundStates = true;
         for (CoreDescriptor coreDescriptor : cc.getCoreDescriptors()) {
           if (coreDescriptor.getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
-            Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getCoreNodeName());
+            Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getReplicaName());
             if (replica == null || replica.getState() != Replica.State.DOWN) {
               foundStates = false;
             }
@@ -1160,24 +1160,24 @@ public class ZkController implements Closeable {
       final CloudDescriptor cloudDesc = desc.getCloudDescriptor();
       final String collection = cloudDesc.getCollectionName();
       final String shardId = cloudDesc.getShardId();
-      final String coreZkNodeName = cloudDesc.getCoreNodeName();
-      assert coreZkNodeName != null : "we should have a coreNodeName by now";
+      final String replicaName = cloudDesc.getReplicaName();
+      assert replicaName != null : "we should have a replicaName by now";
 
       // check replica's existence in clusterstate first
       try {
         zkStateReader.waitForState(collection, 100, TimeUnit.MILLISECONDS,
-            (collectionState) -> getReplicaOrNull(collectionState, shardId, coreZkNodeName) != null);
+            (collectionState) -> getReplicaOrNull(collectionState, shardId, replicaName) != null);
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, timeout waiting for replica present in clusterstate");
       }
-      Replica replica = getReplicaOrNull(zkStateReader.getClusterState().getCollectionOrNull(collection), shardId, coreZkNodeName);
+      Replica replica = getReplicaOrNull(zkStateReader.getClusterState().getCollectionOrNull(collection), shardId, replicaName);
       if (replica == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate");
       }
 
 
       if (replica.getType() != Type.PULL) {
-        getCollectionTerms(collection).register(cloudDesc.getShardId(), coreZkNodeName);
+        getCollectionTerms(collection).register(cloudDesc.getShardId(), replicaName);
       }
 
       ZkShardTerms shardTerms = getShardTerms(collection, cloudDesc.getShardId());
@@ -1192,9 +1192,9 @@ public class ZkController implements Closeable {
           joinElection(desc, afterExpiration, joinAtHead);
         } else if (replica.getType() == Type.PULL) {
           if (joinAtHead) {
-            log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", coreZkNodeName, Type.PULL);
+            log.warn("Replica {} was designated as preferred leader but it's type is {}, It won't join election", replicaName, Type.PULL);
           }
-          log.debug("Replica {} skipping election because it's type is {}", coreZkNodeName, Type.PULL);
+          log.debug("Replica {} skipping election because it's type is {}", replicaName, Type.PULL);
           startReplicationFromLeader(coreName, false);
         }
       } catch (InterruptedException e) {
@@ -1255,7 +1255,7 @@ public class ZkController implements Closeable {
           }
         }
         boolean didRecovery
-            = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, coreZkNodeName, shardId, core, cc, afterExpiration);
+            = checkRecovery(recoverReloadedCores, isLeader, skipRecovery, collection, replicaName, shardId, core, cc, afterExpiration);
         if (!didRecovery) {
           if (isTlogReplicaAndNotLeader) {
             startReplicationFromLeader(coreName, true);
@@ -1277,20 +1277,20 @@ public class ZkController implements Closeable {
       zkStateReader.forceUpdateCollection(collection);
       // the watcher is added to a set so multiple calls of this method will left only one watcher
       zkStateReader.registerDocCollectionWatcher(cloudDesc.getCollectionName(),
-          new UnloadCoreOnDeletedWatcher(coreZkNodeName, shardId, desc.getName()));
+          new UnloadCoreOnDeletedWatcher(replicaName, shardId, desc.getName()));
       return shardId;
     } finally {
       MDCLoggingContext.clear();
     }
   }
 
-  private Replica getReplicaOrNull(DocCollection docCollection, String shard, String coreNodeName) {
+  private Replica getReplicaOrNull(DocCollection docCollection, String shard, String replicaName) {
     if (docCollection == null) return null;
 
     Slice slice = docCollection.getSlice(shard);
     if (slice == null) return null;
 
-    Replica replica = slice.getReplica(coreNodeName);
+    Replica replica = slice.getReplica(replicaName);
     if (replica == null) return null;
     if (!getNodeName().equals(replica.getNodeName())) return null;
 
@@ -1422,9 +1422,9 @@ public class ZkController implements Closeable {
       throws InterruptedException, KeeperException, IOException {
     // look for old context - if we find it, cancel it
     String collection = cd.getCloudDescriptor().getCollectionName();
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    final String replicaName = cd.getCloudDescriptor().getCoreNodeName();
 
-    ContextKey contextKey = new ContextKey(collection, coreNodeName);
+    ContextKey contextKey = new ContextKey(collection, replicaName);
 
     ElectionContext prevContext = electionContexts.get(contextKey);
 
@@ -1438,14 +1438,14 @@ public class ZkController implements Closeable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+    props.put(ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
 
 
     ZkNodeProps ourProps = new ZkNodeProps(props);
 
     LeaderElector leaderElector = new LeaderElector(zkClient, contextKey, electionContexts);
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
-        collection, coreNodeName, ourProps, this, cc);
+        collection, replicaName, ourProps, this, cc);
 
     leaderElector.setup(context);
     electionContexts.put(contextKey, context);
@@ -1529,7 +1529,7 @@ public class ZkController implements Closeable {
 
       String shardId = cd.getCloudDescriptor().getShardId();
 
-      String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+      String replicaName = cd.getCloudDescriptor().getReplicaName();
 
       Map<String,Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
@@ -1544,8 +1544,8 @@ public class ZkController implements Closeable {
       if (numShards != null) {
         props.put(ZkStateReader.NUM_SHARDS_PROP, numShards.toString());
       }
-      if (coreNodeName != null) {
-        props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+      if (replicaName != null) {
+        props.put(CommonParams.REPLICA_NAME, replicaName);
       }
       try (SolrCore core = cc.getCore(cd.getName())) {
         if (core != null && state == Replica.State.ACTIVE) {
@@ -1572,10 +1572,10 @@ public class ZkController implements Closeable {
       if (state == Replica.State.RECOVERING && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
         // state is used by client, state of replica can change from RECOVERING to DOWN without needed to finish recovery
         // by calling this we will know that a replica actually finished recovery or not
-        getShardTerms(collection, shardId).startRecovering(coreNodeName);
+        getShardTerms(collection, shardId).startRecovering(replicaName);
       }
       if (state == Replica.State.ACTIVE && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
-        getShardTerms(collection, shardId).doneRecovering(coreNodeName);
+        getShardTerms(collection, shardId).doneRecovering(replicaName);
       }
 
       ZkNodeProps m = new ZkNodeProps(props);
@@ -1584,14 +1584,14 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
-      if (forcePublish || sendToOverseer(coll, coreNodeName)) {
+      if (forcePublish || sendToOverseer(coll, replicaName)) {
         overseerJobQueue.offer(Utils.toJSON(m));
       } else {
         if (log.isDebugEnabled()) {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
         }
         PerReplicaStates perReplicaStates = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-        PerReplicaStatesOps.flipState(coreNodeName, state, perReplicaStates)
+        PerReplicaStatesOps.flipState(replicaName, state, perReplicaStates)
             .persist(coll.getZNode(), zkClient);
       }
     } finally {
@@ -1640,10 +1640,10 @@ public class ZkController implements Closeable {
   }
 
   public void unregister(String coreName, CoreDescriptor cd, boolean removeCoreFromZk) throws Exception {
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    final String replicaName = cd.getCloudDescriptor().getReplicaName();
     final String collection = cd.getCloudDescriptor().getCollectionName();
     getCollectionTerms(collection).remove(cd.getCloudDescriptor().getShardId(), cd);
-    replicasMetTragicEvent.remove(collection+":"+coreNodeName);
+    replicasMetTragicEvent.remove(collection+":"+replicaName);
 
     if (Strings.isNullOrEmpty(collection)) {
       log.error("No collection was specified.");
@@ -1651,10 +1651,10 @@ public class ZkController implements Closeable {
       return;
     }
     final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
-    Replica replica = (docCollection == null) ? null : docCollection.getReplica(coreNodeName);
+    Replica replica = (docCollection == null) ? null : docCollection.getReplica(replicaName);
 
     if (replica == null || replica.getType() != Type.PULL) {
-      ElectionContext context = electionContexts.remove(new ContextKey(collection, coreNodeName));
+      ElectionContext context = electionContexts.remove(new ContextKey(collection, replicaName));
 
       if (context != null) {
         context.cancelElection();
@@ -1666,7 +1666,7 @@ public class ZkController implements Closeable {
           OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
           ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
-          ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+          ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
       overseerJobQueue.offer(Utils.toJSON(m));
     }
   }
@@ -1683,18 +1683,18 @@ public class ZkController implements Closeable {
   }
 
   private void doGetShardIdAndNodeNameProcess(CoreDescriptor cd) {
-    final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    final String replicaName = cd.getCloudDescriptor().getReplicaName();
 
-    if (coreNodeName != null) {
+    if (replicaName != null) {
       waitForShardId(cd);
     } else {
-      // if no explicit coreNodeName, we want to match by base url and core name
-      waitForCoreNodeName(cd);
+      // if no explicit replicaName, we want to match by base url and core name
+      waitForReplica(cd);
       waitForShardId(cd);
     }
   }
 
-  private void waitForCoreNodeName(CoreDescriptor descriptor) {
+  private void waitForReplica(CoreDescriptor descriptor) {
     int retryCount = 320;
     log.debug("look for our core node name");
     while (retryCount-- > 0) {
@@ -1714,7 +1714,7 @@ public class ZkController implements Closeable {
 
             if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
               descriptor.getCloudDescriptor()
-                  .setCoreNodeName(replica.getName());
+                  .setReplicaName(replica.getName());
               getCoreContainer().getCoresLocator().persist(getCoreContainer(), descriptor);
               return;
             }
@@ -1751,20 +1751,24 @@ public class ZkController implements Closeable {
         "Could not get shard id for core: " + cd.getName());
   }
 
-
-  public String getCoreNodeName(CoreDescriptor descriptor) {
-    String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    if (coreNodeName == null && !genericCoreNodeNames) {
+  public String getReplicaName(CoreDescriptor descriptor) {
+    String replicaName = descriptor.getCloudDescriptor().getReplicaName();
+    if (replicaName == null && !genericReplicaNames) {
       // it's the default
       return getNodeName() + "_" + descriptor.getName();
     }
+    return replicaName;
+  }
 
-    return coreNodeName;
+
+  @Deprecated
+  public String getCoreNodeName(CoreDescriptor descriptor) {
+    return getReplicaName(descriptor);
   }
 
   public void preRegister(CoreDescriptor cd, boolean publishState) {
 
-    String coreNodeName = getCoreNodeName(cd);
+    String replicaName = getReplicaName(cd);
 
     // before becoming available, make sure we are not live and active
     // this also gets us our assigned shard id if it was not specified
@@ -1774,8 +1778,8 @@ public class ZkController implements Closeable {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
 
       // make sure the node name is set on the descriptor
-      if (cloudDesc.getCoreNodeName() == null) {
-        cloudDesc.setCoreNodeName(coreNodeName);
+      if (cloudDesc.getReplicaName() == null) {
+        cloudDesc.setReplicaName(replicaName);
       }
 
       // publishState == false on startup
@@ -1823,11 +1827,11 @@ public class ZkController implements Closeable {
 
   private void checkStateInZk(CoreDescriptor cd) throws InterruptedException, NotInClusterStateException {
     CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-    String nodeName = cloudDesc.getCoreNodeName();
+    String nodeName = cloudDesc.getReplicaName();
     if (nodeName == null) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "No coreNodeName for " + cd);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No replicaName for " + cd);
     }
-    final String coreNodeName = nodeName;
+    final String replicaName = nodeName;
 
     if (cloudDesc.getShardId() == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "No shard id for " + cd);
@@ -1845,9 +1849,9 @@ public class ZkController implements Closeable {
           errorMessage.set("Invalid shard: " + cloudDesc.getShardId());
           return false;
         }
-        Replica replica = slice.getReplica(coreNodeName);
+        Replica replica = slice.getReplica(replicaName);
         if (replica == null) {
-          errorMessage.set("coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+          errorMessage.set("replicaName " + replicaName + " does not exist in shard " + cloudDesc.getShardId() +
               ", ignore the exception if the replica was deleted");
           return false;
         }
@@ -1856,7 +1860,7 @@ public class ZkController implements Closeable {
     } catch (TimeoutException e) {
       String error = errorMessage.get();
       if (error == null)
-        error = "coreNodeName " + coreNodeName + " does not exist in shard " + cloudDesc.getShardId() +
+        error = "replicaName " + replicaName + " does not exist in shard " + cloudDesc.getShardId() +
             ", ignore the exception if the replica was deleted";
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }
@@ -2636,7 +2640,7 @@ public class ZkController implements Closeable {
     }
   }
 
-  public boolean checkIfCoreNodeNameAlreadyExists(CoreDescriptor dcore) {
+  public boolean checkIfReplicaNameAlreadyExists(CoreDescriptor dcore) {
     DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(dcore.getCollectionName());
     if (collection != null) {
       Collection<Slice> slices = collection.getSlices();

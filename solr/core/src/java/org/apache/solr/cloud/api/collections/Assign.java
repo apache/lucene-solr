@@ -114,16 +114,16 @@ public class Assign {
     }
   }
 
-  public static String assignCoreNodeName(DistribStateManager stateManager, DocCollection collection) {
+  public static String assignReplicaName(DistribStateManager stateManager, DocCollection collection) {
     // for backward compatibility;
     int defaultValue = defaultCounterValue(collection, false);
-    String coreNodeName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
-    while (collection.getReplica(coreNodeName) != null) {
-      // there is wee chance that, the new coreNodeName id not totally unique,
+    String replicaName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
+    while (collection.getReplica(replicaName) != null) {
+      // there is wee chance that, the new replicaName is not totally unique,
       // but this will be guaranteed unique for new collections
-      coreNodeName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
+      replicaName = "core_node" + incAndGetId(stateManager, collection.getName(), defaultValue);
     }
-    return coreNodeName;
+    return replicaName;
   }
 
   /**

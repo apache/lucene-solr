@@ -1306,10 +1306,10 @@ public class CoreContainer {
       boolean preExisitingZkEntry = false;
       try {
         if (getZkController() != null) {
-          if (cd.getCloudDescriptor().getCoreNodeName() == null) {
+          if (cd.getCloudDescriptor().getReplicaName() == null) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "coreNodeName missing " + parameters.toString());
           }
-          preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
+          preExisitingZkEntry = getZkController().checkIfReplicaNameAlreadyExists(cd);
         }
 
         // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
@@ -1527,7 +1527,7 @@ public class CoreContainer {
               log.info("Found active leader, will attempt to create fresh core and recover.");
               resetIndexDirectory(dcore, coreConfig);
               // the index of this core is emptied, its term should be set to 0
-              getZkController().getShardTerms(desc.getCollectionName(), desc.getShardId()).setTermToZero(desc.getCoreNodeName());
+              getZkController().getShardTerms(desc.getCollectionName(), desc.getShardId()).setTermToZero(desc.getReplicaName());
               return new SolrCore(this, dcore, coreConfig);
             }
           } catch (SolrException se) {
@@ -1739,7 +1739,7 @@ public class CoreContainer {
 
 
         if (docCollection != null) {
-          Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
+          Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getReplicaName());
           assert replica != null;
           if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
             getZkController().stopReplicationFromLeader(core.getName());

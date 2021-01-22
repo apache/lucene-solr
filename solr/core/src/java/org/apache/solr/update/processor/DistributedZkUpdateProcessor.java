@@ -79,7 +79,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final ZkController zkController;
   private final SolrCmdDistributor cmdDistrib;
   protected List<SolrCmdDistributor.Node> nodes;
-  private Set<String> skippedCoreNodeNames;
+  private Set<String> skippedReplicaNames;
   private final String collection;
   private boolean readOnlyCollection = false;
 
@@ -168,7 +168,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
     }
-    isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
+    isLeader = leaderReplica.getName().equals(cloudDesc.getReplicaName());
 
     nodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG,Replica.Type.NRT), true);
     if (nodes == null) {
@@ -405,9 +405,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         // Am I the leader for this slice?
         ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
-        String leaderCoreNodeName = leader.getName();
-        String coreNodeName = cloudDesc.getCoreNodeName();
-        isLeader = coreNodeName.equals(leaderCoreNodeName);
+        String leaderReplicaName = leader.getName();
+        String replicaName = cloudDesc.getReplicaName();
+        isLeader = replicaName.equals(leaderReplicaName);
 
         if (isLeader) {
           // don't forward to ourself
@@ -516,7 +516,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     try {
       Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
-      isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
+      isLeader = leaderReplica.getName().equals(cloudDesc.getReplicaName());
 
       // TODO: what if we are no longer the leader?
 
@@ -628,7 +628,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
       Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
-      isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
+      isLeader = leaderReplica.getName().equals(cloudDesc.getReplicaName());
 
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
@@ -652,11 +652,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // that means I want to forward onto my replicas...
         // so get the replicas...
         forwardToLeader = false;
-        String leaderCoreNodeName = leaderReplica.getName();
+        String leaderReplicaName = leaderReplica.getName();
         List<Replica> replicas = clusterState.getCollection(collection)
             .getSlice(shardId)
             .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-        replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
+        replicas.removeIf((replica) -> replica.getName().equals(leaderReplicaName));
         if (replicas.isEmpty()) {
           return null;
         }
@@ -671,21 +671,21 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
 
         List<SolrCmdDistributor.Node> nodes = new ArrayList<>(replicas.size());
-        skippedCoreNodeNames = new HashSet<>();
+        skippedReplicaNames = new HashSet<>();
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
         for (Replica replica: replicas) {
-          String coreNodeName = replica.getName();
+          String replicaName = replica.getName();
           if (skipList != null && skipListSet.contains(replica.getCoreUrl())) {
             if (log.isInfoEnabled()) {
               log.info("check url:{} against:{} result:true", replica.getCoreUrl(), skipListSet);
             }
-          } else if(zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
+          } else if(zkShardTerms.registered(replicaName) && zkShardTerms.skipSendingUpdatesTo(replicaName)) {
             if (log.isDebugEnabled()) {
               log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
             }
-            skippedCoreNodeNames.add(replica.getName());
+            skippedReplicaNames.add(replica.getName());
           } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
-            skippedCoreNodeNames.add(replica.getName());
+            skippedReplicaNames.add(replica.getName());
           } else {
             nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId, maxRetriesToFollowers));
           }
@@ -790,7 +790,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     final Slice.State state = mySlice.getState();
     if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
       Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
-      boolean amILeader = myLeader.getName().equals(cloudDesc.getCoreNodeName());
+      boolean amILeader = myLeader.getName().equals(cloudDesc.getReplicaName());
       if (amILeader) {
         // Does the document belong to my hash range as well?
         DocRouter.Range myRange = mySlice.getRange();
@@ -808,11 +808,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
-    String leaderCoreNodeName = leaderReplica.getName();
+    String leaderReplicaName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
         .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-    replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
+    replicas.removeIf((replica) -> replica.getName().equals(leaderReplicaName));
     if (replicas.isEmpty()) {
       return null;
     }
@@ -827,22 +827,22 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     List<SolrCmdDistributor.Node> nodes = new ArrayList<>(replicas.size());
-    skippedCoreNodeNames = new HashSet<>();
+    skippedReplicaNames = new HashSet<>();
     ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
     for (Replica replica : replicas) {
-      String coreNodeName = replica.getName();
+      String replicaName = replica.getName();
       if (skipList != null && skipListSet.contains(replica.getCoreUrl())) {
         if (log.isInfoEnabled()) {
           log.info("check url:{} against:{} result:true", replica.getCoreUrl(), skipListSet);
         }
-      } else if (zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
+      } else if (zkShardTerms.registered(replicaName) && zkShardTerms.skipSendingUpdatesTo(replicaName)) {
         if (log.isDebugEnabled()) {
           log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
         }
-        skippedCoreNodeNames.add(replica.getName());
+        skippedReplicaNames.add(replica.getName());
       } else if (!clusterState.getLiveNodes().contains(replica.getNodeName())
           || replica.getState() == Replica.State.DOWN) {
-        skippedCoreNodeNames.add(replica.getName());
+        skippedReplicaNames.add(replica.getName());
       } else {
         nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId));
       }
@@ -1046,8 +1046,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
       ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
-      if (skippedCoreNodeNames != null) {
-        zkShardTerms.ensureTermsIsHigher(cloudDesc.getCoreNodeName(), skippedCoreNodeNames);
+      if (skippedReplicaNames != null) {
+        zkShardTerms.ensureTermsIsHigher(cloudDesc.getReplicaName(), skippedReplicaNames);
       }
       zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
     }
@@ -1096,7 +1096,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if ("LeaderChanged".equals(cause)) {
         // let's just fail this request and let the client retry? or just call processAdd again?
         log.error("On {}, replica {} now thinks it is the leader! Failing the request to let the client retry!"
-            , cloudDesc.getCoreNodeName(), replicaUrl, error.e);
+            , cloudDesc.getReplicaName(), replicaUrl, error.e);
         errorsForClient.add(error);
         continue;
       }
@@ -1110,24 +1110,24 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         shardId = stdNode.getShardId();
 
         // before we go setting other replicas to down, make sure we're still the leader!
-        String leaderCoreNodeName = null;
+        String leaderReplicaName = null;
         Exception getLeaderExc = null;
         Replica leaderProps = null;
         try {
           leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
           if (leaderProps != null) {
-            leaderCoreNodeName = leaderProps.getName();
+            leaderReplicaName = leaderProps.getName();
           }
         } catch (Exception exc) {
           getLeaderExc = exc;
         }
-        if (leaderCoreNodeName == null) {
+        if (leaderReplicaName == null) {
           log.warn("Failed to determine if {} is still the leader for collection={} shardId={} before putting {} into leader-initiated recovery",
-              cloudDesc.getCoreNodeName(), collection, shardId, replicaUrl, getLeaderExc);
+              cloudDesc.getReplicaName(), collection, shardId, replicaUrl, getLeaderExc);
         }
 
         List<ZkCoreNodeProps> myReplicas = zkController.getZkStateReader().getReplicaProps(collection,
-            cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+            cloudDesc.getShardId(), cloudDesc.getReplicaName());
         boolean foundErrorNodeInReplicaList = false;
         if (myReplicas != null) {
           for (ZkCoreNodeProps replicaProp : myReplicas) {
@@ -1138,16 +1138,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           }
         }
 
-        if (leaderCoreNodeName != null && cloudDesc.getCoreNodeName().equals(leaderCoreNodeName) // we are still same leader
+        if (leaderReplicaName != null && cloudDesc.getCoreNodeName().equals(leaderReplicaName) // we are still same leader
             && foundErrorNodeInReplicaList // we found an error for one of replicas
             && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
           try {
-            String coreNodeName = ((Replica) stdNode.getNodeProps().getNodeProps()).getName();
+            String replicaName = ((Replica) stdNode.getNodeProps().getNodeProps()).getName();
             // if false, then the node is probably not "live" anymore
             // and we do not need to send a recovery message
             Throwable rootCause = SolrException.getRootCause(error.e);
-            log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
-            replicasShouldBeInLowerTerms.add(coreNodeName);
+            log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", replicaName, replicaUrl, rootCause);
+            replicasShouldBeInLowerTerms.add(replicaName);
           } catch (Exception exc) {
             Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
             log.error("Leader failed to set replica {} state to DOWN due to: {}"
@@ -1157,7 +1157,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // not the leader anymore maybe or the error'd node is not my replica?
           if (!foundErrorNodeInReplicaList) {
             log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent!"
-                , cloudDesc.getCoreNodeName(), collection, cloudDesc.getShardId(), stdNode.getNodeProps().getCoreUrl());
+                , cloudDesc.getReplicaName(), collection, cloudDesc.getShardId(), stdNode.getNodeProps().getCoreUrl());
             if (!shardId.equals(cloudDesc.getShardId())) {
               // some replicas on other shard did not receive the updates (ex: during splitshard),
               // exception must be notified to clients
@@ -1165,14 +1165,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             }
           } else {
             log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent!"
-                , cloudDesc.getCoreNodeName(), collection, shardId);
+                , cloudDesc.getReplicaName(), collection, shardId);
           }
         }
       }
     }
     if (!replicasShouldBeInLowerTerms.isEmpty()) {
       zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId())
-          .ensureTermsIsHigher(cloudDesc.getCoreNodeName(), replicasShouldBeInLowerTerms);
+          .ensureTermsIsHigher(cloudDesc.getReplicaName(), replicasShouldBeInLowerTerms);
     }
     handleReplicationFactor();
     if (0 < errorsForClient.size()) {

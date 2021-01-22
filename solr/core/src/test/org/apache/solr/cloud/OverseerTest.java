@@ -192,7 +192,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       q.offer(Utils.toJSON(m));
     }
 
-    public String publishState(String collection, String coreName, String coreNodeName, String shard, Replica.State stateName, int numShards, boolean startElection, Overseer overseer)
+    public String publishState(String collection, String coreName, String replicaName, String shard, Replica.State stateName, int numShards, boolean startElection, Overseer overseer)
         throws Exception {
       if (stateName == null) {
         ElectionContext ec = electionContext.remove(coreName);
@@ -202,7 +202,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.CORE_NAME_PROP, coreName,
-            ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
+            ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
             ZkStateReader.COLLECTION_PROP, collection);
         ZkDistributedQueue q = overseer.getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
@@ -212,7 +212,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.STATE_PROP, stateName.toString(),
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.CORE_NAME_PROP, coreName,
-            ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
+            ZkStateReader.CORE_NODE_NAME_PROP, replicaName,
             ZkStateReader.COLLECTION_PROP, collection,
             ZkStateReader.SHARD_ID_PROP, shard,
             ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards));
@@ -222,8 +222,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       if (startElection && collection.length() > 0) {
         zkStateReader.waitForState(collection, 45000, TimeUnit.MILLISECONDS,
-            (liveNodes, collectionState) -> getShardId(collectionState, coreNodeName) != null);
-        String shardId = getShardId(collection, coreNodeName);
+            (liveNodes, collectionState) -> getShardId(collectionState, replicaName) != null);
+        String shardId = getShardId(collection, replicaName);
         if (shardId != null) {
           ElectionContext prevContext = electionContext.get(coreName);
           if (prevContext != null) {
@@ -238,7 +238,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection,
-              ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
+              ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
           LeaderElector elector = new LeaderElector(zkClient);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               elector, shardId, collection, nodeName + coreName, props,
@@ -252,19 +252,19 @@ public class OverseerTest extends SolrTestCaseJ4 {
       return null;
     }
 
-    private String getShardId(String collection, String coreNodeName) {
+    private String getShardId(String collection, String replicaName) {
       DocCollection dc = zkStateReader.getClusterState().getCollectionOrNull(collection);
-      return getShardId(dc, coreNodeName);
+      return getShardId(dc, replicaName);
     }
 
-    private String getShardId(DocCollection collection, String coreNodeName) {
+    private String getShardId(DocCollection collection, String replicaName) {
       if (collection == null) return null;
       Map<String,Slice> slices = collection.getSlicesMap();
       if (slices != null) {
         for (Slice slice : slices.values()) {
           for (Replica replica : slice.getReplicas()) {
             String cnn = replica.getName();
-            if (coreNodeName.equals(cnn)) {
+            if (replicaName.equals(cnn)) {
               return slice.getName();
             }
           }

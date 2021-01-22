@@ -110,7 +110,7 @@ public class ZkShardTerms implements AutoCloseable{
    * Ensure that terms are higher than some replica's terms. If the current leader is attempting to give up
    * leadership and included in replicasNeedingRecovery, then other replicas that are in sync will have higher
    * terms, while the leader will stay where it is.
-   * @param leader coreNodeName of leader
+   * @param leader replicaName of leader
    * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
    */
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
@@ -123,29 +123,29 @@ public class ZkShardTerms implements AutoCloseable{
   }
   /**
    * Can this replica become leader?
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    * @return true if this replica can become leader, false if otherwise
    */
-  public boolean canBecomeLeader(String coreNodeName) {
-    return terms.get().canBecomeLeader(coreNodeName);
+  public boolean canBecomeLeader(String replicaName) {
+    return terms.get().canBecomeLeader(replicaName);
   }
 
   /**
    * Should leader skip sending updates to this replica?
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    * @return true if this replica has term equals to leader's term, false if otherwise
    */
-  public boolean skipSendingUpdatesTo(String coreNodeName) {
-    return !terms.get().haveHighestTermValue(coreNodeName);
+  public boolean skipSendingUpdatesTo(String replicaName) {
+    return !terms.get().haveHighestTermValue(replicaName);
   }
 
   /**
    * Did this replica registered its term? This is a sign to check f
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    * @return true if this replica registered its term, false if otherwise
    */
-  public boolean registered(String coreNodeName) {
-    return terms.get().getTerm(coreNodeName) != null;
+  public boolean registered(String replicaName) {
+    return terms.get().getTerm(replicaName) != null;
   }
 
   public void close() {
@@ -172,7 +172,7 @@ public class ZkShardTerms implements AutoCloseable{
   }
 
   /**
-   * Remove the coreNodeName from terms map and also remove any expired listeners
+   * Remove the replicaName from terms map and also remove any expired listeners
    * @return Return true if this object should not be reused
    */
   boolean removeTerm(CoreDescriptor cd) {
@@ -182,14 +182,14 @@ public class ZkShardTerms implements AutoCloseable{
       listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(terms.get()));
       numListeners = listeners.size();
     }
-    return removeTerm(cd.getCloudDescriptor().getCoreNodeName()) || numListeners == 0;
+    return removeTerm(cd.getCloudDescriptor().getReplicaName()) || numListeners == 0;
   }
 
   // package private for testing, only used by tests
   // return true if this object should not be reused
-  boolean removeTerm(String coreNodeName) {
+  boolean removeTerm(String replicaName) {
     ShardTerms newTerms;
-    while ( (newTerms = terms.get().removeTerm(coreNodeName)) != null) {
+    while ( (newTerms = terms.get().removeTerm(replicaName)) != null) {
       try {
         if (saveTerms(newTerms, "removeTerm")) return false;
       } catch (KeeperException.NoNodeException e) {
@@ -202,41 +202,41 @@ public class ZkShardTerms implements AutoCloseable{
   /**
    * Register a replica's term (term value will be 0).
    * If a term is already associate with this replica do nothing
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    */
-  void registerTerm(String coreNodeName) {
-    mutate(terms -> terms.registerTerm(coreNodeName));
+  void registerTerm(String replicaName) {
+    mutate(terms -> terms.registerTerm(replicaName));
   }
 
   /**
    * Set a replica's term equals to leader's term, and remove recovering flag of a replica.
    * This call should only be used by {@link org.apache.solr.common.params.CollectionParams.CollectionAction#FORCELEADER}
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    */
-  public void setTermEqualsToLeader(String coreNodeName) {
-    mutate(terms -> terms.setTermEqualsToLeader(coreNodeName));
+  public void setTermEqualsToLeader(String replicaName) {
+    mutate(terms -> terms.setTermEqualsToLeader(replicaName));
   }
 
   /**
    * Set a replica's term to 0. If the term does not exist, create it.
-   * @param coreNodeName of the replica
+   * @param replicaName of the replica
    */
-  public void setTermToZero(String coreNodeName) {
-    mutate(terms -> terms.setTermToZero(coreNodeName));
+  public void setTermToZero(String replicaName) {
+    mutate(terms -> terms.setTermToZero(replicaName));
   }
 
   /**
-   * Mark {@code coreNodeName} as recovering
+   * Mark {@code replicaName} as recovering
    */
-  public void startRecovering(String coreNodeName) {
-    mutate(terms -> terms.startRecovering(coreNodeName));
+  public void startRecovering(String replicaName) {
+    mutate(terms -> terms.startRecovering(replicaName));
   }
 
   /**
-   * Mark {@code coreNodeName} as finished recovering
+   * Mark {@code replicaName} as finished recovering
    */
-  public void doneRecovering(String coreNodeName) {
-    mutate(terms -> terms.doneRecovering(coreNodeName));
+  public void doneRecovering(String replicaName) {
+    mutate(terms -> terms.doneRecovering(replicaName));
   }
 
   public boolean isRecovering(String name) {
@@ -269,8 +269,8 @@ public class ZkShardTerms implements AutoCloseable{
     return terms.get().getMaxTerm();
   }
 
-  public long getTerm(String coreNodeName) {
-    Long term = terms.get().getTerm(coreNodeName);
+  public long getTerm(String replicaName) {
+    Long term = terms.get().getTerm(replicaName);
     return term == null? -1 : term;
   }
 

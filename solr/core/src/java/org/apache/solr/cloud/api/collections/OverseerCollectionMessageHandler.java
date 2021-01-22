@@ -488,7 +488,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  String waitForCoreNodeName(String collectionName, String msgNodeName, String msgCore) {
+  String waitForReplica(String collectionName, String msgNodeName, String msgCore) {
     int retryCount = 320;
     while (retryCount-- > 0) {
       final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
@@ -513,7 +513,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         Thread.currentThread().interrupt();
       }
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
+    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find replicaName");
   }
 
   ClusterState waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
