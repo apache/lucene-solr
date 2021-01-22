@@ -1722,17 +1722,17 @@ public class ZkController implements Closeable, Runnable {
    */
   public void publish(final CoreDescriptor cd, final Replica.State state, boolean updateLastState) throws Exception {
     MDCLoggingContext.setCoreDescriptor(cc, cd);
-    log.info("publishing state={}", state);
-    try (SolrCore core = cc.getCore(cd.getName())) {
-      if ((state == Replica.State.ACTIVE || state == Replica.State.RECOVERING) && (isClosed() || (core != null && core.isClosing()))) {
-        log.info("already closed, won't publish state={}", state);
-        throw new AlreadyClosedException();
-      }
-    }
-
-    // nocommit TODO if we publish anything but ACTIVE, cancel any possible election?
-
     try {
+      log.info("publishing state={}", state);
+      try (SolrCore core = cc.getCore(cd.getName())) {
+        if ((state == Replica.State.ACTIVE || state == Replica.State.RECOVERING) && (isClosed() || (core != null && core.isClosing()))) {
+          log.info("already closed, won't publish state={}", state);
+          throw new AlreadyClosedException();
+        }
+      }
+
+      // nocommit TODO if we publish anything but ACTIVE, cancel any possible election?
+
       String collection = cd.getCloudDescriptor().getCollectionName();
 
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
@@ -1747,10 +1747,10 @@ public class ZkController implements Closeable, Runnable {
       Map<String,Object> props = new HashMap<>();
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
-    //  props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
+      //  props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(CORE_NAME_PROP, cd.getName());
-    //  props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
-    //  props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
+      //  props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
+      //  props.put(ZkStateReader.SHARD_ID_PROP, cd.getCloudDescriptor().getShardId());
       props.put(ZkStateReader.COLLECTION_PROP, collection);
       props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
 

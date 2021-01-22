@@ -22,6 +22,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,9 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher, 
   @Override
   public boolean onTermChanged(ShardTerms terms) {
     if (coreContainer.isShutDown()) return false;
+    MDCLoggingContext.setCoreDescriptor(coreContainer, coreDescriptor);
 
-     try {
+    try {
       if (closed) {
         return false;
       }
@@ -74,6 +76,8 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher, 
         log.info("Failed to watch term of core {}", coreDescriptor.getName(), e);
       }
       return false;
+    } finally {
+      MDCLoggingContext.clear();
     }
 
     return true;

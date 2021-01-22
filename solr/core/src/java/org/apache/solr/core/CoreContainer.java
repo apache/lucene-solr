@@ -104,6 +104,7 @@ import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
@@ -920,21 +921,25 @@ public class CoreContainer implements Closeable {
 
           coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
             SolrCore core;
+            MDCLoggingContext.setCoreDescriptor(this, cd);
             try {
+              try {
 
-              core = createFromDescriptor(cd, false);
+                core = createFromDescriptor(cd, false);
 
-              if (core.getDirectoryFactory().isSharedStorage()) {
-                if (isZooKeeperAware()) {
-                  zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                if (core.getDirectoryFactory().isSharedStorage()) {
+                  if (isZooKeeperAware()) {
+                    zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                  }
                 }
-              }
 
+              } finally {
+                solrCores.markCoreAsNotLoading(cd);
+              } if (isZooKeeperAware()) {
+                new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false).call();
+              }
             } finally {
-              solrCores.markCoreAsNotLoading(cd);
-            }
-            if (isZooKeeperAware()) {
-              new ZkController.RegisterCoreAsync(zkSys.zkController, cd, false).call();
+              MDCLoggingContext.clear();
             }
             return core;
           }));
@@ -1406,8 +1411,8 @@ public class CoreContainer implements Closeable {
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
-        log.info("Creating SolrCore '{}' using configuration from {} solrconfig={}, trusted={}", dcore.getName(),
-            coreConfig.getName(), coreConfig.getSolrConfig().getName(), dcore.isConfigSetTrusted());
+        log.info("Creating SolrCore '{}' using configuration from {} solrconfig={}, trusted={}", dcore.getName(), coreConfig.getName(), coreConfig.getSolrConfig().getName(),
+            dcore.isConfigSetTrusted());
       }
 
       try {
@@ -1429,13 +1434,12 @@ public class CoreContainer implements Closeable {
 
         old = registerCore(dcore, core, true);
         registered = true;
-      } catch (Exception e){
+      } catch (Exception e) {
 
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } finally {
         solrCores.markCoreAsNotLoading(dcore);
       }
-
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
@@ -1452,9 +1456,9 @@ public class CoreContainer implements Closeable {
         unload(dcore.getName(), true, true, true);
         throw e;
       }
-//      if (!registered) {
-//        solrCores.removeCoreDescriptor(dcore);
-//      }
+      //      if (!registered) {
+      //        solrCores.removeCoreDescriptor(dcore);
+      //      }
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
       throw solrException;
     } catch (Throwable t) {
@@ -1465,33 +1469,35 @@ public class CoreContainer implements Closeable {
 
       throw t;
     } finally {
+      try {
+        if (core != null) {
+          if (!registered) {
+            if (core != null) {
 
-      if (core != null) {
-        if (!registered) {
-          if (core != null) {
-
+              SolrCore finalCore1 = core;
+              solrCoreCloseExecutor.submit(() -> {
+                finalCore1.closeAndWait();
+              });
+              SolrCore finalOld = old;
+              solrCoreCloseExecutor.submit(() -> {
+                if (finalOld != null) {
+                  finalOld.closeAndWait();
+                }
+              });
+            }
+          }
+          if (isShutDown) {
             SolrCore finalCore1 = core;
-            solrCoreCloseExecutor.submit(() -> {
+            ParWork.getRootSharedExecutor().submit(() -> {
+
               finalCore1.closeAndWait();
-            });
-            SolrCore finalOld = old;
-            solrCoreCloseExecutor.submit(() -> {
-              if (finalOld != null) {
-                finalOld.closeAndWait();
-              }
+
             });
           }
         }
-        if (isShutDown) {
-          SolrCore finalCore1 = core;
-          ParWork.getRootSharedExecutor().submit(() -> {
-
-            finalCore1.closeAndWait();
-
-          });
-        }
+      } finally {
+        MDCLoggingContext.clear();
       }
-      MDCLoggingContext.clear();
     }
   }
 

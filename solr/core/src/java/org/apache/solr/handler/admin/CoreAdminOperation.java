@@ -43,6 +43,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -72,35 +73,39 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 enum CoreAdminOperation implements CoreAdminOp {
 
   CREATE_OP(CREATE, it -> {
-    assert TestInjection.injectRandomDelayInCoreCreation();
-
     SolrParams params = it.req.getParams();
     log().info("core create command {}", params);
     String coreName = params.required().get(CoreAdminParams.NAME);
-    Map<String, String> coreParams = buildCoreParams(params);
-    CoreContainer coreContainer = it.handler.coreContainer;
-    Path instancePath;
+    MDCLoggingContext.setCoreName(coreName);
+    try {
+      assert TestInjection.injectRandomDelayInCoreCreation();
 
-    // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
-    String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
-    if (instanceDir == null)
-      instanceDir = it.req.getParams().get("property.instanceDir");
-    if (instanceDir != null) {
-      instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
-      instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
-    } else {
-      instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+      Map<String,String> coreParams = buildCoreParams(params);
+      CoreContainer coreContainer = it.handler.coreContainer;
+      Path instancePath;
+
+      // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
+      String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
+      if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
+      if (instanceDir != null) {
+        instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
+        instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
+      } else {
+        instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+      }
+
+      boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+      if (coreContainer.isShutDown()) {
+        log().warn("Will not create SolrCore, CoreContainer is shutdown");
+        throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
+      }
+
+      coreContainer.create(coreName, instancePath, coreParams, newCollection);
+
+      it.rsp.add("core", coreName);
+    } finally {
+      MDCLoggingContext.clear();
     }
-
-    boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
-    if (coreContainer.isShutDown()) {
-      log().warn("Will not create SolrCore, CoreContainer is shutdown");
-      throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
-    }
-
-    coreContainer.create(coreName, instancePath, coreParams, newCollection);
-
-    it.rsp.add("core", coreName);
   }),
   UNLOAD_OP(UNLOAD, it -> {
     SolrParams params = it.req.getParams();

@@ -25,6 +25,7 @@ import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -119,141 +120,147 @@ public class LeaderElector implements Closeable {
   private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
           InterruptedException, IOException {
     //if (checkClosed(context)) return false;
-
-    if (log.isDebugEnabled()) log.debug("Check if I am leader {}", context.getClass().getSimpleName());
-    if (isClosed) {
-      log.info("elector is closed, won't join election");
-      return false;
-    }
-
-    executor.submit(() -> {
-      context.checkIfIamLeaderFired();
-    });
-
-    state = CHECK_IF_LEADER;
-    // get all other numbers...
-    final String holdElectionPath = context.electionPath + ELECTION_NODE;
-    List<String> seqs;
+    MDCLoggingContext.setCoreName(context.leaderProps.getName());
     try {
-      seqs = zkClient.getChildren(holdElectionPath, null, true);
-    } catch (KeeperException.SessionExpiredException e) {
-      log.error("ZooKeeper session has expired");
-      state = OUT_OF_ELECTION;
-      return false;
-    } catch (KeeperException.NoNodeException e) {
-      log.info("the election node disappeared, check if we are the leader again");
-      state = OUT_OF_ELECTION;
-      return false;
-    } catch (KeeperException e) {
-      // we couldn't set our watch for some other reason, retry
-      log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
-      state = OUT_OF_ELECTION;
-      return true;
-    } catch (Exception e) {
-      // we couldn't set our watch for some other reason, retry
-      log.error("Failed on election getchildren call {} {}", e.getClass().getName(), e.getMessage());
-      state = OUT_OF_ELECTION;
-      return true;
-    }
-
-    try {
-
-      sortSeqs(seqs);
-
-      String leaderSeqNodeName;
-      try {
-        leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
-      } catch (NullPointerException e) {
-        state = OUT_OF_ELECTION;
-        if (log.isDebugEnabled()) log.debug("leaderSeqPath has been removed, bailing");
-        return true;
-      }
-      if (!seqs.contains(leaderSeqNodeName)) {
-        log.warn("Our node is no longer in line to be leader");
-        state = OUT_OF_ELECTION;
+      if (log.isDebugEnabled()) log.debug("Check if I am leader {}", context.getClass().getSimpleName());
+      if (isClosed) {
+        log.info("elector is closed, won't join election");
         return false;
       }
-      if (log.isDebugEnabled()) log.debug("The leader election node is {}", leaderSeqNodeName);
-      if (leaderSeqNodeName.equals(seqs.get(0))) {
-        // I am the leader
-        if (log.isDebugEnabled()) log.debug("I am the potential leader {}, running leader process", context.leaderProps.getName());
-        ElectionWatcher oldWatcher = watcher;
-        if (oldWatcher != null) {
-          oldWatcher.close();
-        }
 
-        if ((zkController != null && zkController.getCoreContainer().isShutDown())) {
-          if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
+      executor.submit(() -> {
+        context.checkIfIamLeaderFired();
+      });
+
+      state = CHECK_IF_LEADER;
+      // get all other numbers...
+      final String holdElectionPath = context.electionPath + ELECTION_NODE;
+      List<String> seqs;
+      try {
+        seqs = zkClient.getChildren(holdElectionPath, null, true);
+      } catch (KeeperException.SessionExpiredException e) {
+        log.error("ZooKeeper session has expired");
+        state = OUT_OF_ELECTION;
+        return true;
+      } catch (KeeperException.NoNodeException e) {
+        log.info("the election node disappeared");
+        state = OUT_OF_ELECTION;
+        return false;
+      } catch (KeeperException e) {
+        // we couldn't set our watch for some other reason, retry
+        log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
+        state = OUT_OF_ELECTION;
+        return true;
+      } catch (Exception e) {
+        // we couldn't set our watch for some other reason, retry
+        log.error("Failed on election getchildren call {} {}", e.getClass().getName(), e.getMessage());
+        state = OUT_OF_ELECTION;
+        return true;
+      }
+
+      try {
+
+        sortSeqs(seqs);
+
+        String leaderSeqNodeName;
+        try {
+          leaderSeqNodeName = context.leaderSeqPath.substring(context.leaderSeqPath.lastIndexOf('/') + 1);
+        } catch (NullPointerException e) {
+          state = OUT_OF_ELECTION;
+          if (log.isDebugEnabled()) log.debug("leaderSeqPath has been removed, bailing");
+          return true;
+        }
+        if (!seqs.contains(leaderSeqNodeName)) {
+          log.warn("Our node is no longer in line to be leader");
           state = OUT_OF_ELECTION;
           return false;
         }
-
-        state = POT_LEADER;
-        runIamLeaderProcess(context, replacement);
-        return false;
-
-      } else {
-
-        String toWatch = seqs.get(0);
-        for (String node : seqs) {
-          if (leaderSeqNodeName.equals(node)) {
-            break;
-          }
-          toWatch = node;
-        }
-        try {
-          String watchedNode = holdElectionPath + "/" + toWatch;
-
-          log.info("I am not the leader (our path is ={}) - watch the node below me {} seqs={}", leaderSeqNodeName, watchedNode, seqs);
-
+        if (log.isDebugEnabled()) log.debug("The leader election node is {}", leaderSeqNodeName);
+        if (leaderSeqNodeName.equals(seqs.get(0))) {
+          // I am the leader
+          if (log.isDebugEnabled()) log.debug("I am the potential leader {}, running leader process", context.leaderProps.getName());
           ElectionWatcher oldWatcher = watcher;
           if (oldWatcher != null) {
-            IOUtils.closeQuietly(oldWatcher);
+            oldWatcher.close();
           }
 
-          watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
-          Stat exists = zkClient.exists(watchedNode, watcher);
-          if (exists == null) {
+          if ((zkController != null && zkController.getCoreContainer().isShutDown())) {
+            if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
+            state = OUT_OF_ELECTION;
+            return false;
+          }
+
+          state = POT_LEADER;
+          runIamLeaderProcess(context, replacement);
+          return false;
+
+        } else {
+
+          String toWatch = seqs.get(0);
+          for (String node : seqs) {
+            if (leaderSeqNodeName.equals(node)) {
+              break;
+            }
+            toWatch = node;
+          }
+          try {
+            String watchedNode = holdElectionPath + "/" + toWatch;
+
+            log.info("I am not the leader (our path is ={}) - watch the node below me {} seqs={}", leaderSeqNodeName, watchedNode, seqs);
+
+            ElectionWatcher oldWatcher = watcher;
+            if (oldWatcher != null) {
+              IOUtils.closeQuietly(oldWatcher);
+            }
+
+            watcher = new ElectionWatcher(context.leaderSeqPath, watchedNode, context);
+            Stat exists = zkClient.exists(watchedNode, watcher);
+            if (exists == null) {
+              state = OUT_OF_ELECTION;
+              return true;
+            }
+
+            state = WAITING_IN_ELECTION;
+            if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
+
+            return false;
+          } catch (KeeperException.SessionExpiredException e) {
+            state = OUT_OF_ELECTION;
+            log.error("ZooKeeper session has expired");
+            return true;
+          } catch (KeeperException.NoNodeException e) {
+            log.info("the previous node disappeared, check if we are the leader again");
+            state = OUT_OF_ELECTION;
+            return true;
+          } catch (KeeperException e) {
+            // we couldn't set our watch for some other reason, retry
+            log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
+            state = OUT_OF_ELECTION;
+            return true;
+          } catch (Exception e) {
+            state = OUT_OF_ELECTION;
+            // we couldn't set our watch for some other reason, retry
+            log.error("Failed setting election watch {} {}", e.getClass().getName(), e.getMessage());
             state = OUT_OF_ELECTION;
             return true;
           }
-
-          state = WAITING_IN_ELECTION;
-          if (log.isDebugEnabled()) log.debug("Watching path {} to know if I could be the leader, my node is {}", watchedNode, context.leaderSeqPath);
-
-          return false;
-        } catch (KeeperException.SessionExpiredException e) {
-          state = OUT_OF_ELECTION;
-          log.error("ZooKeeper session has expired");
-          throw e;
-        } catch (KeeperException.NoNodeException e) {
-          log.info("the previous node disappeared, check if we are the leader again");
-
-        } catch (KeeperException e) {
-          // we couldn't set our watch for some other reason, retry
-          log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
-
-        } catch (Exception e) {
-          state = OUT_OF_ELECTION;
-          // we couldn't set our watch for some other reason, retry
-          log.error("Failed setting election watch {} {}", e.getClass().getName(), e.getMessage());
         }
+
+      } catch (KeeperException.SessionExpiredException e) {
+        log.error("ZooKeeper session has expired");
+        state = OUT_OF_ELECTION;
+        return true;
+      } catch (AlreadyClosedException e) {
+        state = OUT_OF_ELECTION;
+        return true;
+      } catch (Exception e) {
+        state = OUT_OF_ELECTION;
+        return true;
       }
 
-    } catch (KeeperException.SessionExpiredException e) {
-      log.error("ZooKeeper session has expired");
-      state = OUT_OF_ELECTION;
-      return false;
-    } catch (AlreadyClosedException e) {
-      state = OUT_OF_ELECTION;
-      return false;
-    } catch (Exception e) {
-      state = OUT_OF_ELECTION;
-      return true;
+    } finally {
+      MDCLoggingContext.clear();
     }
-
-    state = OUT_OF_ELECTION;
-    return true;
   }
 
 

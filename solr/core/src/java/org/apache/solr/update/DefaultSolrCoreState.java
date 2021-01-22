@@ -320,13 +320,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     CoreContainer corecontainer = core.getCoreContainer();
 
     Runnable recoveryTask = () -> {
+      CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+      MDCLoggingContext.setCoreDescriptor(corecontainer, coreDescriptor);
       try {
         if (SKIP_AUTO_RECOVERY) {
           log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
           return;
         }
-        CoreDescriptor coreDescriptor = core.getCoreDescriptor();
-        MDCLoggingContext.setCoreDescriptor(corecontainer, coreDescriptor);
+
         if (log.isDebugEnabled()) log.debug("Going to create and run RecoveryStrategy");
 
 //        try {
@@ -420,6 +421,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (!success) {
         recoverying = false;
       }
+
     }
   }
 
