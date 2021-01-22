@@ -921,10 +921,14 @@ public class CoreContainer implements Closeable {
           coreLoadFutures.add(solrCoreLoadExecutor.submit(() -> {
             SolrCore core;
             try {
-              if (isZooKeeperAware()) {
-                zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-              }
+
               core = createFromDescriptor(cd, false);
+
+              if (core.getDirectoryFactory().isSharedStorage()) {
+                if (isZooKeeperAware()) {
+                  zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                }
+              }
 
             } finally {
               solrCores.markCoreAsNotLoading(cd);
