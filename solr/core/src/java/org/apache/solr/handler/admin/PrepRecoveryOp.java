@@ -18,11 +18,9 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
-import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -97,20 +95,5 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         error = "Timeout waiting for collection state. \n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
     }
-
-    try {
-      ZkShardTerms shardTerms = coreContainer.getZkController().getShardTermsOrNull(collection, shard);
-      // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-      if (shardTerms != null && waitForState == Replica.State.RECOVERING && shardTerms.registered(cname) && shardTerms.skipSendingUpdatesTo(cname)) {
-        // The replica changed its term, then published itself as RECOVERING.
-        // This core already see replica as RECOVERING
-        // so it is guarantees that a live-fetch will be enough for this core to see max term published
-        log.info("refresh shard terms for core {}", cname);
-        shardTerms.refreshTerms(false);
-      }
-    } catch (Exception e) {
-       log.error("Exception while looking at refreshing shard terms", e);
-    }
-
   }
 }

@@ -351,8 +351,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
 
         Replica leader = zkController.getZkStateReader().getLeaderRetry(coreDescriptor.getCollectionName(), coreDescriptor.getCloudDescriptor().getShardId(), 1500);
-        if (leader != null && leader.getName().equals(coreName) && zkController.getZkClient()
-            .exists(COLLECTIONS_ZKNODE + "/" + coreDescriptor.getCollectionName() + "/leaders/" + coreDescriptor.getCloudDescriptor().getShardId() + "/leader")) {
+        if (leader != null && leader.getName().equals(coreName)) {
           log.info("We are the leader, STOP recovery");
           close = true;
           return;
@@ -403,9 +402,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        Replica leaderprops;
+        Replica leader;
         try {
-          leaderprops = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500);
+          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500);
+
+          if (leader != null && leader.getName().equals(coreName)) {
+            log.info("We are the leader, STOP recovery");
+            close = true;
+            return false;
+          }
         } catch (Exception e) {
           log.error("Could not get leader for {} {} {}", cloudDesc.getCollectionName(), cloudDesc.getShardId(), zkStateReader.getClusterState().getCollectionOrNull(cloudDesc.getCollectionName()), e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -413,12 +418,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (isClosed()) {
           throw new AlreadyClosedException();
         }
-        log.info("Starting Replication Recovery. [{}] leader is [{}] and I am [{}]", coreName, leaderprops.getName(), Replica.getCoreUrl(baseUrl, coreName));
+        log.info("Starting Replication Recovery. [{}] leader is [{}] and I am [{}]", coreName, leader.getName(), Replica.getCoreUrl(baseUrl, coreName));
 
         try {
           log.info("Stopping background replicate from leader process");
           zkController.stopReplicationFromLeader(coreName);
-          IndexFetcher.IndexFetchResult result = replicate(leaderprops);
+          IndexFetcher.IndexFetchResult result = replicate(leader);
 
           if (result.getSuccessful()) {
             log.info("replication fetch reported as success");
@@ -597,6 +602,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
         leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 1500);
+
+        if (leader != null && leader.getName().equals(coreName)) {
+          log.info("We are the leader, STOP recovery");
+          close = true;
+          return false;
+        }
 
         log.info("Begin buffering updates. core=[{}]", coreName);
         // recalling buffer updates will drop the old buffer tlog

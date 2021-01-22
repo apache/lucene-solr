@@ -316,7 +316,7 @@ public class LeaderElector implements Closeable {
   }
 
   public void joinElection(boolean replacement,boolean joinAtHead) {
-    if (!isClosed && !zkController.getCoreContainer().isShutDown() && !zkController.isDcCalled() && zkClient.isAlive()) {
+    if (!isClosed && !zkController.getCoreContainer().isShutDown() && !zkController.isDcCalled()) {
       joinFuture = executor.submit(() -> {
         try {
           isCancelled = false;
@@ -382,8 +382,7 @@ public class LeaderElector implements Closeable {
           }
         } else {
           if (log.isDebugEnabled()) log.debug("create ephem election node {}", shardsElectZkPath + "/" + id + "-n_");
-              leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", (byte[]) null,
-                      CreateMode.EPHEMERAL_SEQUENTIAL, false);
+          leaderSeqPath = zkClient.create(shardsElectZkPath + "/" + id + "-n_", (byte[]) null, CreateMode.EPHEMERAL_SEQUENTIAL, false);
         }
 
         log.info("Joined leadership election with path: {}", leaderSeqPath);
@@ -444,7 +443,7 @@ public class LeaderElector implements Closeable {
   }
 
   private boolean shouldRejectJoins() {
-    return zkController.getCoreContainer().isShutDown() || zkController.isDcCalled();
+    return zkController.getCoreContainer().isShutDown() || zkController.isDcCalled() || isClosed;
   }
 
   @Override
@@ -470,10 +469,6 @@ public class LeaderElector implements Closeable {
   }
 
   public void cancel() {
-
-    if (state == OUT_OF_ELECTION || state == CLOSED) {
-      return;
-    }
 
     state = OUT_OF_ELECTION;
 
@@ -587,15 +582,26 @@ public class LeaderElector implements Closeable {
     Collections.sort(seqs, Comparator.comparingInt(LeaderElector::getSeq).thenComparing(o -> o));
   }
 
-  void retryElection(boolean joinAtHead) {
+  synchronized void retryElection(boolean joinAtHead) {
+    state = OUT_OF_ELECTION;
     if (shouldRejectJoins()) {
+      log.info("Closed, won't rejoin election");
       throw new AlreadyClosedException();
     }
-    cancel();
     ElectionWatcher watcher = this.watcher;
     IOUtils.closeQuietly(watcher);
+    this.watcher = null;
     IOUtils.closeQuietly(this);
+    context.leaderSeqPath = null;
+    context.watchedSeqPath = null;
+    if (context instanceof ShardLeaderElectionContextBase) {
+      ((ShardLeaderElectionContextBase) context).closed = false;
+      ((ShardLeaderElectionContextBase) context).leaderZkNodeParentVersion = null;
+    }
+
+    isClosed = false;
     isCancelled = false;
+    joinFuture = null;
     joinElection(true, joinAtHead);
   }
 

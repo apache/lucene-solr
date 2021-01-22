@@ -50,9 +50,9 @@ public class SolrQoSFilter extends QoSFilter {
   @Override
   public void init(FilterConfig filterConfig) {
     super.init(filterConfig);
-    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 5000);
+    _origMaxRequests = Integer.getInteger("solr.concurrentRequests.max", 10000);
     super.setMaxRequests(_origMaxRequests);
-    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 20000));
+    super.setSuspendMs(Integer.getInteger("solr.concurrentRequests.suspendms", 30000));
     super.setWaitMs(Integer.getInteger("solr.concurrentRequests.waitms", 2000));
   }
 
@@ -82,27 +82,27 @@ public class SolrQoSFilter extends QoSFilter {
 
       } else {
         // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
-        if (ourLoad < 0.70 && sLoad < 1.0 && _origMaxRequests != getMaxRequests()) {
+        if (ourLoad < 0.90 && sLoad < 1.6 && _origMaxRequests != getMaxRequests()) {
           if (sLoad < 0.9) {
             if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
             updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
           } else {
-            updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 1.5D)), sLoad, ourLoad);
+            updateMaxRequests(Math.min(_origMaxRequests, Math.round(getMaxRequests() * 3)), sLoad, ourLoad);
           }
         } else {
-          if (sLoad > 1.1) {
+          if (ourLoad > 0.90 && sLoad > 1.5) {
             int cMax = getMaxRequests();
             if (cMax > 5) {
               int max = Math.max(5, (int) ((double) cMax * 0.30D));
             //  log.warn("System load is {} and our load is {} procs is {}, set max concurrent requests to {}", sLoad, ourLoad, SysStats.PROC_COUNT, max);
               updateMaxRequests(max, sLoad, ourLoad);
             }
-          } else if (ourLoad < 0.70 && sLoad < 1.0 && _origMaxRequests != getMaxRequests()) {
+          } else if (ourLoad < 0.90 && sLoad < 2 && _origMaxRequests != getMaxRequests()) {
             if (sLoad < 0.9) {
               if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
               updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
             } else {
-              updateMaxRequests(Math.min(_origMaxRequests, (int) Math.round(getMaxRequests() * 1.5D)), sLoad, ourLoad);
+              updateMaxRequests(Math.min(_origMaxRequests, Math.round(getMaxRequests() * 3)), sLoad, ourLoad);
             }
 
           }

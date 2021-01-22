@@ -127,14 +127,27 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         Replica.Type replicaType;
-        String coreNodeName;
         boolean setTermToMax = false;
 
         CoreDescriptor cd = core.getCoreDescriptor();
         CloudDescriptor cloudCd = cd.getCloudDescriptor();
         replicaType = cloudCd.getReplicaType();
         // should I be leader?
+
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
+        try {
+          // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
+          if (zkShardTerms != null && zkShardTerms.skipSendingUpdatesTo(coreName)) {
+            // The replica changed its term, then published itself as RECOVERING.
+            // This core already see replica as RECOVERING
+            // so it is guarantees that a live-fetch will be enough for this core to see max term published
+            log.info("refresh shard terms for core {}", coreName);
+            zkShardTerms.refreshTerms(false);
+          }
+        } catch (Exception e) {
+          log.error("Exception while looking at refreshing shard terms", e);
+        }
+        
         if (zkShardTerms.registered(coreName) && !zkShardTerms.canBecomeLeader(coreName)) {
           if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
             rejoinLeaderElection(core);
