@@ -147,6 +147,9 @@ Bug Fixes
 
 * SOLR-15073: Fix ClassCastException in SystemInfoHandler.getSecurityInfo. (Nikolay Ivanov, Christine Poerschke)
 
+* SOLR-15071: Fix ArrayIndexOutOfBoundsException in contrib/ltr SolrFeatureScorer.
+  (Florin Babes, Ovidiu Mihalcea, David Smiley, Christine Poerschke)
+
 Other Changes
 ---------------------
 
