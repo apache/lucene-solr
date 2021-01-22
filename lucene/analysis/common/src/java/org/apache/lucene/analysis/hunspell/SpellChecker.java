@@ -74,7 +74,7 @@ public class SpellChecker {
       if (checkWord(caseVariant, wordChars.length, true)) {
         return true;
       }
-      char[] aposCase = stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
+      char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
       if (aposCase != null && checkWord(aposCase, aposCase.length, true)) {
         return true;
       }
