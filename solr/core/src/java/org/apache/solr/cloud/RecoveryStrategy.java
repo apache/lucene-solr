@@ -923,19 +923,19 @@ public class RecoveryStrategy implements Runnable, Closeable {
     log.info("Sending prep recovery command to {} for core {} params={}", leaderBaseUrl, leaderCoreName, prepCmd.getParams());
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
-    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "5000"));
+    int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "10000"));
     // nocommit
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(cc.getUpdateShardHandler().
         getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
 
       prepCmd.setBasePath(leaderBaseUrl);
-      log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
+
       latch = new CountDownLatch(1);
       Cancellable result = client.asyncRequest(prepCmd, null, new NamedListAsyncListener(latch));
       try {
         prevSendPreRecoveryHttpUriRequest = result;
         try {
-          boolean success = latch.await(5, TimeUnit.SECONDS);
+          boolean success = latch.await(15, TimeUnit.SECONDS);
           if (!success) {
             result.cancel();
             throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Timeout waiting for prep recovery cmd on leader");
