@@ -215,7 +215,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
       }
     }
-    params.set(CoreAdminParams.CORE_NODE_NAME,
+    params.set(CommonParams.REPLICA_NAME,
         ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(createReplica.coreName)).get(createReplica.coreName).getName());
 
     String configName = zkStateReader.readConfigName(collectionName);
