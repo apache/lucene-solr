@@ -210,6 +210,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
       for (int i = 0; i < size; i++) {
         int node = nodes[i];
         assert node > lastNode : "nodes out of order: " + lastNode + "," + node;
+        assert node < offsets.length : "node too large: " + node + ">=" + offsets.length;
         graphData.writeVInt(node - lastNode);
         lastNode = node;
       }

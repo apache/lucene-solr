@@ -20,6 +20,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -32,6 +33,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -705,6 +707,7 @@ public class TestVectorValues extends LuceneTestCase {
       int dimension = atLeast(10);
       float[] scratch = new float[dimension];
       int numValues = 0;
+      int numDeletes = 0;
       float[][] values = new float[numDoc][];
       for (int i = 0; i < numDoc; i++) {
         if (random().nextInt(7) != 3) {
@@ -715,9 +718,9 @@ public class TestVectorValues extends LuceneTestCase {
         if (random().nextBoolean() && values[i] != null) {
           // sometimes use a shared scratch array
           System.arraycopy(values[i], 0, scratch, 0, scratch.length);
-          add(iw, fieldName, i, scratch);
+          add(iw, fieldName, i, scratch, SearchStrategy.NONE);
         } else {
-          add(iw, fieldName, i, values[i]);
+          add(iw, fieldName, i, values[i], SearchStrategy.NONE);
         }
         if (random().nextInt(10) == 2) {
           // sometimes delete a random document
@@ -727,13 +730,13 @@ public class TestVectorValues extends LuceneTestCase {
           if (values[idToDelete] != null) {
             values[idToDelete] = null;
             --numValues;
+            ++numDeletes;
           }
         }
         if (random().nextInt(10) == 3) {
           iw.commit();
         }
       }
-      iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
         int valueCount = 0, totalSize = 0;
         for (LeafReaderContext ctx : reader.leaves()) {
@@ -748,29 +751,107 @@ public class TestVectorValues extends LuceneTestCase {
             assertEquals(dimension, v.length);
             String idString = ctx.reader().document(docId).getField("id").stringValue();
             int id = Integer.parseInt(idString);
-            assertArrayEquals(idString, values[id], v, 0);
-            ++valueCount;
+            if (ctx.reader().getLiveDocs() == null || ctx.reader().getLiveDocs().get(docId)) {
+              assertArrayEquals(idString, values[id], v, 0);
+              ++valueCount;
+            } else {
+              assertNull(values[id]);
+            }
           }
         }
         assertEquals(numValues, valueCount);
-        assertEquals(numValues, totalSize);
+        assertEquals(numValues, totalSize - numDeletes);
       }
     }
   }
 
-  private void add(IndexWriter iw, String field, int id, float[] vector) throws IOException {
-    add(iw, field, id, random().nextInt(100), vector);
+  /**
+   * Index random vectors, sometimes skipping documents, sometimes deleting a document, sometimes
+   * merging, sometimes sorting the index, and verify that the expected values can be read back
+   * consistently.
+   */
+  public void testRandom2() throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    String fieldName = "field";
+    try (Directory dir = newDirectory();
+        IndexWriter iw = new IndexWriter(dir, iwc)) {
+      int numDoc = atLeast(100);
+      int dimension = atLeast(10);
+      float[][] values = new float[numDoc][];
+      float[][] id2value = new float[numDoc][];
+      int[] id2ord = new int[numDoc];
+      for (int i = 0; i < numDoc; i++) {
+        int id = random().nextInt(numDoc);
+        float[] value;
+        if (random().nextInt(7) != 3) {
+          // usually index a vector value for a doc
+          value = randomVector(dimension);
+        } else {
+          value = null;
+        }
+        values[i] = value;
+        id2value[id] = value;
+        id2ord[id] = i;
+        add(iw, fieldName, id, value, SearchStrategy.EUCLIDEAN_HNSW);
+      }
+      try (IndexReader reader = iw.getReader()) {
+        for (LeafReaderContext ctx : reader.leaves()) {
+          Bits liveDocs = ctx.reader().getLiveDocs();
+          VectorValues vectorValues = ctx.reader().getVectorValues(fieldName);
+          if (vectorValues == null) {
+            continue;
+          }
+          int docId;
+          while ((docId = vectorValues.nextDoc()) != NO_MORE_DOCS) {
+            float[] v = vectorValues.vectorValue();
+            assertEquals(dimension, v.length);
+            String idString = ctx.reader().document(docId).getField("id").stringValue();
+            int id = Integer.parseInt(idString);
+            if (liveDocs == null || liveDocs.get(docId)) {
+              assertArrayEquals(
+                  "values differ for id=" + idString + ", docid=" + docId + " leaf=" + ctx.ord,
+                  id2value[id],
+                  v,
+                  0);
+            } else {
+              if (id2value[id] != null) {
+                assertFalse(Arrays.equals(id2value[id], v));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private void add(
+      IndexWriter iw, String field, int id, float[] vector, SearchStrategy searchStrategy)
+      throws IOException {
+    add(iw, field, id, random().nextInt(100), vector, searchStrategy);
   }
 
   private void add(IndexWriter iw, String field, int id, int sortkey, float[] vector)
       throws IOException {
+    add(iw, field, id, sortkey, vector, SearchStrategy.NONE);
+  }
+
+  private void add(
+      IndexWriter iw,
+      String field,
+      int id,
+      int sortkey,
+      float[] vector,
+      SearchStrategy searchStrategy)
+      throws IOException {
     Document doc = new Document();
     if (vector != null) {
-      doc.add(new VectorField(field, vector));
+      doc.add(new VectorField(field, vector, searchStrategy));
     }
     doc.add(new NumericDocValuesField("sortkey", sortkey));
-    doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
-    iw.addDocument(doc);
+    String idString = Integer.toString(id);
+    doc.add(new StringField("id", idString, Field.Store.YES));
+    Term idTerm = new Term("id", idString);
+    iw.updateDocument(idTerm, doc);
   }
 
   private float[] randomVector(int dim) {
