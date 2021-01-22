@@ -76,15 +76,16 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         // wait until we are sure the recovering node is ready
         // to accept updates
         final Replica replica = c.getReplica(cname);
-
+        boolean isLive = false;
         if (replica != null) {
-          if ((replica.getState() == waitForState || replica.getState() == Replica.State.ACTIVE) && coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName())) {
+          isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
+          if ((replica.getState() == waitForState || replica.getState() == Replica.State.ACTIVE) && isLive) {
             // if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
             log.info("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState, coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
             return true;
           }
         }
-
+        errorMessage.set("Timeout waiting to see RECOVERY state replica=" + replica + " state=" + replica.getState() + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection));
         return false;
       });
 
