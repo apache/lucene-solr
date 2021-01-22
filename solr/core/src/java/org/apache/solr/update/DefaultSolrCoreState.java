@@ -358,7 +358,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         if (!locked) {
           recoveryWaiting.incrementAndGet();
           if (log.isDebugEnabled()) log.debug("Wait for recovery lock");
-          cancelRecovery(true, false);
+          //cancelRecovery(true, false);
           while (!(recoveryLock.tryLock() || recoveryLock.tryLock(500, TimeUnit.MILLISECONDS))) {
             if (closed || prepForClose) {
               log.warn("Skipping recovery because we are closed");
