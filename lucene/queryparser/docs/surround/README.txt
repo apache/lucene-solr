@@ -70,5 +70,5 @@ WildCardTermEnum (correct name?) should be no problem.
 Warnings about missing terms are sent to System.out, this might
 be replaced by another stream, and tested for in the tests.
 
-BooleanQueryTst.TestCollector uses a results checking method that should
+TestBooleanQuery.TestCollector uses a results checking method that should
 be replaced by the checking method from Lucene's TestBasics.java.
