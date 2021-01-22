@@ -221,7 +221,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // time around. The final unload in the loop should delete the core and
       // allow the next time around to succeed.
       // This also checks the bookkeeping in CoreContainer.create
-      // that prevents muliple simulatneous creations,
+      // that prevents multiple simultaneous creations,
       // currently "inFlightCreations"
       String testName = "coreToTest";
       for (int thread = 0; thread < NUM_THREADS; ++thread) {

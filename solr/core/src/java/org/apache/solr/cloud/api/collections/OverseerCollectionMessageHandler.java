@@ -313,7 +313,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
     String asyncId = message.getStr(ASYNC);
-    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId);
+    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId, Collections.emptySet());
   }
 
   @SuppressWarnings("unchecked")
@@ -748,11 +748,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         throw new SolrException(ErrorCode.BAD_REQUEST,"Unable to get config name");
       }
     }
-  }
-
-  private List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
-                             NamedList<Object> results, Replica.State stateMatcher, String asyncId) {
-    return collectionCmd( message, params, results, stateMatcher, asyncId, Collections.emptySet());
   }
 
   /**

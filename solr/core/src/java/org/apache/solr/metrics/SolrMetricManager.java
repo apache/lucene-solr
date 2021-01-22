@@ -1129,8 +1129,8 @@ public class SolrMetricManager {
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptySet();
     }
-    log.info("Closing metric reporters for registry={} tag={}", registry, tag);
     try {
+      log.info("Closing metric reporters for registry={} tag={}", registry, tag);
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {
         Set<String> names = new HashSet<>(perRegistry.keySet());
@@ -1156,6 +1156,9 @@ public class SolrMetricManager {
       }
     } finally {
       reportersLock.unlock();
+      if (log.isDebugEnabled()) {
+        log.debug("Finished closing registry={}, tag={}", registry, tag);
+      }
     }
   }
 
