@@ -88,7 +88,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
                 state.segmentInfo.getId(),
                 state.segmentSuffix);
 
-        readFields(in, state.fieldInfos);
+        readFields(state.segmentInfo.name, in, state.fieldInfos);
 
       } catch (Throwable exception) {
         priorE = exception;
@@ -129,7 +129,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     }
   }
 
-  private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
+  private void readFields(String segmentName, IndexInput meta, FieldInfos infos)
+      throws IOException {
     for (int fieldNumber = meta.readInt(); fieldNumber != -1; fieldNumber = meta.readInt()) {
       FieldInfo info = infos.fieldInfo(fieldNumber);
       if (info == null) {
@@ -139,7 +140,24 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       if (type == Lucene80DocValuesFormat.NUMERIC) {
         numerics.put(info.name, readNumeric(meta));
       } else if (type == Lucene80DocValuesFormat.BINARY) {
-        binaries.put(info.name, readBinary(meta));
+        final boolean compressed;
+        if (version >= Lucene80DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
+          String value = info.getAttribute(Lucene80DocValuesFormat.MODE_KEY);
+          if (value == null) {
+            throw new IllegalStateException(
+                "missing value for "
+                    + Lucene80DocValuesFormat.MODE_KEY
+                    + " for field: "
+                    + info.name
+                    + " in segment: "
+                    + segmentName);
+          }
+          Lucene80DocValuesFormat.Mode mode = Lucene80DocValuesFormat.Mode.valueOf(value);
+          compressed = mode == Lucene80DocValuesFormat.Mode.BEST_COMPRESSION;
+        } else {
+          compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
+        }
+        binaries.put(info.name, readBinary(meta, compressed));
       } else if (type == Lucene80DocValuesFormat.SORTED) {
         sorted.put(info.name, readSorted(meta));
       } else if (type == Lucene80DocValuesFormat.SORTED_SET) {
@@ -188,22 +206,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     entry.valueJumpTableOffset = meta.readLong();
   }
 
-  private BinaryEntry readBinary(IndexInput meta) throws IOException {
-    BinaryEntry entry = new BinaryEntry();
-    if (version >= Lucene80DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
-      int b = meta.readByte();
-      switch (b) {
-        case 0:
-        case 1:
-          // valid
-          break;
-        default:
-          throw new CorruptIndexException("Unexpected byte: " + b + ", expected 0 or 1", meta);
-      }
-      entry.compressed = b != 0;
-    } else {
-      entry.compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
-    }
+  private BinaryEntry readBinary(IndexInput meta, boolean compressed) throws IOException {
+    final BinaryEntry entry = new BinaryEntry();
+    entry.compressed = compressed;
     entry.dataOffset = meta.readLong();
     entry.dataLength = meta.readLong();
     entry.docsWithFieldOffset = meta.readLong();

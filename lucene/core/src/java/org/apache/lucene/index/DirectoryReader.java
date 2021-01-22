@@ -105,6 +105,23 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
   }
 
   /**
+   * Expert: returns an IndexReader reading the index on the given {@link IndexCommit}. This method
+   * allows to open indices that were created wih a Lucene version older than N-1 provided that all
+   * codecs for this index are available in the classpath and the segment file format used was
+   * created with Lucene 7 or newer. Users of this API must be aware that Lucene doesn't guarantee
+   * semantic compatibility for indices created with versions older than N-1. All backwards
+   * compatibility aside from the file format is optional and applied on a best effort basis.
+   *
+   * @param commit the commit point to open
+   * @param minSupportedMajorVersion the minimum supported major index version
+   * @throws IOException if there is a low-level IO error
+   */
+  public static DirectoryReader open(final IndexCommit commit, int minSupportedMajorVersion)
+      throws IOException {
+    return StandardDirectoryReader.open(commit.getDirectory(), minSupportedMajorVersion, commit);
+  }
+
+  /**
    * If the index has changed since the provided reader was opened, open and return a new reader;
    * else, return null. The new reader, if not null, will be the same type of reader as the previous
    * one, ie an NRT reader will open a new NRT reader, a MultiReader will open a new MultiReader,
@@ -221,7 +238,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
 
     List<IndexCommit> commits = new ArrayList<>();
 
-    SegmentInfos latest = SegmentInfos.readLatestCommit(dir);
+    SegmentInfos latest = SegmentInfos.readLatestCommit(dir, 0);
     final long currentGen = latest.getGeneration();
 
     commits.add(new StandardDirectoryReader.ReaderCommit(null, latest, dir));
@@ -237,7 +254,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
         try {
           // IOException allowed to throw there, in case
           // segments_N is corrupt
-          sis = SegmentInfos.readCommit(dir, fileName);
+          sis = SegmentInfos.readCommit(dir, fileName, 0);
         } catch (FileNotFoundException | NoSuchFileException fnfe) {
           // LUCENE-948: on NFS (and maybe others), if
           // you have writers switching back and forth

@@ -147,6 +147,9 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
     BEST_COMPRESSION
   }
 
+  /** Attribute key for compression mode. */
+  public static final String MODE_KEY = Lucene80DocValuesFormat.class.getSimpleName() + ".mode";
+
   private final Mode mode;
 
   /** Default constructor. */

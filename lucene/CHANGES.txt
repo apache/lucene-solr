@@ -82,7 +82,12 @@ API Changes
 * LUCENE-9317 LUCENE-9318 LUCENE-9319 LUCENE-9558 LUCENE-9600 : Clean up package name conflicts
   between modules. See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
+* LUCENE-9646: Set BM25Similarity discountOverlaps via the constructor (Patrick Marty via Bruno Roustant)
+
 Improvements
+
+* LUCENE-9687: Hunspell support improvements: add SpellChecker API, support default encoding and
+  BREAK/FORBIDDENWORD/COMPOUNDRULE affix rules, improve stemming of all-caps words (Peter Gromov)
 
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
@@ -172,6 +177,12 @@ Improvements
 
 * LUCENE-9605: Update snowball to d8cf01ddf37a, adds Yiddish stemmer. (Robert Muir)
 
+* LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
+  and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
+
+* LUCENE-9674: Implement faster advance on VectorValues using binary search.
+  (Anand Kotriwal, Mike Sokolov)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -188,6 +199,15 @@ Bug fixes
 
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
+
+Changes in Backwards Compatibility Policy
+
+* LUCENE-9669: DirectoryReader#open now accepts an argument to open indices created with versions
+  older than N-1. Lucene now can open indices created with a major version of N-2 in read-only mode.
+  Opening an index created with a major version of N-2 with an IndexWriter is not supported.
+  Further does lucene only support file-format compatibilty which enables reading of old indices while
+  semantic changes like analysis or certain encoding on top of the file format are only supported on 
+  a best effort basis. (Simon Willnauer)  
 
 Other
 
@@ -257,6 +277,9 @@ Improvements
 * LUCENE-9023: GlobalOrdinalsWithScore should not compute occurrences when the
   provided min is 1. (Jim Ferenczi)
 
+* LUCENE-9675: Binary doc values fields now expose their configured compression mode
+  in the attributes of the field info. (Jim Ferenczi)
+
 Optimizations
 ---------------------
 
@@ -295,6 +318,9 @@ Bug Fixes
 
 * LUCENE-9642: When encoding triangles in ShapeField, make sure generated triangles are CCW by rotating 
   triangle points before checking triangle orientation. (Ignacio Vera)  
+
+* LUCENE-9661: Fix deadlock in TermsEnum.EMPTY that occurs when trying to initialize TermsEnum and BaseTermsEnum
+  at the same time (Namgyu Kim)
 
 Other
 ---------------------
@@ -516,7 +542,7 @@ Improvements
   improves the approachability of the IndexWriter code. (Simon Willnauer)
 
 * LUCENE-9324: Add an ID to SegmentCommitInfo in order to compare commits for equality and make
-  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grant)
+  snapshots incremental on generational files. (Simon Willnauer, Mike Mccandless, Adrien Grand)
 
 * LUCENE-9342: TotalHits' relation will be EQUAL_TO when the number of hits is lower than TopDocsColector's numHits
   (Tomás Fernández Löbbe)

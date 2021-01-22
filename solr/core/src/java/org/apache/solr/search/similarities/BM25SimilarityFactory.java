@@ -32,33 +32,27 @@ import org.apache.solr.schema.SimilarityFactory;
  *                   The default is <code>1.2</code>
  *   <li>b (float): Controls to what degree document length normalizes tf values.
  *                  The default is <code>0.75</code>
- * </ul>
- * <p>
- * Optional settings:
- * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link BM25Similarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): True if overlap tokens (tokens with a position of increment of zero) are
+ *                                discounted from the document's length.
+ *                                The default is <code>true</code>
  * </ul>
  * @lucene.experimental
  * @since 8.0.0
  */
 public class BM25SimilarityFactory extends SimilarityFactory {
-  private boolean discountOverlaps;
-  private float k1;
-  private float b;
+  private BM25Similarity similarity;
 
   @Override
   public void init(SolrParams params) {
     super.init(params);
-    discountOverlaps = params.getBool("discountOverlaps", true);
-    k1 = params.getFloat("k1", 1.2f);
-    b = params.getFloat("b", 0.75f);
+    boolean discountOverlaps = params.getBool("discountOverlaps", true);
+    float k1 = params.getFloat("k1", 1.2f);
+    float b = params.getFloat("b", 0.75f);
+    similarity = new BM25Similarity(k1, b, discountOverlaps);
   }
 
   @Override
   public Similarity getSimilarity() {
-    BM25Similarity sim = new BM25Similarity(k1, b);
-    sim.setDiscountOverlaps(discountOverlaps);
-    return sim;
+    return similarity;
   }
 }

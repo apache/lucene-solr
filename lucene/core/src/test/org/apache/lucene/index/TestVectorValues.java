@@ -815,4 +815,50 @@ public class TestVectorValues extends LuceneTestCase {
     assertEquals(2, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW.ordinal());
     assertEquals(3, VectorValues.SearchStrategy.values().length);
   }
+
+  public void testAdvance() throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
+        int numdocs = atLeast(1500);
+        String fieldName = "field";
+        for (int i = 0; i < numdocs; i++) {
+          Document doc = new Document();
+          // randomly add a vector field
+          if (random().nextInt(4) == 3) {
+            doc.add(new VectorField(fieldName, new float[4], SearchStrategy.NONE));
+          }
+          w.addDocument(doc);
+        }
+        w.forceMerge(1);
+        try (IndexReader reader = w.getReader()) {
+          LeafReader r = getOnlyLeafReader(reader);
+          VectorValues vectorValues = r.getVectorValues(fieldName);
+          int[] vectorDocs = new int[vectorValues.size() + 1];
+          int cur = -1;
+          while (++cur < vectorValues.size() + 1) {
+            vectorDocs[cur] = vectorValues.nextDoc();
+            if (cur != 0) {
+              assertTrue(vectorDocs[cur] > vectorDocs[cur - 1]);
+            }
+          }
+          vectorValues = r.getVectorValues(fieldName);
+          cur = -1;
+          for (int i = 0; i < numdocs; i++) {
+            // randomly advance to i
+            if (random().nextInt(4) == 3) {
+              while (vectorDocs[++cur] < i)
+                ;
+              assertEquals(vectorDocs[cur], vectorValues.advance(i));
+              assertEquals(vectorDocs[cur], vectorValues.docID());
+              if (vectorValues.docID() == NO_MORE_DOCS) {
+                break;
+              }
+              // make i equal to docid so that it is greater than docId in the next loop iteration
+              i = vectorValues.docID();
+            }
+          }
+        }
+      }
+    }
+  }
 }

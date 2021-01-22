@@ -158,7 +158,7 @@ To extract features as part of a query, add `[features]` to the `fl` parameter, 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -223,14 +223,14 @@ To rerank the results of a query, add the `rq` parameter to your search, for exa
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score
 
-The addition of the `rq` parameter will not change the output XML of the search.
+The addition of the `rq` parameter will not change the output of the search.
 
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter, for example:
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -266,7 +266,7 @@ To obtain the model that interleaving picked for a search result, computed durin
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score,[interleaving]
 
-The output XML will include the model picked for each search result, resembling the output shown here:
+The output will include the model picked for each search result, resembling the output shown here:
 
 [source,json]
 ----
@@ -290,22 +290,22 @@ The output XML will include the model picked for each search result, resembling 
   }}
 ----
 
-=== Running a Rerank Query Interleaving a model with the original ranking
-When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking. 
+=== Running a Rerank Query Interleaving a Model with the Original Ranking
+When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking.
 To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
 
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score
 
-The addition of the `rq` parameter will not change the output XML of the search.
+The addition of the `rq` parameter will not change the output of the search.
 
 To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score,[interleaving]
 
-The output XML will include the model picked for each search result, resembling the output shown here:
+The output will include the model picked for each search result, resembling the output shown here:
 
 [source,json]
 ----
@@ -329,7 +329,7 @@ The output XML will include the model picked for each search result, resembling 
   }}
 ----
 
-=== Running a Rerank Query with Interleaving passing a specific algorithm
+=== Running a Rerank Query with Interleaving Passing a Specific Algorithm
 To rerank the results of a query, interleaving two models using a specific algorithm, add the `interleavingAlgorithm` local parameter to the ltr query parser, for example:
 
 [source,text]
