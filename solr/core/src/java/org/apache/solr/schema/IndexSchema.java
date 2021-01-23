@@ -738,9 +738,8 @@ public class IndexSchema {
     List<ConfigNode> nodes = n.children(COPY_FIELD);
     ConfigNode f = n.child(FIELDS);
     if (f != null) {
-      List<ConfigNode> c = f.children(COPY_FIELD);
-      if (nodes.isEmpty()) nodes = c;
-      else nodes.addAll(c);
+      nodes = new ArrayList<>(nodes);
+      nodes.addAll(f.children(COPY_FIELD));
     }
     for (ConfigNode node : nodes) {
 

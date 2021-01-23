@@ -51,6 +51,11 @@ public class DataConfigNode implements ConfigNode {
      nodes.add(new DataConfigNode(it));
       return Boolean.TRUE;
     });
+    for (Map.Entry<String, List<ConfigNode>> e : kids.entrySet()) {
+      if(e.getValue()  != null) {
+        e.setValue(Collections.unmodifiableList(e.getValue()));
+      }
+    }
 
   }
 
