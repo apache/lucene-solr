@@ -25,9 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.lucene.util.Version;
 
-/**
- * This test just ensures the factory works
- */
+/** This test just ensures the factory works */
 public class TestPatternTypingFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testFactory() throws Exception {
@@ -37,16 +35,29 @@ public class TestPatternTypingFilterFactory extends BaseTokenStreamFactoryTestCa
 
     TokenStream ts = new CannedTokenStream(tokenA1, tokenA3, tokenB1);
 
-    TokenFilterFactory tokenFilterFactory = tokenFilterFactory("patternTyping", Version.LATEST, new StringMockResourceLoader(
-        "6 \\b(\\d+)-(\\d+) ::: $1_hnum_$2\n" +
-        "2 \\b(\\w+)-(\\w+) ::: $1_hword_$2"
-    ), "patternFile", "patterns.txt");
+    TokenFilterFactory tokenFilterFactory =
+        tokenFilterFactory(
+            "patternTyping",
+            Version.LATEST,
+            new StringMockResourceLoader(
+                "6 \\b(\\d+)-(\\d+) ::: $1_hnum_$2\n" + "2 \\b(\\w+)-(\\w+) ::: $1_hword_$2"),
+            "patternFile",
+            "patterns.txt");
 
     ts = tokenFilterFactory.create(ts);
-    assertTokenStreamContents(ts, new String[]{
-            "One", "forty-two", "4-2"}, null, null,
-        new String[]{"word", "forty_hword_two", "4_hnum_2"},
-        null, null, null, null, null, false, null,
-        new int[]{0, 2, 6});
+    assertTokenStreamContents(
+        ts,
+        new String[] {"One", "forty-two", "4-2"},
+        null,
+        null,
+        new String[] {"word", "forty_hword_two", "4_hnum_2"},
+        null,
+        null,
+        null,
+        null,
+        null,
+        false,
+        null,
+        new int[] {0, 2, 6});
   }
 }

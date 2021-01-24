@@ -17,22 +17,21 @@
 
 package org.apache.lucene.analysis.pattern;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pattern.PatternTypingFilter.PatternTypingRule;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-
 /**
- * Provides a filter that will analyze tokens with the analyzer from an arbitrary field type. By itself this
- * filter is not very useful. Normally it is combined with a filter that reacts to types or flags.
+ * Provides a filter that will analyze tokens with the analyzer from an arbitrary field type. By
+ * itself this filter is not very useful. Normally it is combined with a filter that reacts to types
+ * or flags.
  *
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_taf" class="solr.TextField" positionIncrementGap="100"&gt;
@@ -44,37 +43,38 @@ import java.util.regex.Pattern;
  *               ignore="word,&amp;lt;ALPHANUM&amp;gt;,&amp;lt;NUM&amp;gt;,&amp;lt;SOUTHEAST_ASIAN&amp;gt;,&amp;lt;IDEOGRAPHIC&amp;gt;,&amp;lt;HIRAGANA&amp;gt;,&amp;lt;KATAKANA&amp;gt;,&amp;lt;HANGUL&amp;gt;,&amp;lt;EMOJI&amp;gt;"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * <p>
- * Note that a configuration such as above may interfere with multi-word synonyms. The patterns file has the format:
+ *
+ * <p>Note that a configuration such as above may interfere with multi-word synonyms. The patterns
+ * file has the format:
+ *
  * <pre>
  * (flags) (pattern) ::: (replacement)
  * </pre>
- * Therefore to set the first 2 flag bits on the original token matching 401k or 401(k) and adding a type of
- * 'legal2_401_k' whenever either one is encountered one would use:
+ *
+ * Therefore to set the first 2 flag bits on the original token matching 401k or 401(k) and adding a
+ * type of 'legal2_401_k' whenever either one is encountered one would use:
+ *
  * <pre>
  * 3 (\d+)\(?([a-z])\)? ::: legal2_$1_$2
  * </pre>
- * Note that the number indicating the flag bits to set must not have leading spaces and be followed by a single
- * space, and must be 0 if no flags should be set. The flags number should not contain commas or a decimal point.
- * Lines for which the first character is <code>#</code> will be ignored as comments.  Does not support producing
- * a synonym textually identical to the original term.
+ *
+ * Note that the number indicating the flag bits to set must not have leading spaces and be followed
+ * by a single space, and must be 0 if no flags should be set. The flags number should not contain
+ * commas or a decimal point. Lines for which the first character is <code>#</code> will be ignored
+ * as comments. Does not support producing a synonym textually identical to the original term.
  *
  * @lucene.spi {@value #NAME}
  * @since 8.8
  */
 public class PatternTypingFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
 
-  /**
-   * SPI name
-   */
+  /** SPI name */
   public static final String NAME = "patternTyping";
 
   private final String patternFile;
   private PatternTypingRule[] rules;
 
-  /**
-   * Creates a new PatternTypingFilterFactory
-   */
+  /** Creates a new PatternTypingFilterFactory */
   public PatternTypingFilterFactory(Map<String, String> args) {
     super(args);
     patternFile = require(args, "patternFile");
@@ -83,9 +83,7 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
     }
   }
 
-  /**
-   * Default ctor for compatibility with SPI
-   */
+  /** Default ctor for compatibility with SPI */
   public PatternTypingFilterFactory() {
     throw defaultCtorException();
   }
@@ -94,16 +92,19 @@ public class PatternTypingFilterFactory extends TokenFilterFactory implements Re
   public void inform(ResourceLoader loader) throws IOException {
     List<PatternTypingRule> ruleList = new ArrayList<>();
     List<String> lines = getLines(loader, patternFile);
-    // format: # regex ::: typename[_$1[_$2 ...]]    (technically _$1 does not need the '_' but it usually makes sense)
+    // format: # regex ::: typename[_$1[_$2 ...]]    (technically _$1 does not need the '_' but it
+    // usually makes sense)
     // eg: 2 (\d+\(?([a-z])\)?\(?(\d+)\)? ::: legal3_$1_$2_3
     // which yields legal3_501_c_3 for 501(c)(3) or 501c3 and sets the second lowest bit in flags
     for (String line : lines) {
       int firstSpace = line.indexOf(" "); // no leading spaces allowed
       int flagsVal = Integer.parseInt(line.substring(0, firstSpace));
       line = line.substring(firstSpace + 1);
-      String[] split = line.split(" ::: "); // arbitrary, unlikely to occur in a useful regex easy to read
+      String[] split =
+          line.split(" ::: "); // arbitrary, unlikely to occur in a useful regex easy to read
       if (split.length != 2) {
-        throw new RuntimeException("The PatternTypingFilter: Always two there are, no more, no less, a pattern and a replacement (separated by ' ::: ' )");
+        throw new RuntimeException(
+            "The PatternTypingFilter: Always two there are, no more, no less, a pattern and a replacement (separated by ' ::: ' )");
       }
       Pattern compiled = Pattern.compile(split[0]);
       ruleList.add(new PatternTypingRule(compiled, flagsVal, split[1]));

@@ -17,22 +17,22 @@
 
 package org.apache.lucene.analysis.pattern;
 
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
- * Set a type attribute to a parameterized value when tokens are matched by any of a several regex patterns. The
- * value set in the type attribute is parameterized with the match groups of the regex used for matching.
- * In combination with TypeAsSynonymFilter and DropIfFlagged filter this can supply complex synonym patterns
- * that are protected from subsequent analysis, and optionally drop the original term based on the flag
- * set in this filter. See {@link PatternTypingFilterFactory} for full documentation.
+ * Set a type attribute to a parameterized value when tokens are matched by any of a several regex
+ * patterns. The value set in the type attribute is parameterized with the match groups of the regex
+ * used for matching. In combination with TypeAsSynonymFilter and DropIfFlagged filter this can
+ * supply complex synonym patterns that are protected from subsequent analysis, and optionally drop
+ * the original term based on the flag set in this filter. See {@link PatternTypingFilterFactory}
+ * for full documentation.
  *
  * @see PatternTypingFilterFactory
  * @since 8.8.0
@@ -44,7 +44,7 @@ public class PatternTypingFilter extends TokenFilter {
   private final FlagsAttribute flagAtt = addAttribute(FlagsAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
-  public PatternTypingFilter(TokenStream input,  PatternTypingRule... replacementAndFlagByPattern) {
+  public PatternTypingFilter(TokenStream input, PatternTypingRule... replacementAndFlagByPattern) {
     super(input);
     this.replacementAndFlagByPattern = replacementAndFlagByPattern;
   }
@@ -55,7 +55,8 @@ public class PatternTypingFilter extends TokenFilter {
       for (PatternTypingRule rule : replacementAndFlagByPattern) {
         Matcher matcher = rule.getPattern().matcher(termAtt);
         if (matcher.find()) {
-          // allow 2nd reset() and find() that occurs inside replaceFirst to avoid excess string creation
+          // allow 2nd reset() and find() that occurs inside replaceFirst to avoid excess string
+          // creation
           typeAtt.setType(matcher.replaceFirst(rule.getTypeTemplate()));
           flagAtt.setFlags(rule.getFlags());
           return true;
@@ -66,9 +67,7 @@ public class PatternTypingFilter extends TokenFilter {
     return false;
   }
 
-  /**
-   * Value holding class for pattern typing rules.
-   */
+  /** Value holding class for pattern typing rules. */
   public static class PatternTypingRule {
     private final Pattern pattern;
     private final int flags;
