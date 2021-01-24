@@ -33,6 +33,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
+import org.apache.lucene.index.VectorValues.SearchStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
@@ -51,6 +52,8 @@ public class TestKnnGraph extends LuceneTestCase {
 
   private static int maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
 
+  private SearchStrategy searchStrategy;
+
   @Before
   public void setup() {
     randSeed = random().nextLong();
@@ -58,6 +61,8 @@ public class TestKnnGraph extends LuceneTestCase {
       maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
       HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(256) + 1;
     }
+    int strategy = random().nextInt(SearchStrategy.values().length - 1) + 1;
+    searchStrategy = SearchStrategy.values()[strategy];
   }
 
   @After
@@ -206,6 +211,8 @@ public class TestKnnGraph extends LuceneTestCase {
 
   /** Verify that searching does something reasonable */
   public void testSearch() throws Exception {
+    // We can't use dot product here since the vectors are laid out on a grid, not a sphere.
+    searchStrategy = SearchStrategy.EUCLIDEAN_HNSW;
     try (Directory dir = newDirectory();
         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
       // Add a document for every cartesian point  in an NxN square so we can
@@ -426,11 +433,10 @@ public class TestKnnGraph extends LuceneTestCase {
   }
 
   private void add(IndexWriter iw, int id, float[] vector) throws IOException {
-    add(iw, id, vector, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
+    add(iw, id, vector, searchStrategy);
   }
 
-  private void add(
-      IndexWriter iw, int id, float[] vector, VectorValues.SearchStrategy searchStrategy)
+  private void add(IndexWriter iw, int id, float[] vector, SearchStrategy searchStrategy)
       throws IOException {
     Document doc = new Document();
     if (vector != null) {

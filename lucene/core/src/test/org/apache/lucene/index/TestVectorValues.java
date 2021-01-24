@@ -707,7 +707,6 @@ public class TestVectorValues extends LuceneTestCase {
       int dimension = atLeast(10);
       float[] scratch = new float[dimension];
       int numValues = 0;
-      int numDeletes = 0;
       float[][] values = new float[numDoc][];
       for (int i = 0; i < numDoc; i++) {
         if (random().nextInt(7) != 3) {
@@ -730,13 +729,13 @@ public class TestVectorValues extends LuceneTestCase {
           if (values[idToDelete] != null) {
             values[idToDelete] = null;
             --numValues;
-            ++numDeletes;
           }
         }
         if (random().nextInt(10) == 3) {
           iw.commit();
         }
       }
+      int numDeletes = 0;
       try (IndexReader reader = iw.getReader()) {
         int valueCount = 0, totalSize = 0;
         for (LeafReaderContext ctx : reader.leaves()) {
@@ -755,6 +754,7 @@ public class TestVectorValues extends LuceneTestCase {
               assertArrayEquals(idString, values[id], v, 0);
               ++valueCount;
             } else {
+              ++numDeletes;
               assertNull(values[id]);
             }
           }
@@ -766,11 +766,11 @@ public class TestVectorValues extends LuceneTestCase {
   }
 
   /**
-   * Index random vectors, sometimes skipping documents, sometimes deleting a document, sometimes
-   * merging, sometimes sorting the index, and verify that the expected values can be read back
-   * consistently.
+   * Index random vectors, sometimes skipping documents, sometimes updating a document, sometimes
+   * merging, sometimes sorting the index, using an HNSW search strategy so as to also produce a
+   * graph, and verify that the expected values can be read back consistently.
    */
-  public void testRandom2() throws Exception {
+  public void testRandomWithUpdatesAndGraph() throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     String fieldName = "field";
     try (Directory dir = newDirectory();

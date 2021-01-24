@@ -572,7 +572,7 @@ public class KnnGraphTester {
     IndexWriterConfig iwc = new IndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     // iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setRAMBufferSizeMB(1994d);
-    iwc.setMaxBufferedDocs(10000);
+    // iwc.setMaxBufferedDocs(10000);
 
     if (quiet == false) {
       iwc.setInfoStream(new PrintStreamInfoStream(System.out));
