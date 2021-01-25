@@ -85,6 +85,7 @@ import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
+import org.apache.lucene.analysis.pattern.PatternTypingFilter;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.shingle.FixedShingleFilter;
@@ -426,6 +427,13 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           put(
               Pattern[].class,
               random -> new Pattern[] {Pattern.compile("([a-z]+)"), Pattern.compile("([0-9]+)")});
+          put(
+              PatternTypingFilter.PatternTypingRule[].class,
+              random ->
+                  new PatternTypingFilter.PatternTypingRule[] {
+                    new PatternTypingFilter.PatternTypingRule(
+                        Pattern.compile("^(\\d+)-(\\d+)$"), 6, "$1_hnum_$2")
+                  });
           put(
               PayloadEncoder.class,
               random ->
