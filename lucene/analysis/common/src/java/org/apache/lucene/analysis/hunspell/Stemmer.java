@@ -504,7 +504,7 @@ final class Stemmer {
 
           // if circumfix was previously set by a prefix, we must check this suffix,
           // to ensure it has it, and vice versa
-          if (dictionary.circumfix != 0) {
+          if (dictionary.circumfix != Dictionary.FLAG_UNSET) {
             boolean suffixCircumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
             if (circumfix != suffixCircumfix) {
               continue;
@@ -526,7 +526,7 @@ final class Stemmer {
 
     // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we
     // have that flag
-    if (dictionary.circumfix != 0 && !circumfix && prefix) {
+    if (dictionary.circumfix != Dictionary.FLAG_UNSET && !circumfix && prefix) {
       circumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
     }
 
@@ -577,7 +577,7 @@ final class Stemmer {
   }
 
   private boolean isFlagAppendedByAffix(int affixId, char flag) {
-    if (affixId < 0 || flag == 0) return false;
+    if (affixId < 0 || flag == Dictionary.FLAG_UNSET) return false;
     int appendId = dictionary.affixData(affixId, Dictionary.AFFIX_APPEND);
     return dictionary.hasFlag(appendId, flag, scratch);
   }

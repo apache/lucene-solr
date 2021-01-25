@@ -76,6 +76,7 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
+  static final int FLAG_UNSET = 0;
   private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
@@ -457,20 +458,6 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
-  }
-
-  private String singleArgument(LineNumberReader reader, String line) throws ParseException {
-    return splitBySpace(reader, line, 2)[1];
-  }
-
-  private String[] splitBySpace(LineNumberReader reader, String line, int expectedParts)
-      throws ParseException {
-    String[] parts = line.split("\\s+");
-    if (parts.length < expectedParts
-        || parts.length > expectedParts && !parts[expectedParts].startsWith("#")) {
-      throw new ParseException("Invalid syntax", reader.getLineNumber());
-    }
-    return parts;
   }
 
   private List<CompoundRule> parseCompoundRules(LineNumberReader reader, int num)
@@ -1235,7 +1222,7 @@ public class Dictionary {
   }
 
   boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {
-    if (forbiddenword != 0) {
+    if (forbiddenword != FLAG_UNSET) {
       IntsRef forms = lookupWord(word, 0, length);
       return forms != null && hasFlag(forms, forbiddenword, scratch);
     }
@@ -1315,7 +1302,7 @@ public class Dictionary {
           continue;
         }
         int flag = Integer.parseInt(replacement);
-        if (flag == 0 || flag >= Character.MAX_VALUE) { // read default flags as well
+        if (flag == FLAG_UNSET || flag >= Character.MAX_VALUE) { // read default flags as well
           throw new IllegalArgumentException(
               "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
         }
@@ -1380,11 +1367,11 @@ public class Dictionary {
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {
-    return flag > 0 && hasFlag(decodeFlags(entryId, scratch), flag);
+    return flag != FLAG_UNSET && hasFlag(decodeFlags(entryId, scratch), flag);
   }
 
   static boolean hasFlag(char[] flags, char flag) {
-    return flag > 0 && Arrays.binarySearch(flags, flag) >= 0;
+    return flag != FLAG_UNSET && Arrays.binarySearch(flags, flag) >= 0;
   }
 
   CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
