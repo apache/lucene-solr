@@ -63,7 +63,7 @@ final class BooleanScorer extends BulkScorer {
     }
   }
 
-  // See MinShouldMatchSumScorer for an explanation
+  // See WANDScorer for an explanation
   private static long cost(Collection<BulkScorer> scorers, int minShouldMatch) {
     final PriorityQueue<BulkScorer> pq = new PriorityQueue<BulkScorer>(scorers.size() - minShouldMatch + 1) {
       @Override

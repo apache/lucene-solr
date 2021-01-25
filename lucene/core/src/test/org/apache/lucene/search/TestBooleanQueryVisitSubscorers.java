@@ -238,7 +238,7 @@ public class TestBooleanQueryVisitSubscorers extends LuceneTestCase {
       assertEquals(
           "ConjunctionScorer\n" +
           "    MUST ConstantScoreScorer\n" +
-          "    MUST MinShouldMatchSumScorer\n" +
+          "    MUST WANDScorer\n" +
           "            SHOULD TermScorer body:crawler\n" +
           "            SHOULD TermScorer body:web\n" +
           "            SHOULD TermScorer body:nutch",
