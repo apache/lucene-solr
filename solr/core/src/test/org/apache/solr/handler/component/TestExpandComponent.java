@@ -16,10 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -46,50 +44,50 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  @Test
-  public void testExpand() throws Exception {
-    List<String> groups = new ArrayList<>();
-    groups.add("group_s");
-    groups.add("group_s_dv");
-
-    Collections.shuffle(groups, random());
-    String floatAppend = "";
-
-    String hint = (random().nextBoolean() ? " hint="+ CollapsingQParserPlugin.HINT_TOP_FC : "");
-
-    _testExpand(groups.get(0), floatAppend, hint);
+  private static String maybeTopFc() {
+    return (random().nextBoolean() ? " hint="+ CollapsingQParserPlugin.HINT_TOP_FC : "");
   }
-
-  @Test
-  public void testNumericExpand() throws Exception {
-    List<String> groups = new ArrayList<>();
-    groups.add("group_i");
-    groups.add("group_ti_dv");
-    groups.add("group_f");
-    groups.add("group_tf_dv");
-    Collections.shuffle(groups, random());
-    String floatAppend = "";
-    if(groups.get(0).indexOf("f") > -1) {
-      floatAppend = "."+random().nextInt(100);  //Append the float
-      floatAppend = Float.toString(Float.parseFloat(floatAppend)); //Create a proper float out of the string.
-      floatAppend = floatAppend.substring(1);  //Drop off the leading 0, leaving just the decimal
-    }
-
-    String hint = "";
-
-    _testExpand(groups.get(0), floatAppend, hint);
+  private static String floatAppend() {
+    String floatAppend = "."+random().nextInt(100);  //Append the float
+    floatAppend = Float.toString(Float.parseFloat(floatAppend)); //Create a proper float out of the string.
+    floatAppend = floatAppend.substring(1);  //Drop off the leading 0, leaving just the decimal
+    return floatAppend;
   }
-
+  
+  public void testString() throws Exception {
+    _testExpand("group_s", "", maybeTopFc());
+  }
+  public void testStringDv() throws Exception {
+    _testExpand("group_s_dv", "", maybeTopFc());
+  }
+ 
+  public void testInt() throws Exception {
+    _testExpand("group_i", "", "");
+  }
+  public void testIntDv() throws Exception {
+    _testExpand("group_ti_dv", "", "");
+  }
+  
+  public void testFloat() throws Exception {
+    _testExpand("group_f", floatAppend(), "");
+    _testExpand("group_f", ".0", ""); // explicit 0 check for 0 vs null group
+  }
+  public void testFloatDv() throws Exception {
+    _testExpand("group_tf_dv", floatAppend(), "");
+    _testExpand("group_tf_dv", ".0", ""); // explicit 0 check for 0 vs null group
+  }
+  
   private void _testExpand(String group, String floatAppend, String hint) throws Exception {
+    // NOTE: one of our groups uses '0' as the group value to explicitly check numeric expand for 0 vs null group behavior
     String[][] docs = {
         {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"},
         {"id","2", "term_s","YYYY", group, "1"+floatAppend, "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"},
         {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"},
         {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"},
-        {"id","5", "term_s", "YYYY", group, "2"+floatAppend, "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"},
-        {"id","6", "term_s","YYYY", group, "2"+floatAppend, "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"},
+        {"id","5", "term_s", "YYYY", group, "0"+floatAppend, "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"},
+        {"id","6", "term_s","YYYY", group, "0"+floatAppend, "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"},
         {"id","7", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"},
-        {"id","8", "term_s","YYYY", group, "2"+floatAppend, "test_i", "2", "test_l",  "100000", "test_f", "200", "type_s", "child"}
+        {"id","8", "term_s","YYYY", group, "0"+floatAppend, "test_i", "2", "test_l",  "100000", "test_f", "200", "type_s", "child"}
     };
     createIndex(docs);
 
@@ -107,8 +105,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
 
     //Basic test case page 2
@@ -116,8 +114,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertQ(req(params, "rows", "1", "start", "1"), "*[count(/response/result/doc)=1]",
         "*[count(/response/lst[@name='expanded']/result)=1]",
         "/response/result/doc[1]/str[@name='id'][.='6']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
 
     //Test expand.sort
@@ -129,12 +127,12 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
     );
 
     //Test with nullPolicy, ExpandComponent should ignore docs with null values in the collapse fields.
-    //Main result set should include the doc with null value in the collapse field.
+    //Main result set should include the doc(s) with null value in the collapse field.
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+" nullPolicy=collapse}");
@@ -149,8 +147,20 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[3]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
+    );
+    params.set("fq", "{!collapse field="+group+hint+" nullPolicy=expand}");
+    assertQ(req(params), "*[count(/response/result/doc)=4]",
+        "*[count(/response/lst[@name='expanded']/result)=2]",
+        "/response/result/doc[1]/str[@name='id'][.='3']",
+        "/response/result/doc[2]/str[@name='id'][.='4']",
+        "/response/result/doc[3]/str[@name='id'][.='2']",
+        "/response/result/doc[4]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']"
     );
 
 
@@ -169,8 +179,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='5']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
 
@@ -190,8 +200,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='5']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
     //Test override expand.fq and expand.q
@@ -211,8 +221,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='5']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
     //Test expand.rows
@@ -227,11 +237,11 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=1]",
-        "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=1]",
+        "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=1]",
         "/response/result/doc[1]/str[@name='id'][.='2']",
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']"
     );
 
     //Test expand.rows = 0 - no docs only expand count
@@ -245,7 +255,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(/response/result/doc)=2]",
             "*[count(/response/lst[@name='expanded']/result)=2]",
             "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
-            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]",
             "/response/result/doc[1]/str[@name='id'][.='2']",
             "/response/result/doc[2]/str[@name='id'][.='6']"
     );
@@ -263,7 +273,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertQ(req(params, "fl", "id"), "*[count(/response/result/doc)=2]",
             "*[count(/response/lst[@name='expanded']/result)=2]",
             "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
-            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]",
             "/response/result/doc[1]/str[@name='id'][.='1']",
             "/response/result/doc[2]/str[@name='id'][.='5']"
     );
@@ -281,7 +291,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertQ(req(params, "fl", "id,score"), "*[count(/response/result/doc)=2]",
             "*[count(/response/lst[@name='expanded']/result)=2]",
             "*[count(/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc)=0]",
-            "*[count(/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc)=0]",
+            "*[count(/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc)=0]",
             "*[count(/response/lst[@name='expanded']/result[@maxScore])=0]", //maxScore should not be available
             "/response/result/doc[1]/str[@name='id'][.='1']",
             "/response/result/doc[2]/str[@name='id'][.='5']",
@@ -330,8 +340,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
         "count(//*[@name='score'])=0" // score shouldn't be returned when not requested
     );
 
@@ -342,8 +352,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
         "count(//*[@name='score' and .='NaN'])=0"
     );
 
@@ -356,8 +366,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
         "count(//*[@name='score' and .='NaN'])=0"
     );
 
@@ -370,8 +380,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         // note that the expanded docs are score descending order (score is 1 test_i)
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
         "count(//*[@name='score' and .='NaN'])=0",
         "count(/response/lst[@name='expanded']/result/doc[number(*/@name='score')!=number(*/@name='test_i')])=0"
     );
@@ -385,8 +395,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         // note that the expanded docs are score descending order (score is 1 test_i)
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
         "count(//*[@name='score' and .='NaN'])=0",
         "count(/response/lst[@name='expanded']/result/doc[number(*/@name='score')!=number(*/@name='test_i')])=0"
     );
@@ -408,7 +418,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     // Support expand enabled without previous collapse
-    assertQ(req("q", "type_s:child", "sort", group+" asc, test_l desc", "defType", "edismax",
+    assertQ(req("q", "type_s:child", "sort", group+" desc, test_l desc", "defType", "edismax",
         "expand", "true", "expand.q", "type_s:parent", "expand.field", group),
         "*[count(/response/result/doc)=4]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
@@ -417,7 +427,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/result/doc[3]/str[@name='id'][.='8']",
         "/response/result/doc[4]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']"
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']"
     );
 
     // With multiple collapse
@@ -456,8 +466,8 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "*[count(/response/result/doc)=2]",
         "/response/result/doc[1]/str[@name='id'][.='8']",
         "/response/result/doc[2]/str[@name='id'][.='7']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='0"+floatAppend+"']/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='2']"
     );
