@@ -212,7 +212,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
 
 Other Changes
 ---------------------
