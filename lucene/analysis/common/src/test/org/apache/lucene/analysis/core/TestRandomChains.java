@@ -625,6 +625,23 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                     new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton(),
                     Operations.DEFAULT_MAX_DETERMINIZED_STATES);
               });
+          put(
+              PatternTypingFilter.PatternTypingRule[].class,
+              random -> {
+                int numRules = TestUtil.nextInt(random, 1, 3);
+                PatternTypingFilter.PatternTypingRule[] patternTypingRules =
+                    new PatternTypingFilter.PatternTypingRule[numRules];
+                for (int i = 0; i < patternTypingRules.length; i++) {
+                  String s = TestUtil.randomSimpleString(random, 1, 2);
+                  // random regex with one group
+                  String regex = s + "(.*)";
+                  // pattern rule with a template that accepts one group.
+                  patternTypingRules[i] =
+                      new PatternTypingFilter.PatternTypingRule(
+                          Pattern.compile(regex), TestUtil.nextInt(random, 1, 8), s + "_$1");
+                }
+                return patternTypingRules;
+              });
         }
       };
 
