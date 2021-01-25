@@ -68,7 +68,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
   public InputStream openResource(String resource) throws IOException {
 
     String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
-    if (log.isDebugEnabled()) log.debug("open resource {}", resource);
+    if (log.isTraceEnabled()) log.trace("open resource {}", resource);
 
     try {
 

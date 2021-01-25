@@ -73,15 +73,17 @@ public class ParWork implements Closeable {
 
   private static volatile ParWorkExecutor EXEC;
 
-  // pretty much don't use it
   public static ParWorkExecutor getRootSharedExecutor() {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ParWorkExecutor) getParExecutorService("RootExec",
-              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 15), Integer.MAX_VALUE, 1000,
+          EXEC = (ParWorkExecutor) getParExecutorService("Root",
+              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 32), Integer.MAX_VALUE, 1000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
+          for (int i = 0; i < 16; i++) {
+            EXEC.submit(() -> {});
+          }
         }
       }
     }
@@ -89,10 +91,12 @@ public class ParWork implements Closeable {
   }
 
   public static void shutdownParWorkExecutor() {
-    try {
-      shutdownParWorkExecutor(EXEC, true);
-    } finally {
-      EXEC = null;
+    synchronized (ParWork.class) {
+      try {
+        shutdownParWorkExecutor(EXEC, true);
+      } finally {
+        EXEC = null;
+      }
     }
   }
 
@@ -496,7 +500,7 @@ public class ParWork implements Closeable {
         Integer minThreads;
         Integer maxThreads;
         minThreads = 4;
-        maxThreads = PROC_COUNT;
+        maxThreads = PROC_COUNT / 2;
         exec = getExecutorService(Math.max(minThreads, maxThreads)); // keep alive directly affects how long a worker might
        // ((PerThreadExecService)exec).closeLock(true);
         // be stuck in poll without an enqueue on shutdown
@@ -524,11 +528,10 @@ public class ParWork implements Closeable {
   }
 
   private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {
-    if (log.isDebugEnabled()) {
-      log.debug(
+    if (log.isTraceEnabled()) log.trace(
           "handleObject(AtomicReference<Throwable> exception={}, CloseTimeTracker workUnitTracker={}, Object object={}) - start",
           exception, workUnitTracker, ob.object);
-    }
+
     Object object = ob.object;
 
     Object returnObject = null;
@@ -592,9 +595,7 @@ public class ParWork implements Closeable {
       assert subTracker.doneClose(returnObject instanceof String ? (String) returnObject : (returnObject == null ? "" : returnObject.getClass().getName()));
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("handleObject(AtomicReference<Throwable>, CloseTimeTracker, List<Callable<Object>>, Object) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("handleObject(AtomicReference<Throwable>, CloseTimeTracker, List<Callable<Object>>, Object) - end");
   }
 
   /**

@@ -190,25 +190,25 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected volatile TransactionLog bufferTlog;
   protected volatile TransactionLog tlog;
 
-  protected TransactionLog prevTlog;
+  protected volatile TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   protected final Deque<TransactionLog> logs = new LinkedList<>();  // list of recent logs, newest first
   protected final LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
-  protected int numOldRecords;  // number of records in the recent logs
+  protected volatile int numOldRecords;  // number of records in the recent logs
 
   protected volatile Map<BytesRef,LogPtr> map = new ConcurrentHashMap<>(32);
   protected volatile Map<BytesRef,LogPtr> prevMap;  // used while committing/reopening is happening
   protected volatile Map<BytesRef,LogPtr> prevMap2;  // used while committing/reopening is happening
-  protected TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
-  protected TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap2
+  protected volatile TransactionLog prevMapLog;  // the transaction log used to look up entries found in prevMap
+  protected volatile TransactionLog prevMapLog2;  // the transaction log used to look up entries found in prevMap2
 
   protected final int numDeletesToKeep = 1000;
   protected final int numDeletesByQueryToKeep = 100;
-  protected int numRecordsToKeep;
+  protected volatile int numRecordsToKeep;
   protected volatile int maxNumLogsToKeep;
   protected volatile int numVersionBuckets = 65536; // This should only be used to initialize VersionInfo... the actual number of buckets may be rounded up to a power of two.
-  protected Long maxVersionFromIndex = null;
-  protected boolean existOldBufferLog = false;
+  protected volatile Long maxVersionFromIndex = null;
+  protected volatile boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
   protected Map<BytesRef, LogPtr> oldDeletes = Collections.synchronizedMap(new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
@@ -435,7 +435,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
       try (RecentUpdates startingUpdates = getRecentUpdates()) {
-        startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+        startingVersions = Collections.unmodifiableList(startingUpdates.getVersions(numRecordsToKeep));
 
         // populate recent deletes list (since we can't get that info from the index)
         for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
@@ -1142,22 +1142,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // synchronization is needed for stronger guarantees (as VersionUpdateProcessor does).
   public Long lookupVersion(BytesRef indexedId) {
     LogPtr entry;
-    tlogLock.lock();
-    try {
-      entry = map.get(indexedId);
-      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      if (entry == null && prevMap != null) {
-        entry = prevMap.get(indexedId);
-        // something found in prevMap will always be found in prevMapLog (which could be tlog or prevTlog)
-        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      }
-      if (entry == null && prevMap2 != null) {
-        entry = prevMap2.get(indexedId);
-        // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
-        // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-      }
-    } finally {
-      tlogLock.unlock();
+
+    entry = map.get(indexedId);
+    // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
+    if (entry == null && prevMap != null) {
+      entry = prevMap.get(indexedId);
+      // something found in prevMap will always be found in prevMapLog (which could be tlog or prevTlog)
+      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
+    }
+    if (entry == null && prevMap2 != null) {
+      entry = prevMap2.get(indexedId);
+      // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
+      // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
     }
 
 
@@ -1174,12 +1170,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // We can't get any version info for deletes from the index, so if the doc
     // wasn't found, check a cache of recent deletes.
-    tlogLock.lock();
-    try {
-      entry = oldDeletes.get(indexedId);
-    } finally {
-      tlogLock.unlock();
-    }
+
+    entry = oldDeletes.get(indexedId);
 
     if (entry != null) {
       return entry.version;
@@ -1195,15 +1187,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     if (syncLevel == SyncLevel.NONE) {
       return;
     }
-    TransactionLog currLog;
-    tlogLock.lock();
-    try {
-      currLog = tlog;
-      if (currLog == null) return;
-      currLog.incref();
-    } finally {
-      tlogLock.unlock();
-    }
+
+    TransactionLog currLog = tlog;
+    if (currLog == null) return;
+    currLog.incref();
 
     try {
       currLog.finish(syncLevel);
@@ -1327,20 +1314,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void commitAndSwitchToNewTlog(CommitUpdateCommand cuc) {
     versionInfo.blockUpdates();
     try {
-      tlogLock.lock();
-      try {
-        if (tlog == null) {
-          return;
-        }
-        preCommit(cuc);
-        try {
-          copyOverOldUpdates(cuc.getVersion());
-        } finally {
-          postCommit(cuc);
-        }
-      } finally {
-        tlogLock.unlock();
+      if (tlog == null) {
+        return;
       }
+      preCommit(cuc);
+      try {
+        copyOverOldUpdates(cuc.getVersion());
+      } finally {
+        postCommit(cuc);
+      }
+
     } finally {
       versionInfo.unblockUpdates();
     }
@@ -1611,19 +1594,31 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
           if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
-          ret.add(ptr.version);
+          if (ptr.version != 0) {
+            ret.add(ptr.version);
+          } else {
+            log.warn("Found version of 0 {} {} {}", ptr.pointer, ptr.previousVersion, ptr.log);
+          }
           if (--n <= 0) return ret;
         }
       }
+      if (log.isDebugEnabled()) log.debug("Return getVersions {} {}", n, ret);
 
       return ret;
     }
 
     public Object lookup(long version) {
+      if (log.isDebugEnabled()) log.debug("lookup {}", version);
       Update update = updates.get(version);
       if (update == null) return null;
 
-      return update.log.lookup(update.pointer);
+      if (log.isDebugEnabled()) log.debug("found update from updates {} {}", update.version, updates.size());
+
+      Object object = update.log.lookup(update.pointer);
+
+      if (log.isDebugEnabled()) log.debug("found update from log {} {} ptr={} object={}", update.version, update.log, update.pointer, object);
+
+      return object;
     }
 
     /** Returns the list of deleteByQueries that happened after the given version */
@@ -1640,7 +1635,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     private void update() {
       int numUpdates = 0;
-      updateList = new ArrayList<>(logList.size());
+      updateList = new ArrayList<>(numRecordsToKeep);
       deleteByQueryList = new ArrayList<>();
       deleteList = new ArrayList<>();
       updates = new HashMap<>(numRecordsToKeep);
@@ -1705,11 +1700,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               // would be caused by a corrupt transaction log
             } catch (Exception ex) {
               log.warn("Exception reverse reading log", ex);
-              break;
+             // break;
             }
 
             numUpdates++;
           }
+
+          if (log.isDebugEnabled()) log.debug("Recent updates updates numUpdates={} numUpdatesToKeep={}", numUpdates, numRecordsToKeep);
 
         } catch (IOException | AssertionError e) { // catch AssertionError to handle certain test failures correctly
           // failure to read a log record isn't fatal
@@ -1744,6 +1741,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     tlogLock.lock();
+    RecentUpdates recentUpdates;
     try {
       logList = new LinkedList<>(logs);
       for (TransactionLog log : logList) {
@@ -1761,14 +1759,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         bufferTlog.incref();
         logList.addFirst(bufferTlog);
       }
+
+      recentUpdates = new RecentUpdates(logList, numRecordsToKeep);
     } finally {
       tlogLock.unlock();
     }
 
     // TODO: what if I hand out a list of updates, then do an update, then hand out another list (and
     // one of the updates I originally handed out fell off the list).  Over-request?
-    return new RecentUpdates(logList, numRecordsToKeep);
-
+    return recentUpdates;
   }
 
   public void bufferUpdates() {

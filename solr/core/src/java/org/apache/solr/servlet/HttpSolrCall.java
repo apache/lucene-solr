@@ -257,13 +257,15 @@ public class HttpSolrCall {
         path = path.substring(idx2);
       }
 
-      cores.waitForLoadingCore(origCorename, 15000);
-      // the core may have just finished loading
-
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
 
       if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
+
+//      if (core == null) {
+//        // nocommit
+//        log.info("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
+//      }
 
       if (core != null) {
         path = path.substring(idx);
@@ -280,7 +282,6 @@ public class HttpSolrCall {
         }
       }
     }
-
 
     if (cores.isZooKeeperAware()) {
       // init collectionList (usually one name but not when there are aliases)
@@ -555,8 +556,9 @@ public class HttpSolrCall {
     if (activeSpan != null) {
       MDCLoggingContext.setTracerId(activeSpan.context().toTraceId());
     }
-
-    MDCLoggingContext.setNode(cores);
+    if (cores.isZooKeeperAware()) {
+      MDCLoggingContext.setNode(cores.getZkController().getNodeName());
+    }
 
     if (cores == null) {
       sendError(503, "Server is shutting down or failed to initialize");

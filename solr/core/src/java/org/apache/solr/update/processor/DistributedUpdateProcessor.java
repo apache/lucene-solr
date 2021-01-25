@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -258,7 +259,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         if (!doDist) {
           // TODO: possibly set checkDeleteByQueries as a flag on the command?
-          if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
+          if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
           doLocalAdd(cmd);
 
           // if the update updates a doc that is part of a nested structure,
@@ -292,42 +293,56 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         finalCloneCmd = cmd;
       }
-      distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+
+      Callable distCall = () -> {
         if (log.isTraceEnabled()) log.trace("Run distrib add collection");
 
         try {
           doDistribAdd(finalCloneCmd);
           if (log.isTraceEnabled()) log.trace("after distrib add collection");
         } catch (Throwable e) {
-          ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-      });
+        return null;
+      };
 
-      // TODO: possibly set checkDeleteByQueries as a flag on the command?
-      // if the update updates a doc that is part of a nested structure,
-      // force open a realTimeSearcher to trigger a ulog cache refresh.
-      // This refresh makes RTG handler aware of this update.q
-
-      // TODO: possibly set checkDeleteByQueries as a flag on the command?
-      if (log.isDebugEnabled()) log.debug("Local add cmd {}", cmd.solrDoc);
-      try {
-        doLocalAdd(cmd);
-      } catch (Exception e) {
-        if (distFuture != null) {
-          distFuture.cancel(true);
+      if (!forwardToLeader) {
+        distFuture = ParWork.getRootSharedExecutor().submit(distCall);
+      } else {
+        try {
+          distCall.call();
+        } catch (Exception e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-        if (e instanceof RuntimeException) {
-          throw (RuntimeException) e;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
+
+      // TODO: possibly set checkDeleteByQueries as a flag on the command?
       // if the update updates a doc that is part of a nested structure,
       // force open a realTimeSearcher to trigger a ulog cache refresh.
       // This refresh makes RTG handler aware of this update.q
-      if (ulog != null) {
-        if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-          ulog.openRealtimeSearcher();
+
+
+      if (!forwardToLeader) {
+        // TODO: possibly set checkDeleteByQueries as a flag on the command?
+        if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
+        try {
+          doLocalAdd(cmd);
+        } catch (Exception e) {
+          if (distFuture != null) {
+            distFuture.cancel(false);
+          }
+          if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+          }
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+        // if the update updates a doc that is part of a nested structure,
+        // force open a realTimeSearcher to trigger a ulog cache refresh.
+        // This refresh makes RTG handler aware of this update.q
+        if (ulog != null) {
+          if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+            ulog.openRealtimeSearcher();
+          }
         }
       }
 
@@ -945,7 +960,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           t = e;
         }
         if (distFuture != null) {
-          distFuture.cancel(true);
+          distFuture.cancel(false);
         }
         if (t instanceof SolrException) {
           throw (SolrException) t;

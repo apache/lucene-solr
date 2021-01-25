@@ -17,14 +17,12 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Op;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * <p>A ZK-based distributed queue. Optimized for single-consumer,
@@ -126,7 +123,8 @@ public class ZkDistributedQueue implements DistributedQueue {
   static {
     OPERATIONS.add("state");
     OPERATIONS.add("leader");
-    OPERATIONS.add("downnode");
+    OPERATIONS.add(OverseerAction.DOWNNODE.toLower());
+    OPERATIONS.add(OverseerAction.RECOVERYNODE.toLower());
     OPERATIONS.add("updateshardstate");
   }
 

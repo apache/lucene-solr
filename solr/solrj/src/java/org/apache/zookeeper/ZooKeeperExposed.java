@@ -64,7 +64,7 @@ public class ZooKeeperExposed {
         clientCnxn.sendThread.close();
 
         try {
-            clientCnxn.sendThread.join(20);
+            clientCnxn.sendThread.join(50);
         } catch (InterruptedException e) {
         }
 

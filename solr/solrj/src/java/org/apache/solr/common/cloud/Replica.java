@@ -59,6 +59,8 @@ public class Replica extends ZkNodeProps {
      * full replication or finding out things are already in sync.
      */
     RECOVERING,
+
+    BUFFERING,
     
     /**
      * Recovery attempts have not worked, something is not right.
@@ -87,6 +89,8 @@ public class Replica extends ZkNodeProps {
         return State.ACTIVE;
       } else if (shortState.equals("r")) {
         return State.RECOVERING;
+      } else if (shortState.equals("b")) {
+        return State.BUFFERING;
       } else if (shortState.equals("d")) {
         return State.DOWN;
       } else if (shortState.equals("f")) {

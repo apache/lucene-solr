@@ -725,11 +725,11 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
             idle = false;
 
             // run job
-            if (LOG.isDebugEnabled()) LOG.debug("run {} in {}", job, SolrQueuedThreadPool.this);
+            if (LOG.isTraceEnabled()) LOG.trace("run {} in {}", job, SolrQueuedThreadPool.this);
             runJob(job);
-            if (LOG.isDebugEnabled()) LOG.debug("ran {} in {}", job, SolrQueuedThreadPool.this);
+            if (LOG.isTraceEnabled()) LOG.trace("ran {} in {}", job, SolrQueuedThreadPool.this);
           } catch (InterruptedException e) {
-            if (LOG.isDebugEnabled()) LOG.debug("interrupted {} in {}", job, SolrQueuedThreadPool.this);
+            if (LOG.isTraceEnabled()) LOG.trace("interrupted {} in {}", job, SolrQueuedThreadPool.this);
           } catch (Throwable e) {
             LOG.warn("", e);
           } finally {

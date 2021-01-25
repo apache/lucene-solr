@@ -119,7 +119,11 @@ public class SolrZooKeeper extends ZooKeeper {
     } catch (Exception e) {
       log.warn("Exception closing zookeeper client", e);
     }
-
+//    try {
+//      super.close();
+//    } catch (InterruptedException e) {
+//      e.printStackTrace();
+//    }
   }
 
 }

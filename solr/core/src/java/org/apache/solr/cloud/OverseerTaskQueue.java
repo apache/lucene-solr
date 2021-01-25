@@ -226,6 +226,8 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       this.closed = true;
       try {
         zkClient.getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
+      }  catch (KeeperException.NoWatcherException e) {
+
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
@@ -291,7 +293,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (log.isDebugEnabled()) log.debug("get data from response node {} {} {}", watchID, bytes == null ? null : bytes.length, watcher.getWatchedEvent());
 
       if (bytes == null || bytes.length == 0) {
-        log.error("Found no data at response node {}", watchID);
+        log.error("Found no data at response node, Overseer likely changed {}", watchID);
       }
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
@@ -307,13 +309,13 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
   String createRequestNode(byte[] data, String watchID) throws KeeperException, InterruptedException {
     return createData(dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
-        data, CreateMode.PERSISTENT);
+        data, CreateMode.EPHEMERAL);
   }
 
   String createResponseNode() throws KeeperException, InterruptedException {
     return createData(
         Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + RESPONSE_PREFIX,
-        null, CreateMode.PERSISTENT_SEQUENTIAL);
+        null, CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {

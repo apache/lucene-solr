@@ -62,6 +62,11 @@
         <Set name="idleTimeout"><Property name="solr.jetty.https.timeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.https.acceptQueueSize" default="0"/></Set>
+        <Call name="addLifeCycleListener">
+          <Arg>
+            <New class="org.apache.solr.servlet.SolrLifcycleListener"/>
+          </Arg>
+        </Call>
       </New>
     </Arg>
   </Call>

@@ -478,7 +478,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
 
           newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
 
-          log.info("Old schema version for request is {} version for latest on core is {} new schema version={}", ((ManagedIndexSchema) oldSchema).getSchemaZkVersion(), ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion(), ((ManagedIndexSchema) newSchema).getSchemaZkVersion());
+          if (log.isDebugEnabled()) log.debug("Old schema version for request is {} version for latest on core is {} new schema version={}", ((ManagedIndexSchema) oldSchema).getSchemaZkVersion(), ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion(), ((ManagedIndexSchema) newSchema).getSchemaZkVersion());
 
           // Add copyFields
           for (Map.Entry<String,Map<Integer,List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
@@ -512,7 +512,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
             ((ManagedIndexSchema) cmd.getReq().getSchema()).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema();
             cmd.getReq().updateSchemaToLatest();
 
-            log.info("Schema changed while processing request ... current latest version {} try={}", ((ManagedIndexSchema) cmd.getReq().getSchema()).getSchemaZkVersion(), cnt);
+            if (log.isDebugEnabled()) log.debug("Schema changed while processing request ... current latest version {} try={}", ((ManagedIndexSchema) cmd.getReq().getSchema()).getSchemaZkVersion(), cnt);
           } catch (KeeperException.SessionExpiredException keeperException) {
             throw new SolrException(SERVER_ERROR, keeperException);
           } catch (Exception e1) {

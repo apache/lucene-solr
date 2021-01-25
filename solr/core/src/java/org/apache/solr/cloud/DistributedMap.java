@@ -51,17 +51,17 @@ public class DistributedMap {
 
   public void update(String trackingId, byte[] data) throws KeeperException, InterruptedException {
     String path = dir + "/" + PREFIX + trackingId;
-    log.info("set data in distmap {}", path);
+    if (log.isDebugEnabled()) log.debug("set data in distmap {}", path);
     if (data == null || data.length == 0) {
       throw new IllegalArgumentException();
     }
     zookeeper.setData(path, data, true);
   }
 
-  public void put(String trackingId, byte[] data) throws KeeperException, InterruptedException {
+  public void put(String trackingId, byte[] data, CreateMode createMode) throws KeeperException, InterruptedException {
     String path = dir + "/" + PREFIX + trackingId;
-    log.info("put in distmap {}", path);
-    zookeeper.makePath(path, data, CreateMode.PERSISTENT, null, false, true);
+    if (log.isDebugEnabled()) log.debug("put in distmap {}", path);
+    zookeeper.makePath(path, data, createMode, null, false, true);
   }
   
   /**

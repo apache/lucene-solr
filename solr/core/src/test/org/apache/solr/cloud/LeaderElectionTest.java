@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
@@ -95,9 +96,9 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
     public TestLeaderElectionContext(LeaderElector leaderElector,
         String shardId, String collection, String coreNodeName, Replica props,
-        ZkController zkController, long runLeaderDelay) {
+        ZkController zkController, long runLeaderDelay, CoreDescriptor cd) {
       super (coreNodeName, "/collections/" + collection,
-              "/collections/" + collection + "/leader", props, zkController.getZkClient());
+              "/collections/" + collection + "/leader", props, cd, zkController.getZkClient());
       this.runLeaderDelay = runLeaderDelay;
     }
 
@@ -182,7 +183,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     private void setupOnConnect() throws InterruptedException, KeeperException,
         IOException {
       assertNotNull(es);
-      TestLeaderElectionContext context = new TestLeaderElectionContext(es.elector, shard, "collection1", nodeName, replica, es.zkController, runLeaderDelay);
+      TestLeaderElectionContext context = new TestLeaderElectionContext(es.elector, shard, "collection1", nodeName, replica, es.zkController, runLeaderDelay, null);
       es.elector.setup(context);
       // nocommit - we have to get the seq another way, now returns if become leader first try
       //seq = es.elector.joinElection(context, false);

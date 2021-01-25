@@ -156,6 +156,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
           if (newcore == null) {
             it.handler.coreContainer.waitForLoadingCore(newCoreName, 10000);
+            // above currently done in getCore, but shorter
             newcore = it.handler.coreContainer.getCore(newCoreName);
           }
 

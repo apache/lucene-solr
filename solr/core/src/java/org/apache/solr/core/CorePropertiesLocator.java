@@ -171,8 +171,8 @@ public class CorePropertiesLocator implements CoresLocator {
       log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
     }
     if (cds.size() > 0) {
-      if (log.isInfoEnabled()) {
-        log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+      if (log.isDebugEnabled()) {
+        log.debug("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
       }
     }
     return cds;

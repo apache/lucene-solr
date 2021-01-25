@@ -36,8 +36,6 @@ public class PerThreadExecService extends AbstractExecutorService {
 
   private final AtomicInteger running = new AtomicInteger();
 
-  private final Object awaitTerminate = new Object();
-
   private CloseTracker closeTracker;
 
   private SysStats sysStats = ParWork.getSysStats();
@@ -112,14 +110,12 @@ public class PerThreadExecService extends AbstractExecutorService {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (running.get() > 0) {
       if (timeout.hasTimedOut()) {
-        log.warn("return before reaching termination, wait for {} {}, running={}", l, timeout, running);
+        log.error("return before reaching termination, wait for {} {}, running={}", l, timeout, running);
         return false;
       }
 
       // System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
-      synchronized (awaitTerminate) {
-        awaitTerminate.wait(500);
-      }
+      Thread.sleep(250);
     }
 
     if (isShutdown()) {
@@ -142,33 +138,35 @@ public class PerThreadExecService extends AbstractExecutorService {
         try {
           available.acquire();
         } catch (InterruptedException e) {
+          running.decrementAndGet();
           throw new RejectedExecutionException("Interrupted");
         }
       }
       try {
         service.submit(() -> {
           runIt(runnable, noCallerRunsAvailableLimit, false);
-          if (noCallerRunsAvailableLimit) {
-            available.release();
-          }
         });
       } catch (Exception e) {
         log.error("", e);
-        running.decrementAndGet();
-        synchronized (awaitTerminate) {
-          awaitTerminate.notifyAll();
+        if (noCallerRunsAvailableLimit) {
+          available.release();
         }
+        running.decrementAndGet();
+        throw e;
       }
       return;
     }
 
-    if (!checkLoad()) {
-      runIt(runnable, false, false);
-      return;
+    try {
+      available.acquire();
+    } catch (InterruptedException e) {
+      running.decrementAndGet();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
-    if (!available.tryAcquire()) {
-      runIt(runnable, false, false);
+
+    if (!noCallerRunsAllowed && checkLoad()) {
+      runIt(runnable, true, false);
       return;
     }
 
@@ -176,10 +174,13 @@ public class PerThreadExecService extends AbstractExecutorService {
     try {
       service.submit(() -> runIt(finalRunnable, true, false));
     } catch (Exception e) {
-      running.decrementAndGet();
-      synchronized (awaitTerminate) {
-        awaitTerminate.notifyAll();
+      log.error("Exception submitting", e);
+      try {
+        available.release();
+      } finally {
+        running.decrementAndGet();
       }
+      throw e;
     }
   }
 
@@ -192,12 +193,7 @@ public class PerThreadExecService extends AbstractExecutorService {
           available.release();
         }
       } finally {
-        if (!alreadyShutdown) {
-          running.decrementAndGet();
-          synchronized (awaitTerminate) {
-            awaitTerminate.notifyAll();
-          }
-        }
+        running.decrementAndGet();
       }
     }
   }
@@ -206,22 +202,20 @@ public class PerThreadExecService extends AbstractExecutorService {
     return maxSize;
   }
 
-  public boolean checkLoad() {
+  private boolean checkLoad() {
 
-    double ourLoad = ParWork.getSysStats().getTotalUsage();
-    if (ourLoad > SysStats.OUR_LOAD_HIGH) {
-      if (log.isDebugEnabled()) log.debug("Our cpu usage is too high, run in caller thread {}", ourLoad);
-      return false;
-    } else {
-      double sLoad = sysStats.getSystemLoad();
-      if (sLoad > 1) {
-        if (log.isDebugEnabled()) log.debug("System load is too high, run in caller thread {}", sLoad);
-        return false;
-      }
+    double sLoad = sysStats.getSystemLoad();
+
+    if (hiStateLoad(sLoad)) {
+      return true;
     }
-    return true;
+    return false;
   }
-  
+
+  private boolean hiStateLoad(double sLoad) {
+    return sLoad > 0.8d && running.get() > 3;
+  }
+
   public void closeLock(boolean lock) {
     if (lock) {
       closeTracker.enableCloseLock();

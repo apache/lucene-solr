@@ -112,12 +112,12 @@ public class SolrIndexWriter extends IndexWriter {
 //    return w;
 //  }
 
-  public static SolrIndexWriter buildIndexWriter(SolrCore core, String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) {
+  public static SolrIndexWriter buildIndexWriter(SolrCore core, String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean commitOnClose) {
     SolrIndexWriter iw = null;
     Directory dir = null;
     try {
       dir = getDir(directoryFactory, path, config);
-      iw = new SolrIndexWriter(core, name, directoryFactory, dir, create, schema, config, delPolicy, codec);
+      iw = new SolrIndexWriter(core, name, directoryFactory, dir, create, schema, config, delPolicy, codec, commitOnClose);
     } catch (Throwable e) {
       ParWork.propagateInterrupt(e);
       SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -170,11 +170,11 @@ public class SolrIndexWriter extends IndexWriter {
     assert ObjectReleaseTracker.track(this);
   }
 
-  public SolrIndexWriter(SolrCore core, String name, DirectoryFactory directoryFactory, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
+  public SolrIndexWriter(SolrCore core, String name, DirectoryFactory directoryFactory, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean commitOnClose) throws IOException {
     super(directory,
             config.toIndexWriterConfig(core).
                     setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-                    setIndexDeletionPolicy(delPolicy).setCodec(codec)
+                    setIndexDeletionPolicy(delPolicy).setCodec(codec).setCommitOnClose(commitOnClose)
     );
     try {
     if (log.isDebugEnabled()) log.debug("Opened Writer " + name);
@@ -252,15 +252,11 @@ public class SolrIndexWriter extends IndexWriter {
   @SuppressForbidden(reason = "Need currentTimeMillis, commit time should be used only for debugging purposes, " +
           " but currently suspiciously used for replication as well")
   public static void setCommitData(IndexWriter iw, long commitCommandVersion) {
-    log.info("Calling setCommitData with IW:" + iw.toString() + " commitCommandVersion:"+commitCommandVersion);
+    if (log.isDebugEnabled()) log.debug("Calling setCommitData with IW:" + iw.toString() + " commitCommandVersion:"+commitCommandVersion);
     final Map<String,String> commitData = new HashMap<>();
     commitData.put(COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
     commitData.put(COMMIT_COMMAND_VERSION, String.valueOf(commitCommandVersion));
     iw.setLiveCommitData(commitData.entrySet());
-
-    if (log.isDebugEnabled()) {
-      log.debug("setCommitData(IndexWriter, long) - end");
-    }
   }
 
   // we override this method to collect metrics for merges.
@@ -346,18 +342,12 @@ public class SolrIndexWriter extends IndexWriter {
 
   @Override
   protected void doAfterFlush() throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("doAfterFlush() - start");
-    }
+    if (log.isTraceEnabled()) log.trace("doAfterFlush() - start");
 
     if (flushMeter != null) { // this is null when writer is used only for snapshot cleanup
       flushMeter.mark();      // or if mergeTotals == false
     }
     super.doAfterFlush();
-
-    if (log.isDebugEnabled()) {
-      log.debug("doAfterFlush() - end");
-    }
   }
 
   @Override

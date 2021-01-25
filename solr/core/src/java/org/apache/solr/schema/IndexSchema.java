@@ -732,15 +732,13 @@ public class IndexSchema {
             + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
           throw new SolrException(ErrorCode.SERVER_ERROR, msg );
         }
-        log.debug("field defined: {}", f);
+        if (log.isTraceEnabled()) log.trace("field defined: {}", f);
         if( f.getDefaultValue() != null ) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} contains default value {}", name, f.getDefaultValue());
-          }
+          if (log.isTraceEnabled()) log.trace("{} contains default value {}", name, f.getDefaultValue());
           fieldsWithDefaultValue.add( f );
         }
         if (f.isRequired()) {
-          log.debug("{} is required in this schema", name);
+          if (log.isTraceEnabled()) log.trace("{} is required in this schema", name);
           requiredFields.add(f);
         }
       } else if (nodeValue.equals(DYNAMIC_FIELD)) {
@@ -874,7 +872,7 @@ public class IndexSchema {
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
     dFields.add(new DynamicField(f));
-    log.debug("dynamic field defined: {}", f);
+    if (log.isTraceEnabled()) log.trace("dynamic field defined: {}", f);
   }
 
   protected boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {

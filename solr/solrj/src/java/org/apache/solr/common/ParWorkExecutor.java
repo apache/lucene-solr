@@ -17,7 +17,6 @@
 package org.apache.solr.common;
 
 import org.apache.solr.common.util.CloseTracker;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +49,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
 
   public ParWorkExecutor(String name, int corePoolsSize, int maxPoolsSize,
       int keepalive, BlockingQueue<Runnable> workQueue) {
-    super(corePoolsSize, maxPoolsSize, keepalive, TimeUnit.MILLISECONDS, workQueue
+    super(corePoolsSize, Math.max(corePoolsSize, maxPoolsSize), keepalive, TimeUnit.MILLISECONDS, workQueue
     , new ParWorkThreadFactory(name));
     assert (closeTracker = new CloseTracker(false)) != null;
   }

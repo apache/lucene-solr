@@ -126,9 +126,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public void addCloseListener(Directory dir, CloseListener closeListener) {
-    if (log.isDebugEnabled()) {
-      log.debug("addCloseListener(Directory dir={}, CloseListener closeListener={}) - start", dir, closeListener);
-    }
+    if (log.isTraceEnabled()) log.trace("addCloseListener(Directory dir={}, CloseListener closeListener={}) - start", dir, closeListener);
+
 
     synchronized (this) {
       if (!byDirectoryCache.containsKey(dir)) {
@@ -145,16 +144,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       closeListeners.put(dir, listeners);
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("addCloseListener(Directory, CloseListener) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("addCloseListener(Directory, CloseListener) - end");
   }
 
   @Override
   public void doneWithDirectory(Directory directory) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("doneWithDirectory(Directory directory={}) - start", directory);
-    }
+    if (log.isTraceEnabled()) log.trace("doneWithDirectory(Directory directory={}) - start", directory);
 
     synchronized (this) {
       CacheValue cacheValue = byDirectoryCache.get(directory);
@@ -172,9 +167,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("doneWithDirectory(Directory) - end");
-    }
+
+    if (log.isTraceEnabled()) log.trace("doneWithDirectory(Directory) - end");
   }
 
   /*
@@ -184,9 +178,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    */
   @Override
   public void close() throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("close() - start");
-    }
+    if (log.isTraceEnabled()) log.trace("close() - start");
+
 
     synchronized (this) {
       closed = true;
@@ -227,31 +220,23 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("close() - end");
-    }
+    if (log.isTraceEnabled()) log.trace("close() - end");
   }
 
   private synchronized void removeFromCache(CacheValue v) {
-    if (log.isDebugEnabled()) {
-      log.debug("removeFromCache(CacheValue v={}) - start", v);
-    }
+    if (log.isTraceEnabled()) log.trace("removeFromCache(CacheValue v={}) - start", v);
 
     if (log.isDebugEnabled()) log.debug("Removing from cache: {}", v);
     byDirectoryCache.remove(v.directory);
     byPathCache.remove(v.path);
 
-    if (log.isDebugEnabled()) {
-      log.debug("removeFromCache(CacheValue) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("removeFromCache(CacheValue) - end");
   }
 
   // be sure this is called with the this sync lock
   // returns true if we closed the cacheValue, false if it will be closed later
   private boolean closeCacheValue(CacheValue cacheValue) {
-    if (log.isDebugEnabled()) {
-      log.debug("closeCacheValue(CacheValue cacheValue={}) - start", cacheValue);
-    }
+    if (log.isTraceEnabled()) log.trace("closeCacheValue(CacheValue cacheValue={}) - start", cacheValue);
 
     if (log.isDebugEnabled()) log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries.toString());
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
@@ -330,16 +315,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("closeCacheValue(CacheValue) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("closeCacheValue(CacheValue) - end");
     return cl;
   }
 
   private void close(CacheValue val) {
-    if (log.isDebugEnabled()) {
-      log.debug("close(CacheValue val={}) - start", val);
-    }
+    if (log.isTraceEnabled()) log.trace("close(CacheValue val={}) - start", val);
 
     if (log.isDebugEnabled()) log.debug("Closing directory, CoreContainer#isShutdown={}", coreContainer != null ? coreContainer.isShutDown() : "null");
     try {
@@ -357,38 +338,32 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       ParWork.propagateInterrupt("Error closing directory", e);
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("close(CacheValue) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("close(CacheValue) - end");
   }
 
   private boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
-    if (log.isDebugEnabled()) {
-      log.debug("isSubPath(CacheValue cacheValue={}, CacheValue otherCacheValue={}) - start", cacheValue, otherCacheValue);
-    }
+    if (log.isTraceEnabled()) log.trace("isSubPath(CacheValue cacheValue={}, CacheValue otherCacheValue={}) - start", cacheValue, otherCacheValue);
 
     int one = cacheValue.path.lastIndexOf('/');
     int two = otherCacheValue.path.lastIndexOf('/');
 
     boolean returnboolean = otherCacheValue.path.startsWith(cacheValue.path + "/") && two > one;
-    if (log.isDebugEnabled()) {
-      log.debug("isSubPath(CacheValue, CacheValue) - end");
-    }
+
+    if (log.isTraceEnabled()) log.trace("isSubPath(CacheValue, CacheValue) - end");
+
     return returnboolean;
   }
 
   @Override
   public boolean exists(String path) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("exists(String path={}) - start", path);
-    }
+    if (log.isTraceEnabled()) log.trace("exists(String path={}) - start", path);
 
     // back compat behavior
     File dirFile = new File(path);
     boolean returnboolean = dirFile.canRead() && dirFile.list().length > 0;
-    if (log.isDebugEnabled()) {
-      log.debug("exists(String) - end");
-    }
+
+    if (log.isTraceEnabled()) log.trace("exists(String) - end");
+
     return returnboolean;
   }
 
@@ -401,9 +376,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public final Directory get(String path, DirContext dirContext, String rawLockType)
           throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("get(String path={}, DirContext dirContext={}, String rawLockType={}) - start", path, dirContext, rawLockType);
-    }
+    if (log.isTraceEnabled()) log.trace("get(String path={}, DirContext dirContext={}, String rawLockType={}) - start", path, dirContext, rawLockType);
 
     if (closed) {
       throw new AlreadyClosedException();
@@ -443,9 +416,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       //    log.info("getDir " + path, new RuntimeException("track get " + fullPath)); // nocommit
       // }
 
-      if (log.isDebugEnabled()) {
-        log.debug("get(String, DirContext, String) - end");
-      }
+      if (log.isTraceEnabled()) log.trace("get(String, DirContext, String) - end");
+
       return directory;
     }
   }
@@ -459,9 +431,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    */
   @Override
   public void incRef(Directory directory) {
-    if (log.isDebugEnabled()) {
-      log.debug("incRef(Directory directory={}) - start", directory);
-    }
+    if (log.isTraceEnabled()) log.trace("incRef(Directory directory={}) - start", directory);
 
     synchronized (this) {
       CacheValue cacheValue = byDirectoryCache.get(directory);
@@ -473,16 +443,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       log.debug("incRef'ed: {}", cacheValue,  DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null);
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("incRef(Directory) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("incRef(Directory) - end");
   }
 
   @Override
   public void init(NamedList args) {
-    if (log.isDebugEnabled()) {
-      log.debug("init(NamedList args={}) - start", args);
-    }
+    if (log.isTraceEnabled()) log.trace("init(NamedList args={}) - start", args);
 
     maxWriteMBPerSecFlush = (Double) args.get("maxWriteMBPerSecFlush");
     maxWriteMBPerSecMerge = (Double) args.get("maxWriteMBPerSecMerge");
@@ -497,9 +463,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       log.info(SolrXmlConfig.SOLR_DATA_HOME + "=" + dataHomePath);
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("init(NamedList) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("init(NamedList) - end");
   }
 
   /*
@@ -511,9 +475,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    */
   @Override
   public void release(Directory directory) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("release(Directory directory={}) - start", directory);
-    }
+    if (log.isTraceEnabled()) log.trace("release(Directory directory={}) - start", directory);
 
     if (directory == null) {
       throw new NullPointerException();
@@ -540,7 +502,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       //    }
       cacheValue.refCnt--;
 
-      if (cacheValue.refCnt == 0 && cacheValue.doneWithDir ||  closed) {
+      if (cacheValue.refCnt == 0 && cacheValue.doneWithDir || closed) {
         boolean cl = closeCacheValue(cacheValue);
         if (cl) {
           removeFromCache(cacheValue);
@@ -548,42 +510,28 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("release(Directory) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("release(Directory) - end");
   }
 
   @Override
   public void remove(String path) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("remove(String path={}) - start", path);
-    }
+    if (log.isTraceEnabled()) log.trace("remove(String path={}) - start", path);
 
     remove(path, false);
 
-    if (log.isDebugEnabled()) {
-      log.debug("remove(String) - end");
-    }
+    if (log.isTraceEnabled()) log.trace("remove(String) - end");
   }
 
   @Override
   public void remove(Directory dir) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("remove(Directory dir={}) - start", dir);
-    }
+    if (log.isTraceEnabled()) log.trace("remove(Directory dir={}) - start", dir);
 
     remove(dir, false);
-
-    if (log.isDebugEnabled()) {
-      log.debug("remove(Directory) - end");
-    }
   }
 
   @Override
   public void remove(String path, boolean deleteAfterCoreClose) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("remove(String path={}, boolean deleteAfterCoreClose={}) - start", path, deleteAfterCoreClose);
-    }
+    if (log.isTraceEnabled()) log.trace("remove(String path={}, boolean deleteAfterCoreClose={}) - start", path, deleteAfterCoreClose);
 
     synchronized (this) {
       CacheValue val = byPathCache.get(normalize(path));
@@ -592,17 +540,12 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
       val.setDeleteOnClose(true, deleteAfterCoreClose);
     }
-
-    if (log.isDebugEnabled()) {
-      log.debug("remove(String, boolean) - end");
-    }
   }
 
   @Override
   public void remove(Directory dir, boolean deleteAfterCoreClose) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("remove(Directory dir={}, boolean deleteAfterCoreClose={}) - start", dir, deleteAfterCoreClose);
-    }
+    if (log.isTraceEnabled()) log.trace("remove(Directory dir={}, boolean deleteAfterCoreClose={}) - start", dir, deleteAfterCoreClose);
+
 
     synchronized (this) {
       CacheValue val = byDirectoryCache.get(dir);
@@ -610,10 +553,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         throw new IllegalArgumentException("Unknown directory " + dir);
       }
       val.setDeleteOnClose(true, deleteAfterCoreClose);
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug("remove(Directory, boolean) - end");
     }
   }
 
@@ -623,30 +562,21 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   @Override
   public String normalize(String path) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("normalize(String path={}) - start", path);
-    }
+    if (log.isTraceEnabled()) log.trace("normalize(String path={}) - start", path);
+
 
     path = stripTrailingSlash(path);
 
-    if (log.isDebugEnabled()) {
-      log.debug("normalize(String) - end");
-    }
     return path;
   }
 
   protected String stripTrailingSlash(String path) {
-    if (log.isDebugEnabled()) {
-      log.debug("stripTrailingSlash(String path={}) - start", path);
-    }
+    if (log.isTraceEnabled()) log.trace("stripTrailingSlash(String path={}) - start", path);
 
     if (path.endsWith("/")) {
       path = path.substring(0, path.length() - 1);
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("stripTrailingSlash(String) - end");
-    }
     return path;
   }
 
@@ -657,9 +587,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * @see #doneWithDirectory
    */
   public synchronized Set<String> getLivePaths() {
-    if (log.isDebugEnabled()) {
-      log.debug("getLivePaths() - start");
-    }
+    if (log.isTraceEnabled()) log.trace("getLivePaths() - start");
 
     HashSet<String> livePaths = new HashSet<>(byPathCache.size());
     for (CacheValue val : byPathCache.values()) {
@@ -668,17 +596,14 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("getLivePaths() - end");
-    }
+    if (log.isTraceEnabled()) log.trace("getLivePaths() - end");
+
     return livePaths;
   }
 
   @Override
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
-    if (log.isDebugEnabled()) {
-      log.debug("deleteOldIndexDirectory(String oldDirPath={}) - start", oldDirPath);
-    }
+    if (log.isTraceEnabled()) log.trace("deleteOldIndexDirectory(String oldDirPath={}) - start", oldDirPath);
 
     Set<String> livePaths = getLivePaths();
     if (livePaths.contains(oldDirPath)) {
@@ -690,13 +615,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   protected synchronized String getPath(Directory directory) {
-    if (log.isDebugEnabled()) {
-      log.debug("getPath(Directory directory={}) - start", directory);
-    }
+    if (log.isTraceEnabled()) log.trace("getPath(Directory directory={}) - start", directory);
 
-    if (log.isDebugEnabled()) {
-      log.debug("getPath(Directory) - end");
-    }
     return byDirectoryCache.get(directory).path;
   }
 }

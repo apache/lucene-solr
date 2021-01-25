@@ -79,7 +79,7 @@
         <Set name="acceptQueueSize"><Property name="solr.jetty.https.acceptQueueSize" default="4096"/></Set>
         <Call name="addLifeCycleListener">
           <Arg>
-            <New class="org.apache.solr.servlet.SolrConnectorListener"/>
+            <New class="org.apache.solr.servlet.SolrLifcycleListener"/>
           </Arg>
         </Call>
       </New>

@@ -115,8 +115,8 @@ class SolrCores implements Closeable {
     }
 
     cores.forEach((s, solrCore) -> {
-      container.solrCoreCloseExecutor.submit(() -> {
-        MDCLoggingContext.setCore(solrCore);
+      container.solrCoreExecutor.submit(() -> {
+        MDCLoggingContext.setCoreName(solrCore.getName());
         try {
           solrCore.closeAndWait();
         } catch (Throwable e) {
@@ -213,6 +213,7 @@ class SolrCores implements Closeable {
       set.addAll(getTransientCacheHandler().getAllCoreNames());
     }
     set.addAll(residentDesciptors.keySet());
+    set.addAll(currentlyLoadingCores);
 
     return set;
   }
@@ -266,6 +267,10 @@ class SolrCores implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot unload non-existent core [null]");
     }
 
+    if (!closed) {
+      waitForLoadingCoreToFinish(name, 5000);
+    }
+
     if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
     currentlyLoadingCores.remove(name);
     SolrCore ret = cores.remove(name);
@@ -281,7 +286,9 @@ class SolrCores implements Closeable {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name) {
-    waitForLoadingCoreToFinish(name, 15000);
+    if (!closed) {
+      waitForLoadingCoreToFinish(name, 5000);
+    }
     CoreDescriptor cd = residentDesciptors.get(name);
 
     SolrCore core = cores.get(name);
@@ -337,7 +344,9 @@ class SolrCores implements Closeable {
   public CoreDescriptor getCoreDescriptor(String coreName) {
     if (coreName == null) return null;
 
-    waitForLoadingCoreToFinish(coreName, 15000);
+    if (!closed) {
+      waitForLoadingCoreToFinish(coreName, 5000);
+    }
 
     CoreDescriptor cd = residentDesciptors.get(coreName);
     if (cd != null) {
@@ -387,7 +396,7 @@ class SolrCores implements Closeable {
       while (!currentlyLoadingCores.isEmpty()) {
         synchronized (loadingSignal) {
           try {
-            loadingSignal.wait(1000);
+            loadingSignal.wait(500);
           } catch (InterruptedException e) {
             return;
           }

@@ -81,7 +81,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   public LBHttp2SolrClient(String... baseSolrUrls) {
     super(Arrays.asList(baseSolrUrls));
-
+    // nocommit - should only be internal for us
     this.httpClient = new Http2SolrClient.Builder().markInternalRequest()
         // .withResponseParser(responseParser) // nocommit
         // .allowCompression(compression) // nocommit

@@ -23,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -63,6 +62,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.Replica.State.DOWN;
 
 // TODO: this is flakey, can rarely leak a Directory
+// The UnloadCoreOnDeletedWatcher has been removed
 @SolrTestCase.SuppressObjectReleaseTracker(object = "NRTCachingDirectory")
 public class DeleteReplicaTest extends SolrCloudTestCase {
 
@@ -127,8 +127,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
     ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaJetty.getCoreContainer().getZkController().getZkStateReader());
 
-    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
-      (accessor.getStateWatchers(collectionName));
+//    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+//      (accessor.getStateWatchers(collectionName));
     
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
@@ -224,9 +224,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     
     JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
     ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaJetty.getCoreContainer().getZkController().getZkStateReader());
-
-    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
-      (accessor.getStateWatchers(collectionName));
+//
+//    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+//      (accessor.getStateWatchers(collectionName));
 
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
@@ -245,14 +245,14 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     );
     
     // the core should no longer have a watch collection state since it was removed
-    timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
-        final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
-          (accessor.getStateWatchers(collectionName));
-        log.info("preDeleteWatcherCount={} vs postDeleteWatcherCount={}",
-                 preDeleteWatcherCount, postDeleteWatcherCount);
-        return (preDeleteWatcherCount - 1L == postDeleteWatcherCount);
-      });
+//    timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+//    timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
+//        final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+//          (accessor.getStateWatchers(collectionName));
+//        log.info("preDeleteWatcherCount={} vs postDeleteWatcherCount={}",
+//                 preDeleteWatcherCount, postDeleteWatcherCount);
+//        return (preDeleteWatcherCount - 1L == postDeleteWatcherCount);
+//      });
     
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
@@ -423,20 +423,6 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       }
       throw e;
     }
-  }
-
-  /** 
-   * Helper method for counting the number of instances of <code>UnloadCoreOnDeletedWatcher</code>
-   * that exist on a given node.
-   *
-   * This is useful for verifying that deleting a replica correctly removed it's watchers.
-   *
-   * (Note: tests should not assert specific values, since multiple replicas may exist on the same 
-   * node. Instead tests should only assert that the number of watchers has decreased by 1 per known 
-   * replica removed)
-   */
-  private static final long countUnloadCoreOnDeletedWatchers(final Set<DocCollectionWatcher> watchers) {
-    return watchers.stream().filter(w -> w instanceof ZkController.UnloadCoreOnDeletedWatcher).count();
   }
 }
 

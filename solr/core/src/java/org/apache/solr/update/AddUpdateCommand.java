@@ -43,7 +43,7 @@ public class AddUpdateCommand extends UpdateCommand {
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
    * to index.
    */
-  public SolrInputDocument solrDoc;
+  public volatile SolrInputDocument solrDoc;
 
   /**
    * This is the version of a document, previously indexed, on which the current
@@ -51,7 +51,7 @@ public class AddUpdateCommand extends UpdateCommand {
    * or a full update. A negative value here, e.g. -1, indicates that this add
    * update does not depend on a previous update.
    */
-  public long prevVersion = -1;
+  public volatile long prevVersion = -1;
 
   public boolean overwrite = true;
 
@@ -62,14 +62,14 @@ public class AddUpdateCommand extends UpdateCommand {
 
   public int commitWithin = -1;
 
-  public boolean isLastDocInBatch = false;
+  public volatile boolean isLastDocInBatch = false;
 
   /** Is this a nested update, null means not yet calculated. */
-  public Boolean isNested = null;
+  public volatile Boolean isNested = null;
 
   // optional id in "internal" indexed form... if it is needed and not supplied,
   // it will be obtained from the doc.
-  private BytesRef indexedId;
+  private volatile BytesRef indexedId;
 
   public AddUpdateCommand(SolrQueryRequest req) {
     super(req);

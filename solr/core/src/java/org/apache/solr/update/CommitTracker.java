@@ -294,7 +294,7 @@ public final class CommitTracker implements Runnable, Closeable {
       lock.unlock();
     }
 
-    MDCLoggingContext.setCore(core);
+    MDCLoggingContext.setCoreName(core.getName());
     try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;

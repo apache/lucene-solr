@@ -65,49 +65,11 @@ public class SolrQoSFilter extends QoSFilter {
     boolean imagePath = req.getPathInfo() != null && req.getPathInfo().startsWith("/img/");
     boolean externalRequest = !imagePath && (source == null || !source.equals(QoSParams.INTERNAL));
     if (log.isDebugEnabled()) log.debug("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
+    //log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
 
     if (externalRequest) {
       if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
-      double ourLoad = sysStats.getTotalUsage();
-      if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
-      double sLoad = sysStats.getSystemLoad();
-      if (ourLoad > SysStats.OUR_LOAD_HIGH) {
-
-        int cMax = getMaxRequests();
-        if (cMax > 5) {
-          int max = Math.max(5, (int) ((double) cMax * 0.30D));
-          log.warn("Our individual load is {}", ourLoad);
-          updateMaxRequests(max, sLoad, ourLoad);
-        }
-
-      } else {
-        // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
-        if (ourLoad < 0.90 && sLoad < 1.6 && _origMaxRequests != getMaxRequests()) {
-          if (sLoad < 0.9) {
-            if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
-            updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
-          } else {
-            updateMaxRequests(Math.min(_origMaxRequests, getMaxRequests() * 3), sLoad, ourLoad);
-          }
-        } else {
-          if (ourLoad > 0.90 && sLoad > 1.5) {
-            int cMax = getMaxRequests();
-            if (cMax > 5) {
-              int max = Math.max(5, (int) ((double) cMax * 0.30D));
-            //  log.warn("System load is {} and our load is {} procs is {}, set max concurrent requests to {}", sLoad, ourLoad, SysStats.PROC_COUNT, max);
-              updateMaxRequests(max, sLoad, ourLoad);
-            }
-          } else if (ourLoad < 0.90 && sLoad < 2 && _origMaxRequests != getMaxRequests()) {
-            if (sLoad < 0.9) {
-              if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
-              updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
-            } else {
-              updateMaxRequests(Math.min(_origMaxRequests, getMaxRequests() * 3), sLoad, ourLoad);
-            }
-
-          }
-        }
-      }
+      checkLoad();
 
       //chain.doFilter(req, response);
       super.doFilter(req, response, chain);
@@ -118,11 +80,68 @@ public class SolrQoSFilter extends QoSFilter {
     }
   }
 
+  private void checkLoad() {
+    double ourLoad = sysStats.getTotalUsage();
+    int currentMaxRequests = getMaxRequests();
+    if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
+    double sLoad = sysStats.getSystemLoad();
+
+
+    if (lowStateLoad(sLoad, currentMaxRequests)) {
+//      if (log.isDebugEnabled()) log.debug("set max concurrent requests to orig value {}", _origMaxRequests);
+//      updateMaxRequests(_origMaxRequests, sLoad, ourLoad);
+//    } else {
+      updateMaxRequests(Math.min(_origMaxRequests, _origMaxRequests), sLoad, ourLoad);
+    } else {
+
+      if (hiLoadState(sLoad, currentMaxRequests)) {
+
+        if (currentMaxRequests == _origMaxRequests) {
+          updateMaxRequests(100, sLoad, ourLoad);
+        } else {
+          updateMaxRequests(50, sLoad, ourLoad);
+        }
+      }
+    }
+      // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
+  }
+
+  private boolean lowStateLoad(double sLoad, int currentMaxRequests) {
+    return currentMaxRequests < _origMaxRequests && sLoad < .95d;
+  }
+
+  private boolean hiLoadState(double sLoad, int currentMaxRequests) {
+    return sLoad > 0.95d;
+  }
+
   private void updateMaxRequests(int max, double sLoad, double ourLoad) {
-    if (System.currentTimeMillis() - lastUpdate > 2000) {
+    int currentMax = getMaxRequests();
+    if (max < currentMax) {
+      if (System.currentTimeMillis() - lastUpdate > 500) {
+        log.warn("Set max request to {} sload={} ourload={}", max, sLoad, ourLoad);
+        lastUpdate = System.currentTimeMillis();
+        setMaxRequests(max);
+      }
+    } else if (max > currentMax) {
+
       log.warn("Set max request to {} sload={} ourload={}", max, sLoad, ourLoad);
       lastUpdate = System.currentTimeMillis();
       setMaxRequests(max);
     }
+
+  }
+
+  protected int getPriority(ServletRequest request)
+  {
+    HttpServletRequest baseRequest = (HttpServletRequest)request;
+
+    String pathInfo = baseRequest.getPathInfo();
+    log.info("pathInfo={}", pathInfo);
+
+    if (pathInfo != null && pathInfo.equals("/admin/collections")) {
+      return 5;
+    }
+
+    return 0;
   }
 }

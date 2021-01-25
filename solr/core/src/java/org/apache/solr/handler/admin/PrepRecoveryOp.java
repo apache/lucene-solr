@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -60,6 +61,11 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         "Going to wait for core: {}, state: {}: params={}",
         cname, waitForState, params);
 
+    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(cname);
+    if (leaderElector == null || !leaderElector.isLeader()) {
+      throw new IllegalStateException("Not the valid leader " + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()));
+    }
+
     assert TestInjection.injectPrepRecoveryOpPauseForever();
 
     CoreContainer coreContainer = it.handler.coreContainer;
@@ -67,10 +73,9 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     AtomicReference<String> errorMessage = new AtomicReference<>();
 
     try {
-      coreContainer.getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+      coreContainer.getZkController().getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
-          log.info("collection not found {}", collection);
-          return false;
+          return true;
         }
 
         // wait until we are sure the recovering node is ready
@@ -80,8 +85,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         if (replica != null) {
           isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
           if (replica.getState() == waitForState) {
-            // if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={}", replica, replica.getState(), waitForState);
-            log.info("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState, coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
+            if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState, coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
             return true;
           }
         }

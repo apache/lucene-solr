@@ -20,11 +20,11 @@
     <Appenders>
 
         <Console name="STDERR_COLOR" target="SYSTEM_ERR">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} [%style{%X{replica} %X{trace_id}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} [%style{%X{core}%X{node_name}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{replica} %X{trace_id}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{core}%X{node_name}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </File>
 
         <File name="FILE2" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
@@ -39,10 +39,10 @@
 
     </Appenders>
     <Loggers>
-
-
         <AsyncLogger name="org.apache.solr.servlet.HttpSolrCall" level="DEBUG"/>
         <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+        <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
+        <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
         <AsyncLogger name="org.apache.hadoop" level="WARN"/>
         <AsyncLogger name="org.apache.directory" level="WARN"/>
         <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>

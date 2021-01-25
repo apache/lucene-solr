@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -51,8 +52,8 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected volatile Integer leaderZkNodeParentVersion;
 
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
-                                        Replica props, SolrZkClient zkClient) {
-    super(coreNodeName, electionPath, leaderPath, props);
+                                        Replica props, CoreDescriptor cd,SolrZkClient zkClient) {
+    super(coreNodeName, electionPath, leaderPath, props, cd);
     this.zkClient = zkClient;
   }
 
@@ -213,11 +214,11 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       log.warn("No node exists for election", e);
       throw new AlreadyClosedException("No node exists for election");
     } catch (KeeperException.NodeExistsException e) {
-      log.warn("Node already exists for election", e);
+      log.error("Node already exists for election", e);
 
-      zkClient.delete(leaderPath, -1);
-
-      runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+      return false;
+    } catch (AlreadyClosedException e) {
+      throw e;
     } catch (Throwable t) {
       log.warn("Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: ", t);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not register as the leader because creating the ephemeral registration node in ZooKeeper failed: " + errors, t);

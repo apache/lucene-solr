@@ -17,11 +17,9 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 
 import java.util.Map;
@@ -63,15 +61,15 @@ class ZkCollectionTerms implements AutoCloseable {
     return terms.get(shardId);
   }
 
-  public void register(String shardId, String coreNodeName) throws Exception {
+  public void register(String shardId, String name) throws Exception {
     if (closed) return;
-    getShard(shardId).registerTerm(coreNodeName);
+    getShard(shardId).registerTerm(name);
   }
 
-  public void remove(String shardId, CoreDescriptor coreDescriptor) throws KeeperException, InterruptedException {
+  public void remove(String shardId, String name) throws KeeperException, InterruptedException {
     ZkShardTerms zterms = getShardOrNull(shardId);
     if (zterms != null) {
-      if (zterms.removeTerm(coreDescriptor)) {
+      if (zterms.removeTermFor(name)) {
         IOUtils.closeQuietly(terms.remove(shardId));
       }
     }

@@ -208,7 +208,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           if (stat != null) {
             found = stat.getVersion();
           }
-          log.info("Bad version when trying to persist schema using {} found {} schema {}", ver, found, this);
+          if (log.isDebugEnabled()) log.debug("Bad version when trying to persist schema using {} found {} schema {}", ver, found, this);
 
           schemaChangedInZk = true;
         }
@@ -223,7 +223,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     if (schemaChangedInZk) {
       String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
-      log.info(msg);
+      if (log.isDebugEnabled()) log.debug(msg);
       throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
     }
 

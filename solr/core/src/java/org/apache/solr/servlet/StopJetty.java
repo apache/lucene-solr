@@ -48,7 +48,7 @@ public class StopJetty {
         out.flush();
         if (timeout > 0)
         {
-          System.err.printf("Waiting %,d seconds for jetty to stop%n",timeout);
+          System.err.printf("Waiting %,d seconds for Solr to stop%n",timeout);
           LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
           String response;
           while ((response = lin.readLine()) != null)

@@ -314,6 +314,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       // can make things quite slow
       System.setProperty("solr.disableDefaultJmxReporter", "true");
+
       System.setProperty("solr.skipCommitOnClose", "false");
 
       // can generate tons of URL garbage and can happen too often, defaults to false now anyway

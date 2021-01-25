@@ -162,10 +162,9 @@ public abstract class AbstractPluginLoader<T>
           }
 
           T plugin = create(loader, name, className, node, xpath);
-          if (log.isDebugEnabled()) {
-            log.debug("created {}: {}", ((name != null) ? name : ""), plugin.getClass().getName());
-          }
-          
+
+          if (log.isTraceEnabled()) log.trace("created {}: {}", ((name != null) ? name : ""), plugin.getClass().getName());
+
           // Either initialize now or wait till everything has been registered
           if( preRegister ) {
             info.add( new PluginInitInfo( plugin, node ) );

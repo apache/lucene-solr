@@ -137,8 +137,8 @@ started()
     [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
     [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
     [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
-    #local PID=$(cat "$2" 2>/dev/null) || return 1
-    #kill -0 "$PID" 2>/dev/null || return 1
+    local PID=$(cat "$2" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
     sleep .3
   done

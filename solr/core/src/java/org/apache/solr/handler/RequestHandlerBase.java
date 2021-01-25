@@ -303,7 +303,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    * This function is thread safe.
    */
   public static SolrRequestHandler getRequestHandler(String handlerName, PluginBag<SolrRequestHandler> reqHandlers) {
-    if (log.isDebugEnabled()) log.debug("get request handler {} from {}", reqHandlers);
+    if (log.isDebugEnabled()) log.debug("get request handler {} from {}", handlerName, reqHandlers);
     if (handlerName == null) return null;
     SolrRequestHandler handler = reqHandlers.get(handlerName);
     int idx = 0;

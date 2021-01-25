@@ -65,7 +65,7 @@ public abstract class LBSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // defaults
-  protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
+  protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(403, 503, 500));
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
   public static final ServerWrapper[] EMPTY_SERVER_WRAPPER = new ServerWrapper[0];
@@ -759,20 +759,8 @@ public abstract class LBSolrClient extends SolrClient {
   public void close() {
     this.closed = true;
 
-//    ScheduledThreadPoolExecutor aexec = aliveCheckExecutor;
-//    if (aexec != null) {
-//      aliveCheckExecutor.shutdown();
-//      try {
-//        boolean success = aliveCheckExecutor.awaitTermination(1, TimeUnit.SECONDS);
-//        if (!success) {
-//          aliveCheckExecutor.shutdownNow();
-//        }
-//      } catch (InterruptedException e) {
-//        ParWork.propagateInterrupt(e);
-//      }
-
     if (aliveCheckExecutor != null) {
-      aliveCheckExecutor.shutdown();
+      aliveCheckExecutor.shutdownNow();
     }
     assert ObjectReleaseTracker.release(this);
   }

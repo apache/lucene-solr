@@ -152,10 +152,6 @@
            <Set name="handlers">
              <Array type="org.eclipse.jetty.server.Handler">
                <Item>
-                 <New id="ShutdownHandler" class="org.apache.solr.servlet.SolrShutdownHandler">
-                 </New>
-               </Item>
-               <Item>
                  <New class="org.eclipse.jetty.server.handler.InetAccessHandler">
                    <Call name="include">
                      <Arg>
@@ -193,9 +189,9 @@
     <!-- extra options                                               -->
     <!-- =========================================================== -->
     <Set name="stopAtShutdown">true</Set>
-    <Set name="stopTimeout">500</Set>
+    <Set name="stopTimeout">5000</Set>
     <Set name="dumpAfterStart">false</Set>
-    <Set name="dumpBeforeStop">true</Set>
+    <Set name="dumpBeforeStop">false</Set>
 
     <Call name="addBean">
       <Arg>

@@ -278,8 +278,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   @SuppressWarnings("unchecked")
   public OverseerSolrResponse processMessage(ZkNodeProps message, String operation, ZkStateWriter zkWriter) throws InterruptedException {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
-    MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
-    MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
+    MDCLoggingContext.setCoreName(message.getStr(REPLICA_PROP));
     if (log.isDebugEnabled()) log.debug("OverseerCollectionMessageHandler.processMessage : {} , {}", operation, message);
 
     ClusterState clusterState = zkWriter.getClusterstate(false);

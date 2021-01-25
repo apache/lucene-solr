@@ -51,7 +51,7 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher, 
   @Override
   public boolean onTermChanged(ShardTerms terms) {
     if (coreContainer.isShutDown()) return false;
-    MDCLoggingContext.setCoreDescriptor(coreContainer, coreDescriptor);
+    MDCLoggingContext.setCoreName(coreDescriptor.getName());
 
     try {
       if (closed) {

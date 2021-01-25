@@ -184,6 +184,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     SolrClient client;
     if (http2SolrClientBuilder != null) {
       synchronized (this) {
+        // nocommit - should only be internal for us
         http2SolrClientBuilder
                 .withBaseUrl(server)
                 .markInternalRequest()

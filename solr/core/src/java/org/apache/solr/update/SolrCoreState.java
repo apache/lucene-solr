@@ -70,7 +70,7 @@ public abstract class SolrCoreState {
     boolean close = false;
     synchronized (this) {
       solrCoreStateRefCnt--;
-      log.info("SolrCoreState ref count {}", solrCoreStateRefCnt);
+      if (log.isDebugEnabled()) log.debug("SolrCoreState ref count {}", solrCoreStateRefCnt);
 
       if (solrCoreStateRefCnt == 0) {
         closed = true;
@@ -80,7 +80,7 @@ public abstract class SolrCoreState {
     
     if (close) {
       try {
-        log.debug("Closing SolrCoreState");
+        if (log.isDebugEnabled()) log.debug("Closing SolrCoreState");
         close(closer);
       } catch (Exception e) {
         log.error("Error closing SolrCoreState", e);

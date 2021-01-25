@@ -37,10 +37,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.MetricsHistoryHandler;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,12 +102,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     log.info("Check if collection exists in zookeeper {}", collection);
-
+    CountDownLatch latch = new CountDownLatch(1);
+    zkStateReader.getZkClient().getSolrZooKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection,  (rc, path, ctx) -> {
+      latch.countDown();
+    }, null);
+    latch.await(5, TimeUnit.SECONDS);
     if (!zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection " + collection);
     }
-
-
     checkNotColocatedWith(zkStateReader, collection);
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
@@ -179,6 +177,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
       @Override
       public AddReplicaCmd.Response call() {
+        results.add("collection", collection);
         if (finalShardHandler != null && finalShardRequestTracker != null) {
           try {
             finalShardRequestTracker.processResponses(results, finalShardHandler, false, null, okayExceptions);

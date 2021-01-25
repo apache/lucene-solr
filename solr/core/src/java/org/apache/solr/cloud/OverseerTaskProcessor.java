@@ -28,6 +28,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -44,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -258,7 +258,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     if (asyncId != null) {
       log.info("Add async task {} to running map", asyncId);
-      runningMap.put(asyncId, null);
+      runningMap.put(asyncId, null, CreateMode.PERSISTENT);
     }
   }
 
@@ -307,12 +307,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             if (log.isDebugEnabled()) {
               log.debug("Updated failed map for task with id:[{}]", asyncId);
             }
-            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+            failureMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response), CreateMode.PERSISTENT);
           } else {
             if (log.isDebugEnabled()) {
               log.debug("Updated completed map for task with zkid:[{}]", asyncId);
             }
-            completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+            completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response), CreateMode.PERSISTENT);
 
           }
         } else {

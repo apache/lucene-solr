@@ -173,6 +173,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -362,7 +363,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return;
     }
 
-    log.info("Set latest schema for core={} schema={}", getName(), replacementSchema);
+    if (log.isDebugEnabled()) log.debug("Set latest schema for core={} schema={}", getName(), replacementSchema);
 
     this.schema = replacementSchema;
 
@@ -900,8 +901,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.debug("{}Solr index directory '{}' doesn't exist. Creating new index...", logid, indexDir);
 
       try (SolrIndexWriter writer = SolrIndexWriter.buildIndexWriter(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(),
-              true, getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec)) {
-        writer.commit();
+              true, getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec, true)) {
       } catch (Exception e) {
         ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -1228,15 +1228,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       searcherReadyLatch.countDown();
 
       // nocommit - wait before publish active
-//      if (!getSolrConfig().useColdSearcher) {
-//        try {
-//          initSearcherFuture[0].get();
-//        } catch (InterruptedException e) {
-//          log.error("", e);
-//        } catch (ExecutionException e) {
-//          log.error("", e);
-//        }
-//      }
+      if (!getSolrConfig().useColdSearcher) {
+        try {
+          initSearcherFuture[0].get();
+        } catch (InterruptedException e) {
+          log.error("", e);
+        } catch (ExecutionException e) {
+          log.error("", e);
+        }
+      }
     }
 
 
@@ -1295,7 +1295,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     Future[] waitSearcher = new Future[1];
     try {
-      getSearcher(false, false, null, true);
+      getSearcher(false, false, waitSearcher, true);
     } finally {
       newReaderCreator = null;
       if (iwRef != null) {
@@ -1643,7 +1643,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //    }
 
     if (log.isDebugEnabled()) log.debug("open refcount {} {}", this, cnt);
-    MDCLoggingContext.setCore(this);
   }
 
   /**

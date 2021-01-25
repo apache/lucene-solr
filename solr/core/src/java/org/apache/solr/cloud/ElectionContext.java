@@ -16,12 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,18 +29,19 @@ public abstract class ElectionContext {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final String electionPath;
   protected final Replica leaderProps;
+  protected final CoreDescriptor cd;
   protected final String id;
   protected final String leaderPath;
   protected volatile String leaderSeqPath;
   protected volatile String watchedSeqPath;
 
 
-  public ElectionContext(final String id, final String electionPath, final String leaderPath, final Replica leaderProps) {
+  public ElectionContext(final String id, final String electionPath, final String leaderPath, final Replica leaderProps, CoreDescriptor cd) {
     this.id = id;
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
     this.leaderProps = leaderProps;
-
+    this.cd = cd;
   }
 
   protected void cancelElection() throws InterruptedException, KeeperException {

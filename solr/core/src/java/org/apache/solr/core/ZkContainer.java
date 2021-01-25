@@ -202,7 +202,7 @@ public class ZkContainer implements Closeable {
     log.info("Register in ZooKeeper core={} liveNodes={}", core.getName(), zkController.getZkStateReader().getLiveNodes());
     CoreDescriptor cd = core.getCoreDescriptor(); // save this here - the core may not have it later
     Runnable r = () -> {
-        MDCLoggingContext.setCore(core);
+        MDCLoggingContext.setCoreName(core.getName());
         try {
           try {
             if (testing_beforeRegisterInZk != null) {

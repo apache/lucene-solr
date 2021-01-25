@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
@@ -221,7 +222,7 @@ public class HdfsUpdateLog extends UpdateLog {
     // TODO: these startingVersions assume that we successfully recover from all
     // non-complete tlogs.
     try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(getNumRecordsToKeep());
+      startingVersions = Collections.unmodifiableList(startingUpdates.getVersions(getNumRecordsToKeep()));
 
       // populate recent deletes list (since we can't get that info from the
       // index)

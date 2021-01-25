@@ -48,6 +48,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentBase;
@@ -136,15 +137,18 @@ public class RealTimeGetComponent extends SearchComponent
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
-    
-    // This seems rather kludgey, may there is better way to indicate
-    // that replica can support handling version ranges
-    String val = params.get("checkCanHandleVersionRanges");
-    if(val != null) {
-      rb.rsp.add("canHandleVersionRanges", true);
+
+    String val = params.get("onlyIfLeader");
+    if (val != null && req.getCore().getCoreContainer().isZooKeeperAware()) {
+      LeaderElector leaderElector = req.getCore().getCoreContainer().getZkController().getLeaderElector(req.getCore().getName());
+      if (leaderElector == null || !leaderElector.isLeader()) {
+        throw new IllegalStateException("Not the valid leader");
+      }
+
       return;
     }
-    
+
+
     val = params.get("getFingerprint");
     if(val != null) {
       processGetFingeprint(rb);
@@ -356,7 +360,7 @@ public class RealTimeGetComponent extends SearchComponent
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
     SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.DOC);
-    log.info("getInputDocument called for id={}, returning {}", idStr, doc);
+    if (log.isDebugEnabled()) log.debug("getInputDocument called for id={}, returning {}", idStr, doc);
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
   }
@@ -970,7 +974,7 @@ public class RealTimeGetComponent extends SearchComponent
     // the mappings.
 
     for (int i=0; i<rb.slices.length; i++) {
-      log.info("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      if (log.isDebugEnabled()) log.debug("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[]{rb.shards[i]};
       }
@@ -1189,6 +1193,7 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+      if (log.isDebugEnabled()) log.debug("Get updates  versionsRequested={} params={}", versions.size(), params);
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);

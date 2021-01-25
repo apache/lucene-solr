@@ -231,7 +231,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                   "overseer"));
           Replica replica = new Replica(coreName, props.getProperties(), collection, shardId, zkStateReader);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
-              nodeName + "_" + coreName, shardId, collection, replica,
+              nodeName + "_" + coreName, shardId, collection, replica, null,
               zkStateReader.getZkClient());
           elector.setup(ctx);
           electionContext.put(coreName, ctx);

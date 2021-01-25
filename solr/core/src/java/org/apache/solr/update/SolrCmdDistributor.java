@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -120,7 +119,7 @@ public class SolrCmdDistributor implements Closeable {
 
     // this can happen in certain situations such as close
     if (isRetry) {
-      if (rspCode == 404 || rspCode == 403 || rspCode == 503) {
+      if (rspCode == 403 || rspCode == 503) {
         doRetry = true;
       }
 
@@ -281,9 +280,12 @@ public class SolrCmdDistributor implements Closeable {
 
         @Override
         public void onFailure(Throwable t, int code) {
-          log.error("Exception sending dist update {}", code, t);
+          log.error("Exception sending dist update {} {}", code, t);
           cancels.remove(cancelIndex);
 
+
+          // nocommit - we want to prevent any more from this request
+          // to go just to this node rather than stop the whole request
           if (code == 404) {
             cancelExeption = t;
             return;

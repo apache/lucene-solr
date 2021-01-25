@@ -88,6 +88,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -150,9 +151,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = false;
     final String alias = message.getStr(ALIAS, collectionName);
     if (log.isDebugEnabled()) log.debug("Create collection {}", collectionName);
-    if (clusterState.hasCollection(collectionName)) {
+    CountDownLatch latch = new CountDownLatch(1);
+    zkStateReader.getZkClient().getSolrZooKeeper().sync(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, (rc, path, ctx) -> {
+      latch.countDown();
+    }, null);
+    latch.await(5, TimeUnit.SECONDS);
+
+    if (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
+
     if (aliases.hasAlias(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection alias already exists: " + collectionName);
     }
@@ -255,7 +263,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps props = new ZkNodeProps();
         //props.getProperties().putAll(message.getProperties());
         ZkNodeProps addReplicaProps = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toString(), ZkStateReader.COLLECTION_PROP, collectionName, ZkStateReader.SHARD_ID_PROP,
-            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.NODE_NAME_PROP, nodeName, "node", nodeName,
+            replicaPosition.shard, ZkStateReader.CORE_NAME_PROP, coreName, ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString(), ZkStateReader.NODE_NAME_PROP, nodeName, "node", nodeName,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(), ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP), "shards", message.getStr("shards"),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         props.getProperties().putAll(addReplicaProps.getProperties());
@@ -300,7 +308,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.overseer.getZkStateWriter().enqueueUpdate(clusterState, null, false);
       ocmh.overseer.getZkStateWriter().writePendingUpdates();
 
-      if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas", coresToCreate.size());
+      if (log.isDebugEnabled()) log.debug("Sending create call for {} replicas for {}", coresToCreate.size(), collectionName);
       for (Map.Entry<String,ShardRequest> e : coresToCreate.entrySet()) {
         ShardRequest sreq = e.getValue();
         if (log.isDebugEnabled()) log.debug("Submit request to shard for for replica coreName={} total requests={} shards={}", e.getKey(), coresToCreate.size(),
@@ -393,7 +401,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                 }
                 for (Slice slice : slices) {
                   if (log.isTraceEnabled()) log.trace("slice {} leader={}", slice, slice.getLeader());
-                  if (slice.getLeader() == null || slice.getLeader().getState() != Replica.State.ACTIVE) {
+                  if (slice.getLeader() == null || (slice.getLeader() != null && slice.getLeader().getState() != Replica.State.ACTIVE)) {
                     if (log.isTraceEnabled()) log.trace("no leader found for slice {}", slice.getName());
                     return false;
                   }
@@ -402,10 +410,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
                 return true;
               });
             } catch (InterruptedException e) {
-              log.warn("Interrupted waiting for active replicas on collection creation {}", collectionName);
+              log.warn("Interrupted waiting for active replicas on collection creation collection={}", collectionName);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             } catch (TimeoutException e) {
-              log.error("Exception waiting for active replicas on collection creation {}", collectionName);
+              log.error("Timeout waiting for active replicas on collection creation collection={}", collectionName);
               throw new SolrException(ErrorCode.SERVER_ERROR, e);
             }
           }

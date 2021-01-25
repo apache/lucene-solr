@@ -49,7 +49,6 @@ import java.util.UUID;
 /**
  * Tests of deep paging using {@link CursorMark} and {@link CursorMarkParams#CURSOR_MARK_PARAM}.
  */
-// TODO bad seed? DCC82A1EDB76AEC 9637DF7A121FD190
 public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
@@ -63,9 +62,14 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     // we need DVs on point fields to compute stats & facetsew
+    System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
+    randomizeNumericTypesProperties();
+    System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "true");
+
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
   }
+
   @After
   public void cleanup() throws Exception {
     assertU(delQ("*:*"));

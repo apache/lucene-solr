@@ -98,7 +98,7 @@ public class ZkIndexSchemaReader implements OnReconnect {
    *
    */
   public void createSchemaWatcher() {
-    log.info("Creating ZooKeeper watch for the managed schema at {}", managedSchemaPath);
+    if (log.isDebugEnabled()) log.debug("Creating ZooKeeper watch for the managed schema at {}", managedSchemaPath);
     IOUtils.closeQuietly(schemaWatcher);
     schemaWatcher = new SchemaWatcher(this);
   }
@@ -132,6 +132,8 @@ public class ZkIndexSchemaReader implements OnReconnect {
     public void close() throws IOException {
       try {
         schemaReader.zkClient.getSolrZooKeeper().removeWatches(schemaReader.managedSchemaPath, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
       } catch (Exception e) {
         if (log.isDebugEnabled()) log.debug("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
@@ -162,10 +164,10 @@ public class ZkIndexSchemaReader implements OnReconnect {
 
       v = managedIndexSchemaFactory.getSchema().getSchemaZkVersion();
 
-      log.info("Retrieved schema version {} from Zookeeper, existing={} schema={}", existsVersion, v, managedIndexSchemaFactory.getSchema());
+      if (log.isDebugEnabled()) log.debug("Retrieved schema version {} from Zookeeper, existing={} schema={}", existsVersion, v, managedIndexSchemaFactory.getSchema());
 
       if (v >= existsVersion) {
-        log.info("Old schema version {} is >= found version {}", v, existsVersion);
+        if (log.isDebugEnabled()) log.debug("Old schema version {} is >= found version {}", v, existsVersion);
 
         return null;
       }

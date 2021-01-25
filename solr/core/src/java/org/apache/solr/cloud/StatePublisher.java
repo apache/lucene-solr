@@ -16,21 +16,23 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -41,13 +43,14 @@ public class StatePublisher implements Closeable {
 
   private final Map<String,String> stateCache = new ConcurrentHashMap<>(32, 0.75f, 4);
   private final ZkStateReader zkStateReader;
+  private final CoreContainer cc;
 
   public static class NoOpMessage extends ZkNodeProps {
   }
 
   public static final NoOpMessage TERMINATE_OP = new NoOpMessage();
 
-  private final BlockingArrayQueue<ZkNodeProps> workQueue = new BlockingArrayQueue<>(30, 10);
+  private final ArrayBlockingQueue<ZkNodeProps> workQueue = new ArrayBlockingQueue(300, true);
   private final ZkDistributedQueue overseerJobQueue;
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
@@ -67,7 +70,7 @@ public class StatePublisher implements Closeable {
         bulkMessage.getProperties().put("operation", "state");
         try {
           try {
-            message = workQueue.poll(5, TimeUnit.SECONDS);
+            message = workQueue.poll(15, TimeUnit.SECONDS);
           } catch (InterruptedException e) {
 
           }
@@ -106,8 +109,10 @@ public class StatePublisher implements Closeable {
     }
 
     private void bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) throws KeeperException, InterruptedException {
-      if (zkNodeProps.getStr("operation").equals("downnode")) {
-        bulkMessage.getProperties().put("downnode", zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
+      if (OverseerAction.get(zkNodeProps.getStr("operation")) == OverseerAction.DOWNNODE) {
+        bulkMessage.getProperties().put(OverseerAction.DOWNNODE.toLower(), zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
+      } else if (OverseerAction.get(zkNodeProps.getStr("operation")) == OverseerAction.RECOVERYNODE) {
+        bulkMessage.getProperties().put(OverseerAction.RECOVERYNODE.toLower(), zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
       } else {
         String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
         String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -123,17 +128,14 @@ public class StatePublisher implements Closeable {
     }
 
     private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
-      // do it in a separate thread so that we can be stopped by interrupt without screwing up the ZooKeeper client
-      ParWork.getRootSharedExecutor().invokeAll(Collections.singletonList(() -> {
-        overseerJobQueue.offer(Utils.toJSON(message));
-        return null;
-      }));
+      overseerJobQueue.offer(Utils.toJSON(message));
     }
   }
 
-  public StatePublisher(ZkDistributedQueue overseerJobQueue, ZkStateReader zkStateReader) {
+  public StatePublisher(ZkDistributedQueue overseerJobQueue, ZkStateReader zkStateReader, CoreContainer cc) {
     this.overseerJobQueue = overseerJobQueue;
     this.zkStateReader = zkStateReader;
+    this.cc = cc;
   }
 
   public void submitState(ZkNodeProps stateMessage) {
@@ -159,8 +161,21 @@ public class StatePublisher implements Closeable {
         }
 
         stateCache.put(core, state);
-      } else if (operation.equalsIgnoreCase("downnode")) {
-        // set all statecache entries for replica to DOWN
+      } else if (operation.equalsIgnoreCase(OverseerAction.DOWNNODE.toLower())) {
+        // set all statecache entries for replica to a state
+
+        Collection<String> coreNames = cc.getAllCoreNames();
+        for (String core : coreNames) {
+          stateCache.put(core, Replica.State.getShortState(Replica.State.DOWN));
+        }
+
+      } else if (operation.equalsIgnoreCase(OverseerAction.RECOVERYNODE.toLower())) {
+        // set all statecache entries for replica to a state
+
+        Collection<String> coreNames = cc.getAllCoreNames();
+        for (String core : coreNames) {
+          stateCache.put(core, Replica.State.getShortState(Replica.State.RECOVERING));
+        }
 
       } else {
         throw new IllegalArgumentException(stateMessage.toString());

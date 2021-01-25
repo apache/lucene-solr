@@ -83,6 +83,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -116,6 +117,9 @@ import java.util.concurrent.TimeoutException;
  * @lucene.experimental
  */
 public class Http2SolrClient extends SolrClient {
+
+  public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
@@ -218,9 +222,11 @@ public class Http2SolrClient extends SolrClient {
       ssl = true;
     }
     // nocommit - look at config again as well
-    int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", 6);
+    int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", PROC_COUNT);
+
+    minThreads = Math.min( builder.maxThreadPoolSize, minThreads);
     httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
-        this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 3000 : 5000,
+        this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 1000 : 1000,
         null, -1, null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
@@ -470,7 +476,7 @@ public class Http2SolrClient extends SolrClient {
 
             } catch (Exception e) {
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-                asyncListener.onFailure(e, 500);
+                asyncListener.onFailure(e, e instanceof  SolrException ? ((SolrException) e).code() : 500);
               }
             } finally {
               arrived = true;
@@ -890,15 +896,15 @@ public class Http2SolrClient extends SolrClient {
               log.warn("", e1);
             }
           }
-          throw new RemoteSolrException(serverBaseUrl, 527, msg, null);
+          throw new RemoteSolrException(serverBaseUrl, -1, msg, null);
         }
       }
 
       NamedList<Object> rsp;
-      int httpStatus = 527;
+      int httpStatus = -1;
 
       try {
-        httpStatus = listener.get(10, TimeUnit.SECONDS).getStatus();
+        httpStatus = response.getStatus();
       } catch (Exception e) {
         log.warn("", e);
       }
@@ -1101,7 +1107,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", 512);
+    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(7, PROC_COUNT * 2));
     public int maxRequestsQueuedPerDestination = 1600;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;

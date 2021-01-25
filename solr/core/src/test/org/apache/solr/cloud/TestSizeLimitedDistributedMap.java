@@ -22,6 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
 
@@ -41,7 +42,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     String path = getAndMakeInitialPath(zkClient);
     DistributedMap map = new SizeLimitedDistributedMap(zkClient, path, numResponsesToStore, (element) -> deletedItems.add(element));
     for (int i = 0; i < numResponsesToStore; i++) {
-      map.put("xyz_" + i, new byte[0]);
+      map.put("xyz_" + i, new byte[0], CreateMode.PERSISTENT);
       expectedKeys.add("xyz_" + i);
     }
 
@@ -49,7 +50,7 @@ public class TestSizeLimitedDistributedMap extends TestDistributedMap {
     assertTrue("Expected keys do not match", expectedKeys.containsAll(map.keys()));
     assertTrue("Expected keys do not match", map.keys().containsAll(expectedKeys));
     // add another to trigger cleanup
-    map.put("xyz_" + numResponsesToStore, new byte[0]);
+    map.put("xyz_" + numResponsesToStore, new byte[0], CreateMode.PERSISTENT);
     expectedKeys.add("xyz_" + numResponsesToStore);
     assertEquals("Distributed queue was not cleaned up",
             numResponsesToStore - (numResponsesToStore / 10) + 1, map.size());

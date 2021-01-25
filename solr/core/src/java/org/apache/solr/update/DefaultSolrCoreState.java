@@ -35,6 +35,7 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
@@ -272,7 +273,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
     SolrIndexWriter iw;
     try {
       iw = SolrIndexWriter.buildIndexWriter(core, name, core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getLatestSchema(),
-              core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec());
+              core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), false);
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -318,10 +319,14 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
     log.info("Do recovery for core {}", core.getName());
     CoreContainer corecontainer = core.getCoreContainer();
-
+    if (prepForClose || closed || corecontainer.isShutDown()) {
+      log.warn("Skipping recovery because Solr is shutdown");
+      return;
+    }
     Runnable recoveryTask = () -> {
       CoreDescriptor coreDescriptor = core.getCoreDescriptor();
-      MDCLoggingContext.setCoreDescriptor(corecontainer, coreDescriptor);
+      MDCLoggingContext.setCoreName(core.getName());
+      MDCLoggingContext.setNode(corecontainer.getZkController().getNodeName());
       try {
         if (SKIP_AUTO_RECOVERY) {
           log.warn("Skipping recovery according to sys prop solrcloud.skip.autorecovery");
@@ -432,7 +437,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public void cancelRecovery(boolean wait, boolean prepForClose) {
-    log.info("Cancel recovery");
+    if (log.isDebugEnabled()) log.debug("Cancel recovery");
     recoverying = false;
     
     if (prepForClose) {

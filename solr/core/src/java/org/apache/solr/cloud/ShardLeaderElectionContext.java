@@ -38,7 +38,6 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +58,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   public ShardLeaderElectionContext(LeaderElector leaderElector,
                                     final String shardId, final String collection,
-                                    final String coreNodeName, Replica props, ZkController zkController, CoreContainer cc) {
+                                    final String coreNodeName, Replica props, ZkController zkController, CoreContainer cc, CoreDescriptor cd) {
     super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
-            collection, shardId), props,
+            collection, shardId), props, cd,
             zkController.getZkClient());
     this.cc = cc;
     this.syncStrategy = new SyncStrategy(cc);
@@ -79,7 +78,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc, cd);
   }
 
 
@@ -103,19 +102,18 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         log.error("No SolrCore found, cannot become leader {}", coreName);
         throw new AlreadyClosedException("No SolrCore found, cannot become leader " + coreName);
       }
-      if (core.isClosing() || core.getCoreContainer().isShutDown()) {
-        log.info("We are closed, will not become leader");
-        closed = true;
-        cancelElection();
-        return false;
-      }
+//      if (core.isClosing() || core.getCoreContainer().isShutDown()) {
+//        log.info("We are closed, will not become leader");
+//        closed = true;
+//        cancelElection();
+//        return false;
+//      }
       try {
 
-        core.getSolrCoreState().cancelRecovery(true, false);
+        core.getSolrCoreState().cancelRecovery(false, false);
 
         ActionThrottle lt;
 
-        MDCLoggingContext.setCore(core);
         lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
 
         lt.minimumWaitBetweenActions();
@@ -138,7 +136,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         replicaType = cloudCd.getReplicaType();
         // should I be leader?
 
-        ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
+        if (log.isDebugEnabled()) log.debug("Check zkShardTerms");
+        ZkShardTerms zkShardTerms = zkController.getShardTermsOrNull(collection, shardId);
         try {
           // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
           if (zkShardTerms != null && zkShardTerms.skipSendingUpdatesTo(coreName)) {
@@ -152,7 +151,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.error("Exception while looking at refreshing shard terms", e);
         }
         
-        if (zkShardTerms.registered(coreName) && !zkShardTerms.canBecomeLeader(coreName)) {
+        if (zkShardTerms != null && zkShardTerms.registered(coreName) && !zkShardTerms.canBecomeLeader(coreName)) {
           if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
             rejoinLeaderElection(core);
             return false;
@@ -166,9 +165,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         PeerSync.PeerSyncResult result = null;
         boolean success = false;
-        if (core.getCoreContainer().isShutDown()) {
-          return false;
-        }
+//        if (core.getCoreContainer().isShutDown()) {
+//          return false;
+//        }
         result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
         log.info("Sync strategy sync result {}", result);
         success = result.isSuccess();
@@ -242,11 +241,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // in case of leaderVoteWait timeout, a replica with lower term can win the election
         if (setTermToMax) {
           log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) " + "without being up-to-date with the previous leader", coreName);
-          zkController.createCollectionTerms(collection);
-          zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreName);
+          try {
+            zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreName);
+          } catch (Exception e) {
+            log.error("Exception trying to set shard terms equal to leader", e);
+          }
         }
 
-        super.runLeaderProcess(context, weAreReplacement, 0);
+        boolean leaderSuccess = super.runLeaderProcess(context, weAreReplacement, 0);
+        if (!leaderSuccess) {
+          return false;
+        }
 
         ZkNodeProps zkNodes = ZkNodeProps
             .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
@@ -264,21 +269,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);
-        // we could not register ourselves as leader - try and rejoin election
-
-        rejoinLeaderElection(core);
-        return false;
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
-
 
     } catch (AlreadyClosedException e) {
       log.info("Already closed, won't become leader");
-      closed = true;
-      cancelElection();
       throw e;
-    } finally {
-      MDCLoggingContext.clear();
     }
+
     return true;
   }
 

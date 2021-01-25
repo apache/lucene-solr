@@ -59,7 +59,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     String path = getAndMakeInitialPath(zkClient);
     DistributedMap map = createMap(zkClient, path);
     assertFalse(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
-    map.put("foo", new byte[0]);
+    map.put("foo", new byte[0], CreateMode.PERSISTENT);
     assertTrue(zkClient.exists(path + "/" + DistributedMap.PREFIX + "foo"));
   }
 
@@ -106,9 +106,9 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     assertEquals(0, map.size());
     map.remove("bar");
     assertEquals(0, map.size());
-    map.put("foo", new byte[0]);
+    map.put("foo", new byte[0], CreateMode.PERSISTENT);
     assertEquals(1, map.size());
-    map.put("foo2", new byte[0]);
+    map.put("foo2", new byte[0], CreateMode.PERSISTENT);
     assertEquals(2, map.size());
     map.remove("foo");
     assertEquals(1, map.size());
@@ -143,11 +143,11 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     String path = getAndMakeInitialPath(zkClient);
     DistributedMap map = createMap(zkClient, path);
     assertEquals(0, map.keys().size());
-    map.put("foo", new byte[0]);
+    map.put("foo", new byte[0], CreateMode.PERSISTENT);
     assertTrue(map.keys().contains("foo"));
     assertEquals(1, map.keys().size());
 
-    map.put("bar", new byte[0]);
+    map.put("bar", new byte[0], CreateMode.PERSISTENT);
     assertTrue(map.keys().contains("bar"));
     assertTrue(map.keys().contains("foo"));
     assertEquals(2, map.keys().size());
@@ -164,8 +164,8 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
     DistributedMap map = createMap(zkClient, path);
     map.clear();
     assertEquals(0, map.size());
-    map.put("foo", new byte[0]);
-    map.put("bar", new byte[0]);
+    map.put("foo", new byte[0], CreateMode.PERSISTENT);
+    map.put("bar", new byte[0], CreateMode.PERSISTENT);
     assertEquals(2, map.size());
     map.clear();
     assertEquals(0, map.size());

@@ -412,13 +412,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             + event.getWatchedEvent().getState() + " type "
             + event.getWatchedEvent().getType() + "]");
       } else {
-        // nocommit - look into we may still need this
-        // we have to assume success - it was too quick for us to catch the response
+        // TODO: we could do a check based on the request to see how it turned out
 
-        log.error("We did not find the response, there was also no timeout and we did not get a watched event ...");
+        log.error("The Overseer stopped and we don't know if this was a success ...");
 
         NamedList<Object> resp = new NamedList<>();
-        resp.add("success", "true");
+        resp.add("success", "unknown");
         return new OverseerSolrResponse(resp);
       }
     }

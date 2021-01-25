@@ -30,6 +30,7 @@ import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.ParWorkExecutor;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrThread;
@@ -45,15 +46,16 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +73,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 
@@ -158,7 +161,9 @@ public class Overseer implements SolrCloseable {
   private volatile boolean initedHttpClient = false;
   private volatile QueueWatcher queueWatcher;
   private volatile WorkQueueWatcher.CollectionWorkQueueWatcher collectionQueueWatcher;
-  private volatile ExecutorService taskExecutor;
+  private volatile ParWorkExecutor taskExecutor;
+
+  private volatile ParWorkExecutor zkWriterExecutor;
 
   public boolean isDone() {
     return closeAndDone;
@@ -166,6 +171,10 @@ public class Overseer implements SolrCloseable {
 
   public ExecutorService getTaskExecutor() {
     return taskExecutor;
+  }
+
+  public ExecutorService getTaskZkWriterExecutor() {
+    return zkWriterExecutor;
   }
 
   private static class StringBiConsumer implements BiConsumer<String, Object> {
@@ -277,22 +286,22 @@ public class Overseer implements SolrCloseable {
 
   //  doClose();
 
-    MDCLoggingContext.setNode(zkController == null ?
-        null :
-        zkController.getNodeName());
-
     this.id = id;
 //
 //     stateManagmentExecutor = ParWork.getParExecutorService("stateManagmentExecutor",
 //        1, 1, 3000, new SynchronousQueue());
-     taskExecutor = ParWork.getParExecutorService("overseerTaskExecutor",
-        3, 32, 1000, new SynchronousQueue());
+     taskExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerTaskExecutor",
+         4, SysStats.PROC_COUNT, 1000, new LinkedBlockingQueue<>(1024));
+    for (int i = 0; i < 4; i++) {
+      taskExecutor.submit(() -> {});
+    }
 
-//    try {
-//      if (context != null) context.close();
-//    } catch (Exception e) {
-//      log.error("", e);
-//    }
+    zkWriterExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerZkWriterExecutor",
+        4, SysStats.PROC_COUNT, 1000, new LinkedBlockingQueue<>(1024));
+    for (int i = 0; i < 4; i++) {
+      zkWriterExecutor.submit(() -> {});
+    }
+
     if (overseerOnlyClient == null && !closeAndDone && !initedHttpClient) {
       overseerOnlyClient = new Http2SolrClient.Builder().idleTimeout(60000).connectionTimeout(5000).markInternalRequest().build();
       overseerOnlyClient.enableCloseLock();
@@ -336,7 +345,7 @@ public class Overseer implements SolrCloseable {
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
 
-    this.zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), stats);
+    this.zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), stats, this);
     //systemCollectionCompatCheck(new StringBiConsumer());
 
     queueWatcher = new WorkQueueWatcher(getCoreContainer());
@@ -489,22 +498,9 @@ public class Overseer implements SolrCloseable {
 
     boolean cd = closeAndDone;
 
-    if (cd) {
-      if (taskExecutor != null) {
-        taskExecutor.shutdown();
-      }
-    }
-
     OUR_JVM_OVERSEER = null;
     closed = true;
 
-    if (queueWatcher != null) {
-      queueWatcher.close();
-    }
-
-    if (collectionQueueWatcher != null) {
-      collectionQueueWatcher.close();
-    }
 
     if (!cd) {
       boolean retry;
@@ -519,8 +515,23 @@ public class Overseer implements SolrCloseable {
     }
 
     if (cd) {
-      if (taskExecutor != null && !taskExecutor.isShutdown()) {
+
+      if (taskExecutor != null) {
         taskExecutor.shutdown();
+        try {
+          taskExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+
+        }
+      }
+
+      if (zkWriterExecutor != null) {
+        zkWriterExecutor.shutdown();
+        try {
+          zkWriterExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+
+        }
       }
 
       if (overseerOnlyClient != null) {
@@ -537,8 +548,12 @@ public class Overseer implements SolrCloseable {
         overseerOnlyClient = null;
       }
 
-      if (taskExecutor != null) {
-        taskExecutor.shutdownNow();
+      if (queueWatcher != null) {
+        queueWatcher.close();
+      }
+
+      if (collectionQueueWatcher != null) {
+        collectionQueueWatcher.close();
       }
 
     }
@@ -754,8 +769,10 @@ public class Overseer implements SolrCloseable {
         if (log.isDebugEnabled()) log.debug("set watch on Overseer work queue {}", path);
 
         List<String> children = zkController.getZkClient().getChildren(path, this, true);
-        Collections.sort(children);
-        return children;
+
+        List<String> items = new ArrayList<>(children);
+        Collections.sort(items);
+        return items;
       } catch (KeeperException.SessionExpiredException e) {
         log.warn("ZooKeeper session expired");
         overseer.close();
@@ -795,6 +812,8 @@ public class Overseer implements SolrCloseable {
           if (items.size() > 0) {
             processQueueItems(items, false);
           }
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           log.error("Exception during overseer queue queue processing", e);
         }
@@ -813,6 +832,8 @@ public class Overseer implements SolrCloseable {
         this.closed = true;
         try {
           zkController.getZkClient().getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
+        } catch (KeeperException.NoWatcherException e) {
+
         } catch (Exception e) {
           log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
         }
@@ -847,14 +868,18 @@ public class Overseer implements SolrCloseable {
           final ZkNodeProps message = ZkNodeProps.load(item);
           try {
             boolean success = overseer.processQueueItem(message);
-          } catch (InterruptedException e) {
-            log.error("Overseer state update queue processing interrupted");
-            return;
+          } catch (Exception e) {
+            log.error("Overseer state update queue processing failed", e);
           }
         }
 
         overseer.writePendingUpdates();
-        zkController.getZkClient().delete(fullPaths, true);
+
+        try {
+          zkController.getZkClient().delete(fullPaths, true);
+        } catch (Exception e) {
+          log.error("Failed deleting processed items", e);
+        }
 
 
       } finally {
@@ -905,7 +930,24 @@ public class Overseer implements SolrCloseable {
 
           Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
 
-          overseer.getTaskExecutor().submit(() -> {
+          try {
+            zkController.getZkClient().delete(fullPaths, true);
+          } catch (Exception e) {
+            log.warn("Delete items failed {}", e.getMessage());
+          }
+
+          try {
+            log.info("items in queue {} after delete {} {}", path, zkController.getZkClient().listZnode(path, false));
+          } catch (KeeperException e) {
+            log.warn("Check items failed {}", e.getMessage());
+          } catch (InterruptedException e) {
+            log.warn("Check items failed {}", e.getMessage());
+          } catch (SolrServerException e) {
+            log.warn("Check items failed {}", e.getMessage());
+          }
+
+          overseer.getTaskZkWriterExecutor().submit(() -> {
+            MDCLoggingContext.setNode(zkController.getNodeName());
             try {
               runAsync(items, fullPaths, data, onStart);
             } catch (Exception e) {
@@ -925,20 +967,19 @@ public class Overseer implements SolrCloseable {
           throw new AlreadyClosedException();
         }
 
-        try (ParWork work = new ParWork(this, false, true)) {
+        try (ParWork work = new ParWork(this, false, false)) {
           for (Map.Entry<String,byte[]> entry : data.entrySet()) {
             work.collect("", ()->{
               try {
                 byte[] item = entry.getValue();
                 if (item == null) {
                   log.error("empty item {}", entry.getKey());
-                  zkController.getZkClient().delete(entry.getKey(), -1);
                   return;
                 }
+
                 String responsePath = Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + OverseerTaskQueue.RESPONSE_PREFIX + entry.getKey().substring(entry.getKey().lastIndexOf("-") + 1);
 
                 final ZkNodeProps message = ZkNodeProps.load(item);
-                zkController.getZkClient().delete(entry.getKey(), -1);
                 try {
                   String operation = message.getStr(Overseer.QUEUE_OPERATION);
 
@@ -979,13 +1020,6 @@ public class Overseer implements SolrCloseable {
                     response = collMessageHandler.processMessage(message, operation, zkWriter);
                   }
 
-                  //          try {
-                  //            overseer.writePendingUpdates();
-                  //          } catch (InterruptedException e) {
-                  //            log.error("Overseer state update queue processing interrupted");
-                  //            return;
-                  //          }
-
                   if (log.isDebugEnabled()) log.debug("response {}", response);
 
                   if (response == null) {
@@ -1001,7 +1035,7 @@ public class Overseer implements SolrCloseable {
                     if (log.isDebugEnabled()) {
                       log.debug("Updated completed map for task with zkid:[{}]", asyncId);
                     }
-                    completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response));
+                    completedMap.put(asyncId, OverseerSolrResponseSerializer.serialize(response), CreateMode.PERSISTENT);
 
                   } else {
                     byte[] sdata = OverseerSolrResponseSerializer.serialize(response);
@@ -1009,9 +1043,8 @@ public class Overseer implements SolrCloseable {
                     log.info("Completed task:[{}] {} {}", message, response.getResponse(), responsePath);
                   }
 
-                } catch (InterruptedException e) {
-                  log.error("Overseer state update queue processing interrupted");
-                  return;
+                } catch (Exception e) {
+                  log.error("Exception processing entry");
                 }
 
               } catch (Exception e) {

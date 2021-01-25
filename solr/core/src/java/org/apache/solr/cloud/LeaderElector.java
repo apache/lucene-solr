@@ -128,6 +128,10 @@ public class LeaderElector implements Closeable {
         return false;
       }
 
+      if (state == LEADER || state == POT_LEADER) {
+        return false;
+      }
+
       executor.submit(() -> {
         context.checkIfIamLeaderFired();
       });
@@ -155,7 +159,7 @@ public class LeaderElector implements Closeable {
         // we couldn't set our watch for some other reason, retry
         log.error("Failed on election getchildren call {} {}", e.getClass().getName(), e.getMessage());
         state = OUT_OF_ELECTION;
-        return true;
+        return false;
       }
 
       try {
@@ -184,11 +188,11 @@ public class LeaderElector implements Closeable {
             oldWatcher.close();
           }
 
-          if ((zkController != null && zkController.getCoreContainer().isShutDown())) {
-            if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
-            state = OUT_OF_ELECTION;
-            return false;
-          }
+//          if ((zkController != null && zkController.getCoreContainer().isShutDown())) {
+//            if (log.isDebugEnabled()) log.debug("Elector is closed, will not try and run leader processes");
+//            state = OUT_OF_ELECTION;
+//            return false;
+//          }
 
           state = POT_LEADER;
           runIamLeaderProcess(context, replacement);
@@ -237,8 +241,10 @@ public class LeaderElector implements Closeable {
             log.warn("Failed setting election watch, retrying {} {}", e.getClass().getName(), e.getMessage());
             state = OUT_OF_ELECTION;
             return true;
-          } catch (Exception e) {
+          } catch (AlreadyClosedException e) {
             state = OUT_OF_ELECTION;
+            return false;
+          } catch (Exception e) {
             // we couldn't set our watch for some other reason, retry
             log.error("Failed setting election watch {} {}", e.getClass().getName(), e.getMessage());
             state = OUT_OF_ELECTION;
@@ -252,10 +258,11 @@ public class LeaderElector implements Closeable {
         return true;
       } catch (AlreadyClosedException e) {
         state = OUT_OF_ELECTION;
-        return true;
+        return false;
       } catch (Exception e) {
+        log.error("Exception", e);
         state = OUT_OF_ELECTION;
-        return true;
+        return false;
       }
 
     } finally {
@@ -267,19 +274,24 @@ public class LeaderElector implements Closeable {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
-    if (state == CLOSED) {
-      throw new AlreadyClosedException();
-    }
-    if (state == LEADER) {
-      throw new IllegalStateException("Already in leader state");
-    }
-
-    boolean success = context.runLeaderProcess(context, weAreReplacement, 0);
-
-    if (success) {
-      state = LEADER;
-    } else {
-      state = OUT_OF_ELECTION;
+//    if (state == CLOSED) {
+//      throw new AlreadyClosedException();
+//    }
+//    if (state == LEADER) {
+//      throw new IllegalStateException("Already in leader state");
+//    }
+    boolean success = false;
+    try {
+      success = context.runLeaderProcess(context, weAreReplacement, 0);
+      if (success) {
+        state = LEADER;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed becoming leader");
+      }
+    } finally {
+      if (!success) {
+        state = OUT_OF_ELECTION;
+      }
     }
   }
 
@@ -325,11 +337,15 @@ public class LeaderElector implements Closeable {
   public void joinElection(boolean replacement,boolean joinAtHead) {
     if (!isClosed && !zkController.getCoreContainer().isShutDown() && !zkController.isDcCalled()) {
       joinFuture = executor.submit(() -> {
+        MDCLoggingContext.setCoreName(context.leaderProps.getName());
+        MDCLoggingContext.setNode(zkController.getNodeName());
         try {
           isCancelled = false;
           doJoinElection(context, replacement, joinAtHead);
         } catch (Exception e) {
           log.error("Exception trying to join election", e);
+        } finally {
+          MDCLoggingContext.clear();
         }
       });
     }
@@ -346,12 +362,13 @@ public class LeaderElector implements Closeable {
   public synchronized void doJoinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
     //if (checkClosed(context)) return false;
     if (shouldRejectJoins() || state == CLOSED) {
-      log.info("elector is closed, won't join election");
+      log.info("Won't join election {}", state);
       throw new AlreadyClosedException();
     }
 
-    if (state != OUT_OF_ELECTION) {
-      throw new IllegalStateException("Expected " + OUT_OF_ELECTION + " but got " + state);
+    if (state == LEADER) {
+      log.error("Wrong state",new IllegalStateException("Got " + state));
+      throw new IllegalStateException("Wrong state",new IllegalStateException("Got " + state));
     }
     state = JOIN;
 
@@ -421,12 +438,13 @@ public class LeaderElector implements Closeable {
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
         log.info("No node found during election {} " + e.getMessage(), e.getPath());
-        if (tries++ > 5) {
-          log.error("No node found during election {} " + e.getMessage(), e.getPath());
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        }
-        cont = true;
+//        if (tries++ > 5) {
+//          log.error("No node found during election {} " + e.getMessage(), e.getPath());
+//          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+//              "", e);
+//        }
+//        cont = true;
+        throw new AlreadyClosedException();
       }
     }
 
@@ -512,6 +530,10 @@ public class LeaderElector implements Closeable {
     return isClosed;
   }
 
+  public String getState() {
+    return state;
+  }
+
   private class ElectionWatcher implements Watcher, Closeable {
     final String myNode, watchedNode;
     final ElectionContext context;
@@ -570,6 +592,8 @@ public class LeaderElector implements Closeable {
       SolrZooKeeper zk = zkClient.getSolrZooKeeper();
       try {
         zk.removeWatches(watchedNode, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }

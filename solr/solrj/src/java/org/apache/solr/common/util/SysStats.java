@@ -19,8 +19,8 @@ public class SysStats extends Thread {
     private static final Logger log = LoggerFactory
         .getLogger(MethodHandles.lookup().lookupClass());
 
-    public static final double OUR_LOAD_HIGH = 1.0;
-    public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(5000, TimeUnit.MILLISECONDS);
+    public static final double OUR_LOAD_HIGH = 3.0;
+    public static final long REFRESH_INTERVAL = TimeUnit.NANOSECONDS.convert(2500, TimeUnit.MILLISECONDS);
     public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
     private final long refreshIntervalMs;
 
@@ -89,12 +89,12 @@ public class SysStats extends Thread {
                     threadTime.setLast(threadBean.getThreadCpuTime(threadTime.getId()));
                 }
 
-                double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
-                if (load < 0) {
-                    log.warn("SystemLoadAverage not supported on this JVM");
-                } else {
-                    sysLoad = load / (double) PROC_COUNT;
-                }
+//                double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+//                if (load < 0) {
+//                    log.warn("SystemLoadAverage not supported on this JVM");
+//                } else {
+//                    sysLoad = load / (double) PROC_COUNT;
+//                }
 
             } else {
                 double load =  ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
@@ -162,6 +162,13 @@ public class SysStats extends Thread {
     }
 
     public double getSystemLoad() {
+        double sysLoad = -1;
+        double load = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
+        if (load < 0) {
+            log.warn("SystemLoadAverage not supported on this JVM");
+        } else {
+            sysLoad = load / (double) PROC_COUNT;
+        }
         return sysLoad;
     }
 

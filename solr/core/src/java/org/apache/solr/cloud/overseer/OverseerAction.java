@@ -34,14 +34,15 @@ public enum OverseerAction {
   UPDATESHARDSTATE,
   STATE,
   QUIT,
-  DOWNNODE;
+  DOWNNODE,
+  RECOVERYNODE;
 
   public static OverseerAction get(String p) {
     if (p != null) {
       try {
         return OverseerAction.valueOf(p.toUpperCase(Locale.ROOT));
       } catch (Exception ex) {
-        ParWork.propagateInterrupt(ex);
+
       }
     }
     return null;

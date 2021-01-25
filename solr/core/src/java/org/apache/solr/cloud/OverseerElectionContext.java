@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -37,7 +38,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private final Overseer overseer;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica("overseer:" + overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer), null, null, overseer.getZkStateReader()), zkClient);
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica("overseer:" + overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer), null, null, overseer.getZkStateReader()), null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
   }
@@ -56,7 +57,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 
     if (overseer.isDone()) {
       log.info("Already closed, bailing ...");
-      return false;
+      throw new AlreadyClosedException();
     }
 
     // TODO: the idea here is that we could clear the Overseer queue
@@ -76,12 +77,14 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 //      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
 //    }
 
-
-    super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+    boolean success = super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+    if (!success) {
+      return false;
+    }
 
     if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShudownCalled()
         && !overseer.isDone()) {
-      log.info("Starting overseer after winnning Overseer election {}", id);
+      log.info("Starting overseer after winning Overseer election {}", id);
       overseer.start(id, context);
     } else {
       log.info("Will not start Overseer because we are closed");

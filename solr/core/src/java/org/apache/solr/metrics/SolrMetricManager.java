@@ -1060,7 +1060,7 @@ public class SolrMetricManager {
         new Object[]{this, registry}
     );
     // prepare MDC for plugins that want to use its properties
-    MDCLoggingContext.setCoreDescriptor(coreContainer, solrCore == null ? null : solrCore.getCoreDescriptor());
+    MDCLoggingContext.setCoreName(solrCore == null ? null : solrCore.getName());
     if (tag != null) {
       // add instance tag to MDC
       MDC.put("tag", "t:" + tag);

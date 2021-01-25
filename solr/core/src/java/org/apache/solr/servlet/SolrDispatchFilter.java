@@ -79,6 +79,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrPaths;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -95,6 +96,7 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import static org.apache.solr.security.AuditEvent.EventType;
 
@@ -403,7 +405,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    close();
+    if (cores.isZooKeeperAware())  {
+      MDCLoggingContext.setNode(cores.getZkController().getNodeName());
+    }
+    try {
+      close();
+    } finally {
+      MDCLoggingContext.clear();
+    }
   }
   
   public void close() {

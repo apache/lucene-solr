@@ -829,6 +829,18 @@ function run_package() {
   #exit $?
 }
 
+function running()
+{
+  if [ -f "$1" ]
+  then
+    local PID=$(cat "$1" 2>/dev/null) || return 1
+    kill -0 "$PID" 2>/dev/null
+    return
+  fi
+  rm -f "$1"
+  return 1
+}
+
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
 # (will attempt to jstack before killing)
@@ -845,8 +857,31 @@ function stop_solr() {
 
   echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
   "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY" org.apache.solr.servlet.StopJetty || true
+
+  if [ ! -f "$SOLR_PID_DIR/$JETTY_PID" ] ; then
+    echo "ERROR: no pid found at $SOLR_PID_DIR/$JETTY_PID"
+    exit 1
+  fi
   PID=$(cat $SOLR_PID_DIR/$JETTY_PID)
-  rm $SOLR_PID_DIR/$JETTY_PID
+
+  if [ -z "$PID" ] ; then
+    echo "ERROR: no pid id found in $PID"
+    exit 1
+  fi
+
+  TIMEOUT=30
+  while running $PID; do
+    if (( TIMEOUT-- == 0 )); then
+       kill -KILL "$PID" 2>/dev/null
+    fi
+
+    usleep 300000
+  done
+
+  rm -f "$SOLR_PID_DIR/$JETTY_PID"
+  rm -f "${SOLR_HOME}/jetty.state"
+  usleep 300000
+  echo OK
 } # end stop_solr
 
 if [ $# -eq 1 ]; then
@@ -1904,7 +1939,7 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
                  '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
                  '-XX:+PrintGCApplicationStoppedTime')
   else
-    GC_LOG_OPTS=('-Xlog:gc*')
+    GC_LOG_OPTS=('')
   fi
 else
   GC_LOG_OPTS=($GC_LOG_OPTS)

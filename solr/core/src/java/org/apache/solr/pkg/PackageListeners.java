@@ -61,7 +61,7 @@ public class PackageListeners {
   }
 
   void packagesUpdated(List<PackageLoader.Package> pkgs) {
-    MDCLoggingContext.setCore(core);
+    MDCLoggingContext.setCoreName(core.getName());
     try {
       for (PackageLoader.Package pkgInfo : pkgs) {
         invokeListeners(pkgInfo);
