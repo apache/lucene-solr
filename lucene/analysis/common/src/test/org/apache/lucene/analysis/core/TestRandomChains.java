@@ -428,13 +428,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
               Pattern[].class,
               random -> new Pattern[] {Pattern.compile("([a-z]+)"), Pattern.compile("([0-9]+)")});
           put(
-              PatternTypingFilter.PatternTypingRule[].class,
-              random ->
-                  new PatternTypingFilter.PatternTypingRule[] {
-                    new PatternTypingFilter.PatternTypingRule(
-                        Pattern.compile("^(\\d+)-(\\d+)$"), 6, "$1_hnum_$2")
-                  });
-          put(
               PayloadEncoder.class,
               random ->
                   new IdentityEncoder()); // the other encoders will throw exceptions if tokens
