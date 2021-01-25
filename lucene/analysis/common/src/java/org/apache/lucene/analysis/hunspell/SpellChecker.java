@@ -44,6 +44,14 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    if (word.endsWith(".")) {
+      return removeTrailingDots(word);
+    }
+
+    return spellClean(word);
+  }
+
+  private boolean spellClean(String word) {
     if (isNumber(word)) {
       return true;
     }
@@ -65,6 +73,14 @@ public class SpellChecker {
     }
 
     return false;
+  }
+
+  private boolean removeTrailingDots(String word) {
+    int length = word.length() - 1;
+    while (length > 0 && word.charAt(length - 1) == '.') {
+      length--;
+    }
+    return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
   }
 
   private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
