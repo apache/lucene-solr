@@ -85,6 +85,7 @@ import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.path.PathHierarchyTokenizer;
 import org.apache.lucene.analysis.path.ReversePathHierarchyTokenizer;
+import org.apache.lucene.analysis.pattern.PatternTypingFilter;
 import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.analysis.shingle.FixedShingleFilter;
@@ -616,6 +617,23 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                 return Operations.determinize(
                     new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton(),
                     Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+              });
+          put(
+              PatternTypingFilter.PatternTypingRule[].class,
+              random -> {
+                int numRules = TestUtil.nextInt(random, 1, 3);
+                PatternTypingFilter.PatternTypingRule[] patternTypingRules =
+                    new PatternTypingFilter.PatternTypingRule[numRules];
+                for (int i = 0; i < patternTypingRules.length; i++) {
+                  String s = TestUtil.randomSimpleString(random, 1, 2);
+                  // random regex with one group
+                  String regex = s + "(.*)";
+                  // pattern rule with a template that accepts one group.
+                  patternTypingRules[i] =
+                      new PatternTypingFilter.PatternTypingRule(
+                          Pattern.compile(regex), TestUtil.nextInt(random, 1, 8), s + "_$1");
+                }
+                return patternTypingRules;
               });
         }
       };
