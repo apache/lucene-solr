@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15103")
 @LuceneTestCase.Slow
 @LogLevel("org.apache.solr.handler.admin=DEBUG")
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15103")
 public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
