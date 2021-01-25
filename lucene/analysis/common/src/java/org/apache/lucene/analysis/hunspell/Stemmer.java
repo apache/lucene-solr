@@ -26,7 +26,6 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.Outputs;
 
 /**
  * Stemmer uses the affix rules declared in the Dictionary to generate one or more stems for a word.
@@ -305,11 +304,10 @@ final class Stemmer {
 
     if (doPrefix && dictionary.prefixes != null) {
       FST<IntsRef> fst = dictionary.prefixes;
-      Outputs<IntsRef> outputs = fst.outputs;
       FST.BytesReader bytesReader = prefixReaders[recursionDepth];
       FST.Arc<IntsRef> arc = prefixArcs[recursionDepth];
       fst.getFirstArc(arc);
-      IntsRef NO_OUTPUT = outputs.getNoOutput();
+      IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
       IntsRef output = NO_OUTPUT;
       int limit = dictionary.fullStrip ? length + 1 : length;
       for (int i = 0; i < limit; i++) {
@@ -333,23 +331,12 @@ final class Stemmer {
           }
 
           if (isAffixCompatible(prefix, prevFlag, recursionDepth, false)) {
-            int deAffixedLength = length - i;
-
-            int stripOrd = dictionary.affixData(prefix, Dictionary.AFFIX_STRIP_ORD);
-            int stripStart = dictionary.stripOffsets[stripOrd];
-            int stripEnd = dictionary.stripOffsets[stripOrd + 1];
-            int stripLength = stripEnd - stripStart;
-
-            if (!checkCondition(
-                prefix, dictionary.stripData, stripStart, stripLength, word, i, deAffixedLength)) {
+            char[] strippedWord = stripAffix(word, length, i, prefix, true);
+            if (strippedWord == null) {
               continue;
             }
 
-            char[] strippedWord = new char[stripLength + deAffixedLength];
-            System.arraycopy(dictionary.stripData, stripStart, strippedWord, 0, stripLength);
-            System.arraycopy(word, i, strippedWord, stripLength, deAffixedLength);
-
-            List<CharsRef> stemList =
+            stems.addAll(
                 applyAffix(
                     strippedWord,
                     strippedWord.length,
@@ -358,9 +345,7 @@ final class Stemmer {
                     recursionDepth,
                     true,
                     circumfix,
-                    caseVariant);
-
-            stems.addAll(stemList);
+                    caseVariant));
           }
         }
       }
@@ -368,11 +353,10 @@ final class Stemmer {
 
     if (doSuffix && dictionary.suffixes != null) {
       FST<IntsRef> fst = dictionary.suffixes;
-      Outputs<IntsRef> outputs = fst.outputs;
       FST.BytesReader bytesReader = suffixReaders[recursionDepth];
       FST.Arc<IntsRef> arc = suffixArcs[recursionDepth];
       fst.getFirstArc(arc);
-      IntsRef NO_OUTPUT = outputs.getNoOutput();
+      IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
       IntsRef output = NO_OUTPUT;
       int limit = dictionary.fullStrip ? 0 : 1;
       for (int i = length; i >= limit; i--) {
@@ -396,25 +380,12 @@ final class Stemmer {
           }
 
           if (isAffixCompatible(suffix, prevFlag, recursionDepth, previousWasPrefix)) {
-            int appendLength = length - i;
-            int deAffixedLength = length - appendLength;
-
-            int stripOrd = dictionary.affixData(suffix, Dictionary.AFFIX_STRIP_ORD);
-            int stripStart = dictionary.stripOffsets[stripOrd];
-            int stripEnd = dictionary.stripOffsets[stripOrd + 1];
-            int stripLength = stripEnd - stripStart;
-
-            if (!checkCondition(
-                suffix, word, 0, deAffixedLength, dictionary.stripData, stripStart, stripLength)) {
+            char[] strippedWord = stripAffix(word, length, length - i, suffix, false);
+            if (strippedWord == null) {
               continue;
             }
 
-            char[] strippedWord = new char[stripLength + deAffixedLength];
-            System.arraycopy(word, 0, strippedWord, 0, deAffixedLength);
-            System.arraycopy(
-                dictionary.stripData, stripStart, strippedWord, deAffixedLength, stripLength);
-
-            List<CharsRef> stemList =
+            stems.addAll(
                 applyAffix(
                     strippedWord,
                     strippedWord.length,
@@ -423,15 +394,37 @@ final class Stemmer {
                     recursionDepth,
                     false,
                     circumfix,
-                    caseVariant);
-
-            stems.addAll(stemList);
+                    caseVariant));
           }
         }
       }
     }
 
     return stems;
+  }
+
+  private char[] stripAffix(char[] word, int length, int affixLen, int affix, boolean isPrefix) {
+    int deAffixedLen = length - affixLen;
+
+    int stripOrd = dictionary.affixData(affix, Dictionary.AFFIX_STRIP_ORD);
+    int stripStart = dictionary.stripOffsets[stripOrd];
+    int stripEnd = dictionary.stripOffsets[stripOrd + 1];
+    int stripLen = stripEnd - stripStart;
+
+    char[] stripData = dictionary.stripData;
+    boolean condition =
+        isPrefix
+            ? checkCondition(affix, stripData, stripStart, stripLen, word, affixLen, deAffixedLen)
+            : checkCondition(affix, word, 0, deAffixedLen, stripData, stripStart, stripLen);
+    if (!condition) {
+      return null;
+    }
+
+    char[] strippedWord = new char[stripLen + deAffixedLen];
+    System.arraycopy(
+        word, isPrefix ? affixLen : 0, strippedWord, isPrefix ? stripLen : 0, deAffixedLen);
+    System.arraycopy(stripData, stripStart, strippedWord, isPrefix ? 0 : deAffixedLen, stripLen);
+    return strippedWord;
   }
 
   private boolean isAffixCompatible(
@@ -495,9 +488,9 @@ final class Stemmer {
    * @param strippedWord Word the affix has been removed and the strip added
    * @param length valid length of stripped word
    * @param affix HunspellAffix representing the affix rule itself
-   * @param prefixId when we already stripped a prefix, we cant simply recurse and check the suffix,
-   *     unless both are compatible so we must check dictionary form against both to add it as a
-   *     stem!
+   * @param prefixId when we already stripped a prefix, we can't simply recurse and check the
+   *     suffix, unless both are compatible so we must check dictionary form against both to add it
+   *     as a stem!
    * @param recursionDepth current recursion depth
    * @param prefix true if we are removing a prefix (false if it's a suffix)
    * @return List of stems for the word, or an empty list if none are found
