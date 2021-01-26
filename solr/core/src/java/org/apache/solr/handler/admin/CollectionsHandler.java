@@ -1046,7 +1046,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP,
-              FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME, CoreAdminParams.MAX_NUM_BACKUP);
+              FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME, CoreAdminParams.MAX_NUM_BACKUP_POINTS);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       if (repo != null) {
         params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);

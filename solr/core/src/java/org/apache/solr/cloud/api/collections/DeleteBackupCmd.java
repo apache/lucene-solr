@@ -78,10 +78,10 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         String backupName = message.getStr(NAME);
         String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
         int backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
-        int lastNumBackupPointsToKeep = message.getInt(CoreAdminParams.MAX_NUM_BACKUP, -1);
+        int lastNumBackupPointsToKeep = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
         if (backupId == -1 && lastNumBackupPointsToKeep == -1) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    String.format(Locale.ROOT, "%s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP));
+                    String.format(Locale.ROOT, "%s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP_POINTS));
         }
         CoreContainer cc = ocmh.overseer.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {

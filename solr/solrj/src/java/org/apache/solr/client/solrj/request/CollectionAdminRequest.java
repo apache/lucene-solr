@@ -1076,7 +1076,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
       if (maxNumBackupPoints.isPresent()) {
-        params.set(CoreAdminParams.MAX_NUM_BACKUP, maxNumBackupPoints.get());
+        params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;

@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -138,7 +137,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Completed backing up ZK data for backupName={}", backupName);
 
-      int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP, -1);
+      int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
       if (incremental && maxNumBackup != -1) {
         ocmh.deleteBackup(repository, backupPath, maxNumBackup, results);
       }

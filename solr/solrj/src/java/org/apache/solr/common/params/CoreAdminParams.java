@@ -135,7 +135,7 @@ public abstract class CoreAdminParams
   /**
    * A parameter to specify last number of backups (delete the rest)
    */
-  public static final String MAX_NUM_BACKUP = "maxNumBackup";
+  public static final String MAX_NUM_BACKUP_POINTS = "maxNumBackupPoints";
 
   /**
    * Unique id of the backup
