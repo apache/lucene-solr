@@ -372,8 +372,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
   /* This API is only supported for indexes created with Lucene 8.7+ codec **/
   public FacetLabel[] getBulkPath(int[] ordinal) throws IOException {
     FacetLabel[] bulkPath = new FacetLabel[ordinal.length];
-    Map<Integer,Integer> originalPosition = new HashMap<>();
-    for (int i = 0 ; i < ordinal.length ; i++) {
+    Map<Integer, Integer> originalPosition = new HashMap<>();
+    for (int i = 0; i < ordinal.length; i++) {
       if (ordinal[i] < 0 || ordinal[i] >= indexReader.maxDoc()) {
         return null;
       }
@@ -390,13 +390,15 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
     for (int ord : ordinal) {
       if (bulkPath[originalPosition.get(ord)] == null) {
-        if (values == null || values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase) == false) {
+        if (values == null
+            || values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase) == false) {
           readerIndex = ReaderUtil.subIndex(ord, indexReader.leaves());
           LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
           values = leafReader.getBinaryDocValues(Consts.FULL);
           assert values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase);
         }
-        bulkPath[originalPosition.get(ord)] = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
+        bulkPath[originalPosition.get(ord)] =
+            new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
         synchronized (categoryCache) {
           categoryCache.put(ord, bulkPath[originalPosition.get(ord)]);
         }
