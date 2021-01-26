@@ -80,6 +80,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("compoundrule8");
   }
 
+  public void testGermanCompounding() throws Exception {
+    doTest("germancompounding");
+  }
+
   protected void doTest(String name) throws Exception {
     InputStream affixStream =
         Objects.requireNonNull(getClass().getResourceAsStream(name + ".aff"), name);
