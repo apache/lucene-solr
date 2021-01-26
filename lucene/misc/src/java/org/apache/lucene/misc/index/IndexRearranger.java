@@ -38,8 +38,12 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.NamedThreadFactory;
 
 /**
- * Copy and rearrange index according to document selectors, from input dir to output dir Length of
+ * Copy and rearrange index according to document selectors, from input dir to output dir. Length of
  * documentSelectors determines how many segments there will be
+ *
+ * <p>TODO: another possible (faster) approach to do this is to manipulate FlushPolicy and
+ * MergePolicy at indexing time to create small desired segments first and merge them accordingly
+ * for details please see: https://markmail.org/message/lbtdntclpnocmfuf
  */
 public class IndexRearranger {
   protected final Directory input, output;
@@ -82,12 +86,12 @@ public class IndexRearranger {
     }
   }
 
-  private static void addOneSegment(IndexWriter writer, IndexReader reader, DocumentSelector record)
-      throws IOException {
+  private static void addOneSegment(
+      IndexWriter writer, IndexReader reader, DocumentSelector selector) throws IOException {
     CodecReader[] readers = new CodecReader[reader.leaves().size()];
     for (LeafReaderContext context : reader.leaves()) {
       readers[context.ord] =
-          new DocSelectorFilteredCodecReader((CodecReader) context.reader(), record);
+          new DocSelectorFilteredCodecReader((CodecReader) context.reader(), selector);
     }
     writer.addIndexes(readers);
   }
