@@ -245,6 +245,14 @@
           "type": "string",
           "description": "A location on a shared drive for the backup-collection command to write to. Alternately, it can be set as a cluster property with the cluster endpoint, which also supports setting a location."
         },
+        "followAliases": {
+          "type": "boolean",
+          "description": "Controls whether aliases are resolved when trying to back up the specified collection, or whether Solr should only backup the provided collection name if it matches a concrete collection."
+        },
+        "incremental": {
+          "type": "boolean",
+          "description": "An internal property that controls whether the backup should use the standard 'incremental' file format or the deprecated 'full-snapshot' based format."
+        },
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
@@ -252,8 +260,7 @@
       },
       "required": [
         "collection",
-        "name",
-        "location"
+        "name"
       ]
     },
     "restore-collection": {
@@ -273,6 +280,10 @@
           "type": "string",
           "description": "The location on the shared drive for the restore-collection command to read from. Alternately, it can be set as a cluster property with the cluster endpoint, which also supports setting a location."
         },
+        "backupId": {
+          "type": "integer",
+          "description": "The ID of the backup to restore, when the provided location and backup name hold multiple backups for the provided collection.  Defaults to the most recent backup if not specified."
+        },
         "async": {
           "type": "string",
           "description": "Defines a request ID that can be used to track this action after it's submitted. The action will be processed asynchronously."
@@ -280,8 +291,7 @@
       },
       "required": [
         "collection",
-        "name",
-        "location"
+        "name"
       ]
     }
   }

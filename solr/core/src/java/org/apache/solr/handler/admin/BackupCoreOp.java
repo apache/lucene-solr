@@ -18,16 +18,20 @@
 package org.apache.solr.handler.admin;
 
 import java.net.URI;
+import java.nio.file.Paths;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
-
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -36,38 +40,54 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.required().get(NAME);
-
+    boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
+    String shardBackupIdStr = params.get(CoreAdminParams.SHARD_BACKUP_ID, null);
+    String prevShardBackupIdStr = params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-    BackupRepository repository = it.handler.coreContainer.newBackupRepository(repoName);
-
-    String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
-    if (location == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
-          + " parameter or as a default repository property");
-    }
-
     // An optional parameter to describe the snapshot to be backed-up. If this
     // parameter is not supplied, the latest index commit is backed-up.
     String commitName = params.get(CoreAdminParams.COMMIT_NAME);
 
-    URI locationUri = repository.createURI(location);
-    try (SolrCore core = it.handler.coreContainer.getCore(cname)) {
-      SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
-      // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
-      //  But we want to throw. One reason is that
-      //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
-      //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
-      if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation() + ". " +
-            "Note that Backup/Restore of a SolrCloud collection " +
-            "requires a shared file system mounted at the same path on all nodes!");
+    try (BackupRepository repository = it.handler.coreContainer.newBackupRepository(repoName);
+         SolrCore core = it.handler.coreContainer.getCore(cname)) {
+      String location = repository.getBackupLocation(params.get(CoreAdminParams.BACKUP_LOCATION));
+      if (location == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+                + " parameter or as a default repository property");
       }
-      snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapshot();
+
+      URI locationUri = repository.createURI(location);
+
+      if (incremental) {
+        if ("file".equals(locationUri.getScheme())) {
+          core.getCoreContainer().assertPathAllowed(Paths.get(location));
+        }
+        final ShardBackupId prevShardBackupId = prevShardBackupIdStr != null ? ShardBackupId.from(prevShardBackupIdStr) : null;
+        final ShardBackupId shardBackupId = shardBackupIdStr != null ? ShardBackupId.from(shardBackupIdStr) : null;
+        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
+        IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
+                prevShardBackupId, shardBackupId);
+        @SuppressWarnings({"rawtypes"})
+        NamedList rsp = incSnapShooter.backup();
+        it.rsp.addResponse(rsp);
+      } else {
+        SnapShooter snapShooter = new SnapShooter(repository, core, locationUri, name, commitName);
+        // validateCreateSnapshot will create parent dirs instead of throw; that choice is dubious.
+        //  But we want to throw. One reason is that
+        //  this dir really should, in fact must, already exist here if triggered via a collection backup on a shared
+        //  file system. Otherwise, perhaps the FS location isn't shared -- we want an error.
+        if (!snapShooter.getBackupRepository().exists(snapShooter.getLocation())) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                  "Directory to contain snapshots doesn't exist: " + snapShooter.getLocation() + ". " +
+                          "Note that Backup/Restore of a SolrCloud collection " +
+                          "requires a shared file system mounted at the same path on all nodes!");
+        }
+        snapShooter.validateCreateSnapshot();
+        snapShooter.createSnapshot();
+      }
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Failed to backup core=" + cname + " because " + e, e);
+              "Failed to backup core=" + cname + " because " + e, e);
     }
   }
 }
