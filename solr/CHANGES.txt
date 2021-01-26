@@ -25,6 +25,9 @@ New Features
 
 * SOLR-15019: Replica placement API needs a way to fetch existing replica metrics. (ab, ilan)
 
+* SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
+  for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -186,6 +189,8 @@ Other Changes
 
 * SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
 
+* SOLR-14297: Replace commons-codec Base64 with JDK8 Base64 (Andras Salamon via Houston Putman)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -210,7 +215,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
 
 Other Changes
 ---------------------
@@ -358,6 +363,11 @@ Bug Fixes
   (hossman, Munendra S N)
 
 * SOLR-15070: Suggester requests made with SolrJ can now use XMLResponseParser (Jason Gerlowski)
+
+* SOLR-15073: Fix ClassCastException in SystemInfoHandler.getSecurityInfo. (Nikolay Ivanov, Christine Poerschke)
+
+* SOLR-15071: Fix ArrayIndexOutOfBoundsException in contrib/ltr SolrFeatureScorer.
+  (Florin Babes, Ovidiu Mihalcea, David Smiley, Christine Poerschke)
 
 Other Changes
 ---------------------

@@ -23,8 +23,18 @@ import java.nio.file.Path;
 import java.util.Objects;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
+  @Test
+  public void allcaps() throws Exception {
+    doTest("allcaps");
+  }
+
+  @Test
+  public void i53643_numbersWithSeparators() throws Exception {
+    doTest("i53643");
+  }
 
   public void testBreak() throws Exception {
     doTest("break");
@@ -36,6 +46,38 @@ public class SpellCheckerTest extends StemmerTestBase {
 
   public void testBreakOff() throws Exception {
     doTest("breakoff");
+  }
+
+  public void testCompoundrule() throws Exception {
+    doTest("compoundrule");
+  }
+
+  public void testCompoundrule2() throws Exception {
+    doTest("compoundrule2");
+  }
+
+  public void testCompoundrule3() throws Exception {
+    doTest("compoundrule3");
+  }
+
+  public void testCompoundrule4() throws Exception {
+    doTest("compoundrule4");
+  }
+
+  public void testCompoundrule5() throws Exception {
+    doTest("compoundrule5");
+  }
+
+  public void testCompoundrule6() throws Exception {
+    doTest("compoundrule6");
+  }
+
+  public void testCompoundrule7() throws Exception {
+    doTest("compoundrule7");
+  }
+
+  public void testCompoundrule8() throws Exception {
+    doTest("compoundrule8");
   }
 
   protected void doTest(String name) throws Exception {

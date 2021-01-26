@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /**
  * A spell checker based on Hunspell dictionaries. The objects of this class are not thread-safe
@@ -35,20 +38,126 @@ public class SpellChecker {
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
   public boolean spell(String word) {
-    char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, scratch)) {
-      return false;
+    if (word.isEmpty()) return true;
+
+    if (dictionary.needsInputCleaning) {
+      word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
-    if (!stemmer.stem(wordChars, word.length()).isEmpty()) {
+    if (isNumber(word)) {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
+    char[] wordChars = word.toCharArray();
+    if (checkWord(wordChars, wordChars.length, false)) {
+      return true;
+    }
+
+    WordCase wc = stemmer.caseOf(wordChars, wordChars.length);
+    if ((wc == WordCase.UPPER || wc == WordCase.TITLE) && checkCaseVariants(wordChars, wc)) {
+      return true;
+    }
+
+    if (dictionary.breaks.isNotEmpty()
+        && !hasTooManyBreakOccurrences(word)
+        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
       return tryBreaks(word);
     }
 
     return false;
+  }
+
+  private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
+    char[] caseVariant = wordChars;
+    if (wordCase == WordCase.UPPER) {
+      caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
+      if (checkWord(caseVariant, wordChars.length, true)) {
+        return true;
+      }
+      char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
+      if (aposCase != null && checkWord(aposCase, aposCase.length, true)) {
+        return true;
+      }
+    }
+    return checkWord(stemmer.caseFoldLower(caseVariant, wordChars.length), wordChars.length, true);
+  }
+
+  private boolean checkWord(char[] wordChars, int length, boolean caseVariant) {
+    if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
+      return false;
+    }
+
+    if (!stemmer.doStem(wordChars, length, caseVariant).isEmpty()) {
+      return true;
+    }
+
+    if (dictionary.hasCompounding()) {
+      return checkCompounds(wordChars, 0, length, new ArrayList<>());
+    }
+
+    return false;
+  }
+
+  private boolean checkCompounds(char[] wordChars, int offset, int length, List<IntsRef> words) {
+    if (words.size() >= 100) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      IntsRef forms = dictionary.lookupWord(wordChars, offset, breakPos);
+      if (forms != null) {
+        words.add(forms);
+
+        if (dictionary.compoundRules != null
+            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
+          if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
+            return true;
+          }
+
+          if (checkCompounds(wordChars, offset + breakPos, length - breakPos, words)) {
+            return true;
+          }
+        }
+
+        words.remove(words.size() - 1);
+      }
+    }
+
+    return false;
+  }
+
+  private boolean checkLastCompoundPart(
+      char[] wordChars, int start, int length, List<IntsRef> words) {
+    IntsRef forms = dictionary.lookupWord(wordChars, start, length);
+    if (forms == null) return false;
+
+    words.add(forms);
+    boolean result =
+        dictionary.compoundRules != null
+            && dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+    words.remove(words.size() - 1);
+    return result;
+  }
+
+  private static boolean isNumber(String s) {
+    int i = 0;
+    while (i < s.length()) {
+      char c = s.charAt(i);
+      if (isDigit(c)) {
+        i++;
+      } else if (c == '.' || c == ',' || c == '-') {
+        if (i == 0 || i >= s.length() - 1 || !isDigit(s.charAt(i + 1))) {
+          return false;
+        }
+        i += 2;
+      } else {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean isDigit(char c) {
+    return c >= '0' && c <= '9';
   }
 
   private boolean tryBreaks(String word) {

@@ -28,6 +28,8 @@ public class TestAllCaps extends StemmerTestBase {
   public void testGood() {
     assertStemsTo("OpenOffice.org", "OpenOffice.org");
     assertStemsTo("UNICEF's", "UNICEF");
+    assertStemsTo("L'Afrique", "Afrique");
+    assertStemsTo("L'AFRIQUE", "Afrique");
 
     // Hunspell returns these title-cased stems, so for consistency we do, too
     assertStemsTo("OPENOFFICE.ORG", "Openoffice.org");

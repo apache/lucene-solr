@@ -312,6 +312,57 @@ public class TestWANDScorer extends LuceneTestCase {
     }
   }
 
+  public void testBasicsWithDisjunctionAndMinShouldMatchAndNonScoringMode() throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
+        for (String[] values :
+            Arrays.asList(
+                new String[] {"A", "B"}, // 0
+                new String[] {"A"}, // 1
+                new String[] {}, // 2
+                new String[] {"A", "B", "C"}, // 3
+                new String[] {"B"}, // 4
+                new String[] {"B", "C"} // 5
+                )) {
+          Document doc = new Document();
+          for (String value : values) {
+            doc.add(new StringField("foo", value, Store.NO));
+          }
+          w.addDocument(doc);
+        }
+
+        w.forceMerge(1);
+      }
+
+      try (IndexReader reader = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(reader);
+
+        Query query =
+            new BooleanQuery.Builder()
+                .add(
+                    new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("foo", "A"))), 2),
+                    Occur.SHOULD)
+                .add(new ConstantScoreQuery(new TermQuery(new Term("foo", "B"))), Occur.SHOULD)
+                .add(
+                    new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("foo", "C"))), 3),
+                    Occur.SHOULD)
+                .setMinimumNumberShouldMatch(2)
+                .build();
+
+        Scorer scorer =
+            searcher
+                .createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1)
+                .scorer(searcher.getIndexReader().leaves().get(0));
+
+        assertEquals(0, scorer.iterator().nextDoc());
+        assertEquals(3, scorer.iterator().nextDoc());
+        assertEquals(5, scorer.iterator().nextDoc());
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
+      }
+    }
+  }
+
   public void testBasicsWithFilteredDisjunctionAndMinShouldMatch() throws Exception {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w =
@@ -387,6 +438,66 @@ public class TestWANDScorer extends LuceneTestCase {
     }
   }
 
+  public void testBasicsWithFilteredDisjunctionAndMinShouldMatchAndNonScoringMode()
+      throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
+        for (String[] values :
+            Arrays.asList(
+                new String[] {"A", "B"}, // 0
+                new String[] {"A", "C", "D"}, // 1
+                new String[] {}, // 2
+                new String[] {"A", "B", "C", "D"}, // 3
+                new String[] {"B"}, // 4
+                new String[] {"C", "D"} // 5
+                )) {
+          Document doc = new Document();
+          for (String value : values) {
+            doc.add(new StringField("foo", value, Store.NO));
+          }
+          w.addDocument(doc);
+        }
+
+        w.forceMerge(1);
+      }
+
+      try (IndexReader reader = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(reader);
+
+        Query query =
+            new BooleanQuery.Builder()
+                .add(
+                    new BooleanQuery.Builder()
+                        .add(
+                            new BoostQuery(
+                                new ConstantScoreQuery(new TermQuery(new Term("foo", "A"))), 2),
+                            Occur.SHOULD)
+                        .add(
+                            new ConstantScoreQuery(new TermQuery(new Term("foo", "B"))),
+                            Occur.SHOULD)
+                        .add(
+                            new BoostQuery(
+                                new ConstantScoreQuery(new TermQuery(new Term("foo", "D"))), 4),
+                            Occur.SHOULD)
+                        .setMinimumNumberShouldMatch(2)
+                        .build(),
+                    Occur.MUST)
+                .add(new TermQuery(new Term("foo", "C")), Occur.FILTER)
+                .build();
+
+        Scorer scorer =
+            searcher
+                .createWeight(searcher.rewrite(query), ScoreMode.TOP_DOCS, 1)
+                .scorer(searcher.getIndexReader().leaves().get(0));
+
+        assertEquals(1, scorer.iterator().nextDoc());
+        assertEquals(3, scorer.iterator().nextDoc());
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
+      }
+    }
+  }
+
   public void testBasicsWithFilteredDisjunctionAndMustNotAndMinShouldMatch() throws Exception {
     try (Directory dir = newDirectory()) {
       try (IndexWriter w =
@@ -449,6 +560,58 @@ public class TestWANDScorer extends LuceneTestCase {
         assertEquals(4, scorer.iterator().nextDoc());
         assertEquals(1 + 4, scorer.score(), 0);
 
+        assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
+      }
+    }
+  }
+
+  public void testBasicsWithFilteredDisjunctionAndMustNotAndMinShouldMatchAndNonScoringMode()
+      throws Exception {
+    try (Directory dir = newDirectory()) {
+      try (IndexWriter w =
+          new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()))) {
+        for (String[] values :
+            Arrays.asList(
+                new String[] {"A", "B"}, // 0
+                new String[] {"A", "C", "D"}, // 1
+                new String[] {}, // 2
+                new String[] {"A", "B", "C", "D"}, // 3
+                new String[] {"B", "D"}, // 4
+                new String[] {"C", "D"} // 5
+                )) {
+          Document doc = new Document();
+          for (String value : values) {
+            doc.add(new StringField("foo", value, Store.NO));
+          }
+          w.addDocument(doc);
+        }
+
+        w.forceMerge(1);
+      }
+
+      try (IndexReader reader = DirectoryReader.open(dir)) {
+        IndexSearcher searcher = newSearcher(reader);
+
+        Query query =
+            new BooleanQuery.Builder()
+                .add(
+                    new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("foo", "A"))), 2),
+                    Occur.SHOULD)
+                .add(new ConstantScoreQuery(new TermQuery(new Term("foo", "B"))), Occur.SHOULD)
+                .add(new TermQuery(new Term("foo", "C")), Occur.MUST_NOT)
+                .add(
+                    new BoostQuery(new ConstantScoreQuery(new TermQuery(new Term("foo", "D"))), 4),
+                    Occur.SHOULD)
+                .setMinimumNumberShouldMatch(2)
+                .build();
+
+        Scorer scorer =
+            searcher
+                .createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1)
+                .scorer(searcher.getIndexReader().leaves().get(0));
+
+        assertEquals(0, scorer.iterator().nextDoc());
+        assertEquals(4, scorer.iterator().nextDoc());
         assertEquals(DocIdSetIterator.NO_MORE_DOCS, scorer.iterator().nextDoc());
       }
     }
