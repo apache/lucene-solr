@@ -179,7 +179,8 @@ final class Stemmer {
       }
     }
     try {
-      stems.addAll(stem(word, 0, length, -1, (char) 0, -1, 0, true, true, false, false, caseVariant));
+      stems.addAll(
+          stem(word, 0, length, -1, (char) 0, -1, 0, true, true, false, false, caseVariant));
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
@@ -404,8 +405,9 @@ final class Stemmer {
   }
 
   /**
-   * @return null if affix conditions isn't met; the same char[] if the affix has no strip data and
-   *     can thus be simply removed, or a new char[] containing the word after de-affixation
+   * @return null if affix conditions isn't met; a reference to the same char[] if the affix has no
+   *     strip data and can thus be simply removed, or a new char[] containing the word affix
+   *     removal
    */
   private char[] stripAffix(
       char[] word, int offset, int length, int affixLen, int affix, boolean isPrefix) {
