@@ -1,0 +1,80 @@
+Docker Images for Solr
+======================
+
+In order to build and tag a Solr docker image, merely run the following command:
+
+gradlew docker
+
+This calls the dockerBuild and dockerTag tasks, which have inputs that are described below.
+
+Building
+--------
+
+In order to build the Solr Docker image, run:
+
+gradlew dockerBuild
+
+The docker build task accepts the following inputs, all accepted via both Environment Variables and Gradle Properties.
+
+Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
+   Default: "openjdk:11-jre-slim"
+   EnvVar: SOLR_DOCKER_BASE_IMAGE
+   Gradle Property: -Psolr.docker.baseImage
+
+Github URL or Mirror: (The URL of github or a mirror of github releases. This is of use when building the docker image behind a firewall that does not have access to external Github.)
+   Default: "github.com"
+   EnvVar: SOLR_DOCKER_GITHUB_URL
+   Gradle Property: -Psolr.docker.githubUrl
+
+Tagging and Pushing
+-------
+
+To tag the docker image, run the following command.
+This will also ensure that the docker image has been built as per the inputs detailed above.
+
+gradlew dockerTag
+
+And to push the image with the given tag, run the following command.
+Gradle will ensure that the docker image is built and tagged as the inputs describe before being pushed.
+
+gradlew dockerPush
+
+The docker image tag can be customized via the following options, all accepted via both Environment Variables and Gradle Properties.
+
+Docker Image Repository:
+   Default: "apache/solr"
+   EnvVar: SOLR_DOCKER_IMAGE_REPO
+   Gradle Property: -Psolr.docker.imageRepo
+
+Docker Image Tag:
+   Default: the Solr version, e.g. "9.0.0-SNAPSHOT"
+   EnvVar: SOLR_DOCKER_IMAGE_TAG
+   Gradle Property: -Psolr.docker.imageTag
+
+Docker Image Name: (Use this to explicitly set a whole image name. If given, the image repo and image version options above are ignored.)
+   Default: {image_repo}/{image_tag} (both options provided above, with defaults)
+   EnvVar: SOLR_DOCKER_IMAGE_NAME
+   Gradle Property: -Psolr.docker.imageName
+
+Testing
+-------
+
+To test the docker image, run the following command.
+This will also ensure that the docker image has been built as per the inputs detailed above in the "Building" section.
+
+gradlew testDocker
+
+If a docker image build parameters were used during building, then the same inputs must be used while testing.
+Otherwise a new docker image will be built for the tests to run with.
+
+You can also specify an explicit list of tests to run, or an explicit list of tests to ignore.
+Both inputs are optional, and by default all tests will be run.
+Each input tasks a comma separated list of test names.
+
+Run specific tests:
+   EnvVar: SOLR_DOCKER_TESTS_INCLUDE
+   Gradle Property: -Psolr.docker.tests.include
+
+Exclude specific tests:
+   EnvVar: SOLR_DOCKER_TESTS_EXCLUDE
+   Gradle Property: -Psolr.docker.tests.exclude
