@@ -328,23 +328,24 @@ public class IndexSizeTrigger extends TriggerBase {
           final ReplicaInfo info = metricTags.get(tag);
           if (info == null) {
             log.warn("Missing replica info for response tag {}", tag);
-          } else {
-            // verify that it's a Number
-            if (!(size instanceof Number)) {
-              log.warn("invalid size value for tag {} - not a number: '{}' is {}", tag, size, size.getClass().getName());
-              return;
-            }
+            return;
+          }
+          
+          // verify that it's a Number
+          if (!(size instanceof Number)) {
+            log.warn("invalid size value for tag {} - not a number: '{}' is {}", tag, size, size.getClass().getName());
+            return;
+          }
 
-            ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
-            if (tag.contains("INDEX")) {
-              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_KEY, ((Number) size).longValue());
-            } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
-              currentInfo.getVariables().put(DOCS_SIZE_KEY, ((Number) size).longValue());
-            } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
-              currentInfo.getVariables().put(MAX_DOC_KEY, ((Number) size).longValue());
-            } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
-              currentInfo.getVariables().put(COMMIT_SIZE_KEY, ((Number) size).longValue());
-            }
+          ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
+          if (tag.contains(CORE_IDX.metricsAttribute)) {
+            currentInfo.getVariables().put(TOTAL_BYTES_SIZE_KEY, ((Number) size).longValue());
+          } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
+            currentInfo.getVariables().put(DOCS_SIZE_KEY, ((Number) size).longValue());
+          } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
+            currentInfo.getVariables().put(MAX_DOC_KEY, ((Number) size).longValue());
+          } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
+            currentInfo.getVariables().put(COMMIT_SIZE_KEY, ((Number) size).longValue());
           }
         });
       }
@@ -363,6 +364,11 @@ public class IndexSizeTrigger extends TriggerBase {
     Set<String> splittable = new HashSet<>();
 
     currentSizes.forEach((coreName, info) -> {
+      // check for null
+      if (info == null) {
+        return;
+      }
+      
       // calculate estimated bytes
       long maxDoc = (Long)info.getVariable(MAX_DOC_KEY);
       long numDocs = (Long)info.getVariable(DOCS_SIZE_KEY);
@@ -398,6 +404,11 @@ public class IndexSizeTrigger extends TriggerBase {
     Map<String, List<ReplicaInfo>> belowSize = new HashMap<>();
 
     currentSizes.forEach((coreName, info) -> {
+      // check for null
+      if (info == null) {
+        return;
+      }
+      
       if (((Long)info.getVariable(BYTES_SIZE_KEY) < belowBytes ||
           (Long)info.getVariable(DOCS_SIZE_KEY) < belowDocs) &&
           // make sure we don't produce conflicting ops
@@ -458,6 +469,9 @@ public class IndexSizeTrigger extends TriggerBase {
         params.put(SPLIT_BY_PREFIX, splitByPrefix);
         op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
+        
+        log.info("Shard with shardName={}, sizeInBytes={}, numDocs={} has exceeded configured threshold and will be split",
+            r.getShard(), r.getVariable(BYTES_SIZE_KEY), r.getVariable(DOCS_SIZE_KEY));
         Long time = lastAboveEventMap.get(r.getCore());
         if (time != null && eventTime.get() > time) {
           eventTime.set(time);
