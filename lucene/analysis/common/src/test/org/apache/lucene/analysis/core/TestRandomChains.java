@@ -428,13 +428,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
               Pattern[].class,
               random -> new Pattern[] {Pattern.compile("([a-z]+)"), Pattern.compile("([0-9]+)")});
           put(
-              PatternTypingFilter.PatternTypingRule[].class,
-              random ->
-                  new PatternTypingFilter.PatternTypingRule[] {
-                    new PatternTypingFilter.PatternTypingRule(
-                        Pattern.compile("^(\\d+)-(\\d+)$"), 6, "$1_hnum_$2")
-                  });
-          put(
               PayloadEncoder.class,
               random ->
                   new IdentityEncoder()); // the other encoders will throw exceptions if tokens
@@ -624,6 +617,23 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
                 return Operations.determinize(
                     new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton(),
                     Operations.DEFAULT_MAX_DETERMINIZED_STATES);
+              });
+          put(
+              PatternTypingFilter.PatternTypingRule[].class,
+              random -> {
+                int numRules = TestUtil.nextInt(random, 1, 3);
+                PatternTypingFilter.PatternTypingRule[] patternTypingRules =
+                    new PatternTypingFilter.PatternTypingRule[numRules];
+                for (int i = 0; i < patternTypingRules.length; i++) {
+                  String s = TestUtil.randomSimpleString(random, 1, 2);
+                  // random regex with one group
+                  String regex = s + "(.*)";
+                  // pattern rule with a template that accepts one group.
+                  patternTypingRules[i] =
+                      new PatternTypingFilter.PatternTypingRule(
+                          Pattern.compile(regex), TestUtil.nextInt(random, 1, 8), s + "_$1");
+                }
+                return patternTypingRules;
               });
         }
       };

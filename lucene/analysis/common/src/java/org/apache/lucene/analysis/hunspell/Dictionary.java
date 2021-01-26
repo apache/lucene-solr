@@ -76,6 +76,8 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
+  static final int FLAG_UNSET = 0;
+  private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
   // TODO: really for suffixes we should reverse the automaton and run them backwards
@@ -135,11 +137,11 @@ public class Dictionary {
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
 
-  int circumfix = -1; // circumfix flag, or -1 if one is not defined
-  int keepcase = -1; // keepcase flag, or -1 if one is not defined
-  int needaffix = -1; // needaffix flag, or -1 if one is not defined
-  int forbiddenword = -1; // forbiddenword flag, or -1 if one is not defined
-  int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
+  char circumfix;
+  char keepcase;
+  char needaffix;
+  char forbiddenword;
+  char onlyincompound;
   int compoundMin = 3;
   List<CompoundRule> compoundRules; // nullable
 
@@ -1161,9 +1163,9 @@ public class Dictionary {
   }
 
   boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {
-    if (forbiddenword != -1) {
+    if (forbiddenword != FLAG_UNSET) {
       IntsRef forms = lookupWord(word, 0, length);
-      return forms != null && hasFlag(forms, (char) forbiddenword, scratch);
+      return forms != null && hasFlag(forms, forbiddenword, scratch);
     }
     return false;
   }
@@ -1240,7 +1242,12 @@ public class Dictionary {
         if (replacement.isEmpty()) {
           continue;
         }
-        flags[upto++] = (char) Integer.parseInt(replacement);
+        int flag = Integer.parseInt(replacement);
+        if (flag == FLAG_UNSET || flag >= Character.MAX_VALUE) { // read default flags as well
+          throw new IllegalArgumentException(
+              "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
+        }
+        flags[upto++] = (char) flag;
       }
 
       if (upto < flags.length) {
@@ -1251,10 +1258,8 @@ public class Dictionary {
 
     @Override
     void appendFlag(char flag, StringBuilder to) {
-      if (to.length() > 0) {
-        to.append(",");
-      }
       to.append((int) flag);
+      to.append(",");
     }
   }
 
@@ -1303,11 +1308,11 @@ public class Dictionary {
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {
-    return hasFlag(decodeFlags(entryId, scratch), flag);
+    return flag != FLAG_UNSET && hasFlag(decodeFlags(entryId, scratch), flag);
   }
 
   static boolean hasFlag(char[] flags, char flag) {
-    return Arrays.binarySearch(flags, flag) >= 0;
+    return flag != FLAG_UNSET && Arrays.binarySearch(flags, flag) >= 0;
   }
 
   CharSequence cleanInput(CharSequence input, StringBuilder reuse) {

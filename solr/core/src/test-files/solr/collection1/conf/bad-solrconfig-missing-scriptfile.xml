@@ -1,3 +1,5 @@
+<?xml version="1.0" ?>
+
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -14,13 +16,18 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<html>
-<body>
-Apache Solr Search Server: Scripting contrib
 
-<p>
-This package provides an Update Processor that allows for Java scripting engines
-to be used during the Solr document update processing.
-</p>
-</body>
-</html>
+<config>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <updateRequestProcessorChain name="force-script-engine" default="true">
+    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+      <str name="script">a-file-name-that-does-not-exist.js</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+</config>

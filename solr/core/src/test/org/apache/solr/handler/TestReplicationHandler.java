@@ -358,7 +358,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       Object timesFailed = ((NamedList)details.get("follower")).get(IndexFetcher.TIMES_FAILED);
       // SOLR-7134: we can have a fail because some mock index files have no checksum, will
       // always be downloaded, and may not be able to be moved into the existing index
-      assertTrue(i + ": " + "follower has fetch error count: " + (String)timesFailed, timesFailed == null || ((String) timesFailed).equals("1"));
+      assertTrue(i + ": " + "follower has fetch error count: " + timesFailed, timesFailed == null || ((Number) timesFailed).intValue() == 1);
 
       if (3 != i) {
         // index & fetch
