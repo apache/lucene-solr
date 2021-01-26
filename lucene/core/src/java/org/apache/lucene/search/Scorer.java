@@ -102,8 +102,4 @@ public abstract class Scorer extends Scorable {
    */
   public abstract float getMaxScore(int upTo) throws IOException;
 
-  @Override
-  public float smoothingScore(int docId) throws IOException {
-    return 0;
-  }
 }

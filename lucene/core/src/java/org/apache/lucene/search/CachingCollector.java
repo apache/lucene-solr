@@ -49,7 +49,6 @@ public abstract class CachingCollector extends FilterCollector {
     // members.
     int doc;
     float score;
-    float smoothingScore;
 
     @Override
     public final float score() {
