@@ -16,14 +16,17 @@
  */
 package org.apache.lucene.util;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 import org.junit.Before;
 import org.junit.Test;
@@ -261,6 +264,44 @@ public class TestBytesRefHash extends LuceneTestCase {
       }
 
       assertAllIn(strings, hash);
+      hash.clear();
+      assertEquals(0, hash.size());
+      hash.reinit();
+    }
+  }
+
+  @Test
+  public void testConcurrentFind() throws Exception {
+    int num = atLeast(2);
+    for (int j = 0; j < num; j++) {
+      List<String> strings = new ArrayList<>();
+      for (int i = 0; i < 797; i++) {
+        final String str = TestUtil.randomRealisticUnicodeString(random(), 1, 1000);
+        hash.add(new BytesRef(str));
+        assertTrue(strings.add(str));
+      }
+
+      AtomicInteger miss = new AtomicInteger();
+      Thread[] threads = new Thread[10];
+      for (int i = 0; i < threads.length; i++) {
+        int loops = atLeast(100);
+        threads[i] =
+            new Thread("t" + i) {
+              public void run() {
+                for (int k = 0; k < loops; k++) {
+                  BytesRef find = new BytesRef(strings.get(k % strings.size()));
+                  if (hash.find(find) < 0) {
+                    miss.incrementAndGet();
+                  }
+                }
+              }
+            };
+      }
+
+      for (Thread t : threads) t.start();
+      for (Thread t : threads) t.join();
+
+      assertEquals(0, miss.get());
       hash.clear();
       assertEquals(0, hash.size());
       hash.reinit();

@@ -41,9 +41,6 @@ public final class BytesRefHash implements Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class)
           +
-          // size of scratch1
-          RamUsageEstimator.shallowSizeOfInstance(BytesRef.class)
-          +
           // size of Counter
           RamUsageEstimator.primitiveSizes.get(long.class);
 
@@ -54,7 +51,6 @@ public final class BytesRefHash implements Accountable {
   final ByteBlockPool pool;
   int[] bytesStart;
 
-  private final BytesRef scratch1 = new BytesRef();
   private int hashSize;
   private int hashHalfSize;
   private int hashMask;
@@ -174,8 +170,9 @@ public final class BytesRefHash implements Accountable {
   }
 
   private boolean equals(int id, BytesRef b) {
-    pool.setBytesRef(scratch1, bytesStart[id]);
-    return scratch1.bytesEquals(b);
+    final BytesRef scratch = new BytesRef();
+    pool.setBytesRef(scratch, bytesStart[id]);
+    return scratch.bytesEquals(b);
   }
 
   private boolean shrink(int targetSize) {
