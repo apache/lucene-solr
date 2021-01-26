@@ -17,8 +17,10 @@
 package org.apache.lucene.backward_codecs.lucene84;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
+import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60RWPointsFormat;
 import org.apache.lucene.backward_codecs.lucene70.Lucene70RWSegmentInfoFormat;
+import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
