@@ -51,7 +51,6 @@ solrAdminApp.controller('LoggingController',
         }
         $scope.events = events;
         $scope.watcher = data.watcher;
-        $scope.nodes = 'all';
         /* @todo sticky_mode
         // state element is in viewport
         sticky_mode = ( state.position().top <= $( window ).scrollTop() + $( window ).height() - ( $( 'body' ).height() - state.position().top ) );
@@ -127,7 +126,6 @@ solrAdminApp.controller('LoggingController',
       Logging.levels(function(data) {
         $scope.logging = makeTree(data.loggers, "");
         $scope.watcher = data.watcher;
-        $scope.nodes = 'all';
         $scope.levels = [];
         for (level in data.levels) {
           $scope.levels.push({name:data.levels[level], pos:level});

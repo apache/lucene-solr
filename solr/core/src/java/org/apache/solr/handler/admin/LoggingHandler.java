@@ -49,7 +49,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
 
   @SuppressWarnings({"rawtypes"})
   private LogWatcher watcher;
-  private CoreContainer cc;
+  private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
     this.cc = cc;
@@ -57,16 +57,13 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
   }
   
   public LoggingHandler() {
-    
+    this.cc = null;
   }
   
   @Override
   public void inform(SolrCore core) {
     if (watcher == null) {
       watcher = core.getCoreContainer().getLogging();
-    }
-    if (cc == null) {
-      cc = core.getCoreContainer();
     }
   }
 
