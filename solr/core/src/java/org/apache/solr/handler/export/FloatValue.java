@@ -44,6 +44,10 @@ class FloatValue implements SortValue {
     return currentValue;
   }
 
+  public void toGlobalValue(SortValue previousValue) {
+
+  }
+
   public String getField() {
     return field;
   }
@@ -81,7 +85,7 @@ class FloatValue implements SortValue {
   }
 
   public void setCurrentValue(SortValue sv) {
-    FloatValue fv = (FloatValue)sv;
+    FloatValue fv = (FloatValue) sv;
     this.currentValue = fv.currentValue;
     this.present = fv.present;
   }
@@ -92,7 +96,7 @@ class FloatValue implements SortValue {
   }
 
   public int compareTo(SortValue o) {
-    FloatValue fv = (FloatValue)o;
+    FloatValue fv = (FloatValue) o;
     return comp.compare(currentValue, fv.currentValue);
   }
 }

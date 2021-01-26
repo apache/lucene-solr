@@ -34,13 +34,16 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,28 +76,9 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
+  static final int FLAG_UNSET = 0;
+  private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
-
-  private static final String ALIAS_KEY = "AF";
-  private static final String MORPH_ALIAS_KEY = "AM";
-  private static final String PREFIX_KEY = "PFX";
-  private static final String SUFFIX_KEY = "SFX";
-  private static final String FLAG_KEY = "FLAG";
-  private static final String COMPLEXPREFIXES_KEY = "COMPLEXPREFIXES";
-  private static final String CIRCUMFIX_KEY = "CIRCUMFIX";
-  private static final String IGNORE_KEY = "IGNORE";
-  private static final String ICONV_KEY = "ICONV";
-  private static final String OCONV_KEY = "OCONV";
-  private static final String FULLSTRIP_KEY = "FULLSTRIP";
-  private static final String LANG_KEY = "LANG";
-  private static final String KEEPCASE_KEY = "KEEPCASE";
-  private static final String NEEDAFFIX_KEY = "NEEDAFFIX";
-  private static final String PSEUDOROOT_KEY = "PSEUDOROOT";
-  private static final String ONLYINCOMPOUND_KEY = "ONLYINCOMPOUND";
-
-  private static final String NUM_FLAG_TYPE = "num";
-  private static final String UTF8_FLAG_TYPE = "UTF-8";
-  private static final String LONG_FLAG_TYPE = "long";
 
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
@@ -103,6 +87,7 @@ public class Dictionary {
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
+  Breaks breaks = Breaks.DEFAULT;
 
   // all condition checks used by prefixes and suffixes. these are typically re-used across
   // many affix stripping rules. so these are deduplicated, to save RAM.
@@ -130,7 +115,7 @@ public class Dictionary {
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
-  private FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
+  FlagParsingStrategy flagParsingStrategy = new SimpleFlagParsingStrategy();
 
   // AF entries
   private String[] aliases;
@@ -152,10 +137,13 @@ public class Dictionary {
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
 
-  int circumfix = -1; // circumfix flag, or -1 if one is not defined
-  int keepcase = -1; // keepcase flag, or -1 if one is not defined
-  int needaffix = -1; // needaffix flag, or -1 if one is not defined
-  int onlyincompound = -1; // onlyincompound flag, or -1 if one is not defined
+  char circumfix;
+  char keepcase;
+  char needaffix;
+  char forbiddenword;
+  char onlyincompound;
+  int compoundMin = 3;
+  List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
@@ -256,6 +244,10 @@ public class Dictionary {
     }
   }
 
+  int formStep() {
+    return hasStemExceptions ? 2 : 1;
+  }
+
   /** Looks up Hunspell word forms from the dictionary */
   IntsRef lookupWord(char[] word, int offset, int length) {
     return lookup(words, word, offset, length);
@@ -331,75 +323,62 @@ public class Dictionary {
       if (reader.getLineNumber() == 1 && line.startsWith("\uFEFF")) {
         line = line.substring(1);
       }
-      if (line.startsWith(ALIAS_KEY)) {
+      line = line.trim();
+      if (line.isEmpty()) continue;
+
+      String firstWord = line.split("\\s")[0];
+      if ("AF".equals(firstWord)) {
         parseAlias(line);
-      } else if (line.startsWith(MORPH_ALIAS_KEY)) {
+      } else if ("AM".equals(firstWord)) {
         parseMorphAlias(line);
-      } else if (line.startsWith(PREFIX_KEY)) {
+      } else if ("PFX".equals(firstWord)) {
         parseAffix(
             prefixes, line, reader, PREFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
-      } else if (line.startsWith(SUFFIX_KEY)) {
+      } else if ("SFX".equals(firstWord)) {
         parseAffix(
             suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
-      } else if (line.startsWith(FLAG_KEY)) {
+      } else if ("FLAG".equals(firstWord)) {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
         flagParsingStrategy = getFlagParsingStrategy(line);
-      } else if (line.equals(COMPLEXPREFIXES_KEY)) {
+      } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
-      } else if (line.startsWith(CIRCUMFIX_KEY)) {
-        String[] parts = line.split("\\s+");
-        if (parts.length != 2) {
-          throw new ParseException("Illegal CIRCUMFIX declaration", reader.getLineNumber());
-        }
-        circumfix = flagParsingStrategy.parseFlag(parts[1]);
-      } else if (line.startsWith(KEEPCASE_KEY)) {
-        String[] parts = line.split("\\s+");
-        if (parts.length != 2) {
-          throw new ParseException("Illegal KEEPCASE declaration", reader.getLineNumber());
-        }
-        keepcase = flagParsingStrategy.parseFlag(parts[1]);
-      } else if (line.startsWith(NEEDAFFIX_KEY) || line.startsWith(PSEUDOROOT_KEY)) {
-        String[] parts = line.split("\\s+");
-        if (parts.length != 2) {
-          throw new ParseException("Illegal NEEDAFFIX declaration", reader.getLineNumber());
-        }
-        needaffix = flagParsingStrategy.parseFlag(parts[1]);
-      } else if (line.startsWith(ONLYINCOMPOUND_KEY)) {
-        String[] parts = line.split("\\s+");
-        if (parts.length != 2) {
-          throw new ParseException("Illegal ONLYINCOMPOUND declaration", reader.getLineNumber());
-        }
-        onlyincompound = flagParsingStrategy.parseFlag(parts[1]);
-      } else if (line.startsWith(IGNORE_KEY)) {
-        String[] parts = line.split("\\s+");
-        if (parts.length != 2) {
-          throw new ParseException("Illegal IGNORE declaration", reader.getLineNumber());
-        }
-        ignore = parts[1].toCharArray();
+      } else if ("CIRCUMFIX".equals(firstWord)) {
+        circumfix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("KEEPCASE".equals(firstWord)) {
+        keepcase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("NEEDAFFIX".equals(firstWord) || "PSEUDOROOT".equals(firstWord)) {
+        needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("ONLYINCOMPOUND".equals(firstWord)) {
+        onlyincompound = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("IGNORE".equals(firstWord)) {
+        ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
         needsInputCleaning = true;
-      } else if (line.startsWith(ICONV_KEY) || line.startsWith(OCONV_KEY)) {
-        String[] parts = line.split("\\s+");
-        String type = parts[0];
-        if (parts.length != 2) {
-          throw new ParseException("Illegal " + type + " declaration", reader.getLineNumber());
-        }
-        int num = Integer.parseInt(parts[1]);
+      } else if ("ICONV".equals(firstWord) || "OCONV".equals(firstWord)) {
+        int num = Integer.parseInt(singleArgument(reader, line));
         FST<CharsRef> res = parseConversions(reader, num);
-        if (type.equals("ICONV")) {
+        if (line.startsWith("I")) {
           iconv = res;
           needsInputCleaning |= iconv != null;
         } else {
           oconv = res;
           needsOutputCleaning |= oconv != null;
         }
-      } else if (line.startsWith(FULLSTRIP_KEY)) {
+      } else if ("FULLSTRIP".equals(firstWord)) {
         fullStrip = true;
-      } else if (line.startsWith(LANG_KEY)) {
-        language = line.substring(LANG_KEY.length()).trim();
+      } else if ("LANG".equals(firstWord)) {
+        language = singleArgument(reader, line);
         alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+      } else if ("BREAK".equals(firstWord)) {
+        breaks = parseBreaks(reader, line);
+      } else if ("FORBIDDENWORD".equals(firstWord)) {
+        forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDMIN".equals(firstWord)) {
+        compoundMin = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDRULE".equals(firstWord)) {
+        compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
       }
     }
 
@@ -421,6 +400,48 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private String singleArgument(LineNumberReader reader, String line) throws ParseException {
+    return splitBySpace(reader, line, 2)[1];
+  }
+
+  private String[] splitBySpace(LineNumberReader reader, String line, int expectedParts)
+      throws ParseException {
+    String[] parts = line.split("\\s+");
+    if (parts.length < expectedParts
+        || parts.length > expectedParts && !parts[expectedParts].startsWith("#")) {
+      throw new ParseException("Invalid syntax", reader.getLineNumber());
+    }
+    return parts;
+  }
+
+  private List<CompoundRule> parseCompoundRules(LineNumberReader reader, int num)
+      throws IOException, ParseException {
+    List<CompoundRule> compoundRules = new ArrayList<>();
+    for (int i = 0; i < num; i++) {
+      compoundRules.add(new CompoundRule(singleArgument(reader, reader.readLine()), this));
+    }
+    return compoundRules;
+  }
+
+  private Breaks parseBreaks(LineNumberReader reader, String line)
+      throws IOException, ParseException {
+    Set<String> starting = new LinkedHashSet<>();
+    Set<String> ending = new LinkedHashSet<>();
+    Set<String> middle = new LinkedHashSet<>();
+    int num = Integer.parseInt(singleArgument(reader, line));
+    for (int i = 0; i < num; i++) {
+      String breakStr = singleArgument(reader, reader.readLine());
+      if (breakStr.startsWith("^")) {
+        starting.add(breakStr.substring(1));
+      } else if (breakStr.endsWith("$")) {
+        ending.add(breakStr.substring(0, breakStr.length() - 1));
+      } else {
+        middle.add(breakStr);
+      }
+    }
+    return new Breaks(starting, ending, middle);
   }
 
   private FST<IntsRef> affixFST(TreeMap<String, List<Integer>> affixes) throws IOException {
@@ -615,11 +636,7 @@ public class Dictionary {
     Map<String, String> mappings = new TreeMap<>();
 
     for (int i = 0; i < num; i++) {
-      String line = reader.readLine();
-      String[] parts = line.split("\\s+");
-      if (parts.length != 3) {
-        throw new ParseException("invalid syntax: " + line, reader.getLineNumber());
-      }
+      String[] parts = splitBySpace(reader, reader.readLine(), 3);
       if (mappings.put(parts[1], parts[2]) != null) {
         throw new IllegalStateException("duplicate mapping specified for: " + parts[1]);
       }
@@ -715,11 +732,11 @@ public class Dictionary {
     }
     String flagType = parts[1];
 
-    if (NUM_FLAG_TYPE.equals(flagType)) {
+    if ("num".equals(flagType)) {
       return new NumFlagParsingStrategy();
-    } else if (UTF8_FLAG_TYPE.equals(flagType)) {
+    } else if ("UTF-8".equals(flagType)) {
       return new SimpleFlagParsingStrategy();
-    } else if (LONG_FLAG_TYPE.equals(flagType)) {
+    } else if ("long".equals(flagType)) {
       return new DoubleASCIIFlagParsingStrategy();
     }
 
@@ -867,7 +884,7 @@ public class Dictionary {
       reuse.append(caseFold(word.charAt(i)));
     }
     reuse.append(FLAG_SEPARATOR);
-    reuse.append(HIDDEN_FLAG);
+    flagParsingStrategy.appendFlag(HIDDEN_FLAG, reuse);
     reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
     writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
   }
@@ -1058,7 +1075,9 @@ public class Dictionary {
     return hasFlag(flags, HIDDEN_FLAG);
   }
 
-  static char[] decodeFlags(BytesRef b) {
+  char[] decodeFlags(int entryId, BytesRef b) {
+    this.flagLookup.get(entryId, b);
+
     if (b.length == 0) {
       return CharsRef.EMPTY_CHARS;
     }
@@ -1143,6 +1162,24 @@ public class Dictionary {
     return null;
   }
 
+  boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {
+    if (forbiddenword != FLAG_UNSET) {
+      IntsRef forms = lookupWord(word, 0, length);
+      return forms != null && hasFlag(forms, forbiddenword, scratch);
+    }
+    return false;
+  }
+
+  boolean hasFlag(IntsRef forms, char flag, BytesRef scratch) {
+    int formStep = formStep();
+    for (int i = 0; i < forms.length; i += formStep) {
+      if (hasFlag(forms.ints[forms.offset + i], flag, scratch)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /** Abstraction of the process of parsing flags taken from the affix and dic files */
   abstract static class FlagParsingStrategy {
 
@@ -1167,6 +1204,8 @@ public class Dictionary {
      * @return Parsed flags
      */
     abstract char[] parseFlags(String rawFlags);
+
+    abstract void appendFlag(char flag, StringBuilder to);
   }
 
   /**
@@ -1177,6 +1216,11 @@ public class Dictionary {
     @Override
     public char[] parseFlags(String rawFlags) {
       return rawFlags.toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(flag);
     }
   }
 
@@ -1198,13 +1242,24 @@ public class Dictionary {
         if (replacement.isEmpty()) {
           continue;
         }
-        flags[upto++] = (char) Integer.parseInt(replacement);
+        int flag = Integer.parseInt(replacement);
+        if (flag == FLAG_UNSET || flag >= Character.MAX_VALUE) { // read default flags as well
+          throw new IllegalArgumentException(
+              "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
+        }
+        flags[upto++] = (char) flag;
       }
 
       if (upto < flags.length) {
         flags = ArrayUtil.copyOfSubArray(flags, 0, upto);
       }
       return flags;
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append((int) flag);
+      to.append(",");
     }
   }
 
@@ -1240,10 +1295,24 @@ public class Dictionary {
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append((char) (flag >> 8));
+      to.append((char) (flag & 0xff));
+    }
+  }
+
+  boolean hasCompounding() {
+    return compoundRules != null;
+  }
+
+  boolean hasFlag(int entryId, char flag, BytesRef scratch) {
+    return flag != FLAG_UNSET && hasFlag(decodeFlags(entryId, scratch), flag);
   }
 
   static boolean hasFlag(char[] flags, char flag) {
-    return Arrays.binarySearch(flags, flag) >= 0;
+    return flag != FLAG_UNSET && Arrays.binarySearch(flags, flag) >= 0;
   }
 
   CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
@@ -1370,5 +1439,22 @@ public class Dictionary {
     }
 
     return DEFAULT_TEMP_DIR;
+  }
+
+  /** Possible word breaks according to BREAK directives */
+  static class Breaks {
+    private static final Set<String> MINUS = Collections.singleton("-");
+    static final Breaks DEFAULT = new Breaks(MINUS, MINUS, MINUS);
+    final String[] starting, ending, middle;
+
+    Breaks(Collection<String> starting, Collection<String> ending, Collection<String> middle) {
+      this.starting = starting.toArray(new String[0]);
+      this.ending = ending.toArray(new String[0]);
+      this.middle = middle.toArray(new String[0]);
+    }
+
+    boolean isNotEmpty() {
+      return middle.length > 0 || starting.length > 0 || ending.length > 0;
+    }
   }
 }

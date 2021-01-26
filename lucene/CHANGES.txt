@@ -86,8 +86,8 @@ API Changes
 
 Improvements
 
-* LUCENE-9665 LUCENE-9676 Hunspell improvements: support default encoding, improve stemming of all-caps words
-  (Peter Gromov)
+* LUCENE-9687: Hunspell support improvements: add SpellChecker API, support default encoding and
+  BREAK/FORBIDDENWORD/COMPOUNDRULE affix rules, improve stemming of all-caps words (Peter Gromov)
 
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)
@@ -180,6 +180,9 @@ Improvements
 * LUCENE-8982: Make NativeUnixDirectory pure java with FileChannel direct IO flag,
   and rename to DirectIODirectory (Zach Chen, Uwe Schindler, Mike McCandless, Dawid Weiss).
 
+* LUCENE-9674: Implement faster advance on VectorValues using binary search.
+  (Anand Kotriwal, Mike Sokolov)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -196,6 +199,15 @@ Bug fixes
 
 * LUCENE-9365: FuzzyQuery was missing matches when prefix length was equal to the term length
   (Mark Harwood, Mike Drob)
+
+Changes in Backwards Compatibility Policy
+
+* LUCENE-9669: DirectoryReader#open now accepts an argument to open indices created with versions
+  older than N-1. Lucene now can open indices created with a major version of N-2 in read-only mode.
+  Opening an index created with a major version of N-2 with an IndexWriter is not supported.
+  Further does lucene only support file-format compatibilty which enables reading of old indices while
+  semantic changes like analysis or certain encoding on top of the file format are only supported on 
+  a best effort basis. (Simon Willnauer)  
 
 Other
 

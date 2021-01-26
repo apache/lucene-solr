@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.rule.ImplicitSnitch;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -304,7 +305,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         // copy over property params:
         for (String key : message.keySet()) {
-          if (key.startsWith(OverseerCollectionMessageHandler.COLL_PROP_PREFIX)) {
+          if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
             propMap.put(key, message.getStr(key));
           }
         }
@@ -435,7 +436,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           .onNodes(new ArrayList<>(clusterState.getLiveNodes()))
           .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-          ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+          ocmh.overseer.getCoreContainer(),
           clusterState, collection);
       List<ReplicaPosition> replicaPositions = assignStrategy.assign(ocmh.cloudManager, assignRequest);
       t.stop();
@@ -472,7 +473,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(CoreAdminParams.NAME, solrCoreName);
         // copy over property params:
         for (String key : message.keySet()) {
-          if (key.startsWith(OverseerCollectionMessageHandler.COLL_PROP_PREFIX)) {
+          if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
             propMap.put(key, message.getStr(key));
           }
         }

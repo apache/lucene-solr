@@ -356,7 +356,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
               .onNodes(nodeList)
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+              ocmh.overseer.getCoreContainer(),
               clusterState, restoreCollection);
       return assignStrategy.assign(ocmh.cloudManager, assignRequest);
     }

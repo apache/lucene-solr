@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -60,7 +60,7 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     final Random r = new SecureRandom();
     byte[] salt = new byte[32];
     r.nextBytes(salt);
-    String saltBase64 = Base64.encodeBase64String(salt);
+    String saltBase64 = Base64.getEncoder().encodeToString(salt);
     String val = sha256(pwd, saltBase64) + " " + saltBase64;
     return val;
   }
@@ -121,13 +121,13 @@ public class Sha256AuthenticationProvider implements ConfigEditablePlugin,  Basi
     }
     if (saltKey != null) {
       digest.reset();
-      digest.update(Base64.decodeBase64(saltKey));
+      digest.update(Base64.getDecoder().decode(saltKey));
     }
 
     byte[] btPass = digest.digest(password.getBytes(StandardCharsets.UTF_8));
     digest.reset();
     btPass = digest.digest(btPass);
-    return Base64.encodeBase64String(btPass);
+    return Base64.getEncoder().encodeToString(btPass);
   }
 
   @Override
