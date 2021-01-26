@@ -168,20 +168,18 @@ final class Stemmer {
           continue;
         }
         // we can't add this form, it's a pseudostem requiring an affix
-        if (dictionary.needaffix != -1
-            && Dictionary.hasFlag(wordFlags, (char) dictionary.needaffix)) {
+        if (Dictionary.hasFlag(wordFlags, dictionary.needaffix)) {
           continue;
         }
         // we can't add this form, it only belongs inside a compound word
-        if (dictionary.onlyincompound != -1
-            && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
+        if (Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
           continue;
         }
         stems.add(newStem(word, length, forms, i));
       }
     }
     try {
-      stems.addAll(stem(word, length, -1, -1, -1, 0, true, true, false, false, caseVariant));
+      stems.addAll(stem(word, length, -1, (char) 0, -1, 0, true, true, false, false, caseVariant));
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
@@ -190,7 +188,7 @@ final class Stemmer {
 
   private boolean acceptCase(boolean caseVariant, char[] wordFlags) {
     return caseVariant
-        ? dictionary.keepcase == -1 || !Dictionary.hasFlag(wordFlags, (char) dictionary.keepcase)
+        ? !Dictionary.hasFlag(wordFlags, dictionary.keepcase)
         : !Dictionary.hasHiddenFlag(wordFlags);
   }
 
@@ -289,7 +287,7 @@ final class Stemmer {
       char[] word,
       int length,
       int previous,
-      int prevFlag,
+      char prevFlag,
       int prefixId,
       int recursionDepth,
       boolean doPrefix,
@@ -428,27 +426,19 @@ final class Stemmer {
   }
 
   private boolean isAffixCompatible(
-      int affix, int prevFlag, int recursionDepth, boolean previousWasPrefix) {
+      int affix, char prevFlag, int recursionDepth, boolean previousWasPrefix) {
     int append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
     if (recursionDepth == 0) {
-      if (dictionary.onlyincompound == -1) {
-        return true;
-      }
-
       // check if affix is allowed in a non-compound word
-      return !dictionary.hasFlag(append, (char) dictionary.onlyincompound, scratch);
+      return !dictionary.hasFlag(append, dictionary.onlyincompound, scratch);
     }
 
     if (isCrossProduct(affix)) {
       // cross check incoming continuation class (flag of previous affix) against list.
       char[] appendFlags = dictionary.decodeFlags(append, scratch);
-      assert prevFlag >= 0;
-      boolean allowed =
-          dictionary.onlyincompound == -1
-              || !Dictionary.hasFlag(appendFlags, (char) dictionary.onlyincompound);
-      if (allowed) {
-        return previousWasPrefix || Dictionary.hasFlag(appendFlags, (char) prevFlag);
+      if (!Dictionary.hasFlag(appendFlags, dictionary.onlyincompound)) {
+        return previousWasPrefix || Dictionary.hasFlag(appendFlags, prevFlag);
       }
     }
 
@@ -528,8 +518,8 @@ final class Stemmer {
 
           // if circumfix was previously set by a prefix, we must check this suffix,
           // to ensure it has it, and vice versa
-          if (dictionary.circumfix != -1) {
-            boolean suffixCircumfix = isFlagAppendedByAffix(affix, (char) dictionary.circumfix);
+          if (dictionary.circumfix != Dictionary.FLAG_UNSET) {
+            boolean suffixCircumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
             if (circumfix != suffixCircumfix) {
               continue;
             }
@@ -540,8 +530,7 @@ final class Stemmer {
             continue;
           }
           // we aren't decompounding (yet)
-          if (dictionary.onlyincompound != -1
-              && Dictionary.hasFlag(wordFlags, (char) dictionary.onlyincompound)) {
+          if (Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
             continue;
           }
           stems.add(newStem(strippedWord, length, forms, i));
@@ -551,8 +540,8 @@ final class Stemmer {
 
     // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we
     // have that flag
-    if (dictionary.circumfix != -1 && !circumfix && prefix) {
-      circumfix = isFlagAppendedByAffix(affix, (char) dictionary.circumfix);
+    if (dictionary.circumfix != Dictionary.FLAG_UNSET && !circumfix && prefix) {
+      circumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
     }
 
     if (isCrossProduct(affix) && recursionDepth <= 1) {
@@ -602,7 +591,7 @@ final class Stemmer {
   }
 
   private boolean isFlagAppendedByAffix(int affixId, char flag) {
-    if (affixId < 0) return false;
+    if (affixId < 0 || flag == Dictionary.FLAG_UNSET) return false;
     int appendId = dictionary.affixData(affixId, Dictionary.AFFIX_APPEND);
     return dictionary.hasFlag(appendId, flag, scratch);
   }
