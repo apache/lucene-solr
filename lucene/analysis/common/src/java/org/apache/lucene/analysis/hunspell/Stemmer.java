@@ -143,7 +143,7 @@ final class Stemmer {
 
   // Special prefix handling for Catalan, French, Italian:
   // prefixes separated by apostrophe (SANT'ELIA -> Sant'+Elia).
-  char[] capitalizeAfterApostrophe(char[] word, int length) {
+  static char[] capitalizeAfterApostrophe(char[] word, int length) {
     for (int i = 1; i < length - 1; i++) {
       if (word[i] == '\'') {
         char next = word[i + 1];
@@ -175,11 +175,12 @@ final class Stemmer {
         if (Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
           continue;
         }
-        stems.add(newStem(word, length, forms, i));
+        stems.add(newStem(word, 0, length, forms, i));
       }
     }
     try {
-      stems.addAll(stem(word, length, -1, (char) 0, -1, 0, true, true, false, false, caseVariant));
+      stems.addAll(
+          stem(word, 0, length, -1, (char) 0, -1, 0, true, true, false, false, caseVariant));
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
@@ -214,7 +215,7 @@ final class Stemmer {
     return deduped;
   }
 
-  private CharsRef newStem(char[] buffer, int length, IntsRef forms, int formID) {
+  private CharsRef newStem(char[] buffer, int offset, int length, IntsRef forms, int formID) {
     final String exception;
     if (dictionary.hasStemExceptions) {
       int exceptionID = forms.ints[forms.offset + formID + 1];
@@ -232,7 +233,7 @@ final class Stemmer {
       if (exception != null) {
         scratchSegment.append(exception);
       } else {
-        scratchSegment.append(buffer, 0, length);
+        scratchSegment.append(buffer, offset, length);
       }
       try {
         Dictionary.applyMappings(dictionary.oconv, scratchSegment);
@@ -246,7 +247,7 @@ final class Stemmer {
       if (exception != null) {
         return new CharsRef(exception);
       } else {
-        return new CharsRef(buffer, 0, length);
+        return new CharsRef(buffer, offset, length);
       }
     }
   }
@@ -284,6 +285,7 @@ final class Stemmer {
    */
   private List<CharsRef> stem(
       char[] word,
+      int offset,
       int length,
       int previous,
       char prevFlag,
@@ -308,7 +310,7 @@ final class Stemmer {
       int limit = dictionary.fullStrip ? length + 1 : length;
       for (int i = 0; i < limit; i++) {
         if (i > 0) {
-          int ch = word[i - 1];
+          char ch = word[offset + i - 1];
           if (fst.findTargetArc(ch, arc, arc, prefixReader) == null) {
             break;
           } else if (arc.output() != NO_OUTPUT) {
@@ -327,15 +329,17 @@ final class Stemmer {
           }
 
           if (isAffixCompatible(prefix, prevFlag, recursionDepth, false)) {
-            char[] strippedWord = stripAffix(word, length, i, prefix, true);
+            char[] strippedWord = stripAffix(word, offset, length, i, prefix, true);
             if (strippedWord == null) {
               continue;
             }
 
+            boolean pureAffix = strippedWord == word;
             stems.addAll(
                 applyAffix(
                     strippedWord,
-                    strippedWord.length,
+                    pureAffix ? offset + i : 0,
+                    pureAffix ? length - i : strippedWord.length,
                     prefix,
                     -1,
                     recursionDepth,
@@ -356,7 +360,7 @@ final class Stemmer {
       int limit = dictionary.fullStrip ? 0 : 1;
       for (int i = length; i >= limit; i--) {
         if (i < length) {
-          int ch = word[i];
+          char ch = word[offset + i];
           if (fst.findTargetArc(ch, arc, arc, suffixReader) == null) {
             break;
           } else if (arc.output() != NO_OUTPUT) {
@@ -375,15 +379,17 @@ final class Stemmer {
           }
 
           if (isAffixCompatible(suffix, prevFlag, recursionDepth, previousWasPrefix)) {
-            char[] strippedWord = stripAffix(word, length, length - i, suffix, false);
+            char[] strippedWord = stripAffix(word, offset, length, length - i, suffix, false);
             if (strippedWord == null) {
               continue;
             }
 
+            boolean pureAffix = strippedWord == word;
             stems.addAll(
                 applyAffix(
                     strippedWord,
-                    strippedWord.length,
+                    pureAffix ? offset : 0,
+                    pureAffix ? i : strippedWord.length,
                     suffix,
                     prefixId,
                     recursionDepth,
@@ -398,7 +404,13 @@ final class Stemmer {
     return stems;
   }
 
-  private char[] stripAffix(char[] word, int length, int affixLen, int affix, boolean isPrefix) {
+  /**
+   * @return null if affix conditions isn't met; a reference to the same char[] if the affix has no
+   *     strip data and can thus be simply removed, or a new char[] containing the word affix
+   *     removal
+   */
+  private char[] stripAffix(
+      char[] word, int offset, int length, int affixLen, int affix, boolean isPrefix) {
     int deAffixedLen = length - affixLen;
 
     int stripOrd = dictionary.affixData(affix, Dictionary.AFFIX_STRIP_ORD);
@@ -409,15 +421,22 @@ final class Stemmer {
     char[] stripData = dictionary.stripData;
     boolean condition =
         isPrefix
-            ? checkCondition(affix, stripData, stripStart, stripLen, word, affixLen, deAffixedLen)
-            : checkCondition(affix, word, 0, deAffixedLen, stripData, stripStart, stripLen);
+            ? checkCondition(
+                affix, stripData, stripStart, stripLen, word, offset + affixLen, deAffixedLen)
+            : checkCondition(affix, word, offset, deAffixedLen, stripData, stripStart, stripLen);
     if (!condition) {
       return null;
     }
 
+    if (stripLen == 0) return word;
+
     char[] strippedWord = new char[stripLen + deAffixedLen];
     System.arraycopy(
-        word, isPrefix ? affixLen : 0, strippedWord, isPrefix ? stripLen : 0, deAffixedLen);
+        word,
+        offset + (isPrefix ? affixLen : 0),
+        strippedWord,
+        isPrefix ? stripLen : 0,
+        deAffixedLen);
     System.arraycopy(stripData, stripStart, strippedWord, isPrefix ? 0 : deAffixedLen, stripLen);
     return strippedWord;
   }
@@ -484,6 +503,7 @@ final class Stemmer {
    */
   private List<CharsRef> applyAffix(
       char[] strippedWord,
+      int offset,
       int length,
       int affix,
       int prefixId,
@@ -496,7 +516,7 @@ final class Stemmer {
 
     List<CharsRef> stems = new ArrayList<>();
 
-    IntsRef forms = dictionary.lookupWord(strippedWord, 0, length);
+    IntsRef forms = dictionary.lookupWord(strippedWord, offset, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
         char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
@@ -530,7 +550,7 @@ final class Stemmer {
           if (Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
             continue;
           }
-          stems.add(newStem(strippedWord, length, forms, i));
+          stems.add(newStem(strippedWord, offset, length, forms, i));
         }
       }
     }
@@ -572,6 +592,7 @@ final class Stemmer {
       stems.addAll(
           stem(
               strippedWord,
+              offset,
               length,
               affix,
               flag,
