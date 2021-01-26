@@ -247,6 +247,13 @@ Other
 * LUCENE-9627: Remove unused Lucene50FieldInfosFormat codec and small refactor some codecs
   to separate reading header/footer from reading content of the file. (Ignacio Vera)
 
+======================= Lucene 8.9.0 =======================
+
+New Features
+---------------------
+
+* LUCENE-9694: New tool for creating a deterministic index (Haoyu Zhai)
+
 ======================= Lucene 8.8.0 =======================
 
 New Features
