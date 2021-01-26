@@ -92,6 +92,13 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       collection = extCollection;
     }
 
+    // verify the placement modifications caused by the deletion are allowed
+    DocCollection coll = state.getCollectionOrNull(collection);
+    if (coll != null) {
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.overseer.getCoreContainer(), state, coll);
+      assignStrategy.verifyDeleteCollection(ocmh.cloudManager, coll);
+    }
+
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
 
     boolean removeCounterNode = true;

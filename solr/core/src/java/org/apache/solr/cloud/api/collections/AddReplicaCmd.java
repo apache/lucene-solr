@@ -45,7 +45,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
-import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -61,6 +60,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     List<CreateReplica> createReplicas = buildReplicaPositions(ocmh.cloudManager, clusterState, collectionName, message, replicaTypesVsCount,
-        ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance())
+        ocmh.overseer.getCoreContainer())
           .stream()
           .map(replicaPosition -> assignReplicaDetails(ocmh.cloudManager, clusterState, message, replicaPosition))
           .collect(Collectors.toList());
@@ -302,7 +302,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
                                                             String collectionName, ZkNodeProps message,
                                                             EnumMap<Replica.Type, Integer> replicaTypeVsCount,
-                                                            PlacementPlugin placementPlugin) throws IOException, InterruptedException {
+                                                            CoreContainer coreContainer) throws IOException, InterruptedException {
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
     boolean skipNodeAssignment = message.getBool(CollectionAdminParams.SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
@@ -326,7 +326,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (!skipCreateReplicaInClusterState && !skipNodeAssignment) {
 
       positions = Assign.getNodesForNewReplicas(clusterState, collection.getName(), sliceName, numNrtReplicas,
-                    numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager, placementPlugin);
+                    numTlogReplicas, numPullReplicas, createNodeSetStr, cloudManager, coreContainer);
     }
 
     if (positions == null)  {

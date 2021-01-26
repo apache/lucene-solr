@@ -41,8 +41,6 @@ import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.NodesDownEvent;
-import org.apache.solr.cluster.placement.PlacementPluginConfig;
-import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
@@ -72,18 +70,18 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   private final SolrClient solrClient;
   private final SolrCloudManager solrCloudManager;
+  private final CoreContainer cc;
 
   private State state = State.STOPPED;
 
   private int waitForSecond = DEFAULT_WAIT_FOR_SEC;
 
   private ScheduledThreadPoolExecutor waitForExecutor;
-  private final PlacementPluginFactory<? extends PlacementPluginConfig> placementPluginFactory;
 
   public CollectionsRepairEventListener(CoreContainer cc) {
+    this.cc = cc;
     this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
-    this.placementPluginFactory = cc.getPlacementPluginFactory();
   }
 
   @VisibleForTesting
@@ -169,7 +167,7 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
                 .incrementAndGet();
           }
         });
-        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(placementPluginFactory.createPluginInstance(), clusterState, coll);
+        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc, clusterState, coll);
         lostReplicas.forEach((shard, types) -> {
           Assign.AssignRequestBuilder assignRequestBuilder = new Assign.AssignRequestBuilder()
               .forCollection(coll.getName())

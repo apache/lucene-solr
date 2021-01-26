@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -71,7 +72,7 @@ import static java.util.Collections.singletonMap;
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String COLLECTION = PlacementPluginIntegrationTest.class.getName() + "_collection";
+  private static final String COLLECTION = PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
 
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
@@ -229,6 +230,88 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     waitForVersionChange(version, wrapper, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
+  }
+
+  @Test
+  public void testWithCollectionIntegration() throws Exception {
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
+    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+
+    int version = wrapper.getVersion();
+    log.debug("--initial version={}", version);
+
+    Set<String> nodeSet = new HashSet<>();
+    for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
+      if (nodeSet.size() > 1) {
+        break;
+      }
+      nodeSet.add(node);
+    }
+
+    String SECONDARY_COLLECTION = COLLECTION + "_secondary";
+    PluginMeta plugin = new PluginMeta();
+    plugin.name = PlacementPluginFactory.PLUGIN_NAME;
+    plugin.klass = AffinityPlacementFactory.class.getName();
+    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION));
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+        .forceV2(true)
+        .POST()
+        .withPayload(singletonMap("add", plugin))
+        .build();
+    req.process(cluster.getSolrClient());
+
+    version = waitForVersionChange(version, wrapper, 10);
+
+    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.isSuccess());
+    cluster.waitForActiveCollection(SECONDARY_COLLECTION, 1, 3);
+    DocCollection secondary = cloudManager.getClusterStateProvider().getClusterState().getCollection(SECONDARY_COLLECTION);
+    Set<String> secondaryNodes = new HashSet<>();
+    secondary.forEachReplica((shard, replica) -> secondaryNodes.add(replica.getNodeName()));
+
+    rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+        .setCreateNodeSet(String.join(",", nodeSet))
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.isSuccess());
+    cluster.waitForActiveCollection(COLLECTION, 2, 4);
+    // make sure the primary replicas were placed on the nodeset
+    DocCollection primary = cloudManager.getClusterStateProvider().getClusterState().getCollection(COLLECTION);
+    primary.forEachReplica((shard, replica) ->
+        assertTrue("primary replica not on secondary node!", nodeSet.contains(replica.getNodeName())));
+
+    // try deleting secondary replica from node without the primary replica
+    Optional<String> onlySecondaryReplica = secondary.getReplicas().stream()
+        .filter(replica -> !nodeSet.contains(replica.getNodeName()))
+        .map(replica -> replica.getName()).findFirst();
+    assertTrue("no secondary node without primary replica", onlySecondaryReplica.isPresent());
+
+    rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", onlySecondaryReplica.get())
+        .process(cluster.getSolrClient());
+    assertTrue("delete of a lone secondary replica should succeed", rsp.isSuccess());
+
+    // try deleting secondary replica from node WITH the primary replica - should fail
+    Optional<String> secondaryWithPrimaryReplica = secondary.getReplicas().stream()
+        .filter(replica -> nodeSet.contains(replica.getNodeName()))
+        .map(replica -> replica.getName()).findFirst();
+    assertTrue("no secondary node with primary replica", secondaryWithPrimaryReplica.isPresent());
+    try {
+      rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", secondaryWithPrimaryReplica.get())
+          .process(cluster.getSolrClient());
+      fail("should have failed: " + rsp);
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains("co-located with replicas"));
+    }
+
+    // try deleting secondary collection
+    try {
+      rsp = CollectionAdminRequest.deleteCollection(SECONDARY_COLLECTION)
+          .process(cluster.getSolrClient());
+      fail("should have failed: " + rsp);
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+    }
   }
 
   @Test

@@ -304,7 +304,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     props.put(CoreAdminParams.NAME, tempCollectionReplica2);
     // copy over property params:
     for (String key : message.keySet()) {
-      if (key.startsWith(OverseerCollectionMessageHandler.COLL_PROP_PREFIX)) {
+      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         props.put(key, message.getStr(key));
       }
     }
