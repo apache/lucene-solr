@@ -18,8 +18,10 @@ package org.apache.lucene.facet.taxonomy.directory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -314,7 +316,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
   @Override
   public FacetLabel getPath(int ordinal) throws IOException {
-    ensureOpen();
 
     // Since the cache is shared with DTR instances allocated from
     // doOpenIfChanged, we need to ensure that the ordinal is one that this DTR
@@ -324,14 +325,9 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
       return null;
     }
 
-    // TODO: can we use an int-based hash impl, such as IntToObjectMap,
-    // wrapped as LRU?
-    Integer catIDInteger = Integer.valueOf(ordinal);
-    synchronized (categoryCache) {
-      FacetLabel res = categoryCache.get(catIDInteger);
-      if (res != null) {
-        return res;
-      }
+    FacetLabel ordinalPath = getPathFromCache(ordinal);
+    if (ordinalPath != null) {
+      return ordinalPath;
     }
 
     int readerIndex = ReaderUtil.subIndex(ordinal, indexReader.leaves());
@@ -353,10 +349,61 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
     }
 
     synchronized (categoryCache) {
-      categoryCache.put(catIDInteger, ret);
+      categoryCache.put(ordinal, ret);
     }
 
     return ret;
+  }
+
+  private FacetLabel getPathFromCache(int ordinal) {
+    ensureOpen();
+
+    // TODO: can we use an int-based hash impl, such as IntToObjectMap,
+    // wrapped as LRU?
+    synchronized (categoryCache) {
+      FacetLabel res = categoryCache.get(ordinal);
+      if (res != null) {
+        return res;
+      }
+    }
+    return null;
+  }
+
+  /* This API is only supported for indexes created with Lucene 8.7+ codec **/
+  public FacetLabel[] getBulkPath(int[] ordinal) throws IOException {
+    FacetLabel[] bulkPath = new FacetLabel[ordinal.length];
+    Map<Integer,Integer> originalPosition = new HashMap<>();
+    for (int i = 0 ; i < ordinal.length ; i++) {
+      if (ordinal[i] < 0 || ordinal[i] >= indexReader.maxDoc()) {
+        return null;
+      }
+      FacetLabel ordinalPath = getPathFromCache(ordinal[i]);
+      if (ordinalPath != null) {
+        bulkPath[i] = ordinalPath;
+      }
+      originalPosition.put(ordinal[i], i);
+    }
+
+    Arrays.sort(ordinal);
+    int readerIndex = 0;
+    BinaryDocValues values = null;
+
+    for (int ord : ordinal) {
+      if (bulkPath[originalPosition.get(ord)] == null) {
+        if (values == null || values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase) == false) {
+          readerIndex = ReaderUtil.subIndex(ord, indexReader.leaves());
+          LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
+          values = leafReader.getBinaryDocValues(Consts.FULL);
+          assert values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase);
+        }
+        bulkPath[originalPosition.get(ord)] = new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
+        synchronized (categoryCache) {
+          categoryCache.put(ord, bulkPath[originalPosition.get(ord)]);
+        }
+      }
+    }
+
+    return bulkPath;
   }
 
   @Override

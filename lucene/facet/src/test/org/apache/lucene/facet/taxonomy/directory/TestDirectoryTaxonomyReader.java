@@ -16,11 +16,6 @@
  */
 package org.apache.lucene.facet.taxonomy.directory;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
@@ -37,6 +32,12 @@ import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
@@ -568,5 +569,32 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     assertTrue(taxoReader.getChildResources().size() > 0);
     taxoReader.close();
     dir.close();
+  }
+
+  public void testBulkPath() throws Exception {
+    Directory src = newDirectory();
+    DirectoryTaxonomyWriter w = new DirectoryTaxonomyWriter(src);
+    String arr[] = new String[]{"a", "b", "c", "d", "e"};
+
+    FacetLabel allpaths[] = new FacetLabel[arr.length];
+    int allords[] = new int[arr.length];
+
+    for (int i=0;i<arr.length;i++) {
+      allpaths[i] = new FacetLabel(arr[i]);
+      w.addCategory(allpaths[i]);
+    }
+    w.commit();
+    w.close();
+
+    DirectoryTaxonomyReader r1 = new DirectoryTaxonomyReader(src);
+
+    for (int i=0;i<allpaths.length;i++) {
+      allords[i] = r1.getOrdinal(allpaths[i]);
+    }
+
+    FacetLabel allBulkpath[] = r1.getBulkPath(allords);
+    assertArrayEquals(allpaths, allBulkpath);
+    r1.close();
+    src.close();
   }
 }
