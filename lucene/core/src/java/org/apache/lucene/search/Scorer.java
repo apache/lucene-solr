@@ -101,5 +101,4 @@ public abstract class Scorer extends Scorable {
    * {@link #advanceShallow(int) shallow-advanced} to included and {@code upTo} included.
    */
   public abstract float getMaxScore(int upTo) throws IOException;
-
 }
