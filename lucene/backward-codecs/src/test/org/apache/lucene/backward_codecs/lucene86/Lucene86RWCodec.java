@@ -18,8 +18,6 @@ package org.apache.lucene.backward_codecs.lucene86;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 
 /** RW impersonation of {@link Lucene86Codec}. */

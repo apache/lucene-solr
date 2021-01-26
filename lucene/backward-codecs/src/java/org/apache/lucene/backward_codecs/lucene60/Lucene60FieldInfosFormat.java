@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.backward_codecs.lucene60;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
@@ -33,10 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Lucene 6.0 Field Infos format.
@@ -313,9 +312,9 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
   }
 
   /**
-   * Note: although this format is only used on older versions, we need to keep the write logic
-   * in addition to the read logic. It's possible for field infos on older segments to be written
-   * to, for example as part of in-place doc values updates.
+   * Note: although this format is only used on older versions, we need to keep the write logic in
+   * addition to the read logic. It's possible for field infos on older segments to be written to,
+   * for example as part of in-place doc values updates.
    */
   @Override
   public void write(

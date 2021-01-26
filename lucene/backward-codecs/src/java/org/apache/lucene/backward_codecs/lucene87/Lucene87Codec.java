@@ -18,7 +18,6 @@
 package org.apache.lucene.backward_codecs.lucene87;
 
 import java.util.Objects;
-
 import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
