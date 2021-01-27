@@ -17,6 +17,12 @@
 
 package org.apache.solr.core.backup;
 
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Version;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.PropertiesInputStream;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -27,17 +33,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Version;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.util.PropertiesInputStream;
 
 /**
  * Represents a backup[-*].properties file and the methods to read/write it.

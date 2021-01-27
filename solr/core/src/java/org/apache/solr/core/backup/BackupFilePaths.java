@@ -17,6 +17,8 @@
 
 package org.apache.solr.core.backup;
 
+import org.apache.solr.core.backup.repository.BackupRepository;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -27,9 +29,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.core.backup.repository.BackupRepository;
 
 import static org.apache.solr.core.backup.BackupId.TRADITIONAL_BACKUP;
 import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
