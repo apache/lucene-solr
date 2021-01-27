@@ -1149,7 +1149,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     /**
      * Specify the ID of the backup-point to restore from.
      *
-     * '-1'q is used by default to have Solr restore from the most recent backup-point.
+     * '-1' is used by default to have Solr restore from the most recent backup-point.
      *
      * Solr can store multiple backup points for a given collection - each identified by a unique backup ID.  Users who
      * want to restore a particular backup-point can specify it using this method.
@@ -2697,6 +2697,87 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class List extends CollectionAdminRequest<CollectionAdminResponse> {
     public List () {
       super(CollectionAction.LIST);
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  // DELETEBACKUP request
+  public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private String backupName;
+    private String backupRepo;
+    private String backupLocation;
+    private Boolean purge;
+    private Integer backupId;
+    private Integer keepLastNumberOfBackups;
+
+    public DeleteBackup (String backupRepo, String backupLocation, String backupName) {
+      super(CollectionAction.DELETEBACKUP);
+      this.backupName = backupName;
+      this.backupRepo = backupRepo;
+      this.backupLocation = backupLocation;
+    }
+
+    public DeleteBackup deleteBackupId(int backupId) {
+      this.backupId = backupId;
+      return this;
+    }
+
+    public DeleteBackup keepLastNumberOfBackups(int num) {
+      this.keepLastNumberOfBackups = num;
+      return this;
+    }
+
+    public DeleteBackup purgeBackups(boolean purge) {
+      this.purge = purge;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, backupName);
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupLocation);
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, backupRepo);
+      if (backupId != null)
+        params.set(CoreAdminParams.BACKUP_ID, backupId);
+      if (keepLastNumberOfBackups != null)
+        params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, keepLastNumberOfBackups);
+      if (purge != null)
+        params.set(CoreAdminParams.BACKUP_PURGE_UNUSED, purge);
+      return params;
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  // LISTBACKUP request
+  public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private String backupName;
+    private String backupRepo;
+    private String backupLocation;
+
+    public ListBackup(String backupRepo, String backupLocation, String backupName) {
+      super(CollectionAction.LISTBACKUP);
+      this.backupName = backupName;
+      this.backupRepo = backupRepo;
+      this.backupLocation = backupLocation;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, backupName);
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupLocation);
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, backupRepo);
+
+      return params;
     }
 
     @Override

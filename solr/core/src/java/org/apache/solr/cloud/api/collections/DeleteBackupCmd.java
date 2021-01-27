@@ -57,11 +57,8 @@ import static org.apache.solr.core.backup.BackupManager.START_TIME_PROP;
  * An overseer command used to delete files associated with incremental backups.
  *
  * This assumes use of the incremental backup format, and not the (now deprecated) traditional 'full-snapshot' format.
- * The deletion can either delete a specific {@link BackupId}, or delete everything except the most recent N backup
- * points.
- *
- * While this functionality is structured as an overseer command, the message type isn't currently handled by the
- * overseer or recorded to the overseer queue by any APIs.  This integration will be added in the forthcoming SOLR-15101
+ * The deletion can either delete a specific {@link BackupId}, delete everything except the most recent N backup
+ * points, or can be used to trigger a "garbage collection" of unused index files in the backup repository.
  */
 public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -79,9 +76,10 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
         int backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
         int lastNumBackupPointsToKeep = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
-        if (backupId == -1 && lastNumBackupPointsToKeep == -1) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    String.format(Locale.ROOT, "%s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP_POINTS));
+        boolean purge = message.getBool(CoreAdminParams.BACKUP_PURGE_UNUSED, false);
+        if (backupId == -1 && lastNumBackupPointsToKeep == -1 && !purge) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "%s, %s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP_POINTS,
+                    CoreAdminParams.BACKUP_PURGE_UNUSED));
         }
         CoreContainer cc = ocmh.overseer.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {
@@ -93,12 +91,36 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                         "backup-deletion is only supported on incremental backups");
             }
 
-            if (backupId != -1){
+            if (purge) {
+                purge(repository, backupPath, results);
+            } else if (backupId != -1){
                 deleteBackupId(repository, backupPath, backupId, results);
             } else {
                 keepNumberOfBackup(repository, backupPath, lastNumBackupPointsToKeep, results);
             }
         }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    /**
+     * Clean up {@code backupPath} by removing all index files, shard-metadata files, and backup property files that are
+     * unreachable, uncompleted or corrupted.
+     */
+    void purge(BackupRepository repository, URI backupPath, @SuppressWarnings({"rawtypes"}) NamedList result) throws IOException {
+        PurgeGraph purgeGraph = new PurgeGraph();
+        purgeGraph.build(repository, backupPath);
+
+        BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
+        repository.delete(backupPaths.getIndexDir(), purgeGraph.indexFileDeletes, true);
+        repository.delete(backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes, true);
+        repository.delete(backupPath, purgeGraph.backupIdDeletes, true);
+
+        @SuppressWarnings({"rawtypes"})
+        NamedList details = new NamedList();
+        details.add("numBackupIds", purgeGraph.backupIdDeletes.size());
+        details.add("numShardBackupIds", purgeGraph.shardBackupMetadataDeletes.size());
+        details.add("numIndexFiles", purgeGraph.indexFileDeletes.size());
+        result.add("deleted", details);
     }
 
     /**
@@ -218,5 +240,163 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         deleteBackupIds(backupPath, repository, Collections.singleton(backupId), results);
+    }
+
+    final static class PurgeGraph {
+        // graph
+        Map<String, Node> backupIdNodeMap = new HashMap<>();
+        Map<String, Node> shardBackupMetadataNodeMap = new HashMap<>();
+        Map<String, Node> indexFileNodeMap = new HashMap<>();
+
+        // delete queues
+        List<String> backupIdDeletes = new ArrayList<>();
+        List<String> shardBackupMetadataDeletes = new ArrayList<>();
+        List<String> indexFileDeletes = new ArrayList<>();
+
+        public void build(BackupRepository repository, URI backupPath) throws IOException {
+            BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
+            buildLogicalGraph(repository, backupPath);
+            findDeletableNodes(repository, backupPaths);
+        }
+
+        public void findDeletableNodes(BackupRepository repository, BackupFilePaths backupPaths) {
+            // mark nodes as existing
+            visitExistingNodes(repository.listAllOrEmpty(backupPaths.getShardBackupMetadataDir()),
+                    shardBackupMetadataNodeMap, shardBackupMetadataDeletes);
+            // this may be a long running commands
+            visitExistingNodes(repository.listAllOrEmpty(backupPaths.getIndexDir()),
+                    indexFileNodeMap, indexFileDeletes);
+
+            // for nodes which are not existing, propagate that information to other nodes
+            shardBackupMetadataNodeMap.values().forEach(Node::propagateNotExisting);
+            indexFileNodeMap.values().forEach(Node::propagateNotExisting);
+
+            addDeleteNodesToQueue(backupIdNodeMap, backupIdDeletes);
+            addDeleteNodesToQueue(shardBackupMetadataNodeMap, shardBackupMetadataDeletes);
+            addDeleteNodesToQueue(indexFileNodeMap, indexFileDeletes);
+        }
+
+        /**
+         * Visiting files (nodes) actually present in physical layer,
+         * if it does not present in the {@code nodeMap}, it should be deleted by putting into the {@code deleteQueue}
+         */
+        private void visitExistingNodes(String[] existingNodeKeys, Map<String, Node> nodeMap, List<String> deleteQueue) {
+            for (String nodeKey : existingNodeKeys) {
+                Node node = nodeMap.get(nodeKey);
+
+                if (node == null) {
+                    deleteQueue.add(nodeKey);
+                } else {
+                    node.existing = true;
+                }
+            }
+        }
+
+        private <T> void addDeleteNodesToQueue(Map<T, Node> tNodeMap, List<T> deleteQueue) {
+            tNodeMap.forEach((key, value) -> {
+                if (value.delete) {
+                    deleteQueue.add(key);
+                }
+            });
+        }
+
+        Node getBackupIdNode(String backupPropsName) {
+            return backupIdNodeMap.computeIfAbsent(backupPropsName, bid -> {
+                Node node = new Node();
+                node.existing = true;
+                return node;
+            });
+        }
+
+        Node getShardBackupIdNode(String shardBackupId) {
+            return shardBackupMetadataNodeMap.computeIfAbsent(shardBackupId, s -> new Node());
+        }
+
+        Node getIndexFileNode(String indexFile) {
+            return indexFileNodeMap.computeIfAbsent(indexFile, s -> new IndexFileNode());
+        }
+
+        void addEdge(Node node1, Node node2) {
+            node1.addNeighbor(node2);
+            node2.addNeighbor(node1);
+        }
+
+        private void buildLogicalGraph(BackupRepository repository, URI backupPath) throws IOException {
+            List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(backupPath));
+            for (BackupId backupId : backupIds) {
+                BackupProperties backupProps = BackupProperties.readFrom(repository, backupPath,
+                        BackupFilePaths.getBackupPropsName(backupId));
+
+                Node backupIdNode = getBackupIdNode(BackupFilePaths.getBackupPropsName(backupId));
+                for (String shardBackupMetadataFilename : backupProps.getAllShardBackupMetadataFiles()) {
+                    Node shardBackupMetadataNode = getShardBackupIdNode(shardBackupMetadataFilename);
+                    addEdge(backupIdNode, shardBackupMetadataNode);
+
+                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath,
+                            ShardBackupId.fromShardMetadataFilename(shardBackupMetadataFilename));
+                    if (shardBackupMetadata == null)
+                        continue;
+
+                    for (String indexFile : shardBackupMetadata.listUniqueFileNames()) {
+                        Node indexFileNode = getIndexFileNode(indexFile);
+                        addEdge(indexFileNode, shardBackupMetadataNode);
+                    }
+                }
+            }
+        }
+    }
+
+    //ShardBackupMetadata, BackupId
+    static class Node {
+        List<Node> neighbors;
+        boolean delete = false;
+        boolean existing = false;
+
+        void addNeighbor(Node node) {
+            if (neighbors == null) {
+                neighbors = new ArrayList<>();
+            }
+            neighbors.add(node);
+        }
+
+        void propagateNotExisting() {
+            if (existing)
+                return;
+
+            if (neighbors != null)
+                neighbors.forEach(Node::propagateDelete);
+        }
+
+        void propagateDelete() {
+            if (delete || !existing)
+                return;
+
+            delete = true;
+            if (neighbors != null) {
+                neighbors.forEach(Node::propagateDelete);
+            }
+        }
+    }
+
+    //IndexFile
+    final static class IndexFileNode extends Node {
+        int refCount = 0;
+
+        @Override
+        void addNeighbor(Node node) {
+            super.addNeighbor(node);
+            refCount++;
+        }
+
+        @Override
+        void propagateDelete() {
+            if (delete || !existing)
+                return;
+
+            refCount--;
+            if (refCount == 0) {
+                delete = true;
+            }
+        }
     }
 }
