@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -145,6 +146,8 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
       ZkStateReader zkStateReader = ocmh.zkStateReader;
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      
+      cleanupZooKeeperShardMetadata(zkStateReader.getZkClient(), collectionName, sliceId);
 
       zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 
@@ -154,6 +157,23 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
+    }
+  }
+  
+  private void cleanupZooKeeperShardMetadata(SolrZkClient client, String collection, String sliceId) throws InterruptedException {
+    String[] cleanupPaths = new String[] {
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId,
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId,
+      ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId
+    };
+    
+    for (String path : cleanupPaths) {
+      try {
+        client.clean(path);
+      } catch (KeeperException ex) {
+        log.warn("Non-fatal error occurred attempting to delete shard metadata on zookeeper for collection " + 
+            collection + " and sliceId " + sliceId + " at path " + path, ex);
+      }
     }
   }
 

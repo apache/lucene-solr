@@ -34,6 +34,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
+import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,6 +80,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
     waitForState("Expected 'shard1' to be removed", collection, (n, c) -> {
       return c.getSlice("shard1") == null;
     });
+    
+    // verify shard1 znodes are deleted
+    assertShardZnodesDeleted(collection, "shard1");
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
@@ -86,7 +90,9 @@ public class DeleteShardTest extends SolrCloudTestCase {
     waitForState("Expected 'shard2' to be removed", collection, (n, c) -> {
       return c.getSlice("shard2") == null;
     });
-
+    
+    // verify shard2 znodes are deleted
+    assertShardZnodesDeleted(collection, "shard2");
   }
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {
@@ -154,5 +160,11 @@ public class DeleteShardTest extends SolrCloudTestCase {
     assertEquals(1, getCollectionState(collection).getActiveSlices().size());
     assertTrue("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
     assertTrue("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));
+  }
+  
+  private void assertShardZnodesDeleted(String collection, String sliceId) throws KeeperException, InterruptedException {
+    assertFalse(cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leader_elect/" + sliceId, true));
+    assertFalse(cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/leaders/" + sliceId, true));
+    assertFalse(cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + sliceId, true));
   }
 }
