@@ -371,7 +371,7 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+        alternateCasing = language.startsWith("tr") || language.startsWith("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
       } else if ("FORBIDDENWORD".equals(firstWord)) {
