@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -46,9 +47,7 @@ import org.junit.Test;
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
   private CloseableHttpClient httpClient;
   private CloudSolrClient solrClient;
-  private GenericSolrRequest req;
-  private SimpleSolrResponse rsp;
-  private ModifiableSolrParams mparams;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
@@ -101,21 +100,21 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   @Test
   public void proxyLoggingHandlerAllNodes() throws IOException, SolrServerException {
     CollectionAdminRequest.createCollection("collection", "conf", 2, 2).process(solrClient);
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
 
-    mparams = new ModifiableSolrParams();
     mparams.set(CommonParams.QT, "/admin/logging");
     mparams.set("nodes", "all");
     mparams.set("set", "com.codahale.metrics.jmx.JmxReporter:WARN");
-    req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/logging", mparams);
-    req.process(solrClient, "collection");
+    solrClient.query("collection", mparams, SolrRequest.METHOD.GET);
 
     Set<String> nodes = solrClient.getClusterStateProvider().getLiveNodes();
     nodes.forEach(node -> {
       mparams.clear();
+      mparams.set(CommonParams.QT, "/admin/logging");
       mparams.set("nodes", node);
-      req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/logging", mparams);
+      QueryResponse rsp = null;
       try {
-        rsp = req.process(solrClient, "collection");
+        rsp = solrClient.query("collection", mparams, SolrRequest.METHOD.GET);
       } catch (Exception e) {
         fail("Exception while proxying request to node " + node);
       }
