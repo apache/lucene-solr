@@ -48,10 +48,8 @@
   </requestHandler>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="org.apache.solr.cloud.MockScriptUpdateProcessorFactory">
-      <str name="engine">javascript</str>
-      <str name="script">trivial.updateprocessor.js</str>
-    </processor>
+    <!-- Simulates a ScriptUpdateProcessorFactory for the purposes of testing configsets -->
+    <processor class="org.apache.solr.cloud.MockScriptUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
