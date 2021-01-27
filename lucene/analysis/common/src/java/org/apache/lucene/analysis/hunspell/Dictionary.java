@@ -141,8 +141,9 @@ public class Dictionary {
   char keepcase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound;
-  int compoundMin = 3;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit;
+  boolean checkCompoundCase;
+  int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
@@ -377,8 +378,20 @@ public class Dictionary {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
+        compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDBEGIN".equals(firstWord)) {
+        compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDMIDDLE".equals(firstWord)) {
+        compoundMiddle = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDEND".equals(firstWord)) {
+        compoundEnd = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDPERMITFLAG".equals(firstWord)) {
+        compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
+        checkCompoundCase = true;
       }
     }
 
@@ -1301,10 +1314,6 @@ public class Dictionary {
       to.append((char) (flag >> 8));
       to.append((char) (flag & 0xff));
     }
-  }
-
-  boolean hasCompounding() {
-    return compoundRules != null;
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {

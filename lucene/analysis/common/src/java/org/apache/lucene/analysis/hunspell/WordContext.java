@@ -14,17 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.analysis.hunspell;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+enum WordContext {
+  SIMPLE_WORD,
+  COMPOUND_BEGIN,
+  COMPOUND_MIDDLE,
+  COMPOUND_END;
 
-/** Tests Lucene60FieldInfoFormat */
-public class TestLucene60FieldInfoFormat extends BaseFieldInfoFormatTestCase {
+  boolean isCompound() {
+    return this != SIMPLE_WORD;
+  }
 
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+  char requiredFlag(Dictionary dictionary) {
+    switch (this) {
+      case COMPOUND_BEGIN:
+        return dictionary.compoundBegin;
+      case COMPOUND_MIDDLE:
+        return dictionary.compoundMiddle;
+      case COMPOUND_END:
+        return dictionary.compoundEnd;
+      default:
+        return Dictionary.FLAG_UNSET;
+    }
   }
 }

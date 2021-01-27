@@ -240,7 +240,7 @@
  * systems that frequently run out of file handles.</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat Fields}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90FieldInfosFormat Fields}</td>
  * <td>.fnm</td>
  * <td>Stores information about the fields</td>
  * </tr>

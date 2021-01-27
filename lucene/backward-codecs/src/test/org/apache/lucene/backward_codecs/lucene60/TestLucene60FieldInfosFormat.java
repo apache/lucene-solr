@@ -14,9 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs.lucene60;
 
-/**
- * Components from the Lucene 6.0 index format. See {@link org.apache.lucene.codecs.lucene90} for an
- * overview of the current index format.
- */
-package org.apache.lucene.codecs.lucene60;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84RWCodec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseFieldInfoFormatTestCase;
+
+public class TestLucene60FieldInfosFormat extends BaseFieldInfoFormatTestCase {
+  @Override
+  protected Codec getCodec() {
+    return new Lucene84RWCodec();
+  }
+}

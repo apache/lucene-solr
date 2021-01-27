@@ -87,18 +87,54 @@ public class SpellChecker {
       return false;
     }
 
-    if (!stemmer.doStem(wordChars, length, caseVariant).isEmpty()) {
+    if (hasStems(wordChars, 0, length, caseVariant, WordContext.SIMPLE_WORD)) {
       return true;
     }
 
-    if (dictionary.hasCompounding()) {
-      return checkCompounds(wordChars, 0, length, new ArrayList<>());
+    if (dictionary.compoundRules != null
+        && checkCompoundRules(wordChars, 0, length, new ArrayList<>())) {
+      return true;
+    }
+
+    return dictionary.compoundBegin > 0 && checkCompounds(wordChars, 0, length, caseVariant, 0);
+  }
+
+  private boolean hasStems(
+      char[] chars, int offset, int length, boolean caseVariant, WordContext context) {
+    return !stemmer.doStem(chars, offset, length, caseVariant, context).isEmpty();
+  }
+
+  private boolean checkCompounds(
+      char[] chars, int offset, int length, boolean caseVariant, int depth) {
+    if (depth > dictionary.compoundMax - 2) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      WordContext context = depth == 0 ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_MIDDLE;
+      int breakOffset = offset + breakPos;
+      if (checkCompoundCase(chars, breakOffset)
+          && hasStems(chars, offset, breakPos, caseVariant, context)) {
+        int remainingLength = length - breakPos;
+        if (hasStems(chars, breakOffset, remainingLength, caseVariant, WordContext.COMPOUND_END)) {
+          return true;
+        }
+
+        if (checkCompounds(chars, breakOffset, remainingLength, caseVariant, depth + 1)) {
+          return true;
+        }
+      }
     }
 
     return false;
   }
 
-  private boolean checkCompounds(char[] wordChars, int offset, int length, List<IntsRef> words) {
+  private boolean checkCompoundCase(char[] chars, int breakPos) {
+    if (!dictionary.checkCompoundCase) return true;
+    return Character.isUpperCase(chars[breakPos - 1]) == Character.isUpperCase(chars[breakPos]);
+  }
+
+  private boolean checkCompoundRules(
+      char[] wordChars, int offset, int length, List<IntsRef> words) {
     if (words.size() >= 100) return false;
 
     int limit = length - dictionary.compoundMin + 1;
@@ -113,7 +149,7 @@ public class SpellChecker {
             return true;
           }
 
-          if (checkCompounds(wordChars, offset + breakPos, length - breakPos, words)) {
+          if (checkCompoundRules(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
         }
@@ -132,8 +168,7 @@ public class SpellChecker {
 
     words.add(forms);
     boolean result =
-        dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
     words.remove(words.size() - 1);
     return result;
   }

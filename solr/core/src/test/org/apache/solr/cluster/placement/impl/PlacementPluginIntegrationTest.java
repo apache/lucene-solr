@@ -325,7 +325,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
     NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
-    String sysenv = "PWD";
+    Set<String> potentialEnvVars = Set.of("PWD", "TMPDIR", "TMP", "TEMP", "USER", "USERNAME", "HOME");
+
+    String envVar = null;
+    for (String env : potentialEnvVars) {
+      if (System.getenv(env) != null) {
+        envVar = env;
+        break;
+      }
+    }
+    if (envVar == null) {
+      fail("None of the potential env vars exist? " + potentialEnvVars);
+    }
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
         .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
@@ -336,11 +347,11 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
         .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
-        .requestNodeEnvironmentVariable(sysenv)
+        .requestNodeEnvironmentVariable(envVar)
         .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB, ReplicaMetricImpl.QUERY_RATE_1MIN, ReplicaMetricImpl.UPDATE_RATE_1MIN));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
-    String pwd = System.getenv("PWD");
+    String envVarValue = System.getenv(envVar);
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
       Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
@@ -363,9 +374,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
       assertTrue("sysprop", syspropOpt.isPresent());
       assertEquals("user.name sysprop", userName, syspropOpt.get());
-      Optional<String> sysenvOpt = attributeValues.getEnvironmentVariable(node, sysenv);
-      assertTrue("sysenv", sysenvOpt.isPresent());
-      assertEquals("PWD sysenv", pwd, sysenvOpt.get());
+      Optional<String> envVarOpt = attributeValues.getEnvironmentVariable(node, envVar);
+      assertTrue("envVar", envVarOpt.isPresent());
+      assertEquals("envVar " + envVar, envVarValue, envVarOpt.get());
     }
     assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
     CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();

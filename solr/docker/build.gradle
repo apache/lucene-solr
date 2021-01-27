@@ -201,9 +201,3 @@ task dockerPush(dependsOn: tasks.dockerTag) {
 task docker {
   dependsOn tasks.dockerBuild, tasks.dockerTag
 }
-
-artifacts {
-  dockerImage(tasks.dockerBuild.outputs.files.singleFile) {
-    builtBy(tasks.dockerBuild)
-  }
-}

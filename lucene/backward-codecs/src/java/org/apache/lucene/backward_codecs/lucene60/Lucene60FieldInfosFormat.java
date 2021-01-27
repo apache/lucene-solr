@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene60;
+package org.apache.lucene.backward_codecs.lucene60;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -311,6 +311,11 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
     }
   }
 
+  /**
+   * Note: although this format is only used on older versions, we need to keep the write logic in
+   * addition to the read logic. It's possible for field infos on older segments to be written to,
+   * for example as part of in-place doc values updates.
+   */
   @Override
   public void write(
       Directory directory,
