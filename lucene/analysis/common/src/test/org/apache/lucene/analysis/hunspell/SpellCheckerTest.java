@@ -20,7 +20,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
@@ -29,6 +31,10 @@ public class SpellCheckerTest extends StemmerTestBase {
   @Test
   public void allcaps() throws Exception {
     doTest("allcaps");
+  }
+
+  public void rep() throws Exception {
+    doTest("rep");
   }
 
   @Test
@@ -104,10 +110,22 @@ public class SpellCheckerTest extends StemmerTestBase {
     }
 
     URL wrong = StemmerTestBase.class.getResource(name + ".wrong");
+    URL sug = StemmerTestBase.class.getResource(name + ".sug");
     if (wrong != null) {
-      for (String word : Files.readAllLines(Path.of(wrong.toURI()))) {
+      List<String> wrongWords = Files.readAllLines(Path.of(wrong.toURI()));
+      for (String word : wrongWords) {
         assertFalse("Unexpectedly considered correct: " + word, speller.spell(word));
       }
+      if (sug != null) {
+        String suggestions =
+            wrongWords.stream()
+                .map(s -> String.join(", ", speller.suggest(s)))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+        assertEquals(Files.readString(Path.of(sug.toURI())).trim(), suggestions);
+      }
+    } else {
+      assertNull(".sug file without .wrong file!", sug);
     }
   }
 }
