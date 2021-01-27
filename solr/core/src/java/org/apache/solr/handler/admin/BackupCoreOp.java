@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -34,14 +35,15 @@ import org.apache.solr.handler.SnapShooter;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     final SolrParams params = it.req.getParams();
 
     String cname = params.required().get(CoreAdminParams.CORE);
-    String name = params.required().get(NAME);
-    boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String shardBackupIdStr = params.get(CoreAdminParams.SHARD_BACKUP_ID, null);
+    boolean incremental = isIncrementalBackup(params);
+    final String name = parseBackupName(params);
+    final ShardBackupId shardBackupId = parseShardBackupId(params);
     String prevShardBackupIdStr = params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     // An optional parameter to describe the snapshot to be backed-up. If this
@@ -63,10 +65,9 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
           core.getCoreContainer().assertPathAllowed(Paths.get(location));
         }
         final ShardBackupId prevShardBackupId = prevShardBackupIdStr != null ? ShardBackupId.from(prevShardBackupIdStr) : null;
-        final ShardBackupId shardBackupId = shardBackupIdStr != null ? ShardBackupId.from(shardBackupIdStr) : null;
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
         IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
-                prevShardBackupId, shardBackupId);
+                prevShardBackupId, shardBackupId, Optional.ofNullable(commitName));
         @SuppressWarnings({"rawtypes"})
         NamedList rsp = incSnapShooter.backup();
         it.rsp.addResponse(rsp);
@@ -89,5 +90,29 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Failed to backup core=" + cname + " because " + e, e);
     }
+  }
+
+  /*
+   * 'shardBackupId' is required iff 'incremental=true', but unused otherwise
+   */
+  private ShardBackupId parseShardBackupId(SolrParams params) {
+    if (isIncrementalBackup(params)) {
+      return ShardBackupId.from(params.required().get(CoreAdminParams.SHARD_BACKUP_ID));
+    }
+    return null;
+  }
+
+  /*
+   * 'name' parameter is required iff 'incremental=false', but unused otherwise.
+   */
+  private String parseBackupName(SolrParams params) {
+    if (isIncrementalBackup(params)) {
+      return null;
+    }
+    return params.required().get(CoreAdminParams.NAME);
+  }
+
+  private boolean isIncrementalBackup(SolrParams params) {
+    return params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
   }
 }

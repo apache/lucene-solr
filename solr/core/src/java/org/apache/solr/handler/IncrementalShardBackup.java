@@ -17,14 +17,6 @@
 
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.UUID;
-
 import org.apache.commons.math3.util.Precision;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -42,6 +34,14 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.UUID;
+
 /**
  * Responsible for orchestrating the actual incremental backup process.
  *
@@ -57,6 +57,7 @@ public class IncrementalShardBackup {
 
     private ShardBackupId prevShardBackupId;
     private ShardBackupId shardBackupId;
+    private Optional<String> commitNameOption;
 
     /**
      *
@@ -65,12 +66,14 @@ public class IncrementalShardBackup {
      * @param shardBackupId file where all meta data of this backup will be stored to.
      */
     public IncrementalShardBackup(BackupRepository backupRepo, SolrCore solrCore, BackupFilePaths incBackupFiles,
-                                  ShardBackupId prevShardBackupId, ShardBackupId shardBackupId) {
+                                  ShardBackupId prevShardBackupId, ShardBackupId shardBackupId,
+                                  Optional<String> commitNameOption) {
         this.backupRepo = backupRepo;
         this.solrCore = solrCore;
         this.incBackupFiles = incBackupFiles;
         this.prevShardBackupId = prevShardBackupId;
         this.shardBackupId = shardBackupId;
+        this.commitNameOption = commitNameOption;
     }
 
     @SuppressWarnings({"rawtypes"})
@@ -84,7 +87,7 @@ public class IncrementalShardBackup {
     }
 
     /**
-     * Returns {@link IndexDeletionPolicyWrapper#getAndSaveLatestCommit}.
+     * Returns {@link IndexDeletionPolicyWrapper#getAndSaveLatestCommit} unless a particular commitName was requested.
      * <p>
      * Note:
      * <ul>
@@ -96,7 +99,23 @@ public class IncrementalShardBackup {
      * </ul>
      */
     private IndexCommit getAndSaveIndexCommit() throws IOException {
+        if (commitNameOption.isPresent()) {
+            return SnapShooter.getAndSaveNamedIndexCommit(solrCore, commitNameOption.get());
+        }
+
         final IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
+        final IndexCommit commit = delPolicy.getAndSaveLatestCommit();
+        if (null == commit) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Index does not yet have any commits for core " +
+                    solrCore.getName());
+        }
+        if (log.isDebugEnabled())   {
+            log.debug("Using latest commit: generation={}", commit.getGeneration());
+        }
+        return commit;
+    }
+
+    private IndexCommit getAndSaveLatestIndexCommit(IndexDeletionPolicyWrapper delPolicy) {
         final IndexCommit commit = delPolicy.getAndSaveLatestCommit();
         if (null == commit) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Index does not yet have any commits for core " +

@@ -43,7 +43,7 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
 
     if (shardBackupIdStr == null && name == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either backupName or metadata file is not specified");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either 'name' or 'shardBackupId' must be specified");
     }
 
     ZkController zkController = it.handler.coreContainer.getZkController();
