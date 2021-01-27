@@ -32,6 +32,11 @@ public class SpellCheckerTest extends StemmerTestBase {
   }
 
   @Test
+  public void IJ() throws Exception {
+    doTest("IJ");
+  }
+
+  @Test
   public void i53643_numbersWithSeparators() throws Exception {
     doTest("i53643");
   }
