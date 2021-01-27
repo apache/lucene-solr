@@ -58,7 +58,7 @@ public class TestHnsw extends LuceneTestCase {
     long seed = random().nextLong();
     HnswGraphBuilder.randSeed = seed;
     HnswGraphBuilder builder = new HnswGraphBuilder(vectors);
-    HnswGraph hnsw = builder.build(vectors.randomAccess());
+    HnswGraph hnsw = builder.build(vectors);
     // Recreate the graph while indexing with the same random seed and write it out
     HnswGraphBuilder.randSeed = seed;
     try (Directory dir = newDirectory()) {
@@ -104,9 +104,9 @@ public class TestHnsw extends LuceneTestCase {
   // oriented in the right directions
   public void testAknnDiverse() throws IOException {
     int nDoc = 100;
-    RandomAccessVectorValuesProducer vectors = new CircularVectorValues(nDoc);
+    CircularVectorValues vectors = new CircularVectorValues(nDoc);
     HnswGraphBuilder builder = new HnswGraphBuilder(vectors, 16, 100, random().nextInt());
-    HnswGraph hnsw = builder.build(vectors.randomAccess());
+    HnswGraph hnsw = builder.build(vectors);
     // run some searches
     NeighborQueue nn =
         HnswGraph.search(new float[] {1, 0}, 10, 5, vectors.randomAccess(), hnsw, random());

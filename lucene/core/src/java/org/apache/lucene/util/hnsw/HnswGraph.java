@@ -139,6 +139,7 @@ public final class HnswGraph extends KnnGraphValues {
       graphValues.seek(topCandidateNode);
       int friendOrd;
       while ((friendOrd = graphValues.nextNeighbor()) != NO_MORE_DOCS) {
+        assert friendOrd < size : "friendOrd=" + friendOrd + "; size=" + size;
         if (visited.get(friendOrd)) {
           continue;
         }
