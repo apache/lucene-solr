@@ -17,8 +17,6 @@
 
 package org.apache.solr.core.backup;
 
-import java.util.Optional;
-
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
