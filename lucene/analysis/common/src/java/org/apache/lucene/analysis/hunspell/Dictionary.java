@@ -163,7 +163,7 @@ public class Dictionary {
   // language declaration of the dictionary
   String language;
   // true if case algorithms should use alternate (Turkish/Azeri) mapping
-  boolean alternateCasing;
+  private boolean alternateCasing;
 
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to
@@ -1025,6 +1025,10 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, sorted);
       }
     }
+  }
+
+  boolean isDotICaseChangeDisallowed(char[] word) {
+    return word[0] == 'İ' && !alternateCasing;
   }
 
   private class EntryGrouper {

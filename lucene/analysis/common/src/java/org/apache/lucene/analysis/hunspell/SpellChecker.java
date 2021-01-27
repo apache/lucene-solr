@@ -102,6 +102,11 @@ public class SpellChecker {
         }
       }
     }
+
+    if (dictionary.isDotICaseChangeDisallowed(wordChars)) {
+      return false;
+    }
+
     char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
     if (checkWord(lower, wordChars.length, wordCase)) {
       return true;

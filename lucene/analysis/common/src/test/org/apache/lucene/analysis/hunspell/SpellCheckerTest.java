@@ -32,6 +32,11 @@ public class SpellCheckerTest extends StemmerTestBase {
   }
 
   @Test
+  public void baseUtf() throws Exception {
+    doTest("base_utf");
+  }
+
+  @Test
   public void keepcase() throws Exception {
     doTest("keepcase");
   }
