@@ -1276,10 +1276,12 @@
 
   <!-- Script update processor
 
-    This example hooks in an update processor implemented using JavaScript.
+    This example hooks in an update processor implemented using JavaScript and demonstrates
+    how to pass in custom parameters.
 
     See more about script update processor at https://lucene.apache.org/solr/guide/script-update-processor.html
   -->
+  <!--
   <updateRequestProcessorChain name="script">
     <processor class="org.apache.solr.scripting.update.ScriptUpdateProcessorFactory">
       <str name="script">update-script.js</str>
@@ -1289,6 +1291,7 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
+  -->
 
   <!-- Response Writers
 
