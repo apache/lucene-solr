@@ -37,8 +37,6 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <lib dir="${solr.install.dir:../../../../../}/contrib/scripting/build/libs/" regex="solr-scripting-\d.*\.jar" />
-
 
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
@@ -50,7 +48,7 @@
   </requestHandler>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.StatelessScriptUpdateProcessorFactory">
+    <processor class="org.apache.solr.cloud.MockScriptUpdateProcessorFactory">
       <str name="engine">javascript</str>
       <str name="script">trivial.updateprocessor.js</str>
     </processor>
