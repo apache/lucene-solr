@@ -69,6 +69,8 @@ Improvements
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
 
+* SOLR-15011: /admin/logging handler should be able to configure logs on all nodes (Nazerke Seidan, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
