@@ -46,11 +46,11 @@ public class Test02Boolean extends LuceneTestCase {
   SingleFieldTestDb db1;
 
   public void normalTest1(String query, int[] expdnrs) throws Exception {
-    BooleanQueryTst bqt =
-        new BooleanQueryTst(
+    TestBooleanQuery tbq =
+        new TestBooleanQuery(
             query, expdnrs, db1, fieldName, this, new BasicQueryFactory(maxBasicQueries));
-    bqt.setVerbose(verbose);
-    bqt.doTest();
+    tbq.setVerbose(verbose);
+    tbq.doTest();
   }
 
   public void test02Terms01() throws Exception {

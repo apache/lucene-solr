@@ -17,3 +17,10 @@ PFX h 0 de .
 
 SFX A Y 1
 SFX A te tion/S .
+
+SFX s Y 1
+SFX s 0 s .
+
+PFX p Y 1
+PFX p 0 0/s .
+

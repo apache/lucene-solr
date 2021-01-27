@@ -86,8 +86,8 @@ API Changes
 
 Improvements
 
-* LUCENE-9665 LUCENE-9676 LUCENE-9667 : Hunspell improvements: add SpellChecker API, support default encoding and
-  BREAK/FORBIDDENWORD affix rules, improve stemming of all-caps words (Peter Gromov)
+* LUCENE-9687: Hunspell support improvements: add SpellChecker API, support default encoding and
+  BREAK/FORBIDDENWORD/COMPOUNDRULE affix rules, improve stemming of all-caps words (Peter Gromov)
 
 * LUCENE-9633: Improve match highlighter behavior for degenerate intervals (on non-existing positions).
   (Dawid Weiss)

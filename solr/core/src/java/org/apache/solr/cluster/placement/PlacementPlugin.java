@@ -17,8 +17,6 @@
 
 package org.apache.solr.cluster.placement;
 
-import org.apache.solr.cluster.Cluster;
-
 /**
  * <p>Implemented by external plugins to control replica placement and movement on the search cluster (as well as other things
  * such as cluster elasticity?) when cluster changes are required (initiated elsewhere, most likely following a Collection
@@ -36,16 +34,21 @@ public interface PlacementPlugin {
    *
    * <p>Configuration is passed upon creation of a new instance of this class by {@link PlacementPluginFactory#createPluginInstance}.
    *
-   * @param cluster              initial state of the cluster. Note there are {@link java.util.Set}'s and {@link java.util.Map}'s
-   *                             accessible from the {@link Cluster} and other reachable instances. These collection will not change
-   *                             while the plugin is executing and will be thrown away once the plugin is done. The plugin code can
-   *                             therefore modify them if needed.
    * @param placementRequest     request for placing new replicas or moving existing replicas on the cluster.
-   * @param attributeFetcher     Factory used by the plugin to fetch additional attributes from the cluster nodes, such as
-   *                             count of coresm ssytem properties etc..
-   * @param placementPlanFactory Factory used to create instances of {@link PlacementPlan} to return computed decision.
    * @return plan satisfying the placement request.
    */
-  PlacementPlan computePlacement(Cluster cluster, PlacementRequest placementRequest, AttributeFetcher attributeFetcher,
-                                 PlacementPlanFactory placementPlanFactory) throws PlacementException, InterruptedException;
+  PlacementPlan computePlacement(PlacementRequest placementRequest, PlacementContext placementContext) throws PlacementException, InterruptedException;
+
+  /**
+   * Verify that a collection layout modification doesn't violate constraints on replica placements
+   * required by this plugin. Default implementation is a no-op (any modifications are allowed).
+   * @param modificationRequest modification request.
+   * @param placementContext placement context.
+   * @throws PlacementModificationException if the requested modification would violate replica
+   * placement constraints.
+   */
+  default void verifyAllowedModification(ModificationRequest modificationRequest, PlacementContext placementContext)
+    throws PlacementModificationException, InterruptedException {
+
+  }
 }

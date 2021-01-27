@@ -115,4 +115,9 @@ public interface CollectionAdminParams {
    * for the add replica API. If set to true, a valid "node" should be specified.
    */
   String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
+
+  /**
+   * Prefix for arbitrary collection or replica properties.
+   */
+  String PROPERTY_PREFIX = "property.";
 }

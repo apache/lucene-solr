@@ -30,12 +30,7 @@ import java.util.Set;
  * <p>The set of {@link Node}s on which the replicas should be placed
  * is specified (defaults to being equal to the set returned by {@link Cluster#getLiveNodes()}).
  */
-public interface PlacementRequest {
-  /**
-   * The {@link SolrCollection} to add {@link Replica}(s) to.
-   */
-  SolrCollection getCollection();
-
+public interface PlacementRequest extends ModificationRequest {
   /**
    * <p>Shard name(s) for which new replicas placement should be computed. The shard(s) might exist or not (that's why this
    * method returns a {@link Set} of {@link String}'s and not directly a set of {@link Shard} instances).

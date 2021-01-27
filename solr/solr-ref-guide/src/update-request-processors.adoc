@@ -283,7 +283,7 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document. Useful for only indexing one copy of "similar" documents.
 
-{solr-javadocs}/contrib/scripting/org/apache/solr/scripting/update/ScriptUpdateProcessorFactory.html[ScriptUpdateProcessorFactory]:: An processor that enables the use of update processors implemented as scripts.  Learn more at the <<script-update-processor.adoc#script-update-processor,script update processor>> page.
+{solr-javadocs}/core/org/apache/solr/update/processor/StatelessScriptUpdateProcessorFactory.html[StatelessScriptUpdateProcessorFactory]:: An update request processor factory that enables the use of update processors implemented as scripts.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/TemplateUpdateProcessorFactory.html[TemplateUpdateProcessorFactory]:: Allows adding new fields to documents based on a template pattern. This update processor can also be used at runtime (without defining it in `solrconfig.xml`), see the section <<templateupdateprocessorfactory>> below.
 
