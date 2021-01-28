@@ -87,17 +87,19 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
    * Shard splits start here and make additional requests to the host of the parent shard.
    *
    * The sequence of requests is as follows:
-   *  1. Verify that there is enough disk space to create sub-shards.
-   *  2. If splitByPrefix is true, make request to get prefix ranges.
-   *  3. If this split was attempted previously and there are lingering sub-shards, delete them.
-   *  4. Create sub-shards in CONSTRUCTION state.
-   *  5. Add an initial replica to each sub-shard.
-   *  6. Request that parent shard wait for children to become ACTIVE.
-   *  7. Execute split: either LINK or REWRITE.
-   *  8. Apply buffered updates to the sub-shards so they are up-to-date with parent.
-   *  9. Determine node placement for additional replicas (but do not create yet).
-   *  10. If replicationFactor is more than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE.
-   *  11. Create additional replicas of sub-shards.
+   * <ul>
+   *     <li>Verify that there is enough disk space to create sub-shards.</li>
+   *     <li>If splitByPrefix is true, make request to get prefix ranges.</li>
+   *     <li>If this split was attempted previously and there are lingering sub-shards, delete them.</li>
+   *     <li>Create sub-shards in CONSTRUCTION state.</li>
+   *     <li>Add an initial replica to each sub-shard.</li>
+   *     <li>Request that parent shard wait for children to become ACTIVE.</li>
+   *     <li>Execute split: either LINK or REWRITE.</li>
+   *     <li>Apply buffered updates to the sub-shards so they are up-to-date with parent.</li>
+   *     <li>Determine node placement for additional replicas (but do not create yet).</li>
+   *     <li>If replicationFactor is more than 1, set shard state for sub-shards to RECOVERY; else mark ACTIVE.</li>
+   *     <li>Create additional replicas of sub-shards.</li>
+   * </ul>
    */
   @SuppressWarnings({"rawtypes"})
   public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) throws Exception {
@@ -150,7 +152,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");
     }
 
-    // 1. verify that there is enough space on disk to create sub-shards
+    log.debug("Verifying that there is enough space on disk to create sub-shards");
     RTimerTree t;
     if (ocmh.overseer.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
       t = timings.sub("checkDiskSpace");
@@ -211,8 +213,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       @SuppressWarnings("deprecation")
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
 
-      // 2. if split request has splitByPrefix set to true, make request to SplitOp to get prefix ranges of sub-shards
       if (message.getBool(CommonAdminParams.SPLIT_BY_PREFIX, false)) {
+        log.debug("Making request to SplitOp get doc prefix ranges for each sub-shard");
         t = timings.sub("getRanges");
 
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -254,7 +256,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       String rangesStr = fillRanges(ocmh.cloudManager, message, collection, parentSlice, subRanges, subSlices, subShardNames, firstNrtReplica);
       t.stop();
 
-      // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE sub-shards.
+      // if this shard has attempted a split before and failed, there will be lingering INACTIVE sub-shards.
       //    clean these up before proceeding
       boolean oldShardsDeleted = false;
       for (String subSlice : subSlices) {
@@ -291,7 +293,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         collection = clusterState.getCollection(collectionName);
       }
 
-      // 4. create the child sub-shards in CONSTRUCTION state
+      // create the child sub-shards in CONSTRUCTION state
       String nodeName = parentShardLeader.getNodeName();
       t = timings.sub("createSubSlicesAndLeadersInState");
       for (int i = 0; i < subRanges.size(); i++) {
@@ -316,7 +318,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         // wait until we are able to see the new shard in cluster state and refresh the local view of the cluster state
         clusterState = ocmh.waitForNewShard(collectionName, subSlice);
 
-        // 5. and add the initial replica for each sub-shard
         log.debug("Adding first replica {} as part of slice {} of collection {} on {}"
             , subShardName, subSlice, collectionName, nodeName);
         propMap = new HashMap<>();
@@ -340,7 +341,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.addReplica(clusterState, new ZkNodeProps(propMap), results, null);
       }
 
-      // 6. request that parent shard wait for children to become active
       {
         final ShardRequestTracker syncRequestTracker = ocmh.syncRequestTracker();
         String msgOnError = "SPLITSHARD failed to create subshard leaders";
@@ -381,7 +381,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
             , parentShardLeader.getName(), slice, collectionName, parentShardLeader);
       }
 
-      // 7. execute actual split
+      // execute actual split
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
       params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
@@ -407,7 +407,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         log.debug("Index on shard: {} split into {} successfully", nodeName, subShardNames.size());
       }
 
-      // 8. apply buffered updates on sub-shards
       t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
       {
@@ -432,14 +431,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t.stop();
 
       log.debug("Successfully applied buffered updates on : {}", subShardNames);
-
-      // 9. determine node placement for additional replicas
-      Set<String> nodes = clusterState.getLiveNodes();
-      List<String> nodeList = new ArrayList<>(nodes.size());
-      nodeList.addAll(nodes);
-
-      // Remove the node that hosts the parent shard for replica creation.
-      nodeList.remove(nodeName);
 
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
@@ -546,7 +537,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       // this ensures that the logic inside ReplicaMutator to update sub-shard state to 'active'
       // always gets a chance to execute. See SOLR-7673
 
-      // 10. if replicationFactor > 1, set shard state for sub-shards to RECOVERY; otherwise mark ACTIVE
+      // if replicationFactor > 1, set shard state for sub-shards to RECOVERY; otherwise mark ACTIVE
       if (repFactor == 1) {
         // A commit is needed so that documents are visible when the sub-shard replicas come up
         // (Note: This commit used to be after the state switch, but was brought here before the state switch
@@ -577,7 +568,6 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
       }
 
-      // 11. now actually create replica cores on sub shard nodes
       t = timings.sub("createCoresForReplicas");
       // now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
@@ -606,6 +596,10 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       if (withTiming) {
         results.add(CommonParams.TIMING, timings.asNamedList());
+      }
+
+      if (log.isDebugEnabled()) {
+        log.debug("Timings for split sub-ops: " + timings);
       }
       success = true;
       // don't unlock the shard yet - only do this if the final switch-over in

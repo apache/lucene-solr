@@ -110,9 +110,11 @@ public class SplitShardTest extends SolrCloudTestCase {
 
   /**
    * Create a collection with 3 shards and split them each with a different splitMethod value.
-   * 1. No override specified. Verify that LINK method is used.
-   * 2. REWRITE method specified. Verify that LINK steps are skipped.
-   * 3. Invalid override specified. Verify that split fails.
+   * <ul>
+   *     <li>No override specified. Verify that LINK method is used.</li>
+   *     <li>REWRITE method specified. Verify that LINK steps are skipped.</li>
+   *     <li>Invalid override specified. Verify that split fails.</li>
+   * </ul>
    */
   @Test
   public void testSplitMethods() throws Exception {
