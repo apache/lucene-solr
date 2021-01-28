@@ -60,7 +60,7 @@ public class BinaryDocValueSelector implements IndexRearranger.DocumentSelector,
     return bits;
   }
 
-  public static List<IndexRearranger.DocumentSelector> createFromExistIndex(
+  public static List<IndexRearranger.DocumentSelector> createFromExistingIndex(
       String field, Directory directory) throws IOException {
     List<IndexRearranger.DocumentSelector> selectors = new ArrayList<>();
     try (IndexReader reader = DirectoryReader.open(directory)) {
@@ -74,6 +74,8 @@ public class BinaryDocValueSelector implements IndexRearranger.DocumentSelector,
           }
           if (binaryDocValues.advanceExact(i)) {
             keySet.add(binaryDocValues.binaryValue().utf8ToString());
+          } else {
+            throw new AssertionError("Document don't have selected key");
           }
         }
         selectors.add(new BinaryDocValueSelector(field, keySet));

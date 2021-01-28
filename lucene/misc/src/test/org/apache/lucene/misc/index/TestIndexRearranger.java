@@ -94,7 +94,7 @@ public class TestIndexRearranger extends LuceneTestCase {
             inputDir,
             outputDir,
             getIndexWriterConfig(),
-            BinaryDocValueSelector.createFromExistIndex("textOrd", srcDir));
+            BinaryDocValueSelector.createFromExistingIndex("textOrd", srcDir));
     rearranger.execute();
     assertSequentialIndex(outputDir, 100, 10);
 
