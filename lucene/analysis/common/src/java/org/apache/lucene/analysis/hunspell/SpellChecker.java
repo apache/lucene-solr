@@ -170,7 +170,7 @@ public class SpellChecker {
 
   private boolean checkCompoundCase(char[] chars, int breakPos) {
     if (!dictionary.checkCompoundCase) return true;
-    return Character.isUpperCase(chars[breakPos - 1]) == Character.isUpperCase(chars[breakPos]);
+    return !(Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos]));
   }
 
   private boolean checkCompoundRules(
