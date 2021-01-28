@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -40,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -103,6 +105,50 @@ public class SplitShardTest extends SolrCloudTestCase {
       fail("SplitShard should throw an exception when numSubShards < 2");
     } catch (BaseHttpSolrClient.RemoteSolrException ex) {
       assertTrue(ex.getMessage().contains("A shard can only be split into 2 to 8 subshards in one split request. Provided numSubShards=1"));
+    }
+  }
+
+  /**
+   * Create a collection with 3 shards and split them each with a different splitMethod value.
+   * 1. No override specified. Verify that LINK method is used.
+   * 2. REWRITE method specified. Verify that LINK steps are skipped.
+   * 3. Invalid override specified. Verify that split fails.
+   */
+  @Test
+  public void testSplitMethods() throws Exception {
+    CollectionAdminRequest
+            .createCollection(COLLECTION_NAME, "conf", 3, 1)
+            .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(COLLECTION_NAME, 3, 3);
+
+    CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setShardName("shard1");
+    SolrResponse response = splitShard.process(cluster.getSolrClient());
+    assertTrue(response.getResponse().toString().contains("hardLinkCopy"));
+
+    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
+                    cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
+            COLLECTION_NAME, activeClusterShape(4, 5));
+
+    splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
+            .setNumSubShards(2)
+            .setShardName("shard2")
+            .setSplitMethod(SolrIndexSplitter.SplitMethod.REWRITE.name());
+    response = splitShard.process(cluster.getSolrClient());
+    assertFalse(response.getResponse().toString().contains("hardLinkCopy"));
+    waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
+                    cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
+            COLLECTION_NAME, activeClusterShape(5, 7));
+
+    try {
+      splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
+              .setShardName("shard3")
+              .setSplitMethod("HELLO");
+      splitShard.process(cluster.getSolrClient());
+      fail("SplitShard should throw an exception when splitMethod is anything other than LINK or REWRITE");
+    } catch (BaseHttpSolrClient.RemoteSolrException ex) {
+      assertTrue(ex.getMessage().contains("Unknown value 'splitMethod': HELLO"));
     }
   }
 

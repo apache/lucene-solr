@@ -109,7 +109,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
-          ": " + methodStr);
+          "': " + methodStr);
     }
     boolean withTiming = message.getBool(CommonParams.TIMING, false);
 
