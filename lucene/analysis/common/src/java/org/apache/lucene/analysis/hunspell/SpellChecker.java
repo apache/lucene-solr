@@ -152,8 +152,13 @@ public class SpellChecker {
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
       WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
       int breakOffset = offset + breakPos;
-      if (checkCompoundCase(chars, breakOffset)) {
+      if (mayBreakIntoCompounds(chars, offset, length, breakOffset)) {
         List<CharsRef> stems = stemmer.doStem(chars, offset, breakPos, originalCase, context);
+        if (stems.isEmpty()
+            && dictionary.simplifiedTriple
+            && chars[breakOffset - 1] == chars[breakOffset]) {
+          stems = stemmer.doStem(chars, offset, breakPos + 1, originalCase, context);
+        }
         if (stems.isEmpty()) continue;
 
         int remainingLength = length - breakPos;
@@ -181,9 +186,20 @@ public class SpellChecker {
     return cr1.toString().equalsIgnoreCase(cr2.toString());
   }
 
-  private boolean checkCompoundCase(char[] chars, int breakPos) {
-    if (!dictionary.checkCompoundCase) return true;
-    return !(Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos]));
+  private boolean mayBreakIntoCompounds(char[] chars, int offset, int length, int breakPos) {
+    if (dictionary.checkCompoundCase) {
+      if (Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos])) {
+        return false;
+      }
+    }
+    if (dictionary.checkCompoundTriple && chars[breakPos - 1] == chars[breakPos]) {
+      //noinspection RedundantIfStatement
+      if (breakPos > offset + 1 && chars[breakPos - 2] == chars[breakPos - 1]
+          || breakPos < length - 1 && chars[breakPos] == chars[breakPos + 1]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean checkCompoundRules(
