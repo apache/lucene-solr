@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.BytesRef;
@@ -130,7 +132,11 @@ public class SpellChecker {
       return true;
     }
 
-    return dictionary.compoundBegin > 0 && checkCompounds(wordChars, 0, length, originalCase, 0);
+    if (dictionary.compoundBegin != FLAG_UNSET || dictionary.compoundFlag != FLAG_UNSET) {
+      return checkCompounds(wordChars, 0, length, originalCase, 0);
+    }
+
+    return false;
   }
 
   private boolean hasStems(

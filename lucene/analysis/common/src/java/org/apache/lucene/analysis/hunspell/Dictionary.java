@@ -142,7 +142,7 @@ public class Dictionary {
   char keepcase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit, compoundFlag;
   boolean checkCompoundCase;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
@@ -387,6 +387,8 @@ public class Dictionary {
         compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDFLAG".equals(firstWord)) {
+        compoundFlag = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDBEGIN".equals(firstWord)) {
         compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIDDLE".equals(firstWord)) {

@@ -66,6 +66,11 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("needaffix5");
   }
 
+  @Test
+  public void compoundFlag() throws Exception {
+    doTest("compoundflag");
+  }
+
   public void testBreak() throws Exception {
     doTest("break");
   }

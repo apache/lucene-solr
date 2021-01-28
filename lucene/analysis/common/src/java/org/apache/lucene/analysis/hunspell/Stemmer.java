@@ -234,6 +234,7 @@ final class Stemmer {
           continue;
         }
         if (context.isCompound()
+            && !Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
             && !Dictionary.hasFlag(wordFlags, context.requiredFlag(dictionary))) {
           continue;
         }
@@ -667,7 +668,10 @@ final class Stemmer {
           }
           if (context.isCompound()) {
             char cFlag = context.requiredFlag(dictionary);
-            if (!Dictionary.hasFlag(wordFlags, cFlag) && !isFlagAppendedByAffix(affix, cFlag)) {
+            if (!Dictionary.hasFlag(wordFlags, cFlag)
+                && !isFlagAppendedByAffix(affix, cFlag)
+                && !Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
+                && !isFlagAppendedByAffix(affix, dictionary.compoundFlag)) {
               continue;
             }
           }
