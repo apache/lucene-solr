@@ -2239,6 +2239,7 @@ class CloserThread extends Thread {
 
 
   CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
+    super("CloserThread");
     this.container = container;
     this.solrCores = solrCores;
     this.cfg = cfg;
