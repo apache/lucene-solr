@@ -84,7 +84,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
       apiBag = new ApiBag(false);
+      final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
       apiBag.registerObject(new CollectionsAPI(collectionsHandler));
+      apiBag.registerObject(collectionsAPI.collectionsCommands);
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
 
