@@ -45,7 +45,7 @@ public class SpellChecker {
     }
 
     if (word.endsWith(".")) {
-      return removeTrailingDots(word);
+      return spellWithTrailingDots(word);
     }
 
     return spellClean(word);
@@ -75,7 +75,7 @@ public class SpellChecker {
     return false;
   }
 
-  private boolean removeTrailingDots(String word) {
+  private boolean spellWithTrailingDots(String word) {
     int length = word.length() - 1;
     while (length > 0 && word.charAt(length - 1) == '.') {
       length--;
