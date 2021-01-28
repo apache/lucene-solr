@@ -382,7 +382,13 @@ public class DirectIODirectory extends FilterDirectory {
     public byte readByte() throws IOException {
       if (!buffer.hasRemaining()) {
         refill();
+
+        // refill may not actually fill buffer if it reaches EOF
+        if (buffer.limit() == 0) {
+          throw new EOFException("read past EOF: " + this);
+        }
       }
+
       return buffer.get();
     }
 
@@ -417,6 +423,8 @@ public class DirectIODirectory extends FilterDirectory {
           buffer.get(dst, offset, left);
           toRead -= left;
           offset += left;
+          // when reading past EOF, this method will keep increasing filePos in the loop to
+          // eventually throw EOFException
           refill();
         } else {
           buffer.get(dst, offset, toRead);

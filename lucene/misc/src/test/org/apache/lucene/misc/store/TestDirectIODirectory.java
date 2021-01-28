@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.misc.store;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,6 +79,21 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
       IndexInput i = dir.openInput("out", newIOContext(random()));
       i.seek(fileSize);
       i.close();
+    }
+  }
+
+  public void testReadPastEOFShouldThrowEOFException() throws Exception {
+    final int fileSize = random().nextInt(100);
+    try (Directory dir = getDirectory(createTempDir("testReadPastEOF"))) {
+      try (IndexOutput o = dir.createOutput("out", newIOContext(random()))) {
+        o.writeBytes(new byte[fileSize], 0, fileSize);
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        i.seek(fileSize);
+        expectThrows(EOFException.class, () -> i.readByte());
+        expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
+      }
     }
   }
 
