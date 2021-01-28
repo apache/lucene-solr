@@ -2542,7 +2542,7 @@ public class ZkController implements Closeable {
               log.warn("listener throws error", e);
             }
           }
-        }).start();
+        }, "ZKEventListenerThread").start();
 
       }
     }
