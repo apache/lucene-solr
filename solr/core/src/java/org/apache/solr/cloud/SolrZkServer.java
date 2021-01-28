@@ -124,7 +124,6 @@ public class SolrZkServer {
         log.info("ZooKeeper Server exited.");
       } catch (Exception e) {
         log.error("ZooKeeper Server ERROR", e);
-        currentThread.get().interrupt();
         zkException.set(e);
       }
     }, "embeddedZkServer");
@@ -144,12 +143,16 @@ public class SolrZkServer {
     zkThread.setDaemon(true);
     zkThread.start();
     try {
+      // We don't have any way to hook into the ZK server object to check that it is running, so we just wait and hope
       Thread.sleep(500); // pause for ZooKeeper to start
     } catch (InterruptedException e) {
-      if (zkException.get() != null) {
-        log.info("ZK dataHome={}", dataHome);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not start embedded zookeeper server", zkException.get());
-      }
+      Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while starting embedded zookeeper server", e);
+    }
+
+    if (zkException.get() != null) {
+      log.info("Embedded ZK dataHome={}", dataHome);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not start embedded zookeeper server", zkException.get());
     }
   }
 
