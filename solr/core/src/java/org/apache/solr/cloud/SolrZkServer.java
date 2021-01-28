@@ -109,7 +109,6 @@ public class SolrZkServer {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
     AtomicReference<Exception> zkException = new AtomicReference<>();
-    AtomicReference<Thread> currentThread = new AtomicReference<>(Thread.currentThread());
     zkThread = new Thread(() -> {
       try {
         if (zkProps.getServers().size() > 1) {
