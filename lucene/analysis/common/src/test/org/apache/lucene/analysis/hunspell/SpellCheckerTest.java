@@ -91,6 +91,11 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("simplifiedtriple");
   }
 
+  @Test
+  public void compoundForbid() throws Exception {
+    doTest("compoundforbid");
+  }
+
   public void testBreak() throws Exception {
     doTest("break");
   }
