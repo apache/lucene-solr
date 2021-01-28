@@ -165,7 +165,8 @@ public class SpellChecker {
         List<CharsRef> lastStems =
             stemmer.doStem(chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
         if (!lastStems.isEmpty()
-            && !(dictionary.checkCompoundDup && intersectIgnoreCase(stems, lastStems))) {
+            && !(dictionary.checkCompoundDup && intersectIgnoreCase(stems, lastStems))
+            && !hasForceUCaseProblem(chars, breakOffset, remainingLength, originalCase)) {
           return true;
         }
 
@@ -176,6 +177,15 @@ public class SpellChecker {
     }
 
     return false;
+  }
+
+  private boolean hasForceUCaseProblem(
+      char[] chars, int offset, int length, WordCase originalCase) {
+    if (dictionary.forceUCase == FLAG_UNSET) return false;
+    if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
+
+    IntsRef forms = dictionary.lookupWord(chars, offset, length);
+    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase, scratch);
   }
 
   private boolean intersectIgnoreCase(List<CharsRef> stems1, List<CharsRef> stems2) {

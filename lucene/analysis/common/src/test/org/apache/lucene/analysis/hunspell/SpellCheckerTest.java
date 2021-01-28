@@ -42,6 +42,11 @@ public class SpellCheckerTest extends StemmerTestBase {
   }
 
   @Test
+  public void forceUCase() throws Exception {
+    doTest("forceucase");
+  }
+
+  @Test
   public void checkSharpS() throws Exception {
     doTest("checksharps");
   }

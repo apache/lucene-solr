@@ -139,7 +139,7 @@ public class Dictionary {
   boolean twoStageAffix;
 
   char circumfix;
-  char keepcase;
+  char keepcase, forceUCase;
   char needaffix;
   char forbiddenword;
   char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundFlag;
@@ -352,6 +352,8 @@ public class Dictionary {
         circumfix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("KEEPCASE".equals(firstWord)) {
         keepcase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("FORCEUCASE".equals(firstWord)) {
+        forceUCase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("NEEDAFFIX".equals(firstWord) || "PSEUDOROOT".equals(firstWord)) {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
