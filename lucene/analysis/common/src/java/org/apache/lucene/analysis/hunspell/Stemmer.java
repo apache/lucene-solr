@@ -191,7 +191,7 @@ final class Stemmer {
               length,
               context,
               -1,
-              (char) 0,
+              Dictionary.FLAG_UNSET,
               -1,
               0,
               true,
@@ -361,6 +361,7 @@ final class Stemmer {
                     pureAffix ? length - i : strippedWord.length,
                     context,
                     prefix,
+                    previous,
                     -1,
                     recursionDepth,
                     true,
@@ -413,6 +414,7 @@ final class Stemmer {
                     pureAffix ? i : strippedWord.length,
                     context,
                     suffix,
+                    previous,
                     prefixId,
                     recursionDepth,
                     false,
@@ -543,6 +545,7 @@ final class Stemmer {
       int length,
       WordContext context,
       int affix,
+      int previousAffix,
       int prefixId,
       int recursionDepth,
       boolean prefix,
@@ -553,7 +556,8 @@ final class Stemmer {
 
     List<CharsRef> stems = new ArrayList<>();
 
-    IntsRef forms = dictionary.lookupWord(strippedWord, offset, length);
+    boolean skipLookup = needsAnotherAffix(affix, previousAffix, !prefix);
+    IntsRef forms = skipLookup ? null : dictionary.lookupWord(strippedWord, offset, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
         char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
@@ -649,6 +653,15 @@ final class Stemmer {
     }
 
     return stems;
+  }
+
+  private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix) {
+    if (isFlagAppendedByAffix(affix, dictionary.needaffix)) {
+      return !isSuffix
+          || previousAffix < 0
+          || isFlagAppendedByAffix(previousAffix, dictionary.needaffix);
+    }
+    return false;
   }
 
   private boolean isFlagAppendedByAffix(int affixId, char flag) {

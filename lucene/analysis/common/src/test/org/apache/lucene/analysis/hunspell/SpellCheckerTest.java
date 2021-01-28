@@ -36,6 +36,11 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("i53643");
   }
 
+  @Test
+  public void needAffixOnAffixes() throws Exception {
+    doTest("needaffix5");
+  }
+
   public void testBreak() throws Exception {
     doTest("break");
   }
