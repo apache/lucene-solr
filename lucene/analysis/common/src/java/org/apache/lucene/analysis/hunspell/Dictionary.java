@@ -143,7 +143,7 @@ public class Dictionary {
   char needaffix;
   char forbiddenword;
   char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit, compoundFlag;
-  boolean checkCompoundCase;
+  boolean checkCompoundCase, checkCompoundDup;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
 
@@ -399,6 +399,8 @@ public class Dictionary {
         compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
         checkCompoundCase = true;
+      } else if ("CHECKCOMPOUNDDUP".equals(firstWord)) {
+        checkCompoundDup = true;
       }
     }
 

@@ -76,6 +76,11 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("checkcompoundcase");
   }
 
+  @Test
+  public void checkCompoundDup() throws Exception {
+    doTest("checkcompounddup");
+  }
+
   public void testBreak() throws Exception {
     doTest("break");
   }
