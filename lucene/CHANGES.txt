@@ -11,6 +11,8 @@ New Features
 
 * LUCENE-9004: Approximate nearest vector search via NSW graphs
 
+* LUCENE-9476: DirectoryTaxonomyReader now provides a getBulkPath API (Gautam Worah)
+
 System Requirements
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.

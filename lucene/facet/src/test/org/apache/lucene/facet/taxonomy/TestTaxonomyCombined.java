@@ -366,9 +366,9 @@ public class TestTaxonomyCombined extends FacetTestCase {
       }
     }
     //  (also test invalid ordinals:)
-    assertNull(tr.getPath(-1));
-    assertNull(tr.getPath(tr.getSize()));
-    assertNull(tr.getPath(TaxonomyReader.INVALID_ORDINAL));
+    expectThrows(IllegalArgumentException.class, () -> tr.getPath(-1));
+    expectThrows(IllegalArgumentException.class, () -> tr.getPath(tr.getSize()));
+    expectThrows(IllegalArgumentException.class, () -> tr.getPath(TaxonomyReader.INVALID_ORDINAL));
 
     // test TaxonomyReader.getOrdinal():
     for (int i = 1; i < expectedCategories.length; i++) {

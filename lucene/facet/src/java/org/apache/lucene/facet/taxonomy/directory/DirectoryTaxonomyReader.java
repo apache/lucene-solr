@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.facet.taxonomy.directory;
 
+import com.carrotsearch.hppc.IntIntScatterMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -316,14 +316,14 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
   @Override
   public FacetLabel getPath(int ordinal) throws IOException {
+    ensureOpen();
 
     // Since the cache is shared with DTR instances allocated from
     // doOpenIfChanged, we need to ensure that the ordinal is one that this DTR
     // instance recognizes. Therefore we do this check up front, before we hit
     // the cache.
-    if (ordinal < 0 || ordinal >= indexReader.maxDoc()) {
-      return null;
-    }
+    int indexReaderMaxDoc = indexReader.maxDoc();
+    isOrdinalInIndexReaderRange(ordinal, indexReaderMaxDoc);
 
     FacetLabel ordinalPath = getPathFromCache(ordinal);
     if (ordinalPath != null) {
@@ -356,47 +356,86 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
   }
 
   private FacetLabel getPathFromCache(int ordinal) {
-    ensureOpen();
-
     // TODO: can we use an int-based hash impl, such as IntToObjectMap,
     // wrapped as LRU?
     synchronized (categoryCache) {
-      FacetLabel res = categoryCache.get(ordinal);
-      if (res != null) {
-        return res;
-      }
+      return categoryCache.get(ordinal);
     }
-    return null;
   }
 
-  /* This API is only supported for indexes created with Lucene 8.7+ codec **/
-  public FacetLabel[] getBulkPath(int[] ordinal) throws IOException {
-    FacetLabel[] bulkPath = new FacetLabel[ordinal.length];
-    Map<Integer, Integer> originalPosition = new HashMap<>();
-    for (int i = 0; i < ordinal.length; i++) {
-      if (ordinal[i] < 0 || ordinal[i] >= indexReader.maxDoc()) {
-        return null;
-      }
-      FacetLabel ordinalPath = getPathFromCache(ordinal[i]);
+  private void isOrdinalInIndexReaderRange(int ordinal, int indexReaderMaxDoc)
+      throws IllegalArgumentException {
+    if (ordinal < 0 || ordinal >= indexReaderMaxDoc) {
+      throw new IllegalArgumentException(
+          "ordinal "
+              + ordinal
+              + " is out of the range of the indexReader "
+              + indexReader.toString());
+    }
+  }
+
+  /**
+   * Returns an array of FacetLabels for a given array of ordinals.
+   *
+   * <p>This API is generally faster than iteratively calling {@link
+   * org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader#getPath} over an array of
+   * ordinals.
+   *
+   * <p>This API is only available for Lucene indexes created with 8.7+ codec because it uses
+   * BinaryDocValues instead of StoredFields. Use the {@link
+   * org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader#getPath} method for indices
+   * created with codec version older than 8.7.
+   *
+   * @param ordinals Array of ordinals that are assigned to categories inserted into the taxonomy
+   *     index
+   * @throws IOException if the taxonomy index is created using the older StoredFields based codec.
+   */
+  public FacetLabel[] getBulkPath(int... ordinals) throws IOException {
+    ensureOpen();
+
+    FacetLabel[] bulkPath = new FacetLabel[ordinals.length];
+    // remember the original positions of ordinals before they are sorted
+    IntIntScatterMap originalPosition = new IntIntScatterMap();
+    int indexReaderMaxDoc = indexReader.maxDoc();
+    for (int i = 0; i < ordinals.length; i++) {
+      // check whether the ordinal is valid before accessing the cache
+      isOrdinalInIndexReaderRange(ordinals[i], indexReaderMaxDoc);
+      // check the cache before trying to find it in the index
+      FacetLabel ordinalPath = getPathFromCache(ordinals[i]);
       if (ordinalPath != null) {
         bulkPath[i] = ordinalPath;
       }
-      originalPosition.put(ordinal[i], i);
+      originalPosition.put(ordinals[i], i);
     }
 
-    Arrays.sort(ordinal);
-    int readerIndex = 0;
+    Arrays.sort(ordinals);
+    int readerIndex;
+    int leafReaderMaxDoc = 0;
+    int leafReaderDocBase = 0;
+    LeafReader leafReader;
+    LeafReaderContext leafReaderContext = null;
     BinaryDocValues values = null;
 
-    for (int ord : ordinal) {
+    for (int ord : ordinals) {
       if (bulkPath[originalPosition.get(ord)] == null) {
-        if (values == null
-            || values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase) == false) {
+        if (values == null || ord > leafReaderMaxDoc) {
+
           readerIndex = ReaderUtil.subIndex(ord, indexReader.leaves());
-          LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
+          leafReaderContext = indexReader.leaves().get(readerIndex);
+          leafReader = leafReaderContext.reader();
+          leafReaderMaxDoc = leafReader.maxDoc();
+          leafReaderDocBase = leafReaderContext.docBase;
           values = leafReader.getBinaryDocValues(Consts.FULL);
-          assert values.advanceExact(ord - indexReader.leaves().get(readerIndex).docBase);
+
+          // this check is only needed once to confirm that the index uses BinaryDocValues
+          boolean success = values.advanceExact(ord - leafReaderDocBase);
+          if (success == false) {
+            throw new IOException(
+                "the taxonomy index is created using the older StoredFields format which uses a Lucene "
+                    + "codec older than 8.7. Use the getPath(int ordinal) API iteratively instead.");
+          }
         }
+        values.advanceExact(ord - leafReaderDocBase);
         bulkPath[originalPosition.get(ord)] =
             new FacetLabel(FacetsConfig.stringToPath(values.binaryValue().utf8ToString()));
         synchronized (categoryCache) {
