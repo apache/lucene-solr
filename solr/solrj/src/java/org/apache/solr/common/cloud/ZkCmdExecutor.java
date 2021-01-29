@@ -28,7 +28,7 @@ import java.lang.invoke.MethodHandles;
 
 
 public class ZkCmdExecutor {
-  public static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private long retryDelay = 1500L; // 1 second would match timeout, so 500 ms over for padding
   private int retryCount;
