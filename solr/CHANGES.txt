@@ -215,6 +215,8 @@ Optimizations
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
   Used by default when field=_root_, or explicitly requested for other fields via hint=block.  (Joel Bernstein, hossman)
 
+* SOLR-15120 Reduce duplicated core creation work (Mike Drob, Mark Miller)
+
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
