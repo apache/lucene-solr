@@ -31,6 +31,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
@@ -303,6 +304,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
     when(zkStateReaderMock.getAliases()).thenReturn(Aliases.EMPTY);
+    doAnswer(invocation -> {
+      Predicate<DocCollection> p = invocation.getArgument(3);
+      p.test(clusterStateMock.getCollection(invocation.getArgument(0)));
+      return null;
+    }).when(zkStateReaderMock).waitForState(anyString(), anyLong(), any(), any(Predicate.class));
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
