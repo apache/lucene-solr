@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene50;
 
+import org.apache.lucene.backward_codecs.lucene86.Lucene86RWCodec;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseLiveDocsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestLucene50LiveDocsFormat extends BaseLiveDocsFormatTestCase {
 
   @Override
   protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+    return new Lucene86RWCodec();
   }
 }

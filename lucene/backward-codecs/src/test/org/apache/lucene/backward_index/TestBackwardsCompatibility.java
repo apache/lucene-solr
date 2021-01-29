@@ -1859,6 +1859,29 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
+  public void testDeletes() throws Exception {
+    Path oldIndexDir = createTempDir("dvupdates");
+    TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, dvUpdatesIndex);
+
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+
+    int maxDoc = writer.getDocStats().maxDoc;
+    writer.deleteDocuments(new Term("id", "1"));
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+
+    writer.forceMerge(1);
+    writer.commit();
+    assertEquals(maxDoc - 1, writer.getDocStats().maxDoc);
+
+    writer.close();
+    dir.close();
+  }
+
   public void testSoftDeletes() throws Exception {
     Path oldIndexDir = createTempDir("dvupdates");
     TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
