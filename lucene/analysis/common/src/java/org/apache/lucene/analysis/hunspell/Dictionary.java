@@ -76,7 +76,7 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
-  static final int FLAG_UNSET = 0;
+  static final char FLAG_UNSET = (char) 0;
   private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 

@@ -27,6 +27,16 @@ import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
   @Test
+  public void base() throws Exception {
+    doTest("base");
+  }
+
+  @Test
+  public void keepcase() throws Exception {
+    doTest("keepcase");
+  }
+
+  @Test
   public void allcaps() throws Exception {
     doTest("allcaps");
   }
@@ -37,8 +47,18 @@ public class SpellCheckerTest extends StemmerTestBase {
   }
 
   @Test
+  public void IJ() throws Exception {
+    doTest("IJ");
+  }
+
+  @Test
   public void i53643_numbersWithSeparators() throws Exception {
     doTest("i53643");
+  }
+
+  @Test
+  public void needAffixOnAffixes() throws Exception {
+    doTest("needaffix5");
   }
 
   public void testBreak() throws Exception {

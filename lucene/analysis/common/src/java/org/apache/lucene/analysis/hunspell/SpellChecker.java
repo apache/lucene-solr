@@ -44,11 +44,23 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    if (word.endsWith(".")) {
+      return spellWithTrailingDots(word);
+    }
+
+    return spellClean(word);
+  }
+
+  private boolean spellClean(String word) {
     if (isNumber(word)) {
       return true;
     }
 
     char[] wordChars = word.toCharArray();
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+      return false;
+    }
+
     if (checkWord(wordChars, wordChars.length, null)) {
       return true;
     }
@@ -58,13 +70,19 @@ public class SpellChecker {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty()
-        && !hasTooManyBreakOccurrences(word)
-        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
+    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
       return tryBreaks(word);
     }
 
     return false;
+  }
+
+  private boolean spellWithTrailingDots(String word) {
+    int length = word.length() - 1;
+    while (length > 0 && word.charAt(length - 1) == '.') {
+      length--;
+    }
+    return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
   }
 
   private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
