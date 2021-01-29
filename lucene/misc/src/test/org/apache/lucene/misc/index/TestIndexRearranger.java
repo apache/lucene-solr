@@ -18,6 +18,7 @@
 package org.apache.lucene.misc.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -51,7 +52,7 @@ public class TestIndexRearranger extends LuceneTestCase {
             inputDir,
             outputDir,
             getIndexWriterConfig(),
-            List.of(new OddDocSelector(), new EvenDocSelector()));
+            Arrays.asList(new OddDocSelector(), new EvenDocSelector()));
     rearranger.execute();
     IndexReader reader = DirectoryReader.open(outputDir);
     assertEquals(2, reader.leaves().size());
