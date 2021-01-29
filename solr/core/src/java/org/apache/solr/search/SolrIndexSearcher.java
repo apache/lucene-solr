@@ -818,6 +818,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // Get the absolute value (positive version) of this query. If we
     // get back the same reference, we know it's positive.
     Query absQ = QueryUtils.getAbs(query);
+    if (absQ == null){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Undefined Query");
+    }
     boolean positive = query == absQ;
 
     if (filterCache != null) {
