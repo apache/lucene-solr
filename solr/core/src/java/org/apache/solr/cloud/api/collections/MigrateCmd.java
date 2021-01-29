@@ -262,7 +262,6 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     cmd.setNodeName(sourceLeader.getNodeName());
     cmd.setState(Replica.State.ACTIVE);
     cmd.setCheckLive(true);
-    cmd.setOnlyIfLeader(true);
     cmd.setCollection(tempSourceCollectionName);
     cmd.setShardId(tempSourceSlice.getName());
     {
@@ -332,11 +331,11 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempSourceLeader.getName());
+    cmd.setLeaderName(targetLeader.getName());
     cmd.setNodeName(targetLeader.getNodeName());
     cmd.setState(Replica.State.ACTIVE);
     cmd.setShardId(tempSourceLeader.getSlice());
     cmd.setCheckLive(true);
-    cmd.setOnlyIfLeader(true);
     params = new ModifiableSolrParams(cmd.getParams());
 
     {

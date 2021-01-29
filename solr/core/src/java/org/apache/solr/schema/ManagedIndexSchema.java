@@ -277,11 +277,13 @@ public final class ManagedIndexSchema extends IndexSchema {
         return;
       }
 
-      try {
-        vers = next.get(maxWaitSecs, TimeUnit.SECONDS);
-      } catch (Exception e) {
-        log.warn("", e);
-        // shouldn't happen since we checked isCancelled
+      if (!next.isCancelled()) {
+        try {
+          vers = next.get(maxWaitSecs, TimeUnit.SECONDS);
+        } catch (Exception e) {
+          log.warn("", e);
+          // shouldn't happen since we checked isCancelled
+        }
       }
 
 
@@ -361,17 +363,11 @@ public final class ManagedIndexSchema extends IndexSchema {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1 || remoteVersion < expectedZkVersion) {
           try {
-            if (isClosed.isClosed()) {
-              throw new AlreadyClosedException();
-            }
             NamedList<Object> zkversionResp = solrClient.request(this);
             if (zkversionResp != null)
               remoteVersion = (Integer)zkversionResp.get("zkversion");
 
             if (remoteVersion < expectedZkVersion) {
-              if (isClosed.isClosed()) {
-                return -1;
-              }
               log.info("Replica {} returned schema version {} and has not applied schema version {}"
                   , coreUrl, remoteVersion, expectedZkVersion);
             }

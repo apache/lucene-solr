@@ -142,6 +142,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
+  @Ignore // nocomit debug
   public void testCreateDelete() throws Exception {
     switch (random().nextInt(3)) {
       case 0:
@@ -309,6 +310,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     doReplaceLeader(true);
   }
 
+  // nocommit debug
+  @Ignore
   public void testKillLeader() throws Exception {
     doReplaceLeader(false);
   }
@@ -650,6 +653,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertFalse("Doc1 is deleted but it's still exist", successs);
   }
 
+  // nocommit debug
+  @Ignore
   public void testBasicLeaderElection() throws Exception {
     createAndWaitForCollection(1,0,2,0);
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
@@ -693,6 +698,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     );
   }
 
+  // nocommit debug
+  @Ignore
   public void testOutOfOrderDBQWithInPlaceUpdates() throws Exception {
     createAndWaitForCollection(1,0,2,0);
     assertFalse(getSolrCore(true).get(0).getLatestSchema().getField("inplace_updatable_int").indexed());

@@ -1026,6 +1026,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, shard));
     }
+
+    if (returnLeader.get() == null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No registered leader was found "
+          + "collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
+          + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, shard));
+    }
+
     return returnLeader.get();
   }
 

@@ -23,6 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.SolrQueryRequest;
@@ -80,6 +81,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     } catch (AssertionError e) {
       // NOOP: we're happy
     }
+    req.close();
   }
 
   public void testInvalidUsage() {
@@ -114,6 +116,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         assertTrue(0 < e.getMessage().indexOf("_docid_"));
       }
     }
+    req.close();
   }
 
 
@@ -162,6 +165,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
       assertEquals(ErrorCode.BAD_REQUEST.code, e.code());
       assertTrue(e.getMessage().contains("wrong size"));
     }
+    req.close();
   }
 
   public void testRoundTripParsing() throws IOException {
@@ -198,6 +202,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         assertArrayEquals(inValues, outValues);
       }
     }
+    req.close();
   }
 
   private static Object[] buildRandomSortObjects(SortSpec ss) throws IOException {
@@ -257,6 +262,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
 
       }
     }
+
     return results;
   }
 
@@ -280,13 +286,14 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
    */
   private Collection<String> getAllFieldNames() {
     ArrayList<String> names = new ArrayList<>(37);
-    for (String f : h.getCore().getLatestSchema().getFields().keySet()) {
-      if (! f.equals("_version_")) {
-        names.add(f);
+    try (SolrCore core = h.getCore()) {
+      for (String f : core.getLatestSchema().getFields().keySet()) {
+        if (!f.equals("_version_")) {
+          names.add(f);
+        }
       }
+      return Collections.<String>unmodifiableCollection(names);
     }
-    return Collections.<String>unmodifiableCollection(names);
   }
-
 
 }

@@ -53,6 +53,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -243,9 +244,11 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     p.remove("qt");
     p.set("indent","true");
 
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    String raw = connection.request(path, p, null);
-    return raw;
+    try (SolrCore core = h.getCore()) {
+      DirectSolrConnection connection = new DirectSolrConnection(core);
+      String raw = connection.request(path, p, null);
+      return raw;
+    }
   }
 
 

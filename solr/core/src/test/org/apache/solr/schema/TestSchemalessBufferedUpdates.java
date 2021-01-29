@@ -22,6 +22,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -90,7 +91,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
       // Invalid date will be normalized by ParseDateField URP
-      updateJ(jsonAdd(processAdd(sdoc("id","1", "f_dt","2017-01-04"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(processAdd(sdoc("id","1", "f_dt","2017-01-04"), req.getCore())), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
       assertU(commit());
       assertJQ(req("q", "*:*"), "/response/numFound==1");
 
@@ -102,7 +103,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       // WARN [...] o.a.s.u.UpdateLog REYPLAY_ERR: IOException reading log
       //            org.apache.solr.common.SolrException: Invalid Date String:'2017-01-05'
       //              at org.apache.solr.util.DateMathParser.parseMath(DateMathParser.java:234)
-      updateJ(jsonAdd(processAdd(sdoc("id","2", "f_dt","2017-01-05"))), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(processAdd(sdoc("id","2", "f_dt","2017-01-05"), req.getCore())), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
 
       Future<UpdateLog.RecoveryInfo> rinfoFuture = ulog.applyBufferedUpdates();
 
@@ -121,12 +122,12 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       TestInjection.reset();
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
-      req().close();
+      req.close();
     }
   }
 
-  private SolrInputDocument processAdd(final SolrInputDocument docIn) throws IOException {
-    UpdateRequestProcessorChain processorChain = h.getCore().getUpdateProcessingChain(UPDATE_CHAIN);
+  private SolrInputDocument processAdd(final SolrInputDocument docIn, SolrCore core) throws IOException {
+    UpdateRequestProcessorChain processorChain = core.getUpdateProcessingChain(UPDATE_CHAIN);
     assertNotNull("Undefined URP chain '" + UPDATE_CHAIN + "'", processorChain);
     List <UpdateRequestProcessorFactory> factoriesUpToDUP = new ArrayList<>();
     for (UpdateRequestProcessorFactory urpFactory : processorChain.getProcessors()) {
@@ -134,7 +135,7 @@ public class TestSchemalessBufferedUpdates extends SolrTestCaseJ4 {
       if (urpFactory.getClass().equals(DistributedUpdateProcessorFactory.class)) 
         break;
     }
-    UpdateRequestProcessorChain chainUpToDUP = new UpdateRequestProcessorChain(factoriesUpToDUP, h.getCore());
+    UpdateRequestProcessorChain chainUpToDUP = new UpdateRequestProcessorChain(factoriesUpToDUP, core);
     assertNotNull("URP chain '" + UPDATE_CHAIN + "'", chainUpToDUP);
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();

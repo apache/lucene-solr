@@ -45,10 +45,10 @@ public class TestReloadAndDeleteDocs extends SolrTestCaseJ4 {
   private void doTest(final boolean useUpdateLog) throws Exception {
     System.setProperty("enable.update.log", useUpdateLog ? "true" : "false");
     initCore("solrconfig.xml", "schema.xml", TEST_HOME());
-    assertEquals("UpdateLog existence doesn't match sys prop (test config changed?)",
-                 useUpdateLog,
-                 null != h.getCore().getUpdateHandler().getUpdateLog());
-    h.reload();
-    assertU("<delete><query>*:*</query></delete>");
+    try (SolrCore core = h.getCore()) {
+      assertEquals("UpdateLog existence doesn't match sys prop (test config changed?)", useUpdateLog, null != core.getUpdateHandler().getUpdateLog());
+      h.reload();
+      assertU("<delete><query>*:*</query></delete>");
+    }
   }
 }

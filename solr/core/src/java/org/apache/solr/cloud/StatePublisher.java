@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -31,7 +32,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -110,9 +113,15 @@ public class StatePublisher implements Closeable {
 
     private void bulkMessage(ZkNodeProps zkNodeProps, ZkNodeProps bulkMessage) throws KeeperException, InterruptedException {
       if (OverseerAction.get(zkNodeProps.getStr("operation")) == OverseerAction.DOWNNODE) {
-        bulkMessage.getProperties().put(OverseerAction.DOWNNODE.toLower(), zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
+        String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+        bulkMessage.getProperties().put(OverseerAction.DOWNNODE.toLower(), nodeName);
+
+        clearStatesForNode(bulkMessage, nodeName);
       } else if (OverseerAction.get(zkNodeProps.getStr("operation")) == OverseerAction.RECOVERYNODE) {
-        bulkMessage.getProperties().put(OverseerAction.RECOVERYNODE.toLower(), zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP));
+        String nodeName = zkNodeProps.getStr(ZkStateReader.NODE_NAME_PROP);
+        bulkMessage.getProperties().put(OverseerAction.RECOVERYNODE.toLower(), nodeName);
+
+        clearStatesForNode(bulkMessage, nodeName);
       } else {
         String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
         String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
@@ -127,8 +136,33 @@ public class StatePublisher implements Closeable {
       }
     }
 
+    private void clearStatesForNode(ZkNodeProps bulkMessage, String nodeName) {
+      Set<String> removeCores = new HashSet<>();
+      Set<String> cores = bulkMessage.getProperties().keySet();
+      for (String core : cores) {
+        if (core.equals(OverseerAction.DOWNNODE.toLower()) || core.equals(OverseerAction.RECOVERYNODE.toLower())) {
+          continue;
+        }
+        Collection<DocCollection> collections = zkStateReader.getClusterState().getCollectionsMap().values();
+        for (DocCollection collection : collections) {
+          Replica replica = collection.getReplica(core);
+          if (replica != null) {
+            if (replica.getNodeName().equals(nodeName)) {
+              removeCores.add(core);
+            }
+          }
+        }
+
+      }
+      for (String core : removeCores) {
+        bulkMessage.getProperties().remove(core);
+      }
+    }
+
     private void processMessage(ZkNodeProps message) throws KeeperException, InterruptedException {
-      overseerJobQueue.offer(Utils.toJSON(message));
+      byte[] updates = Utils.toJSON(message);
+      log.info("Send state updates to Overseer {}", message);
+      overseerJobQueue.offer(updates);
     }
   }
 
@@ -147,13 +181,16 @@ public class StatePublisher implements Closeable {
         String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
         String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
 
-        Replica replica = zkStateReader.getClusterState().getCollection(collection).getReplica(core);
-        String lastState = stateCache.get(core);
-        // nocommit
-        if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
-          log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+        DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
+        if (coll != null) {
+          Replica replica = coll.getReplica(core);
+          String lastState = stateCache.get(core);
           // nocommit
-          return;
+          if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
+            log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
+            // nocommit
+            return;
+          }
         }
         if (core == null || state == null) {
           log.error("Nulls in published state");

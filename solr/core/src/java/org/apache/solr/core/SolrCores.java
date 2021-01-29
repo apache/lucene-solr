@@ -298,12 +298,13 @@ class SolrCores implements Closeable {
       return core;
     }
 
-    if (core == null && residentDesciptors.get(name) != null && residentDesciptors.get(name).isTransient() &&  getTransientCacheHandler() != null) {
-      core = getTransientCacheHandler().getCore(name);
-    }
-    if (core != null) {
-      core.open();
-    }
+    // MRM TODO:
+//    if (core == null && residentDesciptors.get(name) != null && residentDesciptors.get(name).isTransient() &&  getTransientCacheHandler() != null) {
+//      core = getTransientCacheHandler().getCore(name);
+//    }
+//    if (core != null) {
+//      core.open();
+//    }
 
     if (core == null && cd != null) {
       throw new IllegalStateException("found a descriptor but no core");

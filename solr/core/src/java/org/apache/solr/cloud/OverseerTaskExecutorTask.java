@@ -1,13 +1,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cloud.overseer.NodeMutator;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.overseer.ReplicaMutator;
-import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
@@ -21,21 +15,17 @@ public class OverseerTaskExecutorTask implements Runnable {
   private final ZkController zkController;
   private final SolrCloudManager cloudManager;
   private final SolrZkClient zkClient;
-  private final Overseer overseer;
-  private final ZkStateWriter zkStateWriter;
   private final ZkNodeProps message;
 
-  public OverseerTaskExecutorTask(CoreContainer cc, ZkStateWriter zkStateWriter, ZkNodeProps message) {
+  public OverseerTaskExecutorTask(CoreContainer cc,  ZkNodeProps message) {
     this.zkController = cc.getZkController();
     this.zkClient = zkController.getZkClient();
     this.cloudManager = zkController.getSolrCloudManager();
-    this.overseer = zkController.getOverseer();
-    this.zkStateWriter = zkStateWriter;
     this.message = message;
   }
 
 
-  private void processQueueItem(ZkNodeProps message) throws Exception {
+  private boolean processQueueItem(ZkNodeProps message) throws Exception {
     if (log.isDebugEnabled()) log.debug("Consume state update from queue {} {}", message);
 
     // assert clusterState != null;
@@ -45,7 +35,7 @@ public class OverseerTaskExecutorTask implements Runnable {
     final String operation = message.getStr(Overseer.QUEUE_OPERATION);
     if (operation == null) {
       log.error("Message missing " + Overseer.QUEUE_OPERATION + ":" + message);
-      return;
+      return false;
     }
 
     if (log.isDebugEnabled()) log.debug("Queue operation is {}", operation);
@@ -54,54 +44,15 @@ public class OverseerTaskExecutorTask implements Runnable {
 
     if (log.isDebugEnabled()) log.debug("Enqueue message {}", operation);
     try {
-      zkStateWriter.enqueueUpdate(null, message, true);
+      zkController.getOverseer().getZkStateWriter().enqueueUpdate(null, message, true);
     } catch (NullPointerException e) {
-      log.info("Overseer is stopped, won't process message");
+      log.info("Overseer is stopped, won't process message " + zkController.getOverseer());
+      return false;
     }
 
 
     if (log.isDebugEnabled()) log.debug("State update consumed from queue {}", message);
-  }
-
-  private ClusterState processMessage(final ZkNodeProps message, final String operation, ClusterState clusterState) {
-    if (log.isDebugEnabled()) {
-      log.debug("processMessage(ZkNodeProps message={}, String operation={} clusterState={})", message, operation, clusterState);
-    }
-
-    OverseerAction overseerAction = OverseerAction.get(operation);
-    if (overseerAction == null) {
-      throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
-    }
-    switch (overseerAction) {
-      case STATE:
-        return new ReplicaMutator(cloudManager).setState(clusterState, message);
-      case LEADER:
-        return new SliceMutator(cloudManager).setShardLeader(clusterState, message);
-      case ADDROUTINGRULE:
-        return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
-      case REMOVEROUTINGRULE:
-        return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
-      case UPDATESHARDSTATE:
-        return new SliceMutator(cloudManager).updateShardState(clusterState, message);
-      //          case QUIT:
-      //            if (myId.equals(message.get(ID))) {
-      //              log.info("Quit command received {} {}", message, LeaderElector.getNodeName(myId));
-      //              try {
-      //                overseerCollectionConfigSetProcessor.close();
-      //              } catch (IOException e) {
-      //                log.error("IOException", e);
-      //              }
-      //              close();
-      //            } else {
-      //              log.warn("Overseer received wrong QUIT message {}", message);
-      //            }
-      //            break;
-      case DOWNNODE:
-        return new NodeMutator().downNode(zkController.zkStateReader, clusterState, message);
-      default:
-        throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
-
-    }
+    return true;
   }
 
   @Override
@@ -117,17 +68,15 @@ public class OverseerTaskExecutorTask implements Runnable {
 
   public static class WriteTask implements Runnable {
     CoreContainer coreContainer;
-    ZkStateWriter zkStateWriter;
 
     public WriteTask(CoreContainer coreContainer, ZkStateWriter zkStateWriter) {
       this.coreContainer = coreContainer;
-      this.zkStateWriter = zkStateWriter;
     }
 
     @Override
     public void run() {
       try {
-        zkStateWriter.writePendingUpdates();
+        coreContainer.getZkController().getOverseer().getZkStateWriter().writePendingUpdates();
       } catch (NullPointerException e) {
         if (log.isDebugEnabled()) log.debug("Won't write pending updates, zkStateWriter=null");
       } catch (Exception e) {

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.servlet;
 
+import java.io.Closeable;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *
  * @since solr 1.2
  */
-public class DirectSolrConnection 
+public class DirectSolrConnection implements Closeable
 {
   protected final SolrCore core;
   protected final SolrRequestParsers parser;

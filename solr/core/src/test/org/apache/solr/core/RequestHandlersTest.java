@@ -116,7 +116,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     Long updateTime = (Long) updateStats.get("UPDATE./update.totalTime");
     Long termTime = (Long) termStats.get("QUERY./terms.totalTime");
 
-    // nocommit
+    // MRM TODO: these update stat's seemed a bit expensive to be enabled in such tight spots by default
     // assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
   }
 }

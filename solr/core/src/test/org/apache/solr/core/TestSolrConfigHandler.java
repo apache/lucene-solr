@@ -142,7 +142,6 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   }
 
-  @Ignore //nocommit debug
   public void testProperty() throws Exception {
     RestTestHarness harness = restTestHarness;
     MapWriter confMap = getRespMap("/config", harness);
@@ -187,7 +186,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime",null));
   }
 
-  @Ignore // nocommit - debug
+  @Ignore // nocommit - debug, may not to poll a short while?
   public void testUserProp() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload = "{\n" +

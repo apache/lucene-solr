@@ -17,8 +17,10 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
@@ -40,7 +42,9 @@ public class TestInitParams extends SolrTestCaseJ4 {
     for (String s : Arrays.asList("/dump1", "/dump3","/root/dump5" , "/root1/anotherlevel/dump6")) {
       SolrRequestHandler handler = h.getCore().getRequestHandler(s);
       SolrQueryResponse rsp = new SolrQueryResponse();
-      handler.handleRequest(req("initArgs", "true"), rsp);
+      SolrQueryRequest req = req("initArgs", "true");
+      handler.handleRequest(req, rsp);
+      req.close();
       NamedList nl = (NamedList) rsp.getValues().get("initArgs");
       NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
       assertEquals("A", def.get("a"));
@@ -48,6 +52,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
       assertEquals("B", def.get("b"));
       def = (NamedList) nl.get(PluginInfo.APPENDS);
       assertEquals("C", def.get("c"));
+      IOUtils.closeQuietly(req);
     }
 
     InitParams initParams = h.getCore().getSolrConfig().getInitParams().get("a");
@@ -63,7 +68,9 @@ public class TestInitParams extends SolrTestCaseJ4 {
   public void testMultiInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req("initArgs", "true"), rsp);
+    SolrQueryRequest req = req("initArgs", "true");
+    handler.handleRequest(req, rsp);
+    req.close();
     NamedList nl = (NamedList) rsp.getValues().get("initArgs");
     NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
     assertEquals("A", def.get("a"));
@@ -72,7 +79,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertEquals("B", def.get("b"));
     def = (NamedList) nl.get(PluginInfo.APPENDS);
     assertEquals("C", def.get("c"));
-
+    IOUtils.closeQuietly(req);
   }
 
 
@@ -80,7 +87,9 @@ public class TestInitParams extends SolrTestCaseJ4 {
   public void testComponentWithConflictingInitParams(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req("initArgs", "true"), rsp);
+    SolrQueryRequest req = req("initArgs", "true");
+    handler.handleRequest(req, rsp);
+    req.close();
     NamedList nl = (NamedList) rsp.getValues().get("initArgs");
     NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
     assertEquals("A1" ,def.get("a"));
@@ -88,6 +97,7 @@ public class TestInitParams extends SolrTestCaseJ4 {
     assertEquals("B1" ,def.get("b"));
     def = (NamedList) nl.get(PluginInfo.APPENDS);
     assertEquals(Arrays.asList("C1","C") ,def.getAll("c"));
+    IOUtils.closeQuietly(req);
   }
 
   public void testNestedRequestHandler() {
@@ -100,19 +110,24 @@ public class TestInitParams extends SolrTestCaseJ4 {
   public void testElevateExample(){
     SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req("initArgs", "true"), rsp);
+    SolrQueryRequest req = req("initArgs", "true");
+    handler.handleRequest(req, rsp);
+    req.close();
     NamedList nl = (NamedList) rsp.getValues().get("initArgs");
     NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
     assertEquals("text" ,def.get("df"));
-
+    IOUtils.closeQuietly(req);
   }
 
   public void testArbitraryAttributes() {
     SolrRequestHandler handler = h.getCore().getRequestHandler("/dump7");
     SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req("initArgs", "true"), rsp);
+    SolrQueryRequest req = req("initArgs", "true");
+    handler.handleRequest(req, rsp);
+    req.close();
     NamedList nl = (NamedList) rsp.getValues().get("initArgs");
     assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
+    IOUtils.closeQuietly(req);
   }
 
   public void testMatchPath(){

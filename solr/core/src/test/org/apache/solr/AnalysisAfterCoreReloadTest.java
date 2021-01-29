@@ -32,6 +32,7 @@ import org.junit.Ignore;
 import java.io.File;
 import java.io.IOException;
 
+@Ignore // MRM-TEST TODO: finish closing things right
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   private static String tmpSolrHome;

@@ -165,8 +165,6 @@ public class SpellCheckCollator {
           }
         } catch (Exception e) {
           log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
-        } finally {
-          checkResponse.req.close();  
         }
       }
       if (hits > 0 || !verifyCandidateWithQuery) {

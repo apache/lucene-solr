@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -29,7 +28,6 @@ import org.junit.runner.Result;
 /**
  * @see TestRuleLimitSysouts
  */
-@Ignore // nocommit turned off ftm.
 public class TestSysoutsLimits extends WithNestedTests {
   public TestSysoutsLimits() {
     super(false);

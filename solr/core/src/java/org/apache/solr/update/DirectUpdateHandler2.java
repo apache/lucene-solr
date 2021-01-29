@@ -894,7 +894,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     } finally {
       if (clearRequestInfo) SolrRequestInfo.clearRequestInfo();
     }
-
+    // we went through the normal process to commit, so we don't have to artificially
+    // cap any ulog files.
     try {
       if (ulog != null) ulog.close(false);
     } catch (Throwable th) {

@@ -574,8 +574,8 @@ public abstract class LuceneTestCase extends Assert {
    * to them (as is the case with ju.logging handlers).
    */
   static {
-//    TestRuleLimitSysouts.checkCaptureStreams();
-//    Logger.getGlobal().getHandlers();
+    TestRuleLimitSysouts.checkCaptureStreams();
+    Logger.getGlobal().getHandlers();
   }
 
   /**
@@ -588,10 +588,10 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
-   * Max static data stored in a test suite class after the suite is complete.
+   * Max 10mb of static data stored in a test suite class after the suite is complete.
    * Prevents static data structures leaking and causing OOMs in subsequent tests.
    */
-  private final static long STATIC_LEAK_THRESHOLD = 600;
+  private final static long STATIC_LEAK_THRESHOLD = 600; // MRM TODO: I dropped this down hard and enabled it again
 
   /** By-name list of ignored types like loggers etc. */
   private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(
@@ -614,11 +614,10 @@ public abstract class LuceneTestCase extends Assert {
       .around(ignoreAfterMaxFailures)
       .around(suiteFailureMarker = new TestRuleMarkFailure())
       .around(new TestRuleAssertionsRequired())
-        // nocommit - lets stop extending from LuceneTestCase
-      //.around(new TestRuleLimitSysouts(suiteFailureMarker))
+      .around(new TestRuleLimitSysouts(suiteFailureMarker))
       .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
     // TODO LUCENE-7595: Java 9 does not allow to look into runtime classes, so we have to fix the RAM usage checker!
-    //if (!Constants.JRE_IS_MINIMUM_JAVA9) {
+    //if (!Constants.JRE_IS_MINIMUM_JAVA9) {  MRM TODO: did not appear to work with the Java 11 I used at the time on my mac
       r = r.around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
         @Override
         protected boolean accept(java.lang.reflect.Field field) {

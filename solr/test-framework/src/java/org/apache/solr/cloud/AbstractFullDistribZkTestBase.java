@@ -569,8 +569,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               throw new RuntimeException(e);
             }
 
-            // nocommit
-           // assertTrue(response.getResponse().toString(), response.isSuccess());
+            assertTrue(response.getResponse().toString(), response.isSuccess());
           });
         }
       }

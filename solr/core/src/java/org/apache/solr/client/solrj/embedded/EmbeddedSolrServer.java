@@ -194,7 +194,13 @@ public class EmbeddedSolrServer extends SolrClient {
 
     // Check for cores action
     SolrQueryRequest req = null;
-    try (SolrCore core = coreContainer.getCore(coreName)) {
+    SolrCore core = null;
+    try {
+      if (req == null) {
+        core = coreContainer.getCore(coreName);
+      } else {
+        core = req.getCore();
+      }
 
       if (core == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such core: " + coreName);
@@ -274,7 +280,11 @@ public class EmbeddedSolrServer extends SolrClient {
       ParWork.propagateInterrupt(ex);
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) req.close();
+      if (req != null) {
+        req.close();
+      } else {
+        core.close();
+      }
       SolrRequestInfo.clearRequestInfo();
     }
   }

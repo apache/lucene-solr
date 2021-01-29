@@ -97,7 +97,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     numJettys = 3;
   }
 
-  // nocommit - no longer used
+  // MRM TODO: - no longer used
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }

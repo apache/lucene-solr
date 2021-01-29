@@ -22,7 +22,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
@@ -69,6 +68,8 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
     // Check to see if our copy field made it out safely
     query.setQuery( "dynamic_runtime:aaa" );
+
+    h.getCore();
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/str[@name='id'][.='10']"

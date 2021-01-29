@@ -737,7 +737,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     for (int i = 0; i < q.length; i += 2) {
       entries[i / 2] = new NamedList.NamedListEntry<>(q[i], q[i + 1]);
     }
-    return new LocalSolrQueryRequest(core, new NamedList<>(entries));
+    return new LocalSolrQueryRequest(core, new NamedList<>(entries), true);
   }
 
   private static final String makePath(String... args) {

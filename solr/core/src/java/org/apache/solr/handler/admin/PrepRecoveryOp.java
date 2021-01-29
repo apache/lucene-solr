@@ -45,26 +45,19 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
     final SolrParams params = it.req.getParams();
 
-    String cname = params.get(CoreAdminParams.CORE, null);
+    String cname = params.required().get(CoreAdminParams.CORE);
+
+    String leaderName = params.required().get("leaderName");
 
     String collection = params.get("collection");
 
     String shard = params.get(ZkStateReader.SHARD_ID_PROP);
-
-    if (collection == null) {
-      throw new IllegalArgumentException("collection cannot be null");
-    }
 
     Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
 
     log.info(
         "Going to wait for core: {}, state: {}: params={}",
         cname, waitForState, params);
-
-    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(cname);
-    if (leaderElector == null || !leaderElector.isLeader()) {
-      throw new IllegalStateException("Not the valid leader " + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()));
-    }
 
     assert TestInjection.injectPrepRecoveryOpPauseForever();
 
@@ -75,7 +68,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     try {
       coreContainer.getZkController().getZkStateReader().waitForState(collection, 10, TimeUnit.SECONDS, (n, c) -> {
         if (c == null) {
-          return true;
+          return false;
         }
 
         // wait until we are sure the recovering node is ready
@@ -99,6 +92,11 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
       if (error == null)
         error = "Timeout waiting for collection state. \n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
       throw new NotInClusterStateException(ErrorCode.SERVER_ERROR, error);
+    }
+
+    LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
+    if (leaderElector == null || !leaderElector.isLeader()) {
+      throw new IllegalStateException("Not the valid leader " + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) + " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
     }
   }
 }

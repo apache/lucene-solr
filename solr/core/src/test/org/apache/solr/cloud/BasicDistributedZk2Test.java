@@ -46,7 +46,7 @@ import java.nio.file.Path;
  * work as expected.
  */
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@LuceneTestCase.Nightly // nocommit - check out more
+@LuceneTestCase.Nightly // MRM TODO: - check out more, convert to bridge
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   private static final String SHARD2 = "shard2";
   private static final String SHARD1 = "shard1";

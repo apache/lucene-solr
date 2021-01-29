@@ -67,7 +67,6 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -1212,19 +1211,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       resourceLoader.inform(infoRegistry);
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
-      if (!isReloaded) { // TODO: reload could move to a different index?
-        seedVersionBuckets();
-      }
 
-      registerConfListener();
-    } catch(Exception e) {
-//      try {
-//        close();
-//      } catch(Exception e2) {
-//        log.error("", e2);
-//      }
-      throw e;
-    } finally {
       searcherReadyLatch.countDown();
 
       // nocommit - wait before publish active
@@ -1237,8 +1224,38 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           log.error("", e);
         }
       }
-    }
 
+      if (!isReloaded) { // MRM TODO: reload could move to a different index?
+        RefCounted<IndexWriter> iw = updateHandler.getSolrCoreState().getIndexWriter(this);
+        try {
+          Directory dir = iw.get().getDirectory();
+
+          RefCounted<SolrIndexSearcher> searcher = getSearcher();
+          try {
+            if (dir != searcher.get().getIndexReader().directory()) {
+              seedVersionBuckets();
+            }
+          } finally {
+            searcher.decref();
+          }
+        } finally {
+          iw.decref();
+        }
+      }
+
+      registerConfListener();
+    } catch(Exception e) {
+//      try {
+//        close();
+//      } catch(Exception e2) {
+//        log.error("", e2);
+//      }
+      try {
+        throw e;
+      } catch (IOException ioException) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ioException);
+      }
+    }
 
   }
 
@@ -1632,17 +1649,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public void open() {
     if (refCount.get() <= 0) {
-      throw new AlreadyClosedException();
+      throw new AlreadyClosedException("open refcount " + this + " " + refCount.get());
     }
     int cnt = refCount.incrementAndGet();
 
-//    RuntimeException e = new RuntimeException();
-//    StackTraceElement[] stack = e.getStackTrace();
-//    for (int i = 0; i < 4; i++) {
-//      log.info(stack[i].toString());
-//    }
+    if (log.isDebugEnabled()) {
+      RuntimeException e = new RuntimeException();
+      StackTraceElement[] stack = e.getStackTrace();
+      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+        log.debug(stack[i].toString());
+      }
 
-    if (log.isDebugEnabled()) log.debug("open refcount {} {}", this, cnt);
+      log.debug("open refcount {} {}", this, cnt);
+    }
   }
 
   /**
@@ -1680,13 +1699,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     synchronized (closeAndWait) {
       closeAndWait.notifyAll();
     }
-    //    RuntimeException e = new RuntimeException();
-    //    StackTraceElement[] stack = e.getStackTrace();
-    //    for (int i = 0; i < 4; i++) {
-    //      log.info(stack[i].toString());
-    //    }
 
-    if (log.isDebugEnabled()) log.debug("close refcount after {} {}", this, count);
+    if (log.isDebugEnabled()) {
+      RuntimeException e = new RuntimeException();
+      StackTraceElement[] stack = e.getStackTrace();
+      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+        log.debug(stack[i].toString());
+      }
+
+      log.debug("close refcount after {} {}", this, count);
+    }
 
     if (count == 0) {
       try {
@@ -1717,9 +1739,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       cnt++;
       try {
         synchronized (closeAndWait) {
-          closeAndWait.wait(250);
+          closeAndWait.wait(1);
         }
-        if (cnt >= 4 && !closing) {
+        if (cnt >= 3 && !closing) {
           close();
         }
         log.warn("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);

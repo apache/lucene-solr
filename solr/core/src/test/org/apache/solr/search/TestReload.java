@@ -16,18 +16,22 @@
  */
 package org.apache.solr.search;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import java.util.Random;
 
-@Ignore // nocommit
 public class TestReload extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     // useFactory(null);   // force FS directory
     initCore("solrconfig-tlog.xml","schema15.xml");
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    deleteCore();
   }
 
   @Test
@@ -58,7 +62,7 @@ public class TestReload extends TestRTGBase {
 
 
     Random rand = random();
-    int iter = atLeast(20);
+    int iter = atLeast(5);
 
     for (int i=0; i<iter; i++) {
       if (rand.nextBoolean()) {

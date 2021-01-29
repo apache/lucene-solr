@@ -16,11 +16,7 @@
  */
 package org.apache.solr.update;
 
-import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
@@ -125,69 +121,35 @@ UpdateHandler implements SolrInfoBean, Closeable {
     this(core, null);
   }
   
-  public UpdateHandler(SolrCore core, UpdateLog updateLog) {
-    UpdateLog ourUpdateLog = null;
-    assert ObjectReleaseTracker.track(this);
-    try {
-      this.core = core;
-      CoreDescriptor cd = core.getCoreDescriptor();
-      if (cd == null) {
-        throw new AlreadyClosedException();
-      }
-      idField = core.getLatestSchema().getUniqueKeyField();
-      idFieldType = idField != null ? idField.getType() : null;
-      parseEventListeners();
-      PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+  public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
+    this.core=core;
+    idField = core.getLatestSchema().getUniqueKeyField();
+    idFieldType = idField!=null ? idField.getType() : null;
+    parseEventListeners();
+    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
-      // If this is a replica of type PULL, don't create the update log
-      boolean skipUpdateLog = cd.getCloudDescriptor() != null && !cd.getCloudDescriptor().requiresTransactionLog();
-      if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-        if (dirFactory instanceof HdfsDirectoryFactory) {
-          ourUpdateLog = new HdfsUpdateLog(((HdfsDirectoryFactory) dirFactory).getConfDir());
-        } else {
-          String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-          ourUpdateLog = core.getResourceLoader().newInstance(className, UpdateLog.class, "update.");
-        }
-
-        if (!core.isReloaded() && !dirFactory.isPersistent()) {
-          ourUpdateLog.clearLog(core, ulogPluginInfo);
-        }
-
-        if (log.isDebugEnabled()) {
-          log.debug("Using UpdateLog implementation: {}", ourUpdateLog.getClass().getName());
-        }
-        ourUpdateLog.init(ulogPluginInfo);
-        ourUpdateLog.init(this, core);
+    // If this is a replica of type PULL, don't create the update log
+    boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
+    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
+      DirectoryFactory dirFactory = core.getDirectoryFactory();
+      if (dirFactory instanceof HdfsDirectoryFactory) {
+        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
-        ourUpdateLog = updateLog;
+        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
+        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
       }
 
-      if (ourUpdateLog != null) {
-        ulog = ourUpdateLog;
-      } else {
-        if ((ulogPluginInfo == null || ulogPluginInfo.isEnabled())
-            && (System.getProperty("enable.update.log") != null && Boolean.getBoolean("enable.update.log")) && VersionInfo.getAndCheckVersionField(core.getLatestSchema()) != null) {
-          // TODO: workaround rare test issue where updatelog config is not found
-          ourUpdateLog = new UpdateLog();
-          ourUpdateLog.init(this, core);
-          ulog = ourUpdateLog;
-        } else {
-          ulog = null;
-        }
+      if (!core.isReloaded() && !dirFactory.isPersistent()) {
+        ulog.clearLog(core, ulogPluginInfo);
       }
 
-      if (ulog == null) {
-        log.info("No UpdateLog configured for UpdateHandler {} {} skip={}", updateLog, ulogPluginInfo, skipUpdateLog);
+      if (log.isInfoEnabled()) {
+        log.info("Using UpdateLog implementation: {}", ulog.getClass().getName());
       }
-    } catch (Throwable e) {
-      log.error("Could not initialize the UpdateHandler", e);
-      IOUtils.closeQuietly(ourUpdateLog);
-      assert ObjectReleaseTracker.release(this);
-      if (e instanceof Error) {
-        throw e;
-      }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      ulog.init(ulogPluginInfo);
+      ulog.init(this, core);
+    } else {
+      ulog = updateLog;
     }
 
   }

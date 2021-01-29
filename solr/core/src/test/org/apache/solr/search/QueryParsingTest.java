@@ -63,6 +63,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
         assertNull("expected no query",q);
       }
     }
+    req.close();
   }
   
   public void testLocalParamsWithModifiableSolrParams() throws Exception {
@@ -94,6 +95,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     assertNotNull(QParser.getParser
                   ("strdist(\"a value\",literal('a value'),edit)",
                    NAME, req).getQuery());
+    req.close();
   }
 
   public void testGetQParser() throws Exception {

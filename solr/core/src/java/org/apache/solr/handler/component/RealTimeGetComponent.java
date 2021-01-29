@@ -138,18 +138,10 @@ public class RealTimeGetComponent extends SearchComponent
       return;
     }
 
-    String val = params.get("onlyIfLeader");
-    if (val != null && req.getCore().getCoreContainer().isZooKeeperAware()) {
-      LeaderElector leaderElector = req.getCore().getCoreContainer().getZkController().getLeaderElector(req.getCore().getName());
-      if (leaderElector == null || !leaderElector.isLeader()) {
-        throw new IllegalStateException("Not the valid leader");
-      }
+    String onlyIfLeader = params.get("onlyIfLeader");
+    // MRM TODO:
 
-      return;
-    }
-
-
-    val = params.get("getFingerprint");
+    String val = params.get("getFingerprint");
     if(val != null) {
       processGetFingeprint(rb);
       return;

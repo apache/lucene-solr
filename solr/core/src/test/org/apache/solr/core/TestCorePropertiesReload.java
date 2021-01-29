@@ -54,7 +54,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     String testProp = coreDescriptor.getCoreProperty("test", null);
     assertTrue(testProp.equals("Before reload"));
-
+    core.close();
     //Re-write the properties file
     Properties props = new Properties();
     props.setProperty("test", "After reload");
@@ -66,6 +66,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
     testProp = coreDescriptor.getCoreProperty("test", null);
     assertTrue(testProp.equals("After reload"));
+    core.close();
   }
 
   private void writeProperties(Properties props) throws Exception {

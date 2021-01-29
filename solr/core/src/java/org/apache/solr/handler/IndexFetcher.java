@@ -725,7 +725,7 @@ public class IndexFetcher {
     ZkController zkController = solrCore.getCoreContainer().getZkController();
     CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
     Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
-        cd.getCollectionName(), cd.getShardId(), 3000, false);
+        cd.getCollectionName(), cd.getShardId(), 3000, true);
     return leaderReplica;
   }
 

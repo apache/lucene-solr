@@ -129,6 +129,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("df", "text");
     QParser qparser = QParser.getParser("hi", "dismax", req);
+    req.close();
 
     DisjunctionMaxQueryParser qp =
       new SolrPluginUtils.DisjunctionMaxQueryParser(qparser, req.getParams().get("df"));

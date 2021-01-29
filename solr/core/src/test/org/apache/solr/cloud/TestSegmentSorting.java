@@ -164,7 +164,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", id, updateField, SolrTestCaseJ4.map("inc", "666")));
     cloudSolrClient.commit();
 
-    // nocommit fix this check
+    // MRM TODO: fix this check
     
     // loop incase we're waiting for a newSearcher to be opened
 //    int newDocId;

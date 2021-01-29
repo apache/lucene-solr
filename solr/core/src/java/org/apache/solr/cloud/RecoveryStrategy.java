@@ -402,7 +402,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
         try {
           if (cnt > 1) {
-            leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, false);
+            leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
           }
 
           if (leader != null && leader.getName().equals(coreName)) {
@@ -417,7 +417,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (isClosed()) {
           throw new AlreadyClosedException();
         }
-        log.info("Starting Replication Recovery. [{}] leader is [{}] and I am [{}]", coreName, leader.getName(), Replica.getCoreUrl(baseUrl, coreName));
+        log.info("Starting Replication Recovery. [{}] leader is [{}] and I am [{}] cnt={}", coreName, leader.getName(), Replica.getCoreUrl(baseUrl, coreName), cnt);
 
         try {
           log.info("Stopping background replicate from leader process");
@@ -596,7 +596,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
 
         if (cnt > 1) {
-          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, false);
+          leader = zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId(), 3000, true);
         }
         if (leader != null && leader.getName().equals(coreName)) {
           log.info("We are the leader, STOP recovery");
@@ -907,6 +907,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(coreName);
+    prepCmd.setLeaderName(leaderCoreName);
     prepCmd.setState(Replica.State.BUFFERING);
     prepCmd.setCollection(coreDescriptor.getCollectionName());
     prepCmd.setShardId(coreDescriptor.getCloudDescriptor().getShardId());

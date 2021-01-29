@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.SolrTestCaseJ4;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
@@ -78,7 +76,7 @@ public class TestHarness extends BaseTestHarness {
   public volatile String coreName;
   protected volatile CoreContainer container;
   public UpdateRequestHandler updater;
-  private Map<String,SolrCore> cores = new ConcurrentHashMap<>();
+  //private Map<String,SolrCore> cores = new ConcurrentHashMap<>();
 
   /**
    * Creates a SolrConfig object for the specified coreName assuming it 
@@ -242,14 +240,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public SolrCore getCore() {
-    SolrCore cached = this.cores.get(coreName);
-    if (cached != null) {
-      return cached;
-    }
     SolrCore core = container.getCore(coreName);
-    if (core != null) {
-      this.cores.put(coreName, core);
-    }
 
     return core;
   }
@@ -273,15 +264,17 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the update
    */
   public String update(String xml) {
-    try (SolrCore core = getCoreInc()) {
-      DirectSolrConnection connection = new DirectSolrConnection(core);
-      SolrRequestHandler handler = core.getRequestHandler("/update");
-      // prefer the handler mapped to /update, but use our generic backup handler
-      // if that lookup fails
-      if (handler == null) {
-        handler = updater;
+    try {
+      try (SolrCore core = getCoreInc()) {
+        DirectSolrConnection connection = new DirectSolrConnection(core);
+        SolrRequestHandler handler = core.getRequestHandler("/update");
+        // prefer the handler mapped to /update, but use our generic backup handler
+        // if that lookup fails
+        if (handler == null) {
+          handler = updater;
+        }
+        return connection.request(handler, null, xml);
       }
-      return connection.request(handler, null, xml);
     } catch (SolrException e) {
       throw (SolrException)e;
     } catch (Exception e) {
@@ -352,7 +345,6 @@ public class TestHarness extends BaseTestHarness {
       }
 
     } finally {
-      req.close();
       SolrRequestInfo.clearRequestInfo();
     }
   }
@@ -375,8 +367,6 @@ public class TestHarness extends BaseTestHarness {
    */
   public void close() {
     if (container != null) {
-
-      cores.forEach((s, solrCore) -> IOUtils.closeQuietly(solrCore));
       try {
         container.shutdown();
       } finally {
@@ -455,7 +445,7 @@ public class TestHarness extends BaseTestHarness {
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),
-                                       q[0], qtype, start, limit, args);
+                                       q[0], qtype, start, limit, args, true);
       }
       if (q.length%2 != 0) { 
         throw new RuntimeException("The length of the string array (query arguments) needs to be even");
@@ -466,7 +456,7 @@ public class TestHarness extends BaseTestHarness {
       }
       NamedList nl = new NamedList(entries);
       if(nl.get("wt" ) == null) nl.add("wt","xml");
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
+      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl, true);
     }
   }
 

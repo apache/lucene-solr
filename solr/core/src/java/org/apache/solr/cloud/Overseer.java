@@ -238,7 +238,7 @@ public class Overseer implements SolrCloseable {
 //
 //  private volatile ExecutorService taskExecutor;
 
-  private volatile ZkStateWriter zkStateWriter;
+  private final ZkStateWriter zkStateWriter;
 
   private final UpdateShardHandler updateShardHandler;
 
@@ -265,6 +265,9 @@ public class Overseer implements SolrCloseable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+
+    Stats stats = new Stats();
+    this.zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), stats, this);
   }
 
   public synchronized void start(String id, ElectionContext context) throws KeeperException {
@@ -338,18 +341,19 @@ public class Overseer implements SolrCloseable {
 //    }
 
 
-    stats = new Stats();
+
     log.info("Overseer (id={}) starting", id);
     //launch cluster state updater thread
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
 
-    this.zkStateWriter = new ZkStateWriter(zkController.getZkStateReader(), stats, this);
     //systemCollectionCompatCheck(new StringBiConsumer());
 
     queueWatcher = new WorkQueueWatcher(getCoreContainer());
     collectionQueueWatcher = new WorkQueueWatcher.CollectionWorkQueueWatcher(getCoreContainer(), id, overseerLbClient, adminPath, stats, Overseer.this);
+    queueWatcher.start();
+    collectionQueueWatcher.start();
 
 
     closed = false;
@@ -547,18 +551,15 @@ public class Overseer implements SolrCloseable {
         overseerOnlyClient.close();
         overseerOnlyClient = null;
       }
-
-      if (queueWatcher != null) {
-        queueWatcher.close();
-      }
-
-      if (collectionQueueWatcher != null) {
-        collectionQueueWatcher.close();
-      }
-
     }
 
-    this.zkStateWriter = null;
+    if (queueWatcher != null) {
+      queueWatcher.close();
+    }
+
+    if (collectionQueueWatcher != null) {
+      collectionQueueWatcher.close();
+    }
 
     if (log.isDebugEnabled()) {
       log.debug("doClose - end");
@@ -728,7 +729,7 @@ public class Overseer implements SolrCloseable {
   public boolean processQueueItem(ZkNodeProps message) throws InterruptedException {
     if (log.isDebugEnabled()) log.debug("processQueueItem {}", message);
     // nocommit - may not need this now
-    new OverseerTaskExecutorTask(getCoreContainer(), zkStateWriter, message).run();
+    new OverseerTaskExecutorTask(getCoreContainer(), message).run();
 //    try {
 //      future.get();
 //    } catch (ExecutionException e) {
@@ -752,7 +753,7 @@ public class Overseer implements SolrCloseable {
     protected final ZkController zkController;
     protected final String path;
     protected final Overseer overseer;
-    protected List<String> startItems;
+    protected volatile List<String> startItems;
     protected volatile boolean closed;
     protected final ReentrantLock ourLock = new ReentrantLock(true);
 
@@ -763,11 +764,13 @@ public class Overseer implements SolrCloseable {
       this.path = path;
     }
 
+    public abstract void start();
+
     private List<String> setWatch() {
       try {
 
         if (log.isDebugEnabled()) log.debug("set watch on Overseer work queue {}", path);
-
+        closeWatcher();
         List<String> children = zkController.getZkClient().getChildren(path, this, true);
 
         List<String> items = new ArrayList<>(children);
@@ -794,6 +797,7 @@ public class Overseer implements SolrCloseable {
         return;
       }
       if (this.closed) {
+        log.info("Overseer is closed, do not process watcher for queue");
         return;
       }
 
@@ -823,22 +827,26 @@ public class Overseer implements SolrCloseable {
 
     }
 
-    protected abstract void processQueueItems(List<String> items, boolean onStart) throws KeeperException;
+    protected abstract void processQueueItems(List<String> items, boolean onStart);
 
     @Override
     public void close() {
       ourLock.lock();
       try {
         this.closed = true;
-        try {
-          zkController.getZkClient().getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
-        } catch (KeeperException.NoWatcherException e) {
-
-        } catch (Exception e) {
-          log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
-        }
+        closeWatcher();
       } finally {
         ourLock.unlock();
+      }
+    }
+
+    private void closeWatcher() {
+      try {
+        zkController.getZkClient().getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
+      } catch (KeeperException.NoWatcherException e) {
+
+      } catch (Exception e) {
+        log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
     }
   }
@@ -847,6 +855,10 @@ public class Overseer implements SolrCloseable {
 
     public WorkQueueWatcher(CoreContainer cc) throws KeeperException {
       super(cc, Overseer.OVERSEER_QUEUE);
+    }
+
+
+    public void start() {
       startItems = super.setWatch();
       log.info("Overseer found entries on start {}", startItems);
       processQueueItems(startItems, true);
@@ -875,12 +887,13 @@ public class Overseer implements SolrCloseable {
 
         overseer.writePendingUpdates();
 
-        try {
-          zkController.getZkClient().delete(fullPaths, true);
-        } catch (Exception e) {
-          log.error("Failed deleting processed items", e);
+        if (overseer.zkStateWriter != null) {
+          try {
+            zkController.getZkClient().delete(fullPaths, true);
+          } catch (Exception e) {
+            log.error("Failed deleting processed items", e);
+          }
         }
-
 
       } finally {
         ourLock.unlock();
@@ -903,11 +916,6 @@ public class Overseer implements SolrCloseable {
         failureMap = Overseer.getFailureMap(cc.getZkController().getZkClient());
         runningMap = Overseer.getRunningMap(cc.getZkController().getZkClient());
         completedMap = Overseer.getCompletedMap(cc.getZkController().getZkClient());
-
-        startItems = super.setWatch();
-
-        log.info("Overseer found entries on start {}", startItems);
-        processQueueItems(startItems, true);
       }
 
       @Override
@@ -915,6 +923,14 @@ public class Overseer implements SolrCloseable {
         super.close();
         IOUtils.closeQuietly(collMessageHandler);
         IOUtils.closeQuietly(configMessageHandler);
+      }
+
+      @Override
+      public void start() {
+        startItems = super.setWatch();
+
+        log.info("Overseer found entries on start {}", startItems);
+        processQueueItems(startItems, true);
       }
 
       @Override

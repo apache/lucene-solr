@@ -37,7 +37,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,17 +235,14 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
     testMalformedDBQ(S_TWO_LEADER_CLIENT);
   }
 
-  @Ignore // nocommit - are we returning the error right for a forward to leader?
   public void testMalformedDBQViaShard1NonLeaderClient() throws Exception {
     testMalformedDBQ(S_ONE_NON_LEADER_CLIENT);
   }
 
-  @Ignore // nocommit - this and above popped up as racey after fixing some http2 client async issue
   public void testMalformedDBQViaShard2NonLeaderClient() throws Exception {
     testMalformedDBQ(S_TWO_NON_LEADER_CLIENT);
   }
 
-  @Ignore // nocommit - this and above popped up as racey after fixing some http2 client async issue
   public void testMalformedDBQViaNoCollectionClient() throws Exception {
     testMalformedDBQ(NO_COLLECTION_CLIENT);
   }

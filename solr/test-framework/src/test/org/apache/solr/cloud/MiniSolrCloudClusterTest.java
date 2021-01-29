@@ -21,65 +21,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
-@Ignore // nocommit debug
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
-
-
-  @Test
-  public void testErrorsInStartup() throws Exception {
-
-    AtomicInteger jettyIndex = new AtomicInteger();
-
-    MiniSolrCloudCluster cluster = null;
-    try {
-      cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
-        @Override
-        public JettySolrRunner startJettySolrRunner(String name, String context, JettyConfig config) throws Exception {
-          if (jettyIndex.incrementAndGet() != 2)
-            return super.startJettySolrRunner(name, context, config);
-          throw new IOException("Fake exception on startup!");
-        }
-      };
-      fail("Expected an exception to be thrown from MiniSolrCloudCluster");
-    }
-    catch (Exception e) {
-      assertEquals("Error starting up MiniSolrCloudCluster", e.getMessage());
-      assertEquals("Expected one suppressed exception", 1, e.getSuppressed().length);
-      assertEquals("Fake exception on startup!", e.getSuppressed()[0].getMessage());
-    }
-    finally {
-      if (cluster != null)
-        cluster.shutdown();
-    }
-  }
-
-  @Test
-  public void testErrorsInShutdown() throws Exception {
-
-    AtomicInteger jettyIndex = new AtomicInteger();
-
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
-      @Override
-      public JettySolrRunner stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
-        JettySolrRunner j = super.stopJettySolrRunner(jetty);
-        if (jettyIndex.incrementAndGet() == 2)
-          throw new IOException("Fake IOException on shutdown!");
-        return j;
-      }
-    };
-
-    Exception ex = expectThrows(Exception.class, cluster::shutdown);
-    assertEquals("Error shutting down MiniSolrCloudCluster", ex.getMessage());
-    assertEquals("Expected one suppressed exception", 1, ex.getSuppressed().length);
-    assertEquals("Fake IOException on shutdown!", ex.getSuppressed()[0].getMessage());
-  }
 
   @Test
   public void testExtraFilters() throws Exception {

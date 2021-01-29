@@ -868,27 +868,76 @@ public class CoreContainer implements Closeable {
     checkForDuplicateCoreNames(cds);
     status |= CORE_DISCOVERY_COMPLETE;
     startedLoadingCores = true;
+
+    if (isZooKeeperAware()) {
+
+      log.info("Waiting to see RECOVERY states for node on startup ...");
+      for (final CoreDescriptor cd : cds) {
+        String collection = cd.getCollectionName();
+        try {
+          getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+            if (c == null) {
+              log.info("Found  incorrect state c={}", c);
+              return false;
+            }
+            String nodeName = getZkController().getNodeName();
+            List<Replica> replicas = c.getReplicas();
+            for (Replica replica : replicas) {
+              if (replica.getNodeName().equals(nodeName)) {
+                if (!replica.getState().equals(Replica.State.RECOVERING)) {
+                   log.info("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+                  return false;
+                }
+              } else {
+                log.info("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+              }
+            }
+
+            return true;
+          });
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          return;
+        } catch (TimeoutException e) {
+          log.error("Timeout", e);
+        }
+      }
+      getZkController().getZkClient().printLayout();
+    }
+
+    for (final CoreDescriptor cd : cds) {
+      if (!cd.isTransient() && cd.isLoadOnStartup()) {
+        solrCores.markCoreAsLoading(cd);
+      }
+    }
+
+    if (isZooKeeperAware()) {
+      zkSys.getZkController().createEphemeralLiveNode();
+    }
+
     for (final CoreDescriptor cd : cds) {
 
       if (log.isDebugEnabled()) log.debug("Process core descriptor {} {} {}", cd.getName(), cd.isTransient(), cd.isLoadOnStartup());
       if (cd.isTransient() || !cd.isLoadOnStartup()) {
         solrCores.addCoreDescriptor(cd);
-      } else {
-        solrCores.markCoreAsLoading(cd);
       }
 
       if (isZooKeeperAware()) {
         String collection = cd.getCollectionName();
 
         if (!zkSys.zkController.getClusterState().hasCollection(collection)) {
+          solrCores.markCoreAsNotLoading(cd);
           try {
             coresLocator.delete(this, cd);
           } catch (Exception e) {
-            log.error("Exception deleting core.properties file", e);
+            log.error("Exception deleting core.properties file for non existing collection", e);
           }
 
-          unload(cd, cd.getName(),true, true, true);
-
+          try {
+            unload(cd, cd.getName(),true, true, true);
+          } catch (Exception e) {
+            log.error("Exception unloading core for non existing collection", e);
+          }
           continue;
         }
       }
@@ -916,11 +965,6 @@ public class CoreContainer implements Closeable {
           return core;
         }));
       }
-    }
-
-    if (isZooKeeperAware()) {
-      // TODO: should make sure we wait till no one is active before this, but would have to be before core load
-      zkSys.getZkController().createEphemeralLiveNode();
     }
 
     if (coreLoadFutures != null && !asyncSolrCoreLoad) {
@@ -1049,7 +1093,7 @@ public class CoreContainer implements Closeable {
     log.info("Shutting down CoreContainer instance=" + System.identityHashCode(this));
 
     if (isZooKeeperAware() && zkSys != null && zkSys.getZkController() != null && !zkSys.getZkController().isDcCalled()) {
-      zkSys.zkController.disconnect(false);
+      zkSys.zkController.disconnect(true);
     }
 
     // must do before isShutDown=true
@@ -1225,7 +1269,11 @@ public class CoreContainer implements Closeable {
       log.info("replacing core: " + cd.getName());
       if (closeOld) {
         if (old != null) {
-          old.close();
+          SolrCore finalCore = old;
+          Future<?> future = solrCoreExecutor.submit(() -> {
+            log.info("Closing replaced core {}", cd.getName());
+            finalCore.closeAndWait();
+          });
         }
       }
       return old;
@@ -1374,9 +1422,7 @@ public class CoreContainer implements Closeable {
       try {
 
         try {
-          if (isShutDown) {
-            throw new AlreadyClosedException("Solr has been shutdown.");
-          }
+
           solrCores.markCoreAsLoading(dcore);
 
           core = new SolrCore(this, dcore, coreConfig);

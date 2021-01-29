@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 // 12-Jun-2018 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-6944")
-@LuceneTestCase.Nightly // nocommit speed up
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

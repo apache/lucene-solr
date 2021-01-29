@@ -871,16 +871,16 @@ function stop_solr() {
 
   TIMEOUT=30
   while running $PID; do
-    if (( TIMEOUT-- == 0 )); then
+    if (( TIMEOUT-- =< 0 )); then
+       echo "Timed out waiting for Solr shutdown, killing ${PID}"
        kill -KILL "$PID" 2>/dev/null
     fi
 
-    usleep 300000
+    sleep .3
   done
 
   rm -f "$SOLR_PID_DIR/$JETTY_PID"
   rm -f "${SOLR_HOME}/jetty.state"
-  usleep 300000
   echo OK
 } # end stop_solr
 

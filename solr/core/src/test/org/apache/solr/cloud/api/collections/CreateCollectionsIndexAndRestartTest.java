@@ -54,9 +54,10 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
 
   @Test
   public void start() throws Exception {
+    int collectionCnt = 1;
     List<Future> futures = new ArrayList<>();
     List<Future> indexFutures = new ArrayList<>();
-    for (int i = 0; i < 10; i ++) {
+    for (int i = 0; i < collectionCnt; i ++) {
       final String collectionName = "testCollection" + i;
       Future<?> future = ParWork.getRootSharedExecutor().submit(() -> {
         try {
@@ -64,7 +65,7 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(100).process(cluster.getSolrClient());
           StoppableIndexingThread indexThread;
           for (int j = 0; j < 2; j++) {
-            indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), Integer.toString(j), false, 100, 10, false);
+            indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), Integer.toString(j), false, 5, 10, false);
             indexThread.setCollection(collectionName);
             indexFutures.add(ParWork.getRootSharedExecutor().submit(indexThread));
           }
@@ -88,25 +89,25 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
     }
 
 
-    for (int i = 0; i < 10; i ++) {
+    for (int i = 0; i < collectionCnt; i ++) {
       final String collectionName = "testCollection" + i;
       cluster.waitForActiveCollection(collectionName, 2, 4);
     }
 
 
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      log.info("Restarting {}", runner);
+      log.info("Stopping {}", runner);
       runner.stop();
     }
 
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      log.info("Restarting {}", runner);
+      log.info("Starting {}", runner);
       runner.start();
     }
 
 
     for (int r = 0; r < 2; r++) {
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < collectionCnt; i++) {
         final String collectionName = "testCollection" + i;
         cluster.waitForActiveCollection(collectionName, 2, 4);
       }

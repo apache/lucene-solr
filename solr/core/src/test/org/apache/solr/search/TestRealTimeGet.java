@@ -739,6 +739,7 @@ public class TestRealTimeGet extends TestRTGBase {
               }
 
               String response = h.query(sreq);
+              sreq.close();
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List) (((Map) rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {

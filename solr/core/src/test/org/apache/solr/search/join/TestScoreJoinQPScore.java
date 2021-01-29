@@ -206,14 +206,18 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     MetricsMap mm = (MetricsMap)metrics.get("CACHE.searcher.queryResultCache");
     {
       Map<String,Object> statPre = mm.getValue();
-      h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));
-      assertHitOrInsert(mm.getValue(), statPre);
+      try (SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true")) {
+        h.query(req);
+        assertHitOrInsert(mm.getValue(), statPre);
+      }
     }
 
     {
       Map<String,Object> statPre = mm.getValue();
-      h.query(req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true"));
-      assertHit(mm.getValue(), statPre);
+      try (SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true")) {
+        h.query(req);
+        assertHit(mm.getValue(), statPre);
+      }
     }
 
     {
@@ -232,22 +236,25 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
        * String boost = (x = r.nextBoolean()) ? "23" : "1";
       changed |= x; */
       String q = (!changed) ? (r.nextBoolean() ? "title:first^67" : "title:night") : "title:first";
-
-      final String resp = h.query(req("q", "{!join from=" + from + " to=" + to +
-              " score=" + score + 
-              //" b=" + boost + 
-              "}" + q, "fl", "id", "omitHeader", "true")
-      );
-      assertInsert(mm.getValue(), statPre);
+      final String resp;
+      try (SolrQueryRequest req = req("q", "{!join from=" + from + " to=" + to +
+          " score=" + score +
+          //" b=" + boost +
+          "}" + q, "fl", "id", "omitHeader", "true")) {
+        resp = h.query(req);
+        assertInsert(mm.getValue(), statPre);
+      }
 
       statPre = mm.getValue();
-      final String repeat = h.query(req("q", "{!join from=" + from + " to=" + to + " score=" + score.toLowerCase(Locale.ROOT) +
-          //" b=" + boost
-              "}" + q, "fl", "id", "omitHeader", "true")
-      );
+      try (SolrQueryRequest req = req("q", "{!join from=" + from + " to=" + to + " score=" + score.toLowerCase(Locale.ROOT) +
+        //" b=" + boost
+        "}" + q, "fl", "id", "omitHeader", "true")
+      ){
+      final String repeat = h.query(req);
       assertHit(mm.getValue(), statPre);
 
       assertEquals("lowercase shouldn't change anything", resp, repeat);
+    }
 
         final String aMod = score.substring(0, score.length() - 1);
         assertQEx("exception on "+aMod, "ScoreMode", 

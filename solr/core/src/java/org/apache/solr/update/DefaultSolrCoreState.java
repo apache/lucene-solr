@@ -143,9 +143,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
           if (refCntWriter == null) return null;
         } else {
           if (indexWriter == null) {
-            if (closed) {
-              throw new AlreadyClosedException();
-            }
             indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2");
           }
           initRefCntWriter();

@@ -117,7 +117,6 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit
   public void testReloadThreaded() throws Exception {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     final CoreContainer cc = init(loader, CONFIGSETS_SOLR_XML);

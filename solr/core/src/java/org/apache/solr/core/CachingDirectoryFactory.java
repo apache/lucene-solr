@@ -378,10 +378,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           throws IOException {
     if (log.isTraceEnabled()) log.trace("get(String path={}, DirContext dirContext={}, String rawLockType={}) - start", path, dirContext, rawLockType);
 
-    if (closed) {
-      throw new AlreadyClosedException();
-    }
-
     String fullPath = normalize(path);
     synchronized (this) {
 
@@ -488,8 +484,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       if (cacheValue == null) {
         org.apache.solr.common.util.IOUtils.closeQuietly(directory);
         assert ObjectReleaseTracker.release(directory);
-        throw new IllegalArgumentException("Unknown directory: " + directory
+        IOUtils.close(directory);
+        log.warn("Unknown directory: " + directory
                 + " " + byDirectoryCache);
+        return;
       }
 //      if (cacheValue.path.equals("data/index")) {
 //        log.info(

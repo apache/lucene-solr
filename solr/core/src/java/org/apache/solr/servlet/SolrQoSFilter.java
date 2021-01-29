@@ -136,10 +136,16 @@ public class SolrQoSFilter extends QoSFilter {
     HttpServletRequest baseRequest = (HttpServletRequest)request;
 
     String pathInfo = baseRequest.getPathInfo();
-    log.info("pathInfo={}", pathInfo);
+    //log.info("pathInfo={}", pathInfo);
 
     if (pathInfo != null && pathInfo.equals("/admin/collections")) {
-      return 5;
+      return 9;
+    } else if (pathInfo != null && pathInfo.contains("/update")) {
+      return 7;
+    } else if (pathInfo != null && pathInfo.contains("/select")) {
+      return 8;
+    } else if (pathInfo != null && pathInfo.contains("/cores")) {
+      return 10;
     }
 
     return 0;

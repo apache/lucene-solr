@@ -34,7 +34,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.KeeperException;
@@ -99,7 +98,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard core={}", context.leaderProps.getSlice(), coreName);
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
-        log.error("No SolrCore found, cannot become leader {}", coreName);
+        log.info("No SolrCore found, cannot become leader {}", coreName);
         throw new AlreadyClosedException("No SolrCore found, cannot become leader " + coreName);
       }
 //      if (core.isClosing() || core.getCoreContainer().isShutDown()) {
@@ -139,13 +138,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if (log.isDebugEnabled()) log.debug("Check zkShardTerms");
         ZkShardTerms zkShardTerms = zkController.getShardTermsOrNull(collection, shardId);
         try {
-          // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-          if (zkShardTerms != null && zkShardTerms.skipSendingUpdatesTo(coreName)) {
-            // The replica changed its term, then published itself as RECOVERING.
-            // This core already see replica as RECOVERING
-            // so it is guarantees that a live-fetch will be enough for this core to see max term published
+          if (zkShardTerms != null) {
+            //  guarantees that a live-fetch will be enough for this core to see max term published
             log.info("refresh shard terms for core {}", coreName);
-            zkShardTerms.refreshTerms(false);
+            zkShardTerms.refreshTerms(false, -1);
           }
         } catch (Exception e) {
           log.error("Exception while looking at refreshing shard terms", e);
@@ -262,10 +258,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         zkController.publish(zkNodes);
 
       } catch (AlreadyClosedException e) {
-        log.info("Already closed or interrupted, bailing..", e);
+        log.info("Already closed, bailing..");
         throw e;
       } catch (InterruptedException e) {
-        log.warn("Already closed or interrupted, bailing..", e);
+        log.warn("Interrupted, bailing..");
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);

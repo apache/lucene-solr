@@ -42,7 +42,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.Nightly // nocommit slow
+@LuceneTestCase.Nightly // MRM TODO: slow
 public class TestRangeQuery extends SolrTestCaseJ4 {
   
   private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;

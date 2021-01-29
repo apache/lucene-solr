@@ -129,7 +129,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     for (Map.Entry<String, String> e : params.entrySet()) {
       l.add(e.getKey(),e.getValue());
     }
-    LocalSolrQueryRequest request = new LocalSolrQueryRequest(h.getCore(), l);  
+    LocalSolrQueryRequest request = new LocalSolrQueryRequest(h.getCore(), l, true);
     h.query("/dataimport", request);
   }
 

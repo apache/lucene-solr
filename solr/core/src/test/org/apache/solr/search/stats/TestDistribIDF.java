@@ -75,6 +75,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   }
 
   @Test
+  // MRM TODO: is this a bit slow?
   public void testSimpleQuery() throws Exception {
 
     //3 shards. 3rd shard won't have any data.

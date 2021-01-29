@@ -1065,10 +1065,11 @@ public class Http2SolrClient extends SolrClient {
         if (available != null) {
           available.acquire();
         }
-        phaser.register();
       } catch (InterruptedException e) {
         log.warn("interrupted", e);
       }
+      phaser.register();
+
     }
 
     public void arrive() {

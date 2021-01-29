@@ -49,33 +49,31 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testLib() throws IOException {
-    SolrResourceLoader loader = h.getCore().getResourceLoader();
-    InputStream data = null;
-    String[] expectedFiles = new String[] { "empty-file-main-lib.txt",
-            "empty-file-a1.txt",
-            "empty-file-a2.txt",
-            "empty-file-b1.txt",
-            "empty-file-b2.txt",
-            "empty-file-c1.txt" };
-    for (String f : expectedFiles) {
-      data = loader.openResource(f);
-      assertNotNull("Should have found file " + f, data);
-      data.close();
-    }
-    String[] unexpectedFiles = new String[] { "empty-file-c2.txt",
-            "empty-file-d2.txt" };
-    for (String f : unexpectedFiles) {
-      data = null;
-      try {
+    try (SolrCore core = h.getCore()) {
+      SolrResourceLoader loader = core.getResourceLoader();
+      InputStream data = null;
+      String[] expectedFiles = new String[] {"empty-file-main-lib.txt", "empty-file-a1.txt", "empty-file-a2.txt", "empty-file-b1.txt", "empty-file-b2.txt", "empty-file-c1.txt"};
+      for (String f : expectedFiles) {
         data = loader.openResource(f);
-      } catch (Exception e) { /* :NOOP: (un)expected */ }
-      assertNull("should not have been able to find " + f, data);
+        assertNotNull("Should have found file " + f, data);
+        data.close();
+      }
+      String[] unexpectedFiles = new String[] {"empty-file-c2.txt", "empty-file-d2.txt"};
+      for (String f : unexpectedFiles) {
+        data = null;
+        try {
+          data = loader.openResource(f);
+        } catch (Exception e) { /* :NOOP: (un)expected */ }
+        assertNull("should not have been able to find " + f, data);
+      }
     }
   }
   @Test
   public void testDisableRequetsHandler() throws Exception {
-    assertNull(h.getCore().getRequestHandler("/disabled"));
-    assertNotNull(h.getCore().getRequestHandler("/enabled"));
+    try (SolrCore core = h.getCore()) {
+      assertNull(core.getRequestHandler("/disabled"));
+      assertNotNull(core.getRequestHandler("/enabled"));
+    }
   }
 
   @Test
@@ -106,9 +104,10 @@ public class TestConfig extends SolrTestCaseJ4 {
   @Test
   public void testAutomaticDeprecationSupport() {
     // make sure the "admin/file" handler is registered
-    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler("/admin/file");
-    assertTrue("file handler should have been automatically registered", handler != null);
-
+    try (SolrCore core = h.getCore()) {
+      ShowFileRequestHandler handler = (ShowFileRequestHandler)core.getRequestHandler("/admin/file");
+      assertTrue("file handler should have been automatically registered", handler != null);
+    }
   }
   
  @Test
@@ -201,7 +200,10 @@ public class TestConfig extends SolrTestCaseJ4 {
     ++numDefaultsTested; ++numNullDefaults; assertNull("default mergedSegmentWarmerInfo", sic.mergedSegmentWarmerInfo);
 
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", solrConfig);
-    IndexWriterConfig iwc = sic.toIndexWriterConfig(h.getCore());
+    IndexWriterConfig iwc;
+    try (SolrCore core = h.getCore()) {
+      iwc = sic.toIndexWriterConfig(core);
+    }
 
     assertNotNull("null mp", iwc.getMergePolicy());
     assertTrue("mp is not TieredMergePolicy", iwc.getMergePolicy() instanceof TieredMergePolicy);

@@ -55,15 +55,6 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // load balancer scheduled executor can be slow to shutdown fully
-//    if (threadName.startsWith("aliveCheckExecutor-")) {
-//      return true;
-//    }
-
-
-//    if (threadName.startsWith("ProcessThread") || threadName.startsWith("SessionTracker")) { // zk thread that will stop in a moment - only seems to happen in very low resource env
-//      return true;
-//    }
 
     // randomizedtesting claims this leaks, but the thread is already TERMINATED state
     // I think it can be resolved, but for now ...
@@ -78,7 +69,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
 //      return true;
 //    }
 
-    // HDFS nocommit fix
+    // HDFS MRM TODO: fix
 //    if (threadName.startsWith("IPC Parameter Sending Thread ")) { // SOLR-5007
 //      return true;
 //    } if (threadName.startsWith("IPC Client")) { // SOLR-5007

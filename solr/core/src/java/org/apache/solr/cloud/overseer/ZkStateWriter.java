@@ -88,7 +88,6 @@ public class ZkStateWriter {
   private Set<String> dirtyState = new HashSet<>();
 
   public ZkStateWriter(ZkStateReader zkStateReader, Stats stats, Overseer overseer) {
-    assert zkStateReader != null;
     this.overseer = overseer;
     this.reader = zkStateReader;
     this.stats = stats;
@@ -185,19 +184,36 @@ public class ZkStateWriter {
 
         switch (overseerAction) {
           case STATE:
-            // log.info("state cmd {}", message);
+            log.info("state cmd {}", message);
             message.getProperties().remove("operation");
 
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
-              if (OverseerAction.get(entry.getKey()) == OverseerAction.DOWNNODE) {
+              if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
+                log.info("state cmd entry {} asOverseerCmd={}", message, OverseerAction.get(entry.getKey()));
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.DOWN));
-              } if (OverseerAction.get(entry.getKey()) == OverseerAction.RECOVERYNODE) {
+              } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
+                log.info("state cmd entry {} asOverseerCmd={}", message, OverseerAction.get(entry.getKey()));
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.RECOVERING));
+              }
+            }
+
+            for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
+              if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
+                continue;
+              } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
+                continue;
               } else {
+                log.info("state cmd entry {} asOverseerCmd={}", message, OverseerAction.get(entry.getKey()));
                 String core = entry.getKey();
                 String collectionAndStateString = (String) entry.getValue();
                 if (log.isDebugEnabled()) log.debug("collectionAndState={}", collectionAndStateString);
                 String[] collectionAndState = collectionAndStateString.split(",");
+
+                if (collectionAndState.length != 2) {
+                  log.error("Bad message format key={} value={}", entry.getKey(), entry.getValue());
+                  continue;
+                }
+
                 String collection = collectionAndState[0];
                 String setState = collectionAndState[1];
 
@@ -250,11 +266,11 @@ public class ZkStateWriter {
                     } else {
                       Replica.State state = Replica.State.getState(setState);
                       Replica existingLeader = docColl.getSlice(replica).getLeader();
-                      if (state == Replica.State.DOWN && existingLeader != null && existingLeader.getName().equals(replica.getName())) {
+                      if (existingLeader != null && existingLeader.getName().equals(replica.getName())) {
                         docColl.getSlice(replica).setLeader(null);
                       }
                       updates.getProperties().put(replica.getName(), Replica.State.getShortState(state));
-                      updates.getProperties().remove("leader");
+                      updates.getProperties().remove("l");
                       // log.info("set state {} {}", state, replica);
                       replica.setState(state);
                       dirtyState.add(collection);
@@ -293,13 +309,16 @@ public class ZkStateWriter {
 
       }
 
-    } finally {
+    } catch (Exception e) {
+      log.error("Exception while queuing update", e);
+      throw e;
+    }  finally {
       ourLock.unlock();
     }
   }
 
   private void nodeOperation(Map.Entry<String,Object> entry, String operation) {
-    log.info("set {}} for {}", operation, entry.getValue());
+    log.info("set operation {} for {}", operation, entry.getValue());
     cs.forEachCollection(docColl -> {
 
       if (trackVersions.get(docColl.getName()) == null) {
@@ -340,7 +359,7 @@ public class ZkStateWriter {
           // nocommit
           Slice slice = docColl.getSlice(replica.getSlice());
           slice.setLeader(null);
-          replica.setState(Replica.State.DOWN);
+          replica.setState(Replica.State.shortStateToState(operation));
           updates.getProperties().put(replica.getName(), operation);
           updates.getProperties().remove("leader");
           dirtyState.add(docColl.getName());
@@ -392,9 +411,11 @@ public class ZkStateWriter {
       }
 
       if (failedUpdates.size() > 0) {
-        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lastFailedException); // nocommit expand
+        Exception lfe = lastFailedException.get();
+        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lfe); // nocommit expand
         failedUpdates.clear();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lastFailedException.get());
+        lfe = null;
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lfe);
       }
 //      } finally {
 //        ourLock.unlock();
@@ -496,7 +517,7 @@ public class ZkStateWriter {
 
       });
 
-      removeCollections.forEach(c -> removeCollection(c));
+      removeCollections.forEach(c ->  trackVersions.remove(c));
 
       if (badVersionException.get() != null) {
         throw badVersionException.get();
@@ -565,6 +586,7 @@ public class ZkStateWriter {
   }
 
   public void removeCollection(String collection) {
+    log.info("Removing collection from zk state {}", collection);
     ourLock.lock();
     try {
       stateUpdates.remove(collection);
@@ -572,11 +594,7 @@ public class ZkStateWriter {
       trackVersions.remove(collection);
       reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1);
       reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1);
-    } catch (KeeperException.NoNodeException e) {
-
-    } catch (InterruptedException e) {
-      log.error("", e);
-    } catch (KeeperException e) {
+    } catch (Exception e) {
       log.error("", e);
     } finally {
       ourLock.unlock();

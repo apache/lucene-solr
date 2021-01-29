@@ -172,10 +172,9 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static class WaitForState extends CoreAdminRequest {
     protected String nodeName;
     protected String coreName;
+    protected String leaderName;
     protected Replica.State state;
     protected Boolean checkLive;
-    protected Boolean onlyIfLeader;
-    protected Boolean onlyIfLeaderActive;
     private String collectionName;
     private String shardId;
 
@@ -199,6 +198,10 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       this.coreName = coreName;
     }
 
+    public void setLeaderName(String leaderName) {
+      this.leaderName = leaderName;
+    }
+
     public Replica.State getState() {
       return state;
     }
@@ -214,14 +217,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     public void setCheckLive(Boolean checkLive) {
       this.checkLive = checkLive;
     }
-    
-    public boolean isOnlyIfLeader() {
-      return onlyIfLeader;
-    }
-
-    public void setOnlyIfLeader(boolean onlyIfLeader) {
-      this.onlyIfLeader = onlyIfLeader;
-    }
 
     public void setCollection(String collectionName) {
       this.collectionName = collectionName;
@@ -229,10 +224,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
 
     public void setShardId(String shardId) {
       this.shardId = shardId;
-    }
-    
-    public void setOnlyIfLeaderActive(boolean onlyIfLeaderActive) {
-      this.onlyIfLeaderActive = onlyIfLeaderActive;
     }
     
     @Override
@@ -246,8 +237,20 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       if (coreName == null) {
         throw new IllegalStateException("The core name must not be null");
       }
- 
+
+      if (leaderName == null) {
+        throw new IllegalStateException("The leaderName name must not be null");
+      }
+
+      if (collectionName == null) {
+        throw new IllegalStateException("The leaderName name must not be null");
+      }
+
       params.set( CoreAdminParams.CORE, coreName);
+
+      params.set( "leaderName", leaderName);
+
+      params.set( "collection", collectionName);
       
       if (nodeName != null) {
         params.set( "nodeName", nodeName);
@@ -259,20 +262,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
       
       if (checkLive != null) {
         params.set( "checkLive", checkLive);
-      }
-      
-      if (onlyIfLeader != null) {
-        params.set( "onlyIfLeader", onlyIfLeader);
-      }
-      
-      if (onlyIfLeaderActive != null) {
-        params.set( "onlyIfLeaderActive", onlyIfLeaderActive);
-      }
-      if (collectionName != null) {
-        params.set( "collection", collectionName);
-      }
-      if (shardId != null) {
-        params.set( ZkStateReader.SHARD_ID_PROP, shardId);
       }
 
       return params;

@@ -21,7 +21,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
@@ -55,8 +54,8 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
     // delete the collection
     CollectionAdminRequest.deleteCollection("DeleteCollectionOnDownNodes").process(cluster.getSolrClient());
 
-    // nocommit - debug
-//    assertFalse("Still found collection that should be gone",
-//        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
+
+    assertFalse("Still found collection that should be gone",
+        cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));
   }
 }

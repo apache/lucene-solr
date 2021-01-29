@@ -298,6 +298,9 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       // create the event before deleting the node, otherwise we can get the deleted
       // event from the watcher.
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
+
+      // zookeeper.delete(watchID,  -1);
+
       return event;
     } finally {
      // time.stop();
@@ -315,7 +318,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   String createResponseNode() throws KeeperException, InterruptedException {
     return createData(
         Overseer.OVERSEER_COLLECTION_MAP_COMPLETED + "/" + RESPONSE_PREFIX,
-        null, CreateMode.EPHEMERAL_SEQUENTIAL);
+        null, CreateMode.PERSISTENT_SEQUENTIAL);
   }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {

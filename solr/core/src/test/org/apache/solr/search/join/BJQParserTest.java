@@ -222,10 +222,11 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   }
   
   private String getLeastScore(String query) throws Exception {
-    final String resp = h.query(req("q",query, "sort","score asc", "fl","score"));
-    return (String) h.
-        evaluateXPath(h.getCore().getResourceLoader(), resp,"(//float[@name='score'])[1]/text()",
-            XPathConstants.STRING);
+    try (SolrQueryRequest req = req("q",query, "sort","score asc", "fl","score")) {
+      final String resp = h.query(req);
+      return (String) h.
+          evaluateXPath(h.getCore().getResourceLoader(), resp, "(//float[@name='score'])[1]/text()", XPathConstants.STRING);
+    }
   }
 
   @Test

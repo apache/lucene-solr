@@ -301,7 +301,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           doDistribAdd(finalCloneCmd);
           if (log.isTraceEnabled()) log.trace("after distrib add collection");
         } catch (Throwable e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          return e;
         }
         return null;
       };
@@ -312,6 +312,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           distCall.call();
         } catch (Exception e) {
+          log.error("Exception sending dist update", e);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
@@ -329,7 +330,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           doLocalAdd(cmd);
         } catch (Exception e) {
           if (distFuture != null) {
-            distFuture.cancel(false);
+            distFuture.cancel(true);
           }
           if (e instanceof RuntimeException) {
             throw (RuntimeException) e;
@@ -350,7 +351,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (distFuture != null) {
       try {
-        distFuture.get();
+        Throwable e = (Throwable) distFuture.get();
       } catch (Exception e) {
         log.error("dist of add failed", e);
       }
@@ -928,17 +929,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
-    versionDeleteByQuery(cmd);
+    boolean drop = versionDeleteByQuery(cmd);
 
-    Future<?> localFuture = null;
+    if (drop) {
+      return;
+    }
+
     Future<?> distFuture = null;
-    localFuture = ParWork.getRootSharedExecutor().submit(() -> {
-      try {
-        doLocalDelete(cmd);
-      } catch (IOException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    });
 
     distFuture = ParWork.getRootSharedExecutor().submit(() -> {
       try {
@@ -948,25 +945,23 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     });
 
-    if (localFuture != null) {
-      try {
-        localFuture.get();
-      } catch (Exception e) {
-        log.error("Exception on local add", e);
-        Throwable t;
-        if (e instanceof ExecutionException) {
-          t = e.getCause();
-        } else {
-          t = e;
-        }
-        if (distFuture != null) {
-          distFuture.cancel(false);
-        }
-        if (t instanceof SolrException) {
-          throw (SolrException) t;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+    try {
+      doLocalDelete(cmd);
+    } catch (Exception e) {
+      log.error("Exception on local deleteByQuery", e);
+      Throwable t;
+      if (e instanceof ExecutionException) {
+        t = e.getCause();
+      } else {
+        t = e;
       }
+      if (distFuture != null) {
+        distFuture.cancel(true);
+      }
+      if (t instanceof SolrException) {
+        throw (SolrException) t;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, t);
     }
 
     if (distFuture != null) {
@@ -997,7 +992,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // no-op for derived classes to implement
   }
 
-  protected void versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+  protected boolean versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     // Find the version
     long versionOnUpdate = findVersionOnUpdate(cmd);
 
@@ -1011,7 +1006,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.blockUpdates();
     try {
 
-      doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
+      return doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
@@ -1032,7 +1027,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return versionOnUpdate;
   }
 
-  private void doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync) throws IOException {
+  private boolean doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync) throws IOException {
     if (versionsStored) {
       final boolean leaderLogic = isLeader & !isReplayOrPeersync;
       if (leaderLogic) {
@@ -1046,7 +1041,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.deleteByQuery(cmd);
-          return;
+          return true;
         }
 
         if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
@@ -1055,6 +1050,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
     }
+    return false;
   }
 
   // internal helper method to setup request by processors who use this class.

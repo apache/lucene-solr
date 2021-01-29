@@ -274,9 +274,9 @@ public class LeaderElector implements Closeable {
   // TODO: get this core param out of here
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement) throws KeeperException,
           InterruptedException, IOException {
-//    if (state == CLOSED) {
-//      throw new AlreadyClosedException();
-//    }
+    if (state == CLOSED || isClosed) {
+      throw new AlreadyClosedException();
+    }
 //    if (state == LEADER) {
 //      throw new IllegalStateException("Already in leader state");
 //    }
@@ -489,7 +489,7 @@ public class LeaderElector implements Closeable {
     }
     try {
       if (joinFuture != null) {
-        joinFuture.get();
+        joinFuture.cancel(true);
       }
     } catch (Exception e) {
       // okay

@@ -407,7 +407,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       super(ourUpdates, ourLowThreshold);
 
       this.logPrefix = logPrefix;
-      this.ourHighest = ourUpdates.get(0);
+      if (ourUpdates.size() > 0) {
+        this.ourHighest = ourUpdates.get(0);
+      }
       this.nUpdates = nUpdates;
     }
 

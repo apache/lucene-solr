@@ -376,11 +376,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
           CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
           cmd.setCoreName(subShardName);
+          cmd.setLeaderName(parentShardLeader.getName());
           cmd.setNodeName(nodeName);
           cmd.setShardId(subShardName);
           cmd.setState(Replica.State.ACTIVE);
           cmd.setCheckLive(true);
-          cmd.setOnlyIfLeader(true);
           cmd.setCollection(collectionName);
 
 

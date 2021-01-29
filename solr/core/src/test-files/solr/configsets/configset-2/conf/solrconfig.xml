@@ -40,7 +40,7 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-
+    <updateLog class="${solr.ulog:solr.UpdateLog}"></updateLog>
   </updateHandler>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">

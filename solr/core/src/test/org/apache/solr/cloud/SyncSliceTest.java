@@ -43,7 +43,7 @@ import java.util.List;
  * elected.
  */
 @Slow
-// nocommit - bridge does not yet have some consistency checks here, finish and back in control client
+// MRM TODO: - bridge does not yet have some consistency checks here, finish and back in control client
 @LuceneTestCase.Nightly
 public class SyncSliceTest extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

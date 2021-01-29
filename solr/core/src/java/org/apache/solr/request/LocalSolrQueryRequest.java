@@ -27,6 +27,7 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrCore;
 
 // With the addition of SolrParams, this class isn't needed for much anymore... it's currently
@@ -37,7 +38,8 @@ import org.apache.solr.core.SolrCore;
  */
 public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public final static Map emptyArgs = new HashMap(0,1);
-  
+  private boolean closeCore;
+
   public String userPrincipalName = null;
   
   protected static SolrParams makeParams(String query, String qtype, int start, int limit, Map args) {
@@ -57,24 +59,49 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   }
 
   public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args) {
+    this(core, query, qtype, start, limit, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, String query, String qtype, int start, int limit, Map args, boolean closeCore) {
     super(core,makeParams(query,qtype,start,limit,args));
+    this.closeCore = closeCore;
   }
 
   public LocalSolrQueryRequest(SolrCore core, NamedList args) {
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, NamedList args, boolean closeCore) {
     super(core, args.toSolrParams());
+    this.closeCore = closeCore;
+    //assert ObjectReleaseTracker.track(this);
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args, boolean closeCore) {
     super(core, new MultiMapSolrParams(args));
+    this.closeCore = closeCore;
   }
   
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
+    this(core, args, false);
+  }
+
+  public LocalSolrQueryRequest(SolrCore core, SolrParams args, boolean closeCore) {
     super(core, args);
+    this.closeCore = closeCore;
   }
 
   @Override
   public void close() {
     super.close();
+    if (closeCore) {
+      IOUtils.closeQuietly(core);
+    }
+    assert ObjectReleaseTracker.release(this);
   }
 
   @Override public Principal getUserPrincipal() {

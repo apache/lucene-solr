@@ -203,7 +203,6 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       throw e;
     } finally {
       if (req != null) req.close();
-      if (parentCore != null) parentCore.close();
       if (newCores != null) {
         for (SolrCore newCore : newCores) {
           newCore.close();

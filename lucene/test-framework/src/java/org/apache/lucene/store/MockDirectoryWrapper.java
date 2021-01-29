@@ -832,7 +832,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
-          // nocommit - rips through heap?
+          // MRM TODO: - rips through heap?
           if (LuceneTestCase.TEST_NIGHTLY) TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
         }
           

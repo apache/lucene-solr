@@ -50,7 +50,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-
+    useFactory(null);
     simfac1 = LMJelinekMercerSimilarityFactory.class;
     simfac2 = SchemaSimilarityFactory.class;
     
@@ -77,9 +77,11 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<>()));
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new NamedList<>(), true);
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = sdoc((Object[]) fieldValues);
     updater.addDoc(cmd);
+    req.close();
   }
 
   private CoreContainer init() throws Exception {
@@ -113,36 +115,42 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public void testOptimizeDiffSchemas() throws Exception {
     // load up a core (why not put it on disk?)
     CoreContainer cc = init();
-    try (SolrCore changed = cc.getCore("changed")) {
 
+    try {
+      SolrCore changed = cc.getCore("changed");
       assertSimilarity(changed, simfac1);
-                       
+
       // add some documents
       addDoc(changed, "id", "1", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "3", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
+      changed = cc.getCore("changed");
       SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
-
+      req.close();
       // write the new schema out and make it current
       FileUtils.writeStringToFile(schemaFile, withoutWhich, StandardCharsets.UTF_8);
 
       IndexSchema iSchema = IndexSchemaFactory.buildIndexSchema("schema.xml", changed.getSolrConfig());
       changed.setLatestSchema(iSchema);
-      
+
       assertSimilarity(changed, simfac2);
       // sanity check our sanity check
-      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2)); 
-
+      assertFalse("test is broken: both simfacs are the same", simfac1.equals(simfac2));
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "1", "text", "some stuff without which");
+      changed = cc.getCore("changed");
       addDoc(changed, "id", "5", "text", "some stuff without which");
 
+      changed = cc.getCore("changed");
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
     } catch (Throwable e) {
-      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: {}"
-          , e.getMessage(), e);
+      log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: {}", e.getMessage(), e);
       throw e;
     } finally {
       if (cc != null) cc.shutdown();

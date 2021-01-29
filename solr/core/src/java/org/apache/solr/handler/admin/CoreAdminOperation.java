@@ -103,7 +103,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       }
       long start = System.nanoTime();
       coreContainer.create(coreName, instancePath, coreParams, newCollection);
-      log().info("SolrCore {} created in {}ms", coreName, TimeUnit.NANOSECONDS.convert(System.nanoTime() - start, TimeUnit.MILLISECONDS));
+      log().info("SolrCore {} created in {}ms", coreName, TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
 
       it.rsp.add("core", coreName);
     } finally {

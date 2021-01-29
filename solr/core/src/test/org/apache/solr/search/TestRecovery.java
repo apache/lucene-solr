@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
-@LuceneTestCase.Nightly // nocommit speedup / debug due to changes
+@LuceneTestCase.Nightly // MRM TODO: speedup / debug due to changes
 public class TestRecovery extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

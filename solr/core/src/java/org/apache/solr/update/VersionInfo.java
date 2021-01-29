@@ -59,7 +59,7 @@ public class VersionInfo {
 
   final ReadWriteLock buckUpdateLock = new ReentrantReadWriteLock(true);
 
-  private int versionBucketLockTimeoutMs;
+  private final int versionBucketLockTimeoutMs;
   private volatile long highestVersion;
 
   /**

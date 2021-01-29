@@ -768,7 +768,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /** Validates a query matches some XPath test expressions and closes the query */
-  public static void assertQ(String message, SolrQueryRequest req, String... tests) {
+  public static <core> void assertQ(String message, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       //since the default (standard) response format is now JSON
@@ -788,8 +788,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         allTests[0] = "*[count(//lst[@name='facet_counts']/*[@name='exception'])=0]";
         tests = allTests;
       }
+      String results;
 
-      String results = h.validateXPath(h.getCore().getResourceLoader(), response, tests);
+      results = h.validateXPath(req.getCore().getResourceLoader(), response, tests);
 
       if (null != results) {
         String msg = "REQUEST FAILED: xpath=" + results
@@ -799,13 +800,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         log.error(msg);
         throw new RuntimeException(msg);
       }
-
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
       ParWork.propagateInterrupt(e2);
       SolrException.log(log,"REQUEST FAILED: " + req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
+    } finally {
+      req.close();
     }
   }
 
@@ -905,6 +907,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       // restore the params
       if (params != null && params != req.getParams()) req.setParams(params);
+      req.close();
     }
   }  
 
@@ -922,6 +925,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
+      req.close();
     }
   }
 
@@ -937,6 +941,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
+      req.close();
     }
   }
   /**
@@ -960,6 +965,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       throw new RuntimeException("Exception during query", e2);
     } finally {
       unIgnoreException(".");
+      req.close();
     }
   }
 
@@ -1158,22 +1164,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /** Send JSON update commands */
   public static String updateJ(String json, SolrParams args) throws Exception {
-    SolrCore core = h.getCore();
-    if (args == null) {
-      args = params("wt","json","indent","true");
-    } else {
-      ModifiableSolrParams newArgs = new ModifiableSolrParams(args);
-      if (newArgs.get("wt") == null) newArgs.set("wt","json");
-      if (newArgs.get("indent") == null) newArgs.set("indent","true");
-      args = newArgs;
+    try (SolrCore core = h.getCore()) {
+      if (args == null) {
+        args = params("wt", "json", "indent", "true");
+      } else {
+        ModifiableSolrParams newArgs = new ModifiableSolrParams(args);
+        if (newArgs.get("wt") == null) newArgs.set("wt", "json");
+        if (newArgs.get("indent") == null) newArgs.set("indent", "true");
+        args = newArgs;
+      }
+      DirectSolrConnection connection = new DirectSolrConnection(core);
+      SolrRequestHandler handler = core.getRequestHandler("/update/json");
+      if (handler == null) {
+        handler = new UpdateRequestHandler();
+        handler.init(null);
+      }
+      return connection.request(handler, args, json);
     }
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update/json");
-    if (handler == null) {
-      handler = new UpdateRequestHandler();
-      handler.init(null);
-    }
-    return connection.request(handler, args, json);
   }
 
   public static SolrInputDocument sdoc(Object... fieldsAndValues) {
@@ -1358,7 +1365,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
 
-  // nocommit - guess this only works for a single replica case? also may not work with parallel
+  // MRM Note: - guess this only works for a single replica case? also may not work with parallel
   public static Long addAndGetVersion(SolrInputDocument sdoc, SolrParams params) throws Exception {
     if (params==null || params.get("versions") == null) {
       ModifiableSolrParams mparams = new ModifiableSolrParams(params);

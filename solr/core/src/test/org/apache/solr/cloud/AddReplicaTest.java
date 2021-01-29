@@ -167,7 +167,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 2, 4);
 
-    // nocommit - this should be able to wait now, look into basecloudclients wait for cluster state call
+    // MRM TODO: - this should be able to wait now without this explicit call, look into basecloudclients wait for cluster state call
 
   }
 }

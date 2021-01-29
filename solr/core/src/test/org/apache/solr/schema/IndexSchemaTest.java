@@ -58,7 +58,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     Map<String,String> args = new HashMap<>();
     args.put( CommonParams.Q, "title:test" );
     args.put( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
 
     assertQ("Make sure they got in", req
             ,"//*[@numFound='1']"
@@ -68,7 +68,8 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put( CommonParams.Q, "aaa_dynamic:aaa" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("dynamic source", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/str[@name='id'][.='10']"
@@ -77,7 +78,8 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put( CommonParams.Q, "dynamic_aaa:aaa" );
     args.put( "indent", "true" );
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    core = h.getCore();
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("dynamic destination", req
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/str[@name='id'][.='10']"
@@ -87,46 +89,45 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIsDynamicField() throws Exception {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    assertFalse( schema.isDynamicField( "id" ) );
-    assertTrue( schema.isDynamicField( "aaa_i" ) );
-    assertFalse( schema.isDynamicField( "no_such_field" ) );
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      assertFalse(schema.isDynamicField("id"));
+      assertTrue(schema.isDynamicField("aaa_i"));
+      assertFalse(schema.isDynamicField("no_such_field"));
+    }
   }
 
   @Test
   public void testProperties() throws Exception{
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    assertFalse(schema.getField("id").multiValued());
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      assertFalse(schema.getField("id").multiValued());
 
-    final String dateClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class);
-    final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
-    // Test TrieDate fields. The following asserts are expecting a field type defined as:
-    String expectedDefinition = "<fieldtype name=\"tdatedv\" class=\""+dateClass+"\" " +
-        "precisionStep=\"6\" docValues=\"true\" multiValued=\"true\"/>";
-    FieldType tdatedv = schema.getFieldType("foo_tdtdvs");
-    assertTrue("Expecting a field type defined as " + expectedDefinition, 
-               (usingPoints ? DatePointField.class : TrieDateField.class).isInstance(tdatedv));
-    assertTrue("Expecting a field type defined as " + expectedDefinition,
-               tdatedv.hasProperty(FieldProperties.DOC_VALUES));
-    assertTrue("Expecting a field type defined as " + expectedDefinition,
-               tdatedv.isMultiValued());
-    if ( ! usingPoints ) {
-      assertEquals("Expecting a field type defined as " + expectedDefinition,
-                   6, ((TrieDateField)tdatedv).getPrecisionStep());
+      final String dateClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Date.class);
+      final boolean usingPoints = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP);
+      // Test TrieDate fields. The following asserts are expecting a field type defined as:
+      String expectedDefinition = "<fieldtype name=\"tdatedv\" class=\"" + dateClass + "\" " + "precisionStep=\"6\" docValues=\"true\" multiValued=\"true\"/>";
+      FieldType tdatedv = schema.getFieldType("foo_tdtdvs");
+      assertTrue("Expecting a field type defined as " + expectedDefinition, (usingPoints ? DatePointField.class : TrieDateField.class).isInstance(tdatedv));
+      assertTrue("Expecting a field type defined as " + expectedDefinition, tdatedv.hasProperty(FieldProperties.DOC_VALUES));
+      assertTrue("Expecting a field type defined as " + expectedDefinition, tdatedv.isMultiValued());
+      if (!usingPoints) {
+        assertEquals("Expecting a field type defined as " + expectedDefinition, 6, ((TrieDateField) tdatedv).getPrecisionStep());
+      }
     }
   }
 
   @Test // LUCENE-5803
   public void testReuseAnalysisComponents() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    Analyzer solrAnalyzer = schema.getIndexAnalyzer();
-    // Get the tokenStream for two fields that both have the same field type (name "text")
-    TokenStream ts1 = solrAnalyzer.tokenStream("text", "foo bar"); // a non-dynamic field
-    TokenStream ts2 = solrAnalyzer.tokenStream("t_text", "whatever"); // a dynamic field
-    assertSame(ts1, ts2);
-    ts1.close();
-    ts2.close();
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      Analyzer solrAnalyzer = schema.getIndexAnalyzer();
+      // Get the tokenStream for two fields that both have the same field type (name "text")
+      TokenStream ts1 = solrAnalyzer.tokenStream("text", "foo bar"); // a non-dynamic field
+      TokenStream ts2 = solrAnalyzer.tokenStream("t_text", "whatever"); // a dynamic field
+      assertSame(ts1, ts2);
+      ts1.close();
+      ts2.close();
+    }
   }
 }

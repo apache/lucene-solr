@@ -365,14 +365,14 @@ public class PeerSync implements SolrMetricProducer {
         }
       }
       
-      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && (((SolrException) srsp.getException()).code() == 503 || ((SolrException) srsp.getException()).code() == 404)) {
-        log.warn("{} got a 503 from {}, counting as success ", msg(), srsp.getShardAddress(), srsp.getException());
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && (((SolrException) srsp.getException()).code() == 503)) {
+        log.warn("{} got a 503 from {}, counting as success.", msg(), srsp.getShardAddress(), srsp.getException().getMessage());
         return true;
       }
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
-        log.warn("{} got a 404 from {}, counting as success. {} Perhaps /get is not registered?"
-            , msg(), srsp.getShardAddress(), srsp.getException());
+        log.warn("{} got a 404 from {}, counting as success."
+            , msg(), srsp.getShardAddress(), srsp.getException().getMessage());
         return true;
       }
       
@@ -502,7 +502,16 @@ public class PeerSync implements SolrMetricProducer {
     @SuppressWarnings({"unchecked"})
     List<Object> updates = (List<Object>)srsp.getSolrResponse().getResponse().get("updates");
 
+    if (updates == null) {
+      throw new IllegalArgumentException("No updates found in response " + srsp.getSolrResponse().getResponse());
+    }
+
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
+
+    if (sreq == null) {
+      throw new IllegalArgumentException("Shard request is null " + srsp);
+    }
+
     if (updates.size() < sreq.totalRequestedUpdates) {
       log.error("{} Requested {} updates from {} but retrieved {} {}", msg(), sreq.totalRequestedUpdates, sreq.shards[0], updates.size(), srsp.getSolrResponse().getResponse());
       return false;

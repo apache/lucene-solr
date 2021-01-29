@@ -32,7 +32,7 @@ import org.apache.solr.common.ParWork;
  * It uses less memory but ignores the <code>lockTimeoutMs</code>.
  */
 public class VersionBucket {
-  public long highest;
+  public volatile long highest;
 
   private final ReentrantLock lock = new ReentrantLock(true);
   private final Condition lockCondition = lock.newCondition();

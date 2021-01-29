@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 
@@ -59,10 +60,10 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // these should all use docValues (either explicitly or implicitly)...
     for (String n : Arrays.asList("keyword_stxt", 
                                   "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
-           
-      FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-      assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?",
-                   true, ft.getNamedPropertyValues(true).get("docValues")) ;
+           try (SolrCore core = h.getCore()) {
+             FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+             assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?", true, ft.getNamedPropertyValues(true).get("docValues"));
+           }
     }
     for (String n : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                   "whitespace_stxt", "whitespace_nois_stxt",
@@ -74,9 +75,10 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     }
 
     { // this field should *NOT* have docValues .. should behave like a plain old TextField
-      SchemaField sf = h.getCore().getLatestSchema().getField("whitespace_nodv_stxt");
-      assertFalse("field " + sf.getName() + " should not have docvalues - schema got changed?",
-                  sf.hasDocValues()) ;
+      try (SolrCore core = h.getCore()) {
+        SchemaField sf = core.getLatestSchema().getField("whitespace_nodv_stxt");
+        assertFalse("field " + sf.getName() + " should not have docvalues - schema got changed?", sf.hasDocValues());
+      }
     }
     
   }
@@ -212,43 +214,40 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
                  "keyword_stxt", "Blarggghhh!"));
     assertU(commit());
 
-    final RefCounted<SolrIndexSearcher> searcher = h.getCore().getNewestSearcher(false);
-    try {
-      final LeafReader r = searcher.get().getSlowAtomicReader();
+    try (SolrCore core = h.getCore()) {
+      final RefCounted<SolrIndexSearcher> searcher = core.getNewestSearcher(false);
+      try {
+        final LeafReader r = searcher.get().getSlowAtomicReader();
 
-      // common cases...
-      for (String field : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
-                                        "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
-        assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
-        assertEquals("DocValuesType: " + field,
-                     DocValuesType.SORTED, r.getFieldInfos().fieldInfo(field).getDocValuesType());
-        assertNotNull("DocValues: " + field, r.getSortedDocValues(field));
-        assertNotNull("Terms: " + field, r.terms(field));
-                      
-      }
-      
-      // special cases...
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nodv_stxt"));
-      assertEquals(DocValuesType.NONE,
-                   r.getFieldInfos().fieldInfo("whitespace_nodv_stxt").getDocValuesType());
-      assertNull(r.getSortedDocValues("whitespace_nodv_stxt"));
-      assertNotNull(r.terms("whitespace_nodv_stxt"));
-      // 
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nois_stxt"));
-      assertEquals(DocValuesType.SORTED,
-                   r.getFieldInfos().fieldInfo("whitespace_nois_stxt").getDocValuesType());
-      assertNotNull(r.getSortedDocValues("whitespace_nois_stxt"));
-      assertNull(r.terms("whitespace_nois_stxt"));
-      //
-      assertNotNull(r.getFieldInfos().fieldInfo("whitespace_m_stxt"));
-      assertEquals(DocValuesType.SORTED_SET,
-                   r.getFieldInfos().fieldInfo("whitespace_m_stxt").getDocValuesType());
-      assertNotNull(r.getSortedSetDocValues("whitespace_m_stxt"));
-      assertNotNull(r.terms("whitespace_m_stxt"));
-        
-    } finally {
-      if (null != searcher) {
-        searcher.decref();
+        // common cases...
+        for (String field : Arrays.asList("keyword_stxt", "keyword_dv_stxt", "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
+          assertNotNull("FieldInfos: " + field, r.getFieldInfos().fieldInfo(field));
+          assertEquals("DocValuesType: " + field, DocValuesType.SORTED, r.getFieldInfos().fieldInfo(field).getDocValuesType());
+          assertNotNull("DocValues: " + field, r.getSortedDocValues(field));
+          assertNotNull("Terms: " + field, r.terms(field));
+
+        }
+
+        // special cases...
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nodv_stxt"));
+        assertEquals(DocValuesType.NONE, r.getFieldInfos().fieldInfo("whitespace_nodv_stxt").getDocValuesType());
+        assertNull(r.getSortedDocValues("whitespace_nodv_stxt"));
+        assertNotNull(r.terms("whitespace_nodv_stxt"));
+        //
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_nois_stxt"));
+        assertEquals(DocValuesType.SORTED, r.getFieldInfos().fieldInfo("whitespace_nois_stxt").getDocValuesType());
+        assertNotNull(r.getSortedDocValues("whitespace_nois_stxt"));
+        assertNull(r.terms("whitespace_nois_stxt"));
+        //
+        assertNotNull(r.getFieldInfos().fieldInfo("whitespace_m_stxt"));
+        assertEquals(DocValuesType.SORTED_SET, r.getFieldInfos().fieldInfo("whitespace_m_stxt").getDocValuesType());
+        assertNotNull(r.getSortedSetDocValues("whitespace_m_stxt"));
+        assertNotNull(r.terms("whitespace_m_stxt"));
+
+      } finally {
+        if (null != searcher) {
+          searcher.decref();
+        }
       }
     }
   }
@@ -280,8 +279,10 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));      
   }
   private List<IndexableField> createIndexableFields(String fieldName) {
-    SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
-    return sf.getType().createFields(sf, "dummy value");
+    try (SolrCore core = h.getCore()) {
+      SchemaField sf = core.getLatestSchema().getField(fieldName);
+      return sf.getType().createFields(sf, "dummy value");
+    }
   }
 
   public void testMaxCharsSort() throws Exception {
@@ -390,17 +391,17 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // first things first...
     // unlike most field types, SortableTextField should default to useDocValuesAsStored==false
     // (check a handful that should have the default behavior)
+    try (SolrCore core = h.getCore()) {
     for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
       {
-        FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(n);
-        assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored",
-                     false, ft.useDocValuesAsStored()) ;
+        FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+        assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored", false, ft.useDocValuesAsStored());
       }
       {
-        SchemaField sf = h.getCore().getLatestSchema().getField(n);
-        assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored",
-                     false, sf.useDocValuesAsStored()) ;
+        SchemaField sf = core.getLatestSchema().getField(n);
+        assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored", false, sf.useDocValuesAsStored());
       }
+    }
     }
     
     // but it should be possible to set useDocValuesAsStored=true explicitly on types...
