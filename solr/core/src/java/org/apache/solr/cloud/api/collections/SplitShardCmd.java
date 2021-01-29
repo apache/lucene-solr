@@ -62,7 +62,7 @@ import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
 /**
  * Index split request processed by Overseer. Requests from here go to the host of the parent shard,
- * and are processed by @link.
+ * and are processed by SplitOp.
  */
 public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -599,7 +599,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (log.isDebugEnabled()) {
-        log.debug("Timings for split sub-ops: " + timings);
+        log.debug("Timings for split sub-ops: ", timings.toString());
       }
       success = true;
       // don't unlock the shard yet - only do this if the final switch-over in
