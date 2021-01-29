@@ -374,7 +374,9 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+        int underscore = language.indexOf("_");
+        String langCode = underscore < 0 ? language : language.substring(0, underscore);
+        alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
       } else if ("FORBIDDENWORD".equals(firstWord)) {
