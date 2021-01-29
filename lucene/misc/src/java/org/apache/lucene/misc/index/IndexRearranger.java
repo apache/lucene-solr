@@ -130,7 +130,7 @@ public class IndexRearranger {
   }
 
   /** Select document within a CodecReader */
-  interface DocumentSelector {
+  public interface DocumentSelector {
     BitSet getFilteredLiveDocs(CodecReader reader) throws IOException;
   }
 }
