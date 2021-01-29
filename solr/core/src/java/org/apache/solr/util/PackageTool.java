@@ -261,44 +261,44 @@ public class PackageTool extends SolrCLI.ToolBase {
         .argName("URL")
         .hasArg()
         .required(true)
-        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
+        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL + '.')
         .build(),
 
         Option.builder("collections")
         .argName("COLLECTIONS")
         .hasArg()
         .required(false)
-        .desc("List of collections. Run './solr package help' for more details.")
+        .desc("List of collections.")
         .build(),
 
         Option.builder("cluster")
         .required(false)
-        .desc("Needed to install cluster level plugins in a package. Run './solr package help' for more details.")
+        .desc("Needed to install cluster level plugins in a package.")
         .build(),
 
         Option.builder("p")
         .argName("PARAMS")
         .hasArgs()
         .required(false)
-        .desc("List of parameters to be used with deploy command. Run './solr package help' for more details.")
+        .desc("List of parameters to be used with deploy command.")
         .longOpt("param")
         .build(),
 
         Option.builder("u")
         .required(false)
-        .desc("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
+        .desc("If a deployment is an update over a previous deployment.")
         .longOpt("update")
         .build(),
 
         Option.builder("c")
         .required(false)
-        .desc("Run './solr package help' for more details.")
+        .desc("The collection to apply the package to, not required.")
         .longOpt("collection")
         .build(),
 
         Option.builder("y")
         .required(false)
-        .desc("Run './solr package help' for more details.")
+        .desc("Don't prompt for input; accept all default choices, defaults to false.")
         .longOpt("noprompt")
         .build()
     };
