@@ -57,6 +57,10 @@ public class SpellChecker {
     }
 
     char[] wordChars = word.toCharArray();
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+      return false;
+    }
+
     if (checkWord(wordChars, wordChars.length, false)) {
       return true;
     }
@@ -66,9 +70,7 @@ public class SpellChecker {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty()
-        && !hasTooManyBreakOccurrences(word)
-        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
+    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
       return tryBreaks(word);
     }
 
