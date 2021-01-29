@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Random;
@@ -261,13 +262,24 @@ public class TestDictionary extends LuceneTestCase {
         Dictionary.getDictionaryEncoding(
             new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(StandardCharsets.UTF_8))));
     assertEquals(
-        Dictionary.DEFAULT_ENCODING,
+        Dictionary.DEFAULT_CHARSET.name(),
         Dictionary.getDictionaryEncoding(new ByteArrayInputStream(new byte[0])));
   }
 
   public void testFlagWithCrazyWhitespace() {
-    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
-    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8", StandardCharsets.UTF_8));
+    assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8", StandardCharsets.UTF_8));
+  }
+
+  @Test
+  public void testUtf8Flag() {
+    Dictionary.FlagParsingStrategy strategy =
+        Dictionary.getFlagParsingStrategy("FLAG\tUTF-8", Dictionary.DEFAULT_CHARSET);
+
+    String src = "привет";
+    String asAscii = new String(src.getBytes(StandardCharsets.UTF_8), Dictionary.DEFAULT_CHARSET);
+    assertNotEquals(src, asAscii);
+    assertEquals(src, new String(strategy.parseFlags(asAscii)));
   }
 
   @Test
@@ -275,19 +287,23 @@ public class TestDictionary extends LuceneTestCase {
     Random r = random();
     char[] flags = new char[r.nextInt(10)];
     for (int i = 0; i < flags.length; i++) {
-      flags[i] = (char) r.nextInt(Character.MAX_VALUE);
+      flags[i] = (char) r.nextInt(Character.MIN_SURROGATE);
     }
 
     String[] flagLines = {"FLAG long", "FLAG UTF-8", "FLAG num"};
+    Charset[] charsets = {StandardCharsets.UTF_8, Dictionary.DEFAULT_CHARSET};
     for (String flagLine : flagLines) {
-      Dictionary.FlagParsingStrategy strategy = Dictionary.getFlagParsingStrategy(flagLine);
-      StringBuilder serialized = new StringBuilder();
-      for (char flag : flags) {
-        strategy.appendFlag(flag, serialized);
-      }
+      for (Charset charset : charsets) {
+        Dictionary.FlagParsingStrategy strategy =
+            Dictionary.getFlagParsingStrategy(flagLine, charset);
+        StringBuilder serialized = new StringBuilder();
+        for (char flag : flags) {
+          strategy.appendFlag(flag, serialized);
+        }
 
-      char[] deserialized = strategy.parseFlags(serialized.toString());
-      assertEquals(new String(flags), new String(deserialized));
+        char[] deserialized = strategy.parseFlags(serialized.toString());
+        assertEquals(new String(flags), new String(deserialized));
+      }
     }
   }
 

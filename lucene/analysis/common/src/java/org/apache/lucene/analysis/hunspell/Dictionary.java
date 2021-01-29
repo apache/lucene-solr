@@ -83,7 +83,7 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
-  static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
+  static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -342,7 +342,7 @@ public class Dictionary {
       } else if ("FLAG".equals(firstWord)) {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
-        flagParsingStrategy = getFlagParsingStrategy(line);
+        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -698,7 +698,7 @@ public class Dictionary {
           // this test only at the end as ineffective but would allow lines only containing spaces:
           encoding.toString().trim().length() == 0) {
         if (ch < 0) {
-          return DEFAULT_ENCODING;
+          return DEFAULT_CHARSET.name();
         }
         continue;
       }
@@ -707,7 +707,7 @@ public class Dictionary {
         int last = matcher.end();
         return encoding.substring(last).trim();
       }
-      return DEFAULT_ENCODING;
+      return DEFAULT_CHARSET.name();
     }
   }
 
@@ -741,7 +741,7 @@ public class Dictionary {
    * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG
    *     definition
    */
-  static FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
+  static FlagParsingStrategy getFlagParsingStrategy(String flagLine, Charset charset) {
     String[] parts = flagLine.split("\\s+");
     if (parts.length != 2) {
       throw new IllegalArgumentException("Illegal FLAG specification: " + flagLine);
@@ -751,6 +751,9 @@ public class Dictionary {
     if ("num".equals(flagType)) {
       return new NumFlagParsingStrategy();
     } else if ("UTF-8".equals(flagType)) {
+      if (DEFAULT_CHARSET.equals(charset)) {
+        return new Utf8FlagParsingStrategy();
+      }
       return new SimpleFlagParsingStrategy();
     } else if ("long".equals(flagType)) {
       return new DoubleASCIIFlagParsingStrategy();
@@ -1237,6 +1240,19 @@ public class Dictionary {
     @Override
     void appendFlag(char flag, StringBuilder to) {
       to.append(flag);
+    }
+  }
+
+  /** Used for FLAG UTF-8 on non-UTF-8 encoding */
+  private static class Utf8FlagParsingStrategy extends FlagParsingStrategy {
+    @Override
+    public char[] parseFlags(String rawFlags) {
+      return new String(rawFlags.getBytes(DEFAULT_CHARSET), StandardCharsets.UTF_8).toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(new String(String.valueOf(flag).getBytes(StandardCharsets.UTF_8), DEFAULT_CHARSET));
     }
   }
 
