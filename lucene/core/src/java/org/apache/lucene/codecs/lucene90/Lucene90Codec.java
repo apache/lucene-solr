@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
@@ -74,7 +73,7 @@ public class Lucene90Codec extends Codec {
   private final FieldInfosFormat fieldInfosFormat = new Lucene90FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
-  private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final CompoundFormat compoundFormat = new Lucene90CompoundFormat();
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat =
