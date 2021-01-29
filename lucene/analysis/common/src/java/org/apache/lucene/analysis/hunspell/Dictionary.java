@@ -133,6 +133,7 @@ public class Dictionary {
   boolean hasStemExceptions;
 
   boolean ignoreCase;
+  boolean checkSharpS;
   boolean complexPrefixes;
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
@@ -353,6 +354,8 @@ public class Dictionary {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
         onlyincompound = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKSHARPS".equals(firstWord)) {
+        checkSharpS = true;
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
