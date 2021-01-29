@@ -150,7 +150,7 @@ public class TextField extends FieldType {
   }
 
   @Override
-  public Query getFieldTokenQuery(QParser parser, SchemaField field, String externalVal) {
+  public Query getFieldTermQuery(QParser parser, SchemaField field, String externalVal) {
     BytesRefBuilder br = new BytesRefBuilder();
     readableToIndexed(externalVal, br);
     return new TermQuery(new Term(field.getName(), br));

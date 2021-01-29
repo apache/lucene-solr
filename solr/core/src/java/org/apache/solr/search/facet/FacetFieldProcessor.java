@@ -471,7 +471,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
    * Trivial helper method for building up a bucket query given the (Stringified) bucket value
    */
   protected Query makeBucketQuery(final String bucketValue) {
-    return sf.getType().getFieldTokenQuery(null, sf, bucketValue);
+    return sf.getType().getFieldTermQuery(null, sf, bucketValue);
   }
 
   private void calculateNumBuckets(SimpleOrderedMap<Object> target) throws IOException {
@@ -996,7 +996,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     // fieldQuery currently relies on a string input of the value...
     String bucketStr = bucketVal instanceof Date ? ((Date)bucketVal).toInstant().toString() : bucketVal.toString();
-    Query domainQ = ft.getFieldTokenQuery(null, sf, bucketStr);
+    Query domainQ = ft.getFieldTermQuery(null, sf, bucketStr);
 
     fillBucket(bucket, domainQ, null, skip, facetInfo);
 
