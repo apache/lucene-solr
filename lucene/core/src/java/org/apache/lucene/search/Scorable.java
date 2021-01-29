@@ -32,8 +32,21 @@ public abstract class Scorable {
   public abstract float score() throws IOException;
 
   /**
-   * Returns the doc ID that is currently being scored.
+   * Returns the smoothing score of the current document matching the query. This score is used when
+   * the query/term does not appear in the document, and behaves like an idf. The smoothing score is
+   * particularly important when the Scorer returns a product of probabilities so that the document
+   * score does not go to zero when one probability is zero. This can return 0 or a smoothing score.
+   *
+   * <p>Smoothing scores are described in many papers, including: Metzler, D. and Croft, W. B. ,
+   * "Combining the Language Model and Inference Network Approaches to Retrieval," Information
+   * Processing and Management Special Issue on Bayesian Networks and Information Retrieval, 40(5),
+   * pp.735-750.
    */
+  public float smoothingScore(int docId) throws IOException {
+    return 0f;
+  }
+
+  /** Returns the doc ID that is currently being scored. */
   public abstract int docID();
 
   /**

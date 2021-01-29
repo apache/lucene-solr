@@ -170,29 +170,27 @@ public class IndexSearcher {
     this(r, null);
   }
 
-  /** Runs searches for each segment separately, using the
-   *  provided Executor. NOTE:
-   *  if you are using {@link NIOFSDirectory}, do not use
-   *  the shutdownNow method of ExecutorService as this uses
-   *  Thread.interrupt under-the-hood which can silently
-   *  close file descriptors (see <a
-   *  href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
-   * 
-   * @lucene.experimental */
+  /**
+   * Runs searches for each segment separately, using the provided Executor. NOTE: if you are using
+   * {@link NIOFSDirectory}, do not use the shutdownNow method of ExecutorService as this uses
+   * Thread.interrupt under-the-hood which can silently close file descriptors (see <a href=
+   * "https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
+   *
+   * @lucene.experimental
+   */
   public IndexSearcher(IndexReader r, Executor executor) {
     this(r.getContext(), executor);
   }
 
   /**
    * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
-   * <p>
-   * Given a non-<code>null</code> {@link Executor} this method runs
-   * searches for each segment separately, using the provided Executor.
-   * NOTE: if you are using {@link NIOFSDirectory}, do not use the shutdownNow method of
-   * ExecutorService as this uses Thread.interrupt under-the-hood which can
-   * silently close file descriptors (see <a
-   * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
-   * 
+   *
+   * <p>Given a non-<code>null</code> {@link Executor} this method runs searches for each segment
+   * separately, using the provided Executor. NOTE: if you are using {@link NIOFSDirectory}, do not
+   * use the shutdownNow method of ExecutorService as this uses Thread.interrupt under-the-hood
+   * which can silently close file descriptors (see <a href=
+   * "https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
+   *
    * @see IndexReaderContext
    * @see IndexReader#getContext()
    * @lucene.experimental
@@ -644,7 +642,7 @@ public class IndexSearcher {
       throws IOException {
 
     // TODO: should we make this
-    // threaded...?  the Collector could be sync'd?
+    // threaded...? the Collector could be sync'd?
     // always use single thread:
     for (LeafReaderContext ctx : leaves) { // search each subreader
       final LeafCollector leafCollector;
