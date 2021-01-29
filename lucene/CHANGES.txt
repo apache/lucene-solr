@@ -1,4 +1,4 @@
-﻿Lucene Change Log
+Lucene Change Log
 
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
@@ -83,17 +83,6 @@ API Changes
   between modules. See MIGRATE.md for details. (David Ryan, Tomoko Uchida, Uwe Schindler, Dawid Weiss)
 
 * LUCENE-9646: Set BM25Similarity discountOverlaps via the constructor (Patrick Marty via Bruno Roustant)
-
-* LUCENE-9537:  Added smoothingScore method and default implementation to 
-  Scorable abstract class.  The smoothing score allows scorers to calculate a 
-  score for a document where the search term or subquery is not present.  The 
-  smoothing score acts like an idf so that documents that do not have terms or 
-  subqueries that are more frequent in the index are not penalized as much as 
-  documents that do not have less frequent terms or subqueries and prevents 
-  scores which are the product or terms or subqueries from going to zero. Added 
-  the implementation of the Indri AND and the IndriDirichletSimilarity from the 
-  academic Indri search engine: http://www.lemurproject.org/indri.php. 
-  (Cameron VandenBerg)   
 
 Improvements
 
@@ -260,11 +249,43 @@ Other
 
 ======================= Lucene 8.9.0 =======================
 
+API Changes
+---------------------
+(No changes)
+
 New Features
 ---------------------
+(No changes)
+
+* LUCENE-9537:  Added smoothingScore method and default implementation to 
+  Scorable abstract class.  The smoothing score allows scorers to calculate a 
+  score for a document where the search term or subquery is not present.  The 
+  smoothing score acts like an idf so that documents that do not have terms or 
+  subqueries that are more frequent in the index are not penalized as much as 
+  documents that do not have less frequent terms or subqueries and prevents 
+  scores which are the product or terms or subqueries from going to zero. Added 
+  the implementation of the Indri AND and the IndriDirichletSimilarity from the 
+  academic Indri search engine: http://www.lemurproject.org/indri.php. 
+  (Cameron VandenBerg)   
 
 * LUCENE-9694: New tool for creating a deterministic index to enable benchmarking changes
   on a consistent multi-segment index even when they require re-indexing. (Haoyu Zhai)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
 
 ======================= Lucene 8.8.0 =======================
 
