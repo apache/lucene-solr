@@ -983,6 +983,17 @@ public abstract class FieldType extends FieldProperties {
     }
   }
 
+  /**
+   * Returns a Query instance for doing a single token searche against a field.
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the token value to search
+   * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
+   */
+  public Query getFieldTokenQuery(QParser parser, SchemaField field, String externalVal) {
+    return getFieldQuery(parser, field, externalVal);
+  }
+
   /** @lucene.experimental  */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     if (!field.indexed()) {
