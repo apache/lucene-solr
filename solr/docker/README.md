@@ -76,7 +76,7 @@ If you want to persist the data, mount a volume or directory on `/var/solr`.
 Solr expects some files and directories in `/var/solr`; if you use your own directory or volume you can either pre-populate them, or let Solr docker copy them for you. See [init-var-solr](scripts/init-var-solr).
 If you want to use custom configuration, mount it in the appropriate place. See below for examples.
 
-The Solr docker distribution adds [scripts](include/scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
+The Solr docker distribution adds [scripts](scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
 
 ## Creating cores
 

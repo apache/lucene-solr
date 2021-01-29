@@ -818,7 +818,6 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
    * (and the other tests should adequeately prove that the block hueristics for _root_ collapsing work)
    */
   public void testBlockCollapseWithExpandComponent() throws Exception {
-    // NOTE: due to SOLR-15078 we don't bother trying to collapse/expand on int in this test
 
     { // convert our docs + some docs w/o collapse fields, along with some commits, to update commands
       // in a shuffled order and process all of them...
@@ -839,10 +838,10 @@ public class TestBlockCollapse extends SolrTestCaseJ4 {
     // we don't bother testing _root_ field collapsing, since it contains different field values then block_s1
     for (String opt : Arrays.asList(// no block collapse logic used (sanity checks)
                                     "field=block_s1",            
-                                    // "field=block_i", // TODO: SOLR-15078
+                                    "field=block_i",
 
                                     // block collapse used explicitly (int)
-                                    // "field=block_i  hint=block", // TODO: SOLR-15078
+                                    "field=block_i  hint=block",
                                     
                                     // block collapse used explicitly (ord)
                                     "field=block_s1 hint=block"

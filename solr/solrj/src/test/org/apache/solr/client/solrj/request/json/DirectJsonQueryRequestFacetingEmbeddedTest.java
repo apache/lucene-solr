@@ -75,12 +75,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
     final String schema = tempSolrHome.getAbsolutePath() + "/" + COLLECTION_NAME + "/conf/managed-schema";
     initCore(config, schema, tempSolrHome.getAbsolutePath(), COLLECTION_NAME);
 
-    client = new EmbeddedSolrServer(h.getCoreContainer(), COLLECTION_NAME) {
-      @Override
-      public void close() {
-        // do not close core container
-      }
-    };
+    client = new EmbeddedSolrServer(h.getCoreContainer(), COLLECTION_NAME);
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);

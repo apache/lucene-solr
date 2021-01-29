@@ -59,7 +59,7 @@ fi
 container_cleanup "$container_name"
 
 # chown it back
-docker run --rm --user 0:0 -d -e VERBOSE=yes \
+docker run --rm --user 0:0 -e VERBOSE=yes \
   -v "$myvarsolr:/myvarsolr" "$tag" \
   bash -c "chown -R $(id -u):$(id -g) /myvarsolr; ls -ld /myvarsolr"
 

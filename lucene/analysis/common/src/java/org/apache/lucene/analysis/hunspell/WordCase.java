@@ -23,39 +23,55 @@ enum WordCase {
   MIXED;
 
   static WordCase caseOf(char[] word, int length) {
-    boolean capitalized = Character.isUpperCase(word[0]);
+    boolean startsWithLower = Character.isLowerCase(word[0]);
 
     boolean seenUpper = false;
     boolean seenLower = false;
     for (int i = 1; i < length; i++) {
-      char ch = word[i];
-      seenUpper = seenUpper || Character.isUpperCase(ch);
-      seenLower = seenLower || Character.isLowerCase(ch);
+      CharCase cc = charCase(word[i]);
+      seenUpper = seenUpper || cc == CharCase.UPPER;
+      seenLower = seenLower || cc == CharCase.LOWER;
       if (seenUpper && seenLower) break;
     }
 
-    return get(capitalized, seenUpper, seenLower);
+    return get(startsWithLower, seenUpper, seenLower);
   }
 
   static WordCase caseOf(CharSequence word, int length) {
-    boolean capitalized = Character.isUpperCase(word.charAt(0));
+    boolean startsWithLower = Character.isLowerCase(word.charAt(0));
 
     boolean seenUpper = false;
     boolean seenLower = false;
     for (int i = 1; i < length; i++) {
-      char ch = word.charAt(i);
-      seenUpper = seenUpper || Character.isUpperCase(ch);
-      seenLower = seenLower || Character.isLowerCase(ch);
+      CharCase cc = charCase(word.charAt(i));
+      seenUpper = seenUpper || cc == CharCase.UPPER;
+      seenLower = seenLower || cc == CharCase.LOWER;
       if (seenUpper && seenLower) break;
     }
 
-    return get(capitalized, seenUpper, seenLower);
+    return get(startsWithLower, seenUpper, seenLower);
   }
 
-  private static WordCase get(boolean capitalized, boolean seenUpper, boolean seenLower) {
-    if (capitalized) {
+  private static WordCase get(boolean startsWithLower, boolean seenUpper, boolean seenLower) {
+    if (!startsWithLower) {
       return !seenLower ? UPPER : !seenUpper ? TITLE : MIXED;
     }
     return seenUpper ? MIXED : LOWER;
+  }
+
+  private static CharCase charCase(char c) {
+    if (Character.isUpperCase(c)) {
+      return CharCase.UPPER;
+    }
+    if (Character.isLowerCase(c) && Character.toUpperCase(c) != c) {
+      return CharCase.LOWER;
+    }
+    return CharCase.NEUTRAL;
+  }
+
+  private enum CharCase {
+    UPPER,
+    LOWER,
+    NEUTRAL
   }
 }

@@ -71,7 +71,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.CollapsingQParserPlugin;
@@ -214,7 +213,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     FieldType fieldType = schemaField.getType();
 
     SortedDocValues values = null;
-    long nullValue = 0L;
 
     if(fieldType instanceof StrField) {
       //Get The Top Level SortedDocValues
@@ -225,28 +223,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       } else {
         values = DocValues.getSorted(reader, field);
       }
-    } else if (fieldType.getNumberType() != null) {
-      //Get the nullValue for the numeric collapse field
-      String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
-      
-      final NumberType numType = fieldType.getNumberType();
-
-      // Since the expand component depends on the operation of the collapse component, 
-      // which validates that numeric field types are 32-bit,
-      // we don't need to handle invalid 64-bit field types here.
-      // FIXME: what happens when expand.field specified?
-      //  how would this work for date field?
-      //  SOLR-10400: before this, long and double were explicitly handled
-      if (defaultValue != null) {
-        if (numType == NumberType.INTEGER) {
-          nullValue = Long.parseLong(defaultValue);
-        } else if (numType == NumberType.FLOAT) {
-          nullValue = Float.floatToIntBits(Float.parseFloat(defaultValue));
-        }
-      } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
-        nullValue = Float.floatToIntBits(0.0f);
-      }
-    } else {
+    } else if (fieldType.getNumberType() == null) {
       // possible if directly expand.field is specified
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Expand not supported for fieldType:'" + fieldType.getTypeName() +"'");
@@ -358,13 +335,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         if (valueDocID < contextDoc) {
           valueDocID = collapseValues.advance(contextDoc);
         }
-        long value;
         if (valueDocID == contextDoc) {
-          value = collapseValues.longValue();
-        } else {
-          value = 0;
-        }
-        if(value != nullValue) {
+          final long value = collapseValues.longValue();
           groupSet.add(value);
           collapsedSet.add(globalDoc);
         }
@@ -399,7 +371,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       
       groupExpandCollector = new GroupExpandCollector(values, groupBits, collapsedSet, limit, sort);
     } else {
-      groupExpandCollector = new NumericGroupExpandCollector(field, nullValue, groupSet, collapsedSet, limit, sort);
+      groupExpandCollector = new NumericGroupExpandCollector(field, groupSet, collapsedSet, limit, sort);
     }
 
     if(groupQuery !=  null) {
@@ -628,11 +600,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     private LongObjectHashMap<Collector> groups;
 
     private IntHashSet collapsedSet;
-    private long nullValue;
 
-    public NumericGroupExpandCollector(String field, long nullValue, LongHashSet groupSet, IntHashSet collapsedSet, int limit, Sort sort) throws IOException {
+    public NumericGroupExpandCollector(String field, LongHashSet groupSet, IntHashSet collapsedSet, int limit, Sort sort) throws IOException {
       int numGroups = collapsedSet.size();
-      this.nullValue = nullValue;
       groups = new LongObjectHashMap<>(numGroups);
       for (LongCursor cursor : groupSet) {
         groups.put(cursor.value, getCollector(limit, sort));
@@ -663,17 +633,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
         @Override
         public void collect(int docId) throws IOException {
-          long value;
           if (docValues.advanceExact(docId)) {
-            value = docValues.longValue();
-          } else {
-            value = 0;
-          }
-          final int index;
-          if (value != nullValue && 
-              (index = leafCollectors.indexOf(value)) >= 0 && 
-              !collapsedSet.contains(docId + docBase)) {
-            leafCollectors.indexGet(index).collect(docId);
+            final long value = docValues.longValue();
+            final int index = leafCollectors.indexOf(value);
+            if (index >= 0 && !collapsedSet.contains(docId + docBase)) {
+              leafCollectors.indexGet(index).collect(docId);
+            }
           }
         }
       };

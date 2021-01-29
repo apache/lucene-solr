@@ -127,8 +127,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   public static final String REQUESTID = "requestid";
 
-  public static final String COLL_PROP_PREFIX = "property.";
-
   public static final String ONLY_IF_DOWN = "onlyIfDown";
 
   public static final String SHARD_UNIQUE = "shardUnique";
@@ -299,7 +297,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
 
     String asyncId = message.getStr(ASYNC);
-    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId);
+    collectionCmd(message, params, results, Replica.State.ACTIVE, asyncId, Collections.emptySet());
   }
 
   @SuppressWarnings("unchecked")
@@ -561,7 +559,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void addPropertyParams(ZkNodeProps message, ModifiableSolrParams params) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
-      if (key.startsWith(COLL_PROP_PREFIX)) {
+      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         params.set(key, message.getStr(key));
       }
     }
@@ -570,7 +568,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   void addPropertyParams(ZkNodeProps message, Map<String, Object> map) {
     // Now add the property.key=value pairs
     for (String key : message.keySet()) {
-      if (key.startsWith(COLL_PROP_PREFIX)) {
+      if (key.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
         map.put(key, message.getStr(key));
       }
     }
@@ -700,11 +698,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
   }
 
-  private List<Replica> collectionCmd(ZkNodeProps message, ModifiableSolrParams params,
-                             NamedList<Object> results, Replica.State stateMatcher, String asyncId) {
-    return collectionCmd( message, params, results, stateMatcher, asyncId, Collections.emptySet());
-  }
-
   /**
    * Send request to all replicas of a collection
    * @return List of replicas which is not live for receiving the request
@@ -713,7 +706,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
                      NamedList<Object> results, Replica.State stateMatcher, String asyncId, Set<String> okayExceptions) {
     log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
     String collectionName = message.getStr(NAME);
-    @SuppressWarnings("deprecation")
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
     ClusterState clusterState = zkStateReader.getClusterState();

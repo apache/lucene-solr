@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /**
  * A spell checker based on Hunspell dictionaries. The objects of this class are not thread-safe
@@ -37,16 +40,33 @@ public class SpellChecker {
   public boolean spell(String word) {
     if (word.isEmpty()) return true;
 
-    char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, scratch)) {
-      return false;
+    if (dictionary.needsInputCleaning) {
+      word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    if (word.endsWith(".")) {
+      return spellWithTrailingDots(word);
+    }
+
+    return spellClean(word);
+  }
+
+  private boolean spellClean(String word) {
     if (isNumber(word)) {
       return true;
     }
 
-    if (!stemmer.stem(wordChars, word.length()).isEmpty()) {
+    char[] wordChars = word.toCharArray();
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+      return false;
+    }
+
+    if (checkWord(wordChars, wordChars.length, null)) {
+      return true;
+    }
+
+    WordCase wc = stemmer.caseOf(wordChars, wordChars.length);
+    if ((wc == WordCase.UPPER || wc == WordCase.TITLE) && checkCaseVariants(wordChars, wc)) {
       return true;
     }
 
@@ -55,6 +75,136 @@ public class SpellChecker {
     }
 
     return false;
+  }
+
+  private boolean spellWithTrailingDots(String word) {
+    int length = word.length() - 1;
+    while (length > 0 && word.charAt(length - 1) == '.') {
+      length--;
+    }
+    return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
+  }
+
+  private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
+    char[] caseVariant = wordChars;
+    if (wordCase == WordCase.UPPER) {
+      caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
+      if (checkWord(caseVariant, wordChars.length, wordCase)) {
+        return true;
+      }
+      char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
+      if (aposCase != null && checkWord(aposCase, aposCase.length, wordCase)) {
+        return true;
+      }
+      for (char[] variation : stemmer.sharpSVariations(caseVariant, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
+    }
+    char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
+    if (checkWord(lower, wordChars.length, wordCase)) {
+      return true;
+    }
+    if (wordCase == WordCase.UPPER) {
+      for (char[] variation : stemmer.sharpSVariations(lower, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
+    if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
+      return false;
+    }
+
+    if (hasStems(wordChars, 0, length, originalCase, WordContext.SIMPLE_WORD)) {
+      return true;
+    }
+
+    if (dictionary.compoundRules != null
+        && checkCompoundRules(wordChars, 0, length, new ArrayList<>())) {
+      return true;
+    }
+
+    return dictionary.compoundBegin > 0 && checkCompounds(wordChars, 0, length, originalCase, 0);
+  }
+
+  private boolean hasStems(
+      char[] chars, int offset, int length, WordCase originalCase, WordContext context) {
+    return !stemmer.doStem(chars, offset, length, originalCase, context).isEmpty();
+  }
+
+  private boolean checkCompounds(
+      char[] chars, int offset, int length, WordCase originalCase, int depth) {
+    if (depth > dictionary.compoundMax - 2) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      WordContext context = depth == 0 ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_MIDDLE;
+      int breakOffset = offset + breakPos;
+      if (checkCompoundCase(chars, breakOffset)
+          && hasStems(chars, offset, breakPos, originalCase, context)) {
+        int remainingLength = length - breakPos;
+        if (hasStems(chars, breakOffset, remainingLength, originalCase, WordContext.COMPOUND_END)) {
+          return true;
+        }
+
+        if (checkCompounds(chars, breakOffset, remainingLength, originalCase, depth + 1)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private boolean checkCompoundCase(char[] chars, int breakPos) {
+    if (!dictionary.checkCompoundCase) return true;
+    return Character.isUpperCase(chars[breakPos - 1]) == Character.isUpperCase(chars[breakPos]);
+  }
+
+  private boolean checkCompoundRules(
+      char[] wordChars, int offset, int length, List<IntsRef> words) {
+    if (words.size() >= 100) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      IntsRef forms = dictionary.lookupWord(wordChars, offset, breakPos);
+      if (forms != null) {
+        words.add(forms);
+
+        if (dictionary.compoundRules != null
+            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
+          if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
+            return true;
+          }
+
+          if (checkCompoundRules(wordChars, offset + breakPos, length - breakPos, words)) {
+            return true;
+          }
+        }
+
+        words.remove(words.size() - 1);
+      }
+    }
+
+    return false;
+  }
+
+  private boolean checkLastCompoundPart(
+      char[] wordChars, int start, int length, List<IntsRef> words) {
+    IntsRef forms = dictionary.lookupWord(wordChars, start, length);
+    if (forms == null) return false;
+
+    words.add(forms);
+    boolean result =
+        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+    words.remove(words.size() - 1);
+    return result;
   }
 
   private static boolean isNumber(String s) {

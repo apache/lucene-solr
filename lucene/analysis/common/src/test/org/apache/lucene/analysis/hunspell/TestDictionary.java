@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Random;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -33,6 +34,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
+import org.junit.Test;
 
 public class TestDictionary extends LuceneTestCase {
 
@@ -266,6 +268,27 @@ public class TestDictionary extends LuceneTestCase {
   public void testFlagWithCrazyWhitespace() {
     assertNotNull(Dictionary.getFlagParsingStrategy("FLAG\tUTF-8"));
     assertNotNull(Dictionary.getFlagParsingStrategy("FLAG    UTF-8"));
+  }
+
+  @Test
+  public void testFlagSerialization() {
+    Random r = random();
+    char[] flags = new char[r.nextInt(10)];
+    for (int i = 0; i < flags.length; i++) {
+      flags[i] = (char) r.nextInt(Character.MAX_VALUE);
+    }
+
+    String[] flagLines = {"FLAG long", "FLAG UTF-8", "FLAG num"};
+    for (String flagLine : flagLines) {
+      Dictionary.FlagParsingStrategy strategy = Dictionary.getFlagParsingStrategy(flagLine);
+      StringBuilder serialized = new StringBuilder();
+      for (char flag : flags) {
+        strategy.appendFlag(flag, serialized);
+      }
+
+      char[] deserialized = strategy.parseFlags(serialized.toString());
+      assertEquals(new String(flags), new String(deserialized));
+    }
   }
 
   private Directory getDirectory() {

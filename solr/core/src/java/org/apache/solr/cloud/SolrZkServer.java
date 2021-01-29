@@ -36,6 +36,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 
@@ -107,26 +108,24 @@ public class SolrZkServer {
     if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
-    zkThread = new Thread() {
-      @Override
-      public void run() {
-        try {
-          if (zkProps.getServers().size() > 1) {
-            QuorumPeerMain zkServer = new QuorumPeerMain();
-            zkServer.runFromConfig(zkProps);
-          } else {
-            ServerConfig sc = new ServerConfig();
-            sc.readFrom(zkProps);
-            ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
-            zkServer.runFromConfig(sc);
-          }
-          log.info("ZooKeeper Server exited.");
-        } catch (Exception e) {
-          log.error("ZooKeeper Server ERROR", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    AtomicReference<Exception> zkException = new AtomicReference<>();
+    zkThread = new Thread(() -> {
+      try {
+        if (zkProps.getServers().size() > 1) {
+          QuorumPeerMain zkServer = new QuorumPeerMain();
+          zkServer.runFromConfig(zkProps);
+        } else {
+          ServerConfig sc = new ServerConfig();
+          sc.readFrom(zkProps);
+          ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
+          zkServer.runFromConfig(sc);
         }
+        log.info("ZooKeeper Server exited.");
+      } catch (Exception e) {
+        log.error("ZooKeeper Server ERROR", e);
+        zkException.set(e);
       }
-    };
+    }, "embeddedZkServer");
 
     if (zkProps.getServers().size() > 1) {
       if (log.isInfoEnabled()) {
@@ -143,9 +142,16 @@ public class SolrZkServer {
     zkThread.setDaemon(true);
     zkThread.start();
     try {
+      // We don't have any way to hook into the ZK server object to check that it is running, so we just wait and hope
       Thread.sleep(500); // pause for ZooKeeper to start
-    } catch (Exception e) {
-      log.error("STARTING ZOOKEEPER", e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while starting embedded zookeeper server", e);
+    }
+
+    if (zkException.get() != null) {
+      log.info("Embedded ZK dataHome={}", dataHome);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not start embedded zookeeper server", zkException.get());
     }
   }
 
