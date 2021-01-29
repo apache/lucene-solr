@@ -252,7 +252,7 @@ Other
 New Features
 ---------------------
 
-* LUCENE-9694: New tool for creating a deterministic index to enabling benchmarking changes
+* LUCENE-9694: New tool for creating a deterministic index to enable benchmarking changes
   on a consistent multi-segment index even when they require re-indexing. (Haoyu Zhai)
 
 ======================= Lucene 8.8.0 =======================
