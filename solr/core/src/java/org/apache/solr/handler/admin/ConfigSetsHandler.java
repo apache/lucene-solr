@@ -307,7 +307,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
   private void ensureOverwritingUntrustedConfigSet(SolrZkClient zkClient, String configSetZkPath) {
     boolean isCurrentlyTrusted = isCurrentlyTrusted(zkClient, configSetZkPath);
     if (isCurrentlyTrusted) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an unstrusted ConfigSet update on a trusted configSet");
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Trying to make an untrusted ConfigSet update on a trusted configSet");
     }
   }
 
