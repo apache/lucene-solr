@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -149,45 +150,92 @@ public class SpellChecker {
     }
 
     if (dictionary.compoundBegin != FLAG_UNSET || dictionary.compoundFlag != FLAG_UNSET) {
-      return checkCompounds(wordChars, 0, length, originalCase, 0);
+      return checkCompounds(new CharsRef(wordChars, 0, length), originalCase, 0, __ -> true);
     }
 
     return false;
   }
 
   private boolean checkCompounds(
-      char[] chars, int offset, int length, WordCase originalCase, int depth) {
+      CharsRef word, WordCase originalCase, int depth, Predicate<List<CharsRef>> checkPatterns) {
     if (depth > dictionary.compoundMax - 2) return false;
 
-    int limit = length - dictionary.compoundMin + 1;
+    int limit = word.length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
       WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
-      int breakOffset = offset + breakPos;
-      if (mayBreakIntoCompounds(chars, offset, length, breakOffset)) {
-        List<CharsRef> stems = stemmer.doStem(chars, offset, breakPos, originalCase, context);
+      int breakOffset = word.offset + breakPos;
+      if (mayBreakIntoCompounds(word.chars, word.offset, word.length, breakOffset)) {
+        List<CharsRef> stems =
+            stemmer.doStem(word.chars, word.offset, breakPos, originalCase, context);
         if (stems.isEmpty()
             && dictionary.simplifiedTriple
-            && chars[breakOffset - 1] == chars[breakOffset]) {
-          stems = stemmer.doStem(chars, offset, breakPos + 1, originalCase, context);
+            && word.chars[breakOffset - 1] == word.chars[breakOffset]) {
+          stems = stemmer.doStem(word.chars, word.offset, breakPos + 1, originalCase, context);
         }
-        if (stems.isEmpty()) continue;
+        if (!stems.isEmpty() && checkPatterns.test(stems)) {
+          Predicate<List<CharsRef>> nextCheck = checkNextPatterns(word, breakPos, stems);
+          if (checkCompoundsAfter(word, breakPos, originalCase, depth, stems, nextCheck)) {
+            return true;
+          }
+        }
+      }
 
-        int remainingLength = length - breakPos;
-        List<CharsRef> lastStems =
-            stemmer.doStem(chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
-        if (!lastStems.isEmpty()
-            && !(dictionary.checkCompoundDup && intersectIgnoreCase(stems, lastStems))
-            && !hasForceUCaseProblem(chars, breakOffset, remainingLength, originalCase)) {
-          return true;
-        }
-
-        if (checkCompounds(chars, breakOffset, remainingLength, originalCase, depth + 1)) {
-          return true;
-        }
+      if (checkCompoundPatternReplacements(word, breakPos, originalCase, depth)) {
+        return true;
       }
     }
 
     return false;
+  }
+
+  private boolean checkCompoundPatternReplacements(
+      CharsRef word, int pos, WordCase originalCase, int depth) {
+    for (CheckCompoundPattern pattern : dictionary.checkCompoundPatterns) {
+      CharsRef expanded = pattern.expandReplacement(word, pos);
+      if (expanded != null) {
+        WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
+        int breakPos = pos + pattern.endLength();
+        List<CharsRef> stems =
+            stemmer.doStem(expanded.chars, expanded.offset, breakPos, originalCase, context);
+        if (!stems.isEmpty()) {
+          Predicate<List<CharsRef>> nextCheck =
+              next -> pattern.prohibitsCompounding(expanded, breakPos, stems, next);
+          if (checkCompoundsAfter(expanded, breakPos, originalCase, depth, stems, nextCheck)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private Predicate<List<CharsRef>> checkNextPatterns(
+      CharsRef word, int breakPos, List<CharsRef> stems) {
+    return nextStems ->
+        dictionary.checkCompoundPatterns.stream()
+            .noneMatch(p -> p.prohibitsCompounding(word, breakPos, stems, nextStems));
+  }
+
+  private boolean checkCompoundsAfter(
+      CharsRef word,
+      int breakPos,
+      WordCase originalCase,
+      int depth,
+      List<CharsRef> prevStems,
+      Predicate<List<CharsRef>> checkPatterns) {
+    int remainingLength = word.length - breakPos;
+    int breakOffset = word.offset + breakPos;
+    List<CharsRef> tailStems =
+        stemmer.doStem(word.chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
+    if (!tailStems.isEmpty()
+        && !(dictionary.checkCompoundDup && intersectIgnoreCase(prevStems, tailStems))
+        && !hasForceUCaseProblem(word.chars, breakOffset, remainingLength, originalCase)
+        && checkPatterns.test(tailStems)) {
+      return true;
+    }
+
+    CharsRef tail = new CharsRef(word.chars, breakOffset, remainingLength);
+    return checkCompounds(tail, originalCase, depth + 1, checkPatterns);
   }
 
   private boolean hasForceUCaseProblem(

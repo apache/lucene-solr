@@ -72,6 +72,18 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("i53643");
   }
 
+  public void testCheckCompoundPattern() throws Exception {
+    doTest("checkcompoundpattern");
+  }
+
+  public void testCheckCompoundPattern2() throws Exception {
+    doTest("checkcompoundpattern2");
+  }
+
+  public void testCheckCompoundPattern3() throws Exception {
+    doTest("checkcompoundpattern3");
+  }
+
   @Test
   public void dotless_i() throws Exception {
     doTest("dotless_i");

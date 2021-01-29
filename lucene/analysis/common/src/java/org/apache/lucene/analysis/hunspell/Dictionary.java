@@ -148,6 +148,7 @@ public class Dictionary {
   boolean checkCompoundTriple, simplifiedTriple;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
+  List<CheckCompoundPattern> checkCompoundPatterns = new ArrayList<>();
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
@@ -422,6 +423,12 @@ public class Dictionary {
         checkCompoundTriple = true;
       } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {
         simplifiedTriple = true;
+      } else if ("CHECKCOMPOUNDPATTERN".equals(firstWord)) {
+        int count = Integer.parseInt(singleArgument(reader, line));
+        for (int i = 0; i < count; i++) {
+          checkCompoundPatterns.add(
+              new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
+        }
       }
     }
 
