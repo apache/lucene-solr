@@ -90,6 +90,8 @@ public class MiniSolrCloudCluster {
   
   public static final String SOLR_TESTS_SHARDS_WHITELIST = "solr.tests.shardsWhitelist";
 
+  public static final int DEFAULT_TIMEOUT = 30;
+
   public static final String DEFAULT_CLOUD_SOLR_XML = "<solr>\n" +
       "\n" +
       "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
@@ -327,7 +329,11 @@ public class MiniSolrCloudCluster {
     log.info("waitForAllNodes: numServers={}", numServers);
     
     int numRunning = 0;
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+
+    if (timeoutSeconds == 0) {
+      timeoutSeconds = DEFAULT_TIMEOUT;
+    }
+    TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     
     while (true) {
       if (timeout.hasTimedOut()) {
