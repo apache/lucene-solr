@@ -16,6 +16,28 @@
  */
 package org.apache.lucene.backward_index;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Modifier;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -70,11 +92,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -90,29 +117,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.lang.reflect.Modifier;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /*
   Verify we can read previous versions' indexes, do searches
@@ -1096,8 +1100,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     // check docvalues fields
     NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
-    BinaryDocValues dvBytesDerefFixed =
-        MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
+    BinaryDocValues dvBytesDerefFixed = MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
     BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
     SortedDocValues dvBytesSortedFixed =
         MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
@@ -1114,7 +1117,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
 
     SortedSetDocValues dvSortedSet = MultiDocValues.getSortedSetValues(reader, "dvSortedSet");
-    SortedNumericDocValues dvSortedNumeric = MultiDocValues.getSortedNumericValues(reader, "dvSortedNumeric");
+    SortedNumericDocValues dvSortedNumeric =
+        MultiDocValues.getSortedNumericValues(reader, "dvSortedNumeric");
 
     for (int i = 0; i < 35; i++) {
       int id = Integer.parseInt(reader.document(i).get("id"));
@@ -1158,15 +1162,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(id, dvShort.longValue());
 
       assertEquals(i, dvSortedSet.nextDoc());
-        long ord = dvSortedSet.nextOrd();
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
-        term = dvSortedSet.lookupOrd(ord);
-        assertEquals(expectedRef, term);
+      long ord = dvSortedSet.nextOrd();
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
+      term = dvSortedSet.lookupOrd(ord);
+      assertEquals(expectedRef, term);
 
-        assertEquals(i, dvSortedNumeric.nextDoc());
-        assertEquals(1, dvSortedNumeric.docValueCount());
-        assertEquals(id, dvSortedNumeric.nextValue());
-  }
+      assertEquals(i, dvSortedNumeric.nextDoc());
+      assertEquals(1, dvSortedNumeric.docValueCount());
+      assertEquals(id, dvSortedNumeric.nextValue());
+    }
 
     ScoreDoc[] hits =
         searcher.search(new TermQuery(new Term(new String("content"), "aaa")), 1000).scoreDocs;
@@ -1177,13 +1181,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
-    hits =
-        searcher.search(new TermQuery(new Term(new String("content5"), "aaa")), 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(new Term(new String("content5"), "aaa")), 1000).scoreDocs;
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
-    hits =
-        searcher.search(new TermQuery(new Term(new String("content6"), "aaa")), 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(new Term(new String("content6"), "aaa")), 1000).scoreDocs;
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
@@ -1246,17 +1248,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     byte[] bytes1 = new byte[4];
     byte[] bytes2 = new byte[] {0, 0, 0, (byte) 34};
     doTestHits(
-        searcher.search(BinaryPoint.newRangeQuery("binaryPoint1d", bytes1, bytes2), 1000)
-            .scoreDocs,
+        searcher.search(BinaryPoint.newRangeQuery("binaryPoint1d", bytes1, bytes2), 1000).scoreDocs,
         34,
         searcher.getIndexReader());
     byte[] bytes3 = new byte[] {0, 0, 0, (byte) 68};
     doTestHits(
         searcher.search(
                 BinaryPoint.newRangeQuery(
-                    "binaryPoint2d",
-                    new byte[][] {bytes1, bytes1},
-                    new byte[][] {bytes2, bytes3}),
+                    "binaryPoint2d", new byte[][] {bytes1, bytes1}, new byte[][] {bytes2, bytes3}),
                 1000)
             .scoreDocs,
         34,
@@ -1763,9 +1762,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
+    DirectoryReader reader = DirectoryReader.open(dir);
+
     verifyUsesDefaultCodec(dir, moreTermsIndex);
-    // TODO: more tests
     TestUtil.checkIndex(dir);
+    searchExampleIndex(reader);
+
+    reader.close();
     dir.close();
   }
 
@@ -1950,20 +1953,58 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertNotNull("Sorted index index " + name + " not found", resource);
       TestUtil.unzip(resource, path);
 
-      // TODO: more tests
       Directory dir = newFSDirectory(path);
-
       DirectoryReader reader = DirectoryReader.open(dir);
+
       assertEquals(1, reader.leaves().size());
       Sort sort = reader.leaves().get(0).reader().getMetaData().getSort();
       assertNotNull(sort);
       assertEquals("<long: \"dateDV\">!", sort.toString());
-      reader.close();
 
-      // this will confirm the docs really are sorted:
+      // This will confirm the docs are really sorted
       TestUtil.checkIndex(dir);
+
+      searchExampleIndex(reader);
+
+      reader.close();
       dir.close();
     }
+  }
+
+  private void searchExampleIndex(DirectoryReader reader) throws IOException {
+    IndexSearcher searcher = newSearcher(reader);
+
+    TopDocs topDocs = searcher.search(new NormsFieldExistsQuery("titleTokenized"), 10);
+    assertEquals(50, topDocs.totalHits.value);
+
+    topDocs = searcher.search(new DocValuesFieldExistsQuery("titleDV"), 10);
+    assertEquals(50, topDocs.totalHits.value);
+
+    topDocs = searcher.search(new TermQuery(new Term("body", "ja")), 10);
+    assertTrue(topDocs.totalHits.value > 0);
+
+    topDocs =
+        searcher.search(
+            IntPoint.newRangeQuery("docid_int", 42, 44),
+            10,
+            new Sort(new SortField("docid_intDV", SortField.Type.INT)));
+    assertEquals(3, topDocs.totalHits.value);
+    assertEquals(3, topDocs.scoreDocs.length);
+    assertEquals(42, ((FieldDoc) topDocs.scoreDocs[0]).fields[0]);
+    assertEquals(43, ((FieldDoc) topDocs.scoreDocs[1]).fields[0]);
+    assertEquals(44, ((FieldDoc) topDocs.scoreDocs[2]).fields[0]);
+
+    topDocs = searcher.search(new TermQuery(new Term("body", "the")), 5);
+    assertTrue(topDocs.totalHits.value > 0);
+
+    topDocs =
+        searcher.search(
+            new MatchAllDocsQuery(), 5, new Sort(new SortField("dateDV", SortField.Type.LONG)));
+    assertEquals(50, topDocs.totalHits.value);
+    assertEquals(5, topDocs.scoreDocs.length);
+    long firstDate = (Long) ((FieldDoc) topDocs.scoreDocs[0]).fields[0];
+    long lastDate = (Long) ((FieldDoc) topDocs.scoreDocs[4]).fields[0];
+    assertTrue(firstDate <= lastDate);
   }
 
   static long getValue(BinaryDocValues bdv) throws IOException {
