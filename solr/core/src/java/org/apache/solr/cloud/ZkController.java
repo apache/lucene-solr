@@ -115,7 +115,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -178,7 +177,7 @@ public class ZkController implements Closeable, Runnable {
         CoreDescriptor desc = core.getCoreDescriptor();
         String collection = desc.getCollectionName();
         try {
-          zkStateReader.waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+          zkStateReader.waitForState(collection, 2, TimeUnit.SECONDS, (n, c) -> {
             if (c == null) {
               return false;
             }
@@ -199,6 +198,7 @@ public class ZkController implements Closeable, Runnable {
           return;
         } catch (TimeoutException e) {
           log.error("Timeout", e);
+          break;
         }
       }
     } else {
@@ -665,6 +665,7 @@ public class ZkController implements Closeable, Runnable {
 
     try (ParWork closer = new ParWork(this, true, true)) {
       closer.collect("replicateFromLeaders", replicateFromLeaders);
+      closer.collect(leaderElectors);
 
       if (publishDown) {
         closer.collect("PublishNodeAsDown&RepFromLeaders", () -> {

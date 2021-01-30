@@ -752,8 +752,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     @Override
     public synchronized DocCollection get(boolean allowCached) {
       gets.incrementAndGet();
+      boolean shouldFetch = true;
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
-        boolean shouldFetch = true;
         if (cachedDocCollection != null) {
           Stat exists = null;
           try {
@@ -766,13 +766,15 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             shouldFetch = false;
           }
         }
-        if (shouldFetch) {
-          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
-          lastUpdateTime = System.nanoTime();
-        }
       }
+
+      if (shouldFetch || cachedDocCollection == null) {
+        cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+        lastUpdateTime = System.nanoTime();
+      }
+
       if (cachedDocCollection == null) {
-        log.error("cached collection is null");
+        log.info("cached collection is null");
       }
       return cachedDocCollection;
     }

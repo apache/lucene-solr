@@ -389,35 +389,7 @@ public class ZkShardTerms implements Closeable {
         log.info("refresh shard terms to zk version {}", stat.getVersion());
         newTerms = new ShardTerms(values, stat.getVersion());
       } catch (KeeperException.NoNodeException e) {
-        log.warn("No node found for shard terms", e);
-        if (!isClosed.get()) {
-          try {
-            if (zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
-              try {
-                zkClient.mkdir(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms");
-              } catch (KeeperException.NodeExistsException e1) {
-
-              }
-              try {
-                zkClient.mkdir(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/terms/" + shard, ZkStateReader.emptyJson);
-              } catch (KeeperException.NodeExistsException e1) {
-
-              }
-              Stat stat = new Stat();
-              byte[] data = zkClient.getData(znodePath, setWatch ? watcher : null, stat, true);
-              ConcurrentHashMap<String,Long> values = new ConcurrentHashMap<>((Map<String,Long>) Utils.fromJSON(data));
-              if (log.isDebugEnabled()) log.debug("refresh shard terms to zk version {}", stat.getVersion());
-              // nocommit
-              log.info("refresh shard terms to zk version {}", stat.getVersion());
-              newTerms = new ShardTerms(values, stat.getVersion());
-              setNewTerms(newTerms);
-              return;
-            }
-          } catch (InterruptedException interruptedException) {
-            throw new AlreadyClosedException(interruptedException);
-          }
-        }
-
+        log.info("No node found for shard terms", e);
         // we have likely been deleted
         throw new AlreadyClosedException("No node found for shard terms");
       } catch (InterruptedException e) {

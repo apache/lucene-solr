@@ -484,7 +484,7 @@ public class ZkStateWriter {
              // Stat estate = reader.getZkClient().exists(path, null);
               trackVersions.remove(collection.getName());
               Stat stat = reader.getZkClient().exists(path, null);
-              log.error("Tried to update state.json ({}) with bad version {} \n {}", collection, version, stat != null ? stat.getVersion() : "null");
+              log.info("Tried to update state.json ({}) with bad version {} \n {}", collection, version, stat != null ? stat.getVersion() : "null");
 
               if (!overseer.isClosed() && stat != null) {
                 trackVersions.put(collection.getName(), stat.getVersion());
@@ -517,7 +517,7 @@ public class ZkStateWriter {
 
       });
 
-      removeCollections.forEach(c ->  trackVersions.remove(c));
+      removeCollections.forEach(c ->  removeCollection(c));
 
       if (badVersionException.get() != null) {
         throw badVersionException.get();
