@@ -495,7 +495,7 @@ case "$ACTION" in
     then
       echo "OK `date`"
     else
-      echo "FAILED `date`"
+      echo -e "FAILED `date`\n startup cmd=${RUN_CMD[*]}"
       exit 1
     fi
 

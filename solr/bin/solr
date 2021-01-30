@@ -871,7 +871,7 @@ function stop_solr() {
 
   TIMEOUT=30
   while running $PID; do
-    if (( TIMEOUT-- =< 0 )); then
+    if (( TIMEOUT-- <= 0 )); then
        echo "Timed out waiting for Solr shutdown, killing ${PID}"
        kill -KILL "$PID" 2>/dev/null
     fi
@@ -2191,7 +2191,7 @@ function start_solr() {
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
+    # MRM TODO: this is hard to deref properly with arguments "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
     "-Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault -Djava.net.preferIPv4Stack=true -Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
 
@@ -2221,7 +2221,7 @@ function start_solr() {
     export JETTY_HOME="$SOLR_SERVER_DIR"
     export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     export JETTY_ARGS="${SOLR_JETTY_CONFIG[@]} $SOLR_JETTY_ADDL_CONFIG"
-    export JAVA_OPTIONS="-Djetty.state=${SOLR_HOME}/jetty.state ${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole -XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh"
+    export JAVA_OPTIONS="-Djetty.state=${SOLR_HOME}/jetty.state ${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole"
     export JETTY_STATE="${SOLR_HOME}/jetty.state"
     bash $SOLR_SERVER_DIR/../bin/jetty.sh start
   fi
