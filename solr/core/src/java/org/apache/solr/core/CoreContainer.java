@@ -877,7 +877,7 @@ public class CoreContainer implements Closeable {
         try {
           getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
             if (c == null) {
-              log.info("Found  incorrect state c={}", c);
+              if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
               return false;
             }
             String nodeName = getZkController().getNodeName();
@@ -885,11 +885,11 @@ public class CoreContainer implements Closeable {
             for (Replica replica : replicas) {
               if (replica.getNodeName().equals(nodeName)) {
                 if (!replica.getState().equals(Replica.State.RECOVERING)) {
-                   log.info("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+                  if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
                   return false;
                 }
               } else {
-                log.info("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+                if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
               }
             }
 
@@ -1238,7 +1238,7 @@ public class CoreContainer implements Closeable {
 
   protected SolrCore registerCore(CoreDescriptor cd, SolrCore core, boolean closeOld) {
 
-    log.info("registerCore name={}, skipRecovery={}", cd.getName());
+    log.info("registerCore name={}", cd.getName());
 
     if (core == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Can not register a null core.");

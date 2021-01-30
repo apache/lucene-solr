@@ -507,7 +507,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       if (testExecutor != null) {
         testExecutor.disableCloseLock();
-        testExecutor.shutdown();
+        testExecutor.shutdownNow();
       }
 
 
@@ -536,7 +536,8 @@ public class SolrTestCase extends LuceneTestCase {
       assertNull(orr, orr);
 
       if (testExecutor != null) {
-        ParWork.shutdownParWorkExecutor(testExecutor, true);
+        boolean success = testExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        assertTrue(success);
         testExecutor = null;
       }
       ParWork.shutdownParWorkExecutor();

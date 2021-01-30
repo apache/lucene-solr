@@ -1092,10 +1092,18 @@ public class IndexFetcher {
                 // A hard link here should survive the eventual directory move, and should be more space efficient as
                 // compared to a file copy. TODO: Maybe we could do a move safely here?
 
-                // TODO: only for local
-                //Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
-                bytesDownloaded.add(localFile.length());
-                moveAFile(indexDir, tmpIndexDir, filename);
+                Directory baseFromDir = getBaseDir(indexDir);
+                Directory baseToDir = getBaseDir(tmpIndexDir);
+
+                if (baseFromDir instanceof FSDirectory && baseToDir instanceof FSDirectory) {
+                  Files.createLink(new File(tmpIndexDirPath, filename).toPath(), localFile.toPath());
+                } else {
+                  bytesDownloaded.add(localFile.length());
+                  boolean success = moveAFile(indexDir, tmpIndexDir, filename);
+                  if (!success) {
+                    throw new SolrException(ErrorCode.SERVER_ERROR, "Move directory failed file=" + filename + " " + indexDir + " to " + tmpIndexDirPath);
+                  }
+                }
               } else {
                 try {
                   dirFileFetcher = new DirectoryFileFetcher(tmpIndexDir, file, (String) file.get(NAME), FILE, latestGeneration);
@@ -1110,8 +1118,7 @@ public class IndexFetcher {
                 } finally {
                   fileFetchRequests.remove(file.get(NAME));
                 }
-              }
-              if (stop) {
+              } if (stop) {
                 throw new AlreadyClosedException();
               }
               if (log.isDebugEnabled()) log.debug("Downloaded {}", tmpIndexDir, file.get(NAME));
@@ -1324,6 +1331,16 @@ public class IndexFetcher {
     }
     log.info("Index is not stale");
     return false;
+  }
+
+  // special hack to work with FilterDirectory
+  protected Directory getBaseDir(Directory dir) {
+    Directory baseDir = dir;
+    while (baseDir instanceof FilterDirectory) {
+      baseDir = ((FilterDirectory) baseDir).getDelegate();
+    }
+
+    return baseDir;
   }
 
   /**

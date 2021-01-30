@@ -1066,7 +1066,7 @@ public class Http2SolrClient extends SolrClient {
           available.acquire();
         }
       } catch (InterruptedException e) {
-        log.warn("interrupted", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       phaser.register();
 

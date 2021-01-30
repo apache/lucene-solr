@@ -504,6 +504,11 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * test that our assumptions about how caches are affected hold true
    */
+  @Nightly // can randomly hit:
+//  java.lang.UnsupportedOperationException
+//  at __randomizedtesting.SeedInfo.seed([4ECEFFACB197503C:3CC812D4842EB732]:0)
+//  at org.apache.lucene.queries.function.FunctionValues.longVal(FunctionValues.java:49)
+//  at org.apache.solr.schema.CurrencyFieldType$RawCurrencyValueSource$1.longVal(CurrencyFieldType.java:571)
   public void testCacheImpacts() throws Exception {
     // cursor queryies can't live in the queryResultCache, but independent filters
     // should still be cached & reused
