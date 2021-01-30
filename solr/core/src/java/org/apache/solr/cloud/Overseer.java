@@ -281,9 +281,9 @@ public class Overseer implements SolrCloseable {
       throw new IllegalStateException("Cannot start an Overseer that is not closed");
     }
 
-    if (OUR_JVM_OVERSEER != null) {
-      throw new IllegalStateException("Cannot start an Overseer if another is running");
-    }
+//    if (OUR_JVM_OVERSEER != null) {
+//      throw new IllegalStateException("Cannot start an Overseer if another is running");
+//    }
 
     OUR_JVM_OVERSEER = this;
 

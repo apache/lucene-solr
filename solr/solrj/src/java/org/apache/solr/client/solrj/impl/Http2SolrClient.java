@@ -277,7 +277,7 @@ public class Http2SolrClient extends SolrClient {
       httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, AGENT));
       httpClient.setIdleTimeout(idleTimeout);
       httpClient.setTCPNoDelay(true);
-      httpClient.setStopTimeout(0);
+      httpClient.setStopTimeout(5000);
       httpClient.setAddressResolutionTimeout(3000);
       if (builder.connectionTimeout != null) httpClient.setConnectTimeout(builder.connectionTimeout);
       httpClient.start();
@@ -295,16 +295,33 @@ public class Http2SolrClient extends SolrClient {
 
   public void close() {
     if (log.isTraceEnabled()) log.trace("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
-   // assert closeTracker != null ? closeTracker.close() : true;
-    asyncTracker.close();
+    // assert closeTracker != null ? closeTracker.close() : true;
+    try {
+      asyncTracker.waitForComplete();
+    } catch (Exception e) {
+      log.error("Exception waiting for httpClient asyncTracker", e);
+    }
+    try {
+      asyncTracker.close();
+    } catch (Exception e) {
+      log.error("Exception closing httpClient asyncTracker", e);
+    }
     closed = true;
     if (closeClient) {
       try {
         httpClient.stop();
-        scheduler.stop();
-        httpClientExecutor.stop();
       } catch (Exception e) {
         log.error("Exception closing httpClient", e);
+      }
+      try {
+        scheduler.stop();
+      } catch (Exception e) {
+        log.error("Exception closing httpClient scheduler", e);
+      }
+      try {
+        httpClientExecutor.stop();
+      } catch (Exception e) {
+        log.error("Exception closing httpClient httpClientExecutor", e);
       }
     }
     if (log.isTraceEnabled()) log.trace("Done closing {}", this.getClass().getSimpleName());
@@ -458,8 +475,6 @@ public class Http2SolrClient extends SolrClient {
     try {
       req.request.send(new InputStreamResponseListener() {
 
-        private volatile boolean arrived;
-
         @Override
         public void onHeaders(Response response) {
           super.onHeaders(response);
@@ -478,18 +493,24 @@ public class Http2SolrClient extends SolrClient {
               if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
                 asyncListener.onFailure(e, e instanceof  SolrException ? ((SolrException) e).code() : 500);
               }
-            } finally {
-              arrived = true;
-              asyncTracker.arrive();
             }
           });
         }
 
+        @Override
+        public void onSuccess(Response response) {
+          try {
+            super.onSuccess(response);
+          } finally {
+            asyncTracker.arrive();
+          }
+        }
 
         @Override
         public void onFailure(Response response, Throwable failure) {
-          super.onFailure(response, failure);
           try {
+            super.onFailure(response, failure);
+
             if (SolrException.getRootCause(failure) != CANCELLED_EXCEPTION) {
               asyncListener.onFailure(failure, response.getStatus());
             } else {
@@ -497,29 +518,9 @@ public class Http2SolrClient extends SolrClient {
             }
 
           } finally {
-            if (!arrived) {
-              asyncTracker.arrive();
-            }
+            asyncTracker.arrive();
           }
         }
-
-        //        @Override
-//        public void onComplete(Result result) {
-//         // super.onComplete(result);
-//          Throwable failure;
-//           try {
-//             if (result.isFailed()) {
-//               failure = result.getFailure();
-//               if (failure != CANCELLED_EXCEPTION) {
-//                 asyncListener.onFailure(failure);
-//               }
-//
-//             }
-//           } finally {
-//             log.info("UNREGISTER TRACKER");
-//             asyncTracker.arrive();
-//           }
-//         }
       });
       if (req.afterSend != null) {
         req.afterSend.run();
@@ -1040,21 +1041,29 @@ public class Http2SolrClient extends SolrClient {
       if (log.isTraceEnabled()) log.trace("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
 
       try {
-        phaser.arriveAndAwaitAdvance();
+        phaser.awaitAdvanceInterruptibly(phaser.arrive(), idleTimeout, TimeUnit.MILLISECONDS);
       } catch (IllegalStateException e) {
-        log.warn("Unexpected, perhaps came after close; ?", e);
+        log.error("Unexpected, perhaps came after close; ?", e);
+      } catch (InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (TimeoutException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e);
       }
 
       if (log.isTraceEnabled()) log.trace("After wait for outstanding requests {}", phaser);
     }
 
     public void close() {
-      if (available != null) {
-        while (available.hasQueuedThreads()) {
-          available.release(available.getQueueLength());
+      try {
+        if (available != null) {
+          while (available.hasQueuedThreads()) {
+            available.release(available.getQueueLength());
+          }
         }
+        phaser.forceTermination();
+      } catch (Exception e) {
+        log.error("Exception closing Http2SolrClient asyncTracker", e);
       }
-      phaser.forceTermination();
     }
 
     public void register() {

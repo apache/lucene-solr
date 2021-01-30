@@ -244,6 +244,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       }
     }
     clients.clear();
+    controlClient = null;
   }
 
   @BeforeClass
@@ -333,9 +334,12 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
     throw new IllegalArgumentException("Could not find replica with nodename=" + node);
   }
-  
+
   public HttpSolrClient getClient(String collection, String url) {
-    String baseUrl = url + "/" + collection;
+    return getClient(url + "/" + collection);
+  }
+
+  public HttpSolrClient getClient(String baseUrl) {
     HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
         .withConnectionTimeout(15000)
         .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))

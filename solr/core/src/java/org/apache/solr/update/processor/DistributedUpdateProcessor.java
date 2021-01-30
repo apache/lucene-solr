@@ -18,9 +18,11 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -136,6 +138,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   volatile VersionInfo vinfo;
   private final boolean versionsStored;
   private final boolean returnVersions;
+
+  private Set<UpdateCommand> cancelCmds = ConcurrentHashMap.newKeySet();
 
   private volatile NamedList<Object> addsResponse = null;
   private volatile NamedList<Object> deleteResponse = null;
@@ -331,6 +335,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         } catch (Exception e) {
           if (distFuture != null) {
             distFuture.cancel(true);
+            cancelCmds.add(cmd);
           }
           if (e instanceof RuntimeException) {
             throw (RuntimeException) e;
@@ -957,6 +962,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       if (distFuture != null) {
         distFuture.cancel(true);
+        cancelCmds.add(cmd);
       }
       if (t instanceof SolrException) {
         throw (SolrException) t;
@@ -1242,10 +1248,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     assert ! finished : "lifecycle sanity check";
     finished = true;
     super.finish();
-    doDistribFinish();
+    doDistribFinish(cancelCmds);
   }
 
-  protected void doDistribFinish() throws IOException {
+  protected void doDistribFinish(Set<UpdateCommand> cancelCmds) throws IOException {
     // no-op for derived classes to implement
   }
 
@@ -1278,8 +1284,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   public static final class DistributedUpdatesAsyncException extends SolrException {
-    public final Set<Error> errors;
-    public DistributedUpdatesAsyncException(Set<Error> errors) {
+    public final Collection<Error> errors;
+    public DistributedUpdatesAsyncException(Collection<Error> errors) {
       super(buildCode(errors), buildMsg(errors), null);
       this.errors = errors;
 
@@ -1300,7 +1306,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     /** Helper method for constructor */
-    private static int buildCode(Set<Error> errors) {
+    private static int buildCode(Collection<Error> errors) {
       assert null != errors;
       assert 0 < errors.size();
 
@@ -1323,7 +1329,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     
     /** Helper method for constructor */
-    private static String buildMsg(Set<Error> errors) {
+    private static String buildMsg(Collection<Error> errors) {
       assert null != errors;
       assert 0 < errors.size();
       

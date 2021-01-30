@@ -20,7 +20,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,6 +43,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.Diagnostics;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
@@ -60,7 +63,7 @@ public class SolrCmdDistributor implements Closeable {
 
   private int maxRetries = MAX_RETRIES_ON_FORWARD;
 
-  private final Set<Error> allErrors = ConcurrentHashMap.newKeySet();
+  private final Map<UpdateCommand, Error> allErrors = new ConcurrentHashMap<>();
   
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
@@ -94,6 +97,10 @@ public class SolrCmdDistributor implements Closeable {
       solrClient.waitForOutstandingRequests();
     } else {
       cancels.forEach(cancellable -> cancellable.cancel());
+      Error error = new Error();
+      error.t = new AlreadyClosedException();
+      AlreadyClosedUpdateCmd cmd = new AlreadyClosedUpdateCmd(null);
+      allErrors.put(cmd, error);
       solrClient.waitForOutstandingRequests();
     }
     finished = true;
@@ -125,12 +132,12 @@ public class SolrCmdDistributor implements Closeable {
 
       // if it's a io exception exception, lets try again
       if (err.t instanceof SolrServerException) {
-        if (((SolrServerException) err.t).getRootCause() instanceof IOException) {
+        if (((SolrServerException) err.t).getRootCause() instanceof IOException  && !(((SolrServerException) err.t).getRootCause() instanceof ClosedChannelException)) {
           doRetry = true;
         }
       }
 
-      if (err.t instanceof IOException) {
+      if (err.t instanceof IOException && !(err.t instanceof ClosedChannelException)) {
         doRetry = true;
       }
 
@@ -259,7 +266,7 @@ public class SolrCmdDistributor implements Closeable {
         if (e instanceof SolrException) {
           error.statusCode = ((SolrException) e).code();
         }
-        allErrors.add(error);
+        allErrors.put(req.cmd, error);
       }
 
       return;
@@ -312,7 +319,7 @@ public class SolrCmdDistributor implements Closeable {
             }
             return;
           } else {
-            allErrors.add(error);
+            allErrors.put(req.cmd, error);
           }
         }
       }));
@@ -328,7 +335,7 @@ public class SolrCmdDistributor implements Closeable {
         log.info("Retrying distrib update on error: {}", e.getMessage());
         submit(req);
       } else {
-        allErrors.add(error);
+        allErrors.put(req.cmd, error);
       }
     }
   }
@@ -601,8 +608,19 @@ public class SolrCmdDistributor implements Closeable {
     }
   }
 
-  public Set<Error> getErrors() {
+  public Map<UpdateCommand, Error> getErrors() {
     return allErrors;
+  }
+
+  private static class AlreadyClosedUpdateCmd extends UpdateCommand {
+    public AlreadyClosedUpdateCmd(SolrQueryRequest req) {
+      super(req);
+    }
+
+    @Override
+    public String name() {
+      return "AlreadyClosedException";
+    }
   }
 }
 

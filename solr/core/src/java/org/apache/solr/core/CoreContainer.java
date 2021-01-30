@@ -2087,6 +2087,11 @@ public class CoreContainer implements Closeable {
    * @see SolrCore#close()
    */
   public SolrCore getCore(String name) {
+
+    if (name == null) {
+      throw new IllegalArgumentException("SolrCore name cannot be null");
+    }
+
     SolrCore core = null;
     CoreDescriptor desc = null;
 

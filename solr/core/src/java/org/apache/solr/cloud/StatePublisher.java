@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -104,8 +105,11 @@ public class StatePublisher implements Closeable {
             processMessage(bulkMessage);
           }
 
+        } catch (AlreadyClosedException e) {
+          log.info("StatePublisher run loop hit AlreadyClosedException, exiting ...");
+          return;
         } catch (Exception e) {
-          log.error("Exception in StatePublisher run loop", e);
+          log.error("Exception in StatePublisher run loop, exiting", e);
           return;
         }
       }

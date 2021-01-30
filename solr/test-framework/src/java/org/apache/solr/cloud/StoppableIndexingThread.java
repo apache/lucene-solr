@@ -55,7 +55,8 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
   private boolean pauseBetweenUpdates;
 
   private String collection;
-  
+  private boolean useLongId;
+
   public StoppableIndexingThread(SolrClient controlClient, SolrClient cloudClient, String id, boolean doDeletes) {
     this(controlClient, cloudClient, id, doDeletes, -1, 1, true);
   }
@@ -70,6 +71,10 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
     this.batchSize = batchSize;
     this.pauseBetweenUpdates = pauseBetweenUpdates;
     setDaemon(true);
+  }
+
+  public void setUseLongId(boolean useLongId) {
+    this.useLongId = useLongId;
   }
 
   public void setCollection(String collection) {
@@ -91,7 +96,13 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         }
       }
       ++numDone;
-      String id = this.id + "-" + i;
+      Object id;
+      if (useLongId) {
+         id = i;
+      } else {
+         id = this.id + "-" + i;
+      }
+
       ++i;
       boolean addFailed = false;
       
@@ -107,7 +118,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           }
           
           UpdateRequest req = new UpdateRequest();
-          req.deleteById(id);
+          req.deleteById(id.toString());
           req.process(cloudClient, collection);
         } catch (Exception e) {
           if (e instanceof InterruptedException) {
@@ -140,11 +151,11 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         addFailed = true;
         log.error("REQUEST FAILED for id={}", id, e);
 
-        addFails.add(id);
+        addFails.add(id.toString());
       }
       
       if (!addFailed && doDeletes && random.nextBoolean()) {
-        deletes.add(id);
+        deletes.add(id.toString());
       }
       
       if (docs.size() > 0 && pauseBetweenUpdates) {

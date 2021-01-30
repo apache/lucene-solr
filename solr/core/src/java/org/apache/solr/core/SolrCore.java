@@ -1653,15 +1653,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     int cnt = refCount.incrementAndGet();
 
-    if (log.isDebugEnabled()) {
-      RuntimeException e = new RuntimeException();
-      StackTraceElement[] stack = e.getStackTrace();
-      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-        log.debug(stack[i].toString());
-      }
-
-      log.debug("open refcount {} {}", this, cnt);
-    }
+//    if (log.isDebugEnabled()) {
+//      RuntimeException e = new RuntimeException();
+//      StackTraceElement[] stack = e.getStackTrace();
+//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+//        log.debug(stack[i].toString());
+//      }
+//
+//      log.debug("open refcount {} {}", this, cnt);
+//    }
   }
 
   /**
@@ -1700,15 +1700,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       closeAndWait.notifyAll();
     }
 
-    if (log.isDebugEnabled()) {
-      RuntimeException e = new RuntimeException();
-      StackTraceElement[] stack = e.getStackTrace();
-      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-        log.debug(stack[i].toString());
-      }
-
-      log.debug("close refcount after {} {}", this, count);
-    }
+//    if (log.isDebugEnabled()) {
+//      RuntimeException e = new RuntimeException();
+//      StackTraceElement[] stack = e.getStackTrace();
+//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+//        log.debug(stack[i].toString());
+//      }
+//
+//      log.debug("close refcount after {} {}", this, count);
+//    }
 
     if (count == 0) {
       try {

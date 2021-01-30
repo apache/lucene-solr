@@ -1134,8 +1134,17 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   // TODO: optionally fail if n replicas are not reached...
-  protected void doDistribFinish() {
+  protected void doDistribFinish(Set<UpdateCommand> cancelCmds) {
     clusterState = zkController.getClusterState();
+
+    // TODO: if not a forward and replication req is not specified, we could
+    // send in a background thread
+
+    cmdDistrib.finish();
+
+    cancelCmds.forEach(updateCommand1 -> {
+      cmdDistrib.getErrors().remove(updateCommand1);
+    });
 
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
@@ -1151,11 +1160,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }
-    // TODO: if not a forward and replication req is not specified, we could
-    // send in a background thread
 
-    cmdDistrib.finish();
-    Set<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+    Collection<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors().values();
     if (errors.size() > 0) {
       log.warn("There were errors during the request {}", errors);
     }
@@ -1256,15 +1262,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         } else {
           // not the leader anymore maybe or the error'd node is not my replica?
           if (!foundErrorNodeInReplicaList) {
-            log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent!", desc.getName(), collection, cloudDesc.getShardId(),
-                stdNode.getNodeProps().getCoreUrl());
+            log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent! replicas={}", desc.getName(), collection, cloudDesc.getShardId(),
+                stdNode.getNodeProps().getCoreUrl(), myReplicas);
             if (!shardId.equals(cloudDesc.getShardId())) {
               // some replicas on other shard did not receive the updates (ex: during splitshard),
               // exception must be notified to clients
               errorsForClient.add(error);
             }
           } else {
-            log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent!", desc.getName(), collection, shardId);
+            log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent! replicas={}", desc.getName(), collection, shardId, myReplicas);
           }
         }
       }

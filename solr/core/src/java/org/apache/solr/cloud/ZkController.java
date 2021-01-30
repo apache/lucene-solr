@@ -171,36 +171,41 @@ public class ZkController implements Closeable, Runnable {
   public void run() {
     disconnect(true);
     if (zkClient.isConnected()) {
-      log.info("Waiting to see DOWN states for node before shutdown ...");
-      Collection<SolrCore> cores = cc.getCores();
-      for (SolrCore core : cores) {
-        CoreDescriptor desc = core.getCoreDescriptor();
-        String collection = desc.getCollectionName();
-        try {
-          zkStateReader.waitForState(collection, 2, TimeUnit.SECONDS, (n, c) -> {
-            if (c == null) {
-              return false;
-            }
-            List<Replica> replicas = c.getReplicas();
-            for (Replica replica : replicas) {
-              if (replica.getNodeName().equals(getNodeName())) {
-                if (!replica.getState().equals(Replica.State.DOWN)) {
-                  // log.info("Found state {} {}", replica.getState(), replica.getNodeName());
-                  return false;
-                }
-              }
-            }
-
-            return true;
-          });
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          return;
-        } catch (TimeoutException e) {
-          log.error("Timeout", e);
-          break;
-        }
+      try {
+        Thread.sleep(300);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
       }
+      //      log.info("Waiting to see DOWN states for node before shutdown ...");
+//      Collection<SolrCore> cores = cc.getCores();
+//      for (SolrCore core : cores) {
+//        CoreDescriptor desc = core.getCoreDescriptor();
+//        String collection = desc.getCollectionName();
+//        try {
+//          zkStateReader.waitForState(collection, 2, TimeUnit.SECONDS, (n, c) -> {
+//            if (c == null) {
+//              return false;
+//            }
+//            List<Replica> replicas = c.getReplicas();
+//            for (Replica replica : replicas) {
+//              if (replica.getNodeName().equals(getNodeName())) {
+//                if (!replica.getState().equals(Replica.State.DOWN)) {
+//                  // log.info("Found state {} {}", replica.getState(), replica.getNodeName());
+//                  return false;
+//                }
+//              }
+//            }
+//
+//            return true;
+//          });
+//        } catch (InterruptedException e) {
+//          ParWork.propagateInterrupt(e);
+//          return;
+//        } catch (TimeoutException e) {
+//          log.error("Timeout", e);
+//          break;
+//        }
+//      }
     } else {
       log.info("ZkClient is not connected, won't wait to see DOWN nodes on shutdown");
     }

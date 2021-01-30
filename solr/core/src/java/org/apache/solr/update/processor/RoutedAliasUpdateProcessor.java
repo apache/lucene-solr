@@ -213,7 +213,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void finish() throws IOException {
     try {
       cmdDistrib.finish();
-      final Set<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+      final Collection<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors().values();
       if (!errors.isEmpty()) {
         throw new DistributedUpdateProcessor.DistributedUpdatesAsyncException(errors);
       }
